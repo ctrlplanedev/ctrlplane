@@ -1,0 +1,28 @@
+{
+  "name": "@ctrlplane/job-config-policy-checker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules",
+    "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
+    "lint": "eslint",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "typecheck": "tsc --noEmit",
+    "with-env": "dotenv -e ../../.env --"
+  },
+  "dependencies": {
+    "@ctrlplane/job-dispatch": "workspace:*",
+    "@ctrlplane/db": "workspace:*",
+    "cron": "^3.1.7"
+  },
+  "devDependencies": {
+    "@ctrlplane/eslint-config": "workspace:^",
+    "@ctrlplane/prettier-config": "workspace:^",
+    "@ctrlplane/tsconfig": "workspace:*",
+    "eslint": "^9.2.0",
+    "prettier": "^3.2.5",
+    "tsx": "^4.11.0",
+    "typescript": "^5.4.5"
+  },
+  "prettier": "@ctrlplane/prettier-config"
+}

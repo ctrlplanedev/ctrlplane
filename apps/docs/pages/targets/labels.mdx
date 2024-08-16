@@ -1,0 +1,27 @@
+# Labels
+
+Labels are key-value pairs attached to Targets. They provide a
+flexible way to categorize and identify your Targets based on their
+characteristics. Examples of labels might include:
+
+```yaml
+region: us-west-2
+type: eks
+tier: frontend
+customer: acme-corp
+```
+
+## Filtering with Labels
+
+Environments use label selectors to determine which Targets should
+trigger their associated workflows. A label selector is a simple expression that
+filters Targets based on their labels.
+
+## App Labels
+
+These are common labels that can be added to targets. which will
+provide some functionaility in the UI. Each kind will also have specific.
+
+| Label                      | Description                                                                                                                                                                                   |
+| :------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ctrlplane.dev/deployment` | System slug and deployment slug. This pairing is used to trace the resource back to its originating deployment. This information is essential for visualizing dependencies between resources. |

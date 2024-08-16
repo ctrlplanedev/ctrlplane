@@ -1,0 +1,201 @@
+"use client";
+
+import { useEffect } from "react";
+import { useParams } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useFieldArray, useForm } from "react-hook-form";
+import { TbInfoCircle, TbPlant } from "react-icons/tb";
+import { useReactFlow } from "reactflow";
+import { z } from "zod";
+
+import { cn } from "@ctrlplane/ui";
+import { Button } from "@ctrlplane/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@ctrlplane/ui/form";
+import { Input } from "@ctrlplane/ui/input";
+import { Separator } from "@ctrlplane/ui/separator";
+import { Textarea } from "@ctrlplane/ui/textarea";
+
+import { api } from "~/trpc/react";
+import { LabelFilterInput } from "../../../_components/LabelFilterInput";
+import { usePanel } from "./SidepanelContext";
+
+const environmentForm = z.object({
+  name: z.string(),
+  description: z.string().default(""),
+  targetFilter: z.array(z.object({ key: z.string(), value: z.string() })),
+});
+
+type EnvironmentFormValues = z.infer<typeof environmentForm>;
+
+export const SidebarEnvironmentPanel: React.FC = () => {
+  const { getNode, setNodes } = useReactFlow();
+  const { selectedNodeId } = usePanel();
+  const node = getNode(selectedNodeId ?? "")!;
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const update = api.environment.update.useMutation();
+  const envOverride = api.job.execution.create.byEnvId.useMutation();
+
+  const form = useForm<EnvironmentFormValues>({
+    resolver: zodResolver(environmentForm),
+    defaultValues: {
+      name: node.data.label,
+      description: node.data.description,
+      targetFilter: Object.entries(
+        node.data.targetFilter as Record<string, string>,
+      ).map(([key, value]) => ({
+        key,
+        value,
+      })),
+    },
+    mode: "onChange",
+  });
+
+  useEffect(() => {
+    form.setValue("name", node.data.label);
+    form.setValue("description", node.data.description);
+    form.setValue(
+      "targetFilter",
+      Object.entries(node.data.targetFilter as Record<string, string>).map(
+        ([key, value]) => ({
+          key,
+          value,
+        }),
+      ),
+    );
+  }, [node.data.label, node.data.description, node.data.targetFilter, form]);
+
+  const { targetFilter } = form.watch();
+  const targets = api.environment.target.byFilter.useQuery(
+    Object.fromEntries(targetFilter.map(({ key, value }) => [key, value])),
+  );
+
+  const { fields, append, remove } = useFieldArray({
+    name: "targetFilter",
+    control: form.control,
+  });
+
+  const onSubmit = form.handleSubmit((values) => {
+    setNodes((nodes) => {
+      const node = nodes.find((n) => n.id === selectedNodeId);
+      if (!node) return nodes;
+      const targetFilter = Object.fromEntries(
+        values.targetFilter.map(({ key, value }) => [key, value]),
+      );
+      update.mutate({ id: node.id, data: { ...values, targetFilter } });
+      return nodes.map((n) =>
+        n.id === selectedNodeId
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                ...values,
+                targetFilter,
+                label: values.name,
+              },
+            }
+          : n,
+      );
+    });
+  });
+
+  return (
+    <Form {...form}>
+      <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
+        <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
+          <TbPlant />
+        </div>
+        <span className="flex-grow">Environment</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="flex-shrink-0 text-neutral-500 hover:text-white"
+        >
+          <TbInfoCircle />
+        </Button>
+      </h2>
+      <Separator />
+      <form onSubmit={onSubmit} className="m-6 space-y-8">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Staging, Production, QA..." {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Add a description..." {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <div>
+          {fields.map((field, index) => (
+            <FormField
+              control={form.control}
+              key={field.id}
+              name={`targetFilter.${index}`}
+              render={({ field: { onChange, value } }) => (
+                <FormItem>
+                  <FormLabel className={cn(index !== 0 && "sr-only")}>
+                    Target Filter ({targets.data?.length ?? "-"})
+                  </FormLabel>
+                  <FormControl>
+                    <LabelFilterInput
+                      value={value}
+                      onChange={onChange}
+                      onRemove={() => remove(index)}
+                      workspaceId={workspace.data?.id}
+                      numInputs={fields.length}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          ))}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            //   disabled={isLastEmpty}
+            onClick={() => append({ key: "", value: "" })}
+          >
+            Add Label
+          </Button>
+        </div>
+
+        <div className="flex gap-2">
+          <Button type="submit" disabled={update.isPending}>
+            Save
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              selectedNodeId != null && envOverride.mutate(selectedNodeId)
+            }
+          >
+            Override
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+};

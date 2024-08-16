@@ -1,0 +1,39 @@
+# Systems
+
+In Ctrlplane, a system serves as a high-level category or grouping for your
+deployments. A system encompasses a set of related deployments that share common
+characteristics, such as the same environments and environment policies.
+
+## Why Use Systems?
+
+Systems offer several benefits in organizing and managing your deployment
+pipelines:
+
+1. **Logical Grouping:** Systems help you logically categorize deployments based
+   on their shared attributes or purpose.
+2. **Consistent Environments:** All deployments within a system utilize the same
+   set of environments, ensuring a standardized workflow across related
+   projects.
+3. **Unified Policies:** Systems apply the same environment policies to all
+   contained deployments, simplifying governance and ensuring consistent
+   controls.
+4. **Streamlined Management:** By centralizing the configuration of environments
+   and policies at the system level, you can manage multiple deployments more
+   efficiently.
+
+## How Systems Work
+
+1. **Creation:** You create a system and define the environments that it will
+   encompass (e.g., QA, Staging, Production).
+2. **Policy Configuration:** You configure the environment policies that will
+   apply to all deployments within the system.
+3. **Deployment Association:** You associate your deployments with the
+   appropriate system, ensuring they inherit the defined environments and
+   policies.
+
+## Key Points
+
+- Systems provide a high-level structure for categorizing deployments.
+- Systems ensure that related deployments share the same environments and
+  policies.
+- Systems simplify management by centralizing configuration.

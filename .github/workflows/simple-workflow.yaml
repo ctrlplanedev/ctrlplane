@@ -1,0 +1,27 @@
+name: Simple Workflow
+run-name: Simple Workflow [${{ inputs.job_execution_id && inputs.job_execution_id || '' }}]
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_execution_id:
+        description: 'Job execution ID'
+        required: true
+
+jobs:
+  sleep-job:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Generate random sleep time
+      id: sleep_time
+      run: echo "SLEEP_DURATION=$((15 + RANDOM % 16))" >> $GITHUB_ENV
+
+    - name: Sleep
+      run: |
+        echo "Sleeping for ${SLEEP_DURATION} seconds..."
+        sleep ${SLEEP_DURATION}
+        echo "Woke up after ${SLEEP_DURATION} seconds."

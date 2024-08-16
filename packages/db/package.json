@@ -1,0 +1,58 @@
+{
+  "name": "@ctrlplane/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "default": "./src/client.ts"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./src/schema/index.ts"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./src/utils/index.ts"
+    }
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "push": "pnpm with-env drizzle-kit push",
+    "studio": "pnpm with-env drizzle-kit studio",
+    "studio:wsl": "pnpm with-env drizzle-kit studio --host 0.0.0.0 --port 3010 --verbose --config drizzle.config.ts",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "with-env": "dotenv -e ../../.env --",
+    "migrate": "pnpm with-env tsx ./src/migrate.ts",
+    "rest": "pnpm with-env psql $POSTGRES_URL -c \"DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;\""
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "^0.10.1",
+    "@vercel/postgres": "^0.8.0",
+    "drizzle-orm": "^0.30.10",
+    "drizzle-zod": "^0.5.1",
+    "pg": "^8.11.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@ctrlplane/eslint-config": "workspace:*",
+    "@ctrlplane/prettier-config": "workspace:*",
+    "@ctrlplane/tsconfig": "workspace:*",
+    "dotenv-cli": "^7.4.2",
+    "drizzle-kit": "^0.21.1",
+    "eslint": "^9.2.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5"
+  },
+  "prettier": "@ctrlplane/prettier-config"
+}

@@ -1,0 +1,53 @@
+# Workflow
+
+In Ctrlplane, **workflows** represent the execution of your existing deployment
+pipelines. Ctrlplane does not aim to replace your existing pipeline tools (e.g.,
+GitHub Actions, GitLab CI/CD, Jenkins); instead, it complements them by
+providing a powerful trigger mechanism and integrations.
+
+Workflows can be automatically triggered by various events within Ctrlplane:
+
+- **New Releases:** When you create a new release of your software, Ctrlplane
+  can trigger workflows to deploy that release to specific environments.
+- **New Targets:** The addition of new targets (e.g., a
+  newly discovered Kubernetes cluster) can initiate workflows to deploy your
+  software to that target.
+- **Target Updates:** If a target changes (e.g., a
+  configuration update), Ctrlplane can trigger workflows to re-deploy your
+  software or perform other necessary actions.
+
+## Job Agents
+
+Job agents are the core of Ctrlplane's integration capabilities. They are
+responsible for triggering your existing pipelines in external systems.
+Ctrlplane supports a variety of job agents for popular CI/CD platforms,
+allowing you to seamlessly integrate with your preferred tools.
+
+Each deployment in Ctrlplane can be configured with one job agents. This means
+you can tailor your triggers and workflows to the specific requirements of each
+deployment.
+
+## How It Works
+
+1. **Configuration:** When setting up your deployment, you select and configure
+   the appropriate jobs. This involves specifying the provider (e.g.,
+   GitHub, GitLab, Jenkins), credentials, and any other necessary details.
+2. **Trigger Event:** When a trigger event occurs (e.g., new release, new
+   target), Ctrlplane identifies the relevant deployments and their associated
+   job agents.
+3. **Job Agent Activation:** Ctrlplane activates the configured job agents,
+   sending the necessary information to trigger the corresponding pipelines in
+   your external systems.
+4. **Pipeline Execution:** Your existing pipelines run as they normally would,
+   deploying your software, running tests, or performing other actions defined
+   within your pipeline.
+
+## Key Points
+
+- Workflows in Ctrlplane represent the execution of your existing pipelines.
+- Job Agents enable seamless integration with various CI/CD platforms.
+- Each deployment can be configured with specific job agents to tailor the
+  triggering mechanism.
+
+Ctrlplane complements your existing pipelines, providing a powerful trigger
+mechanism and centralized management.

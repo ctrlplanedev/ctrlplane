@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: Targets API
+  version: 1.0.0
+paths:
+  /v1/targets:
+    post:
+      summary: Create target
+      responses:
+        "200":
+          description: OK
+          requestBody:
+            required: true
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  kind:
+                    type: string
+                  provider:
+                    type: string
+                  name:
+                    type: string
+                  config:
+                    type: object
+                  labels:
+                    type: object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  version:
+                    type: string
+                  kind:
+                    type: string
+                  provider:
+                    type: string
+                  name:
+                    type: string
+                  config:
+                    type: object
+                  labels:
+                    type: object
+  /v1/targets/{id}: {}
+  /v1/targets/name/{name}: {}

@@ -1,0 +1,19 @@
+{
+  "index": "Introduction",
+  "getting-started": "Getting Started",
+  "use-cases": "Use Cases",
+
+  "-- Core Concepts": {
+    "type": "separator",
+    "title": "Core Concepts"
+  },
+  "deployments": "Deployments",
+  "systems": "Systems",
+  "environments": "Environments",
+  "targets": "Targets",
+  "workflows": "Workflow (CI)",
+  "variables": "Variables",
+  "runbooks": "Runbooks",
+  "advanced": "Advanced",
+  "glossary": "Glossary"
+}

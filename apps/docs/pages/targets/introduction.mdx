@@ -1,0 +1,123 @@
+# Introduction
+
+## What is a Target?
+
+A Target is a flexible concept within Ctrlplane representing any
+entity where you might want to run a deployment workflow. This could be a
+traditional infrastructure target like an EKS cluster, or a more abstract
+concept like a Salesforce account representing a customer's single-tenant
+instance.
+
+## Key Characteristics:
+
+- **Externally Managed:** Targets are not stored within Ctrl Plane.
+  They are managed wherever they naturally exist (e.g., within your cloud
+  infrastructure, CI/CD system, or custom configuration database).
+- **Environmentally Registered:** You associate Targets with specific
+  Environments within your software. This allows you to define which workflows
+  are triggered for which Targets based on their placement.
+- **Versatile Types:** A Target can be:
+  - **Infrastructure-Based:** EKS clusters, serverless functions, virtual
+    machines; anything you deploy your software to.
+  - **Custom Objects:** Any defined entity that requires custom actions or
+    workflows to be executed when added to the system.
+- **Labeled for Filtering:** You attach labels to Targets. These
+  labels are used by Environments to filter which Targets are
+  included in specific workflows.
+
+## How Targets Work
+
+1. **Creation:** Targets are typically created through two primary
+   methods:
+   - **Manually via API:** You can use the API to programmatically create Deployment
+     Targets with the desired configuration, including labels.
+   - **Target Providers:** Automated target providers can discover and register new Deployment
+     Targets based on predefined criteria, automatically assigning labels based
+     on the Target's attributes. (e.g., a target provider might detect a
+     newly created EKS cluster, label it with `region: us-west-2` and `type: eks`,
+     and then register it as a Target).
+2. **Registration:** You link newly created (or discovered) Targets
+   to relevant Environments within Ctrl Plane.
+3. **Workflow Triggering:**
+   - When a Target is **added** to an environment, it automatically
+     triggers the workflows that are defined for that environment and whose
+     label filters match the Target's labels.
+   - You can also configure workflows to trigger when an existing Deployment
+     Target is **updated**, particularly if its config changes.
+   - **New Release:** The most common scenario is a deployment workflow being
+     triggered by a new software release. This workflow then runs on every
+     Target associated with the environment and whose labels match
+     the environment's filter, ensuring your new code gets deployed to the right
+     places.
+4. **Custom Deployments:** In some cases, your Target
+   might trigger the creation of new infrastructure itself. For example, a
+   Target could represent a Kubernetes cluster template. When this
+   Target is used, it would initiate the workflow to provision a new
+   cluster based on the template's configuration. The new cluster would then be
+   registered as a Target with appropriate labels and as a result
+   triggering other workflows.
+
+## Use cases
+
+### EKS Cluster Target
+
+1. An EKS cluster exists in your AWS account.
+2. A target provider discovers the EKS cluster and creates a Target in Ctrlplane, labeling it with the cluster's region and name.
+3. You create an environment in Ctrlplane that filters for EKS clusters in the
+   same region.
+4. When you create a new software release, Ctrlplane detects the EKS cluster
+   Target and automatically runs your deployment workflow, deploying
+   the software to the cluster.
+
+### Salesforce Account Target
+
+1. A new Salesforce account is created for a customer.
+2. A custom Ctrlplane workflow triggers, using the Salesforce account details to
+   provision Kubernetes resources and other infrastructure components.
+3. A target provider detects the new infrastructure and creates Targets for
+   each component.
+4. Ctrlplane runs additional workflows to configure the new infrastructure
+   according to the customer's Salesforce account settings.
+
+## Additional Notes
+
+- **Dynamic Workflows:** The actions performed by workflows can be highly
+  customized based on the type of Target and the environment it's in.
+- **Filter Flexibility:** Label-based filtering provides granular control over
+  which workflows are triggered for each Target. You can create
+  complex filter combinations to precisely match your needs.
+
+## FAQ
+
+**What does it mean for a target to be registered into Ctrlplane?**
+
+When a target is registered into Ctrlplane, it means that Ctrlplane
+is now aware of its existence and can track its details. This includes:
+
+- Metadata: The target's kind (e.g., "EKS Cluster," "Kubernetes
+  Namespace"), version, and any associated labels.
+- Configuration: The configuration properties of the target, as
+  defined by its schema.
+- Status: The current state of the target (e.g., "active,"
+  "inactive," "error").
+
+Once registered, Ctrlplane can use this information to:
+
+- Associate with Environments: Based on labels, the target can be
+  automatically assigned to relevant environments.
+- Trigger Workflows: If the registration of the target matches any
+  trigger conditions defined in your workflows, those workflows will be
+  initiated.
+- Display in Dashboard: The target will be visible in the Ctrlplane
+  dashboard, allowing you to view its details, monitor its status, and manage
+  its deployments.
+
+After a target is registered in Ctrlplane, you typically assign it to
+one or more environments. This is done using labels. You can define labels on
+your targets, and your environment configuration includes filters
+that match those labels.
+
+For example, you might have a target labeled with `environment:
+staging`. If you have an environment called "Staging" that filters for the
+`environment: staging` label, the target will be automatically added
+to that environment.

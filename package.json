@@ -1,0 +1,34 @@
+{
+  "name": "ctrlplane",
+  "private": true,
+  "engines": {
+    "pnpm": ">=9.4.0",
+    "node": ">=20.12.0"
+  },
+  "packageManager": "pnpm@9.4.0",
+  "scripts": {
+    "build": "turbo build",
+    "build:digitalocean": "pnpm install --production=false && pnpm build",
+    "clean": "git clean -xdf node_modules",
+    "clean:workspaces": "turbo clean",
+    "db:push": "pnpm -F db push",
+    "db:studio": "pnpm -F db studio",
+    "dev": "turbo dev --parallel --concurrency 30",
+    "format": "turbo format --continue -- --cache --cache-location node_modules/.cache/.prettiercache",
+    "format:fix": "turbo format --continue -- --write --cache --cache-location node_modules/.cache/.prettiercache",
+    "lint": "turbo lint --continue -- --cache --cache-location node_modules/.cache/.eslintcache",
+    "lint:fix": "turbo lint --continue -- --fix --cache --cache-location node_modules/.cache/.eslintcache",
+    "lint:ws": "pnpm dlx sherif@latest",
+    "postinstall": "pnpm lint:ws",
+    "typecheck": "turbo typecheck",
+    "ui-add": "pnpm -F ui ui-add"
+  },
+  "devDependencies": {
+    "@ctrlplane/prettier-config": "workspace:*",
+    "@turbo/gen": "^2.0.7",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.7",
+    "typescript": "^5.4.5"
+  },
+  "prettier": "@ctrlplane/prettier-config"
+}

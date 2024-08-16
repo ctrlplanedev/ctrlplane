@@ -1,0 +1,39 @@
+# Multi-Region Application Deployment
+
+A global enterprise operates a web application that serves users worldwide. To
+provide a seamless user experience and ensure high availability, the application
+needs to be deployed in multiple geographic regions. This allows for reduced
+latency by serving users from nearby servers and ensures resilience against
+regional outages. However, managing multiple deployments, configurations, and
+failover scenarios can be complex and time-consuming.
+
+Ctrlplane streamlines the deployment and management of multi-region applications
+through its robust features:
+
+- Targets: Each region's infrastructure (e.g., Kubernetes clusters,
+  cloud functions, virtual machines) is represented as a distinct deployment
+  target within Ctrlplane. This allows for granular control over the
+  configuration and deployment process for each region.
+- Environments: Ctrlplane supports multiple environments (e.g., Staging,
+  Production) for each region, enabling region-specific testing and validation
+  before promoting a release to production.
+- Workflows: Ctrlplane workflows can be tailored for multi-region deployments.
+  You can configure workflows to:
+- Deploy sequentially: Deploy to each region one at a time, ensuring proper
+  testing and validation at each step.
+- Deploy in parallel: Deploy to all regions simultaneously to expedite the
+  release process.
+- Variables: Ctrlplane's variable system allows you to define region-specific
+  configurations. You can use variables to set language, currency, compliance
+  settings, and other regional-specific values.
+- Runbooks: Runbooks can be used to automate region-specific maintenance tasks
+  or to orchestrate complex failover procedures in case of regional failures.
+
+## Example
+
+A global e-commerce company uses Ctrlplane to deploy its website and backend
+services to multiple regions in North America, Europe, and Asia. Ctrlplane
+automates the deployment process, ensuring that each region receives the correct
+configuration and that traffic is routed to the nearest region for each user. In
+case of a regional outage, Ctrlplane automatically fails over to a healthy
+region, ensuring minimal disruption to users.

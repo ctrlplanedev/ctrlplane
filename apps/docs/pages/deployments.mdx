@@ -1,0 +1,78 @@
+# Deployments
+
+Deployments are the heart of Ctrlplane. They represent the process of delivering
+your software or application to various environments and targets.
+Deployments encapsulate the configuration, workflows, and triggers necessary to
+automate and manage the entire release process.
+
+## Key Components
+
+A deployment in Ctrlplane typically consists of the following elements:
+
+- **System:** The high-level category or grouping to which the deployment
+  belongs (e.g., "E-commerce," "Backend Services").
+- **Release:** The specific version or build of your software to be deployed.
+- **Environments:** The different stages or phases of the deployment pipeline
+  (e.g., "QA," "Staging," "Production").
+- **Targets:** The specific destinations where your software will be
+  deployed (e.g., Kubernetes clusters, server groups, cloud functions).
+- **Workflows:** The automated tasks and actions performed during the deployment
+  process (e.g., running tests, deploying code, sending notifications).
+- **Job Agents:** The integrations responsible for triggering your existing
+  pipelines in external systems (e.g., GitHub Actions, GitLab CI/CD, Jenkins).
+- **Policies (Optional):** Rules and constraints that govern the deployment
+  process, such as requiring approvals or enforcing automated checks.
+
+## Deployment Process
+
+The typical deployment process in Ctrlplane involves the following steps:
+
+- **Create a New Release:** You create a new release of your software,
+  specifying the version or build number.
+- **Trigger Workflows:** Ctrlplane automatically triggers the workflows
+  associated with the relevant environments for that release.
+- **Job Agent Activation:** The configured job agents for each deployment are
+  activated, sending triggers to your external pipelines.
+- **Pipeline Execution:** Your existing pipelines in GitHub, GitLab, Jenkins, or
+  other systems execute the necessary steps to deploy your software to the
+  targeted environments and targets.
+- **Deployment Status Tracking:** Ctrlplane tracks the status of each
+  deployment, providing you with visibility into the progress and success of
+  your releases.
+
+## Benefits of Deployments in Ctrlplane
+
+- **Automation:** Automates the entire deployment process, reducing manual
+  effort and potential for errors.
+- **Flexibility:** Supports various deployment strategies, from simple linear
+  pipelines to complex multi-stage workflows.
+- **Integration:** Seamlessly integrates with your existing CI/CD tools and
+  processes.
+- **Visibility:** Provides real-time visibility into the status and progress of
+  your deployments.
+- **Control:** Allows you to enforce policies and approvals to ensure compliance
+  and mitigate risks.
+
+## Example
+
+### Deploying a Web Application
+
+You have a web application with three environments (Dev, Staging, Production)
+and multiple targets (Kubernetes clusters in different regions). You
+create a deployment in Ctrlplane for this application, associating it with the
+correct system, environments, and targets. You also configure job agents to
+trigger your GitHub Actions workflows for each environment. When you create a
+new release, Ctrlplane automatically triggers the deployment process, deploying
+your application to the Dev environment first, then to Staging after approval,
+and finally to Production.
+
+## Key Points
+
+- Deployments are the core building block for automating your release process in
+  Ctrlplane.
+- Deployments encompass releases, environments, targets, workflows,
+  and job agents.
+- Ctrlplane complements your existing CI/CD tools, providing a centralized
+  platform for managing deployments across different systems and environments.
+- By leveraging deployments in Ctrlplane, you can achieve a streamlined,
+  efficient, and reliable deployment process.

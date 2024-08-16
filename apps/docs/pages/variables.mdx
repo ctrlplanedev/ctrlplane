@@ -1,0 +1,76 @@
+# Variables
+
+Variables in Ctrlplane are dynamic key-value pairs that can be used to customize
+and parameterize your deployment workflows. They allow you to inject
+environment-specific configuration, secrets, or other runtime values into your
+pipelines, making them more flexible and reusable.
+
+Ctrlplane offers three levels of variable scopes, each with its own ownership
+and applicability:
+
+1. **System Level Variables:** These variables apply to all targets
+   across all deployments within a specific system. They are typically used to
+   store global configuration values or secrets shared by multiple deployments.
+
+2. **Deployment Level Variables (Wildcard Selector):** These variables apply to
+   all targets within a specific deployment. They are often used to
+   store deployment-specific configuration values or secrets relevant to all
+   targets.
+
+3. **Deployment Level Variables (Custom Selector):** These variables apply to a
+   subset of targets within a specific deployment, based on defined
+   selectors (e.g., labels, environment, type). They are useful for tailoring
+   configuration to specific targets within a deployment.
+
+## Order of Precedence and Conflict Resolution
+
+In cases where a variable key is defined at multiple levels, Ctrlplane follows a
+clear order of precedence to resolve conflicts:
+
+- **Per-Target Variables:** Variables defined directly on a target
+  (using custom selectors) have the highest priority and will override any
+  conflicting values from higher levels.
+- **Deployment Level Variables:** Variables defined at the deployment level
+  (either with a wildcard selector or without) take precedence over system-level
+  variables.
+- **System Level Variables:** These variables have the lowest priority and act
+  as default values if no conflicting values are found at higher levels.
+
+## Ownership and Management
+
+- **System Level Variables:** Owned and managed at the system level. Changes to
+  these variables will affect all deployments within the system.
+- **Deployment Level Variables:** Owned and managed at the deployment level.
+  Changes to these variables will affect only the specified deployment.
+
+## Variable Types
+
+Ctrlplane supports various variable types, including:
+
+- `String` - Plain text values (e.g., API_KEY, REGION).
+- `Number` - Numeric values (e.g., PORT, TIMEOUT).
+- `Boolean` - True/False values (e.g., ENABLE_DEBUG).
+- `Array` - List of values (e.g., ALLOWED_IPS).
+- `Object` - Structured data with key-value pairs (e.g., DATABASE_CONFIG).
+- `Secret` - Sensitive values (e.g., passwords, API keys) that are encrypted at rest and masked in logs.
+
+## How to Use Variables
+
+Variables can be used in various places within Ctrlplane:
+
+- **Workflow Definitions:** Inject variables into your workflow steps using template syntax (e.g., `{{ vars.api_key }}`).
+- **Job Agent Configurations:** Pass variables as input parameters to external pipelines (e.g., GitHub Actions, Jenkins).
+- **Target Configurations:** Use variables to define dynamic configuration properties for your targets.
+
+## Best Practices
+
+- **Organize Variables Logically:** Group related variables at the appropriate
+  level (system or deployment) to avoid clutter and improve maintainability.
+- **Use Descriptive Names:** Choose clear and meaningful names for your
+  variables to make your configurations self-documenting.
+- **Secure Secrets:** Always store sensitive values as secrets to protect them
+  from unauthorized access.
+
+By effectively utilizing variables in Ctrlplane, you can create dynamic,
+reusable, and secure deployment workflows that adapt to different environments
+and configurations.

@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  database:
+    container_name: ctrlplane-database
+    image: postgres:16
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ctrlplane
+      POSTGRES_USER: ctrlplane
+      POSTGRES_PASSWORD: ctrlplane
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    container_name: ctrlplane-rabbitmq
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ctrlplane
+      RABBITMQ_DEFAULT_PASS: ctrlplane
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+volumes:
+  db-data:
+  rabbitmq-data:

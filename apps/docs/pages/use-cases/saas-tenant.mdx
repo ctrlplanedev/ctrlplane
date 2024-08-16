@@ -1,0 +1,72 @@
+# Deployment Strategies for a Scalable SaaS Platform
+
+A growing SaaS company offers a platform with varying customer needs for data
+isolation and security. Some customers require strict isolation in a
+single-tenant model, while others prioritize cost-efficiency and are comfortable
+with a multi-tenant model. Additionally, some customers may have unique
+compliance requirements that necessitate a shared-tenant model with enhanced
+isolation. The challenge lies in providing flexible deployment options to cater
+to these diverse needs while ensuring scalability, security, and compliance
+across the platform.
+
+Ctrlplane's flexible architecture enables the implementation of different tenant
+models to cater to varying customer requirements:
+
+- Multi-Tenant Deployment:
+
+  - Targets: Multiple customers share the same infrastructure
+    resources (e.g., Kubernetes cluster, database).
+  - Environments: Environments like "Staging" and "Production" are shared across
+    all customers.
+  - Workflows: Standard deployment workflows are used for all customers,
+    ensuring consistency and efficiency.
+  - Variables: System-level variables are used for common configurations, while
+    customer-specific variables can be used for minor customizations.
+  - Benefits: Cost-effective, easier to manage, suitable for customers with
+    standard security and compliance needs.
+
+- Single-Tenant Deployment:
+
+  - Targets: Each customer gets their own dedicated infrastructure
+    resources, ensuring complete isolation.
+  - Environments: Separate environments are created for each customer, allowing
+    for customized configurations and isolated testing.
+  - Workflows: Deployment workflows can be tailored to specific customer
+    requirements or compliance needs.
+  - Variables: Customer-specific variables are used extensively to customize the
+    environment and application settings.
+  - Benefits: Highest level of security and isolation, ideal for customers with
+    strict data privacy or regulatory requirements.
+
+- Shared-Tenant Deployment:
+  - Targets: Multiple customers share some infrastructure resources
+    (e.g., database servers), while others are dedicated (e.g., application
+    servers).
+  - Environments: Shared environments are used for some stages of the pipeline,
+    while dedicated environments are used for others.
+  - Workflows: Workflows can be configured to handle both shared and dedicated
+    resources, ensuring proper isolation where needed.
+  - Variables: A combination of system-level, deployment-level, and per-target
+    variables is used to manage shared and dedicated configurations.
+  - Benefits: Balances the cost-effectiveness of multi-tenancy with the
+    isolation benefits of single-tenancy, suitable for customers with moderate
+    security and compliance needs.
+
+---
+
+- Dynamic Provisioning: Ctrlplane can automatically provision new single-tenant
+  environments as new customers sign up, scaling the platform seamlessly.
+- Automated Workflows: Standardized workflows can be used for common tasks like
+  software updates and maintenance, regardless of the tenant model.
+- Policy Enforcement: Environment policies can be configured to enforce specific
+  security or compliance requirements for each tenant model.
+
+## Example
+
+A SaaS provider uses Ctrlplane to offer different deployment options to its
+customers. Small businesses choose the cost-effective multi-tenant model, while
+large enterprises opt for single-tenant deployments for enhanced security.
+Government agencies, with specific compliance requirements, choose the
+shared-tenant model to achieve a balance between cost and isolation. Ctrlplane
+enables the SaaS provider to efficiently manage all these different deployment
+models from a single platform, ensuring a seamless experience for all customers.

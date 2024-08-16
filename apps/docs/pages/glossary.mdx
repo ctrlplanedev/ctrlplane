@@ -1,0 +1,37 @@
+# Glossary
+
+**Deployment:** The core process of delivering software or applications to
+various environments and targets.
+
+**Target:** A specific destination or context where actions are
+performed during a deployment. This can be infrastructure like an EKS cluster or
+a more abstract concept like a custom object.
+
+**Environment:** A logical grouping of targets representing distinct
+stages in the software release process (e.g., QA, Staging, Production).
+
+**Environment Policy:** Configurable settings that govern how deployments move
+from one environment to another, including approvals, automated checks, and
+rollback strategies.
+
+**Label:** A tag assigned to a target, used for filtering and
+organizing.
+
+**Release:** A specific version or build of the software to be deployed.
+
+**Runbook:** A type of deployment designed to automate common tasks and
+workflows, independent of specific environments. Can be triggered manually, via
+API, or on a schedule.
+
+**Target Provider:** An automated process that discovers, registers, and updates
+targets by monitoring infrastructure and external systems.
+
+**System:** A high-level category for grouping deployments that share common
+characteristics like environments and policies.
+
+**Workflow:** The automated tasks and actions performed during the deployment
+process, often executed in external systems like GitHub Actions, GitLab CI/CD,
+or Jenkins.
+
+**Job Agent:** The integration component responsible for triggering workflows
+in external systems.

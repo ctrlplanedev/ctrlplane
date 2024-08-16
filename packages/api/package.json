@@ -1,0 +1,43 @@
+{
+  "name": "@ctrlplane/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "license": "",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@ctrlplane/auth": "workspace:*",
+    "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/job-dispatch": "workspace:*",
+    "@ctrlplane/validators": "workspace:*",
+    "@trpc/server": "11.0.0-rc.364",
+    "google-auth-library": "^9.13.0",
+    "googleapis": "^140.0.1",
+    "superjson": "2.2.1",
+    "ts-is-present": "^1.2.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@ctrlplane/eslint-config": "workspace:*",
+    "@ctrlplane/prettier-config": "workspace:*",
+    "@ctrlplane/tsconfig": "workspace:*",
+    "@types/semver": "^7.5.8",
+    "eslint": "^9.2.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.5"
+  },
+  "prettier": "@ctrlplane/prettier-config"
+}

@@ -1,0 +1,40 @@
+# Isolation and Simplified Deployments
+
+In large organizations, application developers often don't have
+direct access or deep knowledge of the underlying infrastructure their code runs
+on. They focus on developing features and fixing bugs, not managing the
+intricacies of targets and environments.
+
+- **Seamless Scalability:** As new targets are added (e.g., new
+  Kubernetes clusters in different regions), Ctrlplane automatically integrates
+  them into the existing pipelines. This means that developers don't need to
+  make any changes to their workflows and infrastructure teams don't need to
+  worry about manually add targets for the new infrastructure.
+- **Abstraction:** Ctrlplane abstracts away the complexities of deployment
+  targets, allowing developers to interact with environments (e.g., "QA,"
+  "Staging," "Production") without needing to understand the underlying
+  infrastructure details.
+- **Standardized Pipelines:** Ctrlplane enables the creation of reusable and
+  standardized pipelines that developers can use to deploy their code to any
+  environment without modification. This simplifies the deployment process and
+  reduces the risk of errors.
+- **Self-Service Deployments:** Developers can trigger deployments to specific
+  environments themselves through Ctrlplane's UI or API, without relying on
+  operations teams. This improves developer autonomy and accelerates the
+  development cycle.
+- **Status Visibility:** Ctrlplane provides developers with real-time feedback
+  on the status and progress of their deployments, giving them confidence that
+  their code is being deployed correctly.
+
+## Example
+
+A developer working on a new feature for a web application can simply select the
+"QA" environment in Ctrlplane and trigger the deployment. Ctrlplane handles the
+rest, deploying the code to the appropriate infrastructure (e.g., a Kubernetes
+cluster) and running any necessary tests. The developer can then monitor the
+deployment status and logs in Ctrlplane, ensuring that the new feature is
+working as expected. Meanwhile, the infrastructure team can add new Kubernetes
+clusters to the "QA" environment without requiring any changes from the
+developer. This streamlined process allows both teams to focus on their core
+tasks while still ensuring that the application is deployed seamlessly to all
+relevant targets.
