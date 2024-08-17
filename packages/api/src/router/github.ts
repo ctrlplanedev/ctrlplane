@@ -90,32 +90,26 @@ const reposRouter = createTRPCRouter({
             installationId: installation.id,
           })) as { token: string };
 
-          const repos = await installationOctokit.repos.listForOrg({
-            org: input.login,
+          console.log({ login: input.login });
+
+          const searchResponse = await installationOctokit.search.code({
+            q: `org:${input.login} filename:example.ctrlplane.yaml`,
+            per_page: 100,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
               authorization: `Bearer ${installationToken.token}`,
             },
           });
 
-          return await Promise.allSettled(
-            repos.data.map(async (repo) => {
-              const response = await installationOctokit.search.code({
-                q: `repo:${input.login}/${repo.name} ctrlplane.yaml`,
-                headers: {
-                  "X-GitHub-Api-Version": "2022-11-28",
-                  authorization: `Bearer ${installationToken.token}`,
-                },
-              });
+          console.log({ searchResponseData: searchResponse.data.items });
 
-              return {
-                ...repo,
-                configFiles: response.data.items.map((item) => item.path),
-              };
-            }),
-          ).then((results) =>
-            results.filter((r) => r.status === "fulfilled").map((r) => r.value),
-          );
+          return installationOctokit.repos.listForOrg({
+            org: input.login,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+              authorization: `Bearer ${installationToken.token}`,
+            },
+          });
         }),
     ),
 

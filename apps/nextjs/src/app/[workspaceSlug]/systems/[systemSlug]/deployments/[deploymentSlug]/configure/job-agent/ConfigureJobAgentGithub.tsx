@@ -33,7 +33,7 @@ export const ConfigureJobAgentGithub: React.FC<{
     installationId: jobAgent.config.installationId,
   });
 
-  console.log({ repos });
+  console.log({ repos: repos.data });
 
   const [repoOpen, setRepoOpen] = useState(false);
   const [repo, setRepo] = useState<string | null>(value.repo ?? null);
@@ -97,7 +97,7 @@ export const ConfigureJobAgentGithub: React.FC<{
               <CommandInput placeholder="Search repo..." />
               <CommandGroup>
                 <CommandList>
-                  {repos.data?.map((repo) => (
+                  {repos.data?.data.map((repo) => (
                     <CommandItem
                       key={repo.id}
                       value={repo.name}
