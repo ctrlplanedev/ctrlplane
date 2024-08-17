@@ -1,5 +1,12 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -27,7 +34,11 @@ export const githubOrganization = pgTable("github_organization", {
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspace.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  connected: boolean("connected").notNull().default(true),
 });
 
 export type GithubOrganization = InferSelectModel<typeof githubOrganization>;

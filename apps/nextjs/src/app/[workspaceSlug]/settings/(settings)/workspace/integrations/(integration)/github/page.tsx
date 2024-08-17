@@ -9,7 +9,8 @@ import { Card } from "@ctrlplane/ui/card";
 
 import { env } from "~/env";
 import { api } from "~/trpc/react";
-import { GithubJobAgentConfig } from "../../../../../../(job)/job-agents/add/GithubConfig";
+import { GithubConfigFileSync } from "./GithubConfigFile";
+import { GithubOrgConfig } from "./GithubOrgConfig";
 
 const githubAuthUrl = (userId?: string, workspaceSlug?: string) =>
   `${env.GITHUB_URL}/login/oauth/authorize?response_type=code&client_id=${env.NEXT_PUBLIC_GITHUB_BOT_CLIENT_ID}&redirect_uri=${env.BASE_URL}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
@@ -35,7 +36,7 @@ export default function GitHubIntegrationPage({
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold">GitHub</h1>
           <p className="text-sm text-muted-foreground">
-            Connect a Github organization to CtrlPlane to configure job agents
+            Connect a Github organization to Ctrlplane to configure job agents
             and sync config files.
           </p>
         </div>
@@ -50,8 +51,8 @@ export default function GitHubIntegrationPage({
           </p>
           <p className="text-sm text-muted-foreground">
             {githubUser.data != null
-              ? "Your GitHub account is connected to CtrlPlane"
-              : "Connect your GitHub account to CtrlPlane"}
+              ? "Your GitHub account is connected to Ctrlplane"
+              : "Connect your GitHub account to Ctrlplane"}
           </p>
         </div>
         {githubUser.data == null && (
@@ -69,13 +70,18 @@ export default function GitHubIntegrationPage({
         )}
       </Card>
 
-      {workspace.data != null && githubUser.data != null && (
-        <GithubJobAgentConfig
-          githubUser={githubUser.data}
-          workspaceId={workspace.data.id}
-          workspaceSlug={workspaceSlug}
-        />
-      )}
+      <GithubOrgConfig
+        githubUser={githubUser.data}
+        workspaceId={workspace.data?.id}
+        workspaceSlug={workspaceSlug}
+        loading={workspace.isLoading || githubUser.isLoading}
+      />
+
+      <GithubConfigFileSync
+        workspaceSlug={workspaceSlug}
+        workspaceId={workspace.data?.id}
+        loading={workspace.isLoading}
+      />
     </div>
   );
 }

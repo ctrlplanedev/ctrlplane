@@ -90,13 +90,32 @@ const reposRouter = createTRPCRouter({
             installationId: installation.id,
           })) as { token: string };
 
-          return installationOctokit.repos.listForOrg({
+          const repos = await installationOctokit.repos.listForOrg({
             org: input.login,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
               authorization: `Bearer ${installationToken.token}`,
             },
           });
+
+          return await Promise.allSettled(
+            repos.data.map(async (repo) => {
+              const response = await installationOctokit.search.code({
+                q: `repo:${input.login}/${repo.name} ctrlplane.yaml`,
+                headers: {
+                  "X-GitHub-Api-Version": "2022-11-28",
+                  authorization: `Bearer ${installationToken.token}`,
+                },
+              });
+
+              return {
+                ...repo,
+                configFiles: response.data.items.map((item) => item.path),
+              };
+            }),
+          ).then((results) =>
+            results.filter((r) => r.status === "fulfilled").map((r) => r.value),
+          );
         }),
     ),
 
@@ -137,8 +156,6 @@ const reposRouter = createTRPCRouter({
       }),
   }),
 });
-
-const installationRouter = createTRPCRouter({});
 
 export const githubRouter = createTRPCRouter({
   user: userRouter,
@@ -198,12 +215,42 @@ export const githubRouter = createTRPCRouter({
         ),
     ),
 
+    byWorkspaceId: protectedProcedure
+      .input(z.string().uuid())
+      .query(async ({ ctx, input }) => {
+        const internalOrgs = await ctx.db
+          .select()
+          .from(githubOrganization)
+          .where(eq(githubOrganization.workspaceId, input));
+
+        return getOctokit()
+          .apps.listInstallations({
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          })
+          .then(({ data: installations }) =>
+            Promise.all(
+              installations.filter(
+                (i) =>
+                  i.target_type === "Organization" &&
+                  internalOrgs.find((org) => org.installationId === i.id) !=
+                    null,
+              ),
+            ),
+          );
+      }),
+
     list: protectedProcedure
       .input(z.string().uuid())
       .query(({ ctx, input }) =>
         ctx.db
           .select()
           .from(githubOrganization)
+          .leftJoin(
+            githubUser,
+            eq(githubOrganization.addedByUserId, githubUser.userId),
+          )
           .where(eq(githubOrganization.workspaceId, input)),
       ),
 
@@ -211,6 +258,27 @@ export const githubRouter = createTRPCRouter({
       .input(githubOrganizationInsert)
       .mutation(({ ctx, input }) =>
         ctx.db.insert(githubOrganization).values(input).returning(),
+      ),
+
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.string().uuid(),
+          data: z.object({
+            connected: z.boolean().optional(),
+            installationId: z.number().optional(),
+            organizationName: z.string().optional(),
+            organizationId: z.string().optional(),
+            addedByUserId: z.string().optional(),
+            workspaceId: z.string().optional(),
+          }),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .update(githubOrganization)
+          .set(input.data)
+          .where(eq(githubOrganization.id, input.id)),
       ),
 
     repos: reposRouter,
