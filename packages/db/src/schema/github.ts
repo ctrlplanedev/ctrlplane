@@ -8,7 +8,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 import { user } from "./auth";
 import { workspace } from "./workspace";

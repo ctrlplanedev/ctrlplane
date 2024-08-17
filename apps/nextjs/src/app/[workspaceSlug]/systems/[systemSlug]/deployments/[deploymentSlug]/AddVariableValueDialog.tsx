@@ -38,9 +38,10 @@ export const AddVariableValueDialog: React.FC<{
   const form = useForm({ schema, defaultValues: { value: "" } });
   const onSubmit = form.handleSubmit(async (values) => {
     await create.mutateAsync({ ...values, variableId: variable.id });
-    await utils.variable.byDeploymentId.invalidate();
+    await utils.deployment.variable.byDeploymentId.invalidate();
     setOpen(false);
   });
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>

@@ -1,6 +1,6 @@
 "use client";
 
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { SiGithub } from "react-icons/si";
 
 import { Button } from "@ctrlplane/ui/button";
