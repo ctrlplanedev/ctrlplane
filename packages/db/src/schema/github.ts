@@ -1,7 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 import { user } from "./auth";
 import { workspace } from "./workspace";

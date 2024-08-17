@@ -1,7 +1,6 @@
 import type { GithubUser } from "@ctrlplane/db/schema";
-import { useEffect, useState } from "react";
-import { redirect } from "next/navigation";
-import { TbGitBranch, TbPlus } from "react-icons/tb";
+import { useState } from "react";
+import { TbPlus } from "react-icons/tb";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button } from "@ctrlplane/ui/button";

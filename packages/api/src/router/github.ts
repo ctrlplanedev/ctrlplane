@@ -138,8 +138,6 @@ const reposRouter = createTRPCRouter({
   }),
 });
 
-const installationRouter = createTRPCRouter({});
-
 export const githubRouter = createTRPCRouter({
   user: userRouter,
 
