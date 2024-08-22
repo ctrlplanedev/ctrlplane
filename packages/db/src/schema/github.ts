@@ -43,3 +43,19 @@ export const githubOrganization = pgTable("github_organization", {
 export type GithubOrganization = InferSelectModel<typeof githubOrganization>;
 
 export const githubOrganizationInsert = createInsertSchema(githubOrganization);
+
+export const githubConfigFile = pgTable("github_config_file", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => githubOrganization.id, { onDelete: "cascade" }),
+  repositoryName: text("repository_name").notNull(),
+  branch: text("branch").notNull().default("main"),
+  path: text("path").notNull(),
+  name: text("name").notNull(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspace.id, { onDelete: "cascade" }),
+});
+
+export const githubConfigFileInsert = createInsertSchema(githubConfigFile);

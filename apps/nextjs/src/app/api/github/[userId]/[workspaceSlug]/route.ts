@@ -14,8 +14,6 @@ export const GET = async (
   const code = searchParams.get("code");
   const { userId, workspaceSlug } = params;
 
-  console.log({ userId, workspaceSlug });
-
   const tokenResponse = await fetch(
     `${env.GITHUB_URL}/login/oauth/access_token`,
     {
