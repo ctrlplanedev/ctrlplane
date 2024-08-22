@@ -1,1 +1,6 @@
-sample: g
+deployments:
+  - name: "gorilla"
+    slug: "gorilla"
+    description: "Gorilla backend service"
+    system: "infra"
+    workspace: "ctrlplane"
