@@ -4,6 +4,7 @@ import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { githubConfigFile } from "./github";
 import { jobAgent } from "./job-execution";
 import { release } from "./release";
 import { system } from "./system";
@@ -23,6 +24,10 @@ export const deployment = pgTable(
       .default("{}")
       .$type<Record<string, any>>()
       .notNull(),
+    githubConfigFileId: uuid("github_config_file_id").references(
+      () => githubConfigFile.id,
+      { onDelete: "cascade" },
+    ),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );

@@ -1,5 +1,12 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { integer, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
 import { user } from "./auth";
@@ -26,9 +33,31 @@ export const githubOrganization = pgTable("github_organization", {
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspace.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  connected: boolean("connected").notNull().default(true),
+  branch: text("branch").notNull().default("main"),
 });
 
 export type GithubOrganization = InferSelectModel<typeof githubOrganization>;
 
 export const githubOrganizationInsert = createInsertSchema(githubOrganization);
+
+export const githubConfigFile = pgTable("github_config_file", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => githubOrganization.id, { onDelete: "cascade" }),
+  repositoryName: text("repository_name").notNull(),
+  branch: text("branch").notNull().default("main"),
+  path: text("path").notNull(),
+  name: text("name").notNull(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspace.id, { onDelete: "cascade" }),
+  lastSyncedAt: timestamp("last_synced_at", {
+    withTimezone: true,
+  }).defaultNow(),
+});

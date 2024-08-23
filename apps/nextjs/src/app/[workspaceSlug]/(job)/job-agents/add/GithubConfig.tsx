@@ -87,7 +87,9 @@ export const GithubJobAgentConfig: React.FC<{
                         ?.filter(
                           (org) =>
                             !githubOrgsInstalled.data?.some(
-                              (o) => o.organizationName === org.data.login,
+                              (o) =>
+                                o.github_organization.organizationName ===
+                                org.data.login,
                             ),
                         )
                         .map(({ data: { id, login, avatar_url } }) => (
