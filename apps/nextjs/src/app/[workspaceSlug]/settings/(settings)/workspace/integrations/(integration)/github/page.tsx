@@ -77,11 +77,7 @@ export default function GitHubIntegrationPage({
         loading={workspace.isLoading || githubUser.isLoading}
       />
 
-      <GithubConfigFileSync
-        workspaceSlug={workspaceSlug}
-        workspaceId={workspace.data?.id}
-        loading={workspace.isLoading}
-      />
+      <GithubConfigFileSync workspaceId={workspace.data?.id} />
     </div>
   );
 }

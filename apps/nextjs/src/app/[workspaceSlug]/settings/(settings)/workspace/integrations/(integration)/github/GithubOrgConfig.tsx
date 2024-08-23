@@ -192,8 +192,12 @@ export const GithubOrgConfig: React.FC<{
                   },
                 });
 
-                await utils.github.organizations.list.invalidate();
-                setValue;
+                await utils.github.organizations.list.invalidate(
+                  workspaceId ?? "",
+                );
+                await utils.github.configFile.list.invalidate(
+                  workspaceId ?? "",
+                );
               }}
             >
               Save
@@ -235,7 +239,7 @@ export const GithubOrgConfig: React.FC<{
                     </p>
                     {github_user != null && (
                       <p className="text-sm text-neutral-400">
-                        Enabled by {github_user?.githubUsername} on{" "}
+                        Enabled by {github_user.githubUsername} on{" "}
                         {github_organization.createdAt.toLocaleDateString()}
                       </p>
                     )}

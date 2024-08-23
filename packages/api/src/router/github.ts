@@ -1,6 +1,7 @@
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
+import * as yaml from "js-yaml";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -9,7 +10,6 @@ import { and, eq, inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   deployment,
   githubConfigFile,
-  githubConfigFileInsert,
   githubOrganization,
   githubOrganizationInsert,
   githubUser,
@@ -174,150 +174,6 @@ const configFileRouter = createTRPCRouter({
         .from(githubConfigFile)
         .where(eq(githubConfigFile.workspaceId, input)),
     ),
-  create: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.id(input.workspaceId),
-    })
-    .input(githubConfigFileInsert)
-    .mutation(({ ctx, input }) =>
-      ctx.db.transaction(async (db) => {
-        db.select()
-          .from(githubOrganization)
-          .where(eq(githubOrganization.id, input.organizationId))
-          .then(takeFirstOrNull)
-          .then((organization) => {
-            if (organization == null)
-              throw new TRPCError({
-                code: "NOT_FOUND",
-                message: "Organization not found",
-              });
-
-            getOctokit()
-              .apps.getInstallation({
-                installation_id: organization.installationId,
-              })
-              .then(({ data: installation }) => {
-                const installationOctokit = new Octokit({
-                  authStrategy: createAppAuth,
-                  auth: {
-                    appId: env.GITHUB_BOT_APP_ID,
-                    privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-                    clientId: env.GITHUB_BOT_CLIENT_ID,
-                    clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-                    installationId: installation.id,
-                  },
-                });
-
-                installationOctokit.repos
-                  .getContent({
-                    owner: organization.organizationName,
-                    repo: input.repositoryName,
-                    path: input.path,
-                    ref: input.branch,
-                  })
-                  .then(async ({ data }) => {
-                    if (!("content" in data))
-                      throw new Error("Invalid response data");
-                    const content = Buffer.from(
-                      data.content,
-                      "base64",
-                    ).toString("utf-8");
-
-                    const parsed = configFile.safeParse(content);
-                    if (!parsed.success)
-                      throw new TRPCError({
-                        code: "BAD_REQUEST",
-                        message: "Invalid config file",
-                      });
-
-                    const parsedDeployments = parsed.data.deployments;
-
-                    console.log({ parsedDeployments });
-
-                    const deploymentInfo = await db
-                      .select()
-                      .from(system)
-                      .innerJoin(
-                        workspace,
-                        eq(system.workspaceId, workspace.id),
-                      )
-                      .where(
-                        and(
-                          inArray(
-                            system.slug,
-                            parsedDeployments.map((d) => d.system),
-                          ),
-                          inArray(
-                            workspace.slug,
-                            parsedDeployments.map((d) => d.workspace),
-                          ),
-                        ),
-                      );
-
-                    db.insert(githubConfigFile)
-                      .values(input)
-                      .returning()
-                      .then(takeFirst)
-                      .then(({ id }) =>
-                        db.insert(deployment).values(
-                          parsedDeployments.map((d) => {
-                            const info = deploymentInfo.find(
-                              (i) =>
-                                i.system.slug === d.system &&
-                                i.workspace.slug === d.workspace,
-                            );
-                            if (info == null)
-                              throw new TRPCError({
-                                code: "NOT_FOUND",
-                                message: "Deployment info not found",
-                              });
-
-                            return {
-                              workspaceId: info.workspace.id,
-                              systemId: info.system.id,
-                              name: d.name,
-                              description: d.description ?? "",
-                              slug: d.slug,
-                              githubConfigFileId: id,
-                            };
-                          }),
-                        ),
-                      );
-                  });
-              });
-          });
-      }),
-    ),
-
-  contents: protectedProcedure
-    .input(
-      z.object({
-        installationId: z.number(),
-        login: z.string(),
-        repo: z.string(),
-        path: z.string(),
-        branch: z.string().optional().default("main"),
-      }),
-    )
-    .query(({ input }) =>
-      getOctokit()
-        .apps.getInstallation({
-          installation_id: input.installationId,
-        })
-        .then(({ data: installation }) => {
-          const installationOctokit = new Octokit({
-            authStrategy: createAppAuth,
-            auth: {
-              appId: env.GITHUB_BOT_APP_ID,
-              privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-              clientId: env.GITHUB_BOT_CLIENT_ID,
-              clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-              installationId: installation.id,
-            },
-          });
-        }),
-    ),
 });
 
 export const githubRouter = createTRPCRouter({
@@ -422,7 +278,153 @@ export const githubRouter = createTRPCRouter({
     create: protectedProcedure
       .input(githubOrganizationInsert)
       .mutation(({ ctx, input }) =>
-        ctx.db.insert(githubOrganization).values(input).returning(),
+        ctx.db.transaction((db) =>
+          db
+            .insert(githubOrganization)
+            .values(input)
+            .returning()
+            .then(takeFirst)
+            .then((org) =>
+              getOctokit()
+                .apps.getInstallation({
+                  installation_id: org.installationId,
+                })
+                .then(async ({ data: installation }) => {
+                  const installationOctokit = new Octokit({
+                    authStrategy: createAppAuth,
+                    auth: {
+                      appId: env.GITHUB_BOT_APP_ID,
+                      privateKey: env.GITHUB_BOT_PRIVATE_KEY,
+                      clientId: env.GITHUB_BOT_CLIENT_ID,
+                      clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
+                      installationId: installation.id,
+                    },
+                  });
+
+                  const installationToken = (await installationOctokit.auth({
+                    type: "installation",
+                    installationId: installation.id,
+                  })) as { token: string };
+
+                  const searchResponse = await installationOctokit.search.code({
+                    q: `org:${org.organizationName} filename:example.ctrlplane.yaml`,
+                    per_page: 100,
+                    headers: {
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      authorization: `Bearer ${installationToken.token}`,
+                    },
+                  });
+
+                  const {
+                    data: { items: configFiles },
+                  } = searchResponse;
+
+                  const parsedConfigFiles = await Promise.all(
+                    configFiles.map(async (cf) => {
+                      const content = await installationOctokit.repos
+                        .getContent({
+                          owner: org.organizationName,
+                          repo: cf.repository.name,
+                          path: cf.path,
+                          ref: "main",
+                        })
+                        .then(({ data }) => {
+                          if (!("content" in data))
+                            throw new Error("Invalid response data");
+                          return Buffer.from(data.content, "base64").toString(
+                            "utf-8",
+                          );
+                        });
+
+                      const yamlContent = yaml.load(content);
+                      const parsed = configFile.safeParse(yamlContent);
+                      if (!parsed.success)
+                        throw new TRPCError({
+                          code: "BAD_REQUEST",
+                          message: "Invalid config file",
+                        });
+
+                      return {
+                        ...cf,
+                        content: parsed.data,
+                      };
+                    }),
+                  );
+
+                  const deploymentInfo = await db
+                    .select()
+                    .from(system)
+                    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+                    .where(
+                      and(
+                        inArray(
+                          system.slug,
+                          parsedConfigFiles
+                            .map((d) =>
+                              d.content.deployments.map((d) => d.system),
+                            )
+                            .flat(),
+                        ),
+                        inArray(
+                          workspace.slug,
+                          parsedConfigFiles
+                            .map((d) =>
+                              d.content.deployments.map((d) => d.workspace),
+                            )
+                            .flat(),
+                        ),
+                      ),
+                    );
+
+                  const insertedConfigFiles = await db
+                    .insert(githubConfigFile)
+                    .values(
+                      parsedConfigFiles.map((d) => ({
+                        ...d,
+                        workspaceId: org.workspaceId,
+                        organizationId: org.id,
+                        repositoryName: d.repository.name,
+                        branch: org.branch,
+                      })),
+                    )
+                    .returning();
+
+                  const deployments = parsedConfigFiles
+                    .map((cf) =>
+                      cf.content.deployments.map((d) => {
+                        const info = deploymentInfo.find(
+                          (i) =>
+                            i.system.slug === d.system &&
+                            i.workspace.slug === d.workspace,
+                        );
+                        if (info == null)
+                          throw new TRPCError({
+                            code: "NOT_FOUND",
+                            message: "Deployment info not found",
+                          });
+                        const { system, workspace } = info;
+                        console.log({ system, workspace });
+
+                        return {
+                          ...d,
+                          systemId: system.id,
+                          workspaceId: workspace.id,
+                          description: d.description ?? "",
+                          githubConfigFileId: insertedConfigFiles.find(
+                            (icf) =>
+                              icf.name === cf.name &&
+                              icf.path === cf.path &&
+                              icf.repositoryName === cf.repository.name,
+                          )?.id,
+                        };
+                      }),
+                    )
+                    .flat();
+
+                  return db.insert(deployment).values(deployments);
+                }),
+            ),
+        ),
       ),
 
     update: protectedProcedure

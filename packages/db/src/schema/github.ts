@@ -38,6 +38,7 @@ export const githubOrganization = pgTable("github_organization", {
     .notNull()
     .defaultNow(),
   connected: boolean("connected").notNull().default(true),
+  branch: text("branch").notNull().default("main"),
 });
 
 export type GithubOrganization = InferSelectModel<typeof githubOrganization>;
@@ -56,6 +57,7 @@ export const githubConfigFile = pgTable("github_config_file", {
   workspaceId: uuid("workspace_id")
     .notNull()
     .references(() => workspace.id, { onDelete: "cascade" }),
+  lastSyncedAt: timestamp("last_synced_at", {
+    withTimezone: true,
+  }).defaultNow(),
 });
-
-export const githubConfigFileInsert = createInsertSchema(githubConfigFile);
