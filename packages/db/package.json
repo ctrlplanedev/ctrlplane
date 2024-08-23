@@ -48,6 +48,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/pg": "^8.11.6",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.21.1",
     "eslint": "^9.2.0",
