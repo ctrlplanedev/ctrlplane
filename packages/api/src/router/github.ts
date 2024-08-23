@@ -288,30 +288,29 @@ export const githubRouter = createTRPCRouter({
                     installationId: installation.id,
                   })) as { token: string };
 
-                  const searchResponseYaml =
-                    await installationOctokit.search.code({
+                  const configFiles = await Promise.all([
+                    installationOctokit.search.code({
                       q: `org:${org.organizationName} filename:ctrlplane.yaml`,
                       per_page: 100,
                       headers: {
                         "X-GitHub-Api-Version": "2022-11-28",
                         authorization: `Bearer ${installationToken.token}`,
                       },
-                    });
-
-                  const searchResponseYml =
-                    await installationOctokit.search.code({
+                    }),
+                    installationOctokit.search.code({
                       q: `org:${org.organizationName} filename:ctrlplane.yaml`,
                       per_page: 100,
                       headers: {
                         "X-GitHub-Api-Version": "2022-11-28",
                         authorization: `Bearer ${installationToken.token}`,
                       },
-                    });
-
-                  const configFiles = [
-                    ...searchResponseYaml.data.items,
-                    ...searchResponseYml.data.items,
-                  ];
+                    }),
+                  ]).then((responses) => {
+                    return [
+                      ...responses[0].data.items,
+                      ...responses[1].data.items,
+                    ];
+                  });
 
                   if (configFiles.length === 0) return [];
 
