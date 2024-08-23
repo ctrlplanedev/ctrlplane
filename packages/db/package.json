@@ -42,7 +42,7 @@
     "drizzle-orm": "^0.30.10",
     "drizzle-zod": "^0.5.1",
     "pg": "^8.11.5",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
@@ -51,8 +51,8 @@
     "@types/pg": "^8.11.6",
     "dotenv-cli": "^7.4.2",
     "drizzle-kit": "^0.21.1",
-    "eslint": "^9.9.0",
-    "prettier": "^3.2.5",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "typescript": "^5.4.5"
   },
   "prettier": "@ctrlplane/prettier-config"

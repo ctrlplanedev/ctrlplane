@@ -19,14 +19,14 @@
     "dotenv": "^16.4.5",
     "google-auth-library": "^9.13.0",
     "semver": "^7.6.2",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
     "@ctrlplane/tsconfig": "workspace:*",
-    "eslint": "^9.9.0",
-    "prettier": "^3.2.5",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   },

@@ -30,8 +30,8 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/lodash": "^4.17.5",
     "@types/node": "^20.12.9",
-    "eslint": "^9.9.0",
-    "prettier": "^3.2.5",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   },

@@ -19,14 +19,14 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
-    "eslint": "^9.9.0",
-    "prettier": "^3.2.5",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "typescript": "^5.4.5"
   },
   "prettier": "@ctrlplane/prettier-config"

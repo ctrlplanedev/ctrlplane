@@ -22,7 +22,7 @@
     "next-auth": "5.0.0-beta.18",
     "node-fetch": "^3.3.2",
     "ws": "^8.17.0",
-    "zod": "^3.23.8"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:^",
@@ -35,8 +35,8 @@
     "@types/ms": "^0.7.34",
     "@types/node": "^20.12.9",
     "@types/ws": "^8.5.10",
-    "eslint": "^9.9.0",
-    "prettier": "^3.2.5",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
     "tsx": "^4.11.0",
     "typescript": "^5.4.5"
   },
