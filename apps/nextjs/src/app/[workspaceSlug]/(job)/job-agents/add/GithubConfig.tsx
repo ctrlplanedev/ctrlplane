@@ -89,10 +89,10 @@ export const GithubJobAgentConfig: React.FC<{
                             !githubOrgsInstalled.data?.some(
                               (o) =>
                                 o.github_organization.organizationName ===
-                                org.data.login,
+                                org.login,
                             ),
                         )
-                        .map(({ data: { id, login, avatar_url } }) => (
+                        .map(({ id, login, avatar_url }) => (
                           <CommandItem
                             key={id}
                             value={login}
@@ -134,26 +134,24 @@ export const GithubJobAgentConfig: React.FC<{
               variant="secondary"
               disabled={isPending || value == null}
               onClick={async () => {
-                const org = githubOrgs.data?.find(
-                  ({ data }) => data.login === value,
-                );
+                const org = githubOrgs.data?.find((o) => o.login === value);
 
                 if (org == null) return;
 
                 await githubOrgCreate.mutateAsync({
                   installationId: org.installationId,
                   workspaceId,
-                  organizationName: org.data.login,
+                  organizationName: org.login,
                   addedByUserId: githubUser.userId,
                 });
 
                 await mutateAsync({
                   workspaceId,
                   type: "github-app",
-                  name: org.data.login,
+                  name: org.login,
                   config: {
                     installationId: org.installationId,
-                    login: org.data.login,
+                    login: org.login,
                   },
                 });
               }}

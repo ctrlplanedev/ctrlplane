@@ -44,7 +44,7 @@
     "@types/lodash": "^4.17.5",
     "@types/semver": "^7.5.8",
     "dotenv-cli": "^7.4.2",
-    "eslint": "^9.2.0",
+    "eslint": "^9.9.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
   },

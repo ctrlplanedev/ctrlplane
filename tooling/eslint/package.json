@@ -25,7 +25,7 @@
   "devDependencies": {
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
-    "eslint": "^9.2.0",
+    "eslint": "^9.9.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
   },

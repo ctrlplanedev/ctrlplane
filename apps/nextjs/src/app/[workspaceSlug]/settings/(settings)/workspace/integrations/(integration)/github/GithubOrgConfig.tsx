@@ -110,11 +110,11 @@ export const GithubOrgConfig: React.FC<{
                             !githubOrgsInstalled.data?.some(
                               (o) =>
                                 o.github_organization.organizationName ===
-                                  org.data.login &&
+                                  org.login &&
                                 o.github_organization.connected === true,
                             ),
                         )
-                        .map(({ data: { id, login, avatar_url } }) => (
+                        .map(({ id, login, avatar_url }) => (
                           <CommandItem
                             key={id}
                             value={login}
@@ -168,27 +168,25 @@ export const GithubOrgConfig: React.FC<{
                     },
                   });
 
-                const org = githubOrgs.data?.find(
-                  ({ data }) => data.login === value,
-                );
+                const org = githubOrgs.data?.find((o) => o.login === value);
 
                 if (org == null) return;
 
                 await githubOrgCreate.mutateAsync({
                   installationId: org.installationId,
                   workspaceId: workspaceId ?? "",
-                  organizationName: org.data.login,
+                  organizationName: org.login,
                   addedByUserId: githubUser?.userId ?? "",
-                  avatarUrl: org.data.avatar_url,
+                  avatarUrl: org.avatar_url,
                 });
 
                 await jobAgentCreate.mutateAsync({
                   workspaceId: workspaceId ?? "",
                   type: "github-app",
-                  name: org.data.login,
+                  name: org.login,
                   config: {
                     installationId: org.installationId,
-                    login: org.data.login,
+                    login: org.login,
                   },
                 });
 

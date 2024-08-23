@@ -282,7 +282,7 @@ export const githubRouter = createTRPCRouter({
                       },
                     }),
                     installationOctokit.search.code({
-                      q: `org:${org.organizationName} filename:ctrlplane.yaml`,
+                      q: `org:${org.organizationName} filename:ctrlplane.yml`,
                       per_page: 100,
                       headers: {
                         "X-GitHub-Api-Version": "2022-11-28",
