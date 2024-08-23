@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/job-config-policy-checker",
+  "name": "@ctrlplane/job-policy-checker",
   "private": true,
   "type": "module",
   "scripts": {
