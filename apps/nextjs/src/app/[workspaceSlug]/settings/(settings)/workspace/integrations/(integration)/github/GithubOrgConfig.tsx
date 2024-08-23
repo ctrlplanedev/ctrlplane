@@ -272,8 +272,8 @@ export const GithubOrgConfig: React.FC<{
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={async () => {
-                        await githubOrgUpdate.mutateAsync({
+                      onClick={() => {
+                        githubOrgUpdate.mutateAsync({
                           id: github_organization.id,
                           data: {
                             connected: false,

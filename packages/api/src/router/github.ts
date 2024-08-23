@@ -288,18 +288,32 @@ export const githubRouter = createTRPCRouter({
                     installationId: installation.id,
                   })) as { token: string };
 
-                  const searchResponse = await installationOctokit.search.code({
-                    q: `org:${org.organizationName} filename:example.ctrlplane.yaml`,
-                    per_page: 100,
-                    headers: {
-                      "X-GitHub-Api-Version": "2022-11-28",
-                      authorization: `Bearer ${installationToken.token}`,
-                    },
-                  });
+                  const searchResponseYaml =
+                    await installationOctokit.search.code({
+                      q: `org:${org.organizationName} filename:ctrlplane.yaml`,
+                      per_page: 100,
+                      headers: {
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        authorization: `Bearer ${installationToken.token}`,
+                      },
+                    });
 
-                  const {
-                    data: { items: configFiles },
-                  } = searchResponse;
+                  const searchResponseYml =
+                    await installationOctokit.search.code({
+                      q: `org:${org.organizationName} filename:ctrlplane.yaml`,
+                      per_page: 100,
+                      headers: {
+                        "X-GitHub-Api-Version": "2022-11-28",
+                        authorization: `Bearer ${installationToken.token}`,
+                      },
+                    });
+
+                  const configFiles = [
+                    ...searchResponseYaml.data.items,
+                    ...searchResponseYml.data.items,
+                  ];
+
+                  if (configFiles.length === 0) return [];
 
                   const parsedConfigFiles = await Promise.allSettled(
                     configFiles.map(async (cf) => {
@@ -308,7 +322,7 @@ export const githubRouter = createTRPCRouter({
                           owner: org.organizationName,
                           repo: cf.repository.name,
                           path: cf.path,
-                          ref: "main",
+                          ref: org.branch,
                         })
                         .then(({ data }) => {
                           if (!("content" in data))
@@ -389,7 +403,6 @@ export const githubRouter = createTRPCRouter({
                             message: "Deployment info not found",
                           });
                         const { system, workspace } = info;
-                        console.log({ system, workspace });
 
                         return {
                           ...d,
