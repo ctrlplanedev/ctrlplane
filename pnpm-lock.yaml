@@ -183,7 +183,7 @@ importers:
         specifier: ^7.8.0
         version: 7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.4)
 
-  apps/job-config-policy-checker:
+  apps/job-policy-checker:
     dependencies:
       '@ctrlplane/db':
         specifier: workspace:*
@@ -215,7 +215,7 @@ importers:
         version: 4.16.2
       typescript:
         specifier: ^5.4.5
-        version: 5.5.3
+        version: 5.5.4
 
   apps/nextjs:
     dependencies:

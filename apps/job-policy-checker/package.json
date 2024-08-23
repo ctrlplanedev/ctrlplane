@@ -1,11 +1,13 @@
 {
   "name": "@ctrlplane/job-policy-checker",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
     "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
+    "build": "tsc",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env --"
