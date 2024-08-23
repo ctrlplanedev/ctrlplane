@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm with-env next build",
+    "build": "SKIP_ENV_VALIDATION=true next build",
     "clean": "git clean -xdf .next .turbo node_modules",
     "dev": "pnpm with-env next dev",
     "format": "prettier --check . --ignore-path ../../.gitignore",

@@ -34,6 +34,7 @@ COPY packages/auth/package.json ./packages/auth/package.json
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
+COPY packages/ui/package.json ./packages/ui/package.json
 
 COPY apps/nextjs/package.json ./apps/nextjs/package.json
 
