@@ -28,6 +28,18 @@ const octokit =
         },
       });
 
+const getOctokitInstallation = (installationId: number) =>
+  new Octokit({
+    authStrategy: createAppAuth,
+    auth: {
+      appId: env.GITHUB_BOT_APP_ID,
+      privateKey: env.GITHUB_BOT_PRIVATE_KEY,
+      clientId: env.GITHUB_BOT_CLIENT_ID,
+      clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
+      installationId,
+    },
+  });
+
 const getOctokit = () => {
   if (octokit == null)
     throw new TRPCError({
@@ -74,17 +86,7 @@ const reposRouter = createTRPCRouter({
           installation_id: input.installationId,
         })
         .then(async ({ data: installation }) => {
-          const installationOctokit = new Octokit({
-            authStrategy: createAppAuth,
-            auth: {
-              appId: env.GITHUB_BOT_APP_ID,
-              privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-              clientId: env.GITHUB_BOT_CLIENT_ID,
-              clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-              installationId: installation.id,
-            },
-          });
-
+          const installationOctokit = getOctokitInstallation(installation.id);
           const installationToken = (await installationOctokit.auth({
             type: "installation",
             installationId: installation.id,
@@ -110,16 +112,9 @@ const reposRouter = createTRPCRouter({
         }),
       )
       .query(async ({ input }) => {
-        const installationOctokit = new Octokit({
-          authStrategy: createAppAuth,
-          auth: {
-            appId: env.GITHUB_BOT_APP_ID,
-            privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-            clientId: env.GITHUB_BOT_CLIENT_ID,
-            clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-            installationId: input.installationId,
-          },
-        });
+        const installationOctokit = getOctokitInstallation(
+          input.installationId,
+        );
 
         const installationToken = (await installationOctokit.auth({
           type: "installation",
@@ -154,16 +149,7 @@ export const githubRouter = createTRPCRouter({
             installations
               .filter((i) => i.target_type === "Organization")
               .map(async (i) => {
-                const installationOctokit = new Octokit({
-                  authStrategy: createAppAuth,
-                  auth: {
-                    appId: env.GITHUB_BOT_APP_ID,
-                    privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-                    clientId: env.GITHUB_BOT_CLIENT_ID,
-                    clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-                    installationId: i.id,
-                  },
-                });
+                const installationOctokit = getOctokitInstallation(i.id);
 
                 const installationToken = (await installationOctokit.auth({
                   type: "installation",
@@ -182,15 +168,13 @@ export const githubRouter = createTRPCRouter({
                   members.data.find((m) => m.id === input) != null;
                 if (!isUserInGithubOrg) return null;
 
-                return _.merge(
-                  await installationOctokit.orgs.get({
-                    org: i.account?.login ?? "",
-                    headers: {
-                      "X-GitHub-Api-Version": "2022-11-28",
-                    },
-                  }),
-                  { installationId: i.id },
-                );
+                const orgData = await installationOctokit.orgs.get({
+                  org: i.account?.login ?? "",
+                  headers: {
+                    "X-GitHub-Api-Version": "2022-11-28",
+                  },
+                });
+                return _.merge(orgData.data, { installationId: i.id });
               }),
           ).then((orgs) => orgs.filter(isPresent)),
         ),
