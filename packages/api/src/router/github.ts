@@ -96,31 +96,13 @@ const reposRouter = createTRPCRouter({
             installationId: installation.id,
           })) as { token: string };
 
-          const searchResponse = await installationOctokit.search.code({
-            q: `org:${input.login} filename:example.ctrlplane.yaml`,
-            per_page: 100,
+          return installationOctokit.repos.listForOrg({
+            org: input.login,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
               authorization: `Bearer ${installationToken.token}`,
             },
           });
-
-          return installationOctokit.repos
-            .listForOrg({
-              org: input.login,
-              headers: {
-                "X-GitHub-Api-Version": "2022-11-28",
-                authorization: `Bearer ${installationToken.token}`,
-              },
-            })
-            .then(({ data }) =>
-              data.map((repo) => ({
-                ...repo,
-                configFiles: searchResponse.data.items.filter(
-                  (item) => item.repository.full_name === repo.full_name,
-                ),
-              })),
-            );
         }),
     ),
 
@@ -319,7 +301,7 @@ export const githubRouter = createTRPCRouter({
                     data: { items: configFiles },
                   } = searchResponse;
 
-                  const parsedConfigFiles = await Promise.all(
+                  const parsedConfigFiles = await Promise.allSettled(
                     configFiles.map(async (cf) => {
                       const content = await installationOctokit.repos
                         .getContent({
@@ -349,6 +331,10 @@ export const githubRouter = createTRPCRouter({
                         content: parsed.data,
                       };
                     }),
+                  ).then((results) =>
+                    results
+                      .map((r) => (r.status === "fulfilled" ? r.value : null))
+                      .filter(isPresent),
                   );
 
                   const deploymentInfo = await db
