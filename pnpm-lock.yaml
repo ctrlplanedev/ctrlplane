@@ -572,6 +572,9 @@ importers:
       '@octokit/rest':
         specifier: ^20.1.1
         version: 20.1.1
+      '@octokit/types':
+        specifier: ^13.5.0
+        version: 13.5.0
       '@t3-oss/env-core':
         specifier: ^0.10.1
         version: 0.10.1(typescript@5.5.3)(zod@3.23.8)
@@ -584,6 +587,9 @@ importers:
       googleapis:
         specifier: ^140.0.1
         version: 140.0.1
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -606,9 +612,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@octokit/types':
-        specifier: ^13.5.0
-        version: 13.5.0
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/lodash':
         specifier: ^4.17.5
         version: 4.17.7

@@ -25,6 +25,8 @@
     "@ctrlplane/validators": "workspace:*",
     "@octokit/auth-app": "^7.1.0",
     "@octokit/rest": "^20.1.1",
+    "@octokit/types": "^13.5.0",
+    "js-yaml": "^4.1.0",
     "@t3-oss/env-core": "^0.10.1",
     "@trpc/server": "11.0.0-rc.364",
     "google-auth-library": "^9.13.0",
@@ -42,6 +44,7 @@
     "@types/lodash": "^4.17.5",
     "@types/pg": "^8.11.6",
     "@types/semver": "^7.5.8",
+    "@types/js-yaml": "^4.0.9",
     "eslint": "^9.9.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5"
