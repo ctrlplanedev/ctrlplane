@@ -6,8 +6,7 @@
     "clean": "rm -rf .turbo node_modules",
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
-    "format": "prettier --check . --ignore-path ../../.gitignore",
-    "typecheck": "tsc --noEmit"
+    "format": "prettier --check . --ignore-path ../../.gitignore"
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
