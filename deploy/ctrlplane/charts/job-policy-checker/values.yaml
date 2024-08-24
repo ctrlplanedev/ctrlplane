@@ -1,30 +1,22 @@
 nameOverride: ""
 fullnameOverride: ""
 
-replica: 2
-
 image:
-  repository: ctrlplane/webservice
+  repository: ctrlplane/job-policy-checker
   tag: latest
   pullPolicy: Always
 
 extraEnv: {}
 extraEnvFrom: {}
 
-deployment:
+cron:
   labels: {}
   annotations: {}
-
-hpa:
-  labels: {}
-  annotations: {}
-  minReplicas: 2
-  maxReplicas: 5
-
-service:
-  type: ClusterIP
-  annotations: {}
-  labels: {}
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 3
+  schedule: "*/1 * * * *" # every minute
+  suspend: false
 
 tolerations: []
 pod: {}

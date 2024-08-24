@@ -5,7 +5,6 @@ metadata:
   labels:
     {{- include "ctrlplane.commonLabels" . | nindent 4 }}
     {{- include "webservice.labels" . | nindent 4 }}
-    {{- include "webservice.commonLabels" . | nindent 4 }}
     {{- if .Values.service.labels -}}
     {{-   toYaml .Values.service.labels | nindent 4 }}
     {{- end }}

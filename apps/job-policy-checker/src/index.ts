@@ -9,7 +9,9 @@ import {
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 
-const jobConfigPolicyChecker = new CronJob("* * * * *", async () => {
+import { env } from "./config";
+
+const run = async () => {
   const jobConfigs = await db
     .select()
     .from(jobConfig)
@@ -24,7 +26,11 @@ const jobConfigPolicyChecker = new CronJob("* * * * *", async () => {
     .filter(isPassingAllPolicies)
     .then(cancelOldJobConfigsOnJobDispatch)
     .dispatch();
-});
+};
+
+const jobConfigPolicyChecker = new CronJob(env.CRON_TIME, run);
 
 console.log("Starting job config policy checker cronjob");
-jobConfigPolicyChecker.start();
+
+run().catch(console.error);
+if (env.CRON_ENABLED) jobConfigPolicyChecker.start();

@@ -13,6 +13,8 @@ coverage
 out/
 next-env.d.ts
 
+local-values.yaml
+
 # nitro
 .nitro/
 .output/

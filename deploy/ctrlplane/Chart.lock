@@ -1,0 +1,9 @@
+dependencies:
+- name: webservice
+  repository: file://charts/webservice
+  version: 0.1.0
+- name: job-policy-checker
+  repository: file://charts/job-policy-checker
+  version: 0.1.0
+digest: sha256:f886849879773b410f68b2d3293065605b5c82987ad285d9c974b9f9ee0f3bd2
+generated: "2024-08-23T23:39:43.317846-04:00"

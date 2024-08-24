@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "job-policy-checker.fullname" . }}
+  labels:
+    {{- if .Values.cron.labels -}}
+    {{-   toYaml .Values.cron.labels | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.cron.annotations -}}
+    {{-   toYaml .Values.cron.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  concurrencyPolicy: {{ .Values.cron.concurrencyPolicy }}
+  schedule: {{ .Values.cron.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: job-policy-checker
+              image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              env:
+                {{- include "ctrlplane.extraEnv" . | nindent 16 }}
+                {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 16 }}
+

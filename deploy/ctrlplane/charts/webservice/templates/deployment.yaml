@@ -12,7 +12,7 @@ metadata:
     {{-   toYaml .Values.deployment.annotations | nindent 4 }}
     {{- end }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replica }}
   selector:
     matchLabels:
       {{- include "ctrlplane.selectorLabels" $ | nindent 6 }}
@@ -42,26 +42,25 @@ spec:
               containerPort: 8080
               protocol: TCP
           env:
-            {{- include "ctrlplane.extraEnv" (dict "root" $ "local" .) | nindent 12 }}
+            {{- include "ctrlplane.extraEnv" . | nindent 12 }}
             {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /ready
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 5
-          startupProbe:
-            httpGet:
-              path: /ready
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 5
-            failureThreshold: 120
+          # livenessProbe:
+          #   httpGet:
+          #     path: /healthz
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /ready
+          #     port: http
+          #   initialDelaySeconds: 20
+          #   periodSeconds: 5
+          # startupProbe:
+          #   httpGet:
+          #     path: /ready
+          #     port: http
+          #   initialDelaySeconds: 20
+          #   periodSeconds: 5
+          #   failureThreshold: 120
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-      volumes: {}

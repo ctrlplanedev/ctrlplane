@@ -191,9 +191,15 @@ importers:
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../../packages/job-dispatch
+      '@t3-oss/env-core':
+        specifier: ^0.10.1
+        version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
       cron:
         specifier: ^3.1.7
         version: 3.1.7
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
     devDependencies:
       '@ctrlplane/eslint-config':
         specifier: workspace:^

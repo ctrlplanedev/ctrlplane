@@ -10,3 +10,7 @@ dependencies:
     version: "*.*.*"
     repository: file://charts/webservice
     condition: webservice.install
+  - name: job-policy-checker
+    version: "*.*.*"
+    repository: file://charts/job-policy-checker
+    condition: job-policy-checker.install
