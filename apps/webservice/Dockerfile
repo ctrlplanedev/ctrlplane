@@ -36,13 +36,13 @@ COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 
-COPY apps/nextjs/package.json ./apps/nextjs/package.json
+COPY apps/webservice/package.json ./apps/webservice/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/nextjs
+RUN turbo build --filter=...@ctrlplane/webservice
 
 
 FROM base AS runner
@@ -52,11 +52,11 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-COPY --from=installer --chown=nodejs:nodejs /app/apps/nextjs/.next/standalone ./
-COPY --from=installer --chown=nodejs:nodejs /app/apps/nextjs/.next/static ./apps/docs/.next/static
-COPY --from=installer --chown=nodejs:nodejs /app/apps/nextjs/public ./apps/docs/public
+COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/standalone ./
+COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/static ./apps/docs/.next/static
+COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/public ./apps/docs/public
 
 EXPOSE 3000
 ENV PORT 3000
 
-CMD HOSTNAME="0.0.0.0" node apps/nextjs/server.js
+CMD HOSTNAME="0.0.0.0" node apps/webservice/server.js
