@@ -9,20 +9,6 @@ const config = {
   output: "standalone",
   reactStrictMode: false,
 
-  /**
-   *
-   * @note We get an error when we try to minmize, no idea why
-   * 4831.js from Terser  -invalid unicode code point at line 1 column 1081060
-   */
-  webpack(webpackConfig) {
-    return {
-      ...webpackConfig,
-      optimization: {
-        minimize: false,
-      },
-    };
-  },
-
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: [
     "@ctrlplane/api",
