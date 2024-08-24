@@ -3,7 +3,7 @@ import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { system } from "./system";
+import { system } from "./system.js";
 
 export const valueSet = pgTable("value_set", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),

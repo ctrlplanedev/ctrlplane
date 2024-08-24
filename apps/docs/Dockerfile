@@ -60,6 +60,6 @@ COPY --from=installer --chown=nodejs:nodejs /app/apps/docs/.next/static ./apps/d
 COPY --from=installer --chown=nodejs:nodejs /app/apps/docs/public ./apps/docs/public
 
 EXPOSE 3000
-ENV PORT 3000
+ENV PORT=3000
 
 CMD HOSTNAME="0.0.0.0" node apps/docs/server.js

@@ -5,12 +5,12 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
     },
     "./queue": {
-      "types": "./dist/queue.d.ts",
-      "default": "./src/queue/index.ts"
+      "types": "./src/queue/index.ts",
+      "default": "./dist/queue/index.js"
     }
   },
   "license": "MIT",

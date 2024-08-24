@@ -1,7 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 
-import { jobAgent } from "./job-execution";
+import { jobAgent } from "./job-execution.js";
 
 export const runbook = pgTable("runbook", {
   id: uuid("id").primaryKey().defaultRandom(),

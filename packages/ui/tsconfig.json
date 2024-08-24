@@ -3,6 +3,7 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "ES2022"],
     "jsx": "preserve",
+    "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["*.ts", "src"],

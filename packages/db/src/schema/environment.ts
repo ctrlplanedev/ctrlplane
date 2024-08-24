@@ -13,8 +13,8 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { record, z } from "zod";
 
-import { release } from "./release";
-import { system } from "./system";
+import { release } from "./release.js";
+import { system } from "./system.js";
 
 export const environment = pgTable("environment", {
   id: uuid("id").primaryKey().defaultRandom(),

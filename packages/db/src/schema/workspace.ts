@@ -3,7 +3,7 @@ import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { user } from "./auth";
+import { user } from "./auth.js";
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").primaryKey().defaultRandom(),

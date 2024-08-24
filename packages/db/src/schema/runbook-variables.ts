@@ -1,6 +1,6 @@
 import { boolean, jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 
-import { runbook } from "./runbook";
+import { runbook } from "./runbook.js";
 
 export const runbookVariable = pgTable("runbook_variable", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),

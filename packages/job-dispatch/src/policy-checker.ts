@@ -21,9 +21,9 @@ import {
   release,
 } from "@ctrlplane/db/schema";
 
-import { isJobConfigInRolloutWindow } from "./gradual-rollout";
-import { isPassingLockingPolicy } from "./lock-checker";
-import { isPassingReleaseDependencyPolicy } from "./release-checker";
+import { isJobConfigInRolloutWindow } from "./gradual-rollout.js";
+import { isPassingLockingPolicy } from "./lock-checker.js";
+import { isPassingReleaseDependencyPolicy } from "./release-checker.js";
 
 const isSuccessCriteriaPassing = async (
   db: Tx,

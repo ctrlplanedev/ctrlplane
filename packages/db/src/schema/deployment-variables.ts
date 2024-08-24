@@ -3,8 +3,8 @@ import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { deployment } from "./deployment";
-import { target } from "./target";
+import { deployment } from "./deployment.js";
+import { target } from "./target.js";
 
 export const deploymentVariable = pgTable(
   "deployment_variable",

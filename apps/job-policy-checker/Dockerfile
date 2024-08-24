@@ -1,19 +1,13 @@
-ARG NODE_VERSION=20
-FROM node:${NODE_VERSION}-alpine AS base
+ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-alpine
 
-
-FROM base AS builder
-
-RUN apk add --no-cache libc6-compat python3 make g++
+RUN apk add --no-cache libc6-compat python3 make g++ bash nano
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
 RUN npm install -g turbo
 RUN corepack enable pnpm
-
-
-FROM builder AS installer
 
 WORKDIR /app
 
@@ -40,17 +34,10 @@ COPY . .
 
 RUN turbo build --filter=...@ctrlplane/job-policy-checker
 
-
-FROM base AS runner
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-COPY --from=installer --chown=nodejs:nodejs /app/apps/job-policy-checker/dist ./
-
-EXPOSE 3000
-ENV PORT=3000
-
-CMD HOSTNAME="0.0.0.0" node apps/job-policy-checker/index.js
+CMD node apps/job-policy-checker/dist/index.js

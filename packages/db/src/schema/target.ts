@@ -11,8 +11,8 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { targetProvider } from "./target-provider";
-import { workspace } from "./workspace";
+import { targetProvider } from "./target-provider.js";
+import { workspace } from "./workspace.js";
 
 export const target = pgTable(
   "target",

@@ -9,7 +9,7 @@ import {
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 
-import { env } from "./config";
+import { env } from "./config.js";
 
 const run = async () => {
   const jobConfigs = await db

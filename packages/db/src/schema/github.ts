@@ -9,8 +9,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { user } from "./auth";
-import { workspace } from "./workspace";
+import { user } from "./auth.js";
+import { workspace } from "./workspace.js";
 
 export const githubUser = pgTable("github_user", {
   id: uuid("id").primaryKey().defaultRandom(),

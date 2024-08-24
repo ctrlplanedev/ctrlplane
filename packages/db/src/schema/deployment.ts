@@ -4,10 +4,10 @@ import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { githubConfigFile } from "./github";
-import { jobAgent } from "./job-execution";
-import { release } from "./release";
-import { system } from "./system";
+import { githubConfigFile } from "./github.js";
+import { jobAgent } from "./job-execution.js";
+import { release } from "./release.js";
+import { system } from "./system.js";
 
 export const deployment = pgTable(
   "deployment",

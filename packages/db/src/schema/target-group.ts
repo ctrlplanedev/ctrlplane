@@ -1,6 +1,6 @@
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 
-import { workspace } from "./workspace";
+import { workspace } from "./workspace.js";
 
 export const targetLabelGroup = pgTable("target_label_group", {
   id: uuid("id").primaryKey().defaultRandom(),

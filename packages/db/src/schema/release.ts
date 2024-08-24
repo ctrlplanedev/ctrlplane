@@ -11,8 +11,8 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { deployment } from "./deployment";
-import { targetLabelGroup } from "./target-group";
+import { deployment } from "./deployment.js";
+import { targetLabelGroup } from "./target-group.js";
 
 export const releaseDependencyRuleType = pgEnum(
   "release_dependency_rule_type",

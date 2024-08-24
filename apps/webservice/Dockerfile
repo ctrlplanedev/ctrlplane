@@ -1,4 +1,4 @@
-ARG NODE_VERSION=20
+ARG NODE_VERSION=22
 FROM node:${NODE_VERSION}-alpine AS base
 
 
@@ -54,7 +54,7 @@ USER nodejs
 
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/standalone ./
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/static ./apps/docs/.next/static
-COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/public ./apps/docs/public
+COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/public ./apps/webservice/public
 
 EXPOSE 3000
 ENV PORT 3000

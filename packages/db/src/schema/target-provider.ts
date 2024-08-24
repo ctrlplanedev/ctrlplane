@@ -9,7 +9,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { workspace } from "./workspace";
+import { workspace } from "./workspace.js";
 
 export const targetProvider = pgTable(
   "target_provider",

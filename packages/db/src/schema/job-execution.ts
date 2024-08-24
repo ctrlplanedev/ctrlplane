@@ -11,12 +11,12 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { user } from "./auth";
-import { environment } from "./environment";
-import { release } from "./release";
-import { runbook } from "./runbook";
-import { target } from "./target";
-import { workspace } from "./workspace";
+import { user } from "./auth.js";
+import { environment } from "./environment.js";
+import { release } from "./release.js";
+import { runbook } from "./runbook.js";
+import { target } from "./target.js";
+import { workspace } from "./workspace.js";
 
 export const jobConfigType = pgEnum("job_config_type", [
   "new_release", //  release was created

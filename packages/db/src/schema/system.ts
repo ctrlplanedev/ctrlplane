@@ -2,7 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { workspace } from "./workspace";
+import { workspace } from "./workspace.js";
 
 export const system = pgTable(
   "system",

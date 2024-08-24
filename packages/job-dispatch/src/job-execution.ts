@@ -26,9 +26,9 @@ import {
   runbook,
 } from "@ctrlplane/db/schema";
 
-import { dispatchJobConfigs } from "./job-dispatch";
-import { isPassingAllPolicies } from "./policy-checker";
-import { cancelOldJobConfigsOnJobDispatch } from "./release-sequencing";
+import { dispatchJobConfigs } from "./job-dispatch.js";
+import { isPassingAllPolicies } from "./policy-checker.js";
+import { cancelOldJobConfigsOnJobDispatch } from "./release-sequencing.js";
 
 export const jobExecutionData = z.object({
   id: z.string().uuid(),

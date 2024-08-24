@@ -16,9 +16,12 @@ import {
   target,
 } from "@ctrlplane/db/schema";
 
-import type { JobExecutionReason } from "./job-execution";
-import { env } from "./config";
-import { createJobExecutions, jobExecutionDataMapper } from "./job-execution";
+import type { JobExecutionReason } from "./job-execution.js";
+import { env } from "./config.js";
+import {
+  createJobExecutions,
+  jobExecutionDataMapper,
+} from "./job-execution.js";
 
 /**
  * @deprecated Moving away from using a queue for dispatching jobExecutions.

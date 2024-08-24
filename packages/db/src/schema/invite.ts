@@ -1,6 +1,6 @@
 import { pgTable, uuid } from "drizzle-orm/pg-core";
 
-import { workspaceMember } from "./workspace";
+import { workspaceMember } from "./workspace.js";
 
 export const workspaceInviteLink = pgTable("workspace_invite_link", {
   id: uuid("id").primaryKey().defaultRandom(),

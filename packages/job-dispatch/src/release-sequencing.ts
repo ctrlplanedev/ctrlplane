@@ -11,7 +11,7 @@ import {
   release,
 } from "@ctrlplane/db/schema";
 
-import { createJobExecutions } from "./job-execution";
+import { createJobExecutions } from "./job-execution.js";
 
 /**
  *
