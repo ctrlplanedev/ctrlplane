@@ -38,8 +38,8 @@ COPY packages/ui/package.json ./packages/ui/package.json
 
 COPY apps/webservice/package.json ./apps/webservice/package.json
 
-COPY . .
 RUN pnpm install --frozen-lockfile
+COPY . .
 
 RUN turbo build --filter=...@ctrlplane/webservice
 
