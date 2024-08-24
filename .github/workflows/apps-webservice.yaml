@@ -4,16 +4,16 @@ on:
   pull_request:
     branches: ["*"]
     paths:
-      - apps/nextjs/**
+      - apps/webservice/**
       - packages/**
-      - .github/workflows/apps-nextjs.yaml
+      - .github/workflows/apps-webservice.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - apps/nextjs/**
+      - apps/webservice/**
       - packages/**
-      - .github/workflows/apps-nextjs.yaml
+      - .github/workflows/apps-webservice.yaml
       - pnpm-lock.yaml
 
 jobs:
