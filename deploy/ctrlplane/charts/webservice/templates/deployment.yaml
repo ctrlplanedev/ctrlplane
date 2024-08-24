@@ -48,25 +48,21 @@ spec:
                 secretKeyRef:
                   name: {{ include "webservice.fullname" . }}
                   key: AUTH_SECRET
+            - name: AUTH_TRUST_HOST
+              value: 'true'
             {{- include "ctrlplane.extraEnv" . | nindent 12 }}
             {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 12 }}
-          # livenessProbe:
-          #   httpGet:
-          #     path: /healthz
-          #     port: http
-          # readinessProbe:
-          #   httpGet:
-          #     path: /ready
-          #     port: http
-          #   initialDelaySeconds: 20
-          #   periodSeconds: 5
-          # startupProbe:
-          #   httpGet:
-          #     path: /ready
-          #     port: http
-          #   initialDelaySeconds: 20
-          #   periodSeconds: 5
-          #   failureThreshold: 120
-
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
+          startupProbe:
+            httpGet:
+              path: /api/healthz
+              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
