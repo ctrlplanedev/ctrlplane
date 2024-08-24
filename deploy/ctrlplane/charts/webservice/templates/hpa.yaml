@@ -4,6 +4,7 @@ metadata:
   name: {{ include "webservice.fullname" . }}
   namespace: {{ $.Release.Namespace }}
   labels:
+    {{- include "webservice.labels" . | nindent 4 }}
     {{- if .Values.hpa.labels -}}
     {{-   toYaml .Values.hpa.labels | nindent 4 }}
     {{- end }}

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    AMQP_URL: z.string(),
+    AMQP_URL: z.string().optional(),
     AMQP_QUEUE: z.string().default("job_configs"),
   },
   runtimeEnv: process.env,

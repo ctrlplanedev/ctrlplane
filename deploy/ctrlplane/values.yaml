@@ -11,3 +11,9 @@ webservice:
 
 job-policy-checker:
   install: true
+
+ingress:
+  create: true
+  class: ""
+  labels: {}
+  annotations: {}

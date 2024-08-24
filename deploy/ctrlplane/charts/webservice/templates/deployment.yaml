@@ -4,6 +4,7 @@ kind: Deployment
 metadata:
   name: {{ include "webservice.fullname" . }}
   labels:
+    {{- include "webservice.labels" . | nindent 4 }}
     {{- if .Values.deployment.labels -}}
     {{-   toYaml .Values.deployment.labels | nindent 4 }}
     {{- end }}
@@ -39,9 +40,14 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 3000
               protocol: TCP
           env:
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "webservice.fullname" . }}
+                  key: AUTH_SECRET
             {{- include "ctrlplane.extraEnv" . | nindent 12 }}
             {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 12 }}
           # livenessProbe:
