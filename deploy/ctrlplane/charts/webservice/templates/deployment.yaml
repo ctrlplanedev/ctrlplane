@@ -1,0 +1,67 @@
+{{- $imageCfg := dict "global" $.Values.global.image "local" $.Values.image -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "webservice.fullname" . }}
+  labels:
+    {{- if .Values.deployment.labels -}}
+    {{-   toYaml .Values.deployment.labels | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.deployment.annotations -}}
+    {{-   toYaml .Values.deployment.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "ctrlplane.selectorLabels" $ | nindent 6 }}
+      {{- include "webservice.labels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "webservice.labels" . | nindent 8 }}
+      annotations:
+        {{- if .Values.pod.annotations -}}
+        {{-   toYaml .Values.pod.annotations | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ include "webservice.serviceAccountName" . }}
+      {{- if .tolerations }}
+      tolerations:
+        {{- toYaml .tolerations | nindent 8 }}
+      {{- end }}
+      {{- include "ctrlplane.nodeSelector" . | nindent 6 }}
+      {{- include "ctrlplane.priorityClassName" . | nindent 6 }}
+      {{- include "ctrlplane.podSecurityContext" .Values.pod.securityContext | nindent 6 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            {{- include "ctrlplane.extraEnv" (dict "root" $ "local" .) | nindent 12 }}
+            {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 120
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes: {}

@@ -1,0 +1,32 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replica: 5
+
+image:
+  repository: ctrlplane/webservice
+  tag: latest
+  pullPolicy: Always
+
+extraEnv: {}
+extraEnvFrom: {}
+
+deployment:
+  labels: {}
+  annotations: {}
+
+service:
+  type: ClusterIP
+  annotations: {}
+  labels: {}
+
+tolerations: []
+pod: {}
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 4000m
+    memory: 4Gi
