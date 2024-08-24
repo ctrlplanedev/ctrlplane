@@ -5,6 +5,18 @@ import importPlugin from "eslint-plugin-import";
 import tseslint from "typescript-eslint";
 
 /**
+ * All packages should use this rule if the package is not used with a bundling
+ * tooling
+ */
+export const requireJsSuffix = tseslint.config({
+  files: ["**/*.ts"],
+  plugins: { import: importPlugin },
+  rules: {
+    "import/extensions": ["error", "always", { ignorePackages: true }],
+  },
+});
+
+/**
  * All packages that leverage t3-env should use this rule
  */
 export const restrictEnvAccess = tseslint.config({
