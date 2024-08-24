@@ -23,6 +23,8 @@ spec:
               image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
               env:
+                - name: CRON_ENABLED
+                  value: 'false'
                 {{- include "ctrlplane.extraEnv" . | nindent 16 }}
                 {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 16 }}
 

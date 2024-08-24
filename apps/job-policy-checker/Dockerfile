@@ -39,7 +39,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 RUN turbo build --filter=...@ctrlplane/job-policy-checker
-RUN cd apps/job-policy-checker && ls
+
 
 FROM base AS runner
 WORKDIR /app
@@ -51,6 +51,6 @@ USER nodejs
 COPY --from=installer --chown=nodejs:nodejs /app/apps/job-policy-checker/dist ./
 
 EXPOSE 3000
-ENV PORT 3000
+ENV PORT=3000
 
 CMD HOSTNAME="0.0.0.0" node apps/job-policy-checker/index.js
