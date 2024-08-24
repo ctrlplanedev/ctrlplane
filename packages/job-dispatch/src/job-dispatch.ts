@@ -56,6 +56,8 @@ const dispatchToAmqp = async (db: Tx, jobExecutions: JobExecution[]) => {
     )
     .then((ds) => ds.map(jobExecutionDataMapper));
 
+  if (env.AMQP_URL == null) throw Error("AMQP_URL is not set");
+
   const connection = await amqp.connect(env.AMQP_URL);
   const channel = await connection.createChannel();
 
