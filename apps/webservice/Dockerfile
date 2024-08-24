@@ -53,10 +53,10 @@ RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/standalone ./
-COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/static ./apps/docs/.next/static
+COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/static ./apps/webservice/.next/static
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/public ./apps/webservice/public
 
 EXPOSE 3000
-ENV PORT 3000
+ENV PORT=3000
 
 CMD HOSTNAME="0.0.0.0" node apps/webservice/server.js
