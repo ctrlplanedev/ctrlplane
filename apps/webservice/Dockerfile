@@ -1,4 +1,4 @@
-ARG NODE_VERSION=22
+ARG NODE_VERSION=20
 FROM node:${NODE_VERSION}-alpine AS base
 
 
@@ -38,9 +38,8 @@ COPY packages/ui/package.json ./packages/ui/package.json
 
 COPY apps/webservice/package.json ./apps/webservice/package.json
 
-RUN pnpm install --frozen-lockfile
-
 COPY . .
+RUN pnpm install --frozen-lockfile
 
 RUN turbo build --filter=...@ctrlplane/webservice
 
