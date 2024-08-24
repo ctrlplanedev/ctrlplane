@@ -33,7 +33,8 @@
     "studio:wsl": "pnpm with-env drizzle-kit studio --host 0.0.0.0 --port 3010 --verbose --config drizzle.config.ts",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
     "with-env": "dotenv -e ../../.env --",
-    "migrate": "pnpm with-env tsx ./src/migrate.ts",
+    "migrate": "pnpm with-env tsx ./migrate.ts",
+    "generate": "pnpm with-env drizzle-kit generate",
     "rest": "pnpm with-env psql $POSTGRES_URL -c \"DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;\""
   },
   "dependencies": {
