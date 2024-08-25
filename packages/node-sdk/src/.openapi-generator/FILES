@@ -1,0 +1,17 @@
+.openapi-generator-ignore
+apis/DefaultApi.ts
+apis/index.ts
+index.ts
+models/AcknowledgeJob200Response.ts
+models/GetAgentRunningExecutions200ResponseInner.ts
+models/GetJobExecution200Response.ts
+models/GetNextJobs200Response.ts
+models/GetNextJobs200ResponseJobExecutionsInner.ts
+models/SetTargetProvidersTargetsRequest.ts
+models/SetTargetProvidersTargetsRequestTargetsInner.ts
+models/UpdateJobAgent200Response.ts
+models/UpdateJobAgentRequest.ts
+models/UpdateJobExecution200Response.ts
+models/UpdateJobExecutionRequest.ts
+models/index.ts
+runtime.ts

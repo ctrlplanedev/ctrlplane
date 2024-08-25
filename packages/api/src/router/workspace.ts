@@ -63,7 +63,7 @@ const integrationsRouter = createTRPCRouter({
 
         const projectId = await auth.getProjectId();
 
-        await google.iam("v1").projects.serviceAccounts.create({
+        const sa = await google.iam("v1").projects.serviceAccounts.create({
           name: `projects/${projectId}`,
           auth,
           requestBody: {
@@ -75,10 +75,13 @@ const integrationsRouter = createTRPCRouter({
           },
         });
 
+        if (sa.data.email == null)
+          throw new Error("No email server account response");
+
         return ctx.db
           .update(workspace)
           .set({
-            googleServiceAccountEmail: `tp-${ws.slug}@${process.env.GOOGLE_PROJECT_ID}.iam.gserviceaccount.com`,
+            googleServiceAccountEmail: sa.data.email,
           })
           .where(eq(workspace.id, input))
           .returning()

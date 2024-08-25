@@ -34,7 +34,7 @@ const run = async () => {
   }
 };
 
-const job = new CronJob("* * * * *", () => run().catch(console.log));
+const job = new CronJob("* * * * *", run);
 
 console.log("Starting managed providers cronjob");
 run();

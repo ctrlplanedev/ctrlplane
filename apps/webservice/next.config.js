@@ -16,7 +16,6 @@ const config = {
     "@ctrlplane/db",
     "@ctrlplane/ui",
     "@ctrlplane/validators",
-    "@ctrlplane/webshell",
     "@ctrlplane/job-dispatch",
   ],
 

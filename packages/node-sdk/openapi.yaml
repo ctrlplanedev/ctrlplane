@@ -1,0 +1,360 @@
+openapi: 3.1.0
+info:
+  title: Ctrlplane API
+  version: 1.0.0
+paths:
+  /v1/{workspace}/job/agent/name:
+    patch:
+      summary: Upserts the agent
+      operationId: updateJobAgent
+      parameters:
+        - name: workspace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+              required:
+                - type
+                - name
+      responses:
+        "200":
+          description: Successfully retrieved or created the agent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  workspaceId:
+                    type: string
+                required:
+                  - id
+                  - name
+                  - workspaceId
+        "500":
+          description: Internal server error
+
+  /v1/{workspace}/target-provider/name/{name}:
+    get:
+      summary: Upserts a target provider.
+      operationId: upsertTargetProvider
+      parameters:
+        - name: workspace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the workspace
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the target provider
+      responses:
+        "200":
+          description: Successfully retrieved or created the target provider
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  workspaceId:
+                    type: string
+                required:
+                  - id
+                  - name
+                  - workspaceId
+        "404":
+          description: Provider not found
+        "500":
+          description: Internal server error
+  /v1/{workspace}/target-provider/{providerId}/set:
+    patch:
+      summary: Sets the target for a provider.
+      operationId: setTargetProvidersTargets
+      parameters:
+        - name: workspace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the workspace
+        - name: providerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: UUID of the scanner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - targets
+              properties:
+                targets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      version:
+                        type: string
+                      kind:
+                        type: string
+                      provider:
+                        type: string
+                      config:
+                        type: object
+                      labels:
+                        type: object
+                        additionalProperties:
+                          type: string
+                    required:
+                      - name
+                      - version
+                      - kind
+                      - provider
+                      - config
+                      - labels
+      responses:
+        "200":
+          description: Successfully updated the deployment target
+        "400":
+          description: Invalid request
+        "404":
+          description: Deployment target not found
+        "500":
+          description: Internal server error
+  /v1/job/agents/{agentId}/executions/running:
+    get:
+      summary: Get a running agents execution
+      operationId: getAgentRunningExecutions
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The execution ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    status:
+                      type: string
+                    message:
+                      type: string
+                    jobAgentId:
+                      type: string
+                    jobAgentConfig:
+                      type: object
+                    externalRunId:
+                      type: [string, "null"]
+                      nullable: true
+                    release:
+                      type: object
+                    deployment:
+                      type: object
+                    config:
+                      type: object
+                    runbook:
+                      type: object
+                    target:
+                      type: object
+                    environment:
+                      type: object
+                  required:
+                    - id
+                    - status
+                    - message
+                    - jobAgentId
+                    - jobAgentConfig
+                    - externalRunId
+                    - config
+  /v1/job/agents/{agentId}/queue/next:
+    get:
+      summary: Get the next jobs
+      operationId: getNextJobs
+      parameters:
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The agent ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobExecutions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: The job ID
+                        status:
+                          type: string
+                        jobAgentId:
+                          type: string
+                        jobAgentConfig:
+                          type: object
+                        message:
+                          type: string
+                        jobConfigId:
+                          type: string
+                      required:
+                        - id
+                        - status
+                        - message
+                        - jobConfigId
+                        - jobAgentId
+                        - jobAgentConfig
+  /v1/job/executions/{executionId}:
+    get:
+      summary: Get a job execution
+      operationId: getJobExecution
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The execution ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                  message:
+                    type: string
+                  jobAgentId:
+                    type: string
+                  jobAgentConfig:
+                    type: object
+                  externalRunId:
+                    type: string
+                  release:
+                    type: object
+                  deployment:
+                    type: object
+                  config:
+                    type: object
+                  runbook:
+                    type: object
+                  target:
+                    type: object
+                  environment:
+                    type: object
+                required:
+                  - id
+                  - status
+                  - message
+                  - jobAgentId
+                  - jobAgentConfig
+                  - externalRunId
+                  - config
+    patch:
+      summary: Update a job execution
+      operationId: updateJobExecution
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The execution ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                message:
+                  type: [string, "null"]
+                  nullable: true
+                externalRunId:
+                  type: [string, "null"]
+                  nullable: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                required:
+                  - id
+  /v1/job/executions/{executionId}/acknowledge:
+    post:
+      summary: Acknowledge a job
+      operationId: acknowledgeJob
+      parameters:
+        - name: executionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The agent ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
