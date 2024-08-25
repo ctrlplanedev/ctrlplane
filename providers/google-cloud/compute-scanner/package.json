@@ -12,15 +12,21 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
+    "dev": "tsx watch --clear-screen=false src/index.ts",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/node-sdk": "workspace:*",
     "@google-cloud/container": "^5.16.0",
+    "@t3-oss/env-core": "^0.10.1",
+    "cron": "^3.1.7",
+    "dotenv": "^16.4.5",
     "handlebars": "^4.7.8",
+    "p-retry": "^6.2.0",
     "semver": "^7.6.2",
     "zod": "catalog:"
   },
