@@ -5,5 +5,8 @@ dependencies:
 - name: job-policy-checker
   repository: file://charts/job-policy-checker
   version: 0.1.0
-digest: sha256:f886849879773b410f68b2d3293065605b5c82987ad285d9c974b9f9ee0f3bd2
-generated: "2024-08-23T23:39:43.317846-04:00"
+- name: migrations
+  repository: file://charts/migrations
+  version: 0.1.0
+digest: sha256:7009169bab87614dc2bf33508ac69a2ce674c4565a6fdc0f3b571ad461c7d991
+generated: "2024-08-24T23:49:27.165058-04:00"

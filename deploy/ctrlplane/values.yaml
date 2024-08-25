@@ -12,6 +12,9 @@ webservice:
 job-policy-checker:
   install: true
 
+migrations:
+  install: true
+
 ingress:
   create: true
   class: ""

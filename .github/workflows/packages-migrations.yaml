@@ -4,15 +4,13 @@ on:
   pull_request:
     branches: ["*"]
     paths:
-      - packages/db/**
+      - packages/db/drizzle/**
       - .github/workflows/packages-migrations.yaml
-      - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - packages/db/**
+      - packages/db/drizzle/**
       - .github/workflows/packages-migrations.yaml
-      - pnpm-lock.yamlaa
 
 jobs:
   build:

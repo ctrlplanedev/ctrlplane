@@ -14,3 +14,7 @@ dependencies:
     version: "*.*.*"
     repository: file://charts/job-policy-checker
     condition: job-policy-checker.install
+  - name: migrations
+    version: "*.*.*"
+    repository: file://charts/migrations
+    condition: migrations.install

@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "migrations.fullname" . }}
+  labels:
+    {{- include "migrations.labels" . | nindent 4 }}
+    {{- if .Values.job.labels }}
+    {{-   toYaml .Values.job.labels | nindent 4 }}
+    {{- end }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    {{- if .Values.job.annotations }}
+    {{-   toYaml .Values.job.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+  backoffLimit: {{ .Values.backoffLimit }}
+  template:
+    metadata:
+      name: "database"
+      labels:
+        {{- include "migrations.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      containers:
+        - name: migrations
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- include "ctrlplane.extraEnv" . | nindent 12 }}
+            {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

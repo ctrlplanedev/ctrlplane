@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ctrlplane
+      POSTGRES_PASSWORD: ctrlplane
+      POSTGRES_DB: ctrlplane
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ctrlplane
+      RABBITMQ_DEFAULT_PASS: ctrlplane
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  webservice:
+    image: ctrlplane/webservice
+    container_name: webservice
+    environment:
+      AUTH_SECRET: "<auth-secret>"
+      DATABASE_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      RABBITMQ_URL: amqp://ctrlplane:ctrlplane@rabbitmq:5672
+    depends_on:
+      - postgres
+      - rabbitmq
+    ports:
+      - "8080:8080"
+
+  job-policy-checker:
+    image: ctrlplane/my-job-policy-checker-image
+    container_name: job-policy-checker
+    environment:
+      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      RABBITMQ_URL: amqp://ctrlplane:ctrlplane@rabbitmq:5672
+    depends_on:
+      - postgres
+      - rabbitmq
+
+volumes:
+  postgres_data:
