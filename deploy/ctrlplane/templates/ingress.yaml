@@ -13,6 +13,11 @@ metadata:
     {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.class }}
+  defaultBackend:
+    service:
+      name: {{ .Release.Name }}-webservice
+      port:
+        number: 3000
   rules:
     - http:
         paths:

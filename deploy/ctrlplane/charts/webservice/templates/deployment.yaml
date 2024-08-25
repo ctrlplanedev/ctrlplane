@@ -36,7 +36,7 @@ spec:
       {{- include "ctrlplane.priorityClassName" . | nindent 6 }}
       {{- include "ctrlplane.podSecurityContext" .Values.pod.securityContext | nindent 6 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: webservice
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - name: http
