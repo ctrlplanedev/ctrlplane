@@ -5,13 +5,13 @@ on:
     branches: ["*"]
     paths:
       - packages/db/**
-      - .github/workflows/apps-migrations.yaml
+      - .github/workflows/packages-migrations.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
       - packages/db/**
-      - .github/workflows/apps-migrations.yaml
+      - .github/workflows/packages-migrations.yaml
       - pnpm-lock.yamlaa
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: package/db/Dockerfile
+          file: packages/db/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -56,5 +56,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: package/db/Dockerfile
+          file: packages/db/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
