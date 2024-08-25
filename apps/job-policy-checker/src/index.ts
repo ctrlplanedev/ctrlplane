@@ -33,4 +33,5 @@ const jobConfigPolicyChecker = new CronJob(env.CRON_TIME, run);
 console.log("Starting job config policy checker cronjob");
 
 run().catch(console.error);
+
 if (env.CRON_ENABLED) jobConfigPolicyChecker.start();
