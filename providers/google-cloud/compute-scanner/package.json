@@ -21,11 +21,15 @@
   "dependencies": {
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/node-sdk": "workspace:*",
+    "@ctrlplane/validators": "workspace:*",
     "@google-cloud/container": "^5.16.0",
+    "@kubernetes/client-node": "^0.21.0",
     "@t3-oss/env-core": "^0.10.1",
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
+    "google-auth-library": "^9.13.0",
     "handlebars": "^4.7.8",
+    "lodash": "^4.17.21",
     "p-retry": "^6.2.0",
     "semver": "^7.6.2",
     "zod": "catalog:"
@@ -34,6 +38,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/lodash": "^4.17.5",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "^5.4.5"
