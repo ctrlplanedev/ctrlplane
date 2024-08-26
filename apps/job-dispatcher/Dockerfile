@@ -25,16 +25,16 @@ COPY tooling/typescript/package.json ./tooling/typescript/package.json
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
-COPY apps/job-policy-checker/package.json ./apps/job-policy-checker/package.json
+COPY apps/job-dispatcher/package.json ./apps/job-dispatcher/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/job-policy-checker
+RUN turbo build --filter=...@ctrlplane/job-dispatcher
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-CMD node apps/job-policy-checker/dist/index.js
+CMD node apps/job-dispatcher/dist/index.js

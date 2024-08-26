@@ -4,18 +4,16 @@ on:
   pull_request:
     branches: ["*"]
     paths:
-      - apps/job-policy-checker/**
-      - packages/job-dispatch/**
+      - apps/job-dispatcher/**
       - packages/db/**
-      - .github/workflows/apps-job-policy-checker.yaml
+      - .github/workflows/apps-job-dispatcher.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - apps/job-policy-checker/**
-      - packages/job-dispatch/**
+      - apps/job-dispatcher/**
       - packages/db/**
-      - .github/workflows/apps-job-policy-checker.yaml
+      - .github/workflows/apps-job-dispatcher.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -43,7 +41,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/job-policy-checker
+          images: ctrlplane/job-dispatchers
           tags: |
             type=sha,format=short,prefix=
 
@@ -52,7 +50,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: apps/job-policy-checker/Dockerfile
+          file: apps/job-dispatchers/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -60,5 +58,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: apps/job-policy-checker/Dockerfile
+          file: apps/job-dispatchers/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
