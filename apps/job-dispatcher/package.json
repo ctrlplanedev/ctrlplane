@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/providers",
+  "name": "@ctrlplane/job-dispatcher",
   "private": true,
   "type": "module",
   "scripts": {
