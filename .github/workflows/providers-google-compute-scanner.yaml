@@ -1,21 +1,17 @@
-name: Apps / Job Policy Checker
+name: Providers / Google Compute Scanner
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - apps/job-policy-checker/**
-      - packages/job-dispatcher/**
-      - packages/db/**
-      - .github/workflows/apps-job-policy-checker.yaml
+      - providers/google-compute-scanner/**
+      - .github/workflows/providers-google-compute-scanner.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - apps/job-policy-checker/**
-      - packages/job-dispatcher/**
-      - packages/db/**
-      - .github/workflows/apps-job-policy-checker.yaml
+      - providers/google-compute-scanner/**
+      - .github/workflows/providers-google-compute-scanner.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -43,7 +39,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/job-policy-checker
+          images: ctrlplane/google-compute-scanner
           tags: |
             type=sha,format=short,prefix=
 
@@ -52,7 +48,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: apps/job-policy-checker/Dockerfile
+          file: providers/google-compute-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -60,5 +56,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: apps/job-policy-checker/Dockerfile
+          file: providers/google-compute-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}

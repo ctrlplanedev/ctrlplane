@@ -39,6 +39,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/lodash": "^4.17.5",
+    "@types/semver": "^7.5.8",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "^5.4.5"

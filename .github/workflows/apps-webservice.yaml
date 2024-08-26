@@ -1,4 +1,4 @@
-name: CD / Webservice
+name: Apps / Webservice
 
 on:
   pull_request:

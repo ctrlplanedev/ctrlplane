@@ -3,7 +3,7 @@ packages:
   - packages/*
   - tooling/*
   - agents/*
-  - providers/**
+  - providers/*
 
 catalog:
   eslint: ^9.9.0
