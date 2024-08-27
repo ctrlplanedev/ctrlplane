@@ -743,6 +743,9 @@ importers:
       '@types/lodash':
         specifier: ^4.17.5
         version: 4.17.7
+      '@types/ms':
+        specifier: ^0.7.34
+        version: 0.7.34
       '@types/pg':
         specifier: ^8.11.6
         version: 8.11.6
@@ -936,6 +939,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/node':
+        specifier: ^20.12.9
+        version: 20.14.11
       eslint:
         specifier: 'catalog:'
         version: 9.9.0(jiti@1.21.6)
