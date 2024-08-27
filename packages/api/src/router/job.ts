@@ -209,6 +209,11 @@ const jobAgentRouter = createTRPCRouter({
     .query(async ({ ctx, input }) =>
       ctx.db.select().from(jobAgent).where(eq(jobAgent.workspaceId, input)),
     ),
+  byType: publicProcedure
+    .input(z.string())
+    .query(async ({ ctx, input }) =>
+      ctx.db.select().from(jobAgent).where(eq(jobAgent.type, input)),
+    ),
   create: protectedProcedure
     .input(createJobAgent)
     .mutation(({ ctx, input }) =>
