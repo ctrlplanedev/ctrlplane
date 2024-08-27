@@ -5,6 +5,6 @@ import { z } from "zod";
 dotenv.config();
 
 export const env = createEnv({
-  server: { POSTGRES_URL: z.string().url() },
+  server: { POSTGRES_URL: z.string().url(), REDIS_URL: z.string().url() },
   runtimeEnv: process.env,
 });

@@ -27,6 +27,16 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  redis:
+    image: redis:latest
+    container_name: ctrlplane-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
 volumes:
   db-data:
   rabbitmq-data:
+  redis-data:

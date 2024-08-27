@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/job-dispatcher",
+  "name": "@ctrlplane/event-worker",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,12 +12,17 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/validators": "workspace:*",
     "@google-cloud/container": "^5.16.0",
     "@kubernetes/client-node": "^0.21.0",
     "@t3-oss/env-core": "^0.10.1",
+    "bullmq": "^5.12.10",
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
     "google-auth-library": "^9.13.0",
+    "ioredis": "^5.4.1",
+    "ms": "^2.1.3",
     "semver": "^7.6.2",
     "zod": "catalog:"
   },
