@@ -40,6 +40,14 @@ The typical deployment process in Ctrlplane involves the following steps:
   deployment, providing you with visibility into the progress and success of
   your releases.
 
+import { Callout } from "nextra/components";
+
+<Callout type="info">
+  Its common to have multiple targets a single application may deploy too. It is
+  best practice to have a single deployment with a pipeline that supports
+  deploying to these different systems.
+</Callout>
+
 ## Benefits of Deployments in Ctrlplane
 
 - **Automation:** Automates the entire deployment process, reducing manual
