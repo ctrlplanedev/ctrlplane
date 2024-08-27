@@ -1,7 +1,41 @@
-# Kubernetes
+# `kubernetes/v1`
 
-## `kubernetes/v1` Schemas
+## ClusterAPI
 
-### KubernetesAPI
+```yaml
+version: kubernetes/v1
+kind: ClusterAPI
+config:
+  name: string
+  server:
+    certificateAuthorityData: string
+    endpoint: url
+labels:
+  kubernetes/version: string
+  kubernetes/distribution: string
+  kubernetes/master-version: string
+  kubernetes/master-version-major: string
+  kubernetes/master-version-minor: string
+  kubernetes/master-version-patch: string
+```
 
-### KubernetesNmamespace
+## Namespace
+
+```yaml
+version: kubernetes/v1
+kind: Namespace
+config:
+  name: string
+  namespace: string
+  server:
+    certificateAuthorityData: string
+    endpoint: url
+labels:
+  kubernetes/namespace: string
+  kubernetes/version: string
+  kubernetes/distribution: string
+  kubernetes/master-version: string
+  kubernetes/master-version-major: string
+  kubernetes/master-version-minor: string
+  kubernetes/master-version-patch: string
+```

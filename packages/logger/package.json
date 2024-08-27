@@ -27,6 +27,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/node": "^20.12.9",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "^5.4.5"

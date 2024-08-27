@@ -2,3 +2,29 @@
 
 The Compute Scanner is a tool that scans Google Cloud projects for new instances
 and creates them for related deployments automatically.
+
+Currently the compute scanner supports importing the following resources:
+
+- Google Kubernetes Engine Clusters (GKE)
+
+## Managed Compute Scanner
+
+The managed Compute Scanner is build into the Ctrlplane solution. Each workspace
+will is assigned a google service account. You need to invite this service
+account to your projects you would like it to scan. Then in the UI, you can add
+a new provider, select the managed install and add all the projects you will
+like it to scale. Once you hit submit you may need to wait a few mins while it
+scanns and imports all compute resources.
+
+## Unmanaged Compute Scanner
+
+The unmanaged Compute Scanner is a standalone tool that can be run in your
+infrastrcuture. Similar to the managed solution, it imports all compute
+resources from your projects. The unmanaged scanner is a docker container that
+can be run in your infrastructure. You will need to provide the service account
+credentials to the container.
+
+You may want to use the unmanaged solution when you want fine control over the scanner.
+
+| Environment Variable | Description | Required | Default |
+| :------------------- | :---------- | -------- | ------- |

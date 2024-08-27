@@ -1,16 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
-import type {
-  Environment,
-  JobAgent,
-  JobConfig,
-  JobExecution,
-  Release,
-  Runbook,
-  Target,
-  updateJobExecution,
-} from "@ctrlplane/db/schema";
+import type { JobConfig, JobExecution } from "@ctrlplane/db/schema";
 import _ from "lodash";
-import { z } from "zod";
 
 import { and, eq, inArray, isNull, or, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -30,59 +20,6 @@ import { dispatchJobConfigs } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { cancelOldJobConfigsOnJobDispatch } from "./release-sequencing.js";
 
-export const jobExecutionData = z.object({
-  id: z.string().uuid(),
-  config: z.record(z.any()),
-  payload: z
-    .object({
-      jobExecution: z
-        .object({
-          id: z.string().uuid(),
-        })
-        .passthrough(),
-      jobAgent: z
-        .object({
-          id: z.string().uuid(),
-        })
-        .passthrough(),
-    })
-    .passthrough(),
-});
-
-export interface JobExecutionData<T extends object = Record<string, unknown>> {
-  id: string;
-  jobAgentConfig: T;
-  payload: {
-    environment: Environment | null;
-    target: Target | null;
-    release: Release | null;
-    runbook: Runbook | null;
-    jobExecution: JobExecution;
-    jobAgent: JobAgent;
-  };
-}
-
-export type JobExecutionState = z.infer<typeof updateJobExecution>;
-
-export const jobExecutionDataMapper = (d: {
-  job_execution: JobExecution;
-  target: Target | null;
-  job_agent: JobAgent;
-  environment: Environment | null;
-  release: Release | null;
-  runbook: Runbook | null;
-}): JobExecutionData<any> => ({
-  ...d.job_execution,
-  payload: {
-    jobAgent: d.job_agent,
-    environment: d.environment,
-    target: d.target,
-    release: d.release,
-    runbook: d.runbook,
-    jobExecution: d.job_execution,
-  },
-});
-
 type JobExecutionStatusType =
   | "completed"
   | "cancelled"
@@ -98,8 +35,9 @@ export type JobExecutionReason =
   | "policy_override"
   | "env_policy_override"
   | "config_policy_override";
+
 /**
- * Converts a job config into a jobExecution which means they can now be
+ * Converts a job config into a job execution which means they can now be
  * picked up by job agents
  */
 export const createJobExecutions = async (

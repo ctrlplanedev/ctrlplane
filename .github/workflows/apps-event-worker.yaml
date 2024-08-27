@@ -1,4 +1,4 @@
-name: Apps / Job Policy Checker
+name: Apps / Event Worker
 
 on:
   pull_request:
@@ -6,6 +6,7 @@ on:
     paths:
       - apps/event-worker/**
       - packages/db/**
+      - packages/validators/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
   push:
@@ -13,6 +14,7 @@ on:
     paths:
       - apps/event-worker/**
       - packages/db/**
+      - packages/validators/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
 

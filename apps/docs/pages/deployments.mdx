@@ -1,3 +1,5 @@
+import { Callout } from "nextra/components";
+
 # Deployments
 
 Deployments are the heart of Ctrlplane. They represent the process of delivering
@@ -39,6 +41,12 @@ The typical deployment process in Ctrlplane involves the following steps:
 - **Deployment Status Tracking:** Ctrlplane tracks the status of each
   deployment, providing you with visibility into the progress and success of
   your releases.
+
+<Callout type="info">
+  Its common to have multiple targets a single application may deploy too. It is
+  best practice to have a single deployment with a pipeline that supports
+  deploying to these different systems.
+</Callout>
 
 ## Benefits of Deployments in Ctrlplane
 

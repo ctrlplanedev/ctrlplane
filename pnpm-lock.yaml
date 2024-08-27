@@ -290,58 +290,6 @@ importers:
         specifier: ^5.4.5
         version: 5.5.4
 
-  apps/target-provider:
-    dependencies:
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@google-cloud/container':
-        specifier: ^5.16.0
-        version: 5.16.0
-      '@kubernetes/client-node':
-        specifier: ^0.21.0
-        version: 0.21.0(bufferutil@4.0.8)(utf-8-validate@6.0.4)
-      '@t3-oss/env-core':
-        specifier: ^0.10.1
-        version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      google-auth-library:
-        specifier: ^9.13.0
-        version: 9.13.0
-      semver:
-        specifier: ^7.6.2
-        version: 7.6.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:^
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:^
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      eslint:
-        specifier: 'catalog:'
-        version: 9.9.0(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      tsx:
-        specifier: ^4.11.0
-        version: 4.16.2
-      typescript:
-        specifier: ^5.4.5
-        version: 5.5.4
-
   apps/webservice:
     dependencies:
       '@ctrlplane/api':
@@ -703,18 +651,27 @@ importers:
       '@trpc/server':
         specifier: 11.0.0-rc.364
         version: 11.0.0-rc.364
+      bullmq:
+        specifier: ^5.12.10
+        version: 5.12.10
       google-auth-library:
         specifier: ^9.13.0
         version: 9.13.0
       googleapis:
         specifier: ^140.0.1
         version: 140.0.1
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.4.1
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       superjson:
         specifier: 2.2.1
         version: 2.2.1
@@ -740,6 +697,9 @@ importers:
       '@types/lodash':
         specifier: ^4.17.5
         version: 4.17.7
+      '@types/ms':
+        specifier: ^0.7.34
+        version: 0.7.34
       '@types/pg':
         specifier: ^8.11.6
         version: 8.11.6
@@ -856,9 +816,6 @@ importers:
       '@t3-oss/env-core':
         specifier: ^0.10.1
         version: 0.10.1(typescript@5.5.3)(zod@3.23.8)
-      amqplib:
-        specifier: ^0.10.4
-        version: 0.10.4
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0
@@ -936,6 +893,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/node':
+        specifier: ^20.12.9
+        version: 20.14.11
       eslint:
         specifier: 'catalog:'
         version: 9.9.0(jiti@1.21.6)

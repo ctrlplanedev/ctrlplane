@@ -7,6 +7,7 @@ const clusterConfig = z.object({
     endpoint: z.string().url(),
   }),
 });
+
 export const kubernetesClusterApiV1 = z.object({
   version: z.literal("kubernetes/v1"),
   kind: z.literal("ClusterAPI"),

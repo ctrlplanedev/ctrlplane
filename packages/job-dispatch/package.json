@@ -26,7 +26,6 @@
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
     "@t3-oss/env-core": "^0.10.1",
-    "amqplib": "^0.10.4",
     "date-fns": "^3.6.0",
     "lodash": "^4.17.21",
     "ms": "^2.1.3",

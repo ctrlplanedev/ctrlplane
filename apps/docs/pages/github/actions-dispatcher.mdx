@@ -1,6 +1,44 @@
+import { Callout } from "nextra/components";
+
 # Actions Dispatcher
 
 GitHub Actions Dispatcher is allows you to trigger other GitHub Actions
 workflows from a single workflow. This is useful when you want to run multiple
 workflows in parallel or when you want to trigger a workflow from another
 repository.
+
+## Creating Actions
+
+<Callout type="info">
+  Due to [limitations of the GitHub
+  API](https://github.com/orgs/community/discussions/9752), workflows do not
+  return the run ID. Inorder for Ctrl Plane to get the ID it generates a random
+  one that is passed into the pipeline and is expected to be added to the Run
+  name. This can be done by adding
+
+```yaml
+name: Receiving Workflow
+run-name: Receiving Workflow [${{ inputs.distinct_id && inputs.distinct_id || 'N/A' }}]
+
+on:
+  workflow_dispatch:
+    inputs:
+      distinct_id:
+        description: "Distinct ID"
+        required: false
+```
+
+</Callout>
+
+### Configuring a workflows
+
+Each provider will make there own assmputions about how values and properties
+are expected to be passed to the underlying workflow. In this section we will
+outline the format inwhich data will be passed in.
+
+First, the workflow must be able to be triggered by a dispatch.
+
+```yaml
+on:
+  workflow_dispatch: {}
+```

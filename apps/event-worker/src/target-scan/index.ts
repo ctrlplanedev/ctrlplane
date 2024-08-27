@@ -1,6 +1,5 @@
 import type { TargetScanEvent } from "@ctrlplane/validators/events";
-import { Queue, Worker } from "bullmq";
-import ms from "ms";
+import { Job, Queue, Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -17,8 +16,10 @@ import { getGkeTargets } from "./gke.js";
 import { upsertTargets } from "./upsert.js";
 
 const targetScanQueue = new Queue(Channel.TargetScan, { connection: redis });
-const requeue = (data: any, delay: number) =>
-  targetScanQueue.add(Channel.TargetScan, data, { delay });
+const removeTargetJob = (job: Job) =>
+  job.repeatJobKey != null
+    ? targetScanQueue.removeRepeatableByKey(job.repeatJobKey)
+    : null;
 
 export const createTargetScanWorker = () =>
   new Worker<TargetScanEvent>(
@@ -36,7 +37,11 @@ export const createTargetScanWorker = () =>
           eq(targetProvider.id, targetProviderGoogle.targetProviderId),
         )
         .then(takeFirstOrNull);
-      if (tp == null) return;
+
+      if (tp == null) {
+        await removeTargetJob(job);
+        return;
+      }
 
       logger.info(
         `Received scanning request for "${tp.target_provider.name}" (${targetProviderId}).`,
@@ -51,9 +56,10 @@ export const createTargetScanWorker = () =>
 
         await upsertTargets(db, tp.workspace.id, gkeTargets);
       }
-
-      await requeue(job.data, ms("5m"));
-      //
     },
-    { connection: redis, concurrency: 10 },
+    {
+      connection: redis,
+      removeOnComplete: { age: 0, count: 0 },
+      concurrency: 10,
+    },
   );
