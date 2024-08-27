@@ -36,14 +36,14 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const _deploymentForm = z.object({
+const deploymentForm = z.object({
   name: z.string().min(3).max(255),
   slug: z.string().min(3).max(255),
   systemId: z.string().uuid(),
   description: z.string().default(""),
 });
 
-type DeploymentFormValues = z.infer<typeof _deploymentForm>;
+type DeploymentFormValues = z.infer<typeof deploymentForm>;
 
 export const CreateDeploymentDialog: React.FC<{
   defaultSystemId?: string;

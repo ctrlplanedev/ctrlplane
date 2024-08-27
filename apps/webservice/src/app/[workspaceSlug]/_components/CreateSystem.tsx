@@ -26,13 +26,13 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const _systemForm = z.object({
+const systemForm = z.object({
   name: z.string().min(3).max(255),
   slug: z.string().min(3).max(255),
   description: z.string().default(""),
 });
 
-type SystemFormValues = z.infer<typeof _systemForm>;
+type SystemFormValues = z.infer<typeof systemForm>;
 
 export const CreateSystemDialog: React.FC<{
   children: React.ReactNode;

@@ -163,7 +163,7 @@ const UpsertLabelGroupDialog: React.FC<{
       open={open}
       onOpenChange={() => {
         setOpen((open) => !open);
-        if (!create) form.reset();
+        !create && form.reset();
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
