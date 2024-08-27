@@ -697,18 +697,27 @@ importers:
       '@trpc/server':
         specifier: 11.0.0-rc.364
         version: 11.0.0-rc.364
+      bullmq:
+        specifier: ^5.12.10
+        version: 5.12.10
       google-auth-library:
         specifier: ^9.13.0
         version: 9.13.0
       googleapis:
         specifier: ^140.0.1
         version: 140.0.1
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.4.1
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       superjson:
         specifier: 2.2.1
         version: 2.2.1
@@ -850,9 +859,6 @@ importers:
       '@t3-oss/env-core':
         specifier: ^0.10.1
         version: 0.10.1(typescript@5.5.3)(zod@3.23.8)
-      amqplib:
-        specifier: ^0.10.4
-        version: 0.10.4
       date-fns:
         specifier: ^3.6.0
         version: 3.6.0

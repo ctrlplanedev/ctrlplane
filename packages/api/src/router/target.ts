@@ -1,4 +1,6 @@
 import type { SQL, Tx } from "@ctrlplane/db";
+import ms from "ms";
+import { targetScanQueue } from "src/dispatch";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -155,6 +157,13 @@ const targetProviderRouter = createTRPCRouter({
             .values({ ...input.config, targetProviderId: tg.id })
             .returning()
             .then(takeFirst);
+
+          await targetScanQueue.add(
+            tg.id,
+            { targetProviderId: tg.id },
+            { repeat: { every: ms("5m") } },
+          );
+
           return { ...tg, config: tgConfig };
         }),
       ),
