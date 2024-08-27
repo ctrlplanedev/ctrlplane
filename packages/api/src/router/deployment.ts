@@ -154,19 +154,13 @@ export const deploymentRouter = createTRPCRouter({
         ctx.accessQuery().workspace.system.deployment.id(input),
     })
     .input(z.string().uuid())
-    .mutation(async ({ ctx, input }) => {
-      await ctx.db
+    .mutation(({ ctx, input }) =>
+      ctx.db
         .delete(deployment)
         .where(eq(deployment.id, input))
-        .then(() => {
-          ctx.db
-            .select()
-            .from(system)
-            .where(eq(system.id, deployment.systemId));
-        });
-
-      return { success: true };
-    }),
+        .returning()
+        .then(takeFirst),
+    ),
 
   bySlug: protectedProcedure
     .meta({
