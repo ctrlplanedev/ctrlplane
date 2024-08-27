@@ -1,19 +1,21 @@
-name: Apps / Job Policy Checker
+name: Apps / Event Worker
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - apps/job-dispatcher/**
+      - apps/event-worker/**
       - packages/db/**
-      - .github/workflows/apps-job-dispatcher.yaml
+      - packages/validators/**
+      - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - apps/job-dispatcher/**
+      - apps/event-worker/**
       - packages/db/**
-      - .github/workflows/apps-job-dispatcher.yaml
+      - packages/validators/**
+      - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -41,7 +43,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/job-dispatchers
+          images: ctrlplane/event-worker
           tags: |
             type=sha,format=short,prefix=
 
@@ -50,7 +52,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: apps/job-dispatchers/Dockerfile
+          file: apps/event-worker/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -58,5 +60,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: apps/job-dispatchers/Dockerfile
+          file: apps/event-worker/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}

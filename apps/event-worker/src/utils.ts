@@ -1,4 +1,4 @@
-import type { Target } from "@ctrlplane/db/schema";
+import { Target } from "@ctrlplane/db/schema";
 
 export function omitNullUndefined(obj: object) {
   return Object.entries(obj).reduce<Record<string, string>>(
@@ -9,15 +9,3 @@ export function omitNullUndefined(obj: object) {
     {},
   );
 }
-
-export type UpsertTarget = Pick<
-  Target,
-  | "version"
-  | "name"
-  | "kind"
-  | "config"
-  | "labels"
-  | "providerId"
-  | "identifier"
-  | "workspaceId"
->;

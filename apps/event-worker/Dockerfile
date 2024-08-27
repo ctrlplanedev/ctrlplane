@@ -23,18 +23,20 @@ COPY tooling/eslint/package.json ./tooling/eslint/package.json
 COPY tooling/typescript/package.json ./tooling/typescript/package.json
 
 COPY packages/db/package.json ./packages/db/package.json
+COPY packages/validators/package.json ./packages/validators/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
-COPY apps/job-dispatcher/package.json ./apps/job-dispatcher/package.json
+COPY apps/event-worker/package.json ./apps/event-worker/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/job-dispatcher
+RUN turbo build --filter=...@ctrlplane/event-worker
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-CMD node apps/job-dispatcher/dist/index.js
+CMD node apps/event-worker/dist/index.js

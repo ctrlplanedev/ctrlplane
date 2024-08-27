@@ -92,7 +92,7 @@ export const WidgetTargetLabelCount: Widget<{
   },
   Component: ({ config, updateConfig, isEditMode }) => {
     const countUndefined = config.countUndefined ?? false;
-    const label = config.label ?? "kubernetes.io/autoscaling-enabled";
+    const label = config.label ?? "kubernetes/autoscaling-enabled";
     const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
     const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
     const targets = api.target.byWorkspaceId.list.useQuery(

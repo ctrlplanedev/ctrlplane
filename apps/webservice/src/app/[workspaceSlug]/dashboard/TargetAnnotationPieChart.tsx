@@ -19,7 +19,7 @@ export const TargetAnnotationPieChart: React.FC<{
   const targets = api.target.byWorkspaceId.list.useQuery({ workspaceId });
   const [showUndefined] = useState(false);
   const [annotation] = useState<string | null>(
-    "kubernetes.io/autoscaling-enabled",
+    "kubernetes/autoscaling-enabled",
   );
 
   const chartData = _.chain(targets.data?.items ?? [])

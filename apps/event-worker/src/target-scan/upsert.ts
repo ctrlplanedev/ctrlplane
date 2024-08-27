@@ -1,9 +1,17 @@
-import type { Tx } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, sql, Tx } from "@ctrlplane/db";
+import { Target, target } from "@ctrlplane/db/schema";
 
-import { buildConflictUpdateColumns, sql } from "@ctrlplane/db";
-import { target } from "@ctrlplane/db/schema";
-
-import type { UpsertTarget } from "./utils";
+export type UpsertTarget = Pick<
+  Target,
+  | "version"
+  | "name"
+  | "kind"
+  | "config"
+  | "labels"
+  | "providerId"
+  | "identifier"
+  | "workspaceId"
+>;
 
 export const upsertTargets = (db: Tx, providerId: string, ts: UpsertTarget[]) =>
   db

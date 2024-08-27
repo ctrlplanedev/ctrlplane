@@ -6,9 +6,6 @@
     "noEmit": false,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
     "esModuleInterop": true,
     "importsNotUsedAsValues": "remove"
   },
