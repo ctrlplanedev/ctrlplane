@@ -51,7 +51,7 @@ const isValidRegex = (str: string) => {
   try {
     new RegExp(str);
     return true;
-  } catch {
+  } catch (e) {
     return false;
   }
 };
@@ -60,7 +60,7 @@ const isValidDuration = (str: string) => {
   try {
     ms(str);
     return true;
-  } catch {
+  } catch (e) {
     return false;
   }
 };
