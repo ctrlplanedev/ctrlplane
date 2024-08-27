@@ -31,9 +31,7 @@ export default function GitHubIntegrationPage({
 
   const configFiles = api.github.configFile.list.useQuery(
     workspace.data?.id ?? "",
-    {
-      enabled: workspace.data != null,
-    },
+    { enabled: workspace.data != null },
   );
 
   return (
