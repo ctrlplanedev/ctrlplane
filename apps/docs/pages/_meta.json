@@ -11,7 +11,7 @@
   "systems": "Systems",
   "environments": "Environments",
   "targets": "Targets",
-  "workflows": "Workflow (CI)",
+  "jobs": "Jobs",
   "variables": "Variables",
   "runbooks": "Runbooks",
   "advanced": "Advanced",
@@ -22,5 +22,6 @@
     "title": "Integrations"
   },
   "github": "GitHub",
-  "google-cloud": "Google Cloud"
+  "google-cloud": "Google Cloud",
+  "kubernetes": "Kubernetes"
 }

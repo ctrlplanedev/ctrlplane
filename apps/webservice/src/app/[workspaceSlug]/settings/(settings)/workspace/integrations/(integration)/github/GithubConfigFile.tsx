@@ -1,3 +1,4 @@
+import type { GithubConfigFile } from "@ctrlplane/db/schema";
 import {
   Card,
   CardContent,
@@ -7,15 +8,9 @@ import {
 } from "@ctrlplane/ui/card";
 import { Separator } from "@ctrlplane/ui/separator";
 
-import { api } from "~/trpc/react";
-
 export const GithubConfigFileSync: React.FC<{
-  workspaceId?: string;
-}> = ({ workspaceId }) => {
-  const configFiles = api.github.configFile.list.useQuery(workspaceId ?? "", {
-    enabled: workspaceId != null,
-  });
-
+  configFiles: GithubConfigFile[];
+}> = ({ configFiles }) => {
   return (
     <Card className="rounded-md">
       <CardHeader className="space-y-2">
@@ -31,8 +26,8 @@ export const GithubConfigFileSync: React.FC<{
       <Separator />
 
       <CardContent className="p-4">
-        {configFiles.data?.map((configFile) => (
-          <div key={configFile.id}>{configFile.name}</div>
+        {configFiles.map((configFile) => (
+          <div key={configFile.id}>{configFile.path}</div>
         ))}
       </CardContent>
     </Card>

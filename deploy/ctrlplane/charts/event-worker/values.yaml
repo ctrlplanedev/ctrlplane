@@ -1,0 +1,42 @@
+nameOverride: ""
+fullnameOverride: ""
+
+replica: 2
+
+image:
+  repository: ctrlplane/event-worker
+  tag: latest
+  pullPolicy: Always
+
+extraEnv: {}
+extraEnvFrom: {}
+
+deployment:
+  labels: {}
+  annotations: {}
+
+hpa:
+  labels: {}
+  annotations: {}
+  minReplicas: 2
+  maxReplicas: 5
+
+service:
+  type: ClusterIP
+  annotations: {}
+  labels: {}
+
+tolerations: []
+pod: {}
+
+serviceAccount:
+  create: false
+  name: ""
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 4000m
+    memory: 4Gi

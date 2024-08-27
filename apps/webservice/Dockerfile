@@ -56,6 +56,8 @@ COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/static ./
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/public ./apps/webservice/public
 
 EXPOSE 3000
+
 ENV PORT=3000
+ENV AUTH_TRUST_HOST=true
 
 CMD HOSTNAME="0.0.0.0" node apps/webservice/server.js

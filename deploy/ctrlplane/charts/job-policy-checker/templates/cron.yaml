@@ -25,6 +25,11 @@ spec:
               env:
                 - name: CRON_ENABLED
                   value: 'false'
+                - name: POSTGRES_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "ctrlplane.chart" . }}-connections
+                      key: POSTGRES_URL
                 {{- include "ctrlplane.extraEnv" . | nindent 16 }}
                 {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 16 }}
 
