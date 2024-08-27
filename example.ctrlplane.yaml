@@ -4,9 +4,3 @@ deployments:
     description: "Gorilla backend service"
     system: "infra"
     workspace: "ctrlplane"
-  - name: "parquet"
-    slug: "parquet"
-    description: "Parquet backend service"
-    system: "infra"
-    workspace: "ctrlplane"
-
