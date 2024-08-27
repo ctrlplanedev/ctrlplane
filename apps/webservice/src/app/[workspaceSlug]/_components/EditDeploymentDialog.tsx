@@ -28,58 +28,43 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const _deploymentForm = z.object({
+const deploymentForm = z.object({
   id: z.string().uuid(),
   name: z.string().min(3).max(255),
   slug: z.string().min(3).max(255),
   description: z.string().optional(),
 });
 
-type DeploymentFormValues = z.infer<typeof _deploymentForm>;
+type DeploymentFormValues = z.infer<typeof deploymentForm>;
 
-export const EditDeploymentDialog: React.FC<{
-  deploymentId: string;
-  deploymentName: string;
-  deploymentSlug: string;
-  deploymentDescription: string;
-  children?: React.ReactNode;
-}> = ({
-  deploymentId,
-  deploymentName,
-  deploymentSlug,
-  deploymentDescription,
-  children,
-}) => {
-  const router = useRouter(); // Initialize the router
+export const EditDeploymentDialog: React.FC<
+  DeploymentFormValues & { children?: React.ReactNode }
+> = ({ id, name, slug, description, children }) => {
+  const router = useRouter();
   const update = api.deployment.update.useMutation();
   const [open, setOpen] = useState(false);
 
   const form = useForm<DeploymentFormValues>({
-    defaultValues: {
-      id: deploymentId,
-      name: deploymentName,
-      slug: deploymentSlug,
-      description: deploymentDescription,
-    },
+    defaultValues: { id, name, slug, description },
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
     const isDataChanged =
-      data.name !== deploymentName ||
-      data.slug !== deploymentSlug ||
-      data.description !== deploymentDescription;
+      data.name !== name ||
+      data.slug !== slug ||
+      data.description !== description;
 
     setOpen(false);
-    if (!isDataChanged) {
-      return;
-    }
+    if (!isDataChanged) return;
+
     const updatedDeployment = await update.mutateAsync({
-      id: deploymentId,
+      id: id,
       data,
     });
 
     router.push(`./deployments/${updatedDeployment.slug}`);
   });
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -94,25 +79,6 @@ export const EditDeploymentDialog: React.FC<{
             </DialogHeader>
             <FormField
               control={form.control}
-              name="id"
-              render={() => (
-                <FormItem>
-                  <FormLabel>ID</FormLabel>
-                  <div className="flex items-center space-x-2">
-                    <FormControl>
-                      <Input
-                        value={deploymentId}
-                        readOnly
-                        className="!cursor-not-allowed bg-gray-800 text-gray-100"
-                      />
-                    </FormControl>
-                    <CopyButton textToCopy={deploymentId} />
-                  </div>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -121,8 +87,6 @@ export const EditDeploymentDialog: React.FC<{
                     <Input
                       placeholder="Website, Identity Service..."
                       {...field}
-                      className="!focus:cursor-auto"
-                      autoFocus
                     />
                   </FormControl>
                 </FormItem>
@@ -152,7 +116,25 @@ export const EditDeploymentDialog: React.FC<{
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="id"
+              render={() => (
+                <FormItem>
+                  <FormLabel>ID</FormLabel>
+                  <FormControl>
+                    <Input
+                      value={id}
+                      readOnly
+                      className="bg-gray-800 text-gray-100"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
             <DialogFooter>
+              <CopyButton textToCopy={id} />
+              <div className="flex-grow" />
               <Button type="submit">Save</Button>
             </DialogFooter>
           </form>

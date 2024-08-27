@@ -16,22 +16,16 @@ import { DeleteDeploymentDialog } from "./DeleteDeployment";
 import { EditDeploymentDialog } from "./EditDeploymentDialog";
 
 export const DeploymentOptionsDropdown: React.FC<{
-  deploymentId: string;
-  deploymentName: string;
-  deploymentSlug: string;
-  deploymentDescription: string;
-}> = ({
-  deploymentId,
-  deploymentName,
-  deploymentSlug,
-  deploymentDescription,
-}) => {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}> = ({ id, name, slug, description }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   return (
     <>
       <DropdownMenu>
-        ``
         <DropdownMenuTrigger asChild>
           <Button size="icon" variant="ghost" className="rounded-full">
             <TbDotsVertical />
@@ -44,10 +38,10 @@ export const DeploymentOptionsDropdown: React.FC<{
         >
           <DropdownMenuGroup>
             <EditDeploymentDialog
-              deploymentId={deploymentId}
-              deploymentName={deploymentName}
-              deploymentSlug={deploymentSlug}
-              deploymentDescription={deploymentDescription}
+              id={id}
+              name={name}
+              slug={slug}
+              description={description}
             >
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                 <TbEdit className="mr-2" />
@@ -63,7 +57,8 @@ export const DeploymentOptionsDropdown: React.FC<{
       </DropdownMenu>
 
       <DeleteDeploymentDialog
-        deploymentId={deploymentId}
+        id={id}
+        name={name}
         isOpen={deleteDialogOpen}
         setIsOpen={setDeleteDialogOpen}
       />

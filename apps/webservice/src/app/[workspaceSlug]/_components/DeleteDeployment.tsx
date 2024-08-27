@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { z } from "zod";
 
 import {
   AlertDialog,
@@ -15,18 +14,16 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
 
-const deleteDeploymentSchema = z.object({
-  deploymentId: z.string().uuid(),
-});
-
 type DeleteDeploymentProps = {
-  deploymentId: string;
+  id: string;
+  name: string;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 };
 
 export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
-  deploymentId,
+  id,
+  name,
   isOpen,
   setIsOpen,
 }) => {
@@ -36,13 +33,7 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
   const utils = api.useUtils();
 
   const onDelete = async () => {
-    const validation = deleteDeploymentSchema.safeParse({ deploymentId });
-
-    if (!validation.success) {
-      console.error("Invalid deployment ID:", deploymentId);
-      return;
-    }
-    await deleteDeployment.mutateAsync(deploymentId);
+    await deleteDeployment.mutateAsync(id);
     await utils.deployment.invalidate();
     router.push(`/${workspaceSlug}/systems`);
     setIsOpen(false);
@@ -55,11 +46,14 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
           <AlertDialogTitle>Delete Deployment</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription>
-          Are you sure you want to delete this deployment? This action cannot be
-          undone.
+          Are you sure you want to delete the{" "}
+          <span className="rounded-md bg-gray-900 px-2 py-1 text-gray-100">
+            {name}
+          </span>{" "}
+          deployment? This action cannot be undone.
         </AlertDialogDescription>
         <AlertDialogFooter>
-          <Button variant="secondary" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
           <Button variant="destructive" onClick={onDelete}>

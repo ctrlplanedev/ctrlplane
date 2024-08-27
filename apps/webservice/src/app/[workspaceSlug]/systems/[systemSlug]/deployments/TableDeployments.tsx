@@ -163,10 +163,10 @@ const DeploymentTable: React.FC<{
                     <TbRocket />
                   </Button>
                   <DeploymentOptionsDropdown
-                    deploymentId={r.id}
-                    deploymentName={r.name}
-                    deploymentSlug={r.slug}
-                    deploymentDescription={r.description}
+                    id={r.id}
+                    name={r.name}
+                    slug={r.slug}
+                    description={r.description}
                   />
                 </div>
               </td>
