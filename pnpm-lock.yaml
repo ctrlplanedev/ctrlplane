@@ -250,10 +250,6 @@ importers:
         specifier: ^5.4.5
         version: 5.5.4
 
-  apps/job-config-policy-checker: {}
-
-  apps/job-dispatcher: {}
-
   apps/job-policy-checker:
     dependencies:
       '@ctrlplane/db':
@@ -293,12 +289,6 @@ importers:
       typescript:
         specifier: ^5.4.5
         version: 5.5.4
-
-  apps/nextjs: {}
-
-  apps/provider: {}
-
-  apps/target-provider: {}
 
   apps/webservice:
     dependencies:
