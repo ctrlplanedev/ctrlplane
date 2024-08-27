@@ -256,16 +256,9 @@ export const githubRouter = createTRPCRouter({
                   installation_id: org.installationId,
                 })
                 .then(async ({ data: installation }) => {
-                  const installationOctokit = new Octokit({
-                    authStrategy: createAppAuth,
-                    auth: {
-                      appId: env.GITHUB_BOT_APP_ID,
-                      privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-                      clientId: env.GITHUB_BOT_CLIENT_ID,
-                      clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-                      installationId: installation.id,
-                    },
-                  });
+                  const installationOctokit = getOctokitInstallation(
+                    installation.id,
+                  );
 
                   const installationToken = (await installationOctokit.auth({
                     type: "installation",
@@ -367,7 +360,6 @@ export const githubRouter = createTRPCRouter({
                         workspaceId: org.workspaceId,
                         organizationId: org.id,
                         repositoryName: d.repository.name,
-                        branch: org.branch,
                       })),
                     )
                     .returning();
@@ -394,7 +386,6 @@ export const githubRouter = createTRPCRouter({
                           description: d.description ?? "",
                           githubConfigFileId: insertedConfigFiles.find(
                             (icf) =>
-                              icf.name === cf.name &&
                               icf.path === cf.path &&
                               icf.repositoryName === cf.repository.name,
                           )?.id,

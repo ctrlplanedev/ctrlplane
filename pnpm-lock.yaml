@@ -307,6 +307,12 @@ importers:
       '@octokit/auth-app':
         specifier: ^7.1.0
         version: 7.1.0
+      '@octokit/rest':
+        specifier: ^20.1.1
+        version: 20.1.1
+      '@octokit/webhooks-types':
+        specifier: ^7.5.1
+        version: 7.5.1
       '@t3-oss/env-nextjs':
         specifier: ^0.10.1
         version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
@@ -1010,7 +1016,7 @@ importers:
         version: 1.13.4(eslint@9.9.0(jiti@1.21.6))
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.29.1(eslint@9.9.0(jiti@1.21.6))
+        version: 2.29.1(@typescript-eslint/parser@7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.3))(eslint@9.9.0(jiti@1.21.6))
       eslint-plugin-jsx-a11y:
         specifier: ^6.8.0
         version: 6.9.0(eslint@9.9.0(jiti@1.21.6))
@@ -2080,6 +2086,9 @@ packages:
 
   '@octokit/types@13.5.0':
     resolution: {integrity: sha512-HdqWTf5Z3qwDVlzCrP8UJquMwunpDiMPt5er+QjGzL4hqr/vBVY/MauQgS1xWxCDT1oMx1EULyqxncdCY/NVSQ==}
+
+  '@octokit/webhooks-types@7.5.1':
+    resolution: {integrity: sha512-1dozxWEP8lKGbtEu7HkRbK1F/nIPuJXNfT0gd96y6d3LcHZTtRtlf8xz3nicSJfesADxJyDh+mWBOsdLkqgzYw==}
 
   '@panva/hkdf@1.2.0':
     resolution: {integrity: sha512-97ZQvZJ4gJhi24Io6zI+W7B67I82q1I8i3BSzQ4OyZj1z4OW87/ruF26lrMES58inTKLy2KgVIDcx8PU4AaANQ==}
@@ -9139,6 +9148,8 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 22.2.0
 
+  '@octokit/webhooks-types@7.5.1': {}
+
   '@panva/hkdf@1.2.0': {}
 
   '@pkgjs/parseargs@0.11.0':
@@ -12744,16 +12755,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.8.1(eslint-import-resolver-node@0.3.9)(eslint@9.9.0(jiti@1.21.6)):
+  eslint-module-utils@2.8.1(@typescript-eslint/parser@7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.3))(eslint-import-resolver-node@0.3.9)(eslint@9.9.0(jiti@1.21.6)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
+      '@typescript-eslint/parser': 7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.3)
       eslint: 9.9.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.29.1(eslint@9.9.0(jiti@1.21.6)):
+  eslint-plugin-import@2.29.1(@typescript-eslint/parser@7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.3))(eslint@9.9.0(jiti@1.21.6)):
     dependencies:
       array-includes: 3.1.8
       array.prototype.findlastindex: 1.2.5
@@ -12763,7 +12775,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.9.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.8.1(eslint-import-resolver-node@0.3.9)(eslint@9.9.0(jiti@1.21.6))
+      eslint-module-utils: 2.8.1(@typescript-eslint/parser@7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.3))(eslint-import-resolver-node@0.3.9)(eslint@9.9.0(jiti@1.21.6))
       hasown: 2.0.2
       is-core-module: 2.13.1
       is-glob: 4.0.3
@@ -12773,6 +12785,8 @@ snapshots:
       object.values: 1.2.0
       semver: 6.3.1
       tsconfig-paths: 3.15.0
+    optionalDependencies:
+      '@typescript-eslint/parser': 7.16.1(eslint@9.9.0(jiti@1.21.6))(typescript@5.5.3)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack

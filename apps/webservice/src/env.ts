@@ -22,6 +22,8 @@ export const env = createEnv({
     POSTGRES_URL: z.string().url(),
     GITHUB_BOT_CLIENT_ID: z.string().optional(),
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
+    GITHUB_BOT_APP_ID: z.string().optional(),
+    GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
   },
 
   /**
