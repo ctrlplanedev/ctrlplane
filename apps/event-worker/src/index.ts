@@ -1,7 +1,7 @@
 import { logger } from "@ctrlplane/logger";
 
-import { redis } from "./redis";
-import { createTargetScanWorker } from "./target-scan";
+import { redis } from "./redis.js";
+import { createTargetScanWorker } from "./target-scan/index.js";
 
 const targetScanWorker = createTargetScanWorker();
 

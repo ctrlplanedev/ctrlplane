@@ -1,5 +1,6 @@
 import type { TargetScanEvent } from "@ctrlplane/validators/events";
-import { Job, Queue, Worker } from "bullmq";
+import type { Job } from "bullmq";
+import { Queue, Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";

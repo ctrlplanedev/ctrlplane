@@ -1,5 +1,8 @@
-import { buildConflictUpdateColumns, sql, Tx } from "@ctrlplane/db";
-import { Target, target } from "@ctrlplane/db/schema";
+import type { Tx } from "@ctrlplane/db";
+import type { Target } from "@ctrlplane/db/schema";
+
+import { buildConflictUpdateColumns, sql } from "@ctrlplane/db";
+import { target } from "@ctrlplane/db/schema";
 
 export type UpsertTarget = Pick<
   Target,

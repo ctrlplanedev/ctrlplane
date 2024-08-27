@@ -1,17 +1,17 @@
+import type { TargetProviderGoogle, Workspace } from "@ctrlplane/db/schema";
 import { CoreV1Api } from "@kubernetes/client-node";
-import { Job } from "bullmq";
+// import { Job } from "bullmq";
 import _ from "lodash";
 
-import { TargetProviderGoogle, Workspace } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
+import type { UpsertTarget } from "./upsert.js";
 import {
   clusterToTarget,
   connectToCluster,
   getClusters,
   getGoogleClusterClient,
 } from "./google.js";
-import { UpsertTarget } from "./upsert.js";
 
 const log = logger.child({ label: "target-scan/gke" });
 
@@ -52,7 +52,7 @@ export const getGkeTargets = async (
   );
   const kubernetesNamespaceTargets = (
     await Promise.all(
-      clusters.flatMap(({ project, clusters }, idx) => {
+      clusters.flatMap(({ project, clusters }) => {
         return clusters.flatMap(async (cluster) => {
           if (cluster.name == null || cluster.location == null) return [];
 
