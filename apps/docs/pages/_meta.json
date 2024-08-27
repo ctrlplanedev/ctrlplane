@@ -15,5 +15,12 @@
   "variables": "Variables",
   "runbooks": "Runbooks",
   "advanced": "Advanced",
-  "glossary": "Glossary"
+  "glossary": "Glossary",
+
+  "-- Integrations": {
+    "type": "separator",
+    "title": "Integrations"
+  },
+  "github": "GitHub",
+  "google-cloud": "Google Cloud"
 }

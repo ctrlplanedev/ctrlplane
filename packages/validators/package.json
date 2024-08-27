@@ -5,8 +5,16 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./src/index.ts"
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./targets": {
+      "types": "./src/targets/index.ts",
+      "default": "./dist/targets/index.js"
+    },
+    "./events": {
+      "types": "./src/events/index.ts",
+      "default": "./dist/events/index.js"
     }
   },
   "license": "MIT",

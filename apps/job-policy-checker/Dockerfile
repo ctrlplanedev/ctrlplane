@@ -18,7 +18,6 @@ RUN pnpm add -g turbo
 COPY package.json package.json
 COPY pnpm-*.yaml .
 
-COPY tooling/tailwind/package.json ./tooling/tailwind/package.json
 COPY tooling/prettier/package.json ./tooling/prettier/package.json
 COPY tooling/eslint/package.json ./tooling/eslint/package.json
 COPY tooling/typescript/package.json ./tooling/typescript/package.json

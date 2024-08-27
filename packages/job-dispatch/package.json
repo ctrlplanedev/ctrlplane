@@ -13,7 +13,7 @@
       "default": "./dist/queue/index.js"
     }
   },
-  "license": "MIT",
+  "license": "",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",

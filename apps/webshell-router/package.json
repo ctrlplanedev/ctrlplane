@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
-    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "dev:new": "tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore"
   },
