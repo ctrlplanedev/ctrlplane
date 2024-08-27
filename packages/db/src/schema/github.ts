@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -45,19 +46,29 @@ export type GithubOrganization = InferSelectModel<typeof githubOrganization>;
 
 export const githubOrganizationInsert = createInsertSchema(githubOrganization);
 
-export const githubConfigFile = pgTable("github_config_file", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  organizationId: uuid("organization_id")
-    .notNull()
-    .references(() => githubOrganization.id, { onDelete: "cascade" }),
-  repositoryName: text("repository_name").notNull(),
-  branch: text("branch").notNull().default("main"),
-  path: text("path").notNull(),
-  name: text("name").notNull(),
-  workspaceId: uuid("workspace_id")
-    .notNull()
-    .references(() => workspace.id, { onDelete: "cascade" }),
-  lastSyncedAt: timestamp("last_synced_at", {
-    withTimezone: true,
-  }).defaultNow(),
-});
+export const githubConfigFile = pgTable(
+  "github_config_file",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => githubOrganization.id, { onDelete: "cascade" }),
+    repositoryName: text("repository_name").notNull(),
+    path: text("path").notNull(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    lastSyncedAt: timestamp("last_synced_at", {
+      withTimezone: true,
+    }).defaultNow(),
+  },
+  (t) => ({
+    unique: uniqueIndex("unique_organization_repository_path").on(
+      t.organizationId,
+      t.repositoryName,
+      t.path,
+    ),
+  }),
+);
+
+export type GithubConfigFile = InferSelectModel<typeof githubConfigFile>;

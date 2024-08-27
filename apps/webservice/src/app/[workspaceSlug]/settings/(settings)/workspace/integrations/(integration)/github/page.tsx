@@ -29,6 +29,11 @@ export default function GitHubIntegrationPage({
     enabled: session.status === "authenticated",
   });
 
+  const configFiles = api.github.configFile.list.useQuery(
+    workspace.data?.id ?? "",
+    { enabled: workspace.data != null },
+  );
+
   return (
     <div className="flex flex-col gap-12">
       <div className="flex items-center gap-4">
@@ -77,7 +82,7 @@ export default function GitHubIntegrationPage({
         loading={workspace.isLoading || githubUser.isLoading}
       />
 
-      <GithubConfigFileSync workspaceId={workspace.data?.id} />
+      <GithubConfigFileSync configFiles={configFiles.data ?? []} />
     </div>
   );
 }
