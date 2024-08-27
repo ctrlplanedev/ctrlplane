@@ -1,6 +1,5 @@
 import type { SQL, Tx } from "@ctrlplane/db";
 import ms from "ms";
-import { targetScanQueue } from "src/dispatch";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -28,6 +27,7 @@ import {
   workspace,
 } from "@ctrlplane/db/schema";
 
+import { targetScanQueue } from "../dispatch";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const labelGroupRouter = createTRPCRouter({
@@ -158,10 +158,11 @@ const targetProviderRouter = createTRPCRouter({
             .returning()
             .then(takeFirst);
 
+          console.log("queueing target scan");
           await targetScanQueue.add(
             tg.id,
             { targetProviderId: tg.id },
-            { repeat: { every: ms("5m") } },
+            { repeat: { every: ms("5m"), immediately: true } },
           );
 
           return { ...tg, config: tgConfig };
