@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "webservice.fullname" . }}
+  name: {{ include "event-worker.fullname" . }}
   labels:
-    {{- include "webservice.labels" . | nindent 4 }}
+    {{- include "event-worker.labels" . | nindent 4 }}
     {{- if .Values.deployment.labels -}}
     {{-   toYaml .Values.deployment.labels | nindent 4 }}
     {{- end }}
@@ -17,17 +17,17 @@ spec:
   selector:
     matchLabels:
       {{- include "ctrlplane.selectorLabels" $ | nindent 6 }}
-      {{- include "webservice.labels" . | nindent 6 }}
+      {{- include "event-worker.labels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "webservice.labels" . | nindent 8 }}
+        {{- include "event-worker.labels" . | nindent 8 }}
       annotations:
         {{- if .Values.pod.annotations -}}
         {{-   toYaml .Values.pod.annotations | nindent 8 }}
         {{- end }}
     spec:
-      serviceAccountName: {{ include "webservice.serviceAccountName" . }}
+      serviceAccountName: {{ include "event-worker.serviceAccountName" . }}
       {{- if .tolerations }}
       tolerations:
         {{- toYaml .tolerations | nindent 8 }}
@@ -36,7 +36,7 @@ spec:
       {{- include "ctrlplane.priorityClassName" . | nindent 6 }}
       {{- include "ctrlplane.podSecurityContext" .Values.pod.securityContext | nindent 6 }}
       containers:
-        - name: webservice
+        - name: event-worker
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - name: http
@@ -53,24 +53,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "ctrlplane.chart" . }}-connections
                   key: POSTGRES_URL
-            - name: AUTH_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "webservice.fullname" . }}
-                  key: AUTH_SECRET
             {{- include "ctrlplane.extraEnv" . | nindent 12 }}
             {{- include "ctrlplane.extraEnvFrom" (dict "root" $ "local" .) | nindent 12 }}
-          livenessProbe:
-            httpGet:
-              path: /api/healthz
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /api/healthz
-              port: http
-          startupProbe:
-            httpGet:
-              path: /api/healthz
-              port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

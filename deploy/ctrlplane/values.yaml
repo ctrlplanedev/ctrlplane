@@ -6,6 +6,18 @@ global:
     labels: {}
     annotations: {}
 
+  redis:
+    host: ""
+    port: 6379
+    password: ""
+
+  postgresql:
+    user: "ctrlplane"
+    password: "ctrlplane"
+    host: ""
+    port: 6379
+    database: "ctrlplane"
+
 webservice:
   install: true
 
