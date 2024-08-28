@@ -1,0 +1,34 @@
+# Installing Ctrlplane on Google Cloud Platform
+
+It is recommended to install Ctrlplane on a Google Cloud Platform (GCP) using
+the official Terraform/Opentofu module. You can customize it to accommodate your
+needs.
+
+If you cannot use the Terraform module, you can install Ctrlplane manually to a
+GKE cluster and use the [Helm Chart](/install/helm) based install.
+
+### Using Terraform
+
+You can find the terraform registry module
+[here](https://registry.terraform.io/modules/sizzldev/ctrlplane/google/latest),
+and the terraform repository
+[here](https://github.com/sizzldev/terraform-google-ctrlplane).
+
+This module creates a reslient and fault tolerant Ctrlplane installation using
+Google Kubernetes Engine (GKE) as the computing environment and the following
+services for storing data:
+
+- CloudSQL for PostgreSQL
+- Memorystore for Redis
+- Cloud Storage
+
+#### Usage
+
+```hcl
+module "ctrlplane" {
+  source  = "sizzldev/ctrlplane/google"
+  version = "x.x.x" // Use the latest version
+
+  namespace = "ctrlplane"
+}
+```

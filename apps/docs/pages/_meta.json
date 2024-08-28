@@ -23,5 +23,13 @@
   },
   "github": "GitHub",
   "google-cloud": "Google Cloud",
-  "kubernetes": "Kubernetes"
+  "kubernetes": "Kubernetes",
+
+  "-- Deploy": {
+    "type": "separator",
+    "title": "Install"
+  },
+  "requirements": "Requirements",
+  "install": "Install Methods",
+  "cloud-providers": "Cloud Providers"
 }

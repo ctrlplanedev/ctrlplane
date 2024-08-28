@@ -1,0 +1,30 @@
+# Configure
+
+## Configure charts using globals
+
+To reduce configuration duplication when installing our wrapper Helm chart,
+several configuration settings are available to be set in the global section of
+values.yaml. These global settings are used across several charts, while all
+other settings are scoped within their chart. See the [Helm
+documentation](https://helm.sh/docs/chart_template_guide/subcharts_and_globals/#global-chart-values)
+on globals for more information on how the global variables work.
+
+### Configure PostgreSQL settings
+
+```yaml
+global:
+  psql:
+    host: psql.example.com
+    port: 5432
+    database: ctrlplane
+    user: ctrlplane
+    password: password
+```
+
+| Name       | Type    | Default     | Description                                                     |
+| :--------- | :------ | :---------- | :-------------------------------------------------------------- |
+| `host`     | String  | `""`        | The hostname of the PostgreSQL server with the database to use. |
+| `database` | String  | `""`        | The name of the database to use on the PostgreSQL server.       |
+| `port`     | Integer | `5432`      | The port on which to connect to the PostgreSQL server.          |
+| `user`     | String  | `ctrlplane` | The username with which to authenticate to the database.        |
+| `password` | String  | `ctrlplane` | The password with which to authenticate to the database.        |
