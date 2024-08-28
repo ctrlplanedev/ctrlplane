@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
   database:
@@ -27,9 +27,32 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
 
+  webservice:
+    container_name: webservice
+    image: ctrlplane/webservice
+    environment:
+      AUTH_SECRET: "<auth-secret>"
+      DATABASE_URL: postgres://ctrlplane:ctrlplane@database:5432/ctrlplane
+      RABBITMQ_URL: amqp://ctrlplane:ctrlplane@rabbitmq:5672
+    depends_on:
+      - database
+      - rabbitmq
+    ports:
+      - "8080:8080"
+
+  job-policy-checker:
+    container_name: job-policy-checker
+    image: ctrlplane/my-job-policy-checker-image
+    environment:
+      POSTGRES_URL: postgres://ctrlplane:ctrlplane@database:5432/ctrlplane
+      RABBITMQ_URL: amqp://ctrlplane:ctrlplane@rabbitmq:5672
+    depends_on:
+      - database
+      - rabbitmq
+
   redis:
-    image: redis:latest
     container_name: ctrlplane-redis
+    image: redis:latest
     restart: always
     ports:
       - "6379:6379"
