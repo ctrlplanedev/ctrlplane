@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import isEqual from "lodash/isEqual";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -44,25 +46,23 @@ export const EditDeploymentDialog: React.FC<
   const update = api.deployment.update.useMutation();
   const [open, setOpen] = useState(false);
 
-  const form = useForm<DeploymentFormValues>({
+  const form = useForm({
+    resolver: zodResolver(deploymentForm),
     defaultValues: { id, name, slug, description },
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
-    const isDataChanged =
-      data.name !== name ||
-      data.slug !== slug ||
-      data.description !== description;
+    const isDataChanged = !isEqual(data, { name, slug, description });
 
     setOpen(false);
     if (!isDataChanged) return;
 
-    const updatedDeployment = await update.mutateAsync({
+    await update.mutateAsync({
       id: id,
       data,
     });
 
-    router.push(`./deployments/${updatedDeployment.slug}`);
+    router.refresh();
   });
 
   return (
@@ -122,13 +122,11 @@ export const EditDeploymentDialog: React.FC<
               render={() => (
                 <FormItem>
                   <FormLabel>ID</FormLabel>
-                  <FormControl>
-                    <Input
-                      value={id}
-                      readOnly
-                      className="bg-gray-800 text-gray-100"
-                    />
-                  </FormControl>
+                  <Input
+                    value={id}
+                    readOnly
+                    className="bg-gray-800 text-gray-100"
+                  />
                 </FormItem>
               )}
             />

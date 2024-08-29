@@ -1,6 +1,5 @@
 import type { TargetProviderGoogle, Workspace } from "@ctrlplane/db/schema";
 import { CoreV1Api } from "@kubernetes/client-node";
-// import { Job } from "bullmq";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";

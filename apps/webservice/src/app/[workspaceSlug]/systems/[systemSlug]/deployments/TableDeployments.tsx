@@ -162,12 +162,7 @@ const DeploymentTable: React.FC<{
                   <Button size="icon" variant="ghost">
                     <TbRocket />
                   </Button>
-                  <DeploymentOptionsDropdown
-                    id={r.id}
-                    name={r.name}
-                    slug={r.slug}
-                    description={r.description}
-                  />
+                  <DeploymentOptionsDropdown {...r} />
                 </div>
               </td>
 
