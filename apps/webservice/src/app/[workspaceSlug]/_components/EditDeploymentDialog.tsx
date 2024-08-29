@@ -52,15 +52,11 @@ export const EditDeploymentDialog: React.FC<
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
-    const isDataChanged = !isEqual(data, { name, slug, description });
-
     setOpen(false);
+    const isDataChanged = !isEqual(data, { name, slug, description });
     if (!isDataChanged) return;
 
-    await update.mutateAsync({
-      id: id,
-      data,
-    });
+    await update.mutateAsync({ id, data });
 
     router.refresh();
   });
