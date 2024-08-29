@@ -10,11 +10,9 @@ const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
 const shutdown = () => {
   logger.warn("Exiting...");
 
-  Promise.all([
-    targetScanWorker.close(),
-    dispatchExecutionJobWorker.close(),
-    redis.quit(),
-  ]);
+  targetScanWorker.close();
+  dispatchExecutionJobWorker.close();
+  redis.quit();
 
   process.exit(0);
 };
