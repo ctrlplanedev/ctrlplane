@@ -1,15 +1,26 @@
+import type { JobExecution } from "@ctrlplane/db/schema";
+import pRetry from "p-retry";
+
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { JobExecution, jobExecution } from "@ctrlplane/db/schema";
+import { jobExecution } from "@ctrlplane/db/schema";
+import { configSchema } from "@ctrlplane/validators/github";
+import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
-import { configSchema, convertStatus, getOctokit } from "../github-utils";
+import { convertStatus, getOctokit } from "../github-utils.js";
 
 export const syncGithubJobExecution = async (je: JobExecution) => {
   const config = je.jobAgentConfig;
   configSchema.parse(config);
 
   const octokit = getOctokit();
-  if (octokit == null) throw new Error("GitHub bot not configured");
+  if (octokit == null) {
+    await db.update(jobExecution).set({
+      status: JobExecutionStatus.InvalidJobAgent,
+      message: "GitHub bot not configured",
+    });
+    return;
+  }
 
   const runId = await pRetry(
     async () => {
@@ -29,7 +40,10 @@ export const syncGithubJobExecution = async (je: JobExecution) => {
   );
 
   if (runId == null) {
-    console.error(`Run ID not found for job execution ${jobExecution.id}`);
+    await db.update(jobExecution).set({
+      status: JobExecutionStatus.ExternalRunNotFound,
+      message: `Run ID not found for job execution ${je.id}`,
+    });
     return;
   }
 
@@ -39,18 +53,14 @@ export const syncGithubJobExecution = async (je: JobExecution) => {
     run_id: runId,
   });
 
-  const status = convertStatus(workflowState.status ?? "pending");
+  const status = convertStatus(
+    workflowState.status ?? JobExecutionStatus.Pending,
+  );
 
   await db
     .update(jobExecution)
     .set({ status })
     .where(eq(jobExecution.id, je.id));
 
-  return status === "completed";
+  return status === JobExecutionStatus.Completed;
 };
-function pRetry(
-  arg0: () => Promise<number | undefined>,
-  arg1: { retries: number; minTimeout: number },
-) {
-  throw new Error("Function not implemented.");
-}

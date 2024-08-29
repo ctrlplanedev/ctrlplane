@@ -186,7 +186,7 @@ export const GithubOrgConfig: React.FC<{
                   name: org.login,
                   config: {
                     installationId: org.installationId,
-                    login: org.login,
+                    owner: org.login,
                   },
                 });
 

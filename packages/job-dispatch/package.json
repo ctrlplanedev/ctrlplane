@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "^0.10.1",
     "date-fns": "^3.6.0",
     "lodash": "^4.17.21",

@@ -5,7 +5,7 @@ import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { jobAgent, jobExecution } from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
-import { JobAgentType } from "@ctrlplane/validators/job-agents";
+import { JobAgentType, JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
 import { redis } from "../redis.js";
 import { dispatchGithubJobExecution } from "./github.js";
@@ -24,12 +24,12 @@ export const createDispatchExecutionJobWorker = () =>
           if (je == null) return;
 
           try {
-            if (je.job_agent.type === JobAgentType.GithubApp)
+            if (je.job_agent.type === String(JobAgentType.GithubApp))
               dispatchGithubJobExecution(je.job_execution);
           } catch (error) {
             db.update(jobExecution)
               .set({
-                status: "failure",
+                status: JobExecutionStatus.Failure,
                 message: (error as Error).message,
               })
               .where(eq(jobExecution.id, je.job_execution.id));

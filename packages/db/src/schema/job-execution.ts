@@ -51,6 +51,8 @@ export const jobExecutionStatus = pgEnum("job_execution_status", [
   "pending",
   "failure",
   "invalid_job_agent",
+  "invalid_integration",
+  "external_run_not_found",
 ]);
 
 export const jobExecutionReason = pgEnum("job_execution_reason", [

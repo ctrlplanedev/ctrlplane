@@ -7,10 +7,10 @@ import { createTargetScanWorker } from "./target-scan/index.js";
 const targetScanWorker = createTargetScanWorker();
 const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
 
-const shutdown = async () => {
+const shutdown = () => {
   logger.warn("Exiting...");
 
-  await Promise.all([
+  Promise.all([
     targetScanWorker.close(),
     dispatchExecutionJobWorker.close(),
     redis.quit(),

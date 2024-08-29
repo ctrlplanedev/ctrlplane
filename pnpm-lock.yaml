@@ -58,70 +58,6 @@ importers:
         specifier: ^5.4.5
         version: 5.5.4
 
-  agents/github-app:
-    dependencies:
-      '@ctrlplane/api':
-        specifier: workspace:*
-        version: link:../../packages/api
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@octokit/auth-app':
-        specifier: ^7.1.0
-        version: 7.1.0
-      '@octokit/rest':
-        specifier: ^20.1.1
-        version: 20.1.1
-      '@t3-oss/env-core':
-        specifier: ^0.10.1
-        version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
-      '@trpc/client':
-        specifier: 11.0.0-rc.364
-        version: 11.0.0-rc.364(@trpc/server@11.0.0-rc.364)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:^
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:^
-        version: link:../../tooling/prettier
-      '@ctrlplane/tailwind-config':
-        specifier: workspace:*
-        version: link:../../tooling/tailwind
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      '@types/node':
-        specifier: ^20.12.9
-        version: 20.16.1
-      eslint:
-        specifier: 'catalog:'
-        version: 9.9.1(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      tsx:
-        specifier: ^4.11.0
-        version: 4.18.0
-      typescript:
-        specifier: ^5.4.5
-        version: 5.5.4
-
   apps/docs:
     dependencies:
       '@ctrlplane/ui':
@@ -819,6 +755,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../validators
       '@t3-oss/env-core':
         specifier: ^0.10.1
         version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
@@ -11623,7 +11562,6 @@ snapshots:
   '@swc/helpers@0.5.12':
     dependencies:
       tslib: 2.7.0
-      '@swc/counter': 0.1.3
 
   '@swc/helpers@0.5.5':
     dependencies:

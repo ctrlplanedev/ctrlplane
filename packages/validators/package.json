@@ -16,9 +16,13 @@
       "types": "./src/events/index.ts",
       "default": "./dist/events/index.js"
     },
-    "./job-agents": {
-      "types": "./src/job-agents/index.ts",
-      "default": "./dist/job-agents/index.js"
+    "./jobs": {
+      "types": "./src/jobs/index.ts",
+      "default": "./dist/jobs/index.js"
+    },
+    "./github": {
+      "types": "./src/github/index.ts",
+      "default": "./dist/github/index.js"
     }
   },
   "license": "MIT",

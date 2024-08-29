@@ -1,12 +1,16 @@
+import type { JobExecution } from "@ctrlplane/db/schema";
 import { Queue } from "bullmq";
 import ms from "ms";
 import pRetry from "p-retry";
 
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { jobExecution, JobExecution } from "@ctrlplane/db/schema";
+import { githubOrganization, jobExecution } from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
+import { configSchema } from "@ctrlplane/validators/github";
+import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
-import { configSchema, convertStatus, getOctokit } from "../github-utils.js";
+import { convertStatus, getOctokit } from "../github-utils.js";
 import { redis } from "../redis.js";
 
 const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
@@ -18,11 +22,41 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
 
   const config = je.jobAgentConfig;
   const parsed = configSchema.safeParse(config);
-  if (!parsed.success)
-    throw new Error(`Invalid job agent config for job execution ${je.id}`);
+  if (!parsed.success) {
+    await db.update(jobExecution).set({
+      status: JobExecutionStatus.InvalidJobAgent,
+      message: `Invalid job agent config for job execution ${je.id}: ${parsed.error.message}`,
+    });
+    return;
+  }
+
+  const ghOrg = await db
+    .select()
+    .from(githubOrganization)
+    .where(
+      and(
+        eq(githubOrganization.installationId, config.installationId),
+        eq(githubOrganization.organizationName, config.organizationName),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  if (ghOrg == null) {
+    await db.update(jobExecution).set({
+      status: JobExecutionStatus.InvalidIntegration,
+      message: `GitHub organization not found for job execution ${je.id}`,
+    });
+    return;
+  }
 
   const octokit = getOctokit();
-  if (octokit == null) throw new Error("GitHub bot not configured");
+  if (octokit == null) {
+    await db.update(jobExecution).set({
+      status: JobExecutionStatus.InvalidJobAgent,
+      message: "GitHub bot not configured",
+    });
+    return;
+  }
 
   const installationToken = (await octokit.auth({
     type: "installation",
@@ -33,7 +67,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     owner: config.login,
     repo: config.repo,
     workflow_id: config.workflowId,
-    ref: "main",
+    ref: ghOrg.branch,
     inputs: {
       job_execution_id: je.id.slice(0, 8),
     },
@@ -60,12 +94,17 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     { retries: 15, minTimeout: 1000 },
   );
 
-  if (runId == null)
-    throw new Error(`Run ID not found for job execution ${je.id}`);
+  if (runId == null) {
+    await db.update(jobExecution).set({
+      status: JobExecutionStatus.ExternalRunNotFound,
+      message: `Run ID not found for job execution ${je.id}`,
+    });
+    return;
+  }
 
   await db.update(jobExecution).set({
     externalRunId: runId.toString(),
-    status: convertStatus(status ?? "pending"),
+    status: convertStatus(status ?? JobExecutionStatus.Pending),
   });
 
   await jobExecutionSyncQueue.add(

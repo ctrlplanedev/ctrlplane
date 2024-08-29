@@ -1,23 +1,16 @@
+import type { JobExecutionStatus } from "@ctrlplane/db/schema";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
-import { z } from "zod";
 
-import { JobExecutionStatus } from "@ctrlplane/db/schema";
+import { JobExecutionStatus as JEStatus } from "@ctrlplane/validators/jobs";
 
-import { env } from "./config";
-
-export const configSchema = z.object({
-  installationId: z.number(),
-  login: z.string().min(1),
-  repo: z.string().min(1),
-  workflowId: z.number(),
-});
+import { env } from "./config.js";
 
 export const convertStatus = (status: string): JobExecutionStatus => {
-  if (status === "success" || status === "neutral") return "completed";
+  if (status === "success" || status === "neutral") return JEStatus.Completed;
   if (status === "queued" || status === "requested" || status === "waiting")
-    return "pending";
-  if (status === "timed_out" || status === "stale") return "failure";
+    return JEStatus.Pending;
+  if (status === "timed_out" || status === "stale") return JEStatus.Failure;
   return status as JobExecutionStatus;
 };
 

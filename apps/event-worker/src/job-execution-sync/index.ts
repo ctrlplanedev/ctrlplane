@@ -1,16 +1,16 @@
-import { Job, Queue, Worker } from "bullmq";
+import type { JobExecution } from "@ctrlplane/db/schema";
+import type { DispatchJobExecutionEvent } from "@ctrlplane/validators/events";
+import type { Job } from "bullmq";
+import { Queue, Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { jobAgent, JobExecution, jobExecution } from "@ctrlplane/db/schema";
-import {
-  Channel,
-  DispatchJobExecutionEvent,
-} from "@ctrlplane/validators/events";
-import { JobAgentType } from "@ctrlplane/validators/job-agents";
+import { jobAgent, jobExecution } from "@ctrlplane/db/schema";
+import { Channel } from "@ctrlplane/validators/events";
+import { JobAgentType, JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
-import { redis } from "../redis";
-import { syncGithubJobExecution } from "./github";
+import { redis } from "../redis.js";
+import { syncGithubJobExecution } from "./github.js";
 
 const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
   connection: redis,
@@ -23,7 +23,8 @@ const removeJobExecutionSyncJob = (job: Job) =>
 type SyncFunction = (je: JobExecution) => Promise<boolean | undefined>;
 
 const getSyncFunction = (agentType: string): SyncFunction | null => {
-  if (agentType === JobAgentType.GithubApp) return syncGithubJobExecution;
+  if (agentType === String(JobAgentType.GithubApp))
+    return syncGithubJobExecution;
   return null;
 };
 
@@ -49,7 +50,7 @@ export const createJobExecutionSyncWorker = () => {
             );
           } catch (error) {
             db.update(jobExecution).set({
-              status: "failure",
+              status: JobExecutionStatus.Failure,
               message: (error as Error).message,
             });
           }
