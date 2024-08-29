@@ -1,4 +1,4 @@
-import colors from "@colors/colors/safe";
+import colors from "@colors/colors/safe.js";
 import * as winston from "winston";
 
 const { LOG_LEVEL, NODE_ENV } = process.env;
