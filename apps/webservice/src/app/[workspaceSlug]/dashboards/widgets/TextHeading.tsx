@@ -26,7 +26,7 @@ export const WidgetHeading: Widget<{
   },
   Component: ({ config, isEditMode, onDelete, updateConfig }) => {
     return (
-      <div className="flex h-full w-full flex-col  px-2 py-2">
+      <div className="flex h-full w-full flex-col px-2 py-2">
         <div className="grow" />
 
         <div className="flex items-center">

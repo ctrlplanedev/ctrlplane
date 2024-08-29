@@ -53,7 +53,7 @@ export const release = pgTable(
     notes: text("notes").default(""),
     deploymentId: uuid("deployment_id")
       .notNull()
-      .references(() => deployment.id),
+      .references(() => deployment.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({ unq: uniqueIndex().on(t.deploymentId, t.version) }),

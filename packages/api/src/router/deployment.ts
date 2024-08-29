@@ -148,6 +148,20 @@ export const deploymentRouter = createTRPCRouter({
         ),
     ),
 
+  delete: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) =>
+        ctx.accessQuery().workspace.system.deployment.id(input),
+    })
+    .input(z.string().uuid())
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .delete(deployment)
+        .where(eq(deployment.id, input))
+        .returning()
+        .then(takeFirst),
+    ),
+
   bySlug: protectedProcedure
     .meta({
       access: ({ ctx, input }) =>

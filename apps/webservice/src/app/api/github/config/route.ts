@@ -1,8 +1,8 @@
+import type { PushEvent } from "@octokit/webhooks-types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
-import type { PushEvent } from "@octokit/webhooks-types";
 import * as yaml from "js-yaml";
 import { isPresent } from "ts-is-present";
 
