@@ -1,15 +1,20 @@
 import { logger } from "@ctrlplane/logger";
 
+import { createDispatchExecutionJobWorker } from "./job-execution-dispatch";
 import { redis } from "./redis";
 import { createTargetScanWorker } from "./target-scan";
 
 const targetScanWorker = createTargetScanWorker();
+const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
 
-const shutdown = () => {
+const shutdown = async () => {
   logger.warn("Exiting...");
 
-  targetScanWorker.close();
-  redis.quit();
+  await Promise.all([
+    targetScanWorker.close(),
+    dispatchExecutionJobWorker.close(),
+    redis.quit(),
+  ]);
 
   process.exit(0);
 };
