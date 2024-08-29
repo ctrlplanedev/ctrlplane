@@ -1,5 +1,3 @@
-import { Target } from "@ctrlplane/db/schema";
-
 export function omitNullUndefined(obj: object) {
   return Object.entries(obj).reduce<Record<string, string>>(
     (acc, [key, value]) => {

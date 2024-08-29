@@ -16,8 +16,8 @@ export const JobAgentMissingAlert: React.FC = () => {
         Job agent not configured
       </AlertTitle>
       <AlertDescription>
-        Job agents are used dispatch job executions to the correct service.
-        Without a agent new releases will not take any action.
+        Job agents are used to dispatch job executions to the correct service.
+        Without an agent new releases will not take any action.
       </AlertDescription>
       <Link
         className="block"

@@ -1,8 +1,8 @@
 import { logger } from "@ctrlplane/logger";
 
-import { createDispatchExecutionJobWorker } from "./job-execution-dispatch";
-import { redis } from "./redis";
-import { createTargetScanWorker } from "./target-scan";
+import { createDispatchExecutionJobWorker } from "./job-execution-dispatch/index.js";
+import { redis } from "./redis.js";
+import { createTargetScanWorker } from "./target-scan/index.js";
 
 const targetScanWorker = createTargetScanWorker();
 const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();

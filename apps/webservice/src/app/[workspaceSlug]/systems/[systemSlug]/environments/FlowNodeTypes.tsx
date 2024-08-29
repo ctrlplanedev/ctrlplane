@@ -39,7 +39,7 @@ const PolicyNode: React.FC<NodeProps> = ({ id, data }) => {
         onMouseDownCapture={() => setSelectedNodeId(id)}
       >
         <div className={cn("flex items-center justify-center gap-1")}>
-          <TbCircleCheck className=" text-teal-400" />
+          <TbCircleCheck className="text-teal-400" />
           {isRegex && <TbRegex className="text-pink-400" />}
           {isSemver && <TbVersions className="text-pink-500" />}
           {isManual ? (

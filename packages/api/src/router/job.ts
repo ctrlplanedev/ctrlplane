@@ -206,8 +206,13 @@ const rolloutDateFromJobConfig = (
 const jobAgentRouter = createTRPCRouter({
   byWorkspaceId: publicProcedure
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) =>
+    .query(({ ctx, input }) =>
       ctx.db.select().from(jobAgent).where(eq(jobAgent.workspaceId, input)),
+    ),
+  byType: publicProcedure
+    .input(z.string())
+    .query(({ ctx, input }) =>
+      ctx.db.select().from(jobAgent).where(eq(jobAgent.type, input)),
     ),
   create: protectedProcedure
     .input(createJobAgent)

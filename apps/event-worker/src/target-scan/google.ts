@@ -1,6 +1,6 @@
 import type { ClusterManagerClient } from "@google-cloud/container";
+import type { google } from "@google-cloud/container/build/protos/protos.js";
 import Container from "@google-cloud/container";
-import { google } from "@google-cloud/container/build/protos/protos.js";
 import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth } from "google-auth-library";
 import { SemVer } from "semver";

@@ -1,4 +1,4 @@
-import { SiAmazonaws, SiGooglecloud, SiMicrosoftazure } from "react-icons/si";
+import { SiAmazon, SiGooglecloud, SiMicrosoftazure } from "react-icons/si";
 import { TbApi, TbCaretDownFilled } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -41,7 +41,7 @@ export const TargetProviderSelectCard: React.FC<{
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2">
-              <SiAmazonaws />
+              <SiAmazon />
               AWS
               <TbCaretDownFilled className="text-xs text-neutral-500" />
             </Button>

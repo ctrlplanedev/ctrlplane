@@ -32,6 +32,6 @@
     "prettier": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "^7.8.0"
+    "typescript-eslint": "catalog:"
   }
 }

@@ -222,7 +222,7 @@ export default function VariablePage({
 
             <Table className="w-full">
               <TableHeader className="text-left">
-                <TableRow className="text-sm ">
+                <TableRow className="text-sm">
                   <TableHead className="p-3">Keys</TableHead>
                   <TableHead className="p-3">Value</TableHead>
                   <TableHead />
