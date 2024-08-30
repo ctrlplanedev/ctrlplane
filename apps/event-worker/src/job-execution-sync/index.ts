@@ -28,7 +28,7 @@ const getSyncFunction = (agentType: string): SyncFunction | null => {
   return null;
 };
 
-export const createJobExecutionSyncWorker = () => {
+export const createJobExecutionSyncWorker = () =>
   new Worker<DispatchJobExecutionEvent>(
     Channel.JobExecutionSync,
     (job) =>
@@ -62,4 +62,3 @@ export const createJobExecutionSyncWorker = () => {
       concurrency: 10,
     },
   );
-};
