@@ -31,7 +31,8 @@ export default function JoinPage({
   const workspace =
     api.invite.workspace.fromInviteToken.useQuery(workspaceInviteToken);
 
-  const workspaceMemberCreate = api.workspace.members.create.useMutation();
+  const workspaceMemberCreate =
+    api.workspace.members.createFromInviteToken.useMutation();
 
   const handleJoinWorkspace = () => {
     workspaceMemberCreate
