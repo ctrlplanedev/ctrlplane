@@ -127,6 +127,8 @@ const statusColor: Record<JobExecutionStatus | "configured", string> = {
   failure: colors.red[400],
   invalid_job_agent: colors.red[400],
   configured: colors.gray[400],
+  invalid_integration: colors.red[400],
+  external_run_not_found: colors.red[400],
 };
 
 const getStatusColor = (status: string) =>

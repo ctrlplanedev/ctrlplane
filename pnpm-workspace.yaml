@@ -2,7 +2,6 @@ packages:
   - apps/*
   - packages/*
   - tooling/*
-  - agents/*
   - providers/*
 
 catalog:
