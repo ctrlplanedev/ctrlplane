@@ -1,4 +1,4 @@
-import { pgTable, uuid } from "drizzle-orm/pg-core";
+import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { workspaceMember } from "./workspace.js";
 
@@ -8,4 +8,5 @@ export const workspaceInviteLink = pgTable("workspace_invite_link", {
     .notNull()
     .references(() => workspaceMember.id, { onDelete: "cascade" }),
   token: uuid("token").notNull().unique().defaultRandom(),
+  expiresAt: timestamp("expires_at").notNull(),
 });

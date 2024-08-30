@@ -2,7 +2,7 @@
 
 import type { User, WorkspaceMember } from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -11,6 +11,7 @@ import {
 } from "@tanstack/react-table";
 import { capitalCase } from "change-case";
 import { TbCheck, TbChevronDown, TbCopy, TbDots } from "react-icons/tb";
+import { v4 } from "uuid";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button } from "@ctrlplane/ui/button";
@@ -41,31 +42,33 @@ interface Member {
 
 const InviteLinkSection: React.FC<{
   sessionMember?: Member;
-}> = ({ sessionMember }) => {
-  const inviteLink = api.invite.workspace.link.byWorkspaceMemberId.useQuery(
-    sessionMember?.workspace_member.id ?? "",
-    { enabled: sessionMember != null },
-  );
-  const { mutateAsync } = api.invite.workspace.link.create.useMutation();
+  workspaceSlug: string;
+  inviteLink?: string;
+}> = ({ sessionMember, workspaceSlug, inviteLink }) => {
+  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const utils = api.useUtils();
+  const { mutateAsync } = api.invite.workspace.link.create.useMutation({
+    onSuccess: () =>
+      utils.invite.workspace.link.byWorkspaceMemberId.invalidate(),
+  });
   const [clickedCopy, setClickedCopy] = useState(false);
 
-  useEffect(() => {
-    if (inviteLink.isSuccess && inviteLink.data == null)
-      mutateAsync(sessionMember?.workspace_member.id ?? "").then(() =>
-        utils.invite.workspace.link.byWorkspaceMemberId.invalidate(
-          sessionMember?.workspace_member.id ?? "",
-        ),
-      );
-  }, [mutateAsync, inviteLink, sessionMember?.workspace_member.id, utils]);
+  const [token] = useState(inviteLink ?? v4());
+  const link = `${env.NEXT_PUBLIC_BASE_URL}/join/${token}`;
 
-  const link = `${env.NEXT_PUBLIC_BASE_URL}/join/${inviteLink.data?.token ?? ""}`;
-
-  const handleCopyClick = () =>
+  const handleCopyClick = () => {
     navigator.clipboard.writeText(link).then(() => {
       setClickedCopy(true);
       setTimeout(() => setClickedCopy(false), 1000);
     });
+
+    if (inviteLink == null && workspace.data != null && sessionMember != null)
+      mutateAsync({
+        workspaceId: workspace.data.id,
+        workspaceMemberId: sessionMember.workspace_member.id,
+        token,
+      });
+  };
 
   return (
     <div className="space-y-4">
@@ -91,6 +94,10 @@ const AddMembersDialog: React.FC<{
   sessionMember?: Member;
 }> = ({ sessionMember, workspaceSlug }) => {
   const [inviteMode, setInviteMode] = useState<"email" | "link">("email");
+  const inviteLink = api.invite.workspace.link.byWorkspaceMemberId.useQuery(
+    sessionMember?.workspace_member.id ?? "",
+    { enabled: sessionMember != null },
+  );
 
   return (
     <Dialog>
@@ -103,7 +110,11 @@ const AddMembersDialog: React.FC<{
         </DialogHeader>
 
         {inviteMode === "link" ? (
-          <InviteLinkSection sessionMember={sessionMember} />
+          <InviteLinkSection
+            sessionMember={sessionMember}
+            workspaceSlug={workspaceSlug}
+            inviteLink={inviteLink.data?.token}
+          />
         ) : (
           <div>email</div>
         )}

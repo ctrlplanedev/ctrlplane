@@ -614,6 +614,9 @@ importers:
       bullmq:
         specifier: ^5.12.10
         version: 5.12.10
+      date-fns:
+        specifier: ^3.6.0
+        version: 3.6.0
       google-auth-library:
         specifier: ^9.13.0
         version: 9.14.0
