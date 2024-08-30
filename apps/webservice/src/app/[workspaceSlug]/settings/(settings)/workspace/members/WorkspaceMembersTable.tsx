@@ -62,13 +62,12 @@ const InviteLinkSection: React.FC<{
       setTimeout(() => setClickedCopy(false), 1000);
     });
 
-    if (inviteLink == null && workspace.data != null && sessionMember != null) {
+    if (inviteLink == null && workspace.data != null && sessionMember != null)
       mutateAsync({
         workspaceId: workspace.data.id,
         workspaceMemberId: sessionMember.workspace_member.id,
         token,
       });
-    }
   };
 
   return (
