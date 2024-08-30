@@ -54,8 +54,7 @@ const InviteLinkSection: React.FC<{
   const [clickedCopy, setClickedCopy] = useState(false);
 
   const [token] = useState(inviteLink ?? v4());
-
-  const link = `${env.BASE_URL}/join/${token}`;
+  const link = `${env.NEXT_PUBLIC_BASE_URL}/join/${token}`;
 
   const handleCopyClick = () => {
     navigator.clipboard.writeText(link).then(() => {

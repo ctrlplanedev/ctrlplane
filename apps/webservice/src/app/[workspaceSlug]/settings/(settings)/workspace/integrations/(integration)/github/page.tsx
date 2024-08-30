@@ -13,7 +13,7 @@ import { GithubConfigFileSync } from "./GithubConfigFile";
 import { GithubOrgConfig } from "./GithubOrgConfig";
 
 const githubAuthUrl = (userId?: string, workspaceSlug?: string) =>
-  `${env.GITHUB_URL}/login/oauth/authorize?response_type=code&client_id=${env.NEXT_PUBLIC_GITHUB_BOT_CLIENT_ID}&redirect_uri=${env.BASE_URL}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
+  `${env.NEXT_PUBLIC_GITHUB_URL}/login/oauth/authorize?response_type=code&client_id=${env.NEXT_PUBLIC_GITHUB_BOT_CLIENT_ID}&redirect_uri=${env.NEXT_PUBLIC_BASE_URL}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
 
 export default function GitHubIntegrationPage({
   params,

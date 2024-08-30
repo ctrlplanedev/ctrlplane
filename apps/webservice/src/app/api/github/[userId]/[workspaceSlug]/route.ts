@@ -15,7 +15,7 @@ export const GET = async (
   const { userId, workspaceSlug } = params;
 
   const tokenResponse = await fetch(
-    `${env.GITHUB_URL}/login/oauth/access_token`,
+    `${env.NEXT_PUBLIC_GITHUB_URL}/login/oauth/access_token`,
     {
       method: "POST",
       headers: {
@@ -53,6 +53,6 @@ export const GET = async (
   });
 
   return NextResponse.redirect(
-    `${env.BASE_URL}/${workspaceSlug}/settings/workspace/integrations/github`,
+    `${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}/settings/workspace/integrations/github`,
   );
 };

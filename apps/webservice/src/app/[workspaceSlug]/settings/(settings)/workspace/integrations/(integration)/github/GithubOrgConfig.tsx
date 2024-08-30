@@ -138,7 +138,7 @@ export const GithubOrgConfig: React.FC<{
 
                       <CommandItem>
                         <a
-                          href={`${env.GITHUB_URL}/apps/${env.GITHUB_BOT_NAME}/installations/select_target?target_id=${githubUser?.githubUserId}?redirect_uri=${env.BASE_URL}/${workspaceSlug}/job-agents/add`}
+                          href={`${env.NEXT_PUBLIC_GITHUB_URL}/apps/${env.NEXT_PUBLIC_GITHUB_BOT_NAME}/installations/select_target?target_id=${githubUser?.githubUserId}?redirect_uri=${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}/job-agents/add`}
                           className="flex items-center gap-2"
                         >
                           <TbPlus />
@@ -254,7 +254,7 @@ export const GithubOrgConfig: React.FC<{
                   <DropdownMenuContent>
                     <DropdownMenuItem>
                       <a
-                        href={`${env.GITHUB_URL}/organizations/${github_organization.organizationName}/settings/installations/${github_organization.installationId}`}
+                        href={`${env.NEXT_PUBLIC_GITHUB_URL}/organizations/${github_organization.organizationName}/settings/installations/${github_organization.installationId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => {

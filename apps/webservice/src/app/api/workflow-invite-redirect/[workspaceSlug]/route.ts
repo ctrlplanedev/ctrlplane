@@ -35,10 +35,12 @@ export const GET = async (
         "duplicate key value",
       );
       if (isDuplicateKeyError)
-        return NextResponse.redirect(`${env.BASE_URL}/${workspaceSlug}`);
+        return NextResponse.redirect(
+          `${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}`,
+        );
 
       throw e;
     });
 
-  return NextResponse.redirect(`${env.BASE_URL}/${workspaceSlug}`);
+  return NextResponse.redirect(`${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}`);
 };
