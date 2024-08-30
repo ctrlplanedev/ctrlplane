@@ -36,6 +36,13 @@
       "when": 1725038558591,
       "tag": "0004_public_luminals",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1725049430244,
+      "tag": "0005_thick_odin",
+      "breakpoints": true
     }
   ]
 }

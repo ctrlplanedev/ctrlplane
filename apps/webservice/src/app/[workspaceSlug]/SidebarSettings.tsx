@@ -43,6 +43,9 @@ const AccountSettings: React.FC<{ workspaceSlug: string }> = ({
         <SidebarLink href={`/${workspaceSlug}/settings/account/profile`}>
           Profile
         </SidebarLink>
+        <SidebarLink href={`/${workspaceSlug}/settings/account/api`}>
+          API
+        </SidebarLink>
       </div>
     </div>
   );

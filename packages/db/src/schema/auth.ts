@@ -70,3 +70,16 @@ export const session = pgTable("session", {
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),
 }));
+
+export const userApiKey = pgTable("user_api_key", {
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, {
+      onDelete: "cascade",
+    }),
+  name: varchar("name", { length: 255 }).notNull(),
+  keyPreview: text("key_preview").notNull(),
+  keyHash: text("key_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+});
