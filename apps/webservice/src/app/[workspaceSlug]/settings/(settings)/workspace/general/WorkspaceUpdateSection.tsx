@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -28,20 +28,25 @@ export const WorkspaceUpdateSection: React.FC = () => {
 
   const form = useForm({
     schema: updateWorkspace,
-    defaultValues: {
-      name: "",
-      slug: "",
-    },
+    defaultValues: { name: "", slug: "" },
   });
 
   useEffect(() => {
     const { data } = workspace;
     if (data == null) return;
+    if (form.getValues("name") !== "") return;
     form.setValue("name", data.name);
     form.setValue("slug", data.slug);
   }, [form, workspace]);
 
-  const onSubmit = form.handleSubmit(() => {});
+  const router = useRouter();
+  const update = api.workspace.update.useMutation();
+  const onSubmit = form.handleSubmit(async (data) => {
+    if (workspace.data == null) return;
+    await update.mutateAsync({ id: workspace.data.id, data });
+    router.push(`/${data.slug}/settings/workspace/general`);
+    router.refresh();
+  });
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-4">
