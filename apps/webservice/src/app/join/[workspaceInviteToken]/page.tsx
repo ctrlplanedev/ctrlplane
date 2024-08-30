@@ -41,12 +41,7 @@ export default function JoinPage({
         userId: session.data?.user.id ?? "",
       })
       .then(() => router.push(`/${workspace.data?.slug}`))
-      .catch((e) => {
-        const message = String(e.message);
-        const isDuplicateKeyError = message.includes("duplicate key value");
-        if (!isDuplicateKeyError || workspace.data == null) throw e;
-        router.push(`/${workspace.data.slug}`);
-      });
+      .catch(notFound);
   };
 
   if (workspace.isSuccess && workspace.data == null) return notFound();
