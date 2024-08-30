@@ -59,7 +59,7 @@ const InviteLinkSection: React.FC<{
       );
   }, [mutateAsync, inviteLink, sessionMember?.workspace_member.id, utils]);
 
-  const link = `${env.BASE_URL}/join/${inviteLink.data?.token ?? ""}`;
+  const link = `${env.NEXT_PUBLIC_BASE_URL}/join/${inviteLink.data?.token ?? ""}`;
 
   const handleCopyClick = () =>
     navigator.clipboard.writeText(link).then(() => {
