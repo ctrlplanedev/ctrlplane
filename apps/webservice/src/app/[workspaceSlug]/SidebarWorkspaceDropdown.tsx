@@ -27,6 +27,7 @@ export const SidebarWorkspaceDropdown: React.FC = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspaces = api.workspace.list.useQuery();
   const workspace = workspaces.data?.find((w) => w.slug === workspaceSlug);
+  const update = api.profile.update.useMutation();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -55,7 +56,12 @@ export const SidebarWorkspaceDropdown: React.FC = () => {
                 {data?.user.email}
               </DropdownMenuLabel>
               {workspaces.data?.map((ws) => (
-                <Link key={ws.id} href={`/${ws.slug}`} passHref>
+                <Link
+                  key={ws.id}
+                  href={`/${ws.slug}`}
+                  passHref
+                  onClick={() => update.mutate({ activeWorkspaceId: ws.id })}
+                >
                   <DropdownMenuItem>
                     {ws.name}
                     {ws.id === workspace?.id && (

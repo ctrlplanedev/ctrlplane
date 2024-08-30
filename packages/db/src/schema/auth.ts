@@ -1,5 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   pgTable,
@@ -10,12 +10,17 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { workspace } from "./workspace.js";
+
 export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
   emailVerified: timestamp("emailVerified", { withTimezone: true }),
   image: varchar("image", { length: 255 }),
+  activeWorkspaceId: uuid("active_workspace_id")
+    .references(() => workspace.id, { onDelete: "set null" })
+    .default(sql`null`),
 });
 
 export type User = InferSelectModel<typeof user>;

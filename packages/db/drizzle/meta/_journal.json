@@ -29,6 +29,13 @@
       "when": 1724997289931,
       "tag": "0003_cloudy_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1725038558591,
+      "tag": "0004_public_luminals",
+      "breakpoints": true
     }
   ]
 }

@@ -149,6 +149,19 @@ export const workspaceRouter = createTRPCRouter({
         .then(takeFirstOrNull),
     ),
 
+  byId: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
+    })
+    .input(z.string())
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(workspace)
+        .where(eq(workspace.id, input))
+        .then(takeFirstOrNull),
+    ),
+
   members: membersRouter,
   integrations: integrationsRouter,
 });

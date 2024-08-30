@@ -9,5 +9,11 @@ export default async function SystemPage() {
   if (session == null) redirect("/login");
   const workspaces = await api.workspace.list();
   if (workspaces.length === 0) redirect("/workspaces/create");
+  const user = await api.user.viewer();
+
+  if (user.activeWorkspaceId != null) {
+    const workspace = await api.workspace.byId(user.activeWorkspaceId);
+    if (workspace != null) redirect(`/${workspace.slug}`);
+  }
   redirect(`/${workspaces[0]!.slug}`);
 }
