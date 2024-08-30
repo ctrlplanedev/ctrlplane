@@ -28,7 +28,7 @@ export default function WorkspaceSettingMembersPage({
   if (!workspace.isLoading && workspace.data == null) return notFound();
 
   return (
-    <>
+    <div className="container mx-auto max-w-2xl space-y-8">
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Members</h1>
         <p className="text-sm text-muted-foreground">
@@ -62,6 +62,6 @@ export default function WorkspaceSettingMembersPage({
         </div>
         <Button variant="secondary">Export CSV</Button>
       </div>
-    </>
+    </div>
   );
 }

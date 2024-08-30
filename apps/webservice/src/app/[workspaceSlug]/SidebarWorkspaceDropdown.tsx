@@ -40,11 +40,7 @@ export const SidebarWorkspaceDropdown: React.FC = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-neutral-900">
-        <Link href={`/${workspaceSlug}/settings/account/preferences`}>
-          <DropdownMenuItem>Preferences</DropdownMenuItem>
-        </Link>
-        <DropdownMenuSeparator />
-        <Link href={`/${workspaceSlug}/settings/overview`}>
+        <Link href={`/${workspaceSlug}/settings/workspace/overview`}>
           <DropdownMenuItem>Workspace settings</DropdownMenuItem>
         </Link>
         <Link href={`/${workspaceSlug}/settings/workspace/members`}>
