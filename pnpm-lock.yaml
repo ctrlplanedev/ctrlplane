@@ -339,6 +339,9 @@ importers:
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
+      bullmq:
+        specifier: ^5.12.10
+        version: 5.12.10
       change-case:
         specifier: ^5.4.4
         version: 5.4.4
@@ -360,6 +363,9 @@ importers:
       immer:
         specifier: ^10.1.1
         version: 10.1.1
+      ioredis:
+        specifier: ^5.4.1
+        version: 5.4.1
       jsonschema:
         specifier: ^1.4.1
         version: 1.4.1
