@@ -31,7 +31,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { env } from "~/env";
 import { api } from "~/trpc/react";
 
 interface GithubOrgConfigProps {

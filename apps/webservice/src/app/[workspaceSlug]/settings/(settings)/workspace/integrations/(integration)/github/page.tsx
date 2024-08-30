@@ -7,7 +7,6 @@ import { SiGithub } from "react-icons/si";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
-import { env } from "~/env";
 import { api } from "~/trpc/react";
 import { GithubConfigFileSync } from "./GithubConfigFile";
 import { GithubOrgConfig } from "./GithubOrgConfig";

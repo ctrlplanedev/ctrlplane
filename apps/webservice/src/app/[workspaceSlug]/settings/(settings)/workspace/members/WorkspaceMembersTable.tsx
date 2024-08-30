@@ -32,7 +32,6 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
-import { env } from "~/env";
 import { api } from "~/trpc/react";
 
 interface Member {
