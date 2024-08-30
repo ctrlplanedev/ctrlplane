@@ -3,8 +3,11 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
+    BASE_URL: z.string().url(),
     REDIS_URL: z.string(),
 
+    GITHUB_URL: z.string().url().optional(),
+    GITHUB_BOT_NAME: z.string().min(1).optional(),
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     GITHUB_BOT_CLIENT_ID: z.string().optional(),
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),

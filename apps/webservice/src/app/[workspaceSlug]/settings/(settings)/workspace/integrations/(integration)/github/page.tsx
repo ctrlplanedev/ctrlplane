@@ -12,8 +12,14 @@ import { api } from "~/trpc/react";
 import { GithubConfigFileSync } from "./GithubConfigFile";
 import { GithubOrgConfig } from "./GithubOrgConfig";
 
-const githubAuthUrl = (userId?: string, workspaceSlug?: string) =>
-  `${env.NEXT_PUBLIC_GITHUB_URL}/login/oauth/authorize?response_type=code&client_id=${env.NEXT_PUBLIC_GITHUB_BOT_CLIENT_ID}&redirect_uri=${env.NEXT_PUBLIC_BASE_URL}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
+const githubAuthUrl = (
+  baseUrl: string,
+  githubUrl: string,
+  clientId: string,
+  userId?: string,
+  workspaceSlug?: string,
+) =>
+  `${githubUrl}/login/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${baseUrl}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
 
 export default function GitHubIntegrationPage({
   params,
@@ -24,6 +30,15 @@ export default function GitHubIntegrationPage({
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const session = useSession();
   const router = useRouter();
+  const baseUrl = api.runtime.baseUrl.useQuery();
+
+  const githubUrl = api.runtime.github.url.useQuery();
+  const githubBotName = api.runtime.github.bot.name.useQuery();
+  const githubBotClientId = api.runtime.github.bot.clientId.useQuery();
+  const isGithubConfigured =
+    githubUrl.data != null &&
+    githubBotName.data != null &&
+    githubBotClientId.data != null;
 
   const githubUser = api.github.user.byUserId.useQuery(session.data!.user.id, {
     enabled: session.status === "authenticated",
@@ -64,7 +79,15 @@ export default function GitHubIntegrationPage({
           <Button
             variant="secondary"
             onClick={() =>
-              router.push(githubAuthUrl(session.data!.user.id, workspaceSlug))
+              router.push(
+                githubAuthUrl(
+                  baseUrl.data ?? "",
+                  githubUrl.data ?? "",
+                  githubBotClientId.data ?? "",
+                  session.data!.user.id,
+                  workspaceSlug,
+                ),
+              )
             }
           >
             Connect
@@ -75,12 +98,19 @@ export default function GitHubIntegrationPage({
         )}
       </Card>
 
-      <GithubOrgConfig
-        githubUser={githubUser.data}
-        workspaceId={workspace.data?.id}
-        workspaceSlug={workspaceSlug}
-        loading={workspace.isLoading || githubUser.isLoading}
-      />
+      {isGithubConfigured && (
+        <GithubOrgConfig
+          githubUser={githubUser.data}
+          workspaceId={workspace.data?.id}
+          workspaceSlug={workspaceSlug}
+          loading={workspace.isLoading || githubUser.isLoading}
+          githubConfig={{
+            url: githubUrl.data ?? "",
+            botName: githubBotName.data ?? "",
+            clientId: githubBotClientId.data ?? "",
+          }}
+        />
+      )}
 
       <GithubConfigFileSync configFiles={configFiles.data ?? []} />
     </div>

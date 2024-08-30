@@ -34,12 +34,25 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { env } from "~/env";
 import { api } from "~/trpc/react";
 
-export const GithubOrgConfig: React.FC<{
+interface GithubOrgConfigProps {
   githubUser?: GithubUser | null;
   workspaceSlug?: string;
   workspaceId?: string;
   loading: boolean;
-}> = ({ githubUser, workspaceSlug, workspaceId, loading }) => {
+  githubConfig: {
+    url: string;
+    botName: string;
+    clientId: string;
+  };
+}
+
+export const GithubOrgConfig: React.FC<GithubOrgConfigProps> = ({
+  githubUser,
+  workspaceSlug,
+  workspaceId,
+  loading,
+  githubConfig,
+}) => {
   const githubOrgs = api.github.organizations.byGithubUserId.useQuery(
     githubUser?.githubUserId ?? 0,
     { enabled: !loading && githubUser != null },
@@ -57,6 +70,8 @@ export const GithubOrgConfig: React.FC<{
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
+
+  const baseUrl = api.runtime.baseUrl.useQuery();
 
   return (
     <Card className="rounded-md">
@@ -138,7 +153,7 @@ export const GithubOrgConfig: React.FC<{
 
                       <CommandItem>
                         <a
-                          href={`${env.NEXT_PUBLIC_GITHUB_URL}/apps/${env.NEXT_PUBLIC_GITHUB_BOT_NAME}/installations/select_target?target_id=${githubUser?.githubUserId}?redirect_uri=${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}/job-agents/add`}
+                          href={`${githubConfig.url}/apps/${githubConfig.botName}/installations/select_target?target_id=${githubUser?.githubUserId}?redirect_uri=${baseUrl.data}/${workspaceSlug}/settings/workspace/integrations/github`}
                           className="flex items-center gap-2"
                         >
                           <TbPlus />
@@ -254,7 +269,7 @@ export const GithubOrgConfig: React.FC<{
                   <DropdownMenuContent>
                     <DropdownMenuItem>
                       <a
-                        href={`${env.NEXT_PUBLIC_GITHUB_URL}/organizations/${github_organization.organizationName}/settings/installations/${github_organization.installationId}`}
+                        href={`${githubConfig.url}/organizations/${github_organization.organizationName}/settings/installations/${github_organization.installationId}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => {
