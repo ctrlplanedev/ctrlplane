@@ -116,7 +116,7 @@ export const GithubJobAgentConfig: React.FC<{
 
                       <CommandItem>
                         <a
-                          href={`${env.GITHUB_URL}/apps/${env.GITHUB_BOT_NAME}/installations/select_target?target_id=${githubUser.githubUserId}?redirect_uri=${env.BASE_URL}/${workspaceSlug}/job-agents/add`}
+                          href={`${env.NEXT_PUBLIC_GITHUB_URL}/apps/${env.NEXT_PUBLIC_GITHUB_BOT_NAME}/installations/select_target?target_id=${githubUser.githubUserId}?redirect_uri=${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}/job-agents/add`}
                           className="flex items-center gap-2"
                         >
                           <TbPlus />
