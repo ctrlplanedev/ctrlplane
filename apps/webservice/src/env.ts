@@ -19,8 +19,8 @@ export const env = createEnv({
    * This way you can ensure the app isn't built with invalid env vars.
    */
   server: {
-    GITHUB_BOT_CLIENT_ID: z.string().optional(),
     POSTGRES_URL: z.string().url(),
+    GITHUB_BOT_CLIENT_ID: z.string().optional(),
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
     GITHUB_BOT_APP_ID: z.string().optional(),
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
