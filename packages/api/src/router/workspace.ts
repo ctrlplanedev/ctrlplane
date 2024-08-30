@@ -26,13 +26,16 @@ const membersRouter = createTRPCRouter({
         .where(eq(workspaceMember.workspaceId, input)),
     ),
 
-  create: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
-    })
+  createFromInviteToken: protectedProcedure
     .input(z.object({ workspaceId: z.string(), userId: z.string() }))
     .mutation(async ({ ctx, input }) =>
-      ctx.db.insert(workspaceMember).values(input).returning(),
+      ctx.db
+        .insert(workspaceMember)
+        .values(input)
+        .onConflictDoNothing({
+          target: [workspaceMember.workspaceId, workspaceMember.userId],
+        })
+        .returning(),
     ),
 });
 
