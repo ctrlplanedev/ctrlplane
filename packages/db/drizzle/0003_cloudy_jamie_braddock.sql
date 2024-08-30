@@ -1,0 +1,1 @@
+ALTER TABLE "workspace_invite_link" ADD COLUMN "expires_at" timestamp NOT NULL;
