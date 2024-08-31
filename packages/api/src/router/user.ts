@@ -1,4 +1,4 @@
-import argon2 from "argon2";
+import { hash } from "bcrypt";
 import { omit } from "lodash";
 import { v4 } from "uuid";
 import { z } from "zod";
@@ -52,7 +52,8 @@ export const userRouter = createTRPCRouter({
       .input(z.object({ name: z.string() }))
       .mutation(async ({ ctx, input }) => {
         const key = v4();
-        const keyHash = await argon2.hash(key);
+
+        const keyHash = await hash(key, 10);
         const apiKey = await ctx.db
           .insert(userApiKey)
           .values({
