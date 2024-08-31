@@ -52,7 +52,6 @@ export const userRouter = createTRPCRouter({
       .input(z.object({ name: z.string() }))
       .mutation(async ({ ctx, input }) => {
         const key = v4();
-
         const keyHash = await hash(key, 10);
         const apiKey = await ctx.db
           .insert(userApiKey)
