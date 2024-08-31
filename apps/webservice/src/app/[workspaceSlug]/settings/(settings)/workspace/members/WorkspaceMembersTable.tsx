@@ -32,7 +32,6 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
-import { env } from "~/env";
 import { api } from "~/trpc/react";
 
 interface Member {
@@ -54,7 +53,8 @@ const InviteLinkSection: React.FC<{
   const [clickedCopy, setClickedCopy] = useState(false);
 
   const [token] = useState(inviteLink ?? v4());
-  const link = `${env.NEXT_PUBLIC_BASE_URL}/join/${token}`;
+  const baseUrl = api.runtime.baseUrl.useQuery();
+  const link = `${baseUrl.data}/join/${token}`;
 
   const handleCopyClick = () => {
     navigator.clipboard.writeText(link).then(() => {

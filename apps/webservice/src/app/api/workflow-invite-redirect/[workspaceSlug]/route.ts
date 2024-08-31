@@ -1,4 +1,3 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 import { auth } from "@ctrlplane/auth";
@@ -6,15 +5,18 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { workspace, workspaceMember } from "@ctrlplane/db/schema";
 
-import { env } from "~/env";
+import { api } from "~/trpc/server";
 
-export const GET = async (
-  req: NextRequest,
-  { params }: { params: { workspaceSlug: string } },
-) => {
+export const GET = async ({
+  params,
+}: {
+  params: { workspaceSlug: string };
+}) => {
   const { workspaceSlug } = params;
   const session = await auth();
   if (session?.user == null) return NextResponse.redirect("/login");
+
+  const baseUrl = await api.runtime.baseUrl();
 
   await db
     .transaction((db) =>
@@ -35,12 +37,10 @@ export const GET = async (
         "duplicate key value",
       );
       if (isDuplicateKeyError)
-        return NextResponse.redirect(
-          `${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}`,
-        );
+        return NextResponse.redirect(`${baseUrl}/${workspaceSlug}`);
 
       throw e;
     });
 
-  return NextResponse.redirect(`${env.NEXT_PUBLIC_BASE_URL}/${workspaceSlug}`);
+  return NextResponse.redirect(`${baseUrl}/${workspaceSlug}`);
 };
