@@ -1,39 +1,56 @@
 # Systems
 
-In Ctrlplane, a system serves as a high-level category or grouping for your
-deployments. A system encompasses a set of related deployments that share common
-characteristics, such as the same environments and environment policies.
+In Ctrlplane, a system is a high-level abstraction for organizing and managing
+related deployments. It's designed to streamline your CI/CD pipelines and
+enforce consistency across your infrastructure.
 
-## Why Use Systems?
+## Key Concepts
 
-Systems offer several benefits in organizing and managing your deployment
-pipelines:
+- **Logical Grouping:** Systems categorize deployments based on shared
+  attributes or purposes.
+- **Environment Standardization:** All deployments within a system use the same
+  set of environments (e.g., Dev, QA, Staging, Production).
+- **Policy Enforcement:** Systems apply uniform environment policies across all
+  associated deployments.
 
-1. **Logical Grouping:** Systems help you logically categorize deployments based
-   on their shared attributes or purpose.
-2. **Consistent Environments:** All deployments within a system utilize the same
-   set of environments, ensuring a standardized workflow across related
-   projects.
-3. **Unified Policies:** Systems apply the same environment policies to all
-   contained deployments, simplifying governance and ensuring consistent
-   controls.
-4. **Streamlined Management:** By centralizing the configuration of environments
-   and policies at the system level, you can manage multiple deployments more
-   efficiently.
+## Benefits for DevOps
 
-## How Systems Work
+1. **Scalable Management:** Centralize environment and policy configurations at
+   the system level, reducing overhead when managing multiple deployments.
+2. **Consistent Workflows:** Ensure standardized deployment processes across
+   related projects.
+3. **Simplified Governance:** Implement and enforce policies uniformly across
+   all deployments within a system.
+4. **Efficient Onboarding:** Quickly set up new deployments with pre-configured
+   environments and policies.
 
-1. **Creation:** You create a system and define the environments that it will
-   encompass (e.g., QA, Staging, Production).
-2. **Policy Configuration:** You configure the environment policies that will
-   apply to all deployments within the system.
-3. **Deployment Association:** You associate your deployments with the
-   appropriate system, ensuring they inherit the defined environments and
-   policies.
+## Implementation
 
-## Key Points
+1. **System Creation:** Define a system with its required environments (e.g.,
+   Dev, QA, Staging, Production).
+2. **Policy Configuration:** Set up environment policies at the system level
+   (e.g., approval processes, security checks, deployment windows).
+3. **Deployment Association:** Link deployments to the appropriate system,
+   automatically inheriting its environments and policies.
 
-- Systems provide a high-level structure for categorizing deployments.
-- Systems ensure that related deployments share the same environments and
-  policies.
-- Systems simplify management by centralizing configuration.
+## Best Practices
+
+- Group deployments logically based on application, team, or business function.
+- Regularly review and update system-level policies to maintain security and
+  compliance.
+- Use systems to enforce standardization across your organization's deployment
+  processes.
+- Leverage system-level configurations to implement infrastructure-as-code
+  principles for your CI/CD pipelines.
+
+## Integration Points
+
+- CI/CD Tools: Systems can be integrated with popular CI/CD tools to enforce
+  policies and standardize deployment workflows.
+- Infrastructure-as-Code: Use Ctrlplane's API or CLI to programmatically manage
+  systems and their configurations.
+- Monitoring and Logging: Implement consistent monitoring and logging practices
+  across all deployments within a system.
+
+By leveraging Ctrlplane's systems, DevOps engineers can achieve greater
+consistency, scalability, and control over their deployment processes.

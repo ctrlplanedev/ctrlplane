@@ -28,6 +28,7 @@
     "@octokit/types": "^13.5.0",
     "@t3-oss/env-core": "^0.10.1",
     "@trpc/server": "11.0.0-rc.364",
+    "bcryptjs": "^2.4.3",
     "bullmq": "^5.12.10",
     "date-fns": "^3.6.0",
     "google-auth-library": "^9.13.0",
@@ -38,6 +39,7 @@
     "ms": "^2.1.3",
     "superjson": "2.2.1",
     "ts-is-present": "^1.2.2",
+    "uuid": "^10.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -45,11 +47,13 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@octokit/types": "^13.5.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash": "^4.17.5",
     "@types/ms": "^0.7.34",
     "@types/pg": "^8.11.6",
     "@types/semver": "^7.5.8",
+    "@types/uuid": "^10.0.0",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "^5.4.5"
