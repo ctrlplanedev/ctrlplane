@@ -1,4 +1,4 @@
-import { hash } from "bcrypt";
+import { hash } from "bcryptjs";
 import { omit } from "lodash";
 import { v4 } from "uuid";
 import { z } from "zod";
