@@ -32,8 +32,8 @@ export default function GitHubIntegrationPage({
   const baseUrl = api.runtime.baseUrl.useQuery();
 
   const githubUrl = api.runtime.github.url.useQuery();
-  const githubBotName = api.runtime.github.bot.name.useQuery();
-  const githubBotClientId = api.runtime.github.bot.clientId.useQuery();
+  const githubBotName = api.runtime.github.botName.useQuery();
+  const githubBotClientId = api.runtime.github.clientId.useQuery();
   const isGithubConfigured =
     githubUrl.data != null &&
     githubBotName.data != null &&
