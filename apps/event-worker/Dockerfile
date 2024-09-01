@@ -1,4 +1,4 @@
-ARG NODE_VERSION=22
+ARG NODE_VERSION=20
 FROM node:${NODE_VERSION}-alpine
 
 RUN apk add --no-cache libc6-compat python3 make g++ bash nano
