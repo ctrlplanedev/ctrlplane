@@ -27,11 +27,18 @@ export const getGkeTargets = async (
     googleServiceAccountEmail,
   );
 
+  if (!googleClusterClient) return [];
+
   const clusters = (
     await Promise.allSettled(
       config.projectIds.map(async (project) => {
-        const clusters = await getClusters(googleClusterClient, project);
-        return { project, clusters };
+        try {
+          const clusters = await getClusters(googleClusterClient, project);
+          return { project, clusters };
+        } catch (e) {
+          log.error("error getting clusters");
+          return { project, clusters: [] };
+        }
       }),
     )
   )

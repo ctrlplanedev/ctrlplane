@@ -5,26 +5,40 @@ import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
+import { logger } from "@ctrlplane/logger";
+
 import { omitNullUndefined } from "../utils.js";
 
 const sourceCredentials = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
 });
 
-export const getGoogleClusterClient = async (targetPrincipal?: string | null) =>
-  new Container.v1.ClusterManagerClient({
-    authClient: new Impersonated(
-      targetPrincipal != null
-        ? {
-            sourceClient: await sourceCredentials.getClient(),
-            targetPrincipal,
-            lifetime: 3600, // Token lifetime in seconds
-            delegates: [],
-            targetScopes: ["https://www.googleapis.com/auth/cloud-platform"],
-          }
-        : {},
-    ),
-  });
+const log = logger.child({ label: "target-scan/gke" });
+
+export const getGoogleClusterClient = async (
+  targetPrincipal?: string | null,
+) => {
+  try {
+    const sourceClient = await sourceCredentials.getClient();
+    log.info("got source client");
+    const impersonated = new Impersonated({
+      sourceClient,
+      targetPrincipal: targetPrincipal ?? undefined,
+      lifetime: 3600,
+      delegates: [],
+      targetScopes: ["https://www.googleapis.com/auth/cloud-platform"],
+    });
+    log.info("got impersonated");
+
+    const clusterClient = new Container.v1.ClusterManagerClient({
+      authClient: impersonated,
+    });
+    log.info("got cluster client");
+    return clusterClient;
+  } catch (e) {
+    log.error(e);
+  }
+};
 
 export const getClusters = async (
   clusterClient: ClusterManagerClient,
