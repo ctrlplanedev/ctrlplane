@@ -5,8 +5,6 @@ import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
-import { logger } from "@ctrlplane/logger";
-
 import { omitNullUndefined } from "../utils.js";
 
 const sourceCredentials = new GoogleAuth({
