@@ -36,7 +36,7 @@ export const getGoogleClusterClient = async (
     log.info("got cluster client");
     return clusterClient;
   } catch (e) {
-    log.error(e);
+    log.error("error getting cluster client: " + String(e));
   }
 };
 

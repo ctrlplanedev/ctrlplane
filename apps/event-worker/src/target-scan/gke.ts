@@ -36,7 +36,7 @@ export const getGkeTargets = async (
           const clusters = await getClusters(googleClusterClient, project);
           return { project, clusters };
         } catch (e) {
-          log.error("error getting clusters");
+          log.error("error getting clusters" + String(e));
           return { project, clusters: [] };
         }
       }),
