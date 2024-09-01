@@ -32,13 +32,8 @@ export const getGkeTargets = async (
   const clusters = (
     await Promise.allSettled(
       config.projectIds.map(async (project) => {
-        try {
-          const clusters = await getClusters(googleClusterClient, project);
-          return { project, clusters };
-        } catch (e) {
-          log.error("error getting clusters" + String(e));
-          return { project, clusters: [] };
-        }
+        const clusters = await getClusters(googleClusterClient, project);
+        return { project, clusters };
       }),
     )
   )
@@ -98,9 +93,9 @@ export const getGkeTargets = async (
                   },
                 ),
               );
-          } catch {
-            console.log(
-              `Unable to connect to cluster: ${cluster.name}/${cluster.id}`,
+          } catch (e) {
+            log.error(
+              `Unable to connect to cluster: ${cluster.name}/${cluster.id} - ${e}`,
             );
             return [];
           }
