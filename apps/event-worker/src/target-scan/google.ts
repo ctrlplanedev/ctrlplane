@@ -2,7 +2,7 @@ import type { ClusterManagerClient } from "@google-cloud/container";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import Container from "@google-cloud/container";
 import { KubeConfig } from "@kubernetes/client-node";
-import { GoogleAuth } from "google-auth-library";
+import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
 import { omitNullUndefined } from "../utils.js";
@@ -11,11 +11,9 @@ const sourceCredentials = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
 });
 
-export const getGoogleClusterClient = async (
-  targetPrincipal?: string | null,
-) => {
-  return new Container.v1.ClusterManagerClient({
-    clientOptions:
+export const getGoogleClusterClient = async (targetPrincipal?: string | null) =>
+  new Container.v1.ClusterManagerClient({
+    authClient: new Impersonated(
       targetPrincipal != null
         ? {
             sourceClient: await sourceCredentials.getClient(),
@@ -25,8 +23,8 @@ export const getGoogleClusterClient = async (
             targetScopes: ["https://www.googleapis.com/auth/cloud-platform"],
           }
         : {},
+    ),
   });
-};
 
 export const getClusters = async (
   clusterClient: ClusterManagerClient,
