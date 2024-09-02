@@ -8,6 +8,41 @@
       "when": 1724546310308,
       "tag": "0000_cool_surge",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1724814291791,
+      "tag": "0001_tranquil_james_howlett",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1724984177867,
+      "tag": "0002_stiff_tyger_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1724997289931,
+      "tag": "0003_cloudy_jamie_braddock",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1725038558591,
+      "tag": "0004_public_luminals",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1725049430244,
+      "tag": "0005_thick_odin",
+      "breakpoints": true
     }
   ]
 }

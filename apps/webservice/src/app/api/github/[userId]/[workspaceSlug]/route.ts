@@ -14,21 +14,21 @@ export const GET = async (
   const code = searchParams.get("code");
   const { userId, workspaceSlug } = params;
 
-  const tokenResponse = await fetch(
-    `${env.GITHUB_URL}/login/oauth/access_token`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        client_id: env.GITHUB_BOT_CLIENT_ID,
-        client_secret: env.GITHUB_BOT_CLIENT_SECRET,
-        code,
-      }),
+  const baseUrl = await api.runtime.baseUrl();
+  const githubUrl = await api.runtime.github.url();
+
+  const tokenResponse = await fetch(`${githubUrl}/login/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
-  );
+    body: JSON.stringify({
+      client_id: env.GITHUB_BOT_CLIENT_ID,
+      client_secret: env.GITHUB_BOT_CLIENT_SECRET,
+      code,
+    }),
+  });
 
   if (!tokenResponse.ok) throw new Error("Failed to fetch access token");
   const tokenData = await tokenResponse.json();
@@ -53,6 +53,6 @@ export const GET = async (
   });
 
   return NextResponse.redirect(
-    `${env.BASE_URL}/${workspaceSlug}/settings/workspace/integrations/github`,
+    `${baseUrl}/${workspaceSlug}/settings/workspace/integrations/github`,
   );
 };

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    POSTGRES_HOST: z
+    POSTGRES_URL: z
       .string()
       .default("postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane"),
   },

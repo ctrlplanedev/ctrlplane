@@ -2,9 +2,7 @@
   "extends": "@ctrlplane/tsconfig/internal-package.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": ".",
-    "incremental": true,
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+    "baseUrl": "."
   },
   "include": ["src"],
   "exclude": ["node_modules"]

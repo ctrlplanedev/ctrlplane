@@ -26,6 +26,8 @@ export const createWorkspace = createInsertSchema(workspace, {
     }),
 }).omit({ id: true });
 
+export const updateWorkspace = createWorkspace.partial();
+
 export type Workspace = InferSelectModel<typeof workspace>;
 
 export const workspaceMember = pgTable(

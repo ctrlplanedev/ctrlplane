@@ -16,8 +16,8 @@ const WorkspaceSettings: React.FC<{ workspaceSlug: string }> = ({
         <SidebarLink href={`/${workspaceSlug}/settings/workspace/overview`}>
           Overview
         </SidebarLink>
-        <SidebarLink href={`/${workspaceSlug}/settings/workspace/security`}>
-          Security
+        <SidebarLink href={`/${workspaceSlug}/settings/workspace/general`}>
+          General
         </SidebarLink>
         <SidebarLink href={`/${workspaceSlug}/settings/workspace/members`}>
           Members
@@ -43,11 +43,8 @@ const AccountSettings: React.FC<{ workspaceSlug: string }> = ({
         <SidebarLink href={`/${workspaceSlug}/settings/account/profile`}>
           Profile
         </SidebarLink>
-        <SidebarLink href={`/${workspaceSlug}/settings/account/preferences`}>
-          Preferences
-        </SidebarLink>
-        <SidebarLink href={`/${workspaceSlug}/settings/account/notifications`}>
-          Notifications
+        <SidebarLink href={`/${workspaceSlug}/settings/account/api`}>
+          API
         </SidebarLink>
       </div>
     </div>

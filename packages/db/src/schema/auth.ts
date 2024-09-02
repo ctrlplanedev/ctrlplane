@@ -1,5 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   pgTable,
@@ -10,12 +10,17 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+import { workspace } from "./workspace.js";
+
 export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
   emailVerified: timestamp("emailVerified", { withTimezone: true }),
   image: varchar("image", { length: 255 }),
+  activeWorkspaceId: uuid("active_workspace_id")
+    .references(() => workspace.id, { onDelete: "set null" })
+    .default(sql`null`),
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -65,3 +70,16 @@ export const session = pgTable("session", {
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),
 }));
+
+export const userApiKey = pgTable("user_api_key", {
+  id: uuid("id").notNull().primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, {
+      onDelete: "cascade",
+    }),
+  name: varchar("name", { length: 255 }).notNull(),
+  keyPreview: text("key_preview").notNull(),
+  keyHash: text("key_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+});

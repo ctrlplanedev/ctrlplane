@@ -57,12 +57,6 @@ export const SidebarCreateMenu: React.FC<{
               New Release
             </DropdownMenuItem>
           </CreateReleaseDialog>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            Create Target
-          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

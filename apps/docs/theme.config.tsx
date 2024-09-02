@@ -16,9 +16,7 @@ const config: DocsThemeConfig = {
   },
   project: {},
   chat: {},
-  sidebar: {
-    defaultMenuCollapseLevel: 0,
-  },
+  sidebar: { defaultMenuCollapseLevel: 1 },
   editLink: { component: null },
   feedback: { content: null },
   footer: {

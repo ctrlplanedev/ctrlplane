@@ -1,6 +1,7 @@
+import { addWeeks } from "date-fns";
 import { z } from "zod";
 
-import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, gte, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   workspace,
   workspaceInviteLink,
@@ -17,23 +18,37 @@ const workspaceRouter = createTRPCRouter({
         return ctx.db
           .select()
           .from(workspaceInviteLink)
-          .where(eq(workspaceInviteLink.workspaceMemberId, input))
+          .where(
+            and(
+              eq(workspaceInviteLink.workspaceMemberId, input),
+              gte(workspaceInviteLink.expiresAt, new Date()),
+            ),
+          )
           .then(takeFirstOrNull);
       }),
     create: protectedProcedure
       .meta({
-        access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
+        access: ({ ctx, input }) =>
+          ctx.accessQuery().workspace.id(input.workspaceId),
       })
-      .input(z.string())
-      .mutation(async ({ ctx, input }) => {
-        return ctx.db
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          workspaceMemberId: z.string().uuid(),
+          token: z.string().uuid(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) =>
+        ctx.db
           .insert(workspaceInviteLink)
           .values({
-            workspaceMemberId: input,
+            workspaceMemberId: input.workspaceMemberId,
+            expiresAt: addWeeks(new Date(), 1),
+            token: input.token,
           })
           .returning()
-          .then(takeFirst);
-      }),
+          .then(takeFirst),
+      ),
   }),
 
   fromInviteToken: publicProcedure

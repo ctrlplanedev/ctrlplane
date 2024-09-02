@@ -81,12 +81,7 @@ export const createJobExecutions = async (
 
   if (insertJobExecutions.length === 0) return [];
 
-  const jobExecutions = await db
-    .insert(jobExecution)
-    .values(insertJobExecutions)
-    .returning();
-
-  return jobExecutions;
+  return db.insert(jobExecution).values(insertJobExecutions).returning();
 };
 
 export const onJobExecutionStatusChange = async (je: JobExecution) => {

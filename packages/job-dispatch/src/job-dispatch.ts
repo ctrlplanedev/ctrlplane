@@ -4,6 +4,7 @@ import _ from "lodash";
 
 import type { JobExecutionReason } from "./job-execution.js";
 import { createJobExecutions } from "./job-execution.js";
+import { dispatchJobExecutionsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
@@ -52,6 +53,15 @@ class DispatchBuilder {
     const wfs = await createJobExecutions(this.db, t, undefined, this._reason);
 
     for (const func of this._then) await func(this.db, t);
+
+    await dispatchJobExecutionsQueue.addBulk(
+      wfs.map((wf) => ({
+        name: wf.id,
+        data: {
+          jobExecutionId: wf.id,
+        },
+      })),
+    );
 
     return wfs;
   }

@@ -1,10 +1,10 @@
-"use client";
-
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SiGithub } from "react-icons/si";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
+
+export const metadata = { title: "Integrations" };
 
 const IntegrationCard: React.FC<{
   children: React.ReactNode;
@@ -20,14 +20,8 @@ const IntegrationContent: React.FC<{ children: React.ReactNode }> = ({
 
 const IntegrationActionButton: React.FC<{
   children: React.ReactNode;
-  onClick?: () => void;
-}> = ({ children, onClick }) => (
-  <Button
-    variant="outline"
-    size="sm"
-    className="block w-full"
-    onClick={onClick}
-  >
+}> = ({ children }) => (
+  <Button variant="outline" size="sm" className="block w-full">
     {children}
   </Button>
 );
@@ -41,11 +35,10 @@ export default function IntegrationsPage({
 }: {
   params: { workspaceSlug: string };
 }) {
-  const router = useRouter();
   const { workspaceSlug } = params;
 
   return (
-    <div className="space-y-4">
+    <div className="container mx-auto max-w-6xl space-y-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold">Integrations</h1>
         <p className="text-sm text-muted-foreground">
@@ -66,15 +59,11 @@ export default function IntegrationsPage({
             </p>
           </IntegrationContent>
 
-          <IntegrationActionButton
-            onClick={() =>
-              router.push(
-                `/${workspaceSlug}/settings/workspace/integrations/github`,
-              )
-            }
+          <Link
+            href={`/${workspaceSlug}/settings/workspace/integrations/github`}
           >
-            Configure
-          </IntegrationActionButton>
+            <IntegrationActionButton>Configure</IntegrationActionButton>
+          </Link>
         </IntegrationCard>
       </div>
     </div>

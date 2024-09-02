@@ -1,0 +1,39 @@
+import { Callout } from "nextra/components";
+
+# Installation system requirements
+
+## Hardware requirements
+
+### CPU
+
+CPU requirements are dependent on the number of users and expected active
+targets. At a minimum, a **4-core CPU** is required.
+
+### Memory
+
+Memory requirements are dependent on the number of users and expected active
+targets. At a minimum, **8GB of memory** is required.
+
+## Redis
+
+Redis stores all user sessions, caching and the background task queue.
+
+The requirements for Redis are as follows:
+
+- Redis 7.x (6.x may work, but is not officially supported)
+- Redis Eviction Policy: `noeviction`
+
+## PostgreSQL
+
+PostgreSQL is the only supported database, it stores most of the applications
+data.
+
+| Ctrlplane Version | Minimum PostgreSQL version | Maximum PostgreSQL version |
+| :---------------- | :------------------------- | :------------------------- |
+| 1.x               | 16.x                       | 16.x                       |
+
+<Callout type="warning">
+  Do not make direct changes to the database, schemas, users, or other
+  properties except when following procedures in the Ctrlplane documentation or
+  following the directions of Ctrlplane Support or other Ctrlplane engineers.
+</Callout>

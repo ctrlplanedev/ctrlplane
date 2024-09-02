@@ -23,6 +23,7 @@ COPY tooling/eslint/package.json ./tooling/eslint/package.json
 COPY tooling/typescript/package.json ./tooling/typescript/package.json
 
 COPY packages/db/package.json ./packages/db/package.json
+COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
 COPY apps/job-policy-checker/package.json ./apps/job-policy-checker/package.json

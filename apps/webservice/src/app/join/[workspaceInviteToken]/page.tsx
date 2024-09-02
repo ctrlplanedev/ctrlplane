@@ -31,7 +31,8 @@ export default function JoinPage({
   const workspace =
     api.invite.workspace.fromInviteToken.useQuery(workspaceInviteToken);
 
-  const workspaceMemberCreate = api.workspace.members.create.useMutation();
+  const workspaceMemberCreate =
+    api.workspace.members.createFromInviteToken.useMutation();
 
   const handleJoinWorkspace = () => {
     workspaceMemberCreate
@@ -40,12 +41,7 @@ export default function JoinPage({
         userId: session.data?.user.id ?? "",
       })
       .then(() => router.push(`/${workspace.data?.slug}`))
-      .catch((e) => {
-        const message = String(e.message);
-        const isDuplicateKeyError = message.includes("duplicate key value");
-        if (!isDuplicateKeyError || workspace.data == null) throw e;
-        router.push(`/${workspace.data.slug}`);
-      });
+      .catch(notFound);
   };
 
   if (workspace.isSuccess && workspace.data == null) return notFound();
@@ -55,7 +51,7 @@ export default function JoinPage({
       <Card
         className={cn(
           "flex flex-col items-center space-y-6 rounded-md border-0 bg-neutral-900 p-8",
-          "transition-opacity  duration-500 ease-out",
+          "transition-opacity duration-500 ease-out",
           workspace.data != null ? "opacity-100" : "opacity-0",
         )}
       >
@@ -70,7 +66,7 @@ export default function JoinPage({
         </Avatar>
 
         <div className="flex flex-col items-center">
-          <p className="mb-3  text-2xl text-neutral-100">
+          <p className="mb-3 text-2xl text-neutral-100">
             Join {workspace.data?.name}
           </p>
 

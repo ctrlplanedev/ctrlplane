@@ -104,7 +104,7 @@ export default function SystemsPage({
         </div>
 
         {systems.data?.total != null && (
-          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground ">
+          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
             Total:
             <Badge
               variant="outline"

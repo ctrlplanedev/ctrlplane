@@ -1,15 +1,15 @@
-name: CD / Migrations
+name: Packages / Migrations
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - packages/db/drizzle/**
+      - packages/db/**
       - .github/workflows/packages-migrations.yaml
   push:
     branches: ["main"]
     paths:
-      - packages/db/drizzle/**
+      - packages/db/**
       - .github/workflows/packages-migrations.yaml
 
 jobs:

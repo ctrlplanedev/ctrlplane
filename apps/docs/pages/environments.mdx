@@ -1,56 +1,40 @@
 # Environments
 
-In Ctrlplane, an environment serves as a logical grouping of targets.
-Think of environments as distinct stages or phases within your software release
-process. Common examples include:
+In Ctrlplane, environments are logical groupings of targets, essential for
+structuring your CI/CD pipeline. Common examples:
 
-- **QA (Quality Assurance):** An environment dedicated to thorough testing and
-  validation before broader deployment.
-- **Staging:** A pre-production environment that closely mirrors your live
-  system for final checks and performance tuning.
-- **Production:** Your live environment where the application is accessible to
-  end users.
+- **QA**: For thorough testing and validation
+- **Staging**: Pre-production environment mirroring production
+- **Production**: Live environment for end-users
 
-By organizing your targets into environments, you gain several
-benefits:
+Benefits:
 
-- **Clear Separation:** You can clearly delineate which targets
-  belong to which stage of your pipeline.
-- **Version Control:** You can easily manage different versions of your software
-  in different environments, allowing for gradual rollouts and controlled
-  validation.
-- **Policy Enforcement:** You can apply specific policies and approvals to
-  transitions between environments, ensuring compliance and minimizing risk.
+- Clear separation of deployment stages
+- Efficient version management across environments
+- Granular policy enforcement for environment transitions
 
 ## Environment Policies
 
-Environments in Ctrlplane support Environment Policies. These policies provide
-configurable settings to govern how deployments move from one environment to the
-next. Environment Policies help you:
+Configurable settings to control inter-environment deployments:
 
-- **Enforce Approvals:** Require manual approval before promoting a deployment
-  to a higher environment (e.g., from Staging to Production).
-- **Define Time Windows:** Restrict deployments to specific time periods (e.g.,
-  only during off-peak hours).
-- **Set Deployment Limits:** Cap the number of concurrent deployments or the
-  total number of deployments within a given timeframe.
-- **Semver/Regex Validation:** Validate the version of the software being
-  deployed against a regular expression or semantic versioning (Semver) pattern.
+- **Approval Workflows**: Implement manual gates (e.g., Staging to Production)
+- **Deployment Windows**: Schedule deployments for specific timeframes
+- **Rate Limiting**: Set concurrent deployment limits or caps within time
+  periods
+- **Version Validation**: Use regex or Semver patterns to validate deployment
+  versions
 
-## Assigning Targets to Environments
+## Target-Environment Association
 
-Targets are added to environments using labels. You define labels on
-your targets, and your environment configuration includes filters
-that match those labels. When a new target is registered, Ctrlplane
-automatically checks if its labels match any environment filters. If so, the
-target is automatically added to the corresponding environment, and
-any associated workflows are triggered.
+Targets are dynamically assigned to environments using a label-based system:
 
-## Key Points
+1. Define labels on targets
+2. Set up environment filters to match these labels
+3. Upon registration, targets are automatically added to matching environments
+4. Associated workflows trigger automatically
 
-- Environments provide logical structure and control over your deployment
-  pipeline.
-- Environment Policies enhance governance and security by defining rules for
-  transitions.
-- Labels offer a flexible way to dynamically associate targets with
-  environments.
+## Key Takeaways
+
+- Environments provide structured control over the deployment pipeline
+- Policies enhance governance and security for environment transitions
+- Label-based system allows flexible, dynamic target-environment associations

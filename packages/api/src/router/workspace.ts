@@ -6,6 +6,7 @@ import { z } from "zod";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createWorkspace,
+  updateWorkspace,
   user,
   workspace,
   workspaceMember,
@@ -25,13 +26,16 @@ const membersRouter = createTRPCRouter({
         .where(eq(workspaceMember.workspaceId, input)),
     ),
 
-  create: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
-    })
+  createFromInviteToken: protectedProcedure
     .input(z.object({ workspaceId: z.string(), userId: z.string() }))
     .mutation(async ({ ctx, input }) =>
-      ctx.db.insert(workspaceMember).values(input).returning(),
+      ctx.db
+        .insert(workspaceMember)
+        .values(input)
+        .onConflictDoNothing({
+          target: [workspaceMember.workspaceId, workspaceMember.userId],
+        })
+        .returning(),
     ),
 });
 
@@ -91,6 +95,20 @@ const integrationsRouter = createTRPCRouter({
 });
 
 export const workspaceRouter = createTRPCRouter({
+  update: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input.id),
+    })
+    .input(z.object({ id: z.string(), data: updateWorkspace }))
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .update(workspace)
+        .set(input.data)
+        .where(eq(workspace.id, input.id))
+        .returning()
+        .then(takeFirst),
+    ),
+
   create: protectedProcedure
     .input(createWorkspace)
     .mutation(async ({ ctx, input }) =>
@@ -128,6 +146,19 @@ export const workspaceRouter = createTRPCRouter({
         .select()
         .from(workspace)
         .where(eq(workspace.slug, input))
+        .then(takeFirstOrNull),
+    ),
+
+  byId: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
+    })
+    .input(z.string())
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(workspace)
+        .where(eq(workspace.id, input))
         .then(takeFirstOrNull),
     ),
 

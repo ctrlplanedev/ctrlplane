@@ -121,7 +121,11 @@ export default function WorkspaceJoin() {
                 )}
               />
 
-              <Button size="lg" className="mt-10 w-full font-semibold">
+              <Button
+                disabled={create.isPending}
+                size="lg"
+                className="mt-10 w-full font-semibold"
+              >
                 Create workspace
               </Button>
             </form>

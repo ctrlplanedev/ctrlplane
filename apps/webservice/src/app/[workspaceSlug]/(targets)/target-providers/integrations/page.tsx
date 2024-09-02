@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  SiAmazonaws,
+  SiAmazon,
   SiGooglecloud,
   SiKubernetes,
   SiMicrosoftazure,
@@ -73,7 +73,7 @@ const TargetProviders: React.FC = () => {
           <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
-                <SiAmazonaws className="mx-auto text-4xl text-orange-300" />
+                <SiAmazon className="mx-auto text-4xl text-orange-300" />
                 <div className="font-semibold">Amazon</div>
               </TargetProviderHeading>
               <p className="text-xs text-muted-foreground">

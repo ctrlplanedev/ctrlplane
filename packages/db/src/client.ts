@@ -6,7 +6,7 @@ import * as schema from "./schema/index.js";
 
 const { Pool } = pg;
 export const pool = new Pool({
-  connectionString: env.POSTGRES_HOST,
+  connectionString: env.POSTGRES_URL,
   ssl: false,
 });
 

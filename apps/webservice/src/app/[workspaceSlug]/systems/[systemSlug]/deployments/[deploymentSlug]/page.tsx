@@ -142,7 +142,7 @@ export default function DeploymentPage({
                   <td>
                     <Link
                       className="inline-flex items-center gap-2 rounded-md px-1 hover:bg-neutral-900"
-                      href={`/${params.workspaceSlug}/systems${system.data?.slug}`}
+                      href={`/${params.workspaceSlug}/systems/${system.data?.slug}`}
                     >
                       {system.data?.name ?? system.data?.slug}
                       <TbLink className="text-xs text-muted-foreground" />

@@ -1,7 +1,7 @@
+import type { GithubOrganization } from "@ctrlplane/db/schema";
+
 import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import type {
-  GithubOrganization} from "@ctrlplane/db/schema";
 import {
   deployment,
   githubConfigFile,

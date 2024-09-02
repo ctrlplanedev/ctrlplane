@@ -3,18 +3,14 @@
 import type { Deployment, Environment, Target } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  TbCircleFilled,
-  TbDotsVertical,
-  TbRocket,
-  TbTerminal2,
-} from "react-icons/tb";
+import { TbCircleFilled, TbRocket, TbTerminal2 } from "react-icons/tb";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/react";
 import { Release } from "./TableCells";
 
@@ -166,9 +162,7 @@ const DeploymentTable: React.FC<{
                   <Button size="icon" variant="ghost">
                     <TbRocket />
                   </Button>
-                  <Button size="icon" variant="ghost" className="rounded-full">
-                    <TbDotsVertical />
-                  </Button>
+                  <DeploymentOptionsDropdown {...r} />
                 </div>
               </td>
 
@@ -198,4 +192,5 @@ const DeploymentTable: React.FC<{
     </div>
   );
 };
+
 export default DeploymentTable;
