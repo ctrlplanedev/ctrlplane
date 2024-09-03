@@ -14,19 +14,6 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  rabbitmq:
-    container_name: ctrlplane-rabbitmq
-    image: rabbitmq:3-management
-    restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ctrlplane
-      RABBITMQ_DEFAULT_PASS: ctrlplane
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-
   webservice:
     container_name: webservice
     image: ctrlplane/webservice:42b9a62
@@ -37,7 +24,7 @@ services:
       RABBITMQ_URL: amqp://ctrlplane:ctrlplane@rabbitmq:5672
     depends_on:
       - database
-      - rabbitmq
+      - redis
     ports:
       - "8080:8080"
 
@@ -51,7 +38,7 @@ services:
       RABBITMQ_URL: amqp://ctrlplane:ctrlplane@rabbitmq:5672
     depends_on:
       - database
-      - rabbitmq
+      - redis
 
   redis:
     container_name: ctrlplane-redis
@@ -64,5 +51,4 @@ services:
 
 volumes:
   db-data:
-  rabbitmq-data:
   redis-data:
