@@ -9,28 +9,74 @@
 </p>
 
 <p align="center">
-  <a aria-label="License" href="https://github.com/ctrl-plane/ctrlplane/blob/main/LICENSE"><img alt="" src="https://img.shields.io/badge/SSPL-blue?style=for-the-badge"></a>
   <a aria-label="Join the community on GitHub" href="https://github.com/ctrl-plane/ctrlplane/discussions"><img alt="" src="https://img.shields.io/badge/Join_the_community-blueviolet?style=for-the-badge"></a>
+  <a aria-label="Commit activity" href="https://github.com/sizzldev/ctrlplane/activity"><img alt="" src="https://img.shields.io/github/commit-activity/m/sizzldev/ctrlplane/main?style=for-the-badge"></a>
 </p>
 
-## Getting Started
+<p align="center">
+  <a href="https://ctrlplane.dev"><b>Website</b></a> •
+  <a href="https://github.com/sizzldev/ctrlplane/releases"><b>Releases</b></a> •
+  <a href="https://docs.ctrlplane.dev"><b>Documentation</b></a>
+</p>
 
-Ctrlplane is a flexible and powerful deployment orchestration platform designed
-to streamline and automate your software release process. It complements your
-existing CI/CD tools by providing centralized management, automated triggers,
-and seamless integrations.
+Meet [Ctrlplane](https://ctrlplane.dev), an open-source deployment tool that
+automates multi-cloud, multi-region, and multi-service software deployments.
 
-## Documentation
+## :zap: Installation
 
-Visit https://docs.ctrlplane.dev to view the full documentation.
+The easiest way to get started with Ctrlplane is by creating a [Ctrlplane
+Cloud](https://app.ctrlplane.dev) account.
 
-## Community
+If you would like to self-host Plane, please see our [deployment guide](https://docs.ctrlplane.dev/install/helm).
 
-The Ctrlplane community can be found on GitHub Discussions where you can ask
-questions, voice ideas, and share your projects with other people.
+| Installation methods | Docs link                                                                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker               | [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docs.ctrlplane.dev/install/helm)               |
+| Kubernetes           | [![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)](https://docs.ctrlplane.dev/install/docker) |
 
-Do note that our Code of Conduct applies to all Ctrlplane community channels.
-Users are highly encouraged to read and adhere to them to avoid repercussions.
+## :rocket: Features
+
+- **Unified Control:** Centralize management of multi-stage deployment pipelines
+  across diverse environments.
+- **Flexible Target Support:** Deploy to Kubernetes, cloud functions, VMs, or
+  custom infrastructure from a single platform.
+- **Advanced Workflow Orchestration:** Automate sophisticated deployment
+  processes including testing, code analysis, security scans, and approval
+  gates.
+- **CI/CD Integration:** Seamlessly connects with Jenkins, GitLab CI, GitHub
+  Actions, and other popular CI tools to trigger deployments.
+- **Environment Management:** Efficiently handle transitions between dev, test,
+  staging, and production environments.
+
+## 🛠️ Quick start for contributors
+
+> Development system must have docker engine installed and running.
+
+1. Clone the code locally using:
+   ```
+   git clone https://github.com/sizzldev/ctrlplane.git
+   ```
+2. Switch to the code folder:
+   ```
+   cd ctrlplane
+   ```
+3. Create your feature or fix branch you plan to work on using:
+   ```
+   git checkout -b <feature-branch-name>
+   ```
+4. Open the code on VSCode or similar equivalent IDE.
+5. Copy `.env.example` to `.env` files available in various folders.
+6. Run the docker command to initiate services:
+   ```
+   docker compose -f docker-compose.yaml up -d
+   ```
+7. Run `pnpm db:push` to push the schema to the database.
+8. Run `pnpm dev` to start the development server.
+
+You are ready to make changes to the code. Do not forget to refresh the browser
+(in case it does not auto-reload).
+
+Thats it!
 
 ## Contributing
 
@@ -63,3 +109,26 @@ pnpm db:push
 ```
 
 2. Run `pnpm dev` at the project root folder.
+
+## ❤️ Community
+
+The Ctrlplane community can be found on [GitHub
+Discussions](https://github.com/sizzldev/ctrlplane/discussions), and our [Discord
+server](https://discord.com/<update>).
+
+Ask questions, report bugs, join discussions, voice ideas, make feature
+requests, or share your projects.
+
+## ⛓️ Security
+
+If you believe you have found a security vulnerability in Plane, we encourage
+you to responsibly disclose this and not open a public issue. We will
+investigate all legitimate reports.
+
+Email security@ctrlplane.dev to disclose any security vulnerabilities.
+
+### We couldn't have done this without you.
+
+<a href="https://github.com/sizzldev/ctrlplane/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=sizzldev/ctrlplane" />
+</a>
