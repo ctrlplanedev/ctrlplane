@@ -1,20 +1,8 @@
 import { Card, Cards } from "nextra/components";
-import {
-  TbArrowRightTail,
-  TbBook,
-  TbCheck,
-  TbPlant,
-  TbRocket,
-  TbServer,
-  TbServer2,
-  TbTarget,
-  TbUsersGroup,
-  TbVariable,
-} from "react-icons/tb";
+import { SiDiscord } from "react-icons/si";
+import { TbBook, TbPlug, TbServer } from "react-icons/tb";
 
-# Ctrlplane: Advanced Deployment Orchestration
-
-Empowering DevOps with Seamless Continuous Deployment
+# Ctrlplane Documentation
 
 ## Overview
 
@@ -22,29 +10,32 @@ Ctrlplane is a robust deployment orchestration platform engineered to enhance
 your existing CI/CD pipeline. It provides centralized management, automated
 triggers, and deep integrations to streamline complex release processes.
 
-## Key Features for DevOps
+<Cards>
+  <Card
+    icon={<TbBook className="h-8 w-8 stroke-blue-400" />}
+    title="Quick Start"
+    href="/docs/guide/built-ins/callout"
+  />
+  <Card
+    icon={<TbServer className="h-8 w-8 stroke-yellow-400" />}
+    title="Self-hosted Ctrlplane"
+    href="/docs/guide/built-ins/tabs"
+  />
+  <Card
+    icon={<TbPlug className="h-8 w-8 stroke-purple-400" />}
+    title="Integrations"
+    href="/"
+  />
+</Cards>
 
-- **Unified Control:** Centralize management of multi-stage deployment pipelines
-  across diverse environments.
-- **Flexible Target Support:** Deploy to Kubernetes, cloud functions, VMs, or
-  custom infrastructure from a single platform.
-- **Advanced Workflow Orchestration:** Automate sophisticated deployment
-  processes including testing, code analysis, security scans, and approval
-  gates.
-- **CI/CD Integration:** Seamlessly connects with Jenkins, GitLab CI, GitHub
-  Actions, and other popular CI tools to trigger deployments.
-- **Environment Management:** Efficiently handle transitions between dev, test,
-  staging, and production environments.
+## Contributing
 
-## Benefits for DevOps Teams
+Found something you can immediately fix in our documentation or want to
+contribute a new tutorial to assist our users? Check out our contribution guide
+to begin your journey.
 
-- **Reduced Complexity:** Simplify management of intricate, multi-environment
-  deployment pipelines.
-- **Increased Reliability:** Minimize manual errors and inconsistencies through
-  automation.
-- **Enhanced Visibility:** Gain a comprehensive view of your entire deployment
-  landscape.
-- **Faster Time-to-Market:** Accelerate release cycles with streamlined
-  processes and automated workflows.
-- **Scalability:** Easily adapt to growing infrastructure and evolving
-  deployment needs.
+## Need Help?
+
+If you’re unsure whether Ctrlplane is the ideal solution for your needs, feel
+free to reach out to the Ctrlplane team via Discord. You can connect with the
+community and receive helpful guidance.

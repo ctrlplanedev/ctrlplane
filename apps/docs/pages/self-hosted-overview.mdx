@@ -1,0 +1,38 @@
+# Overview
+
+Ctrlplane is still in its early days, not everything is perfect yet, and hiccups
+may happen. Please let us know of any suggestions, ideas, or bugs that you
+encounter on our Discord.
+
+Ctrlplane can be self-hosted, giving you the flexibility to run it on your own
+infrastructure.
+
+## Methods
+
+import { Card, Cards } from "nextra/components";
+import { SiDocker, SiKubernetes } from "react-icons/si";
+
+<Cards>
+  <Card
+    icon={<SiDocker className="h-8 w-8" />}
+    title="Docker"
+    href="/self-hosted-methods/docker-compose"
+  />
+  <Card
+    icon={<SiKubernetes className="h-8 w-8" />}
+    title="Kubernetes"
+    href="/self-hosted-methods/kubernetes"
+  />
+</Cards>
+
+## Cloud Providers
+
+import { SiGooglecloud } from "react-icons/si";
+
+<Cards>
+  <Card
+    icon={<SiGooglecloud className="h-8 w-8" />}
+    title="Google Cloud"
+    href="/self-hosted-cloud-providers/google-cloud"
+  />
+</Cards>

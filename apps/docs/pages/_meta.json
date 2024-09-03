@@ -1,7 +1,10 @@
 {
-  "index": "Introduction",
-  "getting-started": "Getting Started",
-  "use-cases": "Use Cases",
+  "-- Getting Started": {
+    "type": "separator",
+    "title": "Getting Started"
+  },
+  "index": "Home",
+  "quickstart": "Quick start",
 
   "-- Core Concepts": {
     "type": "separator",
@@ -25,12 +28,13 @@
   "google-cloud": "Google Cloud",
   "kubernetes": "Kubernetes",
 
-  "-- Deploy": {
+  "-- Self-hosted": {
     "type": "separator",
-    "title": "Install"
+    "title": "Self-hosted"
   },
-  "requirements": "Requirements",
-  "install": "Install Methods",
-  "cloud-providers": "Cloud Providers",
-  "services": "Services"
+  "self-hosted-overview": "Overview",
+  "self-hosted-requirements": "Requirements",
+  "self-hosted-methods": "Methods",
+  "self-hosted-cloud-providers": "Cloud Providers",
+  "self-hosted-services": "Services"
 }

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a aria-label="Join the community on GitHub" href="https://github.com/ctrl-plane/ctrlplane/discussions"><img alt="" src="https://img.shields.io/badge/Join_the_community-blueviolet?style=for-the-badge"></a>
+  <a aria-label="Join the community on GitHub" href="https://github.com/sizzldev/ctrlplane/discussions"><img alt="" src="https://img.shields.io/badge/Join_the_community-blueviolet?style=for-the-badge"></a>
   <a aria-label="Commit activity" href="https://github.com/sizzldev/ctrlplane/activity"><img alt="" src="https://img.shields.io/github/commit-activity/m/sizzldev/ctrlplane/main?style=for-the-badge"></a>
 </p>
 
@@ -78,43 +78,11 @@ You are ready to make changes to the code. Do not forget to refresh the browser
 
 Thats it!
 
-## Contributing
-
-Contributions to Ctrlplane are welcome and highly appreciated. However, before
-you jump right into it, we would like you to review our Contribution Guidelines
-to make sure you have a smooth experience contributing to Ctrlplane.
-
-## Authors
-
-A list of the original co-authors of Ctrlplane that helped bring this amazing
-tool to life!
-
-- Justin Brooks ([@jsbroks](https://github.com/jsbroks))
-- Aditya Choudhari ([@adityachoudhari26](https://github.com/adityachoudhari26))
-
-## Development Mode
-
-1.  Setup dependencies
-
-```bash
-# Install dependencies
-pnpm i
-
-# Configure environment variables
-# There is an `.env.example` in the root directory you can use for reference
-cp .env.example .env
-
-# Push the schema to the database
-pnpm db:push
-```
-
-2. Run `pnpm dev` at the project root folder.
-
-## ❤️ Community
+## :heart: Community
 
 The Ctrlplane community can be found on [GitHub
 Discussions](https://github.com/sizzldev/ctrlplane/discussions), and our [Discord
-server](https://discord.com/<update>).
+server](https://discord.gg/...)
 
 Ask questions, report bugs, join discussions, voice ideas, make feature
 requests, or share your projects.
