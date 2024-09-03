@@ -1,0 +1,133 @@
+# Github Integration
+
+Connect your Github organization to your workspace to enable several powerful features, including
+
+- Github Job Agent
+- Release Scanner
+- Deployment Configuration
+
+## Instance Level Integration
+
+Configuring the Github integration at the instance level will enable it for all workspaces on that instance. However,
+you can optionally configure the integration at the workspace level to override the instance level configuration.
+
+import { Steps } from "nextra/components";
+
+<Steps>
+### On Github, create a new Github App
+
+To set this up, navigate to [github.com](https://github.com/) and register a new
+[GitHub App](https://github.com/settings/apps/new).
+
+### Configure the Github App
+
+Fill out the form as follows:
+
+| Field           | Value                                                 |
+| --------------- | ----------------------------------------------------- |
+| Github App Name | ctrlplane-`{your-instance-name}`                      |
+| Homepage URL    | `https://ctrlplane.dev` (or the URL of your instance) |
+| Webhook URL     | \<your-instance-url\>/api/github/webhook              |
+
+Configure the permissions as follows:
+
+import { TbArrowRight } from "react-icons/tb";
+
+#### Repository Permissions
+
+- `Actions: Read and write` <TbArrowRight className="inline-block" /> Allows the
+  creation of workflow runs associated with your deployments.
+- `Contents: Read only` <TbArrowRight className="inline-block" /> Allows
+  Ctrlplane to detect changes to your `*ctrlplane.yaml` configuration files.
+  Read more about [configuration management](/github/deployment-configs).
+
+#### Organization Permissions
+
+- `Members: Read only` <TbArrowRight className="inline-block" /> Allows you to
+  configure github organizations across your workspaces.
+
+### Subscribe to Events
+
+- `Push` <TbArrowRight className="inline-block" /> Subscribe to push events to
+  sync changes to your deployment configurations.
+
+### Extra configurations
+
+#### Where can this Github App be installed?
+
+You can choose the scope of this installation. Selecting "Only on this account" will only allow the instance level integration access to your current account.
+
+### Create the Github App
+
+### Configure the Github information on your instance
+
+#### Create a new client secret
+
+Copy or note down the client secret, as it will be used to configure the Github App.
+
+#### Generate a new private key
+
+The private key is used to sign access token requests, which allow Ctrlplane to sync changes from your `ctrlplane.yaml` files.
+Once created, the private key will automatically be downloaded - note the location of the file.
+
+#### Helm Chart Installation
+
+In your `values.yaml`, add the following:
+
+```yaml
+global:
+  integrations:
+    github:
+      url: https://ctrlplane.dev
+      bot:
+        appName: ctrlplane-bot
+        appId: 1234567890
+        clientId: 1234567890
+        clientSecret: 1234567890
+        privateKey: `-----BEGIN RSA PRIVATE KEY-----...`
+
+```
+
+#### Terraform Installation
+
+In your `terraform.tfvars`, add the following:
+
+```hcl
+# The name of the Github App
+GITHUB_BOT_APP_NAME = "ctrlplane-bot"
+
+# The ID of the Github App, can be found in the "about" section
+# of the Github App
+GITHUB_BOT_APP_ID = "1234567890"
+
+# The client ID of the Github App, can be found in the "about"
+# section of the Github App
+GITHUB_BOT_CLIENT_ID = "1234567890"
+
+# The client secret of the Github App
+GITHUB_BOT_CLIENT_SECRET = "1234567890"
+
+# The private key of the Github App, can be copied from the
+# downloaded file
+GITHUB_BOT_PRIVATE_KEY = "-----BEGIN RSA PRIVATE KEY-----..."
+```
+
+### Finish the configuration in Ctrlplane
+
+1. Navigate to the github integration page in the workspace settings
+
+   ```js
+   {your-instance-url}/settings/workspace/integrations/github
+   ```
+
+2. Connect your personal account
+
+3. Select or add a Github organization to link to your workspace.
+
+Once you have connected a github organization, you will unlock several features:
+
+- Any `ctrlplane.yaml` files in the organization (that were allowed access during installation) will be automatically synced to your workspace
+- You can use the Github Job Agent associate a Github Action with a deployment
+- You can use the Release Scanner to scan for releases in your organization and create corresponding releases in Ctlrplane
+
+</Steps>

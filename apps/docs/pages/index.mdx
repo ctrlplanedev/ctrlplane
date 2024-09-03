@@ -1,14 +1,12 @@
 import { Card, Cards } from "nextra/components";
-import { SiDiscord } from "react-icons/si";
 import { TbBook, TbPlug, TbServer } from "react-icons/tb";
 
 # Ctrlplane Documentation
 
-## Overview
-
-Ctrlplane is a robust deployment orchestration platform engineered to enhance
-your existing CI/CD pipeline. It provides centralized management, automated
-triggers, and deep integrations to streamline complex release processes.
+Ctrlplane is a powerful [open-source](https://github.com/sizzldev/ctrlplane)
+deployment orchestration platform designed to elevate your existing CI/CD
+workflow. It offers centralized control, intelligent automation, and seamless
+integrations to simplify and optimize even the most intricate release processes.
 
 <Cards>
   <Card
@@ -18,24 +16,37 @@ triggers, and deep integrations to streamline complex release processes.
   />
   <Card
     icon={<TbServer className="h-8 w-8 stroke-yellow-400" />}
-    title="Self-hosted Ctrlplane"
-    href="/self-hosted-overview"
+    title="Core Concepts"
+    href="/core-concepts"
   />
   <Card
     icon={<TbPlug className="h-8 w-8 stroke-purple-400" />}
     title="Integrations"
-    href="/github/actions-dispatcher"
+    href="/integrations"
+  />
+  <Card
+    icon={<TbServer className="h-8 w-8 stroke-green-400" />}
+    title="Self-hosted"
+    href="/self-hosted"
   />
 </Cards>
 
-## Contributing
+## Why Ctrlplane
 
-Found something you can immediately fix in our documentation or want to
-contribute a new tutorial to assist our users? Check out our contribution guide
-to begin your journey.
+- **Unified Control:** Centralize management of multi-stage deployment pipelines
+  across diverse environments.
+- **Flexible Target Support:** Deploy to Kubernetes, cloud functions, VMs, or
+  custom infrastructure from a single platform.
+- **Advanced Workflow Orchestration:** Automate sophisticated deployment
+  processes including testing, code analysis, security scans, and approval
+  gates.
+- **CI/CD Integration:** Seamlessly connects with Jenkins, GitLab CI, GitHub
+  Actions, and other popular CI tools to trigger deployments.
+- **Environment Management:** Efficiently handle transitions between dev, test,
+  staging, and production environments.
 
 ## Need Help?
 
 If you’re unsure whether Ctrlplane is the ideal solution for your needs, feel
-free to reach out to the Ctrlplane team via Discord. You can connect with the
+free to reach out to the Ctrlplane team via [Discord](https://ctrlplane.dev/discord). You can connect with the
 community and receive helpful guidance.
