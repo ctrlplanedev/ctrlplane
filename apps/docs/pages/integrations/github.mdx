@@ -16,8 +16,10 @@ import { Steps } from "nextra/components";
 <Steps>
 ### On Github, create a new Github App
 
-To set this up, navigate to [github.com](https://github.com/) and register a new github app at 
-`https://github.com/organizations/{org-name}/settings/apps/new`.
+To set this up, navigate to [github.com](https://github.com/) and register a new GitHub App.
+
+- Your GitHub account: https://github.com/settings/apps/new
+- Your GitHub organization: `https://github.com/organizations/<your-org>/settings/apps/new`
 
 ### Configure the Github App
 
@@ -55,7 +57,8 @@ import { TbArrowRight } from "react-icons/tb";
 
 #### Where can this Github App be installed?
 
-You can choose the scope of this installation. Selecting "Only on this account" will only allow the instance level integration access to your current account.
+You can choose the scope of this installation. Selecting "Only on this account"
+will only allow the instance level integration access to your current account.
 
 ### Create the Github App
 
@@ -63,12 +66,14 @@ You can choose the scope of this installation. Selecting "Only on this account" 
 
 #### Create a new client secret
 
-Copy or note down the client secret, as it will be used to configure the Github App.
+Copy or note down the client secret, as it will be used to configure the Github
+App.
 
 #### Generate a new private key
 
-The private key is used to sign access token requests, which allow Ctrlplane to sync changes from your `ctrlplane.yaml` files.
-Once created, the private key will automatically be downloaded - note the location of the file.
+The private key is used to sign access token requests, which allow Ctrlplane to
+sync changes from your `ctrlplane.yaml` files. Once created, the private key
+will automatically be downloaded - note the location of the file.
 
 #### Helm Chart Installation
 
