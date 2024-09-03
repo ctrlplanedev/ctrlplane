@@ -1,0 +1,36 @@
+# Job Policy Checker
+
+The Job Policy Checker is a critical component of the ctrlplane application that
+operates on a scheduled basis. Its primary functions include:
+
+1. Running on a cron job: The checker executes at regular intervals, ensuring
+   continuous monitoring and enforcement of policies.
+
+2. Checking environment policies: It evaluates the current state of environments
+   against defined policies, ensuring compliance and identifying any deviations.
+
+3. Dispatching necessary jobs: Based on the policy checks, it automatically
+   triggers and dispatches any required jobs to maintain or restore policy
+   compliance.
+
+This automated process helps maintain system integrity, ensures adherence to
+defined policies, and proactively manages environments without manual
+intervention.
+
+Deployment
+
+- Docker Image: `docker.io/ctrlplane/job-policy-checker:latest`,
+  [Dockerfile](https://github.com/sizzldev/ctrlplane/blob/main/apps/job-policy-checker/Dockerfile)
+- [Helm
+  Chart](https://github.com/sizzldev/ctrlchart/blob/main/charts/job-policy-checker)
+
+Technology:
+
+- [Node-cron](https://github.com/node-cron/node-cron)
+- [TypeScript](https://www.typescriptlang.org/)
+
+## Environment Variables
+
+| Variable       | Default                                                   | Description                                    | Optional |
+| -------------- | --------------------------------------------------------- | ---------------------------------------------- | -------- |
+| `POSTGRES_URL` | postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane | URL for connecting to the PostgreSQL database. | No       |

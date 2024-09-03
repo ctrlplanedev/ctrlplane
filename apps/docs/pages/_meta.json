@@ -31,5 +31,6 @@
   },
   "requirements": "Requirements",
   "install": "Install Methods",
-  "cloud-providers": "Cloud Providers"
+  "cloud-providers": "Cloud Providers",
+  "services": "Services"
 }

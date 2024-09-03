@@ -1,0 +1,32 @@
+# Webservice
+
+The `Webservice` is a core component of the ctrlplane application, it providers
+both the frontend and API gateway for the application.
+
+Deployment
+
+- Docker Image: `docker.io/ctrlplane/webservice:latest`, [Dockerfile](https://github.com/sizzldev/ctrlplane/blob/main/apps/webservice/Dockerfile)
+- [Helm Chart](https://github.com/sizzldev/ctrlchart/blob/main/charts/webservice)
+
+Technology:
+
+- [NextJS](https://nextjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [React](https://reactjs.org/)
+- [TailwindCSS](https://tailwindcss.com/)
+- [tRPC](https://trpc.io/)
+
+## Environment Variables
+
+| Variable                                   | Default                                                   | Description                                               | Optional |
+| ------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------- | -------- |
+| `POSTGRES_URL`                             | postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane | URL for connecting to the PostgreSQL database.            | No       |
+| `REDIS_URL`                                | redis://127.0.0.1:6379                                    | URL for connecting to the Redis database.                 | No       |
+| `BASE_URL`                                 |                                                           | URL for GitHub instance.                                  | No       |
+| `GITHUB_URL`                               | https://github.com                                        | URL for GitHub integration.                               | Yes      |
+| `GITHUB_BOT_NAME`                          |                                                           | Name of the GitHub bot.                                   | Yes      |
+| `GITHUB_BOT_PRIVATE_KEY`                   |                                                           | Private key for the GitHub bot.                           | Yes      |
+| `GITHUB_BOT_CLIENT_ID`                     |                                                           | Client ID for the GitHub bot.                             | Yes      |
+| `GITHUB_BOT_CLIENT_SECRET`                 |                                                           | Client secret for the GitHub bot.                         | Yes      |
+| `GITHUB_BOT_APP_ID`                        |                                                           | App ID for the GitHub bot.                                | Yes      |
+| `WORKSPACE_CREATE_GOOGLE_SERVICE_ACCOUNTS` | false                                                     | Whether to create Google service accounts for workspaces. | Yes      |
