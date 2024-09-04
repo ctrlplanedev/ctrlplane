@@ -32,12 +32,16 @@ export const SidebarMain: React.FC = () => {
     <div className="space-y-8 text-sm">
       <div className="m-3 space-y-4">
         <div className="flex items-center gap-2">
-          <div className="flex-grow">
+          <div className="flex-grow overflow-x-auto">
             <SidebarWorkspaceDropdown />
           </div>
 
           <SearchDialog>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 flex-shrink-0"
+            >
               <TbSearch />
             </Button>
           </SearchDialog>
