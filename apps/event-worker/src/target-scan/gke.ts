@@ -29,13 +29,26 @@ export const getGkeTargets = async (
 
   const clusters = (
     await Promise.allSettled(
-      config.projectIds.map(async (project) => {
-        const clusters = await getClusters(googleClusterClient, project);
-        return { project, clusters };
-      }),
+      config.projectIds.map(async (project) =>
+        getClusters(googleClusterClient, project)
+          .then((clusters) => ({ project, clusters }))
+          .catch((e) => {
+            log.error(
+              `Unable to get clusters for project: ${project} - ${String(e)}`,
+            );
+            return { project, clusters: [] };
+          }),
+      ),
     )
   )
-    .filter((result) => result.status === "fulfilled")
+    .filter(
+      (
+        result,
+      ): result is PromiseFulfilledResult<{
+        project: string;
+        clusters: any[];
+      }> => result.status === "fulfilled",
+    )
     .map((v) => v.value);
 
   const kubernetesApiTargets: UpsertTarget[] = clusters.flatMap(
@@ -49,6 +62,7 @@ export const getGkeTargets = async (
         ),
       ),
   );
+
   const kubernetesNamespaceTargets = (
     await Promise.all(
       clusters.flatMap(({ project, clusters }) => {

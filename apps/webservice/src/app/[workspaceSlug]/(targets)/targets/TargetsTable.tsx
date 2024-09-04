@@ -12,8 +12,20 @@ import { SiKubernetes } from "react-icons/si";
 import { TbLock, TbServer, TbTarget, TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
-import { Button } from "@ctrlplane/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@ctrlplane/ui/alert-dialog";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Checkbox } from "@ctrlplane/ui/checkbox";
+import { Separator } from "@ctrlplane/ui/separator";
 import {
   Table,
   TableBody,
@@ -22,6 +34,8 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+
+import { api } from "~/trpc/react";
 
 const columns: ColumnDef<Target>[] = [
   {
@@ -104,11 +118,23 @@ export const TargetsTable: React.FC<{
   targets: Target[];
   onTableRowClick?: (target: Target) => void;
 }> = ({ targets, onTableRowClick, activeTargetIds }) => {
+  const deleteTargetsMutation = api.target.delete.useMutation();
+
   const table = useReactTable({
     data: targets,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  const utils = api.useUtils();
+  const handleDeleteTargets = async () => {
+    const selectedTargets = table
+      .getSelectedRowModel()
+      .rows.map((row) => row.original.id);
+    await deleteTargetsMutation.mutateAsync(selectedTargets);
+    await utils.target.byWorkspaceId.invalidate();
+    table.toggleAllRowsSelected(false);
+  };
 
   return (
     <div className="relative">
@@ -165,6 +191,36 @@ export const TargetsTable: React.FC<{
               </span>
               <TbX className="h-4 w-4" />
             </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 bg-transparent"
+                >
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete
+                    the selected targets.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className={buttonVariants({ variant: "destructive" })}
+                    onClick={handleDeleteTargets}
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       )}
