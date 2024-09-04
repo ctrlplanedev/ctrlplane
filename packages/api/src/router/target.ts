@@ -130,12 +130,52 @@ const labelGroupRouter = createTRPCRouter({
 const targetProviderRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(async ({ ctx, input }) => {
+      const providers = await ctx.db
         .select()
         .from(targetProvider)
-        .where(eq(targetProvider.workspaceId, input)),
-    ),
+        .where(eq(targetProvider.workspaceId, input));
+
+      const providerCounts = await ctx.db
+        .select({
+          providerId: target.providerId,
+          count: sql<number>`count(*)`.as("count"),
+        })
+        .from(target)
+        .where(
+          inArray(
+            target.providerId,
+            providers.map((p) => p.id),
+          ),
+        )
+        .groupBy(target.providerId);
+
+      const providerKinds = await ctx.db
+        .select({
+          providerId: target.providerId,
+          kind: target.kind,
+          count: sql<number>`count(*)`.as("count"),
+        })
+        .from(target)
+        .where(
+          inArray(
+            target.providerId,
+            providers.map((p) => p.id),
+          ),
+        )
+        .groupBy(target.providerId, target.kind)
+        .orderBy(sql`count(*) DESC`);
+
+      return providers.map((provider) => ({
+        ...provider,
+        targetCount:
+          providerCounts.find((pc) => pc.providerId === provider.id)?.count ??
+          0,
+        kinds: providerKinds
+          .filter((pk) => pk.providerId === provider.id)
+          .map(({ kind, count }) => ({ kind, count })),
+      }));
+    }),
 
   managed: createTRPCRouter({
     google: protectedProcedure
