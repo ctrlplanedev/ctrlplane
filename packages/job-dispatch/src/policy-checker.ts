@@ -107,8 +107,8 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
  *
  * @param db
  * @param jobConfigs
- * @returns JobConfigs that pass the approval policy - the approval policy will require manual approval
- * before dispatching if the policy is set to manual.
+ * @returns JobConfigs that pass the approval policy - the approval policy will
+ * require manual approval before dispatching if the policy is set to manual.
  */
 const isPassingApprovalPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
   if (jobConfigs.length === 0) return [];
@@ -142,9 +142,11 @@ const isPassingApprovalPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
  *
  * @param db
  * @param jobConfigs
- * @returns JobConfigs that pass the rollout policy - the rollout policy will only allow a certain percentage of job executions to be dispatched
- * based on the duration of the policy and amount of time since the release was created. This percentage
- * will increase over the rollout window until all job executions are dispatched.
+ * @returns JobConfigs that pass the rollout policy - the rollout policy will
+ * only allow a certain percentage of job executions to be dispatched based on
+ * the duration of the policy and amount of time since the release was created.
+ * This percentage will increase over the rollout window until all job
+ * executions are dispatched.
  */
 const isPassingJobExecutionRolloutPolicy = async (
   db: Tx,
@@ -189,7 +191,8 @@ const exitStatus = [
  * @param db
  * @param jobConfigs
  * @returns JobConfigs that pass the release sequencing policy - the release sequencing wait policy
- * will wait for all other active job executions in the environment to complete before dispatching.
+ * will wait for all other active job executions in the environment to complete
+ * before dispatching.
  */
 const isPassingReleaseSequencingWaitPolicy = async (
   db: Tx,
@@ -239,8 +242,9 @@ const isPassingReleaseSequencingWaitPolicy = async (
  *
  * @param db
  * @param jobConfigs
- * @returns JobConfigs that pass the release sequencing policy - the release sequencing cancel policy
- * will cancel all other active job executions in the environment.
+ * @returns JobConfigs that pass the release sequencing policy - the release
+ * sequencing cancel policy will cancel all other active job executions in the
+ * environment.
  */
 export const isPassingReleaseSequencingCancelPolicy = async (
   db: Tx,
@@ -287,7 +291,8 @@ export const isPassingReleaseSequencingCancelPolicy = async (
  * @param startDate
  * @param endDate
  * @param recurrence
- * @returns Whether the date is in the time window defined by the start and end date
+ * @returns Whether the date is in the time window defined by the start and end
+ * date
  */
 export const isDateInTimeWindow = (
   date: Date,
@@ -316,8 +321,8 @@ export const isDateInTimeWindow = (
  *
  * @param db
  * @param jobConfigs
- * @returns JobConfigs that pass the release window policy - the release window policy
- * defines the time window in which a release can be deployed.
+ * @returns JobConfigs that pass the release window policy - the release window
+ * policy defines the time window in which a release can be deployed.
  */
 export const isPassingReleaseWindowPolicy = async (
   db: Tx,
@@ -372,7 +377,8 @@ export const isPassingReleaseWindowPolicy = async (
  * @param db
  * @param jobConfigs
  * @returns JobConfigs that pass the concurrency policy - the concurrency policy
- * will limit the number of job executions that can be dispatched in an environment.
+ * will limit the number of job executions that can be dispatched in an
+ * environment.
  */
 export const isPassingConcurrencyPolicy = async (
   db: Tx,
@@ -414,8 +420,10 @@ export const isPassingConcurrencyPolicy = async (
       _.chain(data)
         .groupBy((j) => [j.job_config.releaseId, j.job_config.environmentId])
         .map((jcs) =>
+          // Check if the concurrency policy type is "some"
           jcs[0]!.environment_policy?.concurrencyType === "some"
-            ? jcs.slice(
+            ? // If so, limit the number of job configs based on the concurrency limit
+              jcs.slice(
                 0,
                 Math.max(
                   0,
@@ -423,7 +431,8 @@ export const isPassingConcurrencyPolicy = async (
                     (jcs[0]!.active_job_execution_subquery?.count ?? 0),
                 ),
               )
-            : jcs,
+            : // If not, return all job configs in the group
+              jcs,
         )
         .flatten()
         .map((jc) => jc.job_config)

@@ -1,5 +1,8 @@
 "use client";
 
+import { formatDistanceToNow } from "date-fns";
+
+import { Badge } from "@ctrlplane/ui/badge";
 import {
   Table,
   TableBody,
@@ -8,8 +11,15 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/react";
+import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { TargetProvidersGettingStarted } from "./TargetProvidersGettingStarted";
 
 export default function TargetProvidersPage({
@@ -33,6 +43,7 @@ export default function TargetProvidersPage({
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Kind</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -42,7 +53,46 @@ export default function TargetProvidersPage({
               key={provider.id}
               className="cursor-pointer border-b-neutral-800/50"
             >
-              <TableCell>{provider.name}</TableCell>
+              <TableCell className="flex items-center gap-2">
+                {provider.name}
+                <Badge
+                  variant="outline"
+                  className="h-7 gap-1.5 rounded-full bg-neutral-900 bg-transparent px-2 text-xs text-muted-foreground"
+                >
+                  {provider.targetCount}{" "}
+                  {provider.targetCount === 1 ? "target" : "targets"}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {provider.kinds.map((kind) => (
+                  <Badge
+                    key={kind.kind}
+                    variant="outline"
+                    className="mr-1 h-7 gap-1.5 rounded-full bg-neutral-900 bg-transparent px-2 text-xs text-muted-foreground"
+                  >
+                    {kind.kind}
+                  </Badge>
+                ))}
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <span>
+                        {new Date(provider.createdAt).toLocaleDateString()}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {formatDistanceToNow(new Date(provider.createdAt), {
+                        addSuffix: true,
+                      })}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </TableCell>
+              <TableCell className="text-right">
+                <ProviderActionsDropdown providerId={provider.id} />
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

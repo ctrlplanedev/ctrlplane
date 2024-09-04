@@ -11,16 +11,22 @@ const sourceCredentials = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
 });
 
-export const getGoogleClusterClient = async (targetPrincipal?: string | null) =>
-  new Container.v1.ClusterManagerClient({
-    authClient: new Impersonated({
+export const getGoogleClusterClient = async (
+  targetPrincipal?: string | null,
+) => {
+  const clientOptions: { authClient?: Impersonated } = {};
+
+  if (targetPrincipal !== null)
+    clientOptions.authClient = new Impersonated({
       sourceClient: await sourceCredentials.getClient(),
       targetPrincipal: targetPrincipal ?? undefined,
       lifetime: 3600,
       delegates: [],
       targetScopes: ["https://www.googleapis.com/auth/cloud-platform"],
-    }),
-  });
+    });
+
+  return new Container.v1.ClusterManagerClient(clientOptions);
+};
 
 export const getClusters = async (
   clusterClient: ClusterManagerClient,

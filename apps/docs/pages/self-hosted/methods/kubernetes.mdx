@@ -1,6 +1,35 @@
-# Configure
+# Kubernetes
 
-## Configure charts using globals
+To install a cloud-native version of Ctrlplane, use the Ctrlplane Helm chart.
+This chart contains all the required components to get started and can scale to
+large deployments.
+
+## Pre-requisites
+
+- A working Kubernetes cluster
+- `kubectl` and `helm` on the client system that you will use to install our
+  Helm charts
+
+## Installing Ctrlplane
+
+1. Open Terminal or any other command-line app that has access to Kubernetes
+   tools on your local system.
+
+2. Add Helm Repo
+
+   ```bash
+   helm repo add ctrlplane https://charts.ctrlplane.Dev
+   helm repo update
+   ```
+
+3. Install Helm Chart
+   ```bash
+   helm install ctrlplane ctrlplane/ctrlplane
+   ```
+
+## Configuration
+
+### Global settings
 
 To reduce configuration duplication when installing our wrapper Helm chart,
 several configuration settings are available to be set in the global section of
@@ -9,7 +38,7 @@ other settings are scoped within their chart. See the [Helm
 documentation](https://helm.sh/docs/chart_template_guide/subcharts_and_globals/#global-chart-values)
 on globals for more information on how the global variables work.
 
-### Configure PostgreSQL settings
+#### Configure PostgreSQL settings
 
 ```yaml
 global:

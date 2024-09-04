@@ -1,6 +1,6 @@
 import type { PgColumn, Tx } from "@ctrlplane/db";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import {
   deployment,
   environment,
@@ -46,10 +46,7 @@ const createTargetProviderBaseQuery = (db: Tx) =>
   );
 
 const createTargetBaseQuery = (db: Tx) =>
-  createTargetProviderBaseQuery(db).innerJoin(
-    target,
-    eq(target.providerId, targetProvider.id),
-  );
+  createBaseQuery(db).innerJoin(target, eq(target.workspaceId, workspace.id));
 
 const evaluate =
   (
@@ -62,6 +59,21 @@ const evaluate =
       ? false
       : base
           .where(and(eq(workspaceMember.userId, userId), eq(entityColumn, id)))
+          .then((a) => a.length > 0);
+
+const evaluateMultiple =
+  (
+    base: ReturnType<typeof createBaseQuery>,
+    userId: string | null | undefined,
+    entityColumn: PgColumn,
+  ) =>
+  async (ids: string[]) =>
+    userId == null
+      ? false
+      : base
+          .where(
+            and(eq(workspaceMember.userId, userId), inArray(entityColumn, ids)),
+          )
           .then((a) => a.length > 0);
 
 export const accessQuery = (db: Tx, userId?: string) => {
@@ -86,19 +98,21 @@ export const accessQuery = (db: Tx, userId?: string) => {
     },
   };
 
-  const targetProviderBase = createTargetProviderBaseQuery(db);
   const targetBase = createTargetBaseQuery(db);
+  const targetAccess = {
+    id: evaluate(targetBase, userId, target.id),
+    ids: evaluateMultiple(targetBase, userId, target.id),
+  };
+  const targetProviderBase = createTargetProviderBaseQuery(db);
   const targetProviderAccess = {
     id: evaluate(targetProviderBase, userId, targetProvider.id),
-    target: {
-      id: evaluate(targetBase, userId, target.id),
-    },
   };
 
   return {
     workspace: {
       id: evaluate(base, userId, workspace.id),
       slug: evaluate(base, userId, workspace.slug),
+      target: targetAccess,
       targetProvider: targetProviderAccess,
       system: systemAccess,
     },

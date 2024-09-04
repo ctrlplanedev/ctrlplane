@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    BASE_URL: z.string().url(),
+    BASE_URL: z.string().url().default("http://localhost:3000"),
     REDIS_URL: z.string(),
 
     GITHUB_URL: z.string().url().optional(),

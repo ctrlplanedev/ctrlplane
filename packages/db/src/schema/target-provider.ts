@@ -33,7 +33,7 @@ export const targetProviderGoogle = pgTable("target_provider_google", {
   id: uuid("id").primaryKey().defaultRandom(),
   targetProviderId: uuid("target_provider_id")
     .notNull()
-    .references(() => targetProvider.id),
+    .references(() => targetProvider.id, { onDelete: "cascade" }),
   projectIds: text("project_ids").array().notNull(),
 });
 export const cerateTargetProviderGoogle = createInsertSchema(

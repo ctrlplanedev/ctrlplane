@@ -16,9 +16,11 @@ const isMain = () => {
 };
 
 if (isMain()) {
-  console.log("Running migration script");
+  console.log("Running migration script...");
+  console.log("schema folder", __dirname + "/drizzle");
   migrate()
     .then(async () => {
+      console.log("Migrations complete");
       await pool.end();
     })
     .catch(console.error);
