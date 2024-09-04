@@ -99,7 +99,9 @@ export const WidgetTargetLabelCount: Widget<{
       { workspaceId: workspace.data?.id ?? "" },
       { enabled: workspace.isSuccess },
     );
-    const labelsKey = api.target.labelKeys.useQuery();
+    const labelsKey = api.target.labelKeys.useQuery(workspace.data?.id ?? "", {
+      enabled: workspace.isSuccess,
+    });
 
     const chartData = _.chain(targets.data?.items ?? [])
       .filter((t) => countUndefined || t.labels[label] != null)

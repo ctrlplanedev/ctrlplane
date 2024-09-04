@@ -60,12 +60,10 @@ import { useMatchSorter } from "../../_components/useMatchSorter";
 
 const LabelFilterInput: React.FC<{
   value: string;
-  workspaceId?: string;
+  workspaceId: string;
   onChange: (value: string) => void;
 }> = ({ value, workspaceId, onChange }) => {
-  const { data: labelKeys } = api.target.labelKeys.useQuery(workspaceId, {
-    enabled: workspaceId != null,
-  });
+  const { data: labelKeys } = api.target.labelKeys.useQuery(workspaceId);
   const [open, setOpen] = useState(false);
   const filteredLabels = useMatchSorter(labelKeys ?? [], value);
   return (
