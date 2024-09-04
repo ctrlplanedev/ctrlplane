@@ -82,7 +82,7 @@ Thats it!
 
 The Ctrlplane community can be found on [GitHub
 Discussions](https://github.com/sizzldev/ctrlplane/discussions), and our [Discord
-server](https://discord.gg/...)
+server](https://ctrlplane.dev/discord)
 
 Ask questions, report bugs, join discussions, voice ideas, make feature
 requests, or share your projects.
