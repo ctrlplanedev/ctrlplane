@@ -1,3 +1,5 @@
+"use client";
+
 import type { Target } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
@@ -7,9 +9,11 @@ import {
 } from "@tanstack/react-table";
 import { formatDistanceToNowStrict } from "date-fns";
 import { SiKubernetes } from "react-icons/si";
-import { TbLock, TbServer, TbTarget } from "react-icons/tb";
+import { TbLock, TbServer, TbTarget, TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
+import { Button } from "@ctrlplane/ui/button";
+import { Checkbox } from "@ctrlplane/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -20,6 +24,41 @@ import {
 } from "@ctrlplane/ui/table";
 
 const columns: ColumnDef<Target>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsSomePageRowsSelected()
+            ? "indeterminate"
+            : table.getIsAllPageRowsSelected()
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+        className={cn(
+          "opacity-0 transition-opacity hover:opacity-100",
+          (table.getIsAllPageRowsSelected() ||
+            table.getIsSomePageRowsSelected()) &&
+            "opacity-100",
+        )}
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        onClick={(e) => e.stopPropagation()}
+        aria-label="Select row"
+        className={cn(
+          "opacity-0 transition-opacity hover:opacity-100",
+          row.getIsSelected() && "opacity-100",
+        )}
+      />
+    ),
+    enableSorting: false,
+    enableHiding: false,
+    size: 40, // Set a fixed width for the checkbox column
+  },
   {
     id: "name",
     header: "Name",
@@ -72,43 +111,63 @@ export const TargetsTable: React.FC<{
   });
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.map((row) => (
-          <TableRow
-            className={cn(
-              "cursor-pointer border-b-neutral-800/50",
-              activeTargetIds?.includes(row.original.id) && "bg-neutral-800/50",
-            )}
-            key={row.id}
-            onClick={() => {
-              onTableRowClick?.(row.original);
-            }}
-          >
-            {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
-            ))}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="relative">
+      <Table>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow
+              className={cn(
+                "cursor-pointer border-b-neutral-800/50",
+                activeTargetIds?.includes(row.original.id) &&
+                  "bg-neutral-800/50",
+                row.getIsSelected() && "bg-blue-500/20",
+                row.getIsSelected() && "hover:bg-blue-500/30",
+              )}
+              key={row.id}
+              onClick={() => onTableRowClick?.(row.original)}
+            >
+              {row.getVisibleCells().map((cell) => (
+                <TableCell key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      {table.getSelectedRowModel().rows.length > 0 && (
+        <div className="sticky bottom-4 left-0 right-0 flex justify-center">
+          <div className="flex items-center gap-2 rounded-md bg-neutral-900 p-2 shadow-lg">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => table.toggleAllRowsSelected(false)}
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <span className="text-sm text-muted-foreground">
+                {table.getSelectedRowModel().rows.length} selected
+              </span>
+              <TbX className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
