@@ -129,12 +129,15 @@ const labelGroupRouter = createTRPCRouter({
 
 const targetProviderRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
+    .meta({ access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input) })
     .input(z.string())
     .query(async ({ ctx, input }) => {
       const providers = await ctx.db
         .select()
         .from(targetProvider)
         .where(eq(targetProvider.workspaceId, input));
+
+      if (providers.length === 0) return [];
 
       const providerCounts = await ctx.db
         .select({
@@ -210,14 +213,42 @@ const targetProviderRouter = createTRPCRouter({
         }),
       ),
   }),
+
+  delete: protectedProcedure
+    .input(
+      z.object({
+        providerId: z.string().uuid(),
+        deleteTargets: z.boolean().optional().default(false),
+      }),
+    )
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.transaction(async (tx) => {
+        if (input.deleteTargets)
+          await tx
+            .delete(target)
+            .where(eq(target.providerId, input.providerId));
+
+        const deletedProvider = await tx
+          .delete(targetProvider)
+          .where(eq(targetProvider.id, input.providerId))
+          .returning()
+          .then(takeFirst);
+
+        // We should think about the edge case here, if a scan is in progress,
+        // what do we do?
+        await targetScanQueue.remove(input.providerId);
+
+        return deletedProvider;
+      }),
+    ),
 });
 
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
     .select()
     .from(target)
-    .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-    .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+    .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
+    .innerJoin(workspace, eq(target.workspaceId, workspace.id))
     .where(and(...checks))
     .orderBy(desc(target.kind));
 
@@ -234,7 +265,7 @@ export const targetRouter = createTRPCRouter({
       ctx.db
         .select()
         .from(target)
-        .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
+        .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
         .where(eq(target.id, input))
         .then(takeFirstOrNull)
         .then((a) =>
@@ -309,8 +340,7 @@ export const targetRouter = createTRPCRouter({
         ctx.db
           .selectDistinct({ kind: target.kind })
           .from(target)
-          .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-          .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+          .innerJoin(workspace, eq(target.workspaceId, workspace.id))
           .where(eq(workspace.id, input))
           .then((r) => r.map((row) => row.kind)),
       ),
@@ -339,8 +369,8 @@ export const targetRouter = createTRPCRouter({
         return ctx.db
           .select()
           .from(target)
-          .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-          .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+          .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
+          .innerJoin(workspace, eq(target.workspaceId, workspace.id))
           .where(
             and(
               eq(workspace.id, input.workspaceId),

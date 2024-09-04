@@ -43,6 +43,13 @@
       "when": 1725049430244,
       "tag": "0005_thick_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1725482158482,
+      "tag": "0006_youthful_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

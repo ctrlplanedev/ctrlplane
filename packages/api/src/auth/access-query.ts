@@ -46,10 +46,7 @@ const createTargetProviderBaseQuery = (db: Tx) =>
   );
 
 const createTargetBaseQuery = (db: Tx) =>
-  createTargetProviderBaseQuery(db).innerJoin(
-    target,
-    eq(target.providerId, targetProvider.id),
-  );
+  createBaseQuery(db).innerJoin(target, eq(target.workspaceId, workspace.id));
 
 const evaluate =
   (

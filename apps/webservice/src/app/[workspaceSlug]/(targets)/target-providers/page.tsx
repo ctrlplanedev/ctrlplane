@@ -1,16 +1,8 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { TbDots } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
-import { Button } from "@ctrlplane/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -27,6 +19,7 @@ import {
 } from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/react";
+import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { TargetProvidersGettingStarted } from "./TargetProvidersGettingStarted";
 
 export default function TargetProvidersPage({
@@ -98,18 +91,7 @@ export default function TargetProvidersPage({
                 </TooltipProvider>
               </TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                      <span className="sr-only">Open menu</span>
-                      <TbDots className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                    <DropdownMenuItem>Delete</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <ProviderActionsDropdown providerId={provider.id} />
               </TableCell>
             </TableRow>
           ))}

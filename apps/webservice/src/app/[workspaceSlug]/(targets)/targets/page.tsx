@@ -34,6 +34,12 @@ import {
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { TableCell, TableHead } from "@ctrlplane/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
@@ -49,7 +55,7 @@ import { LabelFilterDialog } from "./LabelFilterDialog";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
-const TargetGeneral: React.FC<Target & { provider: TargetProvider }> = (
+const TargetGeneral: React.FC<Target & { provider: TargetProvider | null }> = (
   target,
 ) => {
   const labels = Object.entries(target.labels).sort(([keyA], [keyB]) =>
@@ -87,7 +93,27 @@ const TargetGeneral: React.FC<Target & { provider: TargetProvider }> = (
               <td className="p-1 pr-2 text-muted-foreground">
                 Target Provider
               </td>
-              <td>{target.provider.name}</td>
+              <td>
+                {target.provider != null ? (
+                  target.provider.name
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <span className="cursor-help italic text-gray-500">
+                          Not set
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-[250px]">
+                          The next target provider to insert a target with the
+                          same identifier will become the owner of this target.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </td>
             </tr>
 
             <tr>
