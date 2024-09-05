@@ -5,8 +5,10 @@ import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { targetProvider, workspace } from "@ctrlplane/db/schema";
 
+import { getUser } from "~/app/api/v1/auth";
+
 export const GET = async (
-  _: NextRequest,
+  req: NextRequest,
   { params }: { params: { workspace: string; name: string } },
 ) => {
   const ws = await db
@@ -17,6 +19,12 @@ export const GET = async (
 
   if (!ws)
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+
+  const canAccess = await getUser(req).then((u) =>
+    u.access.workspace.id(ws.id),
+  );
+  if (!canAccess)
+    return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 
   const tp = await db
     .insert(targetProvider)
