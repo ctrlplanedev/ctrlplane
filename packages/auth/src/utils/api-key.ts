@@ -1,7 +1,6 @@
 import { hash } from "bcryptjs";
-import { eq } from "drizzle-orm";
 
-import { takeFirstOrNull } from "@ctrlplane/db";
+import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { user, userApiKey } from "@ctrlplane/db/schema";
 
