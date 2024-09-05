@@ -1,0 +1,27 @@
+# Event Worker
+
+The `Event Worker` is a core component of the ctrlplane application, it is
+responsible for processing events from the event bus.
+
+Deployment
+
+- Docker Image: `docker.io/ctrlplane/event-worker:latest`, [Dockerfile](https://github.com/sizzldev/ctrlplane/blob/main/apps/event-worker/Dockerfile)
+- [Helm Chart](https://github.com/sizzldev/ctrlchart/blob/main/charts/event-worker)
+
+Technology:
+
+- [BullMQ](https://github.com/taskforcesh/bullmq)
+- [TypeScript](https://www.typescriptlang.org/)
+
+## Environment Variables
+
+| Variable                   | Default                                                   | Description                                    | Optional |
+| -------------------------- | --------------------------------------------------------- | ---------------------------------------------- | -------- |
+| `POSTGRES_URL`             | postgresql://ctrlplane:ctrlplane@127.0.0.1:5432/ctrlplane | URL for connecting to the PostgreSQL database. | No       |
+| `REDIS_URL`                | redis://127.0.0.1:6379                                    | URL for connecting to the Redis database.      | No       |
+| `GITHUB_URL`               | https://github.com                                        | URL for GitHub integration.                    | Yes      |
+| `GITHUB_BOT_NAME`          |                                                           | Name of the GitHub bot.                        | Yes      |
+| `GITHUB_BOT_PRIVATE_KEY`   |                                                           | Private key for the GitHub bot.                | Yes      |
+| `GITHUB_BOT_CLIENT_ID`     |                                                           | Client ID for the GitHub bot.                  | Yes      |
+| `GITHUB_BOT_CLIENT_SECRET` |                                                           | Client secret for the GitHub bot.              | Yes      |
+| `GITHUB_BOT_APP_ID`        |                                                           | App ID for the GitHub bot.                     | Yes      |

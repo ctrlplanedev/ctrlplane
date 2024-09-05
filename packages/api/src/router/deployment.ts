@@ -209,12 +209,11 @@ export const deploymentRouter = createTRPCRouter({
 
   byTargetId: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.targetProvider.target.id(input),
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.id(input),
     })
     .input(z.string())
-    .query(({ ctx, input }) => {
-      return ctx.db
+    .query(({ ctx, input }) =>
+      ctx.db
         .selectDistinctOn([deployment.id])
         .from(deployment)
         .innerJoin(system, eq(system.id, deployment.systemId))
@@ -252,8 +251,8 @@ export const deploymentRouter = createTRPCRouter({
               release: row.release,
             },
           })),
-        );
-    }),
+        ),
+    ),
 
   byWorkspaceId: protectedProcedure
     .meta({

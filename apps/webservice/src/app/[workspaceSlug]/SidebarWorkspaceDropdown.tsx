@@ -34,10 +34,10 @@ export const SidebarWorkspaceDropdown: React.FC = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="flex items-center gap-2 px-2 py-0 text-base"
+          className="flex w-full items-center justify-between gap-2 px-2 py-0 text-base"
         >
-          {workspace?.name}
-          <TbChevronDown className="h-3 w-3 text-muted-foreground" />
+          <span className="truncate">{workspace?.name}</span>
+          <TbChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-neutral-900">

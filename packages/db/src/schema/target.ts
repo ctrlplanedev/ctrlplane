@@ -22,9 +22,9 @@ export const target = pgTable(
     name: text("name").notNull().unique(),
     kind: text("kind").notNull(),
     identifier: text("identifier").notNull(),
-    providerId: uuid("provider_id")
-      .references(() => targetProvider.id)
-      .notNull(),
+    providerId: uuid("provider_id").references(() => targetProvider.id, {
+      onDelete: "set null",
+    }),
     workspaceId: uuid("workspace_id")
       .notNull()
       .references(() => workspace.id),

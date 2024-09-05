@@ -15,5 +15,6 @@ export default async function SystemPage() {
     const workspace = await api.workspace.byId(user.activeWorkspaceId);
     if (workspace != null) redirect(`/${workspace.slug}`);
   }
+
   redirect(`/${workspaces[0]!.slug}`);
 }

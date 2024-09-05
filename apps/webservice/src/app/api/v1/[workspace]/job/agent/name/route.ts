@@ -6,6 +6,8 @@ import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { jobAgent, workspace } from "@ctrlplane/db/schema";
 
+import { getUser } from "~/app/api/v1/auth";
+
 const bodySchema = z.object({ type: z.string(), name: z.string() });
 
 export const PATCH = async (
@@ -20,6 +22,12 @@ export const PATCH = async (
 
   if (ws == null)
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+
+  const canAccess = await getUser(req).then((u) =>
+    u.access.workspace.id(ws.id),
+  );
+  if (!canAccess)
+    return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 
   const response = await req.json();
   const body = bodySchema.parse(response);

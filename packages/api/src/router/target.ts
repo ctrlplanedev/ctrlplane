@@ -9,6 +9,7 @@ import {
   asc,
   desc,
   eq,
+  inArray,
   like,
   or,
   sql,
@@ -128,13 +129,56 @@ const labelGroupRouter = createTRPCRouter({
 
 const targetProviderRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
+    .meta({ access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input) })
     .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(async ({ ctx, input }) => {
+      const providers = await ctx.db
         .select()
         .from(targetProvider)
-        .where(eq(targetProvider.workspaceId, input)),
-    ),
+        .where(eq(targetProvider.workspaceId, input));
+
+      if (providers.length === 0) return [];
+
+      const providerCounts = await ctx.db
+        .select({
+          providerId: target.providerId,
+          count: sql<number>`count(*)`.as("count"),
+        })
+        .from(target)
+        .where(
+          inArray(
+            target.providerId,
+            providers.map((p) => p.id),
+          ),
+        )
+        .groupBy(target.providerId);
+
+      const providerKinds = await ctx.db
+        .select({
+          providerId: target.providerId,
+          kind: target.kind,
+          count: sql<number>`count(*)`.as("count"),
+        })
+        .from(target)
+        .where(
+          inArray(
+            target.providerId,
+            providers.map((p) => p.id),
+          ),
+        )
+        .groupBy(target.providerId, target.kind)
+        .orderBy(sql`count(*) DESC`);
+
+      return providers.map((provider) => ({
+        ...provider,
+        targetCount:
+          providerCounts.find((pc) => pc.providerId === provider.id)?.count ??
+          0,
+        kinds: providerKinds
+          .filter((pk) => pk.providerId === provider.id)
+          .map(({ kind, count }) => ({ kind, count })),
+      }));
+    }),
 
   managed: createTRPCRouter({
     google: protectedProcedure
@@ -169,14 +213,42 @@ const targetProviderRouter = createTRPCRouter({
         }),
       ),
   }),
+
+  delete: protectedProcedure
+    .input(
+      z.object({
+        providerId: z.string().uuid(),
+        deleteTargets: z.boolean().optional().default(false),
+      }),
+    )
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.transaction(async (tx) => {
+        if (input.deleteTargets)
+          await tx
+            .delete(target)
+            .where(eq(target.providerId, input.providerId));
+
+        const deletedProvider = await tx
+          .delete(targetProvider)
+          .where(eq(targetProvider.id, input.providerId))
+          .returning()
+          .then(takeFirst);
+
+        // We should think about the edge case here, if a scan is in progress,
+        // what do we do?
+        await targetScanQueue.remove(input.providerId);
+
+        return deletedProvider;
+      }),
+    ),
 });
 
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
     .select()
     .from(target)
-    .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-    .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+    .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
+    .innerJoin(workspace, eq(target.workspaceId, workspace.id))
     .where(and(...checks))
     .orderBy(desc(target.kind));
 
@@ -184,20 +256,29 @@ export const targetRouter = createTRPCRouter({
   labelGroup: labelGroupRouter,
   provider: targetProviderRouter,
 
-  byId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    ctx.db
-      .select()
-      .from(target)
-      .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-      .where(eq(target.id, input))
-      .then(takeFirstOrNull)
-      .then((a) =>
-        a == null ? null : { ...a.target, provider: a.target_provider },
-      ),
-  ),
+  byId: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.id(input),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(target)
+        .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
+        .where(eq(target.id, input))
+        .then(takeFirstOrNull)
+        .then((a) =>
+          a == null ? null : { ...a.target, provider: a.target_provider },
+        ),
+    ),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
+      .meta({
+        access: ({ ctx, input }) =>
+          ctx.accessQuery().workspace.id(input.workspaceId),
+      })
       .input(
         z.object({
           workspaceId: z.string().uuid().optional(),
@@ -250,17 +331,25 @@ export const targetRouter = createTRPCRouter({
         }));
       }),
 
-    kinds: protectedProcedure.input(z.string().uuid()).query(({ ctx, input }) =>
-      ctx.db
-        .selectDistinct({ kind: target.kind })
-        .from(target)
-        .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-        .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
-        .where(eq(workspace.id, input))
-        .then((r) => r.map((row) => row.kind)),
-    ),
+    kinds: protectedProcedure
+      .meta({
+        access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
+      })
+      .input(z.string().uuid())
+      .query(({ ctx, input }) =>
+        ctx.db
+          .selectDistinct({ kind: target.kind })
+          .from(target)
+          .innerJoin(workspace, eq(target.workspaceId, workspace.id))
+          .where(eq(workspace.id, input))
+          .then((r) => r.map((row) => row.kind)),
+      ),
 
     filtered: protectedProcedure
+      .meta({
+        access: ({ ctx, input }) =>
+          ctx.accessQuery().workspace.id(input.workspaceId),
+      })
       .input(
         z.object({
           workspaceId: z.string().uuid(),
@@ -280,8 +369,8 @@ export const targetRouter = createTRPCRouter({
         return ctx.db
           .select()
           .from(target)
-          .innerJoin(targetProvider, eq(target.providerId, targetProvider.id))
-          .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+          .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
+          .innerJoin(workspace, eq(target.workspaceId, workspace.id))
           .where(
             and(
               eq(workspace.id, input.workspaceId),
@@ -297,12 +386,20 @@ export const targetRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) =>
+        ctx.accessQuery().workspace.id(input.workspaceId),
+    })
     .input(createTarget)
     .mutation(({ ctx, input }) =>
       ctx.db.insert(target).values(input).returning().then(takeFirst),
     ),
 
   update: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) =>
+        ctx.accessQuery().workspace.target.id(input.id),
+    })
     .input(z.object({ id: z.string().uuid(), data: updateTarget }))
     .mutation(({ ctx, input: { id, data } }) =>
       ctx.db
@@ -313,17 +410,30 @@ export const targetRouter = createTRPCRouter({
         .then(takeFirst),
     ),
 
+  delete: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.ids(input),
+    })
+    .input(z.array(z.string().uuid()))
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.delete(target).where(inArray(target.id, input)).returning(),
+    ),
+
   labelKeys: protectedProcedure
-    .input(z.string().optional())
+    .meta({ access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input) })
+    .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
         .selectDistinct({ key: sql<string>`jsonb_object_keys(labels)` })
         .from(target)
-        .where(input != null ? eq(target.workspaceId, input) : undefined)
+        .where(eq(target.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),
 
   lock: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.id(input),
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -335,6 +445,9 @@ export const targetRouter = createTRPCRouter({
     ),
 
   unlock: protectedProcedure
+    .meta({
+      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.id(input),
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db

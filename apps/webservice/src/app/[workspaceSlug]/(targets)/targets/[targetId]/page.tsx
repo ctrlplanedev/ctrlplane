@@ -13,6 +13,12 @@ import {
   ResizablePanelGroup,
 } from "@ctrlplane/ui/resizable";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { useMatchSorterWithSearch } from "~/app/[workspaceSlug]/_components/useMatchSorter";
 import { api } from "~/trpc/react";
@@ -189,7 +195,30 @@ export default function TargetPage({
                 <td className="py-1 pr-2 text-muted-foreground">
                   Target Provider
                 </td>
-                <td>{target.data?.provider.name}</td>
+                {target.isSuccess && (
+                  <>
+                    {target.data?.provider != null ? (
+                      target.data.provider.name
+                    ) : (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="cursor-help italic text-gray-500">
+                              Not set
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[250px]">
+                              The next target provider to insert a target with
+                              the same identifier will become the owner of this
+                              target.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </>
+                )}
               </tr>
 
               <tr>

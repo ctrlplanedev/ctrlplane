@@ -16,7 +16,9 @@ export const LabelFilterInput: React.FC<{
   numInputs: number;
 }> = ({ workspaceId, value, onChange, onRemove, numInputs }) => {
   const [open, setOpen] = useState(false);
-  const labelsKey = api.target.labelKeys.useQuery(workspaceId);
+  const labelsKey = api.target.labelKeys.useQuery(workspaceId ?? "", {
+    enabled: workspaceId != null,
+  });
   const filteredLabels = useMatchSorter(labelsKey.data ?? [], value.key);
   return (
     <div className="flex items-center gap-2">

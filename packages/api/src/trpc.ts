@@ -3,10 +3,10 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { accessQuery } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
 
 import type { AppError } from "./errorCodes";
-import { accessQuery } from "./auth/access-query";
 import { appErrorToTRPCError, handleDatabaseError } from "./dbErrors";
 import { ErrorCode } from "./errorCodes";
 

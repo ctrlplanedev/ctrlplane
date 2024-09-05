@@ -1,35 +1,9 @@
 {
-  "index": "Introduction",
-  "getting-started": "Getting Started",
-  "use-cases": "Use Cases",
-
-  "-- Core Concepts": {
-    "type": "separator",
-    "title": "Core Concepts"
-  },
-  "deployments": "Deployments",
-  "systems": "Systems",
-  "environments": "Environments",
-  "targets": "Targets",
-  "jobs": "Jobs",
-  "variables": "Variables",
-  "runbooks": "Runbooks",
-  "advanced": "Advanced",
+  "index": "Home",
+  "quickstart": "Quickstart",
+  "core-concepts": "Core Concepts",
+  "integrations": "Integrations",
+  "self-hosted": "Self-hosted",
   "glossary": "Glossary",
-
-  "-- Integrations": {
-    "type": "separator",
-    "title": "Integrations"
-  },
-  "github": "GitHub",
-  "google-cloud": "Google Cloud",
-  "kubernetes": "Kubernetes",
-
-  "-- Deploy": {
-    "type": "separator",
-    "title": "Install"
-  },
-  "requirements": "Requirements",
-  "install": "Install Methods",
-  "cloud-providers": "Cloud Providers"
+  "troubleshooting": "Troubleshooting"
 }

@@ -22,7 +22,8 @@ function createLogger(level: string) {
     }),
   ];
 
-  // We dont want colors in production. They do not display correctly in cloud run console.
+  // We dont want colors in production. They do not display correctly in cloud
+  // run console.
   if (NODE_ENV !== "production") format.unshift(winston.format.colorize());
 
   return winston.createLogger({
