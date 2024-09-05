@@ -15,17 +15,19 @@ export default function IntegrationLayout({
   const router = useRouter();
   const { workspaceSlug } = params;
   return (
-    <div className="flex flex-col gap-4">
-      <Button
-        variant="ghost"
-        onClick={() =>
-          router.push(`/${workspaceSlug}/settings/workspace/integrations`)
-        }
-        className="flex w-fit items-center gap-2"
-      >
-        <TbArrowLeft className="h-4 w-4" /> Integrations
-      </Button>
-      {children}
+    <div className="flex justify-center">
+      <div className="flex max-w-3xl flex-col gap-4">
+        <Button
+          variant="ghost"
+          onClick={() =>
+            router.push(`/${workspaceSlug}/settings/workspace/integrations`)
+          }
+          className="flex w-fit items-center gap-2"
+        >
+          <TbArrowLeft className="h-4 w-4" /> Integrations
+        </Button>
+        {children}
+      </div>
     </div>
   );
 }

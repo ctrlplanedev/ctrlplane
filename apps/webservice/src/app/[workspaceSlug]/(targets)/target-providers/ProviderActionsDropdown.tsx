@@ -1,5 +1,9 @@
 "use client";
 
+import type {
+  TargetProvider,
+  TargetProviderGoogle,
+} from "@ctrlplane/db/schema";
 import { TbDots } from "react-icons/tb";
 
 import {
@@ -22,17 +26,22 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
+import { UpdateGoogleProviderDialog } from "./integrations/google/UpdateGoogleProviderDialog";
 
-export const ProviderActionsDropdown: React.FC<{ providerId: string }> = ({
-  providerId,
-}) => {
+type Provider = TargetProvider & {
+  googleConfig: TargetProviderGoogle | null;
+};
+
+export const ProviderActionsDropdown: React.FC<{
+  provider: Provider;
+}> = ({ provider }) => {
   const utils = api.useUtils();
   const deleteProvider = api.target.provider.delete.useMutation({
     onSuccess: () => utils.target.provider.byWorkspaceId.invalidate(),
   });
 
   const handleDelete = (deleteTargets: boolean) =>
-    deleteProvider.mutate({ providerId, deleteTargets });
+    deleteProvider.mutate({ providerId: provider.id, deleteTargets });
 
   return (
     <DropdownMenu>
@@ -43,7 +52,17 @@ export const ProviderActionsDropdown: React.FC<{ providerId: string }> = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem>Edit</DropdownMenuItem>
+        {provider.googleConfig != null && (
+          <UpdateGoogleProviderDialog
+            providerId={provider.id}
+            name={provider.name}
+            projectIds={provider.googleConfig.projectIds}
+          >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Edit
+            </DropdownMenuItem>
+          </UpdateGoogleProviderDialog>
+        )}
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>

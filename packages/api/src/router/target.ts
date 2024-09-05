@@ -17,9 +17,9 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
-  cerateTargetProviderGoogle,
   createTarget,
   createTargetProvider,
+  createTargetProviderGoogle,
   target,
   targetLabelGroup,
   targetProvider,
@@ -135,6 +135,10 @@ const targetProviderRouter = createTRPCRouter({
       const providers = await ctx.db
         .select()
         .from(targetProvider)
+        .leftJoin(
+          targetProviderGoogle,
+          eq(targetProviderGoogle.targetProviderId, targetProvider.id),
+        )
         .where(eq(targetProvider.workspaceId, input));
 
       if (providers.length === 0) return [];
@@ -148,7 +152,7 @@ const targetProviderRouter = createTRPCRouter({
         .where(
           inArray(
             target.providerId,
-            providers.map((p) => p.id),
+            providers.map((p) => p.target_provider.id),
           ),
         )
         .groupBy(target.providerId);
@@ -163,55 +167,91 @@ const targetProviderRouter = createTRPCRouter({
         .where(
           inArray(
             target.providerId,
-            providers.map((p) => p.id),
+            providers.map((p) => p.target_provider.id),
           ),
         )
         .groupBy(target.providerId, target.kind)
         .orderBy(sql`count(*) DESC`);
 
       return providers.map((provider) => ({
-        ...provider,
+        ...provider.target_provider,
+        googleConfig: provider.target_provider_google,
         targetCount:
-          providerCounts.find((pc) => pc.providerId === provider.id)?.count ??
-          0,
+          providerCounts.find(
+            (pc) => pc.providerId === provider.target_provider.id,
+          )?.count ?? 0,
         kinds: providerKinds
-          .filter((pk) => pk.providerId === provider.id)
+          .filter((pk) => pk.providerId === provider.target_provider.id)
           .map(({ kind, count }) => ({ kind, count })),
       }));
     }),
 
   managed: createTRPCRouter({
-    google: protectedProcedure
-      .input(
-        createTargetProvider.and(
-          z.object({
-            config: cerateTargetProviderGoogle.omit({ targetProviderId: true }),
+    google: createTRPCRouter({
+      create: protectedProcedure
+        .input(
+          createTargetProvider.and(
+            z.object({
+              config: createTargetProviderGoogle.omit({
+                targetProviderId: true,
+              }),
+            }),
+          ),
+        )
+        .mutation(({ ctx, input }) =>
+          ctx.db.transaction(async (db) => {
+            const tg = await db
+              .insert(targetProvider)
+              .values(input)
+              .returning()
+              .then(takeFirst);
+            const tgConfig = await db
+              .insert(targetProviderGoogle)
+              .values({ ...input.config, targetProviderId: tg.id })
+              .returning()
+              .then(takeFirst);
+
+            console.log("queueing target scan");
+            await targetScanQueue.add(
+              tg.id,
+              { targetProviderId: tg.id },
+              { repeat: { every: ms("5m"), immediately: true } },
+            );
+
+            return { ...tg, config: tgConfig };
           }),
         ),
-      )
-      .mutation(({ ctx, input }) =>
-        ctx.db.transaction(async (db) => {
-          const tg = await db
-            .insert(targetProvider)
-            .values(input)
-            .returning()
-            .then(takeFirst);
-          const tgConfig = await db
-            .insert(targetProviderGoogle)
-            .values({ ...input.config, targetProviderId: tg.id })
-            .returning()
-            .then(takeFirst);
 
-          console.log("queueing target scan");
-          await targetScanQueue.add(
-            tg.id,
-            { targetProviderId: tg.id },
-            { repeat: { every: ms("5m"), immediately: true } },
-          );
-
-          return { ...tg, config: tgConfig };
-        }),
-      ),
+      update: protectedProcedure
+        .input(
+          z.object({
+            targetProviderId: z.string().uuid(),
+            name: z.string(),
+            config: createTargetProviderGoogle.omit({
+              targetProviderId: true,
+            }),
+          }),
+        )
+        .mutation(({ ctx, input }) =>
+          ctx.db.transaction(async (db) =>
+            db
+              .update(targetProvider)
+              .set(input)
+              .where(eq(targetProvider.id, input.targetProviderId))
+              .then(() =>
+                db
+                  .update(targetProviderGoogle)
+                  .set(input.config)
+                  .where(
+                    eq(
+                      targetProviderGoogle.targetProviderId,
+                      input.targetProviderId,
+                    ),
+                  ),
+              ),
+          ),
+        ),
+    }),
   }),
 
   delete: protectedProcedure

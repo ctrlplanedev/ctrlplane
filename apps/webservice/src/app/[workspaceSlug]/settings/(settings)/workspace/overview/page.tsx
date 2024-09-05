@@ -17,6 +17,7 @@ export default function OverviewPage({
 }: {
   params: { workspaceSlug: string };
 }) {
+  const { workspaceSlug } = params;
   return (
     <div className="container mx-auto max-w-7xl space-y-8">
       <div className="space-y-1">
@@ -45,7 +46,7 @@ export default function OverviewPage({
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${params.workspaceSlug}/target-providers`}>
+              <Link href={`/${workspaceSlug}/target-providers`}>
                 <Button size="sm" variant="secondary">
                   Sync targets
                 </Button>
@@ -73,7 +74,7 @@ export default function OverviewPage({
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${params.workspaceSlug}/systems`}>
+              <Link href={`/${workspaceSlug}/systems`}>
                 <Button size="sm" variant="secondary">
                   Create systems
                 </Button>
@@ -100,7 +101,7 @@ export default function OverviewPage({
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${params.workspaceSlug}/environments`}>
+              <Link href={`/${workspaceSlug}/environments`}>
                 <Button size="sm" variant="secondary">
                   Configure environments
                 </Button>
@@ -133,7 +134,7 @@ export default function OverviewPage({
                 </div>
                 <div>
                   <Link
-                    href={`/${params.workspaceSlug}/settings/workspace/integrations/github`}
+                    href={`/${workspaceSlug}/settings/workspace/integrations/github`}
                   >
                     <Button variant="secondary" size="sm">
                       Open
@@ -153,9 +154,7 @@ export default function OverviewPage({
                 </div>
                 <div>
                   <Link
-                    href={
-                      "https://docs.ctrlplane.dev/google-cloud/compute-scanner"
-                    }
+                    href={`/${workspaceSlug}/settings/workspace/integrations/google`}
                   >
                     <Button variant="secondary" size="sm">
                       Open
