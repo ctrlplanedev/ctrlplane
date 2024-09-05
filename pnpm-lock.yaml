@@ -730,6 +730,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/bcryptjs':
+        specifier: ^2.4.6
+        version: 2.4.6
       eslint:
         specifier: 'catalog:'
         version: 9.9.1(jiti@1.21.6)
