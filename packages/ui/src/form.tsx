@@ -191,9 +191,7 @@ const RootFormMessage = () => {
   const { formState } = useFormContext();
   const error = formState.errors.root;
 
-  if (!error) {
-    return null;
-  }
+  if (!error) return null;
 
   return (
     <p className="text-sm font-medium text-destructive">{error.message}</p>

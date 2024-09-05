@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import isEqual from "lodash/isEqual";
 import { useForm } from "react-hook-form";
@@ -33,6 +32,7 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import { api } from "~/trpc/react";
 
 const deploymentFormSchema = z.object({
+  systemId: z.string().uuid({ message: "Invalid system ID format." }),
   id: z.string().uuid({ message: "Invalid ID format." }),
   name: z
     .string()
@@ -55,13 +55,13 @@ type DeploymentFormValues = z.infer<typeof deploymentFormSchema>;
 
 export const EditDeploymentDialog: React.FC<
   DeploymentFormValues & { children?: React.ReactNode }
-> = ({ id, name, slug, description, children }) => {
-  const router = useRouter();
+> = ({ systemId, id, name, slug, description, children }) => {
   const [open, setOpen] = useState(false);
+  const utils = api.useUtils();
 
   const form = useForm({
     resolver: zodResolver(deploymentFormSchema),
-    defaultValues: { id, name, slug, description },
+    defaultValues: { systemId, id, name, slug, description },
     mode: "onChange",
   });
 
@@ -81,8 +81,8 @@ export const EditDeploymentDialog: React.FC<
       });
     },
     onSuccess: () => {
-      router.refresh();
       setOpen(false);
+      utils.deployment.bySystemId.invalidate();
     },
   });
 
@@ -93,7 +93,10 @@ export const EditDeploymentDialog: React.FC<
       return;
     }
 
-    update.mutate({ id, data });
+    update.mutate({
+      id,
+      data: { name: data.name, slug: data.slug, description: data.description },
+    });
   });
 
   return (

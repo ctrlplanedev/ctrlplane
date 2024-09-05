@@ -115,7 +115,8 @@ const DeploymentTable: React.FC<{
       latestRelease: { id: string; version: string; createdAt: Date } | null;
     }
   >;
-}> = ({ systemSlug, deployments, environments }) => {
+  systemId: string;
+}> = ({ systemSlug, deployments, environments, systemId }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   return (
     <div className="w-full overflow-x-auto">
@@ -162,7 +163,7 @@ const DeploymentTable: React.FC<{
                   <Button size="icon" variant="ghost">
                     <TbRocket />
                   </Button>
-                  <DeploymentOptionsDropdown {...r} />
+                  <DeploymentOptionsDropdown {...r} systemId={systemId} />
                 </div>
               </td>
 
