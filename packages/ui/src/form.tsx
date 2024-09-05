@@ -187,7 +187,6 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = "FormMessage";
 
-// Update RootFormMessage component
 const RootFormMessage = () => {
   const { formState } = useFormContext();
   const error = formState.errors.root;

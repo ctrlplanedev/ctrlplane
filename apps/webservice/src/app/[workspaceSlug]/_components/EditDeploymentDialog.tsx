@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -91,7 +93,7 @@ export const EditDeploymentDialog: React.FC<
       return;
     }
 
-    update.mutateAsync({ id, data }).catch(() => {});
+    update.mutate({ id, data });
   });
 
   return (
