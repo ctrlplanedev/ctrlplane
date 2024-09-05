@@ -82,7 +82,7 @@ export const EditDeploymentDialog: React.FC<
     },
     onSuccess: () => {
       setOpen(false);
-      utils.deployment.bySystemId.invalidate();
+      utils.deployment.bySystemId.invalidate(systemId);
     },
   });
 
