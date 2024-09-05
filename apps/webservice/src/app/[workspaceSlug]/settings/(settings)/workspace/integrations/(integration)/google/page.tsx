@@ -1,8 +1,8 @@
-"use client";
-
 import { SiGooglecloud } from "react-icons/si";
 
 import { Card } from "@ctrlplane/ui/card";
+
+export const metadata = { title: "Google Integrations - Settings" };
 
 export default function GoogleIntegrationPage() {
   return (

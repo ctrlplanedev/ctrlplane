@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+import type { Metadata } from "next";
 import { TbEdit } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
@@ -20,6 +21,8 @@ import {
 
 import { api } from "~/trpc/server";
 import { CreateValueSetDialog } from "./CreateValueSetDialog";
+
+export const metadata: Metadata = { title: "Value Sets - Systems" };
 
 export default async function SystemValueSetsPage({
   params,

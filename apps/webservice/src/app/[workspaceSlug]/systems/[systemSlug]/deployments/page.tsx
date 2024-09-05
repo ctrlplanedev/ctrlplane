@@ -4,7 +4,7 @@ import { api } from "~/trpc/server";
 import { DeploymentGettingStarted } from "./DeploymentGettingStarted";
 import DeploymentTable from "./TableDeployments";
 
-export const metadata: Metadata = { title: "Systems - Deployments" };
+export const metadata: Metadata = { title: "Deployments - Systems" };
 
 export default async function SystemDeploymentsPage({
   params,
