@@ -1,6 +1,8 @@
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 
+import type { AppError } from "./errorCodes";
 import type { AppRouter } from "./root";
+import { ErrorCode } from "./errorCodes";
 import { appRouter } from "./root";
 import { createCallerFactory, createTRPCContext } from "./trpc";
 
@@ -29,5 +31,5 @@ type RouterInputs = inferRouterInputs<AppRouter>;
  **/
 type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export { createTRPCContext, appRouter, createCaller };
-export type { AppRouter, RouterInputs, RouterOutputs };
+export { createTRPCContext, appRouter, createCaller, ErrorCode };
+export type { AppRouter, RouterInputs, RouterOutputs, AppError };

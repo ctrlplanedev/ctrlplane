@@ -1,12 +1,11 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import isEqual from "lodash/isEqual";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+// import { ErrorCode } from "@ctrlplane/api";
 import { Button } from "@ctrlplane/ui/button";
 import { CopyButton } from "@ctrlplane/ui/copy-button";
 import {
@@ -24,41 +23,98 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
+  RootFormMessage,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const deploymentForm = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(3).max(255),
-  slug: z.string().min(3).max(255),
-  description: z.string().optional(),
+// import { handleTRPCError } from "~/utils/error/handling";
+
+const deploymentFormSchema = z.object({
+  id: z.string().uuid({ message: "Invalid ID format." }),
+  name: z
+    .string()
+    .min(3, { message: "Name must be at least 3 characters long." })
+    .max(255, { message: "Name must be at most 255 characters long." }),
+  slug: z
+    .string()
+    .min(3, { message: "Slug must be at least 3 characters long." })
+    .max(255, { message: "Slug must be at most 255 characters long." }),
+  description: z
+    .string()
+    .max(255, { message: "Description must be at most 255 characters long." })
+    .optional()
+    .refine((val) => !val || val.length >= 3, {
+      message: "Description must be at least 3 characters long if provided.",
+    }),
 });
 
-type DeploymentFormValues = z.infer<typeof deploymentForm>;
+type DeploymentFormValues = z.infer<typeof deploymentFormSchema>;
 
 export const EditDeploymentDialog: React.FC<
   DeploymentFormValues & { children?: React.ReactNode }
 > = ({ id, name, slug, description, children }) => {
   const router = useRouter();
-  const update = api.deployment.update.useMutation();
   const [open, setOpen] = useState(false);
 
   const form = useForm({
-    resolver: zodResolver(deploymentForm),
+    resolver: zodResolver(deploymentFormSchema),
     defaultValues: { id, name, slug, description },
+    mode: "onChange",
+  });
+
+  useEffect(() => {
+    console.log("Form errors:", form.formState.errors);
+  }, [form.formState.errors]);
+
+  const update = api.deployment.update.useMutation({
+    onError: (error: unknown) => {
+      console.error("TRPC Error:", error);
+
+      // handleTRPCError(
+      //   error,
+      //   {
+      //     [ErrorCode.UNIQUE_CONSTRAINT]: () => {
+      //       form.setError("slug", {
+      //         type: "manual",
+      //         message:
+      //           "A deployment with this slug already exists. Please choose a different slug.",
+      //       });
+      //     },
+      //   },
+      //   (appError) => {
+      //     form.setError("root", {
+      //       type: "manual",
+      //       message:
+      //         appError.message ||
+      //         "An unexpected error occurred. Please try again.",
+      //     });
+      //   },
+      // );
+    },
+    onSuccess: () => {
+      router.refresh();
+      setOpen(false);
+    },
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
-    setOpen(false);
     const isDataChanged = !isEqual(data, { name, slug, description });
-    if (!isDataChanged) return;
+    if (!isDataChanged) {
+      setOpen(false);
+      return;
+    }
 
-    await update.mutateAsync({ id, data });
-
-    router.refresh();
+    try {
+      await update.mutateAsync({ id, data });
+      // Dialog will be closed in onSuccess callback
+    } catch (error) {
+      console.error("Mutation error:", error);
+      // Don't close the dialog on error
+    }
   });
 
   return (
@@ -85,6 +141,7 @@ export const EditDeploymentDialog: React.FC<
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -97,6 +154,7 @@ export const EditDeploymentDialog: React.FC<
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -109,6 +167,7 @@ export const EditDeploymentDialog: React.FC<
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -126,6 +185,7 @@ export const EditDeploymentDialog: React.FC<
                 </FormItem>
               )}
             />
+            <RootFormMessage />
             <DialogFooter>
               <CopyButton textToCopy={id} />
               <div className="flex-grow" />

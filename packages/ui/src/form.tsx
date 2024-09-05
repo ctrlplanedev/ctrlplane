@@ -167,7 +167,11 @@ const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, children, ...props }, ref) => {
-  const { error, formMessageId } = useFormField();
+  const { formState } = useFormContext();
+  const fieldState = useFormField();
+  const error = fieldState.error ?? formState.errors.root;
+  const formMessageId = fieldState.formMessageId;
+
   const body = error ? String(error.message) : children;
 
   if (!body) {
@@ -178,7 +182,7 @@ const FormMessage = React.forwardRef<
     <p
       ref={ref}
       id={formMessageId}
-      className={cn("text-[0.8rem] font-medium text-destructive", className)}
+      className={cn("text-sm font-medium text-destructive", className)}
       {...props}
     >
       {body}
@@ -186,6 +190,20 @@ const FormMessage = React.forwardRef<
   );
 });
 FormMessage.displayName = "FormMessage";
+
+// New RootFormMessage component
+const RootFormMessage = () => {
+  const { formState } = useFormContext();
+  const error = formState.errors.root;
+
+  if (!error) {
+    return null;
+  }
+
+  return (
+    <p className="text-sm font-medium text-destructive">{error.message}</p>
+  );
+};
 
 export {
   useForm,
@@ -197,6 +215,7 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  RootFormMessage,
 };
 
 export { useFieldArray } from "react-hook-form";

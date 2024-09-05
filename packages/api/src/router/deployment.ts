@@ -112,41 +112,34 @@ export const deploymentRouter = createTRPCRouter({
         ctx.accessQuery().workspace.system.deployment.id(input.id),
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeployment }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const updatedDeployment = await ctx.db
         .update(deployment)
         .set(input.data)
         .where(eq(deployment.id, input.id))
         .returning()
-        .then(takeFirst)
-        .then((d) =>
-          input.data.jobAgentConfig != null
-            ? ctx.db
-                .select()
-                .from(deployment)
-                .innerJoin(release, eq(release.deploymentId, deployment.id))
-                .innerJoin(jobConfig, eq(jobConfig.releaseId, release.id))
-                .leftJoin(
-                  jobExecution,
-                  eq(jobExecution.jobConfigId, jobConfig.id),
-                )
-                .where(
-                  and(
-                    eq(deployment.id, input.id),
-                    isNull(jobExecution.jobConfigId),
-                  ),
-                )
-                .then((jobConfigs) =>
-                  dispatchJobConfigs(ctx.db)
-                    .jobConfigs(jobConfigs.map((jc) => jc.job_config))
-                    .filter(isPassingAllPolicies)
-                    .then(cancelOldJobConfigsOnJobDispatch)
-                    .dispatch()
-                    .then(() => d),
-                )
-            : d,
-        ),
-    ),
+        .then(takeFirst);
+
+      if (input.data.jobAgentConfig != null) {
+        const jobConfigs = await ctx.db
+          .select()
+          .from(deployment)
+          .innerJoin(release, eq(release.deploymentId, deployment.id))
+          .innerJoin(jobConfig, eq(jobConfig.releaseId, release.id))
+          .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
+          .where(
+            and(eq(deployment.id, input.id), isNull(jobExecution.jobConfigId)),
+          );
+
+        await dispatchJobConfigs(ctx.db)
+          .jobConfigs(jobConfigs.map((jc) => jc.job_config))
+          .filter(isPassingAllPolicies)
+          .then(cancelOldJobConfigsOnJobDispatch)
+          .dispatch();
+      }
+
+      return updatedDeployment;
+    }),
 
   delete: protectedProcedure
     .meta({
