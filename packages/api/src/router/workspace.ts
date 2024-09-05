@@ -45,7 +45,7 @@ const integrationsRouter = createTRPCRouter({
       .meta({
         access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
       })
-      .input(z.string())
+      .input(z.string().uuid())
       .mutation(async ({ ctx, input }) => {
         const ws = await ctx.db
           .select()

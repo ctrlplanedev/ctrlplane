@@ -1,4 +1,6 @@
 import React from "react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
 import {
   SiAmazon,
   SiGooglecloud,
@@ -12,6 +14,7 @@ import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
+import { api } from "~/trpc/server";
 import { GoogleDialog } from "./google/GoogleDialog";
 
 const Badge: React.FC<{ className?: string; children?: React.ReactNode }> = ({
@@ -60,7 +63,11 @@ const TargetProviderBadges: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="space-x-1">{children}</div>;
 
-const TargetProviders: React.FC = () => {
+const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
+  workspaceSlug,
+}) => {
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
   return (
     <div className="h-full overflow-y-auto p-8 pb-24">
       <div className="container mx-auto max-w-5xl">
@@ -105,11 +112,21 @@ const TargetProviders: React.FC = () => {
             </TargetProviderContent>
 
             <div>
-              <GoogleDialog>
+              {workspace.googleServiceAccountEmail != null ? (
+                <GoogleDialog>
+                  <Button variant="outline" size="sm" className="w-full">
+                    Configure
+                  </Button>
+                </GoogleDialog>
+              ) : (
                 <Button variant="outline" size="sm" className="w-full">
-                  Configure
+                  <Link
+                    href={`/${workspaceSlug}/settings/workspace/integrations/google`}
+                  >
+                    Enable
+                  </Link>
                 </Button>
-              </GoogleDialog>
+              )}
             </div>
           </TargetProviderCard>
 
@@ -212,6 +229,10 @@ const TargetProviders: React.FC = () => {
   );
 };
 
-export default function TargetProviderIntegrationsPage() {
-  return <TargetProviders />;
+export default function TargetProviderIntegrationsPage({
+  workspaceSlug,
+}: {
+  workspaceSlug: string;
+}) {
+  return <TargetProviders workspaceSlug={workspaceSlug} />;
 }
