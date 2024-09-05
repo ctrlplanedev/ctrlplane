@@ -6,10 +6,6 @@ import { ZodError } from "zod";
 import { accessQuery } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
 
-import type { AppError } from "./errorCodes";
-import { appErrorToTRPCError, handleDatabaseError } from "./dbErrors";
-import { ErrorCode } from "./errorCodes";
-
 export const createTRPCContext = (opts: {
   headers: Headers;
   session: Session | null;
@@ -40,36 +36,14 @@ const t = initTRPC
   .meta<Meta>()
   .create({
     transformer: superjson,
-    errorFormatter: ({ shape, error }) => {
-      let appError: AppError;
-
-      if (error.cause instanceof ZodError) {
-        appError = {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Validation error",
-          details: { zodError: error.cause.flatten() },
-        };
-      } else if (error.cause) {
-        appError = handleDatabaseError(error.cause);
-      } else {
-        appError = {
-          code: ErrorCode.UNEXPECTED_ERROR,
-          message: error.message,
-        };
-      }
-
-      const trpcError = appErrorToTRPCError(appError);
-
-      return {
-        ...shape,
-        data: {
-          ...shape.data,
-          appError,
-        },
-        message: trpcError.message,
-        code: trpcError.code,
-      };
-    },
+    errorFormatter: ({ shape, error }) => ({
+      ...shape,
+      data: {
+        ...shape.data,
+        zodError:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
+      },
+    }),
   });
 
 export const middleware = t.middleware;

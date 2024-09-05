@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import isEqual from "lodash/isEqual";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-// import { ErrorCode } from "@ctrlplane/api";
 import { Button } from "@ctrlplane/ui/button";
 import { CopyButton } from "@ctrlplane/ui/copy-button";
 import {
@@ -30,8 +29,6 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-
-// import { handleTRPCError } from "~/utils/error/handling";
 
 const deploymentFormSchema = z.object({
   id: z.string().uuid({ message: "Invalid ID format." }),
@@ -66,34 +63,20 @@ export const EditDeploymentDialog: React.FC<
     mode: "onChange",
   });
 
-  useEffect(() => {
-    console.log("Form errors:", form.formState.errors);
-  }, [form.formState.errors]);
-
   const update = api.deployment.update.useMutation({
-    onError: (error: unknown) => {
-      console.error("TRPC Error:", error);
-
-      // handleTRPCError(
-      //   error,
-      //   {
-      //     [ErrorCode.UNIQUE_CONSTRAINT]: () => {
-      //       form.setError("slug", {
-      //         type: "manual",
-      //         message:
-      //           "A deployment with this slug already exists. Please choose a different slug.",
-      //       });
-      //     },
-      //   },
-      //   (appError) => {
-      //     form.setError("root", {
-      //       type: "manual",
-      //       message:
-      //         appError.message ||
-      //         "An unexpected error occurred. Please try again.",
-      //     });
-      //   },
-      // );
+    onError: (error) => {
+      if (error.message.includes("violates unique constraint")) {
+        form.setError("root", {
+          type: "manual",
+          message:
+            "A deployment with this slug already exists. Please choose a different slug.",
+        });
+        return;
+      }
+      form.setError("root", {
+        type: "manual",
+        message: "An unexpected error occurred. Please try again.",
+      });
     },
     onSuccess: () => {
       router.refresh();
@@ -101,20 +84,14 @@ export const EditDeploymentDialog: React.FC<
     },
   });
 
-  const onSubmit = form.handleSubmit(async (data) => {
+  const onSubmit = form.handleSubmit((data) => {
     const isDataChanged = !isEqual(data, { name, slug, description });
     if (!isDataChanged) {
       setOpen(false);
       return;
     }
 
-    try {
-      await update.mutateAsync({ id, data });
-      // Dialog will be closed in onSuccess callback
-    } catch (error) {
-      console.error("Mutation error:", error);
-      // Don't close the dialog on error
-    }
+    update.mutateAsync({ id, data }).catch(() => {});
   });
 
   return (
