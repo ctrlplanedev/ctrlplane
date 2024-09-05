@@ -36,7 +36,7 @@ export const targetProviderGoogle = pgTable("target_provider_google", {
     .references(() => targetProvider.id, { onDelete: "cascade" }),
   projectIds: text("project_ids").array().notNull(),
 });
-export const cerateTargetProviderGoogle = createInsertSchema(
+export const createTargetProviderGoogle = createInsertSchema(
   targetProviderGoogle,
   { projectIds: z.array(z.string().min(1)).min(1) },
 ).omit({

@@ -1,9 +1,6 @@
-"use client";
-
-import { useParams, useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
-import { z } from "zod";
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -23,48 +20,56 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  useFieldArray,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 
 import { api } from "~/trpc/react";
+import { createGoogleSchema } from "./GoogleDialog";
 
-const createGoogleSchema = z.object({
-  name: z.string(),
-  projectIds: z.array(z.object({ value: z.string() })),
-});
-
-type CreateGoogleConfig = z.infer<typeof createGoogleSchema>;
-
-export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const UpdateGoogleProviderDialog: React.FC<{
+  providerId: string;
+  name: string;
+  projectIds: string[];
+  children: React.ReactNode;
+}> = ({ providerId, name, projectIds, children }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const form = useForm<CreateGoogleConfig>({
-    resolver: zodResolver(createGoogleSchema),
-    defaultValues: { projectIds: [{ value: "" }] },
+  const form = useForm({
+    schema: createGoogleSchema,
+    defaultValues: { name, projectIds: projectIds.map((p) => ({ value: p })) },
     mode: "onChange",
   });
-  const { fields, append } = useFieldArray({
-    name: "projectIds",
-    control: form.control,
-  });
 
-  const router = useRouter();
   const utils = api.useUtils();
-  const create = api.target.provider.managed.google.useMutation();
+  const update = api.target.provider.managed.google.update.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
     if (workspace.data == null) return;
-    await create.mutateAsync({
+    await update.mutateAsync({
       ...data,
-      workspaceId: workspace.data.id,
+      targetProviderId: providerId,
       config: { projectIds: data.projectIds.map((p) => p.value) },
     });
     await utils.target.provider.byWorkspaceId.invalidate();
-    router.push(`/${workspaceSlug}/target-providers`);
+    setOpen(false);
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "projectIds",
+  });
+
+  const [open, setOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) form.reset();
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <Form {...form}>
@@ -103,7 +108,21 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                         Google Projects
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="my-gcp-project-id" {...field} />
+                        <div className="flex items-center gap-2">
+                          <Input placeholder="my-gcp-project-id" {...field} />
+
+                          {fields.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => remove(index)}
+                            >
+                              <TbX className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -122,7 +141,14 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
             </div>
 
             <DialogFooter>
-              <Button type="submit">Create</Button>
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting || !form.formState.isDirty
+                }
+              >
+                Update
+              </Button>
             </DialogFooter>
           </form>
         </Form>

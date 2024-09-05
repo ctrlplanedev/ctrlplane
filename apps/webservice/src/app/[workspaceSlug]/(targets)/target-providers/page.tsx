@@ -91,7 +91,7 @@ export default function TargetProvidersPage({
                 </TooltipProvider>
               </TableCell>
               <TableCell className="text-right">
-                <ProviderActionsDropdown providerId={provider.id} />
+                <ProviderActionsDropdown provider={provider} />
               </TableCell>
             </TableRow>
           ))}
