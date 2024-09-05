@@ -62,7 +62,7 @@ const TargetProviderBadges: React.FC<{ children: React.ReactNode }> = ({
 
 const TargetProviders: React.FC = () => {
   return (
-    <div className="p-16">
+    <div className="h-full overflow-y-auto p-8 pb-24">
       <div className="container mx-auto max-w-5xl">
         <h2 className="font-semibold">Managed Target Providers</h2>
         <p className="text-sm text-muted-foreground">
