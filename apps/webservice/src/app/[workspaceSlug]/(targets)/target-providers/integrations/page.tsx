@@ -230,9 +230,9 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
 };
 
 export default function TargetProviderIntegrationsPage({
-  workspaceSlug,
+  params,
 }: {
-  workspaceSlug: string;
+  params: { workspaceSlug: string };
 }) {
-  return <TargetProviders workspaceSlug={workspaceSlug} />;
+  return <TargetProviders workspaceSlug={params.workspaceSlug} />;
 }

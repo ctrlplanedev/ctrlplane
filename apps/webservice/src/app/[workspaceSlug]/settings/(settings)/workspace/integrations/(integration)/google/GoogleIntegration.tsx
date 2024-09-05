@@ -16,11 +16,6 @@ export const GoogleIntegration: React.FC<{
 }> = ({ workspaceSlug }) => {
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
 
-  if (workspace.isSuccess && workspace.data == null) return notFound();
-
-  const isIntegrationEnabled =
-    workspace.data?.googleServiceAccountEmail != null;
-
   const createServiceAccount =
     api.workspace.integrations.google.createServiceAccount.useMutation();
   const utils = api.useUtils();
@@ -33,6 +28,12 @@ export const GoogleIntegration: React.FC<{
       setIsCopied(false);
     }, 1000);
   };
+
+  if (workspace.isSuccess && workspace.data == null) return notFound();
+
+  const isIntegrationEnabled =
+    workspace.data?.googleServiceAccountEmail != null;
+
   return (
     <div className="flex flex-col gap-12">
       <div className="flex items-center gap-4">
