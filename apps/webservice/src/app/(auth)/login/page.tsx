@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { TbPlane } from "react-icons/tb";
 
@@ -5,6 +6,8 @@ import { auth } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
 import { LoginCard } from "./LoginCard";
+
+export const metadata: Metadata = { title: "Ctrlplane Login" };
 
 export default async function LoginPage() {
   const session = await auth();
