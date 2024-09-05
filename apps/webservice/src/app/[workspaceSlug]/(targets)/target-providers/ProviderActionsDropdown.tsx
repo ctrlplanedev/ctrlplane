@@ -1,8 +1,11 @@
 "use client";
 
+import type {
+  TargetProvider,
+  TargetProviderGoogle,
+} from "@ctrlplane/db/schema";
 import { TbDots } from "react-icons/tb";
 
-import type { TargetProvider, TargetProviderGoogle } from "@ctrlplane/db/schema";
 import {
   AlertDialog,
   AlertDialogAction,
