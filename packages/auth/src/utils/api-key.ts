@@ -16,10 +16,11 @@ export const getUser = async (apiKey: string) => {
     .where(eq(userApiKey.keyHash, keyHash))
     .then(takeFirstOrNull);
 
-  if (!apiKeyEntry) return null;
+  if (!apiKeyEntry) return { access: accessQuery(db) };
 
   const { user_api_key: keyEntry, user: keyUser } = apiKeyEntry;
-  if (keyEntry.expiresAt && keyEntry.expiresAt < new Date()) return null;
+  if (keyEntry.expiresAt && keyEntry.expiresAt < new Date())
+    return { access: accessQuery(db) };
 
   return { access: accessQuery(db, keyUser.id), user: keyUser };
 };

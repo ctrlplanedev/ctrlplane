@@ -8,6 +8,9 @@
       "react-server": "./src/index.rsc.ts",
       "default": "./src/index.ts"
     },
+    "./utils": {
+      "default": "./src/utils/index.ts"
+    },
     "./env": "./env.ts"
   },
   "license": "MIT",
