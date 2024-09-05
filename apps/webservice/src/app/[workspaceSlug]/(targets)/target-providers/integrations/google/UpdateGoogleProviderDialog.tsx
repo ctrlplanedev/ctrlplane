@@ -1,6 +1,9 @@
+"use client";
+
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { TbX } from "react-icons/tb";
+import { TbBulb, TbCheck, TbCopy, TbX } from "react-icons/tb";
+import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -24,6 +27,7 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
 import { createGoogleSchema } from "./GoogleDialog";
@@ -32,8 +36,9 @@ export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
   projectIds: string[];
+  parentCloseControl?: () => void;
   children: React.ReactNode;
-}> = ({ providerId, name, projectIds, children }) => {
+}> = ({ providerId, name, projectIds, parentCloseControl, children }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const form = useForm({
@@ -53,6 +58,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
     });
     await utils.target.provider.byWorkspaceId.invalidate();
     setOpen(false);
+    parentCloseControl?.();
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -62,12 +68,25 @@ export const UpdateGoogleProviderDialog: React.FC<{
 
   const [open, setOpen] = useState(false);
 
+  const [isCopied, setIsCopied] = useState(false);
+  const [, copy] = useCopyToClipboard();
+  const handleCopy = () => {
+    copy(workspace.data?.googleServiceAccountEmail ?? "");
+    setIsCopied(true);
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 1000);
+  };
+
   return (
     <Dialog
       open={open}
       onOpenChange={(o) => {
         setOpen(o);
-        if (!o) form.reset();
+        if (!o) {
+          form.reset();
+          parentCloseControl?.();
+        }
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -80,7 +99,51 @@ export const UpdateGoogleProviderDialog: React.FC<{
                 Google provider allows you to configure and import GKE clusters
                 from google.
               </DialogDescription>
+
+              <div
+                className="relative mb-4 flex w-fit items-center gap-2 rounded-md bg-neutral-800/50 px-4 py-3 text-muted-foreground"
+                role="alert"
+              >
+                <TbBulb className="h-6 w-6 flex-shrink-0" />
+                <span className="text-sm">
+                  To use the Google provider, you will need to invite our
+                  service account to your project and configure the necessary
+                  permissions. Read more{" "}
+                  <a
+                    href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
+                    className="underline"
+                    target="_blank"
+                  >
+                    here
+                  </a>
+                  .
+                </span>
+              </div>
             </DialogHeader>
+
+            <div className="space-y-2">
+              <Label>Service Account</Label>
+              <div className="relative flex items-center">
+                <Input
+                  value={workspace.data?.googleServiceAccountEmail ?? ""}
+                  className="disabled:cursor-default"
+                  disabled
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
+                  onClick={handleCopy}
+                  className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
+                >
+                  {isCopied ? (
+                    <TbCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
+                  ) : (
+                    <TbCopy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
 
             <FormField
               control={form.control}
@@ -108,7 +171,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
                         Google Projects
                       </FormLabel>
                       <FormControl>
-                        <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
                           <Input placeholder="my-gcp-project-id" {...field} />
 
                           {fields.length > 1 && (
@@ -116,7 +179,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6"
+                              className="absolute right-2 h-4 w-4 bg-neutral-950 hover:bg-neutral-950"
                               onClick={() => remove(index)}
                             >
                               <TbX className="h-4 w-4" />
