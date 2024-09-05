@@ -3,7 +3,7 @@ import { SiGithub, SiGooglecloud } from "react-icons/si";
 
 import { Card } from "@ctrlplane/ui/card";
 
-export const metadata = { title: "Integrations" };
+export const metadata = { title: "Integrations - Settings" };
 
 const IntegrationCard: React.FC<{
   integration: string;

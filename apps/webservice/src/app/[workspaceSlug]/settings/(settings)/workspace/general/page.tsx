@@ -1,5 +1,9 @@
+import type { Metadata } from "next";
+
 import { WorkspaceDeleteSection } from "./WorkspaceDeleteSection";
 import { WorkspaceUpdateSection } from "./WorkspaceUpdateSection";
+
+export const metadata: Metadata = { title: "General - Workspace Settings" };
 
 export default function WorkspaceGeneralSettingsPage() {
   return (

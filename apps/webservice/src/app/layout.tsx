@@ -16,7 +16,9 @@ import { Toaster } from "@ctrlplane/ui/toast";
 import { TRPCReactProvider } from "~/trpc/react";
 import SessionProvider from "./SessionProvider";
 
-export const metadata = {};
+export const metadata = {
+  title: { default: "Ctrlplane" },
+};
 export const viewport: Viewport = {
   themeColor: [{ color: "black" }],
 };

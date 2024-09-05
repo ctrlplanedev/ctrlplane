@@ -10,7 +10,7 @@ import {
 
 import { Button } from "@ctrlplane/ui/button";
 
-export const metadata = { title: "Workspace" };
+export const metadata = { title: "Overview - Workspace" };
 
 export default function OverviewPage({
   params,

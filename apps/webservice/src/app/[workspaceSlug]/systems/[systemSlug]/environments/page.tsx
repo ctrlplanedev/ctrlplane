@@ -13,7 +13,7 @@ import { EnvFlowBuilder } from "./EnvFlowBuilder";
 import { Sidebar } from "./Sidebar";
 import { PanelProvider } from "./SidepanelContext";
 
-export const metadata: Metadata = { title: "Systems - Environments" };
+export const metadata: Metadata = { title: "Environments - Systems" };
 
 export default async function SystemEnvironmentPage({
   params,
