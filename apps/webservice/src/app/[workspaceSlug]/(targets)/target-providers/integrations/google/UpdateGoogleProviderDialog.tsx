@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { TbBulb, TbCheck, TbCopy, TbX } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
@@ -36,9 +37,9 @@ export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
   projectIds: string[];
-  parentCloseControl?: () => void;
+  onClose?: () => void;
   children: React.ReactNode;
-}> = ({ providerId, name, projectIds, parentCloseControl, children }) => {
+}> = ({ providerId, name, projectIds, onClose, children }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const form = useForm({
@@ -58,7 +59,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
     });
     await utils.target.provider.byWorkspaceId.invalidate();
     setOpen(false);
-    parentCloseControl?.();
+    onClose?.();
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -85,7 +86,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
         setOpen(o);
         if (!o) {
           form.reset();
-          parentCloseControl?.();
+          onClose?.();
         }
       }}
     >
@@ -109,13 +110,13 @@ export const UpdateGoogleProviderDialog: React.FC<{
                   To use the Google provider, you will need to invite our
                   service account to your project and configure the necessary
                   permissions. Read more{" "}
-                  <a
+                  <Link
                     href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
                     className="underline"
                     target="_blank"
                   >
                     here
-                  </a>
+                  </Link>
                   .
                 </span>
               </div>

@@ -59,18 +59,14 @@ export const ProviderActionsDropdown: React.FC<{
             providerId={provider.id}
             name={provider.name}
             projectIds={provider.googleConfig.projectIds}
-            parentCloseControl={() => setOpen(false)}
+            onClose={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Edit
             </DropdownMenuItem>
           </UpdateGoogleProviderDialog>
         )}
-        <AlertDialog
-          onOpenChange={(o) => {
-            if (!o) setOpen(false);
-          }}
-        >
+        <AlertDialog onOpenChange={setOpen}>
           <AlertDialogTrigger asChild>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Delete

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -99,13 +100,13 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                   To use the Google provider, you will need to invite our
                   service account to your project and configure the necessary
                   permissions. Read more{" "}
-                  <a
+                  <Link
                     href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
-                    className="underline"
                     target="_blank"
+                    className="underline"
                   >
                     here
-                  </a>
+                  </Link>
                   .
                 </span>
               </div>
