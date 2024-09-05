@@ -3,9 +3,8 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
+import { accessQuery } from "@ctrlplane/auth";
 import { db } from "@ctrlplane/db/client";
-
-import { accessQuery } from "./auth/access-query";
 
 export const createTRPCContext = (opts: {
   headers: Headers;
