@@ -4,6 +4,6 @@
     "outDir": "dist",
     "baseUrl": "."
   },
-  "include": ["src"],
+  "include": ["src", "../auth/src/access-query.ts"],
   "exclude": ["node_modules"]
 }
