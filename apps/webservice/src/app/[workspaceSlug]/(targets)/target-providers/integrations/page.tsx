@@ -12,7 +12,7 @@ import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
-import { GoogleDialog } from "./GoogleDialog";
+import { GoogleDialog } from "./google/GoogleDialog";
 
 const Badge: React.FC<{ className?: string; children?: React.ReactNode }> = ({
   className,
