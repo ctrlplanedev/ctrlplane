@@ -1,5 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm";
 import {
+  boolean,
   json,
   jsonb,
   pgTable,
@@ -11,6 +12,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { user } from "./auth.js";
 import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -70,3 +72,30 @@ export const targetSchema = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
+
+export const targetComment = pgTable("target_comment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  targetId: uuid("target_id")
+    .notNull()
+    .references(() => target.id, { onDelete: "cascade" }),
+  content: jsonb("content").notNull().$type<Record<string, any>>(), // Tiptap JSON content
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  editedAt: timestamp("edited_at", { withTimezone: true }),
+  isResolved: boolean("is_resolved").notNull().default(false),
+  createdBy: uuid("created_by").references(() => user.id, {
+    onDelete: "set null",
+  }),
+});
+
+export type TargetComment = typeof targetComment.$inferSelect;
+
+export const createTargetComment = createInsertSchema(targetComment, {
+  content: z.record(z.any()),
+  createdBy: z.string().uuid(),
+}).omit({ id: true, createdAt: true, editedAt: true });
+
+export const updateTargetComment = createTargetComment.partial().extend({
+  isResolved: z.boolean().optional(),
+});

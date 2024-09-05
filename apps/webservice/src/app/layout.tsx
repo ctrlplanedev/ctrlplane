@@ -4,6 +4,7 @@ import "./react-flow.css";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import "./react-grid-layout.css";
+import "./tiptap.css";
 
 import type { Viewport } from "next";
 import { GeistMono } from "geist/font/mono";

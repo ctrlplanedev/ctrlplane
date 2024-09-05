@@ -3,7 +3,7 @@
 import type { Deployment, Environment, Target } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { TbCircleFilled, TbRocket, TbTerminal2 } from "react-icons/tb";
+import { TbRocket, TbTerminal2 } from "react-icons/tb";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
@@ -146,10 +146,6 @@ const DeploymentTable: React.FC<{
                 )}
               >
                 <div className="flex w-full items-center gap-2">
-                  <div className="relative h-[25px] w-[25px]">
-                    <TbCircleFilled className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
-                    <TbCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
-                  </div>
                   <Link
                     href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${r.slug}`}
                     className="flex-grow hover:text-blue-300"

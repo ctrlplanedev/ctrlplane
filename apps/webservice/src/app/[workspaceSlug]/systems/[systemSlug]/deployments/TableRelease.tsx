@@ -105,7 +105,11 @@ export const ReleaseTable: React.FC<{
     { enabled: releaseIds.length > 0 },
   );
 
-  const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
+  const params = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>();
 
   return (
     <div className="w-full overflow-x-auto">
@@ -161,7 +165,11 @@ export const ReleaseTable: React.FC<{
                     releaseIdx === releases.length - 1 && "rounded-bl-md",
                   )}
                 >
-                  {r.version}
+                  <Link
+                    href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/releases/${r.id}`}
+                  >
+                    {r.version}
+                  </Link>
                 </td>
                 {environments.map((env, idx) => {
                   const environmentReleaseJobConfigs = jobConfigs.filter(

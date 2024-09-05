@@ -1,8 +1,22 @@
 "use client";
 
+import type { Editor } from "@tiptap/react";
 import { notFound } from "next/navigation";
+import Highlight from "@tiptap/extension-highlight";
+import Placeholder from "@tiptap/extension-placeholder";
+import Typography from "@tiptap/extension-typography";
+import * as react from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import { format } from "date-fns";
-import { TbLoader2, TbLock, TbLockOpen } from "react-icons/tb";
+import {
+  TbArrowUp,
+  TbBold,
+  TbItalic,
+  TbLoader2,
+  TbLock,
+  TbLockOpen,
+  TbStrikethrough,
+} from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -23,6 +37,82 @@ import {
 import { useMatchSorterWithSearch } from "~/app/[workspaceSlug]/_components/useMatchSorter";
 import { api } from "~/trpc/react";
 import { ReleaseCell } from "./ReleaseCell";
+
+const useCommentEditor = (config: { editable?: boolean } = {}) =>
+  react.useEditor({
+    ...config,
+    extensions: [
+      StarterKit,
+      Highlight,
+      Typography,
+      Placeholder.configure({ placeholder: "Leave a comment..." }),
+    ],
+    content: "",
+  });
+
+const CommentEditor: React.FC<{ editor: Editor | null }> = ({ editor }) => {
+  return (
+    <>
+      {editor && (
+        <react.BubbleMenu
+          className="rounded-md bg-neutral-800"
+          tippyOptions={{ duration: 100 }}
+          editor={editor}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            className={editor.isActive("bold") ? "is-active" : ""}
+          >
+            <TbBold />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            className={editor.isActive("italic") ? "is-active" : ""}
+          >
+            <TbItalic />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            className={editor.isActive("strike") ? "is-active" : ""}
+          >
+            <TbStrikethrough />
+          </Button>
+        </react.BubbleMenu>
+      )}
+      <react.EditorContent
+        editor={editor}
+        className="prose prose-sm prose-invert prose-p:m-2 prose-ul:m-2 prose-ul:pl-3 prose-ol:m-1 prose-li:m-0.5 !max-w-none px-3 pt-3 "
+      />
+    </>
+  );
+};
+
+const NewCommentInput: React.FC = () => {
+  const editor = useCommentEditor();
+  return (
+    <div className="flex w-full flex-col gap-3 rounded-md border bg-neutral-700/20 text-sm">
+      <CommentEditor editor={editor} />
+      <div className="flex justify-end p-2">
+        <Button
+          size="icon"
+          className="h-7 w-7 rounded-full"
+          disabled={editor?.isEmpty}
+          onClick={() => {
+            editor?.commands.clearContent();
+          }}
+        >
+          <TbArrowUp className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 
 const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
   const jobs = api.job.byTargetId.useQuery(targetId);
@@ -164,10 +254,17 @@ export default function TargetPage({
           )}
         </div>
 
-        <div className="max-4-xl container mx-auto space-y-8 p-8">
+        <div className="max-4xl container mx-auto space-y-8 p-8">
           <div className="space-y-5">
             <div className="text-sm text-muted-foreground">Deployments</div>
             <DeploymentsTable targetId={params.targetId} />
+          </div>
+        </div>
+
+        <div className="max-4xl container mx-auto space-y-8 p-8">
+          <div className="space-y-5">
+            <div className="text-sm text-muted-foreground">Comments</div>
+            <NewCommentInput />
           </div>
         </div>
       </ResizablePanel>
