@@ -74,8 +74,8 @@ const authzProdecdure = authnProcedure.use(
     const { operation } = meta ?? {};
     if (operation != null) {
       const input = await getRawInput();
-      const [scope, permissions] = await operation({ ctx, input });
 
+      const [scope, permissions] = await operation({ ctx, input });
       const check = await checkEntityPermissionForResource(
         { type: "user", id: ctx.session.user.id },
         scope,

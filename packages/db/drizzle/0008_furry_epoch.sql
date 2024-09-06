@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS "workspace_invite_token" (
 	CONSTRAINT "workspace_invite_token_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-DROP TABLE "workspace_member";--> statement-breakpoint
-DROP TABLE "workspace_invite_link";--> statement-breakpoint
+DROP TABLE "workspace_member" CASCADE;--> statement-breakpoint
+DROP TABLE IF EXISTS "workspace_invite_link" CASCADE;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "workspace_invite_token" ADD CONSTRAINT "workspace_invite_token_role_id_role_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."role"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION

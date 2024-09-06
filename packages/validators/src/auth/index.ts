@@ -70,7 +70,7 @@ export const predefinedRoles = {
   admin: {
     id: "00000000-0000-0000-0000-000000000002",
     name: "Admin",
-    permissions: [],
+    permissions: Object.keys(Permission),
   },
   developer: {
     id: "00000000-0000-0000-0000-000000000003",

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { and, count, eq, like, or, takeFirst } from "@ctrlplane/db";
 import { createSystem, system, updateSystem } from "@ctrlplane/db/schema";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { createEnv } from "./environment";
@@ -54,6 +55,7 @@ export const systemRouter = createTRPCRouter({
         total,
       }));
     }),
+
   bySlug: protectedProcedure
     .input(z.string())
     .query(({ ctx: { db }, input }) =>
@@ -65,7 +67,12 @@ export const systemRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure
-
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input.workspaceId },
+        [Permission.SystemCreate],
+      ],
+    })
     .input(createSystem)
     .mutation(({ ctx: { db }, input }) =>
       db.transaction(async (db) => {

@@ -1,13 +1,6 @@
 import type { EntityType, ScopeType } from "@ctrlplane/db/schema";
 
-import {
-  and,
-  eq,
-  inArray,
-  sql,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -18,8 +11,6 @@ import {
   workspace,
 } from "@ctrlplane/db/schema";
 
-const scopeHierarchy: Array<ScopeType> = ["deployment", "system", "workspace"];
-
 /**
  * Returns the first matching scope
  */
@@ -28,8 +19,12 @@ const checkEntityPermissionForScopes = async (
   scopes: Array<{ type: ScopeType; id: string }>,
   permissions: string[],
 ) => {
-  return db
-    .select()
+  const scopeIds = scopes.map((scope) => scope.id);
+  const results = await db
+    .select({
+      scopeId: entityRole.scopeId,
+      scopeType: entityRole.scopeType,
+    })
     .from(entityRole)
     .innerJoin(role, eq(entityRole.roleId, role.id))
     .innerJoin(rolePermission, eq(role.id, rolePermission.roleId))
@@ -38,15 +33,17 @@ const checkEntityPermissionForScopes = async (
         eq(entityRole.entityId, entity.id),
         eq(entityRole.entityType, entity.type),
         inArray(rolePermission.permission, permissions),
-        inArray(
-          entityRole.scopeId,
-          scopes.map((scope) => scope.id),
-        ),
+        inArray(entityRole.scopeId, scopeIds),
       ),
-    )
-    .orderBy(sql`ARRAY_POSITION(${scopeHierarchy}, ${entityRole.scopeType})`)
-    .limit(1)
-    .then(takeFirstOrNull);
+    );
+
+  // Sort the results based on the position of scopeId in scopeIds
+  results.sort(
+    (a, b) => scopeIds.indexOf(a.scopeId) - scopeIds.indexOf(b.scopeId),
+  );
+
+  // Return the first result or null if no results
+  return results.length > 0 ? results[0] : null;
 };
 
 /**
