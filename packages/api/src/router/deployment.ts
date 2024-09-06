@@ -55,7 +55,7 @@ export const deploymentRouter = createTRPCRouter({
     .meta({
       operation: ({ input }) => [
         { type: "deployment", id: input },
-        Permission.DeploymentView,
+        [Permission.DeploymentGet],
       ],
     })
     .input(z.string())
@@ -101,8 +101,10 @@ export const deploymentRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.id(input.systemId),
+      operation: ({ input }) => [
+        { type: "system", id: input.systemId },
+        [Permission.DeploymentCreate],
+      ],
     })
     .input(createDeployment)
     .mutation(({ ctx, input }) =>
@@ -111,8 +113,10 @@ export const deploymentRouter = createTRPCRouter({
 
   update: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.deployment.id(input.id),
+      operation: ({ input }) => [
+        { type: "deployment", id: input.id },
+        [Permission.DeploymentUpdate],
+      ],
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeployment }))
     .mutation(({ ctx, input }) =>
@@ -152,10 +156,7 @@ export const deploymentRouter = createTRPCRouter({
     ),
 
   delete: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.deployment.id(input),
-    })
+
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -166,12 +167,7 @@ export const deploymentRouter = createTRPCRouter({
     ),
 
   bySlug: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx
-          .accessQuery()
-          .workspace.system.deployment.slug(input.deploymentSlug),
-    })
+
     .input(z.object({ deploymentSlug: z.string(), systemSlug: z.string() }))
     .query(({ ctx, input: { deploymentSlug, systemSlug } }) =>
       ctx.db
@@ -194,80 +190,64 @@ export const deploymentRouter = createTRPCRouter({
         ),
     ),
 
-  bySystemId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.system.id(input),
-    })
-    .input(z.string())
-    .query(({ ctx, input }) => {
-      const latestRelease = latestReleaseSubQuery(ctx.db);
-      return ctx.db
-        .select()
-        .from(deployment)
-        .leftJoin(
-          latestRelease,
-          and(
-            eq(latestRelease.deploymentId, deployment.id),
-            eq(latestRelease.rank, 1),
-          ),
-        )
-        .where(eq(deployment.systemId, input))
-        .then((r) =>
-          r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
-        );
-    }),
-
-  byTargetId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.id(input),
-    })
-    .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .selectDistinctOn([deployment.id])
-        .from(deployment)
-        .innerJoin(system, eq(system.id, deployment.systemId))
-        .innerJoin(environment, eq(environment.systemId, system.id))
-        .innerJoin(
-          target,
-          arrayContains(target.labels, environment.targetFilter),
-        )
-        .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
-        .leftJoin(jobExecution, eq(jobConfig.id, jobExecution.jobConfigId))
-        .leftJoin(release, eq(release.id, jobConfig.releaseId))
-        .where(
-          and(
-            eq(target.id, input),
-            isNull(environment.deletedAt),
-            or(
-              isNull(jobExecution.id),
-              inArray(jobExecution.status, [
-                "completed",
-                "pending",
-                "in_progress",
-              ]),
-            ),
-          ),
-        )
-        .orderBy(deployment.id, jobConfig.createdAt)
-        .then((r) =>
-          r.map((row) => ({
-            ...row.deployment,
-            environment: row.environment,
-            system: row.system,
-            jobConfig: {
-              ...row.job_config,
-              execution: row.job_execution,
-              release: row.release,
-            },
-          })),
+  bySystemId: protectedProcedure.input(z.string()).query(({ ctx, input }) => {
+    const latestRelease = latestReleaseSubQuery(ctx.db);
+    return ctx.db
+      .select()
+      .from(deployment)
+      .leftJoin(
+        latestRelease,
+        and(
+          eq(latestRelease.deploymentId, deployment.id),
+          eq(latestRelease.rank, 1),
         ),
-    ),
+      )
+      .where(eq(deployment.systemId, input))
+      .then((r) =>
+        r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
+      );
+  }),
+
+  byTargetId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
+    ctx.db
+      .selectDistinctOn([deployment.id])
+      .from(deployment)
+      .innerJoin(system, eq(system.id, deployment.systemId))
+      .innerJoin(environment, eq(environment.systemId, system.id))
+      .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
+      .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
+      .leftJoin(jobExecution, eq(jobConfig.id, jobExecution.jobConfigId))
+      .leftJoin(release, eq(release.id, jobConfig.releaseId))
+      .where(
+        and(
+          eq(target.id, input),
+          isNull(environment.deletedAt),
+          or(
+            isNull(jobExecution.id),
+            inArray(jobExecution.status, [
+              "completed",
+              "pending",
+              "in_progress",
+            ]),
+          ),
+        ),
+      )
+      .orderBy(deployment.id, jobConfig.createdAt)
+      .then((r) =>
+        r.map((row) => ({
+          ...row.deployment,
+          environment: row.environment,
+          system: row.system,
+          jobConfig: {
+            ...row.job_config,
+            execution: row.job_execution,
+            release: row.release,
+          },
+        })),
+      ),
+  ),
 
   byWorkspaceId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
-    })
     .input(z.string())
     .query(({ ctx, input }) => {
       const latestRelease = latestReleaseSubQuery(ctx.db);

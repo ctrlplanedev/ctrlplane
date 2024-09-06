@@ -42,9 +42,6 @@ const membersRouter = createTRPCRouter({
 const integrationsRouter = createTRPCRouter({
   google: createTRPCRouter({
     createServiceAccount: protectedProcedure
-      .meta({
-        access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
-      })
       .input(z.string().uuid())
       .mutation(async ({ ctx, input }) => {
         const ws = await ctx.db
@@ -96,9 +93,6 @@ const integrationsRouter = createTRPCRouter({
 
 export const workspaceRouter = createTRPCRouter({
   update: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input.id),
-    })
     .input(z.object({ id: z.string(), data: updateWorkspace }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
@@ -137,9 +131,7 @@ export const workspaceRouter = createTRPCRouter({
   ),
 
   bySlug: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.slug(input),
-    })
+
     .input(z.string())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -150,9 +142,7 @@ export const workspaceRouter = createTRPCRouter({
     ),
 
   byId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
-    })
+
     .input(z.string())
     .query(async ({ ctx, input }) =>
       ctx.db

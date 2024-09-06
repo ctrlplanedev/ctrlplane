@@ -44,10 +44,6 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 const policyRouter = createTRPCRouter({
   deployment: createTRPCRouter({
     bySystemId: protectedProcedure
-      .meta({
-        access: ({ ctx, input }) =>
-          ctx.accessQuery().workspace.system.id(input),
-      })
       .input(z.string().uuid())
       .query(({ ctx, input }) =>
         ctx.db
@@ -62,12 +58,6 @@ const policyRouter = createTRPCRouter({
       ),
 
     create: protectedProcedure
-      .meta({
-        access: ({ ctx, input }) =>
-          ctx
-            .accessQuery()
-            .workspace.system.environment.id(input.environmentId),
-      })
       .input(createEnvironmentPolicyDeployment)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -210,32 +200,27 @@ const policyRouter = createTRPCRouter({
       ),
   }),
 
-  bySystemId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.system.id(input),
-    })
-    .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(environmentPolicy)
-        .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
-        )
-        .where(eq(environmentPolicy.systemId, input))
-        .then((policies) =>
-          _.chain(policies)
-            .groupBy("environment_policy.id")
-            .map((p) => ({
-              ...p[0]!.environment_policy,
-              releaseWindows: p
-                .map((t) => t.environment_policy_release_window)
-                .filter(isPresent),
-            }))
-            .value(),
-        ),
-    ),
+  bySystemId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
+    ctx.db
+      .select()
+      .from(environmentPolicy)
+      .leftJoin(
+        environmentPolicyReleaseWindow,
+        eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+      )
+      .where(eq(environmentPolicy.systemId, input))
+      .then((policies) =>
+        _.chain(policies)
+          .groupBy("environment_policy.id")
+          .map((p) => ({
+            ...p[0]!.environment_policy,
+            releaseWindows: p
+              .map((t) => t.environment_policy_release_window)
+              .filter(isPresent),
+          }))
+          .value(),
+      ),
+  ),
 
   byId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
     ctx.db.query.environmentPolicy.findMany({
@@ -245,10 +230,6 @@ const policyRouter = createTRPCRouter({
   ),
 
   create: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.id(input.systemId),
-    })
     .input(createEnvironmentPolicy)
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (db) =>
@@ -319,10 +300,6 @@ export const createEnv = async (
 
 const tragetRouter = createTRPCRouter({
   byEnvironmentId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.environment.id(input),
-    })
     .input(z.string())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -352,10 +329,6 @@ export const environmentRouter = createTRPCRouter({
   target: tragetRouter,
 
   deploy: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.environment.id(input.environmentId),
-    })
     .input(
       z.object({
         environmentId: z.string().uuid(),
@@ -402,33 +375,24 @@ export const environmentRouter = createTRPCRouter({
       };
     }),
 
-  byId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.environment.id(input),
-    })
-    .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(environment)
-        .leftJoin(
-          environmentPolicy,
-          eq(environment.policyId, environmentPolicy.id),
-        )
-        .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
-        .then(takeFirstOrNull)
-        .then((env) =>
-          env == null
-            ? null
-            : { ...env.environment, policy: env.environment_policy },
-        ),
-    ),
+  byId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
+    ctx.db
+      .select()
+      .from(environment)
+      .leftJoin(
+        environmentPolicy,
+        eq(environment.policyId, environmentPolicy.id),
+      )
+      .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
+      .then(takeFirstOrNull)
+      .then((env) =>
+        env == null
+          ? null
+          : { ...env.environment, policy: env.environment_policy },
+      ),
+  ),
 
   bySystemId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.system.id(input),
-    })
     .input(z.string())
     .query(async ({ ctx, input }) => {
       const envs = await ctx.db

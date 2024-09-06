@@ -26,7 +26,7 @@ const scopeHierarchy: Array<ScopeType> = ["deployment", "system", "workspace"];
 const checkEntityPermissionForScopes = async (
   entity: { type: EntityType; id: string },
   scopes: Array<{ type: ScopeType; id: string }>,
-  permission: string,
+  permissions: string[],
 ) => {
   return db
     .select()
@@ -37,7 +37,7 @@ const checkEntityPermissionForScopes = async (
       and(
         eq(entityRole.entityId, entity.id),
         eq(entityRole.entityType, entity.type),
-        eq(rolePermission.permission, permission),
+        inArray(rolePermission.permission, permissions),
         inArray(
           entityRole.scopeId,
           scopes.map((scope) => scope.id),
@@ -58,7 +58,7 @@ const checkEntityPermissionForScopes = async (
 export const checkEntityPermissionForResource = async (
   entity: { type: EntityType; id: string },
   resource: { type: ScopeType; id: string },
-  permission: string,
+  permissions: string[],
 ): Promise<boolean> => {
   const scopes: Array<{ type: ScopeType; id: string }> = [];
 
@@ -102,7 +102,11 @@ export const checkEntityPermissionForResource = async (
     scopes.push({ type: "workspace", id: result.id });
   }
 
-  const role = await checkEntityPermissionForScopes(entity, scopes, permission);
+  const role = await checkEntityPermissionForScopes(
+    entity,
+    scopes,
+    permissions,
+  );
 
   return role != null;
 };

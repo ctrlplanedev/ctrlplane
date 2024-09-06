@@ -18,17 +18,28 @@ export enum Permission {
 
   TargetCreate = "target.create",
   TargetList = "target.list",
-  TargetRead = "target.get",
+  TargetGet = "target.get",
   TargetDelete = "target.delete",
+
+  TargetProviderGet = "targetProvider.get",
+  TargetProviderDelete = "targetProvider.delete",
+  TargetProviderUpdate = "targetProvider.update",
 
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
-  DeploymentRead = "deployment.view",
+  DeploymentGet = "deployment.get",
   DeploymentDelete = "deployment.delete",
 
   ReleaseCreate = "release.create",
   ReleaseGet = "release.get",
   ReleaseList = "release.list",
+
+  RunbookTrigger = "runbook.trigger",
+  RunbookDelete = "runbook.delete",
+  RunbookCreate = "runbook.create",
+  RunbookGet = "runbook.get",
+  RunbookList = "runbook.list",
+  RunbookUpdate = "runbook.update",
 }
 
 export const defaultRoles = [
@@ -39,7 +50,7 @@ export const defaultRoles = [
       Permission.SystemGet,
       Permission.SystemList,
 
-      Permission.TargetRead,
+      Permission.TargetGet,
       Permission.TargetList,
 
       Permission.ReleaseGet,
@@ -72,7 +83,7 @@ export const defaultRoles = [
       Permission.ReleaseGet,
 
       Permission.DeploymentUpdate,
-      Permission.DeploymentRead,
+      Permission.DeploymentGet,
     ],
   },
 ];

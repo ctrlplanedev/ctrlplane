@@ -27,10 +27,6 @@ const workspaceRouter = createTRPCRouter({
           .then(takeFirstOrNull);
       }),
     create: protectedProcedure
-      .meta({
-        access: ({ ctx, input }) =>
-          ctx.accessQuery().workspace.id(input.workspaceId),
-      })
       .input(
         z.object({
           workspaceId: z.string().uuid(),

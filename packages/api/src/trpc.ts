@@ -28,8 +28,8 @@ export type Meta = {
     ctx: Context & { session: Session };
     input: any;
   }) =>
-    | [{ type: ScopeType; id: string }, Permission]
-    | Promise<[{ type: ScopeType; id: string }, Permission]>;
+    | [{ type: ScopeType; id: string }, Permission[]]
+    | Promise<[{ type: ScopeType; id: string }, Permission[]]>;
 };
 
 const t = initTRPC
@@ -73,17 +73,17 @@ const authzProdecdure = authnProcedure.use(
     const { operation } = meta ?? {};
     if (operation != null) {
       const input = await getRawInput();
-      const [resource, permission] = await operation({ ctx, input });
+      const [scope, permissions] = await operation({ ctx, input });
 
       const check = await checkEntityPermissionForResource(
         { type: "user", id: ctx.session.user.id },
-        resource,
-        permission,
+        scope,
+        permissions,
       );
       if (!check)
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: `You do not have the required permission '${permission}' for the ${resource.type} with ID '${resource.id}'.`,
+          message: `You do not have the required permissions for this ${scope.type}.`,
         });
     }
     return next();
