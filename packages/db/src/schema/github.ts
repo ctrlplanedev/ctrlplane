@@ -1,4 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   integer,
@@ -43,6 +43,9 @@ export const githubOrganization = pgTable("github_organization", {
 });
 
 export type GithubOrganization = InferSelectModel<typeof githubOrganization>;
+export type GithubOrganizationInsert = InferInsertModel<
+  typeof githubOrganization
+>;
 
 export const githubOrganizationInsert = createInsertSchema(githubOrganization);
 
