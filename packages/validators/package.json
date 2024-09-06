@@ -23,6 +23,10 @@
     "./github": {
       "types": "./src/github/index.ts",
       "default": "./dist/github/index.js"
+    },
+    "./auth": {
+      "types": "./src/auth/index.ts",
+      "default": "./dist/auth/index.js"
     }
   },
   "license": "MIT",

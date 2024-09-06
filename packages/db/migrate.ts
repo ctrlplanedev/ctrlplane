@@ -3,12 +3,39 @@ import { fileURLToPath } from "url";
 import { migrate as drizzleMigrate } from "drizzle-orm/node-postgres/migrator";
 
 import { db, pool } from "./src/client.js";
+import { predefinedRoles } from "./src/predefined-roles.js";
+import { role, rolePermission } from "./src/schema/rbac.js";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename);
 
-export const migrate = () =>
-  drizzleMigrate(db, { migrationsFolder: __dirname + "/drizzle" });
+const upsertPredefinedRoles = () =>
+  db.transaction(async (tx) => {
+    for (const pr of predefinedRoles) {
+      const { permissions, ...r } = pr;
+      console.log("Upserting " + r.name + " role");
+      await tx
+        .insert(role)
+        .values(r)
+        .onConflictDoUpdate({ target: role.id, set: r });
+      if (permissions.length !== 0)
+        await tx
+          .insert(rolePermission)
+          .values(
+            permissions.map((permission) => ({ permission, roleId: pr.id })),
+          )
+          .onConflictDoNothing();
+    }
+  });
+
+const migrate = async () => {
+  console.log("* Running migration script...");
+  console.log("Schema folder", __dirname + "/drizzle");
+  await drizzleMigrate(db, { migrationsFolder: __dirname + "/drizzle" });
+  console.log("Migration scripts finished\n");
+  console.log("* Upserting predefined roles...");
+  await upsertPredefinedRoles();
+};
 
 const isMain = () => {
   const fileUrl = `file://${process.argv[1]}`;
@@ -16,8 +43,6 @@ const isMain = () => {
 };
 
 if (isMain()) {
-  console.log("Running migration script...");
-  console.log("schema folder", __dirname + "/drizzle");
   migrate()
     .then(async () => {
       console.log("Migrations complete");
