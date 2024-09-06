@@ -1,37 +1,102 @@
-import { pgEnum, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
+import { workspace } from "./workspace.js";
+
 export enum Permission {
+  RolesCrate = "role.create",
+  RoleDelete = "role.delete",
+  RoleGet = "role.get",
+  RoleList = "role.list",
+  RoleUpdate = "role.update",
+
   SystemCreate = "system.create",
   SystemUpdate = "system.update",
-  SystemRead = "system.view",
+  SystemGet = "system.get",
+  SystemList = "system.list",
   SystemDelete = "system.delete",
 
   TargetCreate = "target.create",
+  TargetList = "target.list",
+  TargetRead = "target.get",
   TargetDelete = "target.delete",
 
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
-  DeploymentView = "deployment.view",
+  DeploymentRead = "deployment.view",
   DeploymentDelete = "deployment.delete",
 
   ReleaseCreate = "release.create",
-  ReleaseView = "release.view",
+  ReleaseGet = "release.get",
+  ReleaseList = "release.list",
 }
+
+export const defaultRoles = [
+  {
+    id: "00000000-0000-0000-0000-000000000000",
+    name: "Viewer",
+    permissions: [
+      Permission.SystemGet,
+      Permission.SystemList,
+
+      Permission.TargetRead,
+      Permission.TargetList,
+
+      Permission.ReleaseGet,
+      Permission.ReleaseList,
+
+      Permission.RoleGet,
+      Permission.RoleList,
+    ],
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000001",
+    name: "Editor",
+    description:
+      "All viewer permissions, plus permissions for actions that modify state, " +
+      "such as changing existing resources.",
+    permissions: [],
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000002",
+    name: "Admin",
+    permissions: [],
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000003",
+    name: "Developer",
+    permissions: [
+      Permission.SystemList,
+
+      Permission.ReleaseCreate,
+      Permission.ReleaseGet,
+
+      Permission.DeploymentUpdate,
+      Permission.DeploymentRead,
+    ],
+  },
+];
 
 export const role = pgTable("role", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
+  workspaceId: uuid("workspace_id").references(() => workspace.id, {
+    onDelete: "cascade",
+  }),
 });
 
-export const rolePermission = pgTable("role_permission", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  roleId: uuid("role_id")
-    .references(() => role.id, { onDelete: "cascade" })
-    .notNull(),
-  permission: text("permission"),
-});
+export const rolePermission = pgTable(
+  "role_permission",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    roleId: uuid("role_id")
+      .references(() => role.id, { onDelete: "cascade" })
+      .notNull(),
+    permission: text("permission"),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.roleId, t.permission) }),
+);
 
 export const entityType = pgEnum("entity_type", ["user", "team"]);
 export const entityTypeSchema = z.enum(entityType.enumValues);
@@ -48,7 +113,7 @@ export type ScopeType = z.infer<typeof scopeTypeSchema>;
 export const entityRole = pgTable("entity_role", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  roleId: uuid("id")
+  roleId: uuid("role_id")
     .references(() => role.id, { onDelete: "cascade" })
     .notNull(),
 

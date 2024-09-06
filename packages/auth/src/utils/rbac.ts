@@ -23,7 +23,7 @@ const scopeHierarchy: Array<ScopeType> = ["deployment", "system", "workspace"];
 /**
  * Returns the first matching scope
  */
-const checkEntityPermissionForScopes = (
+const checkEntityPermissionForScopes = async (
   entity: { type: EntityType; id: string },
   scopes: Array<{ type: ScopeType; id: string }>,
   permission: string,
@@ -49,12 +49,19 @@ const checkEntityPermissionForScopes = (
     .then(takeFirstOrNull);
 };
 
-export const hasPermission = async (
+/**
+ * Checks if an entity has a specific permission for a given resource. This
+ * function checks permissions across different scope levels, prioritizing
+ * readability over abstraction. As the complexity grows, we may consider
+ * introducing abstractions to simplify the logic.
+ */
+export const checkEntityPermissionForResource = async (
   entity: { type: EntityType; id: string },
   resource: { type: ScopeType; id: string },
   permission: string,
 ): Promise<boolean> => {
   const scopes: Array<{ type: ScopeType; id: string }> = [];
+
   if (resource.type === "deployment") {
     const result = await db
       .select()
@@ -69,6 +76,30 @@ export const hasPermission = async (
       { type: "system", id: result.system.id },
       { type: "workspace", id: result.workspace.id },
     );
+  }
+
+  if (resource.type === "system") {
+    const result = await db
+      .select()
+      .from(workspace)
+      .innerJoin(system, eq(system.workspaceId, workspace.id))
+      .where(eq(system.id, resource.id))
+      .then(takeFirst);
+
+    scopes.push(
+      { type: "system", id: result.system.id },
+      { type: "workspace", id: result.workspace.id },
+    );
+  }
+
+  if (resource.type === "workspace") {
+    const result = await db
+      .select()
+      .from(workspace)
+      .where(eq(workspace.id, resource.id))
+      .then(takeFirst);
+
+    scopes.push({ type: "workspace", id: result.id });
   }
 
   const role = await checkEntityPermissionForScopes(entity, scopes, permission);

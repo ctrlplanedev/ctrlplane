@@ -19,6 +19,7 @@ import {
   jobAgent,
   jobConfig,
   jobExecution,
+  Permission,
   release,
   system,
   target,
@@ -52,8 +53,10 @@ export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   distrubtionById: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.deployment.id(input),
+      operation: ({ input }) => [
+        { type: "deployment", id: input },
+        Permission.DeploymentView,
+      ],
     })
     .input(z.string())
     .query(({ ctx, input }) => {

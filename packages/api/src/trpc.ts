@@ -1,9 +1,10 @@
 import type { Session } from "@ctrlplane/auth";
+import type { Permission, ScopeType } from "@ctrlplane/db/schema";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { accessQuery } from "@ctrlplane/auth/utils";
+import { checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
 
 export const createTRPCContext = (opts: {
@@ -18,17 +19,17 @@ export const createTRPCContext = (opts: {
   return {
     session,
     db,
-    accessQuery: () => accessQuery(db, session?.user.id),
   };
 };
 
 export type Context = ReturnType<typeof createTRPCContext>;
 export type Meta = {
-  permission?: string;
-  access?: (opts: {
+  operation?: (opts: {
     ctx: Context & { session: Session };
     input: any;
-  }) => boolean | Promise<boolean>;
+  }) =>
+    | [{ type: ScopeType; id: string }, Permission]
+    | Promise<[{ type: ScopeType; id: string }, Permission]>;
 };
 
 const t = initTRPC
@@ -57,27 +58,8 @@ export const createTRPCRouter = t.router;
 
 export const publicProcedure = t.procedure;
 
-const validatePermission = (statement: string, perm: string) => {
-  // Escape special regex characters in the statement except '*'
-  const escapedStatement = statement
-    .replace(/[-/\\^$+?.()|[\]{}]/g, "\\$&")
-    .replace(/\*/g, ".*");
-  const regex = new RegExp(`^${escapedStatement}$`);
-  return regex.test(perm);
-};
-
-export const authenticatedProcedure = t.procedure.use(({ ctx, next, meta }) => {
+const authnProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
-
-  const { permission } = meta ?? {};
-  if (permission != null) {
-    if (!validatePermission("*", permission))
-      throw new TRPCError({
-        code: "FORBIDDEN",
-        message: `You need to have permission: ${permission}`,
-      });
-  }
-
   return next({
     ctx: {
       // infers the `session` as non-nullable
@@ -86,14 +68,26 @@ export const authenticatedProcedure = t.procedure.use(({ ctx, next, meta }) => {
   });
 });
 
-export const protectedProcedure = authenticatedProcedure.use(
-  async ({ ctx, next, meta, getRawInput }) => {
-    const { access } = meta ?? {};
-    if (access != null) {
+const authzProdecdure = authnProcedure.use(
+  async ({ ctx, meta, getRawInput, next }) => {
+    const { operation } = meta ?? {};
+    if (operation != null) {
       const input = await getRawInput();
-      const hasPermission = await access({ ctx, input });
-      if (!hasPermission) throw new TRPCError({ code: "FORBIDDEN" });
+      const [resource, permission] = await operation({ ctx, input });
+
+      const check = await checkEntityPermissionForResource(
+        { type: "user", id: ctx.session.user.id },
+        resource,
+        permission,
+      );
+      if (!check)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `You do not have the required permission '${permission}' for the ${resource.type} with ID '${resource.id}'.`,
+        });
     }
     return next();
   },
 );
+
+export const protectedProcedure = authzProdecdure;
