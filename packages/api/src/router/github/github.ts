@@ -62,6 +62,12 @@ const userRouter = createTRPCRouter({
         .then(takeFirstOrNull),
     ),
 
+  delete: protectedProcedure
+    .input(z.string())
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.delete(githubUser).where(eq(githubUser.userId, input)),
+    ),
+
   create: protectedProcedure
     .input(
       z.object({
@@ -76,12 +82,6 @@ const userRouter = createTRPCRouter({
         .values(input)
         .returning()
         .then((data) => data[0]),
-    ),
-
-  delete: protectedProcedure
-    .input(z.string().uuid())
-    .mutation(async ({ ctx, input }) =>
-      ctx.db.delete(githubUser).where(eq(githubUser.userId, input)),
     ),
 });
 
