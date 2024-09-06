@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export enum Permission {
   WorkspaceInvite = "workspace.invite",
+  WorkspaceListMembers = "workspace.listMembers",
 
   RoleCreate = "role.create",
   RoleDelete = "role.delete",
@@ -18,6 +19,7 @@ export enum Permission {
   TargetCreate = "target.create",
   TargetList = "target.list",
   TargetGet = "target.get",
+  TargetUpdate = "target.update",
   TargetDelete = "target.delete",
 
   TargetProviderGet = "targetProvider.get",

@@ -32,19 +32,6 @@ export const userRouter = createTRPCRouter({
       .then(takeFirst),
   ),
 
-  // viewerAllPermissions: protectedProcedure.query(({ ctx }) =>
-  //   ctx.db
-  //     .selectDistinct({ permission: rolePermission.permission })
-  //     .from(rolePermission)
-  //     .innerJoin(role, eq(role.id, rolePermission.roleId))
-  //     .innerJoin(entityRole, eq(entityRole.roleId, role.id))
-  //     .innerJoin(
-  //       user,
-  //       and(eq(user.id, entityRole.id), eq(entityRole.entityType, "user")),
-  //     )
-  //     .where(eq(user.id, ctx.session.user.id)),
-  // ),
-
   apiKey: createTRPCRouter({
     revoke: protectedProcedure
       .input(z.string().uuid())

@@ -32,7 +32,12 @@ export const entityTypeSchema = z.enum(entityType.enumValues);
 export type EntityType = z.infer<typeof entityTypeSchema>;
 
 export const scopeType = pgEnum("scope_type", [
+  "release",
+  "target",
+  "targetProvider",
+  "targetLabelGroup",
   "workspace",
+  "environment",
   "system",
   "deployment",
 ]);

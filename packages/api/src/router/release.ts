@@ -22,14 +22,21 @@ import {
   isPassingEnvironmentPolicy,
   isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const releaseRouter = createTRPCRouter({
   list: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "deployment", id: input.deploymentId },
+        [Permission.DeploymentGet],
+      ],
+    })
     .input(
       z.object({
-        deploymentId: z.string().optional(),
+        deploymentId: z.string(),
         limit: z.number().optional(),
         offset: z.number().optional(),
       }),
@@ -42,11 +49,7 @@ export const releaseRouter = createTRPCRouter({
           releaseDependency,
           eq(release.id, releaseDependency.releaseId),
         )
-        .where(
-          input.deploymentId
-            ? eq(release.deploymentId, input.deploymentId)
-            : undefined,
-        )
+        .where(eq(release.deploymentId, input.deploymentId))
         .orderBy(desc(release.createdAt))
         .limit(input.limit ?? 1000)
         .offset(input.offset ?? 0)
@@ -63,27 +66,49 @@ export const releaseRouter = createTRPCRouter({
         ),
     ),
 
-  byId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    ctx.db
-      .select()
-      .from(release)
-      .leftJoin(deployment, eq(release.deploymentId, deployment.id))
-      .leftJoin(releaseDependency, eq(releaseDependency.releaseId, release.id))
-      .where(eq(release.id, input))
-      .then((rows) =>
-        _.chain(rows)
-          .groupBy((r) => r.release.id)
-          .map((r) => ({
-            ...r[0]!.release,
-            dependencies: r.filter(isPresent).map((r) => r.release_dependency!),
-          }))
-          .value()
-          .at(0),
-      ),
-  ),
+  byId: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "release", id: input },
+        [Permission.DeploymentGet],
+      ],
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(release)
+        .leftJoin(deployment, eq(release.deploymentId, deployment.id))
+        .leftJoin(
+          releaseDependency,
+          eq(releaseDependency.releaseId, release.id),
+        )
+        .where(eq(release.id, input))
+        .then((rows) =>
+          _.chain(rows)
+            .groupBy((r) => r.release.id)
+            .map((r) => ({
+              ...r[0]!.release,
+              dependencies: r
+                .filter(isPresent)
+                .map((r) => r.release_dependency!),
+            }))
+            .value()
+            .at(0),
+        ),
+    ),
 
   deploy: createTRPCRouter({
     toEnvironment: protectedProcedure
+      .meta({
+        operation: ({ input }) => [
+          [
+            { type: "release", id: input.releaseId },
+            { type: "environment", id: input.environmentId },
+          ],
+          [Permission.DeploymentGet],
+        ],
+      })
       .input(z.object({ environmentId: z.string(), releaseId: z.string() }))
       .mutation(async ({ ctx, input }) => {
         const jobConfigs = await createJobConfigs(ctx.db, "redeploy")
@@ -104,6 +129,12 @@ export const releaseRouter = createTRPCRouter({
   }),
 
   create: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "deployment", id: input.deploymentId },
+        [Permission.DeploymentUpdate],
+      ],
+    })
     .input(createRelease)
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (db) => {
@@ -139,18 +170,8 @@ export const releaseRouter = createTRPCRouter({
       }),
     ),
 
-  delete: protectedProcedure
-    .input(z.string())
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .delete(release)
-        .where(eq(release.id, input))
-        .returning()
-        .then(takeFirst),
-    ),
-
   blockedEnvironments: protectedProcedure
-    .input(z.array(z.string()))
+    .input(z.array(z.string().uuid()))
     .query(async ({ input }) => {
       const policies = await db
         .select()

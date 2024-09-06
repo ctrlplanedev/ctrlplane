@@ -17,20 +17,19 @@ export const createTRPCContext = (opts: {
 
   console.log(">>> tRPC Request from", source, "by", session?.user.email);
 
-  return {
-    session,
-    db,
-  };
+  return { session, db };
 };
 
 export type Context = ReturnType<typeof createTRPCContext>;
+
+type Scope = { type: ScopeType; id: string };
 export type Meta = {
   operation?: (opts: {
     ctx: Context & { session: Session };
     input: any;
   }) =>
-    | [{ type: ScopeType; id: string }, Permission[]]
-    | Promise<[{ type: ScopeType; id: string }, Permission[]]>;
+    | [Scope | Scope[], Permission[]]
+    | Promise<[Scope | Scope[], Permission[]]>;
 };
 
 const t = initTRPC
@@ -75,16 +74,22 @@ const authzProdecdure = authnProcedure.use(
     if (operation != null) {
       const input = await getRawInput();
 
-      const [scope, permissions] = await operation({ ctx, input });
-      const check = await checkEntityPermissionForResource(
-        { type: "user", id: ctx.session.user.id },
-        scope,
-        permissions,
+      const [scopeS, permissions] = await operation({ ctx, input });
+      const scopes = Array.isArray(scopeS) ? scopeS : [scopeS];
+      const check = await Promise.all(
+        scopes.map(async (scope) =>
+          checkEntityPermissionForResource(
+            { type: "user", id: ctx.session.user.id },
+            scope,
+            permissions,
+          ),
+        ),
       );
-      if (!check)
+
+      if (!check.every((c) => c))
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: `You do not have the required permissions for this ${scope.type}.`,
+          message: `You do not have the required permissions for this operation.`,
         });
     }
     return next();

@@ -27,26 +27,42 @@ import {
   updateTarget,
   workspace,
 } from "@ctrlplane/db/schema";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { targetScanQueue } from "../dispatch";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const labelGroupRouter = createTRPCRouter({
-  groups: protectedProcedure.input(z.string().uuid()).query(({ ctx, input }) =>
-    ctx.db
-      .select({
-        targets: sql<number>`count(${target.id})`.mapWith(Number),
-        targetLabelGroup,
-      })
-      .from(targetLabelGroup)
-      .innerJoin(workspace, eq(targetLabelGroup.workspaceId, workspace.id))
-      .innerJoin(target, sql`${target.labels} ?& ${targetLabelGroup.keys}`)
-      .where(eq(workspace.id, input))
-      .groupBy(workspace.id, targetLabelGroup.id)
-      .orderBy(asc(targetLabelGroup.name)),
-  ),
+  groups: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input },
+        [Permission.TargetList],
+      ],
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select({
+          targets: sql<number>`count(${target.id})`.mapWith(Number),
+          targetLabelGroup,
+        })
+        .from(targetLabelGroup)
+        .innerJoin(workspace, eq(targetLabelGroup.workspaceId, workspace.id))
+        .innerJoin(target, sql`${target.labels} ?& ${targetLabelGroup.keys}`)
+        .where(eq(workspace.id, input))
+        .groupBy(workspace.id, targetLabelGroup.id)
+        .orderBy(asc(targetLabelGroup.name)),
+    ),
+
   byId: protectedProcedure
     .input(z.string().uuid())
+    .meta({
+      operation: ({ input }) => [
+        { type: "targetLabelGroup", id: input },
+        [Permission.TargetGet],
+      ],
+    })
     .query(async ({ ctx, input }) => {
       const group = await ctx.db
         .select()
@@ -83,6 +99,12 @@ const labelGroupRouter = createTRPCRouter({
     }),
 
   upsert: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input.id },
+        [Permission.TargetUpdate],
+      ],
+    })
     .input(
       z.object({
         workspaceId: z.string().uuid(),
@@ -112,6 +134,12 @@ const labelGroupRouter = createTRPCRouter({
     }),
 
   delete: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "targetLabelGroup", id: input },
+        [Permission.TargetDelete],
+      ],
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db.delete(targetLabelGroup).where(eq(targetLabelGroup.id, input)),
@@ -120,7 +148,13 @@ const labelGroupRouter = createTRPCRouter({
 
 const targetProviderRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
-    .input(z.string())
+    .meta({
+      operation: ({ input }) => [
+        { type: "targetProvider", id: input },
+        [Permission.TargetList],
+      ],
+    })
+    .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const providers = await ctx.db
         .select()
@@ -245,6 +279,12 @@ const targetProviderRouter = createTRPCRouter({
   }),
 
   delete: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "targetProvider", id: input.providerId },
+        [Permission.TargetDelete],
+      ],
+    })
     .input(
       z.object({
         providerId: z.string().uuid(),
@@ -286,23 +326,37 @@ export const targetRouter = createTRPCRouter({
   labelGroup: labelGroupRouter,
   provider: targetProviderRouter,
 
-  byId: protectedProcedure.input(z.string().uuid()).query(({ ctx, input }) =>
-    ctx.db
-      .select()
-      .from(target)
-      .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
-      .where(eq(target.id, input))
-      .then(takeFirstOrNull)
-      .then((a) =>
-        a == null ? null : { ...a.target, provider: a.target_provider },
-      ),
-  ),
+  byId: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "target", id: input },
+        [Permission.TargetGet],
+      ],
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(target)
+        .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
+        .where(eq(target.id, input))
+        .then(takeFirstOrNull)
+        .then((a) =>
+          a == null ? null : { ...a.target, provider: a.target_provider },
+        ),
+    ),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
+      .meta({
+        operation: ({ input }) => [
+          { type: "workspace", id: input.workspaceId },
+          [Permission.TargetList],
+        ],
+      })
       .input(
         z.object({
-          workspaceId: z.string().uuid().optional(),
+          workspaceId: z.string().uuid(),
           filters: z
             .array(
               z.object({
@@ -316,10 +370,7 @@ export const targetRouter = createTRPCRouter({
         }),
       )
       .query(({ ctx, input }) => {
-        const workspaceIdCheck =
-          input.workspaceId != null
-            ? eq(workspace.id, input.workspaceId)
-            : undefined;
+        const workspaceIdCheck = eq(workspace.id, input.workspaceId);
 
         const nameFilters = (input.filters ?? [])
           .filter((f) => f.key === "name")
@@ -352,58 +403,43 @@ export const targetRouter = createTRPCRouter({
         }));
       }),
 
-    kinds: protectedProcedure.input(z.string().uuid()).query(({ ctx, input }) =>
-      ctx.db
-        .selectDistinct({ kind: target.kind })
-        .from(target)
-        .innerJoin(workspace, eq(target.workspaceId, workspace.id))
-        .where(eq(workspace.id, input))
-        .then((r) => r.map((row) => row.kind)),
-    ),
-
-    filtered: protectedProcedure
-      .input(
-        z.object({
-          workspaceId: z.string().uuid(),
-          filters: z.array(
-            z.object({ key: z.enum(["name", "kind"]), value: z.string() }),
-          ),
-        }),
-      )
-      .query(({ ctx, input }) => {
-        const nameFilters = input.filters
-          .filter((f) => f.key === "name")
-          .map((f) => like(target.name, `%${f.value}%`));
-        const kindFilters = input.filters
-          .filter((f) => f.key === "kind")
-          .map((f) => eq(target.kind, f.value));
-
-        return ctx.db
-          .select()
+    kinds: protectedProcedure
+      .meta({
+        operation: ({ input }) => [
+          { type: "workspace", id: input.workspaceId },
+          [Permission.TargetList],
+        ],
+      })
+      .input(z.string().uuid())
+      .query(({ ctx, input }) =>
+        ctx.db
+          .selectDistinct({ kind: target.kind })
           .from(target)
-          .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
           .innerJoin(workspace, eq(target.workspaceId, workspace.id))
-          .where(
-            and(
-              eq(workspace.id, input.workspaceId),
-              or(...nameFilters),
-              or(...kindFilters),
-            ),
-          )
-          .orderBy(desc(target.kind))
-          .then((t) =>
-            t.map((a) => ({ ...a.target, provider: a.target_provider })),
-          );
-      }),
+          .where(eq(workspace.id, input))
+          .then((r) => r.map((row) => row.kind)),
+      ),
   }),
 
   create: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input.workspaceId },
+        [Permission.TargetCreate],
+      ],
+    })
     .input(createTarget)
     .mutation(({ ctx, input }) =>
       ctx.db.insert(target).values(input).returning().then(takeFirst),
     ),
 
   update: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "target", id: input.id },
+        [Permission.TargetUpdate],
+      ],
+    })
     .input(z.object({ id: z.string().uuid(), data: updateTarget }))
     .mutation(({ ctx, input: { id, data } }) =>
       ctx.db
@@ -415,20 +451,40 @@ export const targetRouter = createTRPCRouter({
     ),
 
   delete: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "target", id: input.id },
+        [Permission.TargetDelete],
+      ],
+    })
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) =>
       ctx.db.delete(target).where(inArray(target.id, input)).returning(),
     ),
 
-  labelKeys: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    ctx.db
-      .selectDistinct({ key: sql<string>`jsonb_object_keys(labels)` })
-      .from(target)
-      .where(eq(target.workspaceId, input))
-      .then((r) => r.map((row) => row.key)),
-  ),
+  labelKeys: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input },
+        [Permission.TargetList],
+      ],
+    })
+    .input(z.string())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .selectDistinct({ key: sql<string>`jsonb_object_keys(labels)` })
+        .from(target)
+        .where(eq(target.workspaceId, input))
+        .then((r) => r.map((row) => row.key)),
+    ),
 
   lock: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "target", id: input },
+        [Permission.TargetUpdate],
+      ],
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -440,6 +496,12 @@ export const targetRouter = createTRPCRouter({
     ),
 
   unlock: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "target", id: input },
+        [Permission.TargetUpdate],
+      ],
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
