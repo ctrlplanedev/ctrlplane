@@ -25,7 +25,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/react";
 
-interface GithubAddOrgDialogProps {
+type GithubAddOrgDialogProps = {
   githubUserId: number;
   children: React.ReactNode;
   githubConfig: {
@@ -35,7 +35,7 @@ interface GithubAddOrgDialogProps {
   };
   workspaceId: string;
   workspaceSlug: string;
-}
+};
 
 export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
   githubUserId,

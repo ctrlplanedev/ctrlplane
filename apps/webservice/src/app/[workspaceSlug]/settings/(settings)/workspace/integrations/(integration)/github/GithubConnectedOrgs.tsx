@@ -24,7 +24,7 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { api } from "~/trpc/react";
 import { GithubAddOrgDialog } from "./GithubAddOrgDialog";
 
-interface GithubConnectedOrgsProps {
+type GithubConnectedOrgsProps = {
   githubUser?: GithubUser | null;
   workspaceSlug?: string;
   workspaceId?: string;
@@ -34,7 +34,7 @@ interface GithubConnectedOrgsProps {
     botName: string;
     clientId: string;
   };
-}
+};
 
 export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = ({
   githubUser,
