@@ -39,16 +39,28 @@ export const scopeType = pgEnum("scope_type", [
 export const scopeTypeSchema = z.enum(scopeType.enumValues);
 export type ScopeType = z.infer<typeof scopeTypeSchema>;
 
-export const entityRole = pgTable("entity_role", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const entityRole = pgTable(
+  "entity_role",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  roleId: uuid("role_id")
-    .references(() => role.id, { onDelete: "cascade" })
-    .notNull(),
+    roleId: uuid("role_id")
+      .references(() => role.id, { onDelete: "cascade" })
+      .notNull(),
 
-  entityType: entityType("entity_type").notNull(),
-  entityId: uuid("entity_id").notNull(),
+    entityType: entityType("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
 
-  scopeId: uuid("scope_id").notNull(),
-  scopeType: scopeType("scope_type").notNull(),
-});
+    scopeId: uuid("scope_id").notNull(),
+    scopeType: scopeType("scope_type").notNull(),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(
+      t.roleId,
+      t.entityType,
+      t.entityId,
+      t.scopeId,
+      t.scopeType,
+    ),
+  }),
+);

@@ -1,13 +1,8 @@
 "use client";
 
-import type {
-  Role,
-  User,
-  Workspace,
-  WorkspaceMember,
-} from "@ctrlplane/db/schema";
+import type { Role, User, Workspace } from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -15,6 +10,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { TbCheck, TbCopy, TbDots } from "react-icons/tb";
+import { useCopyToClipboard } from "react-use";
 import { v4 } from "uuid";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
@@ -52,43 +48,38 @@ import { predefinedRoles } from "@ctrlplane/validators/auth";
 
 import { api } from "~/trpc/react";
 
-type Member = WorkspaceMember & {
+type Member = {
+  id: string;
   user: User;
+  workspace: Workspace;
   role: Role;
 };
 
 const InviteLinkSection: React.FC<{
-  sessionMember?: Member;
   workspace: Workspace;
   inviteLink?: string;
-}> = ({ sessionMember, workspace, inviteLink }) => {
-  const utils = api.useUtils();
-  const { mutateAsync } = api.invite.workspace.link.create.useMutation({
-    onSuccess: () =>
-      utils.invite.workspace.link.byWorkspaceMemberId.invalidate(),
-  });
-  const [clickedCopy, setClickedCopy] = useState(false);
+}> = ({ workspace, inviteLink }) => {
+  const create = api.workspace.invite.token.create.useMutation();
 
+  const [, copy] = useCopyToClipboard();
+  const [clickedCopy, setClickedCopy] = useState(false);
   const [roleId, setRoleId] = useState(predefinedRoles.admin.id);
-  const [token] = useState(inviteLink ?? v4());
+
+  const token = useMemo(() => inviteLink ?? v4(), [inviteLink]);
   const baseUrl = api.runtime.baseUrl.useQuery();
   const link = `${baseUrl.data}/join/${token}`;
 
   const roles = api.workspace.roles.useQuery(workspace.id);
 
   const handleCopyClick = () => {
-    navigator.clipboard.writeText(link).then(() => {
-      setClickedCopy(true);
-      setTimeout(() => setClickedCopy(false), 1000);
+    copy(link);
+    setClickedCopy(true);
+    setTimeout(() => setClickedCopy(false), 1000);
+    create.mutate({
+      roleId,
+      workspaceId: workspace.id,
+      token,
     });
-
-    if (inviteLink == null && sessionMember != null)
-      mutateAsync({
-        roleId,
-        workspaceId: workspace.id,
-        workspaceMemberId: sessionMember.id,
-        token,
-      });
   };
 
   return (
@@ -125,13 +116,8 @@ const InviteLinkSection: React.FC<{
 
 const AddMembersDialog: React.FC<{
   workspace: Workspace;
-  sessionMember?: Member;
-}> = ({ sessionMember, workspace }) => {
+}> = ({ workspace }) => {
   const [inviteMode, setInviteMode] = useState<"email" | "link">("link");
-  const inviteLink = api.invite.workspace.link.byWorkspaceMemberId.useQuery(
-    sessionMember?.id ?? "",
-    { enabled: sessionMember != null },
-  );
 
   return (
     <Dialog>
@@ -144,11 +130,7 @@ const AddMembersDialog: React.FC<{
         </DialogHeader>
 
         {inviteMode === "link" ? (
-          <InviteLinkSection
-            sessionMember={sessionMember}
-            workspace={workspace}
-            inviteLink={inviteLink.data?.token}
-          />
+          <InviteLinkSection workspace={workspace} />
         ) : (
           <div>email</div>
         )}
@@ -206,19 +188,32 @@ const columns: ColumnDef<Member>[] = [
     accessorKey: "role",
     enableGlobalFilter: false,
     cell: ({ row }) => {
-      const { name, description } = row.original.role;
-      if (description != null && description !== "")
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>{name}</TooltipTrigger>
-              <TooltipContent>
-                <p>{description}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      return <span>{name}</span>;
+      const { id: currentRoleId } = row.original.role;
+      const roles = api.workspace.roles.useQuery(row.original.workspace.id);
+
+      return (
+        <Select defaultValue={currentRoleId}>
+          <SelectTrigger className="w-[230px]">
+            <SelectValue placeholder="Select a role" />
+          </SelectTrigger>
+          <SelectContent>
+            {roles.data?.map((role) => (
+              <SelectItem key={role.id} value={role.id}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>{role.name}</TooltipTrigger>
+                    {role.description && (
+                      <TooltipContent>
+                        <p>{role.description}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
     },
   },
   {
@@ -227,17 +222,19 @@ const columns: ColumnDef<Member>[] = [
     accessorKey: "user.id",
     enableGlobalFilter: false,
     cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon">
-            <TbDots />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex justify-end">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <TbDots />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem>Edit</DropdownMenuItem>
+            <DropdownMenuItem>Delete</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     ),
   },
 ];
@@ -245,8 +242,7 @@ const columns: ColumnDef<Member>[] = [
 export const MembersTable: React.FC<{
   workspace: Workspace;
   data: Array<Member>;
-  sessionMember?: Member;
-}> = ({ workspace, data, sessionMember }) => {
+}> = ({ workspace, data }) => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const table = useReactTable({
@@ -273,14 +269,14 @@ export const MembersTable: React.FC<{
             onChange={(e) => table.setGlobalFilter(e.target.value)}
           />
         </div>
-        <AddMembersDialog workspace={workspace} sessionMember={sessionMember} />
+        <AddMembersDialog workspace={workspace} />
       </div>
       <Table>
         <TableBody>
           {table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
-              className="flex items-center justify-between border-b-neutral-800/50 px-0 hover:bg-transparent"
+              className="border-b-neutral-800/50 px-0 hover:bg-transparent"
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>

@@ -16,12 +16,12 @@ export default async function WorkspaceSettingMembersPage({
 }) {
   const session = await auth();
   if (session == null) notFound();
+
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
 
   const members = await api.workspace.members.list(workspace.id);
-  const sessionMember = members.find((m) => m.user.id === session.user.id);
 
   return (
     <div className="container mx-auto max-w-2xl space-y-8">
@@ -33,13 +33,9 @@ export default async function WorkspaceSettingMembersPage({
       </div>
       <div className="border-b" />
       <div className="space-y-1">
-        <p className="font-semibold">Manage members</p>
+        <p className="font-semibold">Manage members ({members.length})</p>
       </div>
-      <MembersTable
-        data={members}
-        workspace={workspace}
-        sessionMember={sessionMember}
-      />
+      <MembersTable data={members} workspace={workspace} />
       <div className="border-b" />
       <div className="flex items-center">
         <div className="flex-grow">

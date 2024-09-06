@@ -7,7 +7,6 @@ import { db } from "@ctrlplane/db/client";
 import { account, session, user } from "@ctrlplane/db/schema";
 
 import { env } from "../env";
-import { getRedirectUrlFromWorkspaceInviteToken } from "./workspace-invite-redirect";
 
 declare module "next-auth" {
   interface Session {
@@ -42,22 +41,11 @@ export const authConfig: NextAuthConfig = {
         },
       };
     },
-    redirect: ({ url, baseUrl }) => {
-      const urlTokens = url.split("/");
-      const numTokens = urlTokens.length;
-
-      const isWorkspaceInviteRedirect =
-        urlTokens.length > 2 && urlTokens[numTokens - 2] === "workspace-invite";
-      if (!isWorkspaceInviteRedirect) return url;
-
-      const workspaceInviteToken = urlTokens[numTokens - 1];
-      if (workspaceInviteToken == null) return baseUrl;
-
-      return getRedirectUrlFromWorkspaceInviteToken(
-        db,
-        workspaceInviteToken,
-        baseUrl,
-      );
+    redirect: ({ url }) => {
+      const params = new URLSearchParams(url);
+      const token = params.get("inviteToken");
+      if (token != null) return `/join/${token}`;
+      return "/";
     },
   },
 } satisfies NextAuthConfig;
