@@ -1,5 +1,6 @@
 import type { Session } from "@ctrlplane/auth";
-import type { Permission, ScopeType } from "@ctrlplane/db/schema";
+import type { ScopeType } from "@ctrlplane/db/schema";
+import type { Permission } from "@ctrlplane/validators/auth";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";

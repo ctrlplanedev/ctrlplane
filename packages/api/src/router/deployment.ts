@@ -19,7 +19,6 @@ import {
   jobAgent,
   jobConfig,
   jobExecution,
-  Permission,
   release,
   system,
   target,
@@ -30,6 +29,7 @@ import {
   dispatchJobConfigs,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";

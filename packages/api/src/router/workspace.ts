@@ -6,11 +6,13 @@ import { z } from "zod";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createWorkspace,
+  entityRole,
   updateWorkspace,
   user,
   workspace,
   workspaceMember,
 } from "@ctrlplane/db/schema";
+import { predefinedRoles } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -106,19 +108,29 @@ export const workspaceRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createWorkspace)
     .mutation(async ({ ctx, input }) =>
-      ctx.db.transaction((db) =>
-        db
+      ctx.db.transaction(async (tx) => {
+        const w = await tx
           .insert(workspace)
           .values(input)
           .returning()
-          .then(takeFirst)
-          .then((w) =>
-            db
-              .insert(workspaceMember)
-              .values({ workspaceId: w.id, userId: ctx.session.user.id })
-              .returning(),
-          ),
-      ),
+          .then(takeFirst);
+
+        await tx
+          .insert(workspaceMember)
+          .values({ workspaceId: w.id, userId: ctx.session.user.id });
+
+        await tx.insert(entityRole).values({
+          roleId: predefinedRoles.admin.id,
+
+          scopeType: "workspace",
+          scopeId: w.id,
+
+          entityType: "user",
+          entityId: ctx.session.user.id,
+        });
+
+        return w;
+      }),
     ),
 
   list: protectedProcedure.query(async ({ ctx }) =>

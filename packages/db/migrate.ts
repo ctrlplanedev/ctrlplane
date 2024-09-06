@@ -2,8 +2,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { migrate as drizzleMigrate } from "drizzle-orm/node-postgres/migrator";
 
+import { predefinedRoles } from "@ctrlplane/validators/auth";
+
 import { db, pool } from "./src/client.js";
-import { predefinedRoles } from "./src/predefined-roles.js";
 import { role, rolePermission } from "./src/schema/rbac.js";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
@@ -11,7 +12,7 @@ const __dirname = path.dirname(__filename);
 
 const upsertPredefinedRoles = () =>
   db.transaction(async (tx) => {
-    for (const pr of predefinedRoles) {
+    for (const pr of Object.values(predefinedRoles)) {
       const { permissions, ...r } = pr;
       console.log("Upserting " + r.name + " role");
       await tx
@@ -45,7 +46,7 @@ const isMain = () => {
 if (isMain()) {
   migrate()
     .then(async () => {
-      console.log("Migrations complete");
+      console.log("* Migrations complete");
       await pool.end();
     })
     .catch(console.error);
