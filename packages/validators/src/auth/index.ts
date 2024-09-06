@@ -1,7 +1,9 @@
 import { z } from "zod";
 
 export enum Permission {
-  RolesCrate = "role.create",
+  WorkspaceInvite = "workspace.invite",
+
+  RoleCreate = "role.create",
   RoleDelete = "role.delete",
   RoleGet = "role.get",
   RoleList = "role.list",
@@ -45,48 +47,17 @@ export const predefinedRoles = {
   viewer: {
     id: "00000000-0000-0000-0000-000000000000",
     name: "Viewer",
-    permissions: [
-      Permission.SystemGet,
-      Permission.SystemList,
-
-      Permission.TargetGet,
-      Permission.TargetList,
-
-      Permission.ReleaseGet,
-      Permission.ReleaseList,
-
-      Permission.RoleGet,
-      Permission.RoleList,
-    ],
-  },
-  editor: {
-    id: "00000000-0000-0000-0000-000000000001",
-    name: "Editor",
-    description:
-      "All viewer permissions, plus permissions for actions that modify state, " +
-      "such as changing existing resources.",
-    permissions: [],
+    permissions: Object.values(Permission).filter(
+      (a) => a.includes(".list") || a.includes(".get"),
+    ),
   },
   admin: {
-    id: "00000000-0000-0000-0000-000000000002",
+    id: "00000000-0000-0000-0000-000000000001",
     name: "Admin",
-    permissions: Object.keys(Permission),
-  },
-  developer: {
-    id: "00000000-0000-0000-0000-000000000003",
-    name: "Application Developer",
-    permissions: [
-      Permission.SystemList,
-
-      Permission.ReleaseCreate,
-      Permission.ReleaseGet,
-
-      Permission.DeploymentUpdate,
-      Permission.DeploymentGet,
-    ],
+    permissions: Object.values(Permission),
   },
   noAccess: {
-    id: "00000000-0000-0000-0000-000000000004",
+    id: "00000000-0000-0000-0000-000000000002",
     name: "No Access",
     description:
       "This role grants no permissions by default. It's ideal for initially inviting users to a workspace, allowing for subsequent assignment of specific, scoped permissions to particular resources.",
