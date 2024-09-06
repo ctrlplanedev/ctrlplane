@@ -19,7 +19,7 @@ import {
 /**
  * Returns the first matching scope
  */
-const checkEntityPermissionForScopes = async (
+const findFirstMatchingScopeWithPermission = async (
   entity: { type: EntityType; id: string },
   scopes: Array<{ type: ScopeType; id: string }>,
   permissions: string[],
@@ -62,8 +62,8 @@ export const checkEntityPermissionForResource = async (
   resource: { type: ScopeType; id: string },
   permissions: string[],
 ): Promise<boolean> => {
-  const scopes = await getScopesForResource(resource);
-  const role = await checkEntityPermissionForScopes(
+  const scopes = await fetchScopeHierarchyForResource(resource);
+  const role = await findFirstMatchingScopeWithPermission(
     entity,
     scopes,
     permissions,
@@ -72,7 +72,7 @@ export const checkEntityPermissionForResource = async (
 };
 
 type Scope = { type: ScopeType; id: string };
-const getScopesForResource = async (resource: {
+const fetchScopeHierarchyForResource = async (resource: {
   type: ScopeType;
   id: string;
 }): Promise<Array<Scope>> => {

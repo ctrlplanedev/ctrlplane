@@ -1,11 +1,12 @@
 import type { Session } from "@ctrlplane/auth";
+import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import type { ScopeType } from "@ctrlplane/db/schema";
 import type { Permission } from "@ctrlplane/validators/auth";
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
+import { can, checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
 
 export const createTRPCContext = (opts: {
@@ -24,6 +25,12 @@ export type Context = ReturnType<typeof createTRPCContext>;
 
 type Scope = { type: ScopeType; id: string };
 export type Meta = {
+  authorizationCheck?: (opts: {
+    ctx: Context & { session: Session };
+    input: any;
+    canUser: PermissionChecker;
+  }) => boolean | Promise<boolean>;
+
   operation?: (opts: {
     ctx: Context & { session: Session };
     input: any;
@@ -70,6 +77,18 @@ const authnProcedure = t.procedure.use(({ ctx, next }) => {
 
 const authzProdecdure = authnProcedure.use(
   async ({ ctx, meta, getRawInput, next }) => {
+    const { authorizationCheck } = meta ?? {};
+    if (authorizationCheck != null) {
+      const input = await getRawInput();
+      const canUser = can().user(ctx.session.user.id);
+      const check = authorizationCheck({ ctx, input, canUser });
+      if (!check)
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: `You do not have the required permissions for this operation.`,
+        });
+    }
+
     const { operation } = meta ?? {};
     if (operation != null) {
       const input = await getRawInput();

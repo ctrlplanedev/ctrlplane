@@ -102,6 +102,11 @@ export const deploymentRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentCreate)
+          .on({ type: "system", id: input.systemId }),
+
       operation: ({ input }) => [
         { type: "system", id: input.systemId },
         [Permission.DeploymentCreate],
@@ -179,7 +184,9 @@ export const deploymentRouter = createTRPCRouter({
       ctx.db
         .select()
         .from(deployment)
-        .leftJoin(system, eq(system.id, deployment.systemId))
+
+        .innerJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
         .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
         .where(
           and(
@@ -194,7 +201,7 @@ export const deploymentRouter = createTRPCRouter({
             ? null
             : {
                 ...r.deployment,
-                system: r.system,
+                system: { ...r.system, workspace: r.workspace },
                 agent: r.job_agent,
               },
         ),
