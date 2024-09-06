@@ -1,14 +1,15 @@
-import { createAppAuth } from "@octokit/auth-app";
+import type { Tx } from "@ctrlplane/db";
+import type {
+  GithubOrganization,
+  GithubOrganizationInsert,
+} from "@ctrlplane/db/schema";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
+import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import * as yaml from "js-yaml";
 import { isPresent } from "ts-is-present";
 
-import type { Tx } from "@ctrlplane/db";
 import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
-import type {
-  GithubOrganization,
-  GithubOrganizationInsert} from "@ctrlplane/db/schema";
 import {
   deployment,
   githubConfigFile,
