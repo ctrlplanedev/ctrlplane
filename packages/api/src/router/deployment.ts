@@ -23,6 +23,7 @@ import {
   system,
   target,
   updateDeployment,
+  workspace,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
@@ -167,16 +168,25 @@ export const deploymentRouter = createTRPCRouter({
     ),
 
   bySlug: protectedProcedure
-
-    .input(z.object({ deploymentSlug: z.string(), systemSlug: z.string() }))
-    .query(({ ctx, input: { deploymentSlug, systemSlug } }) =>
+    .input(
+      z.object({
+        workspaceSlug: z.string(),
+        deploymentSlug: z.string(),
+        systemSlug: z.string(),
+      }),
+    )
+    .query(({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) =>
       ctx.db
         .select()
         .from(deployment)
         .leftJoin(system, eq(system.id, deployment.systemId))
         .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
         .where(
-          and(eq(deployment.slug, deploymentSlug), eq(system.slug, systemSlug)),
+          and(
+            eq(deployment.slug, deploymentSlug),
+            eq(system.slug, systemSlug),
+            eq(workspace.slug, workspaceSlug),
+          ),
         )
         .then(takeFirstOrNull)
         .then((r) =>

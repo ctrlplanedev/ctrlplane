@@ -29,7 +29,7 @@ export default async function SystemValueSetsPage({
 }: {
   params: { workspaceSlug: string; systemSlug: string };
 }) {
-  const system = (await api.system.bySlug(params.systemSlug))!;
+  const system = await api.system.bySlug(params);
   const valueSet = await api.valueSet.bySystemId(system.id);
 
   return (

@@ -406,7 +406,7 @@ export const targetRouter = createTRPCRouter({
     kinds: protectedProcedure
       .meta({
         operation: ({ input }) => [
-          { type: "workspace", id: input.workspaceId },
+          { type: "workspace", id: input },
           [Permission.TargetList],
         ],
       })

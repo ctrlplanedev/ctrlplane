@@ -64,6 +64,13 @@
       "when": 1725644075314,
       "tag": "0008_furry_epoch",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1725655538592,
+      "tag": "0009_flashy_pyro",
+      "breakpoints": true
     }
   ]
 }

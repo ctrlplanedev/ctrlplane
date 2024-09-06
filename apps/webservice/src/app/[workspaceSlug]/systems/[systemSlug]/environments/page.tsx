@@ -18,10 +18,9 @@ export const metadata: Metadata = { title: "Environments - Systems" };
 export default async function SystemEnvironmentPage({
   params,
 }: {
-  params: { systemSlug: string };
+  params: { workspaceSlug: string; systemSlug: string };
 }) {
-  const { systemSlug } = params;
-  const sys = (await api.system.bySlug(systemSlug))!;
+  const sys = await api.system.bySlug(params);
   const envs = await api.environment.bySystemId(sys.id);
   const policies = await api.environment.policy.bySystemId(sys.id);
   const policyDeployments = await api.environment.policy.deployment.bySystemId(

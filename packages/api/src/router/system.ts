@@ -73,6 +73,7 @@ export const systemRouter = createTRPCRouter({
         const sys = await ctx.db
           .select()
           .from(system)
+          .innerJoin(workspace, eq(system.workspaceId, workspace.id))
           .where(
             and(
               eq(system.slug, input.systemSlug),
@@ -80,7 +81,7 @@ export const systemRouter = createTRPCRouter({
             ),
           )
           .then(takeFirst);
-        return [{ type: "system", id: sys.id }, [Permission.SystemGet]];
+        return [{ type: "system", id: sys.system.id }, [Permission.SystemGet]];
       },
     })
     .input(z.object({ workspaceSlug: z.string(), systemSlug: z.string() }))
@@ -88,13 +89,15 @@ export const systemRouter = createTRPCRouter({
       db
         .select()
         .from(system)
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
         .where(
           and(
             eq(system.slug, input.systemSlug),
             eq(workspace.slug, input.workspaceSlug),
           ),
         )
-        .then(takeFirst),
+        .then(takeFirst)
+        .then((m) => ({ ...m.system, workspace: m.workspace })),
     ),
 
   create: protectedProcedure
