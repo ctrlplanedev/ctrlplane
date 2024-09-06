@@ -39,6 +39,7 @@ const workspaceRouter = createTRPCRouter({
         ctx.db
           .insert(workspaceInviteLink)
           .values({
+            roleId: input.roleId,
             workspaceMemberId: input.workspaceMemberId,
             expiresAt: addWeeks(new Date(), 1),
             token: input.token,

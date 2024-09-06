@@ -7,7 +7,7 @@ import type {
   WorkspaceMember,
 } from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -48,6 +48,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
+import { predefinedRoles } from "@ctrlplane/validators/auth";
 
 import { api } from "~/trpc/react";
 
@@ -68,16 +69,12 @@ const InviteLinkSection: React.FC<{
   });
   const [clickedCopy, setClickedCopy] = useState(false);
 
-  const [roleId, setRoleId] = useState<string | null>(null);
+  const [roleId, setRoleId] = useState(predefinedRoles.admin.id);
   const [token] = useState(inviteLink ?? v4());
   const baseUrl = api.runtime.baseUrl.useQuery();
   const link = `${baseUrl.data}/join/${token}`;
 
   const roles = api.workspace.roles.useQuery(workspace.id);
-  useEffect(() => {
-    if (roles.data != null && roles.data.length > 0 && roleId != null)
-      setRoleId(roles.data[0]!.id);
-  }, [roles.data, roleId]);
 
   const handleCopyClick = () => {
     navigator.clipboard.writeText(link).then(() => {
@@ -85,7 +82,7 @@ const InviteLinkSection: React.FC<{
       setTimeout(() => setClickedCopy(false), 1000);
     });
 
-    if (inviteLink == null && sessionMember != null && roleId != null)
+    if (inviteLink == null && sessionMember != null)
       mutateAsync({
         roleId,
         workspaceId: workspace.id,
@@ -103,7 +100,7 @@ const InviteLinkSection: React.FC<{
         </p>
       </div>
 
-      <Select onValueChange={setRoleId}>
+      <Select value={roleId} onValueChange={setRoleId}>
         <SelectTrigger className="w-[200px]">
           <SelectValue placeholder="Select a role" />
         </SelectTrigger>
