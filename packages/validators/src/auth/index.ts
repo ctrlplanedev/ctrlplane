@@ -85,4 +85,11 @@ export const predefinedRoles = {
       Permission.DeploymentGet,
     ],
   },
+  noAccess: {
+    id: "00000000-0000-0000-0000-000000000004",
+    name: "No Access",
+    description:
+      "This role grants no permissions by default. It's ideal for initially inviting users to a workspace, allowing for subsequent assignment of specific, scoped permissions to particular resources.",
+    permissions: [],
+  },
 };

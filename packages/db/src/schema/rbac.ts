@@ -1,3 +1,4 @@
+import type { InferSelectModel } from "drizzle-orm";
 import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -11,6 +12,8 @@ export const role = pgTable("role", {
     onDelete: "cascade",
   }),
 });
+
+export type Role = InferSelectModel<typeof role>;
 
 export const rolePermission = pgTable(
   "role_permission",

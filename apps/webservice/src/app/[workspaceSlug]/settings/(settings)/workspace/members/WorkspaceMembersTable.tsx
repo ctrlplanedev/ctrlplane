@@ -1,6 +1,11 @@
 "use client";
 
-import type { User, WorkspaceMember } from "@ctrlplane/db/schema";
+import type {
+  Role,
+  User,
+  Workspace,
+  WorkspaceMember,
+} from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
 import { useState } from "react";
 import {
@@ -9,8 +14,7 @@ import {
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { capitalCase } from "change-case";
-import { TbCheck, TbChevronDown, TbCopy, TbDots } from "react-icons/tb";
+import { TbCheck, TbCopy, TbDots } from "react-icons/tb";
 import { v4 } from "uuid";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
@@ -31,13 +35,19 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 import { Input } from "@ctrlplane/ui/input";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/react";
 
-interface Member {
+type Member = WorkspaceMember & {
   user: User;
-  workspace_member: WorkspaceMember;
-}
+  role: Role;
+};
 
 const InviteLinkSection: React.FC<{
   sessionMember?: Member;
@@ -65,7 +75,7 @@ const InviteLinkSection: React.FC<{
     if (inviteLink == null && workspace.data != null && sessionMember != null)
       mutateAsync({
         workspaceId: workspace.data.id,
-        workspaceMemberId: sessionMember.workspace_member.id,
+        workspaceMemberId: sessionMember.id,
         token,
       });
   };
@@ -90,12 +100,13 @@ const InviteLinkSection: React.FC<{
 };
 
 const AddMembersDialog: React.FC<{
+  workspaceName: string;
   workspaceSlug: string;
   sessionMember?: Member;
-}> = ({ sessionMember, workspaceSlug }) => {
-  const [inviteMode, setInviteMode] = useState<"email" | "link">("email");
+}> = ({ sessionMember, workspaceSlug, workspaceName }) => {
+  const [inviteMode, setInviteMode] = useState<"email" | "link">("link");
   const inviteLink = api.invite.workspace.link.byWorkspaceMemberId.useQuery(
-    sessionMember?.workspace_member.id ?? "",
+    sessionMember?.id ?? "",
     { enabled: sessionMember != null },
   );
 
@@ -106,7 +117,7 @@ const AddMembersDialog: React.FC<{
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite to {capitalCase(workspaceSlug)}</DialogTitle>
+          <DialogTitle>Invite to {workspaceName}</DialogTitle>
         </DialogHeader>
 
         {inviteMode === "link" ? (
@@ -169,9 +180,23 @@ const columns: ColumnDef<Member>[] = [
   {
     id: "role",
     header: "Role",
-    accessorKey: "workspace_member.role",
+    accessorKey: "role",
     enableGlobalFilter: false,
-    cell: "admin",
+    cell: ({ row }) => {
+      const { name, description } = row.original.role;
+      if (description != null && description !== "")
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>{name}</TooltipTrigger>
+              <TooltipContent>
+                <p>{description}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      return <span>{name}</span>;
+    },
   },
   {
     id: "actions",
@@ -195,10 +220,10 @@ const columns: ColumnDef<Member>[] = [
 ];
 
 export const MembersTable: React.FC<{
-  workspaceSlug: string;
+  workspace: Workspace;
   data: Array<Member>;
   sessionMember?: Member;
-}> = ({ workspaceSlug, data, sessionMember }) => {
+}> = ({ workspace, data, sessionMember }) => {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
   const table = useReactTable({
@@ -224,21 +249,10 @@ export const MembersTable: React.FC<{
             className="w-72"
             onChange={(e) => table.setGlobalFilter(e.target.value)}
           />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-1">
-                <TbChevronDown />
-                Filter
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem>Admins</DropdownMenuItem>
-              <DropdownMenuItem>Members</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
         <AddMembersDialog
-          workspaceSlug={workspaceSlug}
+          workspaceName={workspace.name}
+          workspaceSlug={workspace.slug}
           sessionMember={sessionMember}
         />
       </div>

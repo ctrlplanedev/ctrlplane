@@ -7,6 +7,7 @@ import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createWorkspace,
   entityRole,
+  role,
   updateWorkspace,
   user,
   workspace,
@@ -17,16 +18,24 @@ import { predefinedRoles } from "@ctrlplane/validators/auth";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const membersRouter = createTRPCRouter({
-  list: protectedProcedure
-    .input(z.string())
-    .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(workspaceMember)
-        .innerJoin(workspace, eq(workspace.id, workspaceMember.workspaceId))
-        .innerJoin(user, eq(user.id, workspaceMember.userId))
-        .where(eq(workspaceMember.workspaceId, input)),
-    ),
+  list: protectedProcedure.input(z.string()).query(async ({ ctx, input }) =>
+    ctx.db
+      .select()
+      .from(workspaceMember)
+      .innerJoin(workspace, eq(workspace.id, workspaceMember.workspaceId))
+      .innerJoin(user, eq(user.id, workspaceMember.userId))
+      .innerJoin(entityRole, eq(user.id, entityRole.entityId))
+      .innerJoin(role, eq(entityRole.roleId, role.id))
+      .where(eq(workspaceMember.workspaceId, input))
+      .then((members) =>
+        members.map((m) => ({
+          ...m.workspace_member,
+          role: m.role,
+          workspace: m.workspace,
+          user: m.user,
+        })),
+      ),
+  ),
 
   createFromInviteToken: protectedProcedure
     .input(z.object({ workspaceId: z.string(), userId: z.string() }))
