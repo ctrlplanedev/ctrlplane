@@ -34,13 +34,13 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const labelGroupRouter = createTRPCRouter({
   groups: protectedProcedure
-    .input(z.string().uuid())
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input },
-        [Permission.TargetList],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "workspace", id: input }),
     })
+    .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db
         .select({
@@ -56,13 +56,13 @@ const labelGroupRouter = createTRPCRouter({
     ),
 
   byId: protectedProcedure
-    .input(z.string().uuid())
     .meta({
-      operation: ({ input }) => [
-        { type: "targetLabelGroup", id: input },
-        [Permission.TargetGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetGet)
+          .on({ type: "targetLabelGroup", id: input }),
     })
+    .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const group = await ctx.db
         .select()
@@ -100,10 +100,10 @@ const labelGroupRouter = createTRPCRouter({
 
   upsert: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input.id },
-        [Permission.TargetUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(
       z.object({
@@ -135,10 +135,10 @@ const labelGroupRouter = createTRPCRouter({
 
   delete: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "targetLabelGroup", id: input },
-        [Permission.TargetDelete],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetDelete)
+          .on({ type: "targetLabelGroup", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
@@ -149,10 +149,10 @@ const labelGroupRouter = createTRPCRouter({
 const targetProviderRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "targetProvider", id: input },
-        [Permission.TargetList],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "targetProvider", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -280,10 +280,10 @@ const targetProviderRouter = createTRPCRouter({
 
   delete: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "targetProvider", id: input.providerId },
-        [Permission.TargetDelete],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetDelete)
+          .on({ type: "targetProvider", id: input.providerId }),
     })
     .input(
       z.object({
@@ -328,10 +328,8 @@ export const targetRouter = createTRPCRouter({
 
   byId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "target", id: input },
-        [Permission.TargetGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.TargetGet).on({ type: "target", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -349,10 +347,10 @@ export const targetRouter = createTRPCRouter({
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
       .meta({
-        operation: ({ input }) => [
-          { type: "workspace", id: input.workspaceId },
-          [Permission.TargetList],
-        ],
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.TargetList)
+            .on({ type: "workspace", id: input.workspaceId }),
       })
       .input(
         z.object({
@@ -405,10 +403,10 @@ export const targetRouter = createTRPCRouter({
 
     kinds: protectedProcedure
       .meta({
-        operation: ({ input }) => [
-          { type: "workspace", id: input },
-          [Permission.TargetList],
-        ],
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.TargetList)
+            .on({ type: "workspace", id: input }),
       })
       .input(z.string().uuid())
       .query(({ ctx, input }) =>
@@ -423,10 +421,10 @@ export const targetRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input.workspaceId },
-        [Permission.TargetCreate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(createTarget)
     .mutation(({ ctx, input }) =>
@@ -435,10 +433,10 @@ export const targetRouter = createTRPCRouter({
 
   update: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "target", id: input.id },
-        [Permission.TargetUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateTarget }))
     .mutation(({ ctx, input: { id, data } }) =>
@@ -452,10 +450,11 @@ export const targetRouter = createTRPCRouter({
 
   delete: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "target", id: input.id },
-        [Permission.TargetDelete],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.TargetDelete).on(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion
+          (input as any).map((t: any) => ({ type: "target" as const, id: t })),
+        ),
     })
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) =>
@@ -464,10 +463,10 @@ export const targetRouter = createTRPCRouter({
 
   labelKeys: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input },
-        [Permission.TargetList],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "workspace", id: input }),
     })
     .input(z.string())
     .query(({ ctx, input }) =>
@@ -480,10 +479,10 @@ export const targetRouter = createTRPCRouter({
 
   lock: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "target", id: input },
-        [Permission.TargetUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
@@ -497,10 +496,10 @@ export const targetRouter = createTRPCRouter({
 
   unlock: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "target", id: input },
-        [Permission.TargetUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>

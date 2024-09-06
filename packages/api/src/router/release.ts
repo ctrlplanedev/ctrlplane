@@ -29,10 +29,10 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 export const releaseRouter = createTRPCRouter({
   list: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "deployment", id: input.deploymentId },
-        [Permission.DeploymentGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(
       z.object({
@@ -68,10 +68,10 @@ export const releaseRouter = createTRPCRouter({
 
   byId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "release", id: input },
-        [Permission.DeploymentGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "release", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -101,13 +101,13 @@ export const releaseRouter = createTRPCRouter({
   deploy: createTRPCRouter({
     toEnvironment: protectedProcedure
       .meta({
-        operation: ({ input }) => [
-          [
-            { type: "release", id: input.releaseId },
-            { type: "environment", id: input.environmentId },
-          ],
-          [Permission.DeploymentGet],
-        ],
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.DeploymentGet)
+            .on(
+              { type: "release", id: input.releaseId },
+              { type: "environment", id: input.environmentId },
+            ),
       })
       .input(z.object({ environmentId: z.string(), releaseId: z.string() }))
       .mutation(async ({ ctx, input }) => {
@@ -130,10 +130,10 @@ export const releaseRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "deployment", id: input.deploymentId },
-        [Permission.DeploymentUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(createRelease)
     .mutation(async ({ ctx, input }) =>

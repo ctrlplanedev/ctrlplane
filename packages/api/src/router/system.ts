@@ -15,10 +15,10 @@ import { createEnv } from "./environment";
 export const systemRouter = createTRPCRouter({
   list: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input.workspaceId },
-        [Permission.SystemList],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemList)
+          .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(
       z.object({
@@ -69,7 +69,7 @@ export const systemRouter = createTRPCRouter({
 
   bySlug: protectedProcedure
     .meta({
-      operation: async ({ input, ctx }) => {
+      authorizationCheck: async ({ canUser, ctx, input }) => {
         const sys = await ctx.db
           .select()
           .from(system)
@@ -81,7 +81,9 @@ export const systemRouter = createTRPCRouter({
             ),
           )
           .then(takeFirst);
-        return [{ type: "system", id: sys.system.id }, [Permission.SystemGet]];
+        return canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "system", id: sys.system.id });
       },
     })
     .input(z.object({ workspaceSlug: z.string(), systemSlug: z.string() }))
@@ -102,10 +104,10 @@ export const systemRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input.workspaceId },
-        [Permission.SystemCreate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(createSystem)
     .mutation(({ ctx: { db }, input }) =>
@@ -126,6 +128,12 @@ export const systemRouter = createTRPCRouter({
     ),
 
   update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "system", id: input.id }),
+    })
     .input(z.object({ id: z.string(), data: updateSystem }))
     .mutation(({ ctx, input }) =>
       ctx.db

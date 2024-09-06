@@ -54,10 +54,10 @@ export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   distrubtionById: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "deployment", id: input },
-        [Permission.DeploymentGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input }),
     })
     .input(z.string())
     .query(({ ctx, input }) => {
@@ -106,11 +106,6 @@ export const deploymentRouter = createTRPCRouter({
         canUser
           .perform(Permission.DeploymentCreate)
           .on({ type: "system", id: input.systemId }),
-
-      operation: ({ input }) => [
-        { type: "system", id: input.systemId },
-        [Permission.DeploymentCreate],
-      ],
     })
     .input(createDeployment)
     .mutation(({ ctx, input }) =>
@@ -119,10 +114,10 @@ export const deploymentRouter = createTRPCRouter({
 
   update: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "deployment", id: input.id },
-        [Permission.DeploymentUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeployment }))
     .mutation(({ ctx, input }) =>
@@ -162,7 +157,12 @@ export const deploymentRouter = createTRPCRouter({
     ),
 
   delete: protectedProcedure
-
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentDelete)
+          .on({ type: "deployment", id: input }),
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -180,11 +180,32 @@ export const deploymentRouter = createTRPCRouter({
         systemSlug: z.string(),
       }),
     )
+    .meta({
+      authorizationCheck: async ({ canUser, input, ctx }) => {
+        const { workspaceSlug, deploymentSlug, systemSlug } = input;
+        const sys = await ctx.db
+          .select()
+          .from(deployment)
+          .innerJoin(system, eq(system.id, deployment.systemId))
+          .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+          .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+          .where(
+            and(
+              eq(deployment.slug, deploymentSlug),
+              eq(system.slug, systemSlug),
+              eq(workspace.slug, workspaceSlug),
+            ),
+          )
+          .then(takeFirst);
+        return canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "system", id: sys.system.id });
+      },
+    })
     .query(({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) =>
       ctx.db
         .select()
         .from(deployment)
-
         .innerJoin(system, eq(system.id, deployment.systemId))
         .innerJoin(workspace, eq(system.workspaceId, workspace.id))
         .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
@@ -207,66 +228,91 @@ export const deploymentRouter = createTRPCRouter({
         ),
     ),
 
-  bySystemId: protectedProcedure.input(z.string()).query(({ ctx, input }) => {
-    const latestRelease = latestReleaseSubQuery(ctx.db);
-    return ctx.db
-      .select()
-      .from(deployment)
-      .leftJoin(
-        latestRelease,
-        and(
-          eq(latestRelease.deploymentId, deployment.id),
-          eq(latestRelease.rank, 1),
-        ),
-      )
-      .where(eq(deployment.systemId, input))
-      .then((r) =>
-        r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
-      );
-  }),
-
-  byTargetId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    ctx.db
-      .selectDistinctOn([deployment.id])
-      .from(deployment)
-      .innerJoin(system, eq(system.id, deployment.systemId))
-      .innerJoin(environment, eq(environment.systemId, system.id))
-      .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
-      .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
-      .leftJoin(jobExecution, eq(jobConfig.id, jobExecution.jobConfigId))
-      .leftJoin(release, eq(release.id, jobConfig.releaseId))
-      .where(
-        and(
-          eq(target.id, input),
-          isNull(environment.deletedAt),
-          or(
-            isNull(jobExecution.id),
-            inArray(jobExecution.status, [
-              "completed",
-              "pending",
-              "in_progress",
-            ]),
+  bySystemId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentList)
+          .on({ type: "system", id: input }),
+    })
+    .query(async ({ ctx, input }) => {
+      const latestRelease = latestReleaseSubQuery(ctx.db);
+      return ctx.db
+        .select()
+        .from(deployment)
+        .leftJoin(
+          latestRelease,
+          and(
+            eq(latestRelease.deploymentId, deployment.id),
+            eq(latestRelease.rank, 1),
           ),
+        )
+        .where(eq(deployment.systemId, input))
+        .then((r) =>
+          r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
+        );
+    }),
+
+  byTargetId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentList)
+          .on({ type: "target", id: input }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .selectDistinctOn([deployment.id])
+        .from(deployment)
+        .innerJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(environment, eq(environment.systemId, system.id))
+        .innerJoin(
+          target,
+          arrayContains(target.labels, environment.targetFilter),
+        )
+        .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
+        .leftJoin(jobExecution, eq(jobConfig.id, jobExecution.jobConfigId))
+        .leftJoin(release, eq(release.id, jobConfig.releaseId))
+        .where(
+          and(
+            eq(target.id, input),
+            isNull(environment.deletedAt),
+            or(
+              isNull(jobExecution.id),
+              inArray(jobExecution.status, [
+                "completed",
+                "pending",
+                "in_progress",
+              ]),
+            ),
+          ),
+        )
+        .orderBy(deployment.id, jobConfig.createdAt)
+        .then((r) =>
+          r.map((row) => ({
+            ...row.deployment,
+            environment: row.environment,
+            system: row.system,
+            jobConfig: {
+              ...row.job_config,
+              execution: row.job_execution,
+              release: row.release,
+            },
+          })),
         ),
-      )
-      .orderBy(deployment.id, jobConfig.createdAt)
-      .then((r) =>
-        r.map((row) => ({
-          ...row.deployment,
-          environment: row.environment,
-          system: row.system,
-          jobConfig: {
-            ...row.job_config,
-            execution: row.job_execution,
-            release: row.release,
-          },
-        })),
-      ),
-  ),
+    ),
 
   byWorkspaceId: protectedProcedure
-    .input(z.string())
-    .query(({ ctx, input }) => {
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentList)
+          .on({ type: "workspace", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) => {
       const latestRelease = latestReleaseSubQuery(ctx.db);
       return ctx.db
         .select()

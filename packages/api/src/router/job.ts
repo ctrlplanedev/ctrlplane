@@ -58,12 +58,12 @@ const jobConfigQuery = (tx: Tx) =>
 
 const jobConfigRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
-    .input(z.string())
+    .input(z.string().uuid())
     .meta({
-      operation: ({ input }) => [
-        { type: "workspace", id: input },
-        [Permission.SystemList],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemList)
+          .on({ type: "workspace", id: input }),
     })
     .query(({ ctx, input }) =>
       jobConfigQuery(ctx.db)
@@ -88,13 +88,13 @@ const jobConfigRouter = createTRPCRouter({
 
   byDeploymentAndEnvironment: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        [
-          { type: "deployment", id: input.deploymentId },
-          { type: "environment", id: input.environmentId },
-        ],
-        [Permission.DeploymentGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on(
+            { type: "deployment", id: input.deploymentId },
+            { type: "environment", id: input.environmentId },
+          ),
     })
     .input(
       z.object({
@@ -127,10 +127,10 @@ const jobConfigRouter = createTRPCRouter({
   byDeploymentId: protectedProcedure
     .input(z.string().uuid())
     .meta({
-      operation: ({ input }) => [
-        { type: "deployment", id: input },
-        [Permission.DeploymentGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input }),
     })
     .query(({ ctx, input }) =>
       jobConfigQuery(ctx.db)
@@ -150,10 +150,10 @@ const jobConfigRouter = createTRPCRouter({
 
   byReleaseId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "release", id: input },
-        [Permission.DeploymentGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "release", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -318,10 +318,10 @@ const jobExecutionRouter = createTRPCRouter({
   create: createTRPCRouter({
     byEnvId: protectedProcedure
       .meta({
-        operation: ({ input }) => [
-          { type: "environment", id: input },
-          [Permission.DeploymentUpdate],
-        ],
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.DeploymentUpdate)
+            .on({ type: "environment", id: input }),
       })
       .input(z.string().uuid())
       .mutation(({ ctx, input }) =>

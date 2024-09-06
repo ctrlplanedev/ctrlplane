@@ -302,10 +302,10 @@ export const createEnv = async (
 const tragetRouter = createTRPCRouter({
   byEnvironmentId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "environment", id: input },
-        [Permission.TargetList],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "environment", id: input }),
     })
     .input(z.string())
     .query(async ({ ctx, input }) =>
@@ -324,9 +324,28 @@ const tragetRouter = createTRPCRouter({
     ),
 
   byFilter: protectedProcedure
-    .input(z.record(z.string()))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        labels: z.record(z.string()),
+      }),
+    )
     .query(async ({ ctx, input }) =>
-      ctx.db.select().from(target).where(arrayContains(target.labels, input)),
+      ctx.db
+        .select()
+        .from(target)
+        .where(
+          and(
+            arrayContains(target.labels, input.labels),
+            eq(target.workspaceId, input.workspaceId),
+          ),
+        ),
     ),
 });
 
@@ -336,6 +355,12 @@ export const environmentRouter = createTRPCRouter({
   target: tragetRouter,
 
   deploy: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "environment", id: input.environmentId }),
+    })
     .input(
       z.object({
         environmentId: z.string().uuid(),
@@ -384,10 +409,10 @@ export const environmentRouter = createTRPCRouter({
 
   byId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "environment", id: input },
-        [Permission.SystemGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "environment", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -409,10 +434,8 @@ export const environmentRouter = createTRPCRouter({
 
   bySystemId: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "system", id: input },
-        [Permission.SystemGet],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.SystemGet).on({ type: "system", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -442,10 +465,10 @@ export const environmentRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "system", id: input.systemId },
-        [Permission.SystemCreate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemCreate)
+          .on({ type: "system", id: input.systemId }),
     })
     .input(createEnvironment)
     .mutation(({ ctx, input }) =>
@@ -454,10 +477,10 @@ export const environmentRouter = createTRPCRouter({
 
   update: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "environment", id: input.id },
-        [Permission.SystemUpdate],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "environment", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(({ ctx, input }) =>
@@ -471,10 +494,10 @@ export const environmentRouter = createTRPCRouter({
 
   delete: protectedProcedure
     .meta({
-      operation: ({ input }) => [
-        { type: "environment", id: input },
-        [Permission.SystemDelete],
-      ],
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemDelete)
+          .on({ type: "environment", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
