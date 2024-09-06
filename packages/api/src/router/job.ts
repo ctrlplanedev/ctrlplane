@@ -34,6 +34,7 @@ import {
   getRolloutDateForJobConfig,
   isDateInTimeWindow,
 } from "@ctrlplane/job-dispatch";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 
@@ -56,26 +57,45 @@ const jobConfigQuery = (tx: Tx) =>
     );
 
 const jobConfigRouter = createTRPCRouter({
-  byWorkspaceId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    jobConfigQuery(ctx.db)
-      .leftJoin(system, eq(system.id, deployment.systemId))
-      .where(and(eq(system.workspaceId, input), isNull(environment.deletedAt)))
-      .orderBy(asc(jobConfig.createdAt))
-      .limit(1_000)
-      .then((data) =>
-        data.map((t) => ({
-          ...t.job_config,
-          execution: t.job_execution,
-          agent: t.job_agent,
-          target: t.target,
-          release: { ...t.release, deployment: t.deployment },
-          runbook: t.runbook,
-          environment: t.environment,
-        })),
-      ),
-  ),
+  byWorkspaceId: protectedProcedure
+    .input(z.string())
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input },
+        [Permission.SystemList],
+      ],
+    })
+    .query(({ ctx, input }) =>
+      jobConfigQuery(ctx.db)
+        .leftJoin(system, eq(system.id, deployment.systemId))
+        .where(
+          and(eq(system.workspaceId, input), isNull(environment.deletedAt)),
+        )
+        .orderBy(asc(jobConfig.createdAt))
+        .limit(1_000)
+        .then((data) =>
+          data.map((t) => ({
+            ...t.job_config,
+            execution: t.job_execution,
+            agent: t.job_agent,
+            target: t.target,
+            release: { ...t.release, deployment: t.deployment },
+            runbook: t.runbook,
+            environment: t.environment,
+          })),
+        ),
+    ),
 
   byDeploymentAndEnvironment: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        [
+          { type: "deployment", id: input.deploymentId },
+          { type: "environment", id: input.environmentId },
+        ],
+        [Permission.DeploymentGet],
+      ],
+    })
     .input(
       z.object({
         deploymentId: z.string().uuid(),
@@ -104,64 +124,80 @@ const jobConfigRouter = createTRPCRouter({
         ),
     ),
 
-  byDeploymentId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    jobConfigQuery(ctx.db)
-      .where(and(eq(deployment.id, input), isNull(environment.deletedAt)))
-      .then((data) =>
-        data.map((t) => ({
-          ...t.job_config,
-          jobExecution: t.job_execution,
-          jobAgent: t.job_agent,
-          target: t.target,
-          release: { ...t.release, deployment: t.deployment },
-          runbook: t.runbook,
-          environment: t.environment,
-        })),
-      ),
-  ),
+  byDeploymentId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      operation: ({ input }) => [
+        { type: "deployment", id: input },
+        [Permission.DeploymentGet],
+      ],
+    })
+    .query(({ ctx, input }) =>
+      jobConfigQuery(ctx.db)
+        .where(and(eq(deployment.id, input), isNull(environment.deletedAt)))
+        .then((data) =>
+          data.map((t) => ({
+            ...t.job_config,
+            jobExecution: t.job_execution,
+            jobAgent: t.job_agent,
+            target: t.target,
+            release: { ...t.release, deployment: t.deployment },
+            runbook: t.runbook,
+            environment: t.environment,
+          })),
+        ),
+    ),
 
-  byReleaseId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    jobConfigQuery(ctx.db)
-      .leftJoin(
-        environmentPolicy,
-        eq(environment.policyId, environmentPolicy.id),
-      )
-      .leftJoin(
-        environmentPolicyReleaseWindow,
-        eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
-      )
-      .where(and(eq(release.id, input), isNull(environment.deletedAt)))
-      .then((data) =>
-        _.chain(data)
-          .groupBy("job_config.id")
-          .map((v) => ({
-            ...v[0]!.job_config,
-            jobExecution: v[0]!.job_execution,
-            jobAgent: v[0]!.job_agent,
-            target: v[0]!.target,
-            release: { ...v[0]!.release, deployment: v[0]!.deployment },
-            runbook: v[0]!.runbook,
-            environment: v[0]!.environment,
-            rolloutDate:
-              v[0]!.job_config.targetId == null ||
-              v[0]!.environment_policy == null ||
-              v[0]!.release == null ||
-              v[0]!.environment == null
-                ? null
-                : rolloutDateFromJobConfig(
-                    v[0]!.job_config.targetId,
-                    v[0]!.release.id,
-                    v[0]!.environment.id,
-                    v[0]!.release.createdAt,
-                    v[0]!.environment_policy.duration,
-                    v
-                      .map((r) => r.environment_policy_release_window)
-                      .filter(isPresent),
-                  ),
-          }))
-          .value(),
-      ),
-  ),
+  byReleaseId: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "release", id: input },
+        [Permission.DeploymentGet],
+      ],
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      jobConfigQuery(ctx.db)
+        .leftJoin(
+          environmentPolicy,
+          eq(environment.policyId, environmentPolicy.id),
+        )
+        .leftJoin(
+          environmentPolicyReleaseWindow,
+          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+        )
+        .where(and(eq(release.id, input), isNull(environment.deletedAt)))
+        .then((data) =>
+          _.chain(data)
+            .groupBy("job_config.id")
+            .map((v) => ({
+              ...v[0]!.job_config,
+              jobExecution: v[0]!.job_execution,
+              jobAgent: v[0]!.job_agent,
+              target: v[0]!.target,
+              release: { ...v[0]!.release, deployment: v[0]!.deployment },
+              runbook: v[0]!.runbook,
+              environment: v[0]!.environment,
+              rolloutDate:
+                v[0]!.job_config.targetId == null ||
+                v[0]!.environment_policy == null ||
+                v[0]!.release == null ||
+                v[0]!.environment == null
+                  ? null
+                  : rolloutDateFromJobConfig(
+                      v[0]!.job_config.targetId,
+                      v[0]!.release.id,
+                      v[0]!.environment.id,
+                      v[0]!.release.createdAt,
+                      v[0]!.environment_policy.duration,
+                      v
+                        .map((r) => r.environment_policy_release_window)
+                        .filter(isPresent),
+                    ),
+            }))
+            .value(),
+        ),
+    ),
 });
 
 const rolloutDateFromJobConfig = (
@@ -281,6 +317,12 @@ const jobExecutionRouter = createTRPCRouter({
 
   create: createTRPCRouter({
     byEnvId: protectedProcedure
+      .meta({
+        operation: ({ input }) => [
+          { type: "environment", id: input },
+          [Permission.DeploymentUpdate],
+        ],
+      })
       .input(z.string().uuid())
       .mutation(({ ctx, input }) =>
         ctx.db

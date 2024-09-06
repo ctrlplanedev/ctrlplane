@@ -38,6 +38,7 @@ import {
   isPassingAllPolicies,
   isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -300,6 +301,12 @@ export const createEnv = async (
 
 const tragetRouter = createTRPCRouter({
   byEnvironmentId: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "environment", id: input },
+        [Permission.TargetList],
+      ],
+    })
     .input(z.string())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -375,25 +382,39 @@ export const environmentRouter = createTRPCRouter({
       };
     }),
 
-  byId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    ctx.db
-      .select()
-      .from(environment)
-      .leftJoin(
-        environmentPolicy,
-        eq(environment.policyId, environmentPolicy.id),
-      )
-      .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
-      .then(takeFirstOrNull)
-      .then((env) =>
-        env == null
-          ? null
-          : { ...env.environment, policy: env.environment_policy },
-      ),
-  ),
+  byId: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "environment", id: input },
+        [Permission.SystemGet],
+      ],
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(environment)
+        .leftJoin(
+          environmentPolicy,
+          eq(environment.policyId, environmentPolicy.id),
+        )
+        .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
+        .then(takeFirstOrNull)
+        .then((env) =>
+          env == null
+            ? null
+            : { ...env.environment, policy: env.environment_policy },
+        ),
+    ),
 
   bySystemId: protectedProcedure
-    .input(z.string())
+    .meta({
+      operation: ({ input }) => [
+        { type: "system", id: input },
+        [Permission.SystemGet],
+      ],
+    })
+    .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const envs = await ctx.db
         .select()
@@ -420,12 +441,24 @@ export const environmentRouter = createTRPCRouter({
     }),
 
   create: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "system", id: input.systemId },
+        [Permission.SystemCreate],
+      ],
+    })
     .input(createEnvironment)
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((db) => createEnv(db, input)),
     ),
 
   update: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "environment", id: input.id },
+        [Permission.SystemUpdate],
+      ],
+    })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -437,6 +470,12 @@ export const environmentRouter = createTRPCRouter({
     ),
 
   delete: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "environment", id: input },
+        [Permission.SystemDelete],
+      ],
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((db) =>

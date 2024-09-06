@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { and, count, eq, like, or, takeFirst } from "@ctrlplane/db";
-import { createSystem, system, updateSystem } from "@ctrlplane/db/schema";
+import {
+  createSystem,
+  system,
+  updateSystem,
+  workspace,
+} from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -9,6 +14,12 @@ import { createEnv } from "./environment";
 
 export const systemRouter = createTRPCRouter({
   list: protectedProcedure
+    .meta({
+      operation: ({ input }) => [
+        { type: "workspace", id: input.workspaceId },
+        [Permission.SystemList],
+      ],
+    })
     .input(
       z.object({
         workspaceId: z.string().uuid(),
@@ -57,14 +68,34 @@ export const systemRouter = createTRPCRouter({
     }),
 
   bySlug: protectedProcedure
-    .input(z.string())
+    .meta({
+      operation: async ({ input, ctx }) => {
+        const sys = await ctx.db
+          .select()
+          .from(system)
+          .where(
+            and(
+              eq(system.slug, input.systemSlug),
+              eq(workspace.slug, input.workspaceSlug),
+            ),
+          )
+          .then(takeFirst);
+        return [{ type: "system", id: sys.id }, [Permission.SystemGet]];
+      },
+    })
+    .input(z.object({ workspaceSlug: z.string(), systemSlug: z.string() }))
     .query(({ ctx: { db }, input }) =>
-      db.query.system.findFirst({ where: eq(system.slug, input) }),
+      db
+        .select()
+        .from(system)
+        .where(
+          and(
+            eq(system.slug, input.systemSlug),
+            eq(workspace.slug, input.workspaceSlug),
+          ),
+        )
+        .then(takeFirst),
     ),
-
-  byId: protectedProcedure.input(z.string()).query(({ ctx: { db }, input }) => {
-    db.query.system.findMany({ where: eq(system.id, input) });
-  }),
 
   create: protectedProcedure
     .meta({
