@@ -7,7 +7,7 @@ import type {
   WorkspaceMember,
 } from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -34,6 +34,13 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 import { Input } from "@ctrlplane/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import {
   Tooltip,
@@ -51,10 +58,9 @@ type Member = WorkspaceMember & {
 
 const InviteLinkSection: React.FC<{
   sessionMember?: Member;
-  workspaceSlug: string;
+  workspace: Workspace;
   inviteLink?: string;
-}> = ({ sessionMember, workspaceSlug, inviteLink }) => {
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+}> = ({ sessionMember, workspace, inviteLink }) => {
   const utils = api.useUtils();
   const { mutateAsync } = api.invite.workspace.link.create.useMutation({
     onSuccess: () =>
@@ -62,9 +68,16 @@ const InviteLinkSection: React.FC<{
   });
   const [clickedCopy, setClickedCopy] = useState(false);
 
+  const [roleId, setRoleId] = useState<string | null>(null);
   const [token] = useState(inviteLink ?? v4());
   const baseUrl = api.runtime.baseUrl.useQuery();
   const link = `${baseUrl.data}/join/${token}`;
+
+  const roles = api.workspace.roles.useQuery(workspace.id);
+  useEffect(() => {
+    if (roles.data != null && roles.data.length > 0 && roleId != null)
+      setRoleId(roles.data[0]!.id);
+  }, [roles.data, roleId]);
 
   const handleCopyClick = () => {
     navigator.clipboard.writeText(link).then(() => {
@@ -72,9 +85,10 @@ const InviteLinkSection: React.FC<{
       setTimeout(() => setClickedCopy(false), 1000);
     });
 
-    if (inviteLink == null && workspace.data != null && sessionMember != null)
+    if (inviteLink == null && sessionMember != null && roleId != null)
       mutateAsync({
-        workspaceId: workspace.data.id,
+        roleId,
+        workspaceId: workspace.id,
         workspaceMemberId: sessionMember.id,
         token,
       });
@@ -89,6 +103,19 @@ const InviteLinkSection: React.FC<{
         </p>
       </div>
 
+      <Select onValueChange={setRoleId}>
+        <SelectTrigger className="w-[200px]">
+          <SelectValue placeholder="Select a role" />
+        </SelectTrigger>
+        <SelectContent className="w-[200px]">
+          {roles.data?.map((r) => (
+            <SelectItem key={r.id} value={r.id}>
+              {r.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <div className="flex items-center space-x-2">
         <Input readOnly value={link} className="w-96 overflow-ellipsis" />
         <Button variant="outline" size="icon" onClick={handleCopyClick}>
@@ -100,10 +127,9 @@ const InviteLinkSection: React.FC<{
 };
 
 const AddMembersDialog: React.FC<{
-  workspaceName: string;
-  workspaceSlug: string;
+  workspace: Workspace;
   sessionMember?: Member;
-}> = ({ sessionMember, workspaceSlug, workspaceName }) => {
+}> = ({ sessionMember, workspace }) => {
   const [inviteMode, setInviteMode] = useState<"email" | "link">("link");
   const inviteLink = api.invite.workspace.link.byWorkspaceMemberId.useQuery(
     sessionMember?.id ?? "",
@@ -117,13 +143,13 @@ const AddMembersDialog: React.FC<{
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite to {workspaceName}</DialogTitle>
+          <DialogTitle>Invite to {workspace.name}</DialogTitle>
         </DialogHeader>
 
         {inviteMode === "link" ? (
           <InviteLinkSection
             sessionMember={sessionMember}
-            workspaceSlug={workspaceSlug}
+            workspace={workspace}
             inviteLink={inviteLink.data?.token}
           />
         ) : (
@@ -250,11 +276,7 @@ export const MembersTable: React.FC<{
             onChange={(e) => table.setGlobalFilter(e.target.value)}
           />
         </div>
-        <AddMembersDialog
-          workspaceName={workspace.name}
-          workspaceSlug={workspace.slug}
-          sessionMember={sessionMember}
-        />
+        <AddMembersDialog workspace={workspace} sessionMember={sessionMember} />
       </div>
       <Table>
         <TableBody>

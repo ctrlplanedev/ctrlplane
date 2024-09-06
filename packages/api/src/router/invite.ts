@@ -29,6 +29,7 @@ const workspaceRouter = createTRPCRouter({
     create: protectedProcedure
       .input(
         z.object({
+          roleId: z.string().uuid(),
           workspaceId: z.string().uuid(),
           workspaceMemberId: z.string().uuid(),
           token: z.string().uuid(),

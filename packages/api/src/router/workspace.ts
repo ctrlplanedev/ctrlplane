@@ -3,7 +3,7 @@ import { auth } from "google-auth-library";
 import { google } from "googleapis";
 import { z } from "zod";
 
-import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, isNull, or, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createWorkspace,
   entityRole,
@@ -103,6 +103,15 @@ const integrationsRouter = createTRPCRouter({
 });
 
 export const workspaceRouter = createTRPCRouter({
+  roles: protectedProcedure
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(role)
+        .where(or(eq(role.workspaceId, input), isNull(role.workspaceId))),
+    ),
+
   update: protectedProcedure
     .input(z.object({ id: z.string(), data: updateWorkspace }))
     .mutation(async ({ ctx, input }) =>
