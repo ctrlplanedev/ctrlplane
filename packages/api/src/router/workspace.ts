@@ -213,22 +213,20 @@ export const workspaceRouter = createTRPCRouter({
       .then((rows) => rows.map((r) => r.workspace)),
   ),
 
-  bySlug: protectedProcedure
-    .input(z.string().uuid())
-    .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(workspace)
-        .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
-        .where(
-          and(
-            eq(workspace.slug, input),
-            eq(entityRole.entityId, ctx.session.user.id),
-          ),
-        )
-        .then(takeFirstOrNull)
-        .then((workspace) => workspace?.workspace ?? null),
-    ),
+  bySlug: protectedProcedure.input(z.string()).query(async ({ ctx, input }) =>
+    ctx.db
+      .select()
+      .from(workspace)
+      .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
+      .where(
+        and(
+          eq(workspace.slug, input),
+          eq(entityRole.entityId, ctx.session.user.id),
+        ),
+      )
+      .then(takeFirstOrNull)
+      .then((workspace) => workspace?.workspace ?? null),
+  ),
 
   byId: protectedProcedure
     .input(z.string().uuid())
