@@ -34,6 +34,7 @@ export default async function SystemEnvironmentPage({
             <ResizablePanel defaultSize={60}>
               <div className="h-[calc(100vh-53px)]">
                 <EnvFlowBuilder
+                  workspaceId={sys.workspaceId}
                   systemId={sys.id}
                   envs={envs}
                   policies={policies}

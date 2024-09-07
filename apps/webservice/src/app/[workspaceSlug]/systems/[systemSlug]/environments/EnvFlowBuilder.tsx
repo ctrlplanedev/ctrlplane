@@ -169,11 +169,12 @@ const useOnConnect = () => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const EnvFlowBuilder: React.FC<{
+  workspaceId: string;
   systemId: string;
   envs: Array<Environment>;
   policies: Array<EnvironmentPolicy>;
   policyDeployments: Array<EnvironmentPolicyDeployment>;
-}> = ({ systemId, envs, policies, policyDeployments }) => {
+}> = ({ workspaceId, systemId, envs, policies, policyDeployments }) => {
   const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState([
     triggerNode,
@@ -289,7 +290,11 @@ export const EnvFlowBuilder: React.FC<{
       deleteKeyCode={[]}
     >
       <Panel position={"bottom-center"} className="flex items-center gap-4">
-        <EnvFlowPanel onLayout={onLayout} systemId={systemId} />
+        <EnvFlowPanel
+          onLayout={onLayout}
+          systemId={systemId}
+          workspaceId={workspaceId}
+        />
       </Panel>
     </ReactFlow>
   );
