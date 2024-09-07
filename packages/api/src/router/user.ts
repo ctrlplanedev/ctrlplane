@@ -3,8 +3,9 @@ import { omit } from "lodash";
 import { v4 } from "uuid";
 import { z } from "zod";
 
+import { can } from "@ctrlplane/auth/utils";
 import { and, eq, takeFirst } from "@ctrlplane/db";
-import { user, userApiKey } from "@ctrlplane/db/schema";
+import { scopeType, user, userApiKey } from "@ctrlplane/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -24,6 +25,21 @@ export const profileRouter = createTRPCRouter({
 });
 
 export const userRouter = createTRPCRouter({
+  can: protectedProcedure
+    .input(
+      z.object({
+        action: z.string(),
+        resource: z.object({
+          type: z.enum(scopeType.enumValues),
+          id: z.string().uuid(),
+        }),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { action, resource } = input;
+      return can().user(ctx.session.user.id).perform(action).on(resource);
+    }),
+
   viewer: protectedProcedure.query(({ ctx }) =>
     ctx.db
       .select()

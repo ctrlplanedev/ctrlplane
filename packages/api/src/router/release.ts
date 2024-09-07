@@ -31,7 +31,7 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.DeploymentGet)
+          .perform(Permission.ReleaseList)
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(
@@ -70,7 +70,7 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.DeploymentGet)
+          .perform(Permission.ReleaseGet)
           .on({ type: "release", id: input }),
     })
     .input(z.string().uuid())
@@ -103,7 +103,7 @@ export const releaseRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.DeploymentGet)
+            .perform(Permission.DeploymentGet, Permission.ReleaseGet)
             .on(
               { type: "release", id: input.releaseId },
               { type: "environment", id: input.environmentId },
@@ -132,7 +132,7 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.DeploymentUpdate)
+          .perform(Permission.ReleaseCreate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(createRelease)
@@ -171,6 +171,13 @@ export const releaseRouter = createTRPCRouter({
     ),
 
   blockedEnvironments: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseGet).on(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+          input.map((releaseId: any) => ({ type: "release", id: releaseId })),
+        ),
+    })
     .input(z.array(z.string().uuid()))
     .query(async ({ input }) => {
       const policies = await db

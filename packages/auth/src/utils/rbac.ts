@@ -6,6 +6,8 @@ import {
   deployment,
   entityRole,
   environment,
+  environmentPolicy,
+  jobAgent,
   release,
   role,
   rolePermission,
@@ -13,6 +15,7 @@ import {
   target,
   targetLabelGroup,
   targetProvider,
+  valueSet,
   workspace,
 } from "@ctrlplane/db/schema";
 
@@ -86,8 +89,11 @@ const fetchScopeHierarchyForResource = async (resource: {
     system: getSystemScopes,
     workspace: getWorkspaceScopes,
     environment: getEnvironmentScopes,
+    environmentPolicy: getEnvironmentPolicyScopes,
     release: getReleaseScopes,
     targetLabelGroup: getTargetLabelGroupScopes,
+    valueSet: getValueSetScopes,
+    jobAgent: getJobAgentScopes,
   };
 
   const handler = scopeHandlers[resource.type];
@@ -101,7 +107,7 @@ const getReleaseScopes = async (id: string) => {
     .innerJoin(system, eq(system.workspaceId, workspace.id))
     .innerJoin(deployment, eq(deployment.systemId, system.id))
     .innerJoin(release, eq(release.deploymentId, deployment.id))
-    .where(eq(deployment.id, id))
+    .where(eq(release.id, id))
     .then(takeFirst);
 
   return [
@@ -118,11 +124,43 @@ const getEnvironmentScopes = async (id: string) => {
     .from(workspace)
     .innerJoin(system, eq(system.workspaceId, workspace.id))
     .innerJoin(environment, eq(environment.systemId, system.id))
-    .where(eq(target.id, id))
+    .where(eq(environment.id, id))
     .then(takeFirst);
 
   return [
     { type: "environment" as const, id: result.environment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
+const getEnvironmentPolicyScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(environmentPolicy, eq(environmentPolicy.systemId, system.id))
+    .where(eq(environmentPolicy.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "environmentPolicy" as const, id: result.environment_policy.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
+const getValueSetScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(valueSet, eq(valueSet.systemId, system.id))
+    .where(eq(valueSet.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "valueSet" as const, id: result.value_set.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
@@ -133,7 +171,7 @@ const getTargetLabelGroupScopes = async (id: string) => {
     .select()
     .from(workspace)
     .innerJoin(targetLabelGroup, eq(targetLabelGroup.workspaceId, workspace.id))
-    .where(eq(target.id, id))
+    .where(eq(targetLabelGroup.id, id))
     .then(takeFirst);
 
   return [
@@ -208,4 +246,18 @@ const getWorkspaceScopes = async (id: string) => {
     .then(takeFirst);
 
   return [{ type: "workspace" as const, id: result.id }];
+};
+
+const getJobAgentScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(jobAgent, eq(jobAgent.workspaceId, workspace.id))
+    .where(eq(jobAgent.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "jobAgent" as const, id: result.job_agent.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
 };

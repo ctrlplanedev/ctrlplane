@@ -1,19 +1,9 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobExecutionStatus } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  isNull,
-  notInArray,
-  or,
-  takeFirst,
-} from "@ctrlplane/db";
+import { and, asc, desc, eq, isNull, or, takeFirst } from "@ctrlplane/db";
 import {
   createJobAgent,
   deployment,
@@ -36,7 +26,7 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const jobConfigQuery = (tx: Tx) =>
   tx
@@ -90,7 +80,7 @@ const jobConfigRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.DeploymentGet)
+          .perform(Permission.DeploymentGet, Permission.SystemGet)
           .on(
             { type: "deployment", id: input.deploymentId },
             { type: "environment", id: input.environmentId },
@@ -240,17 +230,25 @@ const rolloutDateFromJobConfig = (
 };
 
 const jobAgentRouter = createTRPCRouter({
-  byWorkspaceId: publicProcedure
+  byWorkspaceId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.JobAgentList)
+          .on({ type: "workspace", id: input }),
+    })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db.select().from(jobAgent).where(eq(jobAgent.workspaceId, input)),
     ),
-  byType: publicProcedure
-    .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db.select().from(jobAgent).where(eq(jobAgent.type, input)),
-    ),
+
   create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.JobAgentCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
     .input(createJobAgent)
     .mutation(({ ctx, input }) =>
       ctx.db.insert(jobAgent).values(input).returning().then(takeFirst),
@@ -258,63 +256,6 @@ const jobAgentRouter = createTRPCRouter({
 });
 
 const jobExecutionRouter = createTRPCRouter({
-  list: createTRPCRouter({
-    byAgentId: publicProcedure
-      .input(z.string().uuid())
-      .query(({ ctx, input }) =>
-        ctx.db
-          .select()
-          .from(jobExecution)
-          .innerJoin(jobConfig, eq(jobConfig.id, jobExecution.jobConfigId))
-          .leftJoin(environment, eq(environment.id, jobConfig.environmentId))
-          .leftJoin(runbook, eq(runbook.id, jobConfig.runbookId))
-          .leftJoin(target, eq(target.id, jobConfig.targetId))
-          .leftJoin(release, eq(release.id, jobConfig.releaseId))
-          .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-          .where(
-            and(
-              eq(jobExecution.jobAgentId, input),
-              notInArray(jobExecution.status, [
-                "failure",
-                "cancelled",
-                "skipped",
-                "completed",
-              ]),
-              isNull(environment.deletedAt),
-            ),
-          )
-          .then((r) =>
-            r.map((row) => ({
-              ...row.job_execution,
-              config: row.job_config,
-              environment: row.environment,
-              runbook: row.runbook,
-              target: row.target,
-              release: { ...row.release, deployment: row.deployment },
-            })),
-          ),
-      ),
-  }),
-
-  update: publicProcedure
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        data: z.object({
-          status: z.string() as z.ZodType<JobExecutionStatus>,
-          externalRunId: z.string().optional(),
-        }),
-      }),
-    )
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .update(jobExecution)
-        .set(input.data)
-        .where(eq(jobExecution.id, input.id))
-        .returning()
-        .then(takeFirst),
-    ),
-
   create: createTRPCRouter({
     byEnvId: protectedProcedure
       .meta({
@@ -344,24 +285,32 @@ const jobExecutionRouter = createTRPCRouter({
 });
 
 export const jobRouter = createTRPCRouter({
-  byTargetId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
-    jobConfigQuery(ctx.db)
-      .where(and(eq(target.id, input), isNull(environment.deletedAt)))
-      .limit(1_000)
-      .orderBy(desc(jobExecution.createdAt), desc(jobConfig.createdAt))
-      .then((data) =>
-        data.map((t) => ({
-          ...t.job_config,
-          execution: t.job_execution,
-          agent: t.job_agent,
-          target: t.target,
-          deployment: t.deployment,
-          release: { ...t.release },
-          runbook: t.runbook,
-          environment: t.environment,
-        })),
-      ),
-  ),
+  byTargetId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemList)
+          .on({ type: "target", id: input }),
+    })
+    .input(z.string())
+    .query(({ ctx, input }) =>
+      jobConfigQuery(ctx.db)
+        .where(and(eq(target.id, input), isNull(environment.deletedAt)))
+        .limit(1_000)
+        .orderBy(desc(jobExecution.createdAt), desc(jobConfig.createdAt))
+        .then((data) =>
+          data.map((t) => ({
+            ...t.job_config,
+            execution: t.job_execution,
+            agent: t.job_agent,
+            target: t.target,
+            deployment: t.deployment,
+            release: { ...t.release },
+            runbook: t.runbook,
+            environment: t.environment,
+          })),
+        ),
+    ),
 
   config: jobConfigRouter,
   agent: jobAgentRouter,

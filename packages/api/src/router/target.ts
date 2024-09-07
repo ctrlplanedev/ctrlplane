@@ -213,6 +213,12 @@ const targetProviderRouter = createTRPCRouter({
   managed: createTRPCRouter({
     google: createTRPCRouter({
       create: protectedProcedure
+        .meta({
+          authorizationCheck: ({ canUser, input }) =>
+            canUser
+              .perform(Permission.TargetUpdate)
+              .on({ type: "workspace", id: input.workspaceId }),
+        })
         .input(
           createTargetProvider.and(
             z.object({

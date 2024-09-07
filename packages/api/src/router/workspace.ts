@@ -14,12 +14,18 @@ import {
   workspace,
   workspaceInviteToken,
 } from "@ctrlplane/db/schema";
-import { predefinedRoles } from "@ctrlplane/validators/auth";
+import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const membersRouter = createTRPCRouter({
   list: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceListMembers)
+          .on({ type: "workspace", id: input }),
+    })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -122,6 +128,12 @@ const inviteRouter = createTRPCRouter({
       ),
 
     create: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.WorkspaceInvite)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
       .input(
         z.object({
           roleId: z.string().uuid(),
@@ -158,7 +170,7 @@ export const workspaceRouter = createTRPCRouter({
     ),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: updateWorkspace }))
+    .input(z.object({ id: z.string().uuid(), data: updateWorkspace }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
         .update(workspace)
@@ -202,22 +214,36 @@ export const workspaceRouter = createTRPCRouter({
   ),
 
   bySlug: protectedProcedure
-    .input(z.string())
+    .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
         .select()
         .from(workspace)
-        .where(eq(workspace.slug, input))
-        .then(takeFirstOrNull),
+        .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
+        .where(
+          and(
+            eq(workspace.slug, input),
+            eq(entityRole.entityId, ctx.session.user.id),
+          ),
+        )
+        .then(takeFirstOrNull)
+        .then((workspace) => workspace?.workspace ?? null),
     ),
 
   byId: protectedProcedure
-    .input(z.string())
+    .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
         .select()
         .from(workspace)
-        .where(eq(workspace.id, input))
-        .then(takeFirstOrNull),
+        .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
+        .where(
+          and(
+            eq(workspace.id, input),
+            eq(entityRole.entityId, ctx.session.user.id),
+          ),
+        )
+        .then(takeFirstOrNull)
+        .then((w) => w?.workspace ?? null),
     ),
 });

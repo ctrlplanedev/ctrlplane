@@ -4,6 +4,9 @@ export enum Permission {
   WorkspaceInvite = "workspace.invite",
   WorkspaceListMembers = "workspace.listMembers",
 
+  JobAgentList = "jobAgent.list",
+  JobAgentCreate = "jobAgent.create",
+
   RoleCreate = "role.create",
   RoleDelete = "role.delete",
   RoleGet = "role.get",
