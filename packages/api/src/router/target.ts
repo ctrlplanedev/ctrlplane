@@ -152,7 +152,7 @@ const targetProviderRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetList)
-          .on({ type: "targetProvider", id: input }),
+          .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {

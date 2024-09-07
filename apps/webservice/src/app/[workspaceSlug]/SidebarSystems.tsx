@@ -76,10 +76,8 @@ export const SidebarSystems: React.FC = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const systems = api.system.list.useQuery(
-    {
-      workspaceId: workspace.data?.id ?? "",
-    },
-    { enabled: workspace.isSuccess },
+    { workspaceId: workspace.data?.id ?? "" },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
   const [open, setOpen] = useState(true);
   return (
