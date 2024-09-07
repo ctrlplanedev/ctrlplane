@@ -66,16 +66,16 @@ const authnProcedure = t.procedure.use(({ ctx, next }) => {
 });
 
 const authzProdecdure = authnProcedure.use(
-  async ({ ctx, meta, getRawInput, next }) => {
+  async ({ ctx, meta, path, getRawInput, next }) => {
     const { authorizationCheck } = meta ?? {};
     if (authorizationCheck != null) {
-      const input = await getRawInput();
       const canUser = can().user(ctx.session.user.id);
+      const input = await getRawInput();
       const check = authorizationCheck({ ctx, input, canUser });
       if (!check)
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: `You do not have the required permissions for this operation.`,
+          message: `You do not have the required permissions for '${path}' operation.`,
         });
     }
 
