@@ -141,9 +141,6 @@ const reposRouter = createTRPCRouter({
 
 const configFileRouter = createTRPCRouter({
   list: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
-    })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db

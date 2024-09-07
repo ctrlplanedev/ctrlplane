@@ -1,16 +1,17 @@
-"use client";
-
-import { notFound, useRouter } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound, redirect } from "next/navigation";
 import { v3 } from "murmurhash";
-import { useSession } from "next-auth/react";
 import colors from "tailwindcss/colors";
 
+import { auth } from "@ctrlplane/auth";
+import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
+import { workspace, workspaceInviteToken } from "@ctrlplane/db/schema";
 import { cn } from "@ctrlplane/ui";
 import { Avatar, AvatarFallback } from "@ctrlplane/ui/avatar";
-import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
-import { api } from "~/trpc/react";
+import { JoinWorkspaceButton } from "./JoinWorkspaceButton";
 
 const getColorForAvatar = (name: string) => {
   const hash = v3(name);
@@ -20,31 +21,29 @@ const getColorForAvatar = (name: string) => {
   return color[800];
 };
 
-export default function JoinPage({
+export const metadata: Metadata = {
+  title: "Accept Token Invite",
+};
+
+export default async function JoinPage({
   params,
 }: {
   params: { workspaceInviteToken: string };
 }) {
-  const { workspaceInviteToken } = params;
-  const session = useSession();
-  const router = useRouter();
-  const workspace =
-    api.invite.workspace.fromInviteToken.useQuery(workspaceInviteToken);
+  const token = await db
+    .select()
+    .from(workspaceInviteToken)
+    .innerJoin(workspace, eq(workspace.id, workspaceInviteToken.workspaceId))
+    .where(eq(workspaceInviteToken.token, params.workspaceInviteToken))
+    .then(takeFirstOrNull);
 
-  const workspaceMemberCreate =
-    api.workspace.members.createFromInviteToken.useMutation();
+  if (token == null) notFound();
 
-  const handleJoinWorkspace = () => {
-    workspaceMemberCreate
-      .mutateAsync({
-        workspaceId: workspace.data?.id ?? "",
-        userId: session.data?.user.id ?? "",
-      })
-      .then(() => router.push(`/${workspace.data?.slug}`))
-      .catch(notFound);
-  };
+  const session = await auth();
+  if (session == null)
+    redirect(`/login?acceptToken=${params.workspaceInviteToken}`);
 
-  if (workspace.isSuccess && workspace.data == null) return notFound();
+  const ws = token.workspace;
 
   return (
     <div className="flex h-screen w-screen items-center justify-center">
@@ -52,40 +51,26 @@ export default function JoinPage({
         className={cn(
           "flex flex-col items-center space-y-6 rounded-md border-0 bg-neutral-900 p-8",
           "transition-opacity duration-500 ease-out",
-          workspace.data != null ? "opacity-100" : "opacity-0",
         )}
       >
         <Avatar className="h-14 w-14">
           <AvatarFallback
-            style={{
-              backgroundColor: getColorForAvatar(workspace.data?.name ?? ""),
-            }}
+            style={{ backgroundColor: getColorForAvatar(ws.name) }}
           >
-            {workspace.data?.name.substring(0, 2).toUpperCase() ?? ""}
+            {ws.name.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex flex-col items-center">
-          <p className="mb-3 text-2xl text-neutral-100">
-            Join {workspace.data?.name}
-          </p>
+          <p className="mb-3 text-2xl text-neutral-100">Join {ws.name}</p>
 
           <p className="mb-5 text-sm text-muted-foreground">
-            You have been invited to join the {workspace.data?.name} workspace.
+            You have been invited to join the {ws.name} workspace.
           </p>
-          <Button
-            className="w-full"
-            onClick={
-              session.data?.user != null
-                ? handleJoinWorkspace
-                : () =>
-                    router.push(
-                      `/login/workspace-invite/${workspaceInviteToken}`,
-                    )
-            }
-          >
-            {session.data?.user != null ? "Join Workspace" : "Log in"}
-          </Button>
+          <JoinWorkspaceButton
+            workspace={ws}
+            token={params.workspaceInviteToken}
+          />
         </div>
       </Card>
     </div>

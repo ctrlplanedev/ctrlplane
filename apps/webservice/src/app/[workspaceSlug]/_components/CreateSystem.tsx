@@ -52,9 +52,13 @@ export const CreateSystemDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (values) => {
-    const system = await create.mutateAsync({ workspaceId, ...values });
-    await utils.system.list.invalidate();
-    router.push(`/${workspaceSlug}/systems/${system.slug}`);
+    try {
+      const system = await create.mutateAsync({ workspaceId, ...values });
+      await utils.system.list.invalidate();
+      router.push(`/${workspaceSlug}/systems/${system.slug}`);
+    } catch (e) {
+      console.error(e);
+    }
     setOpen(false);
   });
 

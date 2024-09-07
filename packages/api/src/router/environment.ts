@@ -38,16 +38,13 @@ import {
   isPassingAllPolicies,
   isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const policyRouter = createTRPCRouter({
   deployment: createTRPCRouter({
     bySystemId: protectedProcedure
-      .meta({
-        access: ({ ctx, input }) =>
-          ctx.accessQuery().workspace.system.id(input),
-      })
       .input(z.string().uuid())
       .query(({ ctx, input }) =>
         ctx.db
@@ -62,12 +59,6 @@ const policyRouter = createTRPCRouter({
       ),
 
     create: protectedProcedure
-      .meta({
-        access: ({ ctx, input }) =>
-          ctx
-            .accessQuery()
-            .workspace.system.environment.id(input.environmentId),
-      })
       .input(createEnvironmentPolicyDeployment)
       .mutation(({ ctx, input }) =>
         ctx.db
@@ -210,32 +201,27 @@ const policyRouter = createTRPCRouter({
       ),
   }),
 
-  bySystemId: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.system.id(input),
-    })
-    .input(z.string())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(environmentPolicy)
-        .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
-        )
-        .where(eq(environmentPolicy.systemId, input))
-        .then((policies) =>
-          _.chain(policies)
-            .groupBy("environment_policy.id")
-            .map((p) => ({
-              ...p[0]!.environment_policy,
-              releaseWindows: p
-                .map((t) => t.environment_policy_release_window)
-                .filter(isPresent),
-            }))
-            .value(),
-        ),
-    ),
+  bySystemId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
+    ctx.db
+      .select()
+      .from(environmentPolicy)
+      .leftJoin(
+        environmentPolicyReleaseWindow,
+        eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+      )
+      .where(eq(environmentPolicy.systemId, input))
+      .then((policies) =>
+        _.chain(policies)
+          .groupBy("environment_policy.id")
+          .map((p) => ({
+            ...p[0]!.environment_policy,
+            releaseWindows: p
+              .map((t) => t.environment_policy_release_window)
+              .filter(isPresent),
+          }))
+          .value(),
+      ),
+  ),
 
   byId: protectedProcedure.input(z.string()).query(({ ctx, input }) =>
     ctx.db.query.environmentPolicy.findMany({
@@ -245,10 +231,6 @@ const policyRouter = createTRPCRouter({
   ),
 
   create: protectedProcedure
-    .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.id(input.systemId),
-    })
     .input(createEnvironmentPolicy)
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (db) =>
@@ -320,8 +302,10 @@ export const createEnv = async (
 const tragetRouter = createTRPCRouter({
   byEnvironmentId: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.environment.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "environment", id: input }),
     })
     .input(z.string())
     .query(async ({ ctx, input }) =>
@@ -340,9 +324,28 @@ const tragetRouter = createTRPCRouter({
     ),
 
   byFilter: protectedProcedure
-    .input(z.record(z.string()))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        labels: z.record(z.string()),
+      }),
+    )
     .query(async ({ ctx, input }) =>
-      ctx.db.select().from(target).where(arrayContains(target.labels, input)),
+      ctx.db
+        .select()
+        .from(target)
+        .where(
+          and(
+            arrayContains(target.labels, input.labels),
+            eq(target.workspaceId, input.workspaceId),
+          ),
+        ),
     ),
 });
 
@@ -353,8 +356,10 @@ export const environmentRouter = createTRPCRouter({
 
   deploy: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.environment.id(input.environmentId),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "environment", id: input.environmentId }),
     })
     .input(
       z.object({
@@ -404,10 +409,12 @@ export const environmentRouter = createTRPCRouter({
 
   byId: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.environment.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "environment", id: input }),
     })
-    .input(z.string())
+    .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db
         .select()
@@ -427,9 +434,10 @@ export const environmentRouter = createTRPCRouter({
 
   bySystemId: protectedProcedure
     .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.system.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.SystemGet).on({ type: "system", id: input }),
     })
-    .input(z.string())
+    .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const envs = await ctx.db
         .select()
@@ -456,12 +464,24 @@ export const environmentRouter = createTRPCRouter({
     }),
 
   create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemCreate)
+          .on({ type: "system", id: input.systemId }),
+    })
     .input(createEnvironment)
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((db) => createEnv(db, input)),
     ),
 
   update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "environment", id: input.id }),
+    })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -473,6 +493,12 @@ export const environmentRouter = createTRPCRouter({
     ),
 
   delete: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemDelete)
+          .on({ type: "environment", id: input }),
+    })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((db) =>

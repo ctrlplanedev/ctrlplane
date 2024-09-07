@@ -1,31 +1,27 @@
-"use client";
-
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { TbArrowRight } from "react-icons/tb";
 
+import { auth } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
-import { api } from "~/trpc/react";
+import { api } from "~/trpc/server";
 import { MembersTable } from "./WorkspaceMembersTable";
 
-export default function WorkspaceSettingMembersPage({
+export const metadata: Metadata = { title: "Workspace Members" };
+
+export default async function WorkspaceSettingMembersPage({
   params,
 }: {
   params: { workspaceSlug: string };
 }) {
-  const session = useSession();
-  const { workspaceSlug } = params;
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const members = api.workspace.members.list.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess },
-  );
-  const sessionMember = members.data?.find(
-    (m) => m.user.id === session.data?.user.id,
-  );
+  const session = await auth();
+  if (session == null) notFound();
 
-  if (!workspace.isLoading && workspace.data == null) return notFound();
+  const { workspaceSlug } = params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
+
+  const members = await api.workspace.members.list(workspace.id);
 
   return (
     <div className="container mx-auto max-w-2xl space-y-8">
@@ -37,21 +33,9 @@ export default function WorkspaceSettingMembersPage({
       </div>
       <div className="border-b" />
       <div className="space-y-1">
-        <p className="font-semibold">Manage members</p>
-        <p className="text-sm text-muted-foreground">
-          On the Free plan all members in a workspace are administrators.
-          Upgrade to a paid plan to add the ability to assign or remove
-          administrator roles.{" "}
-          <span className="inline-flex items-center text-blue-600">
-            Go to Plans <TbArrowRight />
-          </span>
-        </p>
+        <p className="font-semibold">Manage members ({members.length})</p>
       </div>
-      <MembersTable
-        data={members.data ?? []}
-        workspaceSlug={workspaceSlug}
-        sessionMember={sessionMember}
-      />
+      <MembersTable data={members} workspace={workspace} />
       <div className="border-b" />
       <div className="flex items-center">
         <div className="flex-grow">

@@ -79,7 +79,9 @@ export const CreateReleaseDialog: React.FC<{
     { workspaceId: workspace.data?.id ?? "" },
     { enabled: workspace.isSuccess },
   );
-  const deployments = api.deployment.bySystemId.useQuery(systemId);
+  const deployments = api.deployment.bySystemId.useQuery(systemId, {
+    enabled: systemId !== "",
+  });
   const globalDeployments = api.deployment.byWorkspaceId.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.data != null },

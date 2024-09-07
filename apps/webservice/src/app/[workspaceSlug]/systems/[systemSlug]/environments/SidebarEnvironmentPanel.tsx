@@ -73,7 +73,13 @@ export const SidebarEnvironmentPanel: React.FC = () => {
 
   const { targetFilter } = form.watch();
   const targets = api.environment.target.byFilter.useQuery(
-    Object.fromEntries(targetFilter.map(({ key, value }) => [key, value])),
+    {
+      workspaceId: workspace.data?.id ?? "",
+      labels: Object.fromEntries(
+        targetFilter.map(({ key, value }) => [key, value]),
+      ),
+    },
+    { enabled: workspace.data != null },
   );
 
   const { fields, append, remove } = useFieldArray({
