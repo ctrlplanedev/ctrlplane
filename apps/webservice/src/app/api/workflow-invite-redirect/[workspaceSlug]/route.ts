@@ -5,7 +5,7 @@ import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { workspace, workspaceMember } from "@ctrlplane/db/schema";
 
-import { api } from "~/trpc/server";
+import { env } from "~/env";
 
 export const GET = async ({
   params,
@@ -16,7 +16,7 @@ export const GET = async ({
   const session = await auth();
   if (session?.user == null) return NextResponse.redirect("/login");
 
-  const baseUrl = await api.runtime.baseUrl();
+  const baseUrl = env.BASE_URL;
 
   await db
     .transaction((db) =>

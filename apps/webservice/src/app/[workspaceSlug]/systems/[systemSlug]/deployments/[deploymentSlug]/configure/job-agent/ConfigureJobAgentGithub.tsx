@@ -29,7 +29,7 @@ export const ConfigureJobAgentGithub: React.FC<{
   onChange: (v: Record<string, any>) => void;
 }> = ({ value, jobAgent, onChange }) => {
   const repos = api.github.organizations.repos.list.useQuery({
-    login: jobAgent.config.login,
+    owner: jobAgent.config.owner,
     installationId: jobAgent.config.installationId,
   });
 
@@ -40,7 +40,7 @@ export const ConfigureJobAgentGithub: React.FC<{
     {
       installationId: jobAgent.config.installationId,
       repo: repo ?? "",
-      login: jobAgent.config.login,
+      owner: jobAgent.config.owner,
     },
     { enabled: repo != null },
   );
@@ -59,7 +59,7 @@ export const ConfigureJobAgentGithub: React.FC<{
 
     onChange({
       installationId: jobAgent.config.installationId,
-      login: jobAgent.config.login,
+      owner: jobAgent.config.owner,
       repo,
       workflowId,
     });
@@ -95,7 +95,7 @@ export const ConfigureJobAgentGithub: React.FC<{
               <CommandInput placeholder="Search repo..." />
               <CommandGroup>
                 <CommandList>
-                  {repos.data?.data.map((repo) => (
+                  {repos.data?.map((repo) => (
                     <CommandItem
                       key={repo.id}
                       value={repo.name}

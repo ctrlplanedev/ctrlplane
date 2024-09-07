@@ -153,7 +153,7 @@ export const GET = async (req: NextRequest) => {
     },
   });
 
-  const baseUrl = await api.runtime.baseUrl();
+  const baseUrl = env.BASE_URL;
   const workspaceSlug = activeWorkspace.slug;
 
   return NextResponse.redirect(

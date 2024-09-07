@@ -5,12 +5,14 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
 import {
+  deployment,
   githubConfigFile,
   githubOrganization,
   githubOrganizationInsert,
   githubUser,
+  jobAgent,
 } from "@ctrlplane/db/schema";
 
 import { env } from "../../config";
@@ -87,7 +89,7 @@ const userRouter = createTRPCRouter({
 
 const reposRouter = createTRPCRouter({
   list: protectedProcedure
-    .input(z.object({ installationId: z.number(), login: z.string() }))
+    .input(z.object({ installationId: z.number(), owner: z.string() }))
     .query(({ input }) =>
       octokit?.apps
         .getInstallation({
@@ -100,13 +102,14 @@ const reposRouter = createTRPCRouter({
             installationId: installation.id,
           })) as { token: string };
 
-          return installationOctokit.repos.listForOrg({
-            org: input.login,
+          const { data } = await installationOctokit.repos.listForOrg({
+            org: input.owner,
             headers: {
               "X-GitHub-Api-Version": "2022-11-28",
               authorization: `Bearer ${installationToken.token}`,
             },
           });
+          return data;
         }),
     ),
 
@@ -115,7 +118,7 @@ const reposRouter = createTRPCRouter({
       .input(
         z.object({
           installationId: z.number(),
-          login: z.string(),
+          owner: z.string(),
           repo: z.string(),
         }),
       )
@@ -130,8 +133,7 @@ const reposRouter = createTRPCRouter({
         })) as { token: string };
 
         return installationOctokit.actions.listRepoWorkflows({
-          owner: input.login,
-          repo: input.repo,
+          ...input,
           headers: {
             "X-GitHub-Api-Version": "2022-11-28",
             authorization: `Bearer ${installationToken.token}`,
@@ -230,18 +232,43 @@ export const githubRouter = createTRPCRouter({
           );
       }),
 
-    list: protectedProcedure
-      .input(z.string().uuid())
-      .query(({ ctx, input }) =>
-        ctx.db
-          .select()
-          .from(githubOrganization)
-          .leftJoin(
-            githubUser,
-            eq(githubOrganization.addedByUserId, githubUser.userId),
-          )
-          .where(eq(githubOrganization.workspaceId, input)),
-      ),
+    list: protectedProcedure.input(z.string().uuid()).query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(githubOrganization)
+        .leftJoin(
+          githubUser,
+          eq(githubOrganization.addedByUserId, githubUser.userId),
+        )
+        .leftJoin(
+          githubConfigFile,
+          eq(githubConfigFile.organizationId, githubOrganization.id),
+        )
+        .leftJoin(
+          deployment,
+          eq(deployment.githubConfigFileId, githubConfigFile.id),
+        )
+        .where(eq(githubOrganization.workspaceId, input))
+        .then((rows) =>
+          _.chain(rows)
+            .groupBy("github_organization.id")
+            .map((v) => ({
+              ...v[0]!.github_organization,
+              addedByUser: v[0]!.github_user,
+              configFiles: v
+                .map((v) => v.github_config_file)
+                .filter(isPresent)
+                .map((cf) => ({
+                  ...cf,
+                  deployments: v
+                    .map((v) => v.deployment)
+                    .filter(isPresent)
+                    .filter((d) => d.githubConfigFileId === cf.id),
+                })),
+            }))
+            .value(),
+        ),
+    ),
 
     create: protectedProcedure
       .input(githubOrganizationInsert)
@@ -268,6 +295,55 @@ export const githubRouter = createTRPCRouter({
           .where(eq(githubOrganization.id, input.id)),
       ),
 
+    delete: protectedProcedure
+      .input(
+        z.object({ id: z.string().uuid(), deleteDeployments: z.boolean() }),
+      )
+      .mutation(({ ctx, input }) =>
+        ctx.db.transaction(async (db) => {
+          const configFiles = await db
+            .select()
+            .from(githubConfigFile)
+            .where(eq(githubConfigFile.organizationId, input.id));
+
+          const deletedOrg = await db
+            .delete(githubOrganization)
+            .where(eq(githubOrganization.id, input.id))
+            .returning()
+            .then(takeFirstOrNull);
+
+          if (deletedOrg == null)
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Organization not found",
+            });
+
+          await db
+            .delete(jobAgent)
+            .where(
+              and(
+                eq(jobAgent.type, "github-app"),
+                eq(jobAgent.name, deletedOrg.organizationName),
+                eq(jobAgent.workspaceId, deletedOrg.workspaceId),
+              ),
+            );
+
+          if (input.deleteDeployments)
+            await db.delete(deployment).where(
+              inArray(
+                deployment.githubConfigFileId,
+                configFiles.map((c) => c.id),
+              ),
+            );
+
+          octokit?.apps.deleteInstallation({
+            installation_id: deletedOrg.installationId,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          });
+        }),
+      ),
     repos: reposRouter,
   }),
 });

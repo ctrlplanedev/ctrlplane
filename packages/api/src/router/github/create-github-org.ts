@@ -9,7 +9,7 @@ import { Octokit } from "@octokit/rest";
 import * as yaml from "js-yaml";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, eq, inArray, sql, takeFirst } from "@ctrlplane/db";
 import {
   deployment,
   githubConfigFile,
@@ -150,7 +150,15 @@ const processParsedConfigFiles = async (
     )
     .flat();
 
-  await db.insert(deployment).values(deployments);
+  await db
+    .insert(deployment)
+    .values(deployments)
+    .onConflictDoUpdate({
+      target: [deployment.systemId, deployment.slug],
+      set: {
+        githubConfigFileId: sql`excluded.github_config_file_id`,
+      },
+    });
 };
 
 export const createNewGithubOrganization = async (

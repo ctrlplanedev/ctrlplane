@@ -1,14 +1,14 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "react-icons/si";
-import { TbLoader2 } from "react-icons/tb";
 
+import { auth } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
-import { api } from "~/trpc/react";
+import { env } from "~/env";
+import { api } from "~/trpc/server";
+import { DeleteGithubUserButton } from "./DeleteGithubUserButton";
 import { GithubConfigFileSync } from "./GithubConfigFile";
 import { GithubConnectedOrgs } from "./GithubConnectedOrgs";
 
@@ -21,39 +21,28 @@ const githubAuthUrl = (
 ) =>
   `${githubUrl}/login/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${baseUrl}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
 
-export default function GitHubIntegrationPage({
+export default async function GitHubIntegrationPage({
   params,
 }: {
   params: { workspaceSlug: string };
 }) {
   const { workspaceSlug } = params;
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const session = useSession();
-  const router = useRouter();
-  const baseUrl = api.runtime.baseUrl.useQuery();
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
+  const session = await auth();
+  if (session == null) redirect("/login");
 
-  const githubUrl = api.runtime.github.url.useQuery();
-  const githubBotName = api.runtime.github.botName.useQuery();
-  const githubBotClientId = api.runtime.github.clientId.useQuery();
+  const baseUrl = env.BASE_URL;
+
+  const githubUrl = env.GITHUB_URL;
+  const githubBotName = env.GITHUB_BOT_NAME;
+  const githubBotClientId = env.GITHUB_BOT_CLIENT_ID;
   const isGithubConfigured =
-    githubUrl.data != null &&
-    githubBotName.data != null &&
-    githubBotClientId.data != null;
+    githubUrl != null && githubBotName != null && githubBotClientId != null;
 
-  const githubUser = api.github.user.byUserId.useQuery(session.data!.user.id, {
-    enabled: session.status === "authenticated",
-  });
+  const githubUser = await api.github.user.byUserId(session.user.id);
 
-  const deleteGithubUser = api.github.user.delete.useMutation();
-
-  const configFiles = api.github.configFile.list.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.data != null },
-  );
-
-  const loading = workspace.isLoading || githubUser.isLoading;
-
-  const utils = api.useUtils();
+  const configFiles = await api.github.configFile.list(workspace.id);
 
   return (
     <div className="flex flex-col gap-12">
@@ -68,80 +57,54 @@ export default function GitHubIntegrationPage({
         </div>
       </div>
 
-      {loading && (
-        <div className="flex w-[768px] items-center justify-center">
-          <TbLoader2 className="h-10 w-10 animate-spin" />
-        </div>
-      )}
-
-      {!loading && (
-        <div className="flex w-[768px] flex-col gap-12">
-          <Card className="flex items-center justify-between rounded-md p-4">
-            <div className="flex flex-col">
-              <p className="text-neutral-100">
-                {githubUser.data != null
-                  ? "Personal account connected"
-                  : "Connect your personal account"}
-              </p>
-              <p className="w-[500px] text-wrap text-sm text-muted-foreground">
-                {githubUser.data != null
-                  ? "Your GitHub account is connected to Ctrlplane"
-                  : "Connect your GitHub account to Ctrlplane to add Github organizations to your workspaces"}
-              </p>
-            </div>
-            {githubUser.data == null && (
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  router.push(
-                    githubAuthUrl(
-                      baseUrl.data ?? "",
-                      githubUrl.data ?? "",
-                      githubBotClientId.data ?? "",
-                      session.data!.user.id,
-                      workspaceSlug,
-                    ),
-                  )
-                }
-              >
-                Connect
-              </Button>
-            )}
-            {githubUser.data != null && (
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  deleteGithubUser
-                    .mutateAsync(githubUser.data!.userId)
-                    .then(() =>
-                      utils.github.user.byUserId.invalidate(
-                        session.data!.user.id,
-                      ),
-                    )
-                }
-              >
-                Disconnect
-              </Button>
-            )}
-          </Card>
-
-          {isGithubConfigured && (
-            <GithubConnectedOrgs
-              githubUser={githubUser.data}
-              workspaceId={workspace.data?.id}
-              workspaceSlug={workspaceSlug}
-              loading={workspace.isLoading || githubUser.isLoading}
-              githubConfig={{
-                url: githubUrl.data ?? "",
-                botName: githubBotName.data ?? "",
-                clientId: githubBotClientId.data ?? "",
-              }}
-            />
+      <div className="flex w-[768px] flex-col gap-12">
+        <Card className="flex items-center justify-between rounded-md p-4">
+          <div className="flex flex-col">
+            <p className="text-neutral-100">
+              {githubUser != null
+                ? "Personal account connected"
+                : "Connect your personal account"}
+            </p>
+            <p className="w-[500px] text-wrap text-sm text-muted-foreground">
+              {githubUser != null
+                ? "Your GitHub account is connected to Ctrlplane"
+                : "Connect your GitHub account to Ctrlplane to add Github organizations to your workspaces"}
+            </p>
+          </div>
+          {githubUser == null && (
+            <Link
+              href={githubAuthUrl(
+                baseUrl,
+                githubUrl ?? "",
+                githubBotClientId ?? "",
+                session.user.id,
+                workspaceSlug,
+              )}
+            >
+              <Button variant="secondary">Connect</Button>
+            </Link>
           )}
+          {githubUser != null && (
+            <DeleteGithubUserButton githubUserId={githubUser.userId} />
+          )}
+        </Card>
 
-          <GithubConfigFileSync configFiles={configFiles.data ?? []} />
-        </div>
-      )}
+        {isGithubConfigured && (
+          <GithubConnectedOrgs
+            githubUser={githubUser}
+            workspaceId={workspace.id}
+            workspaceSlug={workspaceSlug}
+            loading={false}
+            githubConfig={{
+              url: githubUrl,
+              botName: githubBotName,
+              clientId: githubBotClientId,
+            }}
+          />
+        )}
+
+        <GithubConfigFileSync configFiles={configFiles} />
+      </div>
     </div>
   );
 }

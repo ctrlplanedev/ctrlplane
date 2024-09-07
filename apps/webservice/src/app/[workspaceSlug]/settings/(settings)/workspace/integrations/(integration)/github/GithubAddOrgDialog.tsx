@@ -1,5 +1,8 @@
+"use client";
+
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TbBulb } from "react-icons/tb";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
@@ -26,7 +29,10 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { api } from "~/trpc/react";
 
 type GithubAddOrgDialogProps = {
-  githubUserId: number;
+  githubUser?: {
+    githubUserId: number;
+    userId: string;
+  };
   children: React.ReactNode;
   githubConfig: {
     url: string;
@@ -38,16 +44,17 @@ type GithubAddOrgDialogProps = {
 };
 
 export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
-  githubUserId,
+  githubUser,
   children,
   githubConfig,
   workspaceId,
 }) => {
   const [open, setOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const githubOrgs =
-    api.github.organizations.byGithubUserId.useQuery(githubUserId);
-
+  const githubOrgs = api.github.organizations.byGithubUserId.useQuery(
+    githubUser?.githubUserId ?? 0,
+  );
+  const router = useRouter();
   const githubOrgsInstalled =
     api.github.organizations.list.useQuery(workspaceId);
 
@@ -55,14 +62,30 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
     githubOrgs.data?.filter(
       (org) =>
         !githubOrgsInstalled.data?.some(
-          (o) =>
-            o.github_organization.organizationName === org.login &&
-            o.github_organization.connected === true,
+          (o) => o.organizationName === org.login,
         ),
     ) ?? [];
 
+  const githubOrgCreate = api.github.organizations.create.useMutation();
+
   const [image, setImage] = useState<string | null>(null);
   const [value, setValue] = useState<string | null>(null);
+
+  const handlePreconnectedOrgSave = () => {
+    if (value == null) return;
+    const org = validOrgsToAdd.find((o) => o.login === value);
+    if (org == null) return;
+
+    githubOrgCreate
+      .mutateAsync({
+        installationId: org.installationId,
+        workspaceId,
+        organizationName: org.login,
+        addedByUserId: githubUser?.userId ?? "",
+        avatarUrl: org.avatar_url,
+      })
+      .then(() => router.refresh());
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -175,7 +198,12 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
         )}
 
         <DialogFooter className="px-4">
-          <Button>Save</Button>
+          <Button
+            onClick={handlePreconnectedOrgSave}
+            disabled={value == null || githubOrgCreate.isPending}
+          >
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
