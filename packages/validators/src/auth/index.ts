@@ -3,6 +3,8 @@ import { z } from "zod";
 export enum Permission {
   WorkspaceInvite = "workspace.invite",
   WorkspaceListMembers = "workspace.listMembers",
+  WorkspaceUpdate = "workspace.update",
+  WorkspaceListIntegrations = "workspace.listIntegrations",
 
   JobAgentList = "jobAgent.list",
   JobAgentCreate = "jobAgent.create",

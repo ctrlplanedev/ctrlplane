@@ -7,6 +7,7 @@ import { TbBulb, TbCheck, TbCopy, TbX } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -101,12 +102,10 @@ export const UpdateGoogleProviderDialog: React.FC<{
                 from google.
               </DialogDescription>
 
-              <div
-                className="relative mb-4 flex w-fit items-center gap-2 rounded-md bg-neutral-800/50 px-4 py-3 text-muted-foreground"
-                role="alert"
-              >
-                <TbBulb className="h-6 w-6 flex-shrink-0" />
-                <span className="text-sm">
+              <Alert variant="secondary">
+                <TbBulb className="h-5 w-5" />
+                <AlertTitle>Google Provider</AlertTitle>
+                <AlertDescription>
                   To use the Google provider, you will need to invite our
                   service account to your project and configure the necessary
                   permissions. Read more{" "}
@@ -118,8 +117,8 @@ export const UpdateGoogleProviderDialog: React.FC<{
                     here
                   </Link>
                   .
-                </span>
-              </div>
+                </AlertDescription>
+              </Alert>
             </DialogHeader>
 
             <div className="space-y-2">

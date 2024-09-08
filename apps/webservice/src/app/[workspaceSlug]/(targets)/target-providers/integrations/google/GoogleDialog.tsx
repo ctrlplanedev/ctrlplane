@@ -10,6 +10,7 @@ import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
 
 import { cn } from "@ctrlplane/ui";
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -91,25 +92,25 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                 from google.
               </DialogDescription>
 
-              <div
-                className="relative mb-4 flex w-fit items-center gap-2 rounded-md bg-neutral-800/50 px-4 py-3 text-muted-foreground"
-                role="alert"
-              >
-                <TbBulb className="h-6 w-6 flex-shrink-0" />
-                <span className="text-sm">
-                  To use the Google provider, you will need to invite our
-                  service account to your project and configure the necessary
-                  permissions. Read more{" "}
-                  <Link
-                    href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
-                    target="_blank"
-                    className="underline"
-                  >
-                    here
-                  </Link>
-                  .
-                </span>
-              </div>
+              <Alert variant="secondary">
+                <TbBulb className="h-5 w-5" />
+                <AlertTitle>Google Provider</AlertTitle>
+                <AlertDescription>
+                  <span>
+                    To use the Google provider, you will need to invite our
+                    service account to your project and configure the necessary
+                    permissions. Read more{" "}
+                    <Link
+                      href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
+                      target="_blank"
+                      className="underline"
+                    >
+                      here
+                    </Link>
+                    .
+                  </span>
+                </AlertDescription>
+              </Alert>
             </DialogHeader>
 
             <div className="space-y-2">

@@ -14,8 +14,8 @@ export const GET = async (
   const code = searchParams.get("code");
   const { userId, workspaceSlug } = params;
 
-  const baseUrl = await api.runtime.baseUrl();
-  const githubUrl = await api.runtime.github.url();
+  const baseUrl = env.BASE_URL;
+  const githubUrl = env.GITHUB_URL;
 
   const tokenResponse = await fetch(`${githubUrl}/login/oauth/access_token`, {
     method: "POST",

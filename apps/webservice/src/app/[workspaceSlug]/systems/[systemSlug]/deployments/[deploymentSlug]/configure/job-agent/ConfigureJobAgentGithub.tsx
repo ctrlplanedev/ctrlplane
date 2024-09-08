@@ -26,11 +26,13 @@ import { api } from "~/trpc/react";
 export const ConfigureJobAgentGithub: React.FC<{
   value: Record<string, any>;
   jobAgent: JobAgent;
+  workspaceId: string;
   onChange: (v: Record<string, any>) => void;
-}> = ({ value, jobAgent, onChange }) => {
+}> = ({ value, jobAgent, workspaceId, onChange }) => {
   const repos = api.github.organizations.repos.list.useQuery({
-    login: jobAgent.config.login,
+    owner: jobAgent.config.owner,
     installationId: jobAgent.config.installationId,
+    workspaceId,
   });
 
   const [repoOpen, setRepoOpen] = useState(false);
@@ -40,7 +42,8 @@ export const ConfigureJobAgentGithub: React.FC<{
     {
       installationId: jobAgent.config.installationId,
       repo: repo ?? "",
-      login: jobAgent.config.login,
+      owner: jobAgent.config.owner,
+      workspaceId,
     },
     { enabled: repo != null },
   );
@@ -59,7 +62,7 @@ export const ConfigureJobAgentGithub: React.FC<{
 
     onChange({
       installationId: jobAgent.config.installationId,
-      login: jobAgent.config.login,
+      owner: jobAgent.config.owner,
       repo,
       workflowId,
     });
@@ -95,7 +98,7 @@ export const ConfigureJobAgentGithub: React.FC<{
               <CommandInput placeholder="Search repo..." />
               <CommandGroup>
                 <CommandList>
-                  {repos.data?.data.map((repo) => (
+                  {repos.data?.map((repo) => (
                     <CommandItem
                       key={repo.id}
                       value={repo.name}
