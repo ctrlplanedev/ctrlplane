@@ -2,9 +2,11 @@ import { TbVariable } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 
-// import { CreateRunbookDialog } from "../../../_components/CreateRunbook";
+import { CreateVariableSetDialog } from "./CreateValueSetDialog";
 
-export const VariableSetGettingStarted: React.FC = () => {
+export const VariableSetGettingStarted: React.FC<{ systemId: string }> = ({
+  systemId,
+}) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -24,9 +26,9 @@ export const VariableSetGettingStarted: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* <CreateVariableSetDialog systemId={systemId}> */}
-          <Button size="sm">Create Variable Set</Button>
-          {/* </CreateVariableSetDialog> */}
+          <CreateVariableSetDialog systemId={systemId}>
+            <Button size="sm">Create Variable Set</Button>
+          </CreateVariableSetDialog>
           <Button size="sm" variant="secondary">
             Documentation
           </Button>

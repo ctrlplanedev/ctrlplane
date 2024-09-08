@@ -1,7 +1,4 @@
-"use client";
-
 import { Fragment } from "react";
-import { useParams } from "next/navigation";
 import { TbCategory, TbServer, TbShip, TbTag } from "react-icons/tb";
 
 import {
@@ -13,37 +10,34 @@ import {
   BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
 
-import { api } from "~/trpc/react";
+import { api } from "~/trpc/server";
 
-export const SystemBreadcrumbNavbar: React.FC = () => {
-  const { workspaceSlug, systemSlug, deploymentSlug, versionId } = useParams<{
+export const SystemBreadcrumbNavbar = async ({
+  params,
+}: {
+  params: {
     workspaceSlug: string;
     systemSlug?: string;
     deploymentSlug?: string;
     versionId?: string;
-  }>();
+  };
+}) => {
+  const { workspaceSlug, systemSlug, deploymentSlug, versionId } = params;
 
-  const system = api.system.bySlug.useQuery(
-    { workspaceSlug, systemSlug: systemSlug ?? "" },
-    { enabled: systemSlug != null },
-  );
+  const system = systemSlug
+    ? await api.system.bySlug({ workspaceSlug, systemSlug })
+    : null;
 
-  const deployment = api.deployment.bySlug.useQuery(
-    {
-      workspaceSlug,
-      systemSlug: systemSlug ?? "",
-      deploymentSlug: deploymentSlug ?? "",
-    },
-    { enabled: deploymentSlug != null },
-  );
+  const deployment =
+    deploymentSlug && systemSlug
+      ? await api.deployment.bySlug({
+          workspaceSlug,
+          systemSlug,
+          deploymentSlug,
+        })
+      : null;
 
-  // const target = api.target.byId.useQuery(targetId ?? "", {
-  //   enabled: targetId != null,
-  // });
-
-  const release = api.release.byId.useQuery(versionId ?? "", {
-    enabled: versionId != null,
-  });
+  const release = versionId ? await api.release.byId(versionId) : null;
 
   const crumbs = [
     {
@@ -56,33 +50,34 @@ export const SystemBreadcrumbNavbar: React.FC = () => {
       path: `/${workspaceSlug}/systems`,
     },
     {
-      isSet: system.data?.name != null,
+      isSet: system?.name != null,
       name: (
         <>
-          <TbServer /> {system.data?.name}
+          <TbServer /> {system?.name}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}`,
     },
     {
-      isSet: deployment.data?.name != null,
+      isSet: deployment?.name != null,
       name: (
         <>
-          <TbShip /> {deployment.data?.name}
+          <TbShip /> {deployment?.name}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`,
     },
     {
-      isSet: release.data?.version != null,
+      isSet: release?.version != null,
       name: (
         <>
-          <TbTag /> {release.data?.version}
+          <TbTag /> {release?.version}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/releases/${versionId}`,
     },
   ].filter((t) => t.isSet);
+
   return (
     <Breadcrumb className="p-3">
       <BreadcrumbList>

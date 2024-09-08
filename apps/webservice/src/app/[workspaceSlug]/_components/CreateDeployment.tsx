@@ -88,10 +88,9 @@ export const CreateDeploymentDialog: React.FC<{
   }, [defaultSystemId, form, systems, systemId]);
 
   const router = useRouter();
-  const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
     const deployment = await create.mutateAsync(data);
-    await utils.deployment.invalidate();
+    router.refresh();
     const slug = systems.data?.items.find(
       (system) => system.id === deployment.systemId,
     )?.slug;
