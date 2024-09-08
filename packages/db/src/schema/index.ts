@@ -12,7 +12,7 @@ export * from "./workspace.js";
 export * from "./github.js";
 export * from "./deployment-variables.js";
 export * from "./dashboard.js";
-export * from "./value-sets.js";
+export * from "./variable-sets.js";
 export * from "./invite.js";
 export * from "./target-group.js";
 export * from "./runbook-variables.js";

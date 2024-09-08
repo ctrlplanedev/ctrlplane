@@ -64,14 +64,23 @@ const authnProcedure = t.procedure.use(({ ctx, next }) => {
     },
   });
 });
-
-const authzProdecdure = authnProcedure.use(
+const authzProcedure = authnProcedure.use(
   async ({ ctx, meta, path, getRawInput, next }) => {
     const { authorizationCheck } = meta ?? {};
     if (authorizationCheck != null) {
       const canUser = can().user(ctx.session.user.id);
       const input = await getRawInput();
-      const check = authorizationCheck({ ctx, input, canUser });
+      let check = false;
+      try {
+        check = await authorizationCheck({ ctx, input, canUser });
+      } catch (e: any) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "An internal error occurred during authorization check",
+          cause: e,
+        });
+      }
+
       if (!check)
         throw new TRPCError({
           code: "FORBIDDEN",
@@ -83,4 +92,4 @@ const authzProdecdure = authnProcedure.use(
   },
 );
 
-export const protectedProcedure = authzProdecdure;
+export const protectedProcedure = authzProcedure;

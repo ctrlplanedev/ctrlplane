@@ -3,17 +3,20 @@ import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { eq, takeFirst } from "@ctrlplane/db";
+
+import "@ctrlplane/db/schema";
+
 import {
-  createValueSet,
-  updateValueSet,
-  value,
-  valueSet,
+  createVariableSet,
+  updateVariableSet,
+  variableSet,
+  variableSetValue,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const valueSetRouter = createTRPCRouter({
+export const variableSetRouter = createTRPCRouter({
   bySystemId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -23,19 +26,50 @@ export const valueSetRouter = createTRPCRouter({
     .query(async ({ ctx, input }) =>
       ctx.db
         .select()
-        .from(valueSet)
-        .leftJoin(value, eq(value.valueSetId, valueSet.id))
-        .where(eq(valueSet.systemId, input))
+        .from(variableSet)
+        .leftJoin(
+          variableSetValue,
+          eq(variableSetValue.variableSetId, variableSet.id),
+        )
+        .where(eq(variableSet.systemId, input))
         .then((rows) =>
           _.chain(rows)
-            .groupBy("valueSetId")
+            .groupBy((r) => r.variable_set.id)
             .entries()
             .map(([, rows]) => ({
-              ...rows[0]!.value_set,
-              values: rows.map((row) => row.value).filter(isPresent),
+              ...rows[0]!.variable_set,
+              values: rows
+                .map((row) => row.variable_set_value)
+                .filter(isPresent),
             }))
             .value(),
         ),
+    ),
+
+  byId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "variableSet", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(variableSet)
+        .leftJoin(
+          variableSetValue,
+          eq(variableSetValue.variableSetId, variableSet.id),
+        )
+        .where(eq(variableSet.id, input))
+        .then((rows) => {
+          if (rows.length === 0) return null;
+          return {
+            ...rows[0]!.variable_set,
+            values: rows.map((row) => row.variable_set_value).filter(isPresent),
+          };
+        }),
     ),
 
   create: protectedProcedure
@@ -45,18 +79,18 @@ export const valueSetRouter = createTRPCRouter({
           .perform(Permission.SystemUpdate)
           .on({ type: "system", id: input.systemId }),
     })
-    .input(createValueSet)
+    .input(createVariableSet)
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction(async (db) => {
-        const vs = await db
-          .insert(valueSet)
+      ctx.db.transaction(async (tx) => {
+        const vs = await tx
+          .insert(variableSet)
           .values(input)
           .returning()
           .then(takeFirst);
-        const values = await db
-          .insert(value)
+        const values = await tx
+          .insert(variableSetValue)
           .values(
-            input.values.map((value) => ({ ...value, valueSetId: vs.id })),
+            input.values.map((value) => ({ ...value, variableSetId: vs.id })),
           )
           .returning();
         return { ...vs, values };
@@ -68,7 +102,7 @@ export const valueSetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.SystemUpdate)
-          .on({ type: "valueSet", id: input }),
+          .on({ type: "variableSet", id: input }),
     })
     .input(z.string().uuid())
     .mutation(() => {}),
@@ -78,12 +112,12 @@ export const valueSetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.SystemUpdate)
-          .on({ type: "valueSet", id: input.id }),
+          .on({ type: "variableSet", id: input.id }),
     })
     .input(
       z.object({
         id: z.string().uuid(),
-        data: updateValueSet.and(
+        data: updateVariableSet.and(
           z.object({ values: z.record(z.string()).optional() }),
         ),
       }),

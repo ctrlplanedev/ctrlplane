@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TbX } from "react-icons/tb";
 import { z } from "zod";
 
@@ -36,11 +37,11 @@ const schema = z.object({
   values: z.array(z.object({ key: z.string(), value: z.string() })),
 });
 
-export const CreateValueSetDialog: React.FC<{
+export const CreateVariableSetDialog: React.FC<{
   children?: React.ReactNode;
   systemId: string;
 }> = ({ children, systemId }) => {
-  const create = api.valueSet.create.useMutation();
+  const create = api.variableSet.create.useMutation();
   const form = useForm({
     schema,
     defaultValues: {
@@ -56,10 +57,12 @@ export const CreateValueSetDialog: React.FC<{
     control: form.control,
   });
 
+  const router = useRouter();
   const onSubmit = form.handleSubmit(async (data) => {
     await create.mutateAsync({ ...data, systemId });
     form.reset();
     setOpen(false);
+    router.refresh();
   });
 
   return (
@@ -69,9 +72,9 @@ export const CreateValueSetDialog: React.FC<{
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-3">
             <DialogHeader>
-              <DialogTitle>Create Value Set</DialogTitle>
+              <DialogTitle>Create Variable Set</DialogTitle>
               <DialogDescription>
-                Value sets are a group of variables.
+                Variable sets are a group of variables.
               </DialogDescription>
             </DialogHeader>
 

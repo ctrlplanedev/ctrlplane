@@ -39,7 +39,7 @@ export const scopeType = pgEnum("scope_type", [
   "workspace",
   "environment",
   "environmentPolicy",
-  "valueSet",
+  "variableSet",
   "system",
   "deployment",
   "jobAgent",

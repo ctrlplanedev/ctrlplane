@@ -15,7 +15,7 @@ import {
   target,
   targetLabelGroup,
   targetProvider,
-  valueSet,
+  variableSet,
   workspace,
 } from "@ctrlplane/db/schema";
 
@@ -92,7 +92,7 @@ const fetchScopeHierarchyForResource = async (resource: {
     environmentPolicy: getEnvironmentPolicyScopes,
     release: getReleaseScopes,
     targetLabelGroup: getTargetLabelGroupScopes,
-    valueSet: getValueSetScopes,
+    variableSet: getVariableSetScopes,
     jobAgent: getJobAgentScopes,
   };
 
@@ -150,17 +150,17 @@ const getEnvironmentPolicyScopes = async (id: string) => {
   ];
 };
 
-const getValueSetScopes = async (id: string) => {
+const getVariableSetScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
     .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(valueSet, eq(valueSet.systemId, system.id))
-    .where(eq(valueSet.id, id))
+    .innerJoin(variableSet, eq(variableSet.systemId, system.id))
+    .where(eq(variableSet.id, id))
     .then(takeFirst);
 
   return [
-    { type: "valueSet" as const, id: result.value_set.id },
+    { type: "variableSet" as const, id: result.variable_set.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
