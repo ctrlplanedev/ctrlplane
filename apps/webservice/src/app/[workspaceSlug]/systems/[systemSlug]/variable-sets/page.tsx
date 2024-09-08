@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
 
 import { api } from "~/trpc/server";
 import { CreateVariableSetDialog } from "./CreateValueSetDialog";
+import { VariableSetGettingStarted } from "./GettingStartedVariableSets";
 
 export const metadata: Metadata = { title: "Value Sets - Systems" };
 
@@ -19,8 +21,9 @@ export default async function SystemValueSetsPage({
 }: {
   params: { workspaceSlug: string; systemSlug: string };
 }) {
-  const system = await api.system.bySlug(params);
+  const system = await api.system.bySlug(params).catch(() => notFound());
   const variableSet = await api.variableSet.bySystemId(system.id);
+  if (variableSet.length === 0) return <VariableSetGettingStarted />;
 
   return (
     <div>
