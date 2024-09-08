@@ -1,6 +1,6 @@
 "use client";
 
-import type { System } from "@ctrlplane/db/schema";
+import type { System, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import _ from "lodash";
@@ -21,9 +21,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@ctrlplane/ui/collapsible";
-import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { api } from "~/trpc/react";
 import { CreateSystemDialog } from "./_components/CreateSystem";
 import { SidebarLink } from "./SidebarLink";
 
@@ -72,13 +70,10 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
   );
 };
 
-export const SidebarSystems: React.FC = () => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const systems = api.system.list.useQuery(
-    { workspaceId: workspace.data?.id ?? "" },
-    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
-  );
+export const SidebarSystems: React.FC<{
+  workspace: Workspace;
+  systems: System[];
+}> = ({ workspace, systems }) => {
   const [open, setOpen] = useState(true);
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="m-3 space-y-2">
@@ -87,19 +82,8 @@ export const SidebarSystems: React.FC = () => {
         <TbChevronRight className={cn(open && "rotate-90", "transition-all")} />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-2.5">
-        {systems.isLoading && (
-          <>
-            {_.range(4).map((i) => (
-              <Skeleton
-                key={i}
-                className="h-4 w-full"
-                style={{ opacity: 1 * (1 - i / 10) }}
-              />
-            ))}
-          </>
-        )}
-        {!systems.isLoading && systems.data?.total === 0 && (
-          <CreateSystemDialog workspaceId={workspace.data?.id ?? ""}>
+        {systems.length === 0 && (
+          <CreateSystemDialog workspaceId={workspace.id}>
             <Button
               className="flex w-full items-center justify-start gap-1.5 text-left"
               variant="ghost"
@@ -109,7 +93,7 @@ export const SidebarSystems: React.FC = () => {
             </Button>
           </CreateSystemDialog>
         )}
-        {systems.data?.items.map((system) => (
+        {systems.map((system) => (
           <SystemCollapsible key={system.id} system={system} />
         ))}
       </CollapsibleContent>
