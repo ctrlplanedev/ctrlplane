@@ -92,7 +92,7 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                 from google.
               </DialogDescription>
 
-              <Alert variant="info">
+              <Alert variant="secondary">
                 <TbBulb className="h-5 w-5" />
                 <AlertTitle>Google Provider</AlertTitle>
                 <AlertDescription>

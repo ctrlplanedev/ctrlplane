@@ -61,7 +61,7 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
             </DialogHeader>
 
             {validOrgsToAdd.length > 0 && (
-              <Alert variant="info">
+              <Alert variant="secondary">
                 <TbBulb className="h-5 w-5" />
                 <AlertTitle>Connect an organization</AlertTitle>
                 <AlertDescription>

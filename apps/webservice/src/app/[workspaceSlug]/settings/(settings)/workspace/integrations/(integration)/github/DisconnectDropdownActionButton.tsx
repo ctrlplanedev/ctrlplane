@@ -14,5 +14,3 @@ export const DisconnectDropdownActionButton = React.forwardRef<
     </DropdownMenuItem>
   );
 });
-
-DisconnectDropdownActionButton.displayName = "DisconnectDropdownActionButton";

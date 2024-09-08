@@ -102,7 +102,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
                 from google.
               </DialogDescription>
 
-              <Alert variant="info">
+              <Alert variant="secondary">
                 <TbBulb className="h-5 w-5" />
                 <AlertTitle>Google Provider</AlertTitle>
                 <AlertDescription>
