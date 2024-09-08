@@ -24,7 +24,6 @@ export const appRouter = createTRPCRouter({
   github: githubRouter,
   dashboard: dashboardRouter,
   valueSet: valueSetRouter,
-  invite: invitesRouter,
   profile: profileRouter,
   user: userRouter,
   runtime: runtimeRouter,

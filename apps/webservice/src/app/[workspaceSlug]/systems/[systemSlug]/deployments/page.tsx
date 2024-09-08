@@ -9,9 +9,9 @@ export const metadata: Metadata = { title: "Deployments - Systems" };
 export default async function SystemDeploymentsPage({
   params,
 }: {
-  params: { systemSlug: string };
+  params: { workspaceSlug: string; systemSlug: string };
 }) {
-  const system = (await api.system.bySlug(params.systemSlug))!;
+  const system = await api.system.bySlug(params);
   const deployments = await api.deployment.bySystemId(system.id);
   const environments = await api.environment.bySystemId(system.id);
 

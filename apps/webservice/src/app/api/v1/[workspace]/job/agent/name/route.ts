@@ -2,9 +2,11 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { can } from "@ctrlplane/auth/utils";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { jobAgent, workspace } from "@ctrlplane/db/schema";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
 
@@ -23,9 +25,15 @@ export const PATCH = async (
   if (ws == null)
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
-  const canAccess = await getUser(req).then((u) =>
-    u.access.workspace.id(ws.id),
-  );
+  const user = await getUser(req);
+  if (user == null)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const canAccess = await can()
+    .user(user.id)
+    .perform(Permission.SystemUpdate)
+    .on({ type: "workspace", id: ws.id });
+
   if (!canAccess)
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 

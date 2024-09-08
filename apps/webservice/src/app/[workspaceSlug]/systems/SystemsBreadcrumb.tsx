@@ -23,12 +23,17 @@ export const SystemBreadcrumbNavbar: React.FC = () => {
     versionId?: string;
   }>();
 
-  const system = api.system.bySlug.useQuery(systemSlug ?? "", {
-    enabled: systemSlug != null,
-  });
+  const system = api.system.bySlug.useQuery(
+    { workspaceSlug, systemSlug: systemSlug ?? "" },
+    { enabled: systemSlug != null },
+  );
 
   const deployment = api.deployment.bySlug.useQuery(
-    { systemSlug: systemSlug ?? "", deploymentSlug: deploymentSlug ?? "" },
+    {
+      workspaceSlug,
+      systemSlug: systemSlug ?? "",
+      deploymentSlug: deploymentSlug ?? "",
+    },
     { enabled: deploymentSlug != null },
   );
 

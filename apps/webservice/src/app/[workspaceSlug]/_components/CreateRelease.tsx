@@ -77,21 +77,23 @@ export const CreateReleaseDialog: React.FC<{
   const { systemId, deploymentId } = form.watch();
   const systems = api.system.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.data != null && workspace.data.id !== "" },
   );
-  const deployments = api.deployment.bySystemId.useQuery(systemId);
+  const deployments = api.deployment.bySystemId.useQuery(systemId, {
+    enabled: systemId !== "",
+  });
   const globalDeployments = api.deployment.byWorkspaceId.useQuery(
     workspace.data?.id ?? "",
-    { enabled: workspace.data != null },
+    { enabled: workspace.data != null && workspace.data.id !== "" },
   );
   const targetLabelGroups = api.target.labelGroup.groups.useQuery(
     workspace.data?.id ?? "",
-    { enabled: workspace.data != null },
+    { enabled: workspace.data != null && workspace.data.id !== "" },
   );
-  const latestRelease = api.release.list.useQuery({
-    deploymentId,
-    limit: 1,
-  });
+  const latestRelease = api.release.list.useQuery(
+    { deploymentId, limit: 1 },
+    { enabled: deploymentId !== "" },
+  );
 
   const [open, setOpen] = useState(false);
   useEffect(() => {

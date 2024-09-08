@@ -31,7 +31,6 @@ export const dashboardWidget = pgTable("dashboard_widget", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   dashboardId: uuid("dashboard_id")
-    .notNull()
     .references(() => dashboard.id, { onDelete: "cascade" })
     .notNull(),
 

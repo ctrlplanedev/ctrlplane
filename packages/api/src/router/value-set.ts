@@ -9,11 +9,16 @@ import {
   value,
   valueSet,
 } from "@ctrlplane/db/schema";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const valueSetRouter = createTRPCRouter({
   bySystemId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.SystemGet).on({ type: "system", id: input }),
+    })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -33,22 +38,48 @@ export const valueSetRouter = createTRPCRouter({
         ),
     ),
 
-  create: protectedProcedure.input(createValueSet).mutation(({ ctx, input }) =>
-    ctx.db.transaction(async (db) => {
-      const vs = await db
-        .insert(valueSet)
-        .values(input)
-        .returning()
-        .then(takeFirst);
-      const values = await db
-        .insert(value)
-        .values(input.values.map((value) => ({ ...value, valueSetId: vs.id })))
-        .returning();
-      return { ...vs, values };
-    }),
-  ),
-  delete: protectedProcedure.input(z.string().uuid()).mutation(() => {}),
+  create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "system", id: input.systemId }),
+    })
+    .input(createValueSet)
+    .mutation(({ ctx, input }) =>
+      ctx.db.transaction(async (db) => {
+        const vs = await db
+          .insert(valueSet)
+          .values(input)
+          .returning()
+          .then(takeFirst);
+        const values = await db
+          .insert(value)
+          .values(
+            input.values.map((value) => ({ ...value, valueSetId: vs.id })),
+          )
+          .returning();
+        return { ...vs, values };
+      }),
+    ),
+
+  delete: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "valueSet", id: input }),
+    })
+    .input(z.string().uuid())
+    .mutation(() => {}),
+
   set: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemUpdate)
+          .on({ type: "valueSet", id: input.id }),
+    })
     .input(
       z.object({
         id: z.string().uuid(),

@@ -34,7 +34,7 @@ export default async function ReleasePage({
 
   if (release == null) notFound();
 
-  const system = (await api.system.bySlug(params.systemSlug))!;
+  const system = await api.system.bySlug(params);
   const environments = await api.environment.bySystemId(system.id);
   const policies = await api.environment.policy.bySystemId(system.id);
   const policyDeployments = await api.environment.policy.deployment.bySystemId(

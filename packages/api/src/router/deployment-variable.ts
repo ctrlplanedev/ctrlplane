@@ -22,21 +22,36 @@ import {
   variableDeploymentValueTarget,
   variableDeploymentValueTargetFilter,
 } from "@ctrlplane/db/schema";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const valueRouter = createTRPCRouter({
-  byId: protectedProcedure.query(async () => {
-    // return ctx.db.value.findMany();
-  }),
-
   create: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, ctx, input }) => {
+        const variable = await ctx.db
+          .select()
+          .from(deploymentVariable)
+          .where(eq(deploymentVariable.id, input.variableId))
+          .then(takeFirst);
+        return canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: variable.deploymentId });
+      },
+    })
     .input(createDeploymentVariableValue)
     .mutation(async ({ ctx, input }) =>
       ctx.db.insert(deploymentVariableValue).values(input).returning(),
     ),
 
   setTarget: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "target", id: input.targetId }),
+    })
     .input(
       z.object({
         targetId: z.string().uuid(),
@@ -173,6 +188,12 @@ export const deploymentVariableRouter = createTRPCRouter({
   value: valueRouter,
 
   byTargetId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "target", id: input }),
+    })
     .input(z.string().uuid())
     .query(({ ctx, input }) => {
       return ctx.db
@@ -208,6 +229,12 @@ export const deploymentVariableRouter = createTRPCRouter({
     }),
 
   byDeploymentId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input }),
+    })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -243,12 +270,30 @@ export const deploymentVariableRouter = createTRPCRouter({
     ),
 
   create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
     .input(createDeploymentVariable)
     .mutation(async ({ ctx, input }) =>
       ctx.db.insert(deploymentVariable).values(input).returning(),
     ),
 
   update: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, ctx, input }) => {
+        const variable = await ctx.db
+          .select()
+          .from(deploymentVariable)
+          .where(eq(deploymentVariable.id, input.id))
+          .then(takeFirst);
+        return canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: variable.deploymentId });
+      },
+    })
     .input(z.object({ id: z.string().uuid(), data: updateDeploymentVariable }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
