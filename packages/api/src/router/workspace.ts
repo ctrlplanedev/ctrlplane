@@ -200,6 +200,11 @@ export const workspaceRouter = createTRPCRouter({
           entityId: ctx.session.user.id,
         });
 
+        await tx
+          .update(user)
+          .set({ activeWorkspaceId: w.id })
+          .where(eq(user.id, ctx.session.user.id));
+
         return w;
       }),
     ),
