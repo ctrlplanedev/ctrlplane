@@ -17,23 +17,27 @@ import { user, workspace } from "@ctrlplane/db/schema";
 import { env } from "~/env";
 import { api } from "~/trpc/server";
 
-const octokit =
-  env.GITHUB_BOT_APP_ID == null
-    ? null
-    : new Octokit({
-        authStrategy: createAppAuth,
-        auth: {
-          appId: env.GITHUB_BOT_APP_ID,
-          privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-          clientId: env.GITHUB_BOT_CLIENT_ID,
-          clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-        },
-      });
+const isValidGithubAppConfiguration =
+  env.GITHUB_BOT_APP_ID != null &&
+  env.GITHUB_BOT_PRIVATE_KEY != null &&
+  env.GITHUB_BOT_CLIENT_ID != null &&
+  env.GITHUB_BOT_CLIENT_SECRET != null;
+
+const octokit = isValidGithubAppConfiguration
+  ? new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: env.GITHUB_BOT_APP_ID,
+        privateKey: env.GITHUB_BOT_PRIVATE_KEY,
+        clientId: env.GITHUB_BOT_CLIENT_ID,
+        clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
+      },
+    })
+  : null;
 
 const getOctokitInstallation = (installationId: number) =>
-  octokit == null
-    ? null
-    : new Octokit({
+  isValidGithubAppConfiguration
+    ? new Octokit({
         authStrategy: createAppAuth,
         auth: {
           appId: env.GITHUB_BOT_APP_ID,
@@ -42,12 +46,13 @@ const getOctokitInstallation = (installationId: number) =>
           clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
           installationId,
         },
-      });
+      })
+    : null;
 
 export const GET = async (req: NextRequest) => {
   if (octokit == null)
     return NextResponse.json(
-      { error: "GitHub bot not configured" },
+      { error: "GitHub app not configured" },
       { status: INTERNAL_SERVER_ERROR },
     );
 
@@ -57,8 +62,8 @@ export const GET = async (req: NextRequest) => {
 
   if (installationId == null || setupAction == null)
     return NextResponse.json(
-      { error: "Installation ID or setup action not found" },
-      { status: NOT_FOUND },
+      { error: "Invalid request from GitHub" },
+      { status: BAD_REQUEST },
     );
 
   if (setupAction !== "install")
@@ -70,7 +75,7 @@ export const GET = async (req: NextRequest) => {
   const session = await auth();
   if (session == null)
     return NextResponse.json(
-      { error: "Unauthorized" },
+      { error: "Authentication required" },
       { status: UNAUTHORIZED },
     );
 
@@ -81,7 +86,7 @@ export const GET = async (req: NextRequest) => {
     .then(takeFirstOrNull);
   if (u == null)
     return NextResponse.json(
-      { error: "Unauthorized" },
+      { error: "User not found" },
       { status: UNAUTHORIZED },
     );
 
@@ -123,7 +128,7 @@ export const GET = async (req: NextRequest) => {
   const installationOctokit = getOctokitInstallation(installation.data.id);
   if (installationOctokit == null)
     return NextResponse.json(
-      { error: "Failed to get installation octokit" },
+      { error: "Failed to get authenticated Github client" },
       { status: INTERNAL_SERVER_ERROR },
     );
 

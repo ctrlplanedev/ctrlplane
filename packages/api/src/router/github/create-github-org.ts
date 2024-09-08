@@ -36,30 +36,37 @@ type ParsedConfigFile = ConfigFile & {
   };
 };
 
-const octokit =
-  env.GITHUB_BOT_APP_ID == null
-    ? null
-    : new Octokit({
+const isValidGithubAppConfiguration =
+  env.GITHUB_BOT_APP_ID != null &&
+  env.GITHUB_BOT_PRIVATE_KEY != null &&
+  env.GITHUB_BOT_CLIENT_ID != null &&
+  env.GITHUB_BOT_CLIENT_SECRET != null;
+
+const octokit = isValidGithubAppConfiguration
+  ? new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: env.GITHUB_BOT_APP_ID,
+        privateKey: env.GITHUB_BOT_PRIVATE_KEY,
+        clientId: env.GITHUB_BOT_CLIENT_ID,
+        clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
+      },
+    })
+  : null;
+
+const getOctokitInstallation = (installationId: number) =>
+  isValidGithubAppConfiguration
+    ? new Octokit({
         authStrategy: createAppAuth,
         auth: {
           appId: env.GITHUB_BOT_APP_ID,
           privateKey: env.GITHUB_BOT_PRIVATE_KEY,
           clientId: env.GITHUB_BOT_CLIENT_ID,
           clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
+          installationId,
         },
-      });
-
-const getOctokitInstallation = (installationId: number) =>
-  new Octokit({
-    authStrategy: createAppAuth,
-    auth: {
-      appId: env.GITHUB_BOT_APP_ID,
-      privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-      clientId: env.GITHUB_BOT_CLIENT_ID,
-      clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-      installationId,
-    },
-  });
+      })
+    : null;
 
 const parseConfigFile = async (
   cf: ConfigFile,
@@ -178,6 +185,8 @@ export const createNewGithubOrganization = async (
     if (installation == null) throw new Error("Failed to get installation");
 
     const installationOctokit = getOctokitInstallation(installation.data.id);
+    if (installationOctokit == null)
+      throw new Error("Failed to get authenticated Github client");
     const installationToken = (await installationOctokit.auth({
       type: "installation",
       installationId: installation.data.id,
