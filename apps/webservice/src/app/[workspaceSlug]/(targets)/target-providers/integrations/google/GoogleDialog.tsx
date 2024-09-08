@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
-import { TbCheck, TbCopy } from "react-icons/tb";
+import { TbBulb, TbCheck, TbCopy } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
 
 import { cn } from "@ctrlplane/ui";
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -32,7 +33,6 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
-import { Callout } from "../../../../_components/Callout";
 
 export const createGoogleSchema = z.object({
   name: z.string(),
@@ -92,21 +92,25 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                 from google.
               </DialogDescription>
 
-              <Callout>
-                <span>
-                  To use the Google provider, you will need to invite our
-                  service account to your project and configure the necessary
-                  permissions. Read more{" "}
-                  <Link
-                    href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
-                    target="_blank"
-                    className="underline"
-                  >
-                    here
-                  </Link>
-                  .
-                </span>
-              </Callout>
+              <Alert variant="info">
+                <TbBulb className="h-5 w-5" />
+                <AlertTitle>Google Provider</AlertTitle>
+                <AlertDescription>
+                  <span>
+                    To use the Google provider, you will need to invite our
+                    service account to your project and configure the necessary
+                    permissions. Read more{" "}
+                    <Link
+                      href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
+                      target="_blank"
+                      className="underline"
+                    >
+                      here
+                    </Link>
+                    .
+                  </span>
+                </AlertDescription>
+              </Alert>
             </DialogHeader>
 
             <div className="space-y-2">

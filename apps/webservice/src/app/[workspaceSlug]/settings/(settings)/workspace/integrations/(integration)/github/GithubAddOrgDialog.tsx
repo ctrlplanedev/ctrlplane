@@ -3,7 +3,9 @@
 import type { GithubUser } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
+import { TbBulb } from "react-icons/tb";
 
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -16,7 +18,6 @@ import {
 } from "@ctrlplane/ui/dialog";
 
 import type { GithubOrg } from "./SelectPreconnectedOrgDialogContent";
-import { Callout } from "../../../../../../_components/Callout";
 import { SelectPreconnectedOrgDialogContent } from "./SelectPreconnectedOrgDialogContent";
 
 type GithubAddOrgDialogProps = {
@@ -60,32 +61,35 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
             </DialogHeader>
 
             {validOrgsToAdd.length > 0 && (
-              <Callout>
-                You have two options for connecting an organization:
-                <ol className="list-decimal space-y-2 pl-5">
-                  <li>
-                    <strong>Connect a new organization:</strong> Install the
-                    ctrlplane Github app on an organization to connect it to
-                    your workspace.
-                  </li>
-                  <li>
-                    <strong>Select a pre-connected organization:</strong> Choose
-                    an organization that already has the ctrlplane Github app
-                    installed.
-                  </li>
-                </ol>
-                <span>
-                  Read more{" "}
-                  <Link
-                    href="https://docs.ctrlplane.dev/integrations/github/github-bot"
-                    className="underline"
-                    target="_blank"
-                  >
-                    here
-                  </Link>
-                  .
-                </span>
-              </Callout>
+              <Alert variant="info">
+                <TbBulb className="h-5 w-5" />
+                <AlertTitle>Connect an organization</AlertTitle>
+                <AlertDescription>
+                  You have two options for connecting an organization:
+                  <ol className="list-decimal space-y-2 pl-5">
+                    <li>
+                      <strong>Connect a new organization:</strong> Install the
+                      ctrlplane Github app on a new organization.
+                    </li>
+                    <li>
+                      <strong>Select pre-connected:</strong> Select a
+                      pre-connected organization where the ctrlplane app is
+                      installed.
+                    </li>
+                  </ol>
+                  <span>
+                    Read more{" "}
+                    <Link
+                      href="https://docs.ctrlplane.dev/integrations/github/github-bot"
+                      target="_blank"
+                      className="underline"
+                    >
+                      here
+                    </Link>
+                    .
+                  </span>
+                </AlertDescription>
+              </Alert>
             )}
 
             <DialogFooter className="flex">
