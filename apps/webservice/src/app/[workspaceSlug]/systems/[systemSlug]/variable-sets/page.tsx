@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { TbInfoCircle } from "react-icons/tb";
 
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Card,
@@ -36,33 +38,49 @@ export default async function SystemValueSetsPage({
       {variableSet.length === 0 ? (
         <VariableSetGettingStarted systemId={system.id} />
       ) : (
-        <div>
-          <div className="flex items-center gap-4 border-b p-2 pl-4">
-            <h1 className="flex-grow">Value Sets</h1>
-            <CreateVariableSetDialog systemId={system.id}>
-              <Button>Create variable set</Button>
-            </CreateVariableSetDialog>
-          </div>
+        <>
+          <div>
+            <div className="flex items-center gap-4 border-b p-2 pl-4">
+              <h1 className="flex-grow">Value Sets</h1>
+              <CreateVariableSetDialog systemId={system.id}>
+                <Button>Create variable set</Button>
+              </CreateVariableSetDialog>
+            </div>
 
-          <div className="container mx-auto space-y-4 p-8">
-            {variableSet.map((variableSet) => (
-              <Link
-                className="block"
-                key={variableSet.id}
-                href={`variable-sets/${variableSet.id}`}
-              >
-                <Card className="hover:bg-neutral-800/20">
-                  <CardHeader>
-                    <CardTitle>{variableSet.name}</CardTitle>
-                    <CardDescription>
-                      {variableSet.description ?? "Add a description..."}
-                    </CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
-            ))}
+            <div className="container mx-auto max-w-4xl space-y-4 p-8">
+              <Alert variant="secondary">
+                <TbInfoCircle />
+                <AlertTitle>Variable conflicts and precedence</AlertTitle>
+                <AlertDescription>
+                  Conflicts occur when one or more variables applied to a
+                  workspace have the same type and the same key.
+                  Workspace-specific variables always overwrite conflicting
+                  variables from variable sets. When different variable sets
+                  contain conflicts, HCP Terraform prioritizes them first based
+                  on the variable set scope and then by the lexical precedence
+                  of the variable set name. Learn more about variable precedence
+                </AlertDescription>
+              </Alert>
+
+              {variableSet.map((variableSet) => (
+                <Link
+                  className="block"
+                  key={variableSet.id}
+                  href={`variable-sets/${variableSet.id}`}
+                >
+                  <Card className="hover:bg-neutral-800/20">
+                    <CardHeader>
+                      <CardTitle>{variableSet.name}</CardTitle>
+                      <CardDescription>
+                        {variableSet.description ?? "Add a description..."}
+                      </CardDescription>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );

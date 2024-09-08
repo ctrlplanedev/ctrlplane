@@ -4,8 +4,10 @@ import { auth } from "google-auth-library";
 import { google } from "googleapis";
 import { z } from "zod";
 
+import { scopeHandlers } from "@ctrlplane/auth/utils";
 import { and, eq, isNull, or, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
+  createEntityRole,
   createWorkspace,
   entityRole,
   role,
@@ -45,6 +47,7 @@ const membersRouter = createTRPCRouter({
             id: m.entity_role.id,
             user: m.user,
             role: m.role,
+            entityRole: m.entity_role,
             workspace: m.workspace,
           })),
         ),
@@ -155,10 +158,62 @@ const inviteRouter = createTRPCRouter({
   }),
 });
 
+const iamRouter = createTRPCRouter({
+  assign: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, input }) => {
+        const scopes = await scopeHandlers[
+          input.scopeType as keyof typeof scopeHandlers
+        ](input.scopeId);
+        const workspaceScope = scopes.find(
+          (scope) => scope.type === "workspace",
+        );
+        if (!workspaceScope) throw new Error("Workspace scope not found");
+        return canUser
+          .perform(Permission.IamSetPolicy)
+          .on({ type: "workspace", id: workspaceScope.id });
+      },
+    })
+    .input(createEntityRole)
+    .mutation(({ ctx, input }) =>
+      ctx.db.insert(entityRole).values(input).returning(),
+    ),
+  remove: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ ctx, canUser, input }) => {
+        const entityRoleRecord = await ctx.db
+          .select()
+          .from(entityRole)
+          .where(eq(entityRole.id, input))
+          .then(takeFirstOrNull);
+
+        if (!entityRoleRecord) throw new Error("Entity role not found");
+
+        const scopes = await scopeHandlers[entityRoleRecord.scopeType](
+          entityRoleRecord.scopeId,
+        );
+        const workspaceScope = scopes.find(
+          (scope) => scope.type === "workspace",
+        );
+        if (!workspaceScope) throw new Error("Workspace scope not found");
+
+        return canUser
+          .perform(Permission.IamSetPolicy)
+          .on({ type: "workspace", id: workspaceScope.id });
+      },
+    })
+    .input(z.string().uuid())
+    .mutation(({ ctx, input }) =>
+      ctx.db.delete(entityRole).where(eq(entityRole.id, input)).returning(),
+    ),
+});
+
 export const workspaceRouter = createTRPCRouter({
   invite: inviteRouter,
   members: membersRouter,
   integrations: integrationsRouter,
+
+  iam: iamRouter,
 
   roles: protectedProcedure
     .input(z.string().uuid())

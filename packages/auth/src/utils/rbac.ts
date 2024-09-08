@@ -74,32 +74,6 @@ export const checkEntityPermissionForResource = async (
   return role != null;
 };
 
-type Scope = { type: ScopeType; id: string };
-const fetchScopeHierarchyForResource = async (resource: {
-  type: ScopeType;
-  id: string;
-}): Promise<Array<Scope>> => {
-  const scopeHandlers: Record<
-    ScopeType,
-    (id: string) => Promise<Array<Scope>>
-  > = {
-    target: getTargetScopes,
-    targetProvider: getTargetProviderScopes,
-    deployment: getDeploymentScopes,
-    system: getSystemScopes,
-    workspace: getWorkspaceScopes,
-    environment: getEnvironmentScopes,
-    environmentPolicy: getEnvironmentPolicyScopes,
-    release: getReleaseScopes,
-    targetLabelGroup: getTargetLabelGroupScopes,
-    variableSet: getVariableSetScopes,
-    jobAgent: getJobAgentScopes,
-  };
-
-  const handler = scopeHandlers[resource.type];
-  return handler(resource.id);
-};
-
 const getReleaseScopes = async (id: string) => {
   const result = await db
     .select()
@@ -260,4 +234,31 @@ const getJobAgentScopes = async (id: string) => {
     { type: "jobAgent" as const, id: result.job_agent.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
+};
+
+type Scope = { type: ScopeType; id: string };
+
+export const scopeHandlers: Record<
+  ScopeType,
+  (id: string) => Promise<Array<Scope>>
+> = {
+  target: getTargetScopes,
+  targetProvider: getTargetProviderScopes,
+  deployment: getDeploymentScopes,
+  system: getSystemScopes,
+  workspace: getWorkspaceScopes,
+  environment: getEnvironmentScopes,
+  environmentPolicy: getEnvironmentPolicyScopes,
+  release: getReleaseScopes,
+  targetLabelGroup: getTargetLabelGroupScopes,
+  variableSet: getVariableSetScopes,
+  jobAgent: getJobAgentScopes,
+};
+
+const fetchScopeHierarchyForResource = async (resource: {
+  type: ScopeType;
+  id: string;
+}): Promise<Array<Scope>> => {
+  const handler = scopeHandlers[resource.type];
+  return handler(resource.id);
 };

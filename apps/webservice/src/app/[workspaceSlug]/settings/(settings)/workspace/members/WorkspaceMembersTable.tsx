@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/rules-of-hooks */
 "use client";
 
-import type { Role, User, Workspace } from "@ctrlplane/db/schema";
+import type { EntityRole, Role, User, Workspace } from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
@@ -52,6 +54,7 @@ type Member = {
   id: string;
   user: User;
   workspace: Workspace;
+  entityRole: EntityRole;
   role: Role;
 };
 
@@ -221,21 +224,34 @@ const columns: ColumnDef<Member>[] = [
     header: "Actions",
     accessorKey: "user.id",
     enableGlobalFilter: false,
-    cell: () => (
-      <div className="flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <TbDots />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem>Edit</DropdownMenuItem>
-            <DropdownMenuItem>Delete</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const viewer = api.user.viewer.useQuery();
+      const { id } = row.original.entityRole;
+      const router = useRouter();
+      const remove = api.workspace.iam.remove.useMutation();
+      if (id == null) return null;
+      return (
+        <div className="flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <TbDots />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                onClick={() =>
+                  remove.mutateAsync(id).then(() => router.refresh())
+                }
+                disabled={row.original.user.id === viewer.data?.id}
+              >
+                Remove from workspace
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
   },
 ];
 

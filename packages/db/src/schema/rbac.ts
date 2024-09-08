@@ -1,5 +1,6 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { pgEnum, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { workspace } from "./workspace.js";
@@ -72,3 +73,8 @@ export const entityRole = pgTable(
     ),
   }),
 );
+
+export type EntityRole = InferInsertModel<typeof entityRole>;
+export const createEntityRole = createInsertSchema(entityRole).omit({
+  id: true,
+});
