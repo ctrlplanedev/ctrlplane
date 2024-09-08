@@ -1,3 +1,5 @@
+"use client";
+
 import type {
   Deployment,
   GithubConfigFile,
@@ -21,13 +23,13 @@ import { buttonVariants } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
 
-interface GithubConfigFileWithDeployments extends GithubConfigFile {
+type GithubConfigFileWithDeployments = GithubConfigFile & {
   deployments: Deployment[];
-}
+};
 
-export interface GithubOrganizationWithConfigFiles extends GithubOrganization {
+export type GithubOrganizationWithConfigFiles = GithubOrganization & {
   configFiles: GithubConfigFileWithDeployments[];
-}
+};
 
 type GithubRemoveOrgDialogProps = {
   githubOrganization: GithubOrganizationWithConfigFiles;

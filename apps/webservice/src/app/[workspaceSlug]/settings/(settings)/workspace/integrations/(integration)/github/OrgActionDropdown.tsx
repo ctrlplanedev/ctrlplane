@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { TbChevronDown, TbExternalLink } from "react-icons/tb";
 
@@ -12,6 +10,7 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import type { GithubOrganizationWithConfigFiles } from "./GithubRemoveOrgDialog";
+import { DisconnectDropdownActionButton } from "./DisconnectDropdownActionButton";
 import { GithubRemoveOrgDialog } from "./GithubRemoveOrgDialog";
 
 type OrgActionDropdownProps = {
@@ -48,9 +47,7 @@ export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
         </Link>
 
         <GithubRemoveOrgDialog githubOrganization={org}>
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-            Disconnect
-          </DropdownMenuItem>
+          <DisconnectDropdownActionButton />
         </GithubRemoveOrgDialog>
       </DropdownMenuContent>
     </DropdownMenu>
