@@ -20,9 +20,13 @@ export default async function WorkspaceLayout({
     .catch(() => null);
 
   if (workspace == null) notFound();
+
+  const systems = await api.system.list({ workspaceId: workspace.id });
   return (
     <div className="h-screen">
-      <SidebarPanels>{children}</SidebarPanels>
+      <SidebarPanels workspace={workspace} systems={systems.items}>
+        {children}
+      </SidebarPanels>
     </div>
   );
 }
