@@ -38,7 +38,20 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
   workspaceId,
   githubConfig,
 }) => {
+  const githubOrgsUserCanAccess =
+    githubUser != null
+      ? await api.github.organizations.byGithubUserId({
+          workspaceId,
+          githubUserId: githubUser.githubUserId,
+        })
+      : [];
   const githubOrgsInstalled = await api.github.organizations.list(workspaceId);
+  const validOrgsToAdd = githubOrgsUserCanAccess.filter(
+    (org) =>
+      !githubOrgsInstalled.some(
+        (installedOrg) => installedOrg.organizationName === org.login,
+      ),
+  );
 
   return (
     <Card className="rounded-md">
@@ -57,6 +70,7 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
             githubUser={githubUser}
             githubConfig={githubConfig}
             workspaceId={workspaceId}
+            validOrgsToAdd={validOrgsToAdd}
           >
             <Button size="icon" variant="secondary">
               <TbPlus className="h-3 w-3" />

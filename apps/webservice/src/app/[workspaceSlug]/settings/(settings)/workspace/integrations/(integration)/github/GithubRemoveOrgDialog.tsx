@@ -45,6 +45,7 @@ export const GithubRemoveOrgDialog: React.FC<GithubRemoveOrgDialogProps> = ({
     githubOrgDelete
       .mutateAsync({
         id: githubOrganization.id,
+        workspaceId: githubOrganization.workspaceId,
         deleteDeployments: deleteResources,
       })
       .then(() => router.refresh());

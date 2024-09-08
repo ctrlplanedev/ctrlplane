@@ -152,13 +152,15 @@ export default function ConfigureJobAgentPage({
                           />
                         )}
 
-                        {jobAgent?.type === "github-app" && (
-                          <ConfigureJobAgentGithub
-                            value={value}
-                            jobAgent={jobAgent}
-                            onChange={onChange}
-                          />
-                        )}
+                        {jobAgent?.type === "github-app" &&
+                          workspace.data != null && (
+                            <ConfigureJobAgentGithub
+                              value={value}
+                              jobAgent={jobAgent}
+                              workspaceId={workspace.data.id}
+                              onChange={onChange}
+                            />
+                          )}
                       </Card>
                     </FormControl>
                     <FormMessage />

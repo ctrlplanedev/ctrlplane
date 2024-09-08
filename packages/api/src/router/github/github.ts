@@ -14,6 +14,7 @@ import {
   githubUser,
   jobAgent,
 } from "@ctrlplane/db/schema";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { env } from "../../config";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -89,7 +90,20 @@ const userRouter = createTRPCRouter({
 
 const reposRouter = createTRPCRouter({
   list: protectedProcedure
-    .input(z.object({ installationId: z.number(), owner: z.string() }))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.WorkspaceListIntegrations).on({
+          type: "workspace",
+          id: input.workspaceId,
+        }),
+    })
+    .input(
+      z.object({
+        installationId: z.number(),
+        owner: z.string(),
+        workspaceId: z.string().uuid(),
+      }),
+    )
     .query(({ input }) =>
       octokit?.apps
         .getInstallation({
@@ -115,11 +129,19 @@ const reposRouter = createTRPCRouter({
 
   workflows: createTRPCRouter({
     list: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceListIntegrations).on({
+            type: "workspace",
+            id: input.workspaceId,
+          }),
+      })
       .input(
         z.object({
           installationId: z.number(),
           owner: z.string(),
           repo: z.string(),
+          workspaceId: z.string().uuid(),
         }),
       )
       .query(async ({ input }) => {
@@ -145,6 +167,13 @@ const reposRouter = createTRPCRouter({
 
 const configFileRouter = createTRPCRouter({
   list: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.WorkspaceListIntegrations).on({
+          type: "workspace",
+          id: input,
+        }),
+    })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db
@@ -160,50 +189,72 @@ export const githubRouter = createTRPCRouter({
   configFile: configFileRouter,
 
   organizations: createTRPCRouter({
-    byGithubUserId: protectedProcedure.input(z.number()).query(({ input }) =>
-      getOctokit()
-        .apps.listInstallations({
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-        })
-        .then(({ data: installations }) =>
-          Promise.all(
-            installations
-              .filter((i) => i.target_type === "Organization")
-              .map(async (i) => {
-                const installationOctokit = getOctokitInstallation(i.id);
+    byGithubUserId: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceListIntegrations).on({
+            type: "workspace",
+            id: input.workspaceId,
+          }),
+      })
+      .input(
+        z.object({
+          githubUserId: z.number(),
+          workspaceId: z.string().uuid(),
+        }),
+      )
+      .query(({ input }) =>
+        getOctokit()
+          .apps.listInstallations({
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+            },
+          })
+          .then(({ data: installations }) =>
+            Promise.all(
+              installations
+                .filter((i) => i.target_type === "Organization")
+                .map(async (i) => {
+                  const installationOctokit = getOctokitInstallation(i.id);
 
-                const installationToken = (await installationOctokit.auth({
-                  type: "installation",
-                  installationId: i.id,
-                })) as { token: string };
+                  const installationToken = (await installationOctokit.auth({
+                    type: "installation",
+                    installationId: i.id,
+                  })) as { token: string };
 
-                const members = await installationOctokit.orgs.listMembers({
-                  org: i.account?.login ?? "",
-                  headers: {
-                    "X-GitHub-Api-Version": "2022-11-28",
-                    authorization: `Bearer ${installationToken.token}`,
-                  },
-                });
+                  const members = await installationOctokit.orgs.listMembers({
+                    org: i.account?.login ?? "",
+                    headers: {
+                      "X-GitHub-Api-Version": "2022-11-28",
+                      authorization: `Bearer ${installationToken.token}`,
+                    },
+                  });
 
-                const isUserInGithubOrg =
-                  members.data.find((m) => m.id === input) != null;
-                if (!isUserInGithubOrg) return null;
+                  const isUserInGithubOrg =
+                    members.data.find((m) => m.id === input.githubUserId) !=
+                    null;
+                  if (!isUserInGithubOrg) return null;
 
-                const orgData = await installationOctokit.orgs.get({
-                  org: i.account?.login ?? "",
-                  headers: {
-                    "X-GitHub-Api-Version": "2022-11-28",
-                  },
-                });
-                return _.merge(orgData.data, { installationId: i.id });
-              }),
-          ).then((orgs) => orgs.filter(isPresent)),
-        ),
-    ),
+                  const orgData = await installationOctokit.orgs.get({
+                    org: i.account?.login ?? "",
+                    headers: {
+                      "X-GitHub-Api-Version": "2022-11-28",
+                    },
+                  });
+                  return _.merge(orgData.data, { installationId: i.id });
+                }),
+            ).then((orgs) => orgs.filter(isPresent)),
+          ),
+      ),
 
     byWorkspaceId: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceListIntegrations).on({
+            type: "workspace",
+            id: input,
+          }),
+      })
       .input(z.string().uuid())
       .query(async ({ ctx, input }) => {
         const internalOrgs = await ctx.db
@@ -229,49 +280,72 @@ export const githubRouter = createTRPCRouter({
           );
       }),
 
-    list: protectedProcedure.input(z.string().uuid()).query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(githubOrganization)
-        .leftJoin(
-          githubUser,
-          eq(githubOrganization.addedByUserId, githubUser.userId),
-        )
-        .leftJoin(
-          githubConfigFile,
-          eq(githubConfigFile.organizationId, githubOrganization.id),
-        )
-        .leftJoin(
-          deployment,
-          eq(deployment.githubConfigFileId, githubConfigFile.id),
-        )
-        .where(eq(githubOrganization.workspaceId, input))
-        .then((rows) =>
-          _.chain(rows)
-            .groupBy("github_organization.id")
-            .map((v) => ({
-              ...v[0]!.github_organization,
-              addedByUser: v[0]!.github_user,
-              configFiles: v
-                .map((v) => v.github_config_file)
-                .filter(isPresent)
-                .map((cf) => ({
-                  ...cf,
-                  deployments: v
-                    .map((v) => v.deployment)
-                    .filter(isPresent)
-                    .filter((d) => d.githubConfigFileId === cf.id),
-                })),
-            }))
-            .value(),
-        ),
-    ),
+    list: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceListIntegrations).on({
+            type: "workspace",
+            id: input,
+          }),
+      })
+      .input(z.string().uuid())
+      .query(({ ctx, input }) =>
+        ctx.db
+          .select()
+          .from(githubOrganization)
+          .leftJoin(
+            githubUser,
+            eq(githubOrganization.addedByUserId, githubUser.userId),
+          )
+          .leftJoin(
+            githubConfigFile,
+            eq(githubConfigFile.organizationId, githubOrganization.id),
+          )
+          .leftJoin(
+            deployment,
+            eq(deployment.githubConfigFileId, githubConfigFile.id),
+          )
+          .where(eq(githubOrganization.workspaceId, input))
+          .then((rows) =>
+            _.chain(rows)
+              .groupBy("github_organization.id")
+              .map((v) => ({
+                ...v[0]!.github_organization,
+                addedByUser: v[0]!.github_user,
+                configFiles: v
+                  .map((v) => v.github_config_file)
+                  .filter(isPresent)
+                  .map((cf) => ({
+                    ...cf,
+                    deployments: v
+                      .map((v) => v.deployment)
+                      .filter(isPresent)
+                      .filter((d) => d.githubConfigFileId === cf.id),
+                  })),
+              }))
+              .value(),
+          ),
+      ),
 
     create: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceUpdate).on({
+            type: "workspace",
+            id: input.workspaceId,
+          }),
+      })
       .input(githubOrganizationInsert)
       .mutation(({ ctx, input }) => createNewGithubOrganization(ctx.db, input)),
 
     update: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceUpdate).on({
+            type: "workspace",
+            id: input.data.workspaceId,
+          }),
+      })
       .input(
         z.object({
           id: z.string().uuid(),
@@ -293,8 +367,19 @@ export const githubRouter = createTRPCRouter({
       ),
 
     delete: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.WorkspaceUpdate).on({
+            type: "workspace",
+            id: input.workspaceId,
+          }),
+      })
       .input(
-        z.object({ id: z.string().uuid(), deleteDeployments: z.boolean() }),
+        z.object({
+          id: z.string().uuid(),
+          workspaceId: z.string().uuid(),
+          deleteDeployments: z.boolean(),
+        }),
       )
       .mutation(({ ctx, input }) =>
         ctx.db.transaction(async (db) => {

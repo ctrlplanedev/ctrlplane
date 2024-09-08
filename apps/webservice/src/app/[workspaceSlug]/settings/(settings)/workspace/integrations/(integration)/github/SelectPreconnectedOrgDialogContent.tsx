@@ -17,9 +17,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
 
-type GithubOrg = RestEndpointMethodTypes["orgs"]["get"]["response"]["data"] & {
-  installationId: number;
-};
+export type GithubOrg =
+  RestEndpointMethodTypes["orgs"]["get"]["response"]["data"] & {
+    installationId: number;
+  };
 
 type PreconnectedOrgsComboboxProps = {
   githubOrgs: GithubOrg[];

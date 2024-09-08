@@ -15,9 +15,12 @@ import {
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
 
-import { api } from "~/trpc/react";
 import { Callout } from "../../../../../../_components/Callout";
-import { SelectPreconnectedOrgDialogContent } from "./SelectPreconnectedOrgDialogContent";
+import type {
+  GithubOrg} from "./SelectPreconnectedOrgDialogContent";
+import {
+  SelectPreconnectedOrgDialogContent,
+} from "./SelectPreconnectedOrgDialogContent";
 
 type GithubAddOrgDialogProps = {
   githubUser: GithubUser;
@@ -27,6 +30,7 @@ type GithubAddOrgDialogProps = {
     botName: string;
     clientId: string;
   };
+  validOrgsToAdd: GithubOrg[];
   workspaceId: string;
 };
 
@@ -34,22 +38,9 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
   githubUser,
   children,
   githubConfig,
+  validOrgsToAdd,
   workspaceId,
 }) => {
-  const githubOrgs = api.github.organizations.byGithubUserId.useQuery(
-    githubUser.githubUserId,
-  );
-  const githubOrgsInstalled =
-    api.github.organizations.list.useQuery(workspaceId);
-
-  const validOrgsToAdd =
-    githubOrgs.data?.filter(
-      (org) =>
-        !githubOrgsInstalled.data?.some(
-          (o) => o.organizationName === org.login,
-        ),
-    ) ?? [];
-
   const [dialogStep, setDialogStep] = useState<"choose-org" | "pre-connected">(
     "choose-org",
   );
@@ -124,7 +115,7 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
 
         {dialogStep === "pre-connected" && (
           <SelectPreconnectedOrgDialogContent
-            githubOrgs={githubOrgs.data ?? []}
+            githubOrgs={validOrgsToAdd}
             githubUser={githubUser}
             workspaceId={workspaceId}
             onNavigateBack={() => setDialogStep("choose-org")}
