@@ -2,7 +2,6 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { TbCheck, TbChevronDown } from "react-icons/tb";
 
@@ -65,7 +64,7 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
                 >
                   <DropdownMenuItem>
                     {ws.name}
-                    {ws.id === workspace?.id && (
+                    {ws.id === workspace.id && (
                       <DropdownMenuShortcut>
                         <TbCheck />
                       </DropdownMenuShortcut>
