@@ -81,7 +81,7 @@ export const SidebarSystems: React.FC<{
         Your systems
         <TbChevronRight className={cn(open && "rotate-90", "transition-all")} />
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-2.5">
+      <CollapsibleContent className="space-y-1">
         {systems.length === 0 && (
           <CreateSystemDialog workspaceId={workspace.id}>
             <Button
