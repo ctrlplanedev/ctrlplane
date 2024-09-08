@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { system } from "./system.js";
 
-export const valueSet = pgTable("value_set", {
+export const variableSet = pgTable("variable_set", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: text("name").notNull(),
   description: text("description"),
@@ -13,8 +13,22 @@ export const valueSet = pgTable("value_set", {
     .notNull()
     .references(() => system.id),
 });
-export type ValueSet = InferInsertModel<typeof valueSet>;
-export const createValueSet = createInsertSchema(valueSet)
+
+export const variableSetValue = pgTable(
+  "variable_set_value",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    key: text("key"),
+    variableSetId: uuid("variable_set_id")
+      .notNull()
+      .references(() => variableSet.id),
+    value: text("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.variableSetId, t.key, t.value) }),
+);
+
+export type VariableSet = InferInsertModel<typeof variableSet>;
+export const createVariableSet = createInsertSchema(variableSet)
   .omit({ id: true })
   .and(
     z.object({
@@ -27,7 +41,7 @@ export const createValueSet = createInsertSchema(valueSet)
     }),
   );
 
-export const updateValueSet = createInsertSchema(valueSet)
+export const updateVariableSet = createInsertSchema(variableSet)
   .omit({ id: true })
   .partial()
   .and(
@@ -38,16 +52,4 @@ export const updateValueSet = createInsertSchema(valueSet)
       .partial(),
   );
 
-export const value = pgTable(
-  "value",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    valueSetId: uuid("value_set_id")
-      .notNull()
-      .references(() => valueSet.id),
-    key: text("key"),
-    value: text("value").notNull(),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.valueSetId, t.key, t.value) }),
-);
-export type Value = InferInsertModel<typeof value>;
+export type VariableSetValue = InferInsertModel<typeof variableSetValue>;

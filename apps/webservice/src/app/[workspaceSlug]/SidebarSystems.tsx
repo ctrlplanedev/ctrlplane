@@ -63,9 +63,9 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
           <TbRun className="text-muted-foreground" /> Runbooks
         </SidebarLink>
         <SidebarLink
-          href={`/${workspaceSlug}/systems/${system.slug}/value-sets`}
+          href={`/${workspaceSlug}/systems/${system.slug}/variable-sets`}
         >
-          <TbVariable className="text-muted-foreground" /> Value Sets
+          <TbVariable className="text-muted-foreground" /> Variable Sets
         </SidebarLink>
       </CollapsibleContent>
     </Collapsible>
