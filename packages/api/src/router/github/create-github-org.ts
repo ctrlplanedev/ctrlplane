@@ -89,11 +89,7 @@ const parseConfigFile = async (
   const yamlContent = yaml.load(content);
   const parsed = configFile.safeParse(yamlContent);
   if (!parsed.success) throw new Error("Invalid config file");
-
-  return {
-    ...cf,
-    content: parsed.data,
-  };
+  return { ...cf, content: parsed.data };
 };
 
 const processParsedConfigFiles = async (
@@ -115,9 +111,9 @@ const processParsedConfigFiles = async (
         ),
         inArray(
           workspace.slug,
-          parsedConfigFiles
-            .map((d) => d.content.deployments.map((d) => d.workspace))
-            .flat(),
+          parsedConfigFiles.flatMap((d) =>
+            d.content.deployments.map((d) => d.workspace),
+          ),
         ),
       ),
     );
@@ -134,28 +130,26 @@ const processParsedConfigFiles = async (
     )
     .returning();
 
-  const deployments = parsedConfigFiles
-    .map((cf) =>
-      cf.content.deployments.map((d) => {
-        const info = deploymentInfo.find(
-          (i) => i.system.slug === d.system && i.workspace.slug === d.workspace,
-        );
-        if (info == null) throw new Error("Deployment info not found");
-        const { system, workspace } = info;
+  const deployments = parsedConfigFiles.flatMap((cf) =>
+    cf.content.deployments.map((d) => {
+      const info = deploymentInfo.find(
+        (i) => i.system.slug === d.system && i.workspace.slug === d.workspace,
+      );
+      if (info == null) throw new Error("Deployment info not found");
+      const { system, workspace } = info;
 
-        return {
-          ...d,
-          systemId: system.id,
-          workspaceId: workspace.id,
-          description: d.description ?? "",
-          githubConfigFileId: insertedConfigFiles.find(
-            (icf) =>
-              icf.path === cf.path && icf.repositoryName === cf.repository.name,
-          )?.id,
-        };
-      }),
-    )
-    .flat();
+      return {
+        ...d,
+        systemId: system.id,
+        workspaceId: workspace.id,
+        description: d.description ?? "",
+        githubConfigFileId: insertedConfigFiles.find(
+          (icf) =>
+            icf.path === cf.path && icf.repositoryName === cf.repository.name,
+        )?.id,
+      };
+    }),
+  );
 
   await db
     .insert(deployment)
@@ -209,9 +203,10 @@ export const createNewGithubOrganization = async (
           authorization: `Bearer ${installationToken.token}`,
         },
       }),
-    ]).then((responses) => {
-      return [...responses[0].data.items, ...responses[1].data.items];
-    });
+    ]).then(([yamlFiles, ymlFiles]) => [
+      ...yamlFiles.data.items,
+      ...ymlFiles.data.items,
+    ]);
 
     if (configFiles.length === 0) return;
 

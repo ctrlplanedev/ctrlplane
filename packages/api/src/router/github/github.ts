@@ -5,7 +5,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   deployment,
   githubConfigFile,
@@ -67,7 +67,7 @@ const userRouter = createTRPCRouter({
 
   delete: protectedProcedure
     .input(z.string())
-    .mutation(async ({ ctx, input }) =>
+    .mutation(({ ctx, input }) =>
       ctx.db.delete(githubUser).where(eq(githubUser.userId, input)),
     ),
 
@@ -80,11 +80,7 @@ const userRouter = createTRPCRouter({
       }),
     )
     .mutation(({ ctx, input }) =>
-      ctx.db
-        .insert(githubUser)
-        .values(input)
-        .returning()
-        .then((data) => data[0]),
+      ctx.db.insert(githubUser).values(input).returning().then(takeFirst),
     ),
 });
 
