@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { auth } from "@ctrlplane/auth";
-import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/server";
-import { MembersTable } from "./WorkspaceMembersTable";
+import { MembersExport } from "./MembersExport";
+import { MembersTable } from "./MembersTable";
 
 export const metadata: Metadata = { title: "Workspace Members" };
 
@@ -37,15 +37,7 @@ export default async function WorkspaceSettingMembersPage({
       </div>
       <MembersTable data={members} workspace={workspace} />
       <div className="border-b" />
-      <div className="flex items-center">
-        <div className="flex-grow">
-          <p>Export members list</p>
-          <p className="text-sm text-muted-foreground">
-            Export a CSV with information of all members in your workspace.
-          </p>
-        </div>
-        <Button variant="secondary">Export CSV</Button>
-      </div>
+      <MembersExport data={members} />
     </div>
   );
 }
