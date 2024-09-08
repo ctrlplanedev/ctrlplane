@@ -15,12 +15,9 @@ import {
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
 
+import type { GithubOrg } from "./SelectPreconnectedOrgDialogContent";
 import { Callout } from "../../../../../../_components/Callout";
-import type {
-  GithubOrg} from "./SelectPreconnectedOrgDialogContent";
-import {
-  SelectPreconnectedOrgDialogContent,
-} from "./SelectPreconnectedOrgDialogContent";
+import { SelectPreconnectedOrgDialogContent } from "./SelectPreconnectedOrgDialogContent";
 
 type GithubAddOrgDialogProps = {
   githubUser: GithubUser;
