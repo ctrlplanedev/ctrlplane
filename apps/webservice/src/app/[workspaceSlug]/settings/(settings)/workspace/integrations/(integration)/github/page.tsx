@@ -93,7 +93,6 @@ export default async function GitHubIntegrationPage({
           <GithubConnectedOrgs
             githubUser={githubUser}
             workspaceId={workspace.id}
-            workspaceSlug={workspaceSlug}
             loading={false}
             githubConfig={{
               url: githubUrl,

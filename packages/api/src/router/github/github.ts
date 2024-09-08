@@ -335,13 +335,6 @@ export const githubRouter = createTRPCRouter({
                 configFiles.map((c) => c.id),
               ),
             );
-
-          octokit?.apps.deleteInstallation({
-            installation_id: deletedOrg.installationId,
-            headers: {
-              "X-GitHub-Api-Version": "2022-11-28",
-            },
-          });
         }),
       ),
     repos: reposRouter,

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
-import { TbBulb, TbCheck, TbCopy } from "react-icons/tb";
+import { TbCheck, TbCopy } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
 
@@ -32,6 +32,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
+import { Callout } from "../../../../_components/Callout";
 
 export const createGoogleSchema = z.object({
   name: z.string(),
@@ -91,12 +92,8 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                 from google.
               </DialogDescription>
 
-              <div
-                className="relative mb-4 flex w-fit items-center gap-2 rounded-md bg-neutral-800/50 px-4 py-3 text-muted-foreground"
-                role="alert"
-              >
-                <TbBulb className="h-6 w-6 flex-shrink-0" />
-                <span className="text-sm">
+              <Callout>
+                <span>
                   To use the Google provider, you will need to invite our
                   service account to your project and configure the necessary
                   permissions. Read more{" "}
@@ -109,7 +106,7 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                   </Link>
                   .
                 </span>
-              </div>
+              </Callout>
             </DialogHeader>
 
             <div className="space-y-2">

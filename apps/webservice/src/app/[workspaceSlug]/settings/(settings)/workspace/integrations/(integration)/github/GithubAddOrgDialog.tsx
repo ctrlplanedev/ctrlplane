@@ -1,19 +1,10 @@
 "use client";
 
+import type { GithubUser } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { TbBulb } from "react-icons/tb";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  Command,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@ctrlplane/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -23,16 +14,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/react";
+import { Callout } from "../../../../../../_components/Callout";
+import { SelectPreconnectedOrgDialogContent } from "./SelectPreconnectedOrgDialogContent";
 
 type GithubAddOrgDialogProps = {
-  githubUser?: {
-    githubUserId: number;
-    userId: string;
-  };
+  githubUser: GithubUser;
   children: React.ReactNode;
   githubConfig: {
     url: string;
@@ -40,7 +28,6 @@ type GithubAddOrgDialogProps = {
     clientId: string;
   };
   workspaceId: string;
-  workspaceSlug: string;
 };
 
 export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
@@ -49,12 +36,9 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
   githubConfig,
   workspaceId,
 }) => {
-  const [open, setOpen] = useState(false);
-  const [popoverOpen, setPopoverOpen] = useState(false);
   const githubOrgs = api.github.organizations.byGithubUserId.useQuery(
-    githubUser?.githubUserId ?? 0,
+    githubUser.githubUserId,
   );
-  const router = useRouter();
   const githubOrgsInstalled =
     api.github.organizations.list.useQuery(workspaceId);
 
@@ -66,145 +50,90 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
         ),
     ) ?? [];
 
-  const githubOrgCreate = api.github.organizations.create.useMutation();
-
-  const [image, setImage] = useState<string | null>(null);
-  const [value, setValue] = useState<string | null>(null);
-
-  const handlePreconnectedOrgSave = () => {
-    if (value == null) return;
-    const org = validOrgsToAdd.find((o) => o.login === value);
-    if (org == null) return;
-
-    githubOrgCreate
-      .mutateAsync({
-        installationId: org.installationId,
-        workspaceId,
-        organizationName: org.login,
-        addedByUserId: githubUser?.userId ?? "",
-        avatarUrl: org.avatar_url,
-      })
-      .then(() => router.refresh());
-  };
+  const [dialogStep, setDialogStep] = useState<"choose-org" | "pre-connected">(
+    "choose-org",
+  );
+  const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="flex flex-col px-0">
-        <div className="flex flex-col gap-4 px-4">
-          <DialogHeader>
-            <DialogTitle>Connect a new Organization</DialogTitle>
-            <DialogDescription>
-              Install the Github app on the organization to connect it to your
-              workspace.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Link
-            href={`${githubConfig.url}/apps/${githubConfig.botName}/installations/select_target`}
-          >
-            <Button variant="outline">Connect Organization</Button>
-          </Link>
-        </div>
-
-        {validOrgsToAdd.length > 0 && (
+      <DialogContent className="flex flex-col gap-4">
+        {dialogStep === "choose-org" && (
           <>
-            <Separator className="my-4" />
-            <div className="flex flex-col gap-4 px-4">
-              <DialogHeader>
-                <DialogTitle>
-                  Select from pre-connected organizations
-                </DialogTitle>
+            <DialogHeader>
+              <DialogTitle>Connect a new Organization</DialogTitle>
+              {validOrgsToAdd.length === 0 && (
                 <DialogDescription>
-                  <div
-                    className="relative mb-4 flex w-fit flex-col gap-2 rounded-md bg-neutral-800/50 px-4 py-3 text-muted-foreground"
-                    role="alert"
-                  >
-                    <TbBulb className="h-6 w-6 flex-shrink-0" />
-                    <span className="text-sm">
-                      These organizations already have the Github application
-                      installed, so you can simply add them to your workspace to
-                      unlock agent configuration and config file syncing. Read
-                      more{" "}
-                      <Link
-                        href="https://docs.ctrlplane.dev/integrations/github/github-bot"
-                        className="underline"
-                        target="_blank"
-                      >
-                        here
-                      </Link>
-                      .
-                    </span>
-                  </div>
+                  Install the ctrlplane Github app on an organization to connect
+                  it to your workspace.
                 </DialogDescription>
-              </DialogHeader>
+              )}
+            </DialogHeader>
 
-              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={popoverOpen}
-                    className=" items-center justify-start py-5"
+            {validOrgsToAdd.length > 0 && (
+              <Callout>
+                You have two options for connecting an organization:
+                <ol className="list-decimal space-y-2 pl-5">
+                  <li>
+                    <strong>Connect a new organization:</strong> Install the
+                    ctrlplane Github app on an organization to connect it to
+                    your workspace.
+                  </li>
+                  <li>
+                    <strong>Select a pre-connected organization:</strong> Choose
+                    an organization that already has the ctrlplane Github app
+                    installed.
+                  </li>
+                </ol>
+                <span>
+                  Read more{" "}
+                  <Link
+                    href="https://docs.ctrlplane.dev/integrations/github/github-bot"
+                    className="underline"
+                    target="_blank"
                   >
-                    <div className="flex h-10 items-center gap-2">
-                      {image !== null && (
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={image} />
-                          <AvatarFallback>{value?.slice(0, 2)}</AvatarFallback>
-                        </Avatar>
-                      )}
+                    here
+                  </Link>
+                  .
+                </span>
+              </Callout>
+            )}
 
-                      <span className=" overflow-hidden text-ellipsis">
-                        {value ?? "Select organization..."}
-                      </span>
-                    </div>
+            <DialogFooter className="flex">
+              <Link
+                href={`${githubConfig.url}/apps/${githubConfig.botName}/installations/select_target`}
+              >
+                <Button variant="outline">Connect new organization</Button>
+              </Link>
+
+              {validOrgsToAdd.length > 0 && (
+                <div className="flex flex-grow justify-end">
+                  <Button
+                    className="w-fit"
+                    variant="outline"
+                    onClick={() => setDialogStep("pre-connected")}
+                  >
+                    Select pre-connected
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[466px] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search organization..." />
-                    <CommandGroup>
-                      <CommandList>
-                        {validOrgsToAdd.map(({ id, login, avatar_url }) => (
-                          <CommandItem
-                            key={id}
-                            value={login}
-                            onSelect={(currentValue) => {
-                              setValue(currentValue);
-                              setImage(avatar_url);
-                              setPopoverOpen(false);
-                            }}
-                            className="w-full cursor-pointer"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarImage src={avatar_url} />
-                                <AvatarFallback>
-                                  {login.slice(0, 2)}
-                                </AvatarFallback>
-                              </Avatar>
-                              {login}
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandList>
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
+                </div>
+              )}
+            </DialogFooter>
           </>
         )}
 
-        <DialogFooter className="px-4">
-          <Button
-            onClick={handlePreconnectedOrgSave}
-            disabled={value == null || githubOrgCreate.isPending}
-          >
-            Save
-          </Button>
-        </DialogFooter>
+        {dialogStep === "pre-connected" && (
+          <SelectPreconnectedOrgDialogContent
+            githubOrgs={githubOrgs.data ?? []}
+            githubUser={githubUser}
+            workspaceId={workspaceId}
+            onNavigateBack={() => setDialogStep("choose-org")}
+            onSave={() => {
+              setOpen(false);
+              setDialogStep("choose-org");
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

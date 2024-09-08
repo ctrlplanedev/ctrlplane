@@ -11,6 +11,12 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 import { Separator } from "@ctrlplane/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/server";
 import { GithubAddOrgDialog } from "./GithubAddOrgDialog";
@@ -18,8 +24,7 @@ import { OrgActionDropdown } from "./OrgActionDropdown";
 
 type GithubConnectedOrgsProps = {
   githubUser?: GithubUser | null;
-  workspaceSlug?: string;
-  workspaceId?: string;
+  workspaceId: string;
   loading: boolean;
   githubConfig: {
     url: string;
@@ -30,13 +35,10 @@ type GithubConnectedOrgsProps = {
 
 export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
   githubUser,
-  workspaceSlug,
   workspaceId,
   githubConfig,
 }) => {
-  const githubOrgsInstalled = await api.github.organizations.list(
-    workspaceId ?? "",
-  );
+  const githubOrgsInstalled = await api.github.organizations.list(workspaceId);
 
   return (
     <Card className="rounded-md">
@@ -50,16 +52,34 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
             organizations
           </CardDescription>
         </div>
-        <GithubAddOrgDialog
-          githubUser={githubUser ?? undefined}
-          githubConfig={githubConfig}
-          workspaceId={workspaceId ?? ""}
-          workspaceSlug={workspaceSlug ?? ""}
-        >
-          <Button size="icon" variant="secondary" disabled={githubUser == null}>
-            <TbPlus className="h-3 w-3" />
-          </Button>
-        </GithubAddOrgDialog>
+        {githubUser != null ? (
+          <GithubAddOrgDialog
+            githubUser={githubUser}
+            githubConfig={githubConfig}
+            workspaceId={workspaceId}
+          >
+            <Button size="icon" variant="secondary">
+              <TbPlus className="h-3 w-3" />
+            </Button>
+          </GithubAddOrgDialog>
+        ) : (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="cursor-not-allowed hover:bg-secondary hover:text-secondary-foreground"
+                >
+                  <TbPlus className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Connect your Github account to add organizations</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </CardHeader>
 
       {githubOrgsInstalled.length > 0 && (
