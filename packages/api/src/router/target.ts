@@ -1,5 +1,4 @@
 import type { SQL, Tx } from "@ctrlplane/db";
-import { update } from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
