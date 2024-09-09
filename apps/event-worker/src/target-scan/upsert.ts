@@ -37,7 +37,7 @@ export const upsertTargets = (db: Tx, providerId: string, ts: UpsertTarget[]) =>
     .then((targets) =>
       createJobConfigs(db, "new_target")
         .targets(targets.map((t) => t.id))
-        .filter(isPassingReleaseSequencingCancelPolicy)
+        .filterAsync(isPassingReleaseSequencingCancelPolicy)
         .then(createJobExecutionApprovals)
         .insert()
         .then((jobConfigs) =>

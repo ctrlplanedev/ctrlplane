@@ -69,7 +69,7 @@ export const PATCH = async (
       createJobConfigs(db, "new_target")
         .causedById(user.id)
         .targets(targets.map((t) => t.id))
-        .filter(isPassingReleaseSequencingCancelPolicy)
+        .filterAsync(isPassingReleaseSequencingCancelPolicy)
         .then(createJobExecutionApprovals)
         .insert()
         .then((jobConfigs) =>

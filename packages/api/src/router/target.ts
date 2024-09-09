@@ -159,7 +159,7 @@ export const targetRouter = createTRPCRouter({
           createJobConfigs(ctx.db, "new_target")
             .causedById(ctx.session.user.id)
             .targets([target.id])
-            .filter(isPassingReleaseSequencingCancelPolicy)
+            .filterAsync(isPassingReleaseSequencingCancelPolicy)
             .then(createJobExecutionApprovals)
             .insert()
             .then((jobConfigs) =>

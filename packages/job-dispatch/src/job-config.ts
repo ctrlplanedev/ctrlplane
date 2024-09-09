@@ -15,7 +15,9 @@ import {
   target,
 } from "@ctrlplane/db/schema";
 
-type FilterFunc = (
+type FilterFunc = (insertJobConfigs: JobConfigInsert[]) => JobConfigInsert[];
+
+type AsyncFilterFunc = (
   tx: Tx,
   insertJobConfigs: JobConfigInsert[],
 ) => Promise<JobConfigInsert[]>;
@@ -33,6 +35,7 @@ class JobConfigBuilder {
   private releaseIds?: string[];
 
   private _filters: FilterFunc[] = [];
+  private _asyncFilters: AsyncFilterFunc[] = [];
   private _then: ThenFunc[] = [];
 
   constructor(
@@ -47,6 +50,11 @@ class JobConfigBuilder {
 
   filter(fn: FilterFunc) {
     this._filters.push(fn);
+    return this;
+  }
+
+  filterAsync(fn: AsyncFilterFunc) {
+    this._asyncFilters.push(fn);
     return this;
   }
 
@@ -134,21 +142,12 @@ class JobConfigBuilder {
       releaseId: v.release.id,
     }));
 
-    for (const func of this._filters) wt = await func(this.tx, wt);
+    for (const func of this._filters) wt = func(wt);
+    for (const func of this._asyncFilters) wt = await func(this.tx, wt);
 
     if (wt.length === 0) return [];
 
-    const jobConfigs = await this.tx
-      .insert(jobConfig)
-      .values(wt)
-      .onConflictDoNothing({
-        target: [
-          jobConfig.targetId,
-          jobConfig.releaseId,
-          jobConfig.environmentId,
-        ],
-      })
-      .returning();
+    const jobConfigs = await this.tx.insert(jobConfig).values(wt).returning();
 
     for (const func of this._then) await func(this.tx, jobConfigs);
 

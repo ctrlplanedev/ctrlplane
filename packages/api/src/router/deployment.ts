@@ -1,4 +1,3 @@
-import type { Tx } from "@ctrlplane/db";
 import { z } from "zod";
 
 import {
@@ -32,23 +31,9 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
+import { latestReleaseSubQuery } from "../latest-release-subquery";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
-
-const latestReleaseSubQuery = (db: Tx) =>
-  db
-    .select({
-      id: release.id,
-      deploymentId: release.deploymentId,
-      version: release.version,
-      createdAt: release.createdAt,
-
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY deployment_id ORDER BY created_at DESC)`.as(
-        "rank",
-      ),
-    })
-    .from(release)
-    .as("release");
 
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,

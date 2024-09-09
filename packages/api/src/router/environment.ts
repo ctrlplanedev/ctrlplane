@@ -40,6 +40,7 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
+import { latestReleaseSubQuery } from "../latest-release-subquery";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const policyRouter = createTRPCRouter({
@@ -470,7 +471,7 @@ export const environmentRouter = createTRPCRouter({
         .causedById(ctx.session.user.id)
         .environments([env.id])
         .releases([rel.release.id])
-        .filter(isPassingReleaseSequencingCancelPolicy)
+        .filterAsync(isPassingReleaseSequencingCancelPolicy)
         .then(createJobExecutionApprovals)
         .insert();
 
@@ -564,19 +565,29 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(async ({ ctx, input }) => {
-      const currentTargets = await ctx.db
+      const latestRelease = latestReleaseSubQuery(ctx.db);
+      const existingJobConfigs = await ctx.db
         .select()
-        .from(environment)
-        .innerJoin(system, eq(environment.systemId, system.id))
-        .leftJoin(
-          target,
+        .from(deployment)
+        .innerJoin(
+          latestRelease,
           and(
-            arrayContains(target.labels, environment.targetFilter),
-            eq(target.workspaceId, system.workspaceId),
+            eq(latestRelease.deploymentId, deployment.id),
+            eq(latestRelease.rank, 1),
           ),
         )
-        .where(eq(environment.id, input.id))
-        .then((rows) => rows.map((r) => r.target).filter(isPresent));
+        .innerJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(environment, eq(environment.systemId, system.id))
+        .innerJoin(target, eq(target.workspaceId, system.workspaceId))
+        .innerJoin(
+          jobConfig,
+          and(
+            eq(jobConfig.environmentId, environment.id),
+            eq(jobConfig.releaseId, latestRelease.id),
+            eq(jobConfig.targetId, target.id),
+          ),
+        )
+        .where(eq(environment.id, input.id));
 
       return ctx.db
         .update(environment)
@@ -587,12 +598,18 @@ export const environmentRouter = createTRPCRouter({
         .then((env) =>
           createJobConfigs(ctx.db, "new_target")
             .environments([env.id])
-            .filter(async (_, jobConfigs) =>
-              jobConfigs.filter(
-                (j) => !currentTargets.some((t) => t.id === j.targetId),
+            .filter((jobConfigsInserts) =>
+              jobConfigsInserts.filter(
+                (jobConfigInsert) =>
+                  !existingJobConfigs.some(
+                    (existingJobConfig) =>
+                      existingJobConfig.release.id ===
+                        jobConfigInsert.releaseId &&
+                      existingJobConfig.target.id === jobConfigInsert.targetId,
+                  ),
               ),
             )
-            .filter(isPassingReleaseSequencingCancelPolicy)
+            .filterAsync(isPassingReleaseSequencingCancelPolicy)
             .then(createJobExecutionApprovals)
             .insert()
             .then((jobConfigs) =>

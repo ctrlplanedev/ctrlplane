@@ -115,7 +115,7 @@ export const releaseRouter = createTRPCRouter({
           .causedById(ctx.session.user.id)
           .environments([input.environmentId])
           .releases([input.releaseId])
-          .filter(isPassingReleaseSequencingCancelPolicy)
+          .filterAsync(isPassingReleaseSequencingCancelPolicy)
           .then(createJobExecutionApprovals)
           .insert();
 
@@ -155,9 +155,9 @@ export const releaseRouter = createTRPCRouter({
 
         const jobConfigs = await createJobConfigs(db, "new_release")
           .causedById(ctx.session.user.id)
-          .filter(isPassingEnvironmentPolicy)
+          .filterAsync(isPassingEnvironmentPolicy)
           .releases([rel.id])
-          .filter(isPassingReleaseSequencingCancelPolicy)
+          .filterAsync(isPassingReleaseSequencingCancelPolicy)
           .then(createJobExecutionApprovals)
           .insert();
 
