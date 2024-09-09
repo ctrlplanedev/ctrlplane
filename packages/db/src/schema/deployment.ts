@@ -19,14 +19,16 @@ export const deployment = pgTable(
     systemId: uuid("system_id")
       .notNull()
       .references(() => system.id),
-    jobAgentId: uuid("job_agent_id").references(() => jobAgent.id),
+    jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
+      onDelete: "set null",
+    }),
     jobAgentConfig: jsonb("job_agent_config")
       .default("{}")
       .$type<Record<string, any>>()
       .notNull(),
     githubConfigFileId: uuid("github_config_file_id").references(
       () => githubConfigFile.id,
-      { onDelete: "cascade" },
+      { onDelete: "set null" },
     ),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),

@@ -1,15 +1,14 @@
 import { dashboardRouter } from "./router/dashboard";
 import { deploymentRouter } from "./router/deployment";
 import { environmentRouter } from "./router/environment";
-import { githubRouter } from "./router/github";
-import { invitesRouter } from "./router/invite";
+import { githubRouter } from "./router/github/github";
 import { jobRouter } from "./router/job";
 import { releaseRouter } from "./router/release";
 import { runtimeRouter } from "./router/runtime";
 import { systemRouter } from "./router/system";
 import { targetRouter } from "./router/target";
 import { profileRouter, userRouter } from "./router/user";
-import { valueSetRouter } from "./router/value-set";
+import { variableSetRouter } from "./router/variable-set";
 import { workspaceRouter } from "./router/workspace";
 import { createTRPCRouter } from "./trpc";
 
@@ -23,8 +22,7 @@ export const appRouter = createTRPCRouter({
   target: targetRouter,
   github: githubRouter,
   dashboard: dashboardRouter,
-  valueSet: valueSetRouter,
-  invite: invitesRouter,
+  variableSet: variableSetRouter,
   profile: profileRouter,
   user: userRouter,
   runtime: runtimeRouter,

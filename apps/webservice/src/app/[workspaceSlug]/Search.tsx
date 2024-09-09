@@ -34,7 +34,7 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
       workspaceId: workspace.data?.id ?? "",
       filters: search != "" ? [{ key: "name", value: search }] : [],
     },
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
 
   return (

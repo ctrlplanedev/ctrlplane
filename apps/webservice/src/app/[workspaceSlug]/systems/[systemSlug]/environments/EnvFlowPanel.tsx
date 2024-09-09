@@ -44,7 +44,10 @@ const environmentForm = z.object({
 
 type EnvironmentFormValues = z.infer<typeof environmentForm>;
 
-const AddEnvironmentButton: React.FC<{ systemId: string }> = ({ systemId }) => {
+const AddEnvironmentButton: React.FC<{
+  workspaceId: string;
+  systemId: string;
+}> = ({ workspaceId, systemId }) => {
   const create = api.environment.create.useMutation();
 
   const { setSelectedNodeId } = usePanel();
@@ -59,9 +62,12 @@ const AddEnvironmentButton: React.FC<{ systemId: string }> = ({ systemId }) => {
   });
 
   const { targetFilter } = form.watch();
-  const targets = api.environment.target.byFilter.useQuery(
-    Object.fromEntries(targetFilter.map(({ key, value }) => [key, value])),
-  );
+  const targets = api.environment.target.byFilter.useQuery({
+    workspaceId, // Assuming systemId is the workspaceId
+    labels: Object.fromEntries(
+      targetFilter.map(({ key, value }) => [key, value]),
+    ),
+  });
 
   const { fields } = useFieldArray({
     name: "targetFilter",
@@ -255,9 +261,10 @@ const useDeleteNodeOrEdge = () => {
 };
 
 export const EnvFlowPanel: React.FC<{
+  workspaceId: string;
   systemId: string;
   onLayout: () => void;
-}> = ({ onLayout, systemId }) => {
+}> = ({ onLayout, workspaceId, systemId }) => {
   const { fitView } = useReactFlow();
   const { disabled, onDelete } = useDeleteNodeOrEdge();
   return (
@@ -283,7 +290,7 @@ export const EnvFlowPanel: React.FC<{
         <Separator orientation="vertical" className="h-10" />
       </div>
 
-      <AddEnvironmentButton systemId={systemId} />
+      <AddEnvironmentButton workspaceId={workspaceId} systemId={systemId} />
       <NewPolicyButton systemId={systemId} />
 
       <div className="px-2">

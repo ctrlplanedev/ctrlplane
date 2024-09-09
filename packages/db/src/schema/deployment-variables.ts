@@ -15,8 +15,6 @@ export const deploymentVariable = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id),
-
-    // defaultValue: jsonb("default_value").$type<any>(),
     schema: jsonb("schema").$type<Record<string, any>>(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.key) }),

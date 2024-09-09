@@ -46,10 +46,10 @@ export const JobExecHistoryChart: React.FC<{ className?: string }> = ({
 
   const targets = api.target.byWorkspaceId.list.useQuery(
     { workspaceId: workspaceId },
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
   const deployments = api.deployment.byWorkspaceId.useQuery(workspaceId, {
-    enabled: workspace.isSuccess,
+    enabled: workspace.isSuccess && workspace.data?.id !== "",
   });
 
   return (

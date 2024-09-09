@@ -13,15 +13,14 @@ import { EnvFlowBuilder } from "./EnvFlowBuilder";
 import { Sidebar } from "./Sidebar";
 import { PanelProvider } from "./SidepanelContext";
 
-export const metadata: Metadata = { title: "Systems - Environments" };
+export const metadata: Metadata = { title: "Environments - Systems" };
 
 export default async function SystemEnvironmentPage({
   params,
 }: {
-  params: { systemSlug: string };
+  params: { workspaceSlug: string; systemSlug: string };
 }) {
-  const { systemSlug } = params;
-  const sys = (await api.system.bySlug(systemSlug))!;
+  const sys = await api.system.bySlug(params);
   const envs = await api.environment.bySystemId(sys.id);
   const policies = await api.environment.policy.bySystemId(sys.id);
   const policyDeployments = await api.environment.policy.deployment.bySystemId(
@@ -35,6 +34,7 @@ export default async function SystemEnvironmentPage({
             <ResizablePanel defaultSize={60}>
               <div className="h-[calc(100vh-53px)]">
                 <EnvFlowBuilder
+                  workspaceId={sys.workspaceId}
                   systemId={sys.id}
                   envs={envs}
                   policies={policies}

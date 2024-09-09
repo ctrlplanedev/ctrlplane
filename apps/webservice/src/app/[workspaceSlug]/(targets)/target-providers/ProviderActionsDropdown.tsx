@@ -4,6 +4,7 @@ import type {
   TargetProvider,
   TargetProviderGoogle,
 } from "@ctrlplane/db/schema";
+import { useState } from "react";
 import { TbDots } from "react-icons/tb";
 
 import {
@@ -35,6 +36,7 @@ type Provider = TargetProvider & {
 export const ProviderActionsDropdown: React.FC<{
   provider: Provider;
 }> = ({ provider }) => {
+  const [open, setOpen] = useState(false);
   const utils = api.useUtils();
   const deleteProvider = api.target.provider.delete.useMutation({
     onSuccess: () => utils.target.provider.byWorkspaceId.invalidate(),
@@ -44,7 +46,7 @@ export const ProviderActionsDropdown: React.FC<{
     deleteProvider.mutate({ providerId: provider.id, deleteTargets });
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
           <span className="sr-only">Open menu</span>
@@ -57,13 +59,14 @@ export const ProviderActionsDropdown: React.FC<{
             providerId={provider.id}
             name={provider.name}
             projectIds={provider.googleConfig.projectIds}
+            onClose={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Edit
             </DropdownMenuItem>
           </UpdateGoogleProviderDialog>
         )}
-        <AlertDialog>
+        <AlertDialog onOpenChange={setOpen}>
           <AlertDialogTrigger asChild>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Delete

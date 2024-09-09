@@ -23,12 +23,14 @@ import {
   system,
   target,
   updateDeployment,
+  workspace,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
   dispatchJobConfigs,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
+import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
@@ -52,8 +54,10 @@ export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   distrubtionById: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.deployment.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input }),
     })
     .input(z.string())
     .query(({ ctx, input }) => {
@@ -98,8 +102,10 @@ export const deploymentRouter = createTRPCRouter({
 
   create: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.id(input.systemId),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentCreate)
+          .on({ type: "system", id: input.systemId }),
     })
     .input(createDeployment)
     .mutation(({ ctx, input }) =>
@@ -108,8 +114,10 @@ export const deploymentRouter = createTRPCRouter({
 
   update: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.deployment.id(input.id),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUpdate)
+          .on({ type: "deployment", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeployment }))
     .mutation(({ ctx, input }) =>
@@ -150,8 +158,10 @@ export const deploymentRouter = createTRPCRouter({
 
   delete: protectedProcedure
     .meta({
-      access: ({ ctx, input }) =>
-        ctx.accessQuery().workspace.system.deployment.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentDelete)
+          .on({ type: "deployment", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
@@ -163,21 +173,48 @@ export const deploymentRouter = createTRPCRouter({
     ),
 
   bySlug: protectedProcedure
+    .input(
+      z.object({
+        workspaceSlug: z.string(),
+        deploymentSlug: z.string(),
+        systemSlug: z.string(),
+      }),
+    )
     .meta({
-      access: ({ ctx, input }) =>
-        ctx
-          .accessQuery()
-          .workspace.system.deployment.slug(input.deploymentSlug),
+      authorizationCheck: async ({ canUser, input, ctx }) => {
+        const { workspaceSlug, deploymentSlug, systemSlug } = input;
+        const sys = await ctx.db
+          .select()
+          .from(deployment)
+          .innerJoin(system, eq(system.id, deployment.systemId))
+          .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+          .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+          .where(
+            and(
+              eq(deployment.slug, deploymentSlug),
+              eq(system.slug, systemSlug),
+              eq(workspace.slug, workspaceSlug),
+            ),
+          )
+          .then(takeFirst);
+        return canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "system", id: sys.system.id });
+      },
     })
-    .input(z.object({ deploymentSlug: z.string(), systemSlug: z.string() }))
-    .query(({ ctx, input: { deploymentSlug, systemSlug } }) =>
+    .query(({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) =>
       ctx.db
         .select()
         .from(deployment)
-        .leftJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
         .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
         .where(
-          and(eq(deployment.slug, deploymentSlug), eq(system.slug, systemSlug)),
+          and(
+            eq(deployment.slug, deploymentSlug),
+            eq(system.slug, systemSlug),
+            eq(workspace.slug, workspaceSlug),
+          ),
         )
         .then(takeFirstOrNull)
         .then((r) =>
@@ -185,18 +222,21 @@ export const deploymentRouter = createTRPCRouter({
             ? null
             : {
                 ...r.deployment,
-                system: r.system,
+                system: { ...r.system, workspace: r.workspace },
                 agent: r.job_agent,
               },
         ),
     ),
 
   bySystemId: protectedProcedure
+    .input(z.string().uuid())
     .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.system.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentList)
+          .on({ type: "system", id: input }),
     })
-    .input(z.string())
-    .query(({ ctx, input }) => {
+    .query(async ({ ctx, input }) => {
       const latestRelease = latestReleaseSubQuery(ctx.db);
       return ctx.db
         .select()
@@ -215,10 +255,13 @@ export const deploymentRouter = createTRPCRouter({
     }),
 
   byTargetId: protectedProcedure
+    .input(z.string().uuid())
     .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.target.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentList)
+          .on({ type: "target", id: input }),
     })
-    .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
         .selectDistinctOn([deployment.id])
@@ -263,10 +306,13 @@ export const deploymentRouter = createTRPCRouter({
 
   byWorkspaceId: protectedProcedure
     .meta({
-      access: ({ ctx, input }) => ctx.accessQuery().workspace.id(input),
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentList)
+          .on({ type: "workspace", id: input }),
     })
-    .input(z.string())
-    .query(({ ctx, input }) => {
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) => {
       const latestRelease = latestReleaseSubQuery(ctx.db);
       return ctx.db
         .select()

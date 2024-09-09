@@ -10,8 +10,6 @@ export default async function DeploymentTargetsPage({
     targetId: string;
   };
 }) {
-  //   const system = (await api.system.bySlug(params.systemSlug))!;
-  //   const deployments = await api.deployment.bySystemId(system.id);
   const target = await api.target.byId(params.targetId);
   return (
     <div className="container mx-auto">

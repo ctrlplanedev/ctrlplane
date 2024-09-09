@@ -264,7 +264,7 @@ export default function TargetsPage({
   );
   const kinds = api.target.byWorkspaceId.kinds.useQuery(
     workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
   const lockTarget = api.target.lock.useMutation();
   const unlockTarget = api.target.unlock.useMutation();

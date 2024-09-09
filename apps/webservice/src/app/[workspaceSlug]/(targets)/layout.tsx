@@ -27,16 +27,16 @@ export default function TargetLayout({
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const targets = api.target.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
 
   const labelGroups = api.target.labelGroup.groups.useQuery(
     workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
   const targetProviders = api.target.provider.byWorkspaceId.useQuery(
     workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess },
+    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
   return (
     <>

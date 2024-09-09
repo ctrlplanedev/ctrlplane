@@ -1,5 +1,6 @@
 "use client";
 
+import type { System, Workspace } from "@ctrlplane/db/schema";
 import { useParams } from "next/navigation";
 import { TbSearch } from "react-icons/tb";
 
@@ -12,19 +13,26 @@ import { SidebarSystems } from "./SidebarSystems";
 import { SidebarWorkspace } from "./SidebarWorkspace";
 import { SidebarWorkspaceDropdown } from "./SidebarWorkspaceDropdown";
 
-export const SidebarMain: React.FC = () => {
+export const SidebarMain: React.FC<{
+  workspace: Workspace;
+  systems: System[];
+}> = ({ workspace, systems }) => {
   const { deploymentSlug, workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
     systemSlug?: string;
     deploymentSlug?: string;
   }>();
 
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const system = api.system.bySlug.useQuery(systemSlug ?? "", {
-    enabled: systemSlug != null,
-  });
+  const system = api.system.bySlug.useQuery(
+    { workspaceSlug, systemSlug: systemSlug ?? "" },
+    { enabled: systemSlug != null },
+  );
   const deployment = api.deployment.bySlug.useQuery(
-    { systemSlug: systemSlug ?? "", deploymentSlug: deploymentSlug ?? "" },
+    {
+      workspaceSlug,
+      systemSlug: systemSlug ?? "",
+      deploymentSlug: deploymentSlug ?? "",
+    },
     { enabled: deploymentSlug != null && systemSlug != null },
   );
 
@@ -33,7 +41,7 @@ export const SidebarMain: React.FC = () => {
       <div className="m-3 space-y-4">
         <div className="flex items-center gap-2">
           <div className="flex-grow overflow-x-auto">
-            <SidebarWorkspaceDropdown />
+            <SidebarWorkspaceDropdown workspace={workspace} />
           </div>
 
           <SearchDialog>
@@ -47,7 +55,7 @@ export const SidebarMain: React.FC = () => {
           </SearchDialog>
 
           <SidebarCreateMenu
-            workspaceId={workspace.data?.id ?? ""}
+            workspaceId={workspace.id}
             systemId={system.data?.id}
             deploymentId={deployment.data?.id}
           />
@@ -56,7 +64,7 @@ export const SidebarMain: React.FC = () => {
 
       <SidebarWorkspace />
 
-      <SidebarSystems />
+      <SidebarSystems workspace={workspace} systems={systems} />
     </div>
   );
 };

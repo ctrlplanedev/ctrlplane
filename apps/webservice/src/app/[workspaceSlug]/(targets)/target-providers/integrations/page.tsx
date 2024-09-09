@@ -1,18 +1,14 @@
 import React from "react";
-import {
-  SiAmazon,
-  SiGooglecloud,
-  SiKubernetes,
-  SiMicrosoftazure,
-  SiTerraform,
-} from "react-icons/si";
+import { notFound } from "next/navigation";
+import { SiGooglecloud, SiKubernetes, SiTerraform } from "react-icons/si";
 import { TbSettings } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
-import { GoogleDialog } from "./google/GoogleDialog";
+import { api } from "~/trpc/server";
+import { GoogleActionButton } from "./GoogleActionButton";
 
 const Badge: React.FC<{ className?: string; children?: React.ReactNode }> = ({
   className,
@@ -60,7 +56,11 @@ const TargetProviderBadges: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="space-x-1">{children}</div>;
 
-const TargetProviders: React.FC = () => {
+const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
+  workspaceSlug,
+}) => {
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
   return (
     <div className="h-full overflow-y-auto p-8 pb-24">
       <div className="container mx-auto max-w-5xl">
@@ -70,7 +70,7 @@ const TargetProviders: React.FC = () => {
           anything.
         </p>
         <div className="mt-8 grid grid-cols-3 gap-6">
-          <TargetProviderCard>
+          {/* <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
                 <SiAmazon className="mx-auto text-4xl text-orange-300" />
@@ -87,7 +87,7 @@ const TargetProviders: React.FC = () => {
             </TargetProviderContent>
 
             <TargetProviderActionButton>Configure</TargetProviderActionButton>
-          </TargetProviderCard>
+          </TargetProviderCard> */}
 
           <TargetProviderCard>
             <TargetProviderContent>
@@ -104,15 +104,9 @@ const TargetProviders: React.FC = () => {
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <GoogleDialog>
-                <Button variant="outline" size="sm" className="w-full">
-                  Configure
-                </Button>
-              </GoogleDialog>
-            </div>
+            <GoogleActionButton workspace={workspace} />
           </TargetProviderCard>
-
+          {/* 
           <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
@@ -133,7 +127,7 @@ const TargetProviders: React.FC = () => {
                 Configure
               </Button>
             </div>
-          </TargetProviderCard>
+          </TargetProviderCard> */}
         </div>
 
         <div className="my-16 border-b" />
@@ -158,11 +152,9 @@ const TargetProviders: React.FC = () => {
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <Button variant="outline" size="sm" className="w-full">
-                Instructions
-              </Button>
-            </div>
+            <TargetProviderActionButton>
+              Instructions
+            </TargetProviderActionButton>
           </TargetProviderCard>
           <TargetProviderCard>
             <TargetProviderContent>
@@ -178,11 +170,9 @@ const TargetProviders: React.FC = () => {
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <Button variant="outline" size="sm" className="w-full">
-                Instructions
-              </Button>
-            </div>
+            <TargetProviderActionButton>
+              Instructions
+            </TargetProviderActionButton>
           </TargetProviderCard>
           <TargetProviderCard>
             <TargetProviderContent>
@@ -200,11 +190,9 @@ const TargetProviders: React.FC = () => {
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <Button variant="outline" size="sm" className="w-full">
-                Instructions
-              </Button>
-            </div>
+            <TargetProviderActionButton>
+              Instructions
+            </TargetProviderActionButton>
           </TargetProviderCard>
         </div>
       </div>
@@ -212,6 +200,10 @@ const TargetProviders: React.FC = () => {
   );
 };
 
-export default function TargetProviderIntegrationsPage() {
-  return <TargetProviders />;
+export default function TargetProviderIntegrationsPage({
+  params,
+}: {
+  params: { workspaceSlug: string };
+}) {
+  return <TargetProviders workspaceSlug={params.workspaceSlug} />;
 }

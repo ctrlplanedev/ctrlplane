@@ -24,14 +24,14 @@ export default function DeploymentPage({
 }: {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
 }) {
-  const system = api.system.bySlug.useQuery(params.systemSlug);
+  const system = api.system.bySlug.useQuery(params);
   const environments = api.environment.bySystemId.useQuery(
     system.data?.id ?? "",
     { enabled: isPresent(system.data) },
   );
   const deployment = api.deployment.bySlug.useQuery(params);
   const releases = api.release.list.useQuery(
-    { deploymentId: deployment.data?.id },
+    { deploymentId: deployment.data?.id ?? "" },
     { enabled: isPresent(deployment.data), refetchInterval: 10_000 },
   );
   const jobConfigs = api.job.config.byDeploymentId.useQuery(
