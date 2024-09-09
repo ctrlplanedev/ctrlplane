@@ -563,8 +563,22 @@ export const environmentRouter = createTRPCRouter({
           .on({ type: "environment", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const currentTargets = await ctx.db
+        .select()
+        .from(environment)
+        .innerJoin(system, eq(environment.systemId, system.id))
+        .leftJoin(
+          target,
+          and(
+            arrayContains(target.labels, environment.targetFilter),
+            eq(target.workspaceId, system.workspaceId),
+          ),
+        )
+        .where(eq(environment.id, input.id))
+        .then((rows) => rows.map((r) => r.target).filter(isPresent));
+
+      return ctx.db
         .update(environment)
         .set(input.data)
         .where(eq(environment.id, input.id))
@@ -573,6 +587,11 @@ export const environmentRouter = createTRPCRouter({
         .then((env) =>
           createJobConfigs(ctx.db, "new_target")
             .environments([env.id])
+            .filter(async (_, jobConfigs) =>
+              jobConfigs.filter(
+                (j) => !currentTargets.some((t) => t.id === j.targetId),
+              ),
+            )
             .filter(isPassingReleaseSequencingCancelPolicy)
             .then(createJobExecutionApprovals)
             .insert()
@@ -583,8 +602,8 @@ export const environmentRouter = createTRPCRouter({
                 .then(cancelOldJobConfigsOnJobDispatch)
                 .dispatch(),
             ),
-        ),
-    ),
+        );
+    }),
 
   delete: protectedProcedure
     .meta({

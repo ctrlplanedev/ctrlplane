@@ -27,22 +27,16 @@ export const jobConfigType = pgEnum("job_config_type", [
   "runbook", // triggered via a runbook
 ]);
 
-export const jobConfig = pgTable(
-  "job_config",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    type: jobConfigType("type").notNull(),
-    causedById: uuid("caused_by_id").references(() => user.id),
-    releaseId: uuid("release_id").references(() => release.id),
-    targetId: uuid("target_id").references(() => target.id),
-    environmentId: uuid("environment_id").references(() => environment.id),
-    runbookId: uuid("runbook_id").references(() => runbook.id),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  (t) => ({
-    uniq: uniqueIndex().on(t.targetId, t.releaseId, t.environmentId),
-  }),
-);
+export const jobConfig = pgTable("job_config", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  type: jobConfigType("type").notNull(),
+  causedById: uuid("caused_by_id").references(() => user.id),
+  releaseId: uuid("release_id").references(() => release.id),
+  targetId: uuid("target_id").references(() => target.id),
+  environmentId: uuid("environment_id").references(() => environment.id),
+  runbookId: uuid("runbook_id").references(() => runbook.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
 
 export type JobConfig = InferSelectModel<typeof jobConfig>;
 export type JobConfigType = JobConfig["type"];
