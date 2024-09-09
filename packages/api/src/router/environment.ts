@@ -566,6 +566,12 @@ export const environmentRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(async ({ ctx, input }) => {
       const latestRelease = latestReleaseSubQuery(ctx.db);
+      /*
+       * When updating the labels of an environment and retriggering releases
+       * we should exclude targets that were already part of the environment (would lead to uninteded duplicate job configs).
+       * We need to check if there is a job config matching the release and target
+       * in this environment that is not associated with a runbook.
+       */
       const existingJobConfigs = await ctx.db
         .select()
         .from(deployment)
@@ -585,6 +591,7 @@ export const environmentRouter = createTRPCRouter({
             eq(jobConfig.environmentId, environment.id),
             eq(jobConfig.releaseId, latestRelease.id),
             eq(jobConfig.targetId, target.id),
+            isNull(jobConfig.runbookId),
           ),
         )
         .where(eq(environment.id, input.id));
