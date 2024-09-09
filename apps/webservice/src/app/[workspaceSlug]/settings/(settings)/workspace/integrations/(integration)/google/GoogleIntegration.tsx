@@ -25,9 +25,7 @@ export const GoogleIntegration: React.FC<{
   const handleCopy = () => {
     copy(workspace.googleServiceAccountEmail ?? "");
     setIsCopied(true);
-    setTimeout(() => {
-      setIsCopied(false);
-    }, 1000);
+    setTimeout(() => setIsCopied(false), 1000);
   };
 
   const isIntegrationEnabled = workspace.googleServiceAccountEmail != null;
@@ -58,6 +56,7 @@ export const GoogleIntegration: React.FC<{
           {isIntegrationEnabled ? (
             <Button
               variant="outline"
+              disabled={deleteServiceAccount.isPending}
               onClick={() =>
                 deleteServiceAccount
                   .mutateAsync(workspace.id)
@@ -69,6 +68,7 @@ export const GoogleIntegration: React.FC<{
           ) : (
             <Button
               variant="outline"
+              disabled={createServiceAccount.isPending}
               onClick={() =>
                 createServiceAccount
                   .mutateAsync(workspace.id)
@@ -99,7 +99,7 @@ export const GoogleIntegration: React.FC<{
               </div>
 
               <div className="flex items-center gap-2">
-                <span>Connected</span>
+                <span>Enabled</span>
                 <div className="h-2 w-2 rounded-full bg-green-500" />
               </div>
             </div>
