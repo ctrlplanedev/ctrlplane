@@ -162,10 +162,9 @@ export const targetRouter = createTRPCRouter({
             .filter(isPassingReleaseSequencingCancelPolicy)
             .then(createJobExecutionApprovals)
             .insert()
-            .then(takeFirst)
-            .then((jobConfig) =>
+            .then((jobConfigs) =>
               dispatchJobConfigs(ctx.db)
-                .jobConfigs([jobConfig])
+                .jobConfigs(jobConfigs)
                 .filter(isPassingAllPolicies)
                 .then(cancelOldJobConfigsOnJobDispatch)
                 .dispatch(),
