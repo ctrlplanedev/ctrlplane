@@ -1,7 +1,4 @@
-import { TRPCError } from "@trpc/server";
 import { addWeeks } from "date-fns";
-import { auth } from "google-auth-library";
-import { google } from "googleapis";
 import { z } from "zod";
 
 import { scopeHandlers } from "@ctrlplane/auth/utils";
@@ -19,6 +16,7 @@ import {
 import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { integrationsRouter } from "./workspace-integrations";
 
 const membersRouter = createTRPCRouter({
   list: protectedProcedure
@@ -52,58 +50,6 @@ const membersRouter = createTRPCRouter({
           })),
         ),
     ),
-});
-
-const integrationsRouter = createTRPCRouter({
-  google: createTRPCRouter({
-    createServiceAccount: protectedProcedure
-      .input(z.string().uuid())
-      .mutation(async ({ ctx, input }) => {
-        const ws = await ctx.db
-          .select()
-          .from(workspace)
-          .where(eq(workspace.id, input))
-          .then(takeFirstOrNull);
-
-        if (ws == null)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Workspace not found",
-          });
-
-        if (ws.googleServiceAccountEmail !== null)
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "Google service account already exists.",
-          });
-
-        const projectId = await auth.getProjectId();
-
-        const sa = await google.iam("v1").projects.serviceAccounts.create({
-          name: `projects/${projectId}`,
-          auth,
-          requestBody: {
-            accountId: `ctrlplane-${ws.slug}`,
-            serviceAccount: {
-              displayName: `Workspace ${ws.slug}`,
-              description: `Service account for ${ws.slug} (${ws.id})`,
-            },
-          },
-        });
-
-        if (sa.data.email == null)
-          throw new Error("No email server account response");
-
-        return ctx.db
-          .update(workspace)
-          .set({
-            googleServiceAccountEmail: sa.data.email,
-          })
-          .where(eq(workspace.id, input))
-          .returning()
-          .then(takeFirst);
-      }),
-  }),
 });
 
 const inviteRouter = createTRPCRouter({
