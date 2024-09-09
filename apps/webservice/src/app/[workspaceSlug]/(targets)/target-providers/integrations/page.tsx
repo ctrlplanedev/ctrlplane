@@ -1,13 +1,6 @@
 import React from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  SiAmazon,
-  SiGooglecloud,
-  SiKubernetes,
-  SiMicrosoftazure,
-  SiTerraform,
-} from "react-icons/si";
+import { SiGooglecloud, SiKubernetes, SiTerraform } from "react-icons/si";
 import { TbSettings } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
@@ -15,7 +8,7 @@ import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
 import { api } from "~/trpc/server";
-import { GoogleDialog } from "./google/GoogleDialog";
+import { GoogleActionButton } from "./GoogleActionButton";
 
 const Badge: React.FC<{ className?: string; children?: React.ReactNode }> = ({
   className,
@@ -77,7 +70,7 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
           anything.
         </p>
         <div className="mt-8 grid grid-cols-3 gap-6">
-          <TargetProviderCard>
+          {/* <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
                 <SiAmazon className="mx-auto text-4xl text-orange-300" />
@@ -94,7 +87,7 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
             </TargetProviderContent>
 
             <TargetProviderActionButton>Configure</TargetProviderActionButton>
-          </TargetProviderCard>
+          </TargetProviderCard> */}
 
           <TargetProviderCard>
             <TargetProviderContent>
@@ -111,25 +104,9 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              {workspace.googleServiceAccountEmail != null ? (
-                <GoogleDialog>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Configure
-                  </Button>
-                </GoogleDialog>
-              ) : (
-                <Button variant="outline" size="sm" className="w-full">
-                  <Link
-                    href={`/${workspaceSlug}/settings/workspace/integrations/google`}
-                  >
-                    Enable
-                  </Link>
-                </Button>
-              )}
-            </div>
+            <GoogleActionButton workspace={workspace} />
           </TargetProviderCard>
-
+          {/* 
           <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
@@ -150,7 +127,7 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
                 Configure
               </Button>
             </div>
-          </TargetProviderCard>
+          </TargetProviderCard> */}
         </div>
 
         <div className="my-16 border-b" />
@@ -175,11 +152,9 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <Button variant="outline" size="sm" className="w-full">
-                Instructions
-              </Button>
-            </div>
+            <TargetProviderActionButton>
+              Instructions
+            </TargetProviderActionButton>
           </TargetProviderCard>
           <TargetProviderCard>
             <TargetProviderContent>
@@ -195,11 +170,9 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <Button variant="outline" size="sm" className="w-full">
-                Instructions
-              </Button>
-            </div>
+            <TargetProviderActionButton>
+              Instructions
+            </TargetProviderActionButton>
           </TargetProviderCard>
           <TargetProviderCard>
             <TargetProviderContent>
@@ -217,11 +190,9 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <div>
-              <Button variant="outline" size="sm" className="w-full">
-                Instructions
-              </Button>
-            </div>
+            <TargetProviderActionButton>
+              Instructions
+            </TargetProviderActionButton>
           </TargetProviderCard>
         </div>
       </div>

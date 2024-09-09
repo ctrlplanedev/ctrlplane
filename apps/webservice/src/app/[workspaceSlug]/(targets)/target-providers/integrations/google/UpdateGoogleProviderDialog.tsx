@@ -106,15 +106,15 @@ export const UpdateGoogleProviderDialog: React.FC<{
                 <TbBulb className="h-5 w-5" />
                 <AlertTitle>Google Provider</AlertTitle>
                 <AlertDescription>
-                  To use the Google provider, you will need to invite our
-                  service account to your project and configure the necessary
-                  permissions. Read more{" "}
+                  To utilize the Google provider, it's necessary to grant our
+                  service account access to your project and set up the required
+                  permissions. For detailed instructions, please refer to our{" "}
                   <Link
                     href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
-                    className="underline"
                     target="_blank"
+                    className="underline"
                   >
-                    here
+                    documentation
                   </Link>
                   .
                 </AlertDescription>

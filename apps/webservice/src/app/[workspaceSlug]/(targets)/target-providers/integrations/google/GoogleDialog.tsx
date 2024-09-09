@@ -1,8 +1,9 @@
 "use client";
 
+import type { Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import { TbBulb, TbCheck, TbCopy } from "react-icons/tb";
@@ -41,11 +42,10 @@ export const createGoogleSchema = z.object({
 
 type CreateGoogleConfig = z.infer<typeof createGoogleSchema>;
 
-export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+export const GoogleDialog: React.FC<{
+  workspace: Workspace;
+  children: React.ReactNode;
+}> = ({ children, workspace }) => {
   const form = useForm<CreateGoogleConfig>({
     resolver: zodResolver(createGoogleSchema),
     defaultValues: { projectIds: [{ value: "" }] },
@@ -59,7 +59,7 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
   const [isCopied, setIsCopied] = useState(false);
   const [, copy] = useCopyToClipboard();
   const handleCopy = () => {
-    copy(workspace.data?.googleServiceAccountEmail ?? "");
+    copy(workspace.googleServiceAccountEmail ?? "");
     setIsCopied(true);
     setTimeout(() => {
       setIsCopied(false);
@@ -70,14 +70,14 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
   const utils = api.useUtils();
   const create = api.target.provider.managed.google.create.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
-    if (workspace.data == null) return;
     await create.mutateAsync({
       ...data,
-      workspaceId: workspace.data.id,
+      workspaceId: workspace.id,
       config: { projectIds: data.projectIds.map((p) => p.value) },
     });
     await utils.target.provider.byWorkspaceId.invalidate();
-    router.push(`/${workspaceSlug}/target-providers`);
+    router.refresh();
+    router.push(`/${workspace.slug}/target-providers`);
   });
   return (
     <Dialog>
@@ -96,19 +96,17 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
                 <TbBulb className="h-5 w-5" />
                 <AlertTitle>Google Provider</AlertTitle>
                 <AlertDescription>
-                  <span>
-                    To use the Google provider, you will need to invite our
-                    service account to your project and configure the necessary
-                    permissions. Read more{" "}
-                    <Link
-                      href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
-                      target="_blank"
-                      className="underline"
-                    >
-                      here
-                    </Link>
-                    .
-                  </span>
+                  To utilize the Google provider, it's necessary to grant our
+                  service account access to your project and set up the required
+                  permissions. For detailed instructions, please refer to our{" "}
+                  <Link
+                    href="https://docs.ctrlplane.dev/integrations/google-cloud/compute-scanner"
+                    target="_blank"
+                    className="underline"
+                  >
+                    documentation
+                  </Link>
+                  .
                 </AlertDescription>
               </Alert>
             </DialogHeader>
@@ -117,7 +115,7 @@ export const GoogleDialog: React.FC<{ children: React.ReactNode }> = ({
               <Label>Service Account</Label>
               <div className="relative flex items-center">
                 <Input
-                  value={workspace.data?.googleServiceAccountEmail ?? ""}
+                  value={workspace.googleServiceAccountEmail ?? ""}
                   className="disabled:cursor-default"
                   disabled
                 />
