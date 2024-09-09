@@ -16,6 +16,7 @@ import {
   createWorkspace,
   entityRole,
   role,
+  rolePermission,
   updateWorkspace,
   user,
   workspace,
@@ -86,6 +87,30 @@ const inviteRouter = createTRPCRouter({
       ),
 
     create: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.IamSetPolicy)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
+      .input(
+        z.object({
+          name: z.string(),
+          description: z.string().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) =>
+        ctx.db
+          .insert(workspace)
+          .values({
+            name: input.name,
+            slug: input.name,
+          })
+          .returning()
+          .then(takeFirst),
+      ),
+
+    createInvite: protectedProcedure
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
@@ -233,21 +258,45 @@ export const workspaceRouter = createTRPCRouter({
     .input(createWorkspace)
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
+        // Ensure predefined roles exist
+        for (const [_, roleData] of Object.entries(predefinedRoles)) {
+          await tx
+            .insert(role)
+            .values({
+              id: roleData.id,
+              name: roleData.name,
+              description:
+                "description" in roleData ? roleData.description : undefined,
+            })
+            .onConflictDoNothing();
+        }
+
         const w = await tx
           .insert(workspace)
           .values(input)
           .returning()
           .then(takeFirst);
 
+        // Assign admin role with all permissions
         await tx.insert(entityRole).values({
           roleId: predefinedRoles.admin.id,
-
           scopeType: "workspace",
           scopeId: w.id,
-
           entityType: "user",
           entityId: ctx.session.user.id,
         });
+
+        // Ensure the admin role has all permissions
+        const allPermissions = Object.values(Permission);
+        await tx
+          .insert(rolePermission)
+          .values(
+            allPermissions.map((permission) => ({
+              roleId: predefinedRoles.admin.id,
+              permission,
+            })),
+          )
+          .onConflictDoNothing();
 
         await tx
           .update(user)
