@@ -13,9 +13,9 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-    "@ctrlplane/job-dispatch": "workspace:*",
     "@google-cloud/container": "^5.16.0",
     "@kubernetes/client-node": "^0.21.0",
     "@octokit/auth-app": "^7.1.0",
