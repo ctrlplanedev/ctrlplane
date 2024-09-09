@@ -2,7 +2,15 @@ import { addWeeks } from "date-fns";
 import { z } from "zod";
 
 import { scopeHandlers } from "@ctrlplane/auth/utils";
-import { and, eq, isNull, or, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  eq,
+  isNull,
+  or,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   createEntityRole,
   createWorkspace,
@@ -40,6 +48,7 @@ const membersRouter = createTRPCRouter({
             eq(entityRole.scopeType, "workspace"),
           ),
         )
+        .orderBy(asc(user.name), asc(user.email))
         .then((members) =>
           members.map((m) => ({
             id: m.entity_role.id,
