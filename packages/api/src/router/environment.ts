@@ -569,7 +569,21 @@ export const environmentRouter = createTRPCRouter({
         .set(input.data)
         .where(eq(environment.id, input.id))
         .returning()
-        .then(takeFirst),
+        .then(takeFirst)
+        .then((env) =>
+          createJobConfigs(ctx.db, "new_target")
+            .environments([env.id])
+            .filter(isPassingReleaseSequencingCancelPolicy)
+            .then(createJobExecutionApprovals)
+            .insert()
+            .then((jobConfigs) =>
+              dispatchJobConfigs(ctx.db)
+                .jobConfigs(jobConfigs)
+                .filter(isPassingAllPolicies)
+                .then(cancelOldJobConfigsOnJobDispatch)
+                .dispatch(),
+            ),
+        ),
     ),
 
   delete: protectedProcedure

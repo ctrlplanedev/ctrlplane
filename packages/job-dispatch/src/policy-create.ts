@@ -15,6 +15,7 @@ export const createJobExecutionApprovals = async (
   db: Tx,
   jobConfigs: JobConfig[],
 ) => {
+  if (jobConfigs.length === 0) return;
   const policiesToCheck = await db
     .selectDistinctOn([release.id, environmentPolicy.id])
     .from(jobConfig)

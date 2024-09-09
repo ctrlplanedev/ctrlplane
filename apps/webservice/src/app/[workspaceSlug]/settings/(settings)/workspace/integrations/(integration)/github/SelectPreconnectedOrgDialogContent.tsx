@@ -39,24 +39,34 @@ export const SelectPreconnectedOrgDialogContent: React.FC<
   const router = useRouter();
 
   const githubOrgCreate = api.github.organizations.create.useMutation();
+  const jobAgentCreate = api.job.agent.create.useMutation();
 
   const handleSave = () => {
     if (value == null) return;
     const org = githubOrgs.find((o) => o.login === value);
     if (org == null) return;
 
-    githubOrgCreate
-      .mutateAsync({
+    Promise.all([
+      githubOrgCreate.mutateAsync({
         installationId: org.installationId,
         workspaceId,
         organizationName: org.login,
         addedByUserId: githubUser.userId,
         avatarUrl: org.avatar_url,
-      })
-      .then(() => {
-        onSave();
-        router.refresh();
-      });
+      }),
+      jobAgentCreate.mutateAsync({
+        workspaceId,
+        type: "github-app",
+        name: org.login,
+        config: {
+          installationId: org.installationId,
+          owner: org.login,
+        },
+      }),
+    ]).then(() => {
+      onSave();
+      router.refresh();
+    });
   };
 
   return (

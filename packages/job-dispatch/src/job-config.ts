@@ -138,7 +138,17 @@ class JobConfigBuilder {
 
     if (wt.length === 0) return [];
 
-    const jobConfigs = await this.tx.insert(jobConfig).values(wt).returning();
+    const jobConfigs = await this.tx
+      .insert(jobConfig)
+      .values(wt)
+      .onConflictDoNothing({
+        target: [
+          jobConfig.targetId,
+          jobConfig.releaseId,
+          jobConfig.environmentId,
+        ],
+      })
+      .returning();
 
     for (const func of this._then) await func(this.tx, jobConfigs);
 

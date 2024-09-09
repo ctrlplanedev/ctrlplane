@@ -116,6 +116,7 @@ export const releaseRouter = createTRPCRouter({
           .environments([input.environmentId])
           .releases([input.releaseId])
           .filter(isPassingReleaseSequencingCancelPolicy)
+          .then(createJobExecutionApprovals)
           .insert();
 
         await dispatchJobConfigs(ctx.db)

@@ -1,4 +1,5 @@
 import type { SQL, Tx } from "@ctrlplane/db";
+import { update } from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -21,6 +22,14 @@ import {
   updateTarget,
   workspace,
 } from "@ctrlplane/db/schema";
+import {
+  cancelOldJobConfigsOnJobDispatch,
+  createJobConfigs,
+  createJobExecutionApprovals,
+  dispatchJobConfigs,
+  isPassingAllPolicies,
+  isPassingReleaseSequencingCancelPolicy,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -142,7 +151,27 @@ export const targetRouter = createTRPCRouter({
     })
     .input(createTarget)
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(target).values(input).returning().then(takeFirst),
+      ctx.db
+        .insert(target)
+        .values(input)
+        .returning()
+        .then(takeFirst)
+        .then((target) =>
+          createJobConfigs(ctx.db, "new_target")
+            .causedById(ctx.session.user.id)
+            .targets([target.id])
+            .filter(isPassingReleaseSequencingCancelPolicy)
+            .then(createJobExecutionApprovals)
+            .insert()
+            .then(takeFirst)
+            .then((jobConfig) =>
+              dispatchJobConfigs(ctx.db)
+                .jobConfigs([jobConfig])
+                .filter(isPassingAllPolicies)
+                .then(cancelOldJobConfigsOnJobDispatch)
+                .dispatch(),
+            ),
+        ),
     ),
 
   update: protectedProcedure

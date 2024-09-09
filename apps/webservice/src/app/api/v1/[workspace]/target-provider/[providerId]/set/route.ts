@@ -11,6 +11,14 @@ import {
   targetProvider,
   workspace,
 } from "@ctrlplane/db/schema";
+import {
+  cancelOldJobConfigsOnJobDispatch,
+  createJobConfigs,
+  createJobExecutionApprovals,
+  dispatchJobConfigs,
+  isPassingAllPolicies,
+  isPassingReleaseSequencingCancelPolicy,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
@@ -56,7 +64,22 @@ export const PATCH = async (
       target: [target.name, target.providerId],
       set: buildConflictUpdateColumns(target, ["labels"]),
     })
-    .returning();
+    .returning()
+    .then((targets) =>
+      createJobConfigs(db, "new_target")
+        .causedById(user.id)
+        .targets(targets.map((t) => t.id))
+        .filter(isPassingReleaseSequencingCancelPolicy)
+        .then(createJobExecutionApprovals)
+        .insert()
+        .then((jobConfigs) =>
+          dispatchJobConfigs(db)
+            .jobConfigs(jobConfigs)
+            .filter(isPassingAllPolicies)
+            .then(cancelOldJobConfigsOnJobDispatch)
+            .dispatch(),
+        ),
+    );
 
   return NextResponse.json({ targets: results });
 };

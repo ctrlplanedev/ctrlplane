@@ -3,6 +3,14 @@ import type { Target } from "@ctrlplane/db/schema";
 
 import { buildConflictUpdateColumns, sql } from "@ctrlplane/db";
 import { target } from "@ctrlplane/db/schema";
+import {
+  cancelOldJobConfigsOnJobDispatch,
+  createJobConfigs,
+  createJobExecutionApprovals,
+  dispatchJobConfigs,
+  isPassingAllPolicies,
+  isPassingReleaseSequencingCancelPolicy,
+} from "@ctrlplane/job-dispatch";
 
 export type UpsertTarget = Pick<
   Target,
@@ -25,4 +33,18 @@ export const upsertTargets = (db: Tx, providerId: string, ts: UpsertTarget[]) =>
       setWhere: sql`target.provider_id = ${providerId}`,
       set: buildConflictUpdateColumns(target, ["labels"]),
     })
-    .returning();
+    .returning()
+    .then((targets) =>
+      createJobConfigs(db, "new_target")
+        .targets(targets.map((t) => t.id))
+        .filter(isPassingReleaseSequencingCancelPolicy)
+        .then(createJobExecutionApprovals)
+        .insert()
+        .then((jobConfigs) =>
+          dispatchJobConfigs(db)
+            .jobConfigs(jobConfigs)
+            .filter(isPassingAllPolicies)
+            .then(cancelOldJobConfigsOnJobDispatch)
+            .dispatch(),
+        ),
+    );

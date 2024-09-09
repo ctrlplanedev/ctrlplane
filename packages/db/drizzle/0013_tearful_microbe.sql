@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "job_config_target_id_release_id_environment_id_index" ON "job_config" ("target_id","release_id","environment_id");

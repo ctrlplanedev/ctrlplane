@@ -127,6 +127,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ctrlplane/job-dispatch':
+        specifier: workspace:*
+        version: link:../../packages/job-dispatch
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
