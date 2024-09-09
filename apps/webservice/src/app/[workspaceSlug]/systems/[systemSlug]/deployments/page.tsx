@@ -24,7 +24,6 @@ export default async function SystemDeploymentsPage({
         deployments={deployments}
         environments={environments}
         systemSlug={params.systemSlug}
-        systemId={system.id}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import isEqual from "lodash/isEqual";
 import { useForm } from "react-hook-form";
@@ -57,7 +58,7 @@ export const EditDeploymentDialog: React.FC<
   DeploymentFormValues & { children?: React.ReactNode }
 > = ({ systemId, id, name, slug, description, children }) => {
   const [open, setOpen] = useState(false);
-  const utils = api.useUtils();
+  const router = useRouter();
 
   const form = useForm({
     resolver: zodResolver(deploymentFormSchema),
@@ -81,8 +82,7 @@ export const EditDeploymentDialog: React.FC<
       });
     },
     onSuccess: () => {
-      utils.deployment.invalidate();
-      utils.deployment.bySystemId.invalidate(systemId);
+      router.refresh();
       setOpen(false);
     },
   });
