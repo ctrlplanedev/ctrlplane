@@ -191,11 +191,27 @@ const columns: ColumnDef<Member>[] = [
     accessorKey: "role",
     enableGlobalFilter: false,
     cell: ({ row }) => {
+      const viewer = api.user.viewer.useQuery();
       const { id: currentRoleId } = row.original.role;
+      const { id: entityRoleId } = row.original.entityRole;
       const roles = api.workspace.roles.useQuery(row.original.workspace.id);
+      const updateRole = api.workspace.iam.set.useMutation();
+      const router = useRouter();
+      const isCurrentUser = row.original.user.id === viewer.data?.id;
+
+      const handleRoleChange = (newRoleId: string) => {
+        if (entityRoleId == null) return;
+        updateRole
+          .mutateAsync({ entityRoleId, newRoleId })
+          .then(() => router.refresh());
+      };
 
       return (
-        <Select defaultValue={currentRoleId}>
+        <Select
+          defaultValue={currentRoleId}
+          onValueChange={handleRoleChange}
+          disabled={isCurrentUser}
+        >
           <SelectTrigger className="w-[230px]">
             <SelectValue placeholder="Select a role" />
           </SelectTrigger>

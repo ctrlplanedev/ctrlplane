@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
@@ -16,6 +17,7 @@ export const CreateApiKey: React.FC = () => {
   const create = api.user.apiKey.create.useMutation();
   const utils = api.useUtils();
   const [, copy] = useCopyToClipboard();
+  const router = useRouter();
   return (
     <>
       <div className="flex items-center gap-4">
@@ -30,6 +32,7 @@ export const CreateApiKey: React.FC = () => {
             setKey(apiKey.key);
             copy(apiKey.key);
             await utils.user.apiKey.list.invalidate();
+            router.refresh();
           }}
         >
           Create new API key

@@ -80,7 +80,7 @@ const inviteRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.WorkspaceInvite)
+            .perform(Permission.IamSetPolicy)
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .input(
@@ -151,6 +151,45 @@ const iamRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db.delete(entityRole).where(eq(entityRole.id, input)).returning(),
+    ),
+
+  set: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ ctx, canUser, input }) => {
+        const entityRoleRecord = await ctx.db
+          .select()
+          .from(entityRole)
+          .where(eq(entityRole.id, input.entityRoleId))
+          .then(takeFirstOrNull);
+
+        if (!entityRoleRecord) throw new Error("Entity role not found");
+
+        const scopes = await scopeHandlers[entityRoleRecord.scopeType](
+          entityRoleRecord.scopeId,
+        );
+        const workspaceScope = scopes.find(
+          (scope) => scope.type === "workspace",
+        );
+        if (!workspaceScope) throw new Error("Workspace scope not found");
+
+        return canUser
+          .perform(Permission.IamSetPolicy)
+          .on({ type: "workspace", id: workspaceScope.id });
+      },
+    })
+    .input(
+      z.object({
+        entityRoleId: z.string().uuid(),
+        newRoleId: z.string().uuid(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .update(entityRole)
+        .set({ roleId: input.newRoleId })
+        .where(eq(entityRole.id, input.entityRoleId))
+        .returning()
+        .then(takeFirst),
     ),
 });
 
