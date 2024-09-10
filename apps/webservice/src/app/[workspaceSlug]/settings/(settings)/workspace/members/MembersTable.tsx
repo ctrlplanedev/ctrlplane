@@ -62,7 +62,7 @@ const InviteLinkSection: React.FC<{
   workspace: Workspace;
   inviteLink?: string;
 }> = ({ workspace, inviteLink }) => {
-  const create = api.workspace.invite.token.create.useMutation();
+  const create = api.workspace.invite.token.createInvite.useMutation();
 
   const [, copy] = useCopyToClipboard();
   const [clickedCopy, setClickedCopy] = useState(false);
