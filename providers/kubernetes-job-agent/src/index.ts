@@ -18,7 +18,6 @@ const getScannerId = async () => {
     });
     return id;
   } catch (error) {
-    console.error(error);
     logger.error(error);
     logger.error(
       `Failed to get scanner ID. This could be caused by incorrect workspace (${env.CTRLPLANE_WORKSPACE}), or API Key`,

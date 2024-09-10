@@ -6,6 +6,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -71,15 +72,20 @@ export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, { fields: [session.userId], references: [user.id] }),
 }));
 
-export const userApiKey = pgTable("user_api_key", {
-  id: uuid("id").notNull().primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => user.id, {
-      onDelete: "cascade",
-    }),
-  name: varchar("name", { length: 255 }).notNull(),
-  keyPreview: text("key_preview").notNull(),
-  keyHash: text("key_hash").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }),
-});
+export const userApiKey = pgTable(
+  "user_api_key",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, {
+        onDelete: "cascade",
+      }),
+    name: varchar("name", { length: 255 }).notNull(),
+    keyPreview: text("key_preview").notNull(),
+    keyHash: text("key_hash").notNull(),
+    keyPrefix: text("key_prefix").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+  },
+  (t) => ({ unqi: uniqueIndex().on(t.keyPrefix, t.keyHash) }),
+);
