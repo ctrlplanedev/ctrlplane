@@ -276,7 +276,6 @@ export const workspaceRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        // Assign admin role with all permissions
         await tx.insert(entityRole).values({
           roleId: predefinedRoles.admin.id,
           scopeType: "workspace",
@@ -285,7 +284,6 @@ export const workspaceRouter = createTRPCRouter({
           entityId: ctx.session.user.id,
         });
 
-        // Ensure the admin role has all permissions
         const allPermissions = Object.values(Permission);
         await tx
           .insert(rolePermission)
