@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 
+import { api } from "~/trpc/server";
 import { CreateApiKey, ListApiKeys } from "./ApiSection";
 
 export const metadata: Metadata = { title: "API Key Creation" };
 
-export default function AccountSettingApiPage() {
+export default async function AccountSettingApiPage() {
+  const apiKeys = await api.user.apiKey.list();
   return (
     <div className="container mx-auto max-w-2xl space-y-8">
       <div className="space-y-1">
@@ -18,7 +20,7 @@ export default function AccountSettingApiPage() {
           build your own integration or hacks.
         </div>
 
-        <ListApiKeys />
+        <ListApiKeys apiKeys={apiKeys} />
         <CreateApiKey />
       </div>
     </div>

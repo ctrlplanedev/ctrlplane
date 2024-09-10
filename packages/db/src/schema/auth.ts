@@ -89,3 +89,5 @@ export const userApiKey = pgTable(
   },
   (t) => ({ unqi: uniqueIndex().on(t.keyPrefix, t.keyHash) }),
 );
+
+export type UserApiKey = Omit<InferSelectModel<typeof userApiKey>, "keyHash">;

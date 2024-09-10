@@ -1,5 +1,6 @@
 "use client";
 
+import type { UserApiKey } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TbCheck, TbCopy } from "react-icons/tb";
@@ -86,15 +87,15 @@ export const CreateApiKey: React.FC = () => {
   );
 };
 
-export const ListApiKeys: React.FC = () => {
-  const list = api.user.apiKey.list.useQuery();
+export const ListApiKeys: React.FC<{ apiKeys: UserApiKey[] }> = ({
+  apiKeys,
+}) => {
   const revoke = api.user.apiKey.revoke.useMutation();
   const utils = api.useUtils();
 
-  if (list.isLoading || list.data?.length === 0) return null;
   return (
     <div className="rounded-md border bg-neutral-900/50">
-      {list.data?.map((key, idx) => (
+      {apiKeys.map((key, idx) => (
         <div
           key={key.id}
           className={cn(
