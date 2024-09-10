@@ -5,7 +5,7 @@ import { z } from "zod";
 import {
   and,
   arrayContains,
-  desc,
+  asc,
   eq,
   inArray,
   like,
@@ -34,7 +34,7 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
     .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
     .innerJoin(workspace, eq(target.workspaceId, workspace.id))
     .where(and(...checks))
-    .orderBy(desc(target.kind));
+    .orderBy(asc(target.kind), asc(target.name));
 
 export const targetRouter = createTRPCRouter({
   labelGroup: targetLabelGroupRouter,
