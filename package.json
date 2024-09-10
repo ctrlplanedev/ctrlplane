@@ -14,6 +14,7 @@
     "db:push": "pnpm -F db push",
     "db:studio": "pnpm -F db studio",
     "dev": "turbo dev --parallel --concurrency 30 --filter=!./providers/**/*",
+    "dev:otel": "NEXT_OTEL_VERBOSE=1  turbo dev --parallel --concurrency 30 --filter=!./providers/**/*",
     "format": "turbo format --continue -- --cache --cache-location node_modules/.cache/.prettiercache",
     "format:fix": "turbo format --continue -- --write --cache --cache-location node_modules/.cache/.prettiercache",
     "lint": "turbo lint --continue -- --cache --cache-location node_modules/.cache/.eslintcache",
@@ -21,7 +22,9 @@
     "lint:ws": "pnpm dlx sherif@latest",
     "postinstall": "pnpm lint:ws",
     "typecheck": "turbo typecheck",
-    "ui-add": "pnpm -F ui ui-add"
+    "ui-add": "pnpm -F ui ui-add",
+    "otel:up": "docker compose -f docker-compose.otel.yaml up -d",
+    "otel:down": "docker compose -f docker-compose.otel.yaml down"
   },
   "devDependencies": {
     "@ctrlplane/prettier-config": "workspace:*",
