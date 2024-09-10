@@ -1,3 +1,4 @@
+import type { InferSelectModel } from "drizzle-orm";
 import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 
 import { workspace } from "./workspace.js";
@@ -11,3 +12,5 @@ export const targetLabelGroup = pgTable("target_label_group", {
   description: text("description").notNull(),
   keys: text("keys").array().notNull(),
 });
+
+export type TargetLabelGroup = InferSelectModel<typeof targetLabelGroup>;
