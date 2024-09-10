@@ -258,7 +258,6 @@ export const workspaceRouter = createTRPCRouter({
     .input(createWorkspace)
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
-        // Ensure predefined roles exist
         for (const [_, roleData] of Object.entries(predefinedRoles)) {
           await tx
             .insert(role)
