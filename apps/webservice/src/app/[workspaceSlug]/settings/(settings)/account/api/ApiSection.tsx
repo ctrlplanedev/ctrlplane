@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { TbCheck, TbCopy } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
@@ -16,17 +17,26 @@ export const CreateApiKey: React.FC = () => {
   const [key, setKey] = useState("");
   const create = api.user.apiKey.create.useMutation();
   const utils = api.useUtils();
-  const [, copy] = useCopyToClipboard();
+
   const router = useRouter();
+
+  const [isCopied, setIsCopied] = useState(false);
+  const [, copy] = useCopyToClipboard();
+  const handleCopy = () => {
+    copy(key);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+  };
   return (
     <>
       <div className="flex items-center gap-4">
         <Input
-          placeholder="name"
+          placeholder="Name"
           onChange={(e) => setName(e.target.value)}
           value={name}
         />
         <Button
+          disabled={name.length === 0}
           onClick={async () => {
             const apiKey = await create.mutateAsync({ name });
             setKey(apiKey.key);
@@ -44,7 +54,27 @@ export const CreateApiKey: React.FC = () => {
             This key has been copied to clipboard. Please store it safely as it
             will only be visible this one time:
           </div>
-          <code>{key}</code>
+          <div className="relative flex items-center">
+            <Input
+              value={key}
+              className="text-ellipsis pr-8 disabled:cursor-default"
+              disabled
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              onClick={handleCopy}
+              className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
+            >
+              {isCopied ? (
+                <TbCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
+              ) : (
+                <TbCopy className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
           <DialogFooter>
             <Button type="submit" onClick={() => setKey("")}>
               Close

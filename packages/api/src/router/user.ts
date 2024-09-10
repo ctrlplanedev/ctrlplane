@@ -72,7 +72,7 @@ export const userRouter = createTRPCRouter({
           .values({
             ...input,
             userId: ctx.session.user.id,
-            keyPreview: key.slice(-8),
+            keyPreview: prefix.slice(0, 10),
             keyHash: hash(secret),
             keyPrefix: prefix,
             expiresAt: null,
