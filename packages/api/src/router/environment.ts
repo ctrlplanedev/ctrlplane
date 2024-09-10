@@ -565,68 +565,104 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(async ({ ctx, input }) => {
-      const latestRelease = latestReleaseSubQuery(ctx.db);
-      /*
-       * When updating the labels of an environment and retriggering releases
-       * we should exclude targets that were already part of the environment (would lead to uninteded duplicate job configs).
-       * We need to check if there is a job config matching the release and target
-       * in this environment that is not associated with a runbook.
-       */
-      const existingJobConfigs = await ctx.db
-        .select()
-        .from(deployment)
-        .innerJoin(
-          latestRelease,
-          and(
-            eq(latestRelease.deploymentId, deployment.id),
-            eq(latestRelease.rank, 1),
-          ),
-        )
-        .innerJoin(system, eq(system.id, deployment.systemId))
-        .innerJoin(environment, eq(environment.systemId, system.id))
-        .innerJoin(target, eq(target.workspaceId, system.workspaceId))
-        .innerJoin(
-          jobConfig,
-          and(
-            eq(jobConfig.environmentId, environment.id),
-            eq(jobConfig.releaseId, latestRelease.id),
-            eq(jobConfig.targetId, target.id),
-            isNull(jobConfig.runbookId),
-          ),
-        )
-        .where(eq(environment.id, input.id));
-
-      return ctx.db
+      const env = await ctx.db
         .update(environment)
         .set(input.data)
         .where(eq(environment.id, input.id))
         .returning()
-        .then(takeFirst)
-        .then((env) =>
-          createJobConfigs(ctx.db, "new_target")
-            .environments([env.id])
-            .filter((jobConfigsInserts) =>
-              jobConfigsInserts.filter(
-                (jobConfigInsert) =>
-                  !existingJobConfigs.some(
-                    (existingJobConfig) =>
-                      existingJobConfig.release.id ===
-                        jobConfigInsert.releaseId &&
-                      existingJobConfig.target.id === jobConfigInsert.targetId,
-                  ),
-              ),
-            )
-            .filterAsync(isPassingReleaseSequencingCancelPolicy)
-            .then(createJobExecutionApprovals)
-            .insert()
-            .then((jobConfigs) =>
-              dispatchJobConfigs(ctx.db)
-                .jobConfigs(jobConfigs)
-                .filter(isPassingAllPolicies)
-                .then(cancelOldJobConfigsOnJobDispatch)
-                .dispatch(),
-            ),
-        );
+        .then(takeFirst);
+
+      const latestRelease = latestReleaseSubQuery(ctx.db);
+
+      const releases = await ctx.db
+        .select()
+        .from(latestRelease)
+        .innerJoin(deployment, eq(latestRelease.deploymentId, deployment.id))
+        .innerJoin(system, eq(deployment.systemId, system.id))
+        .innerJoin(environment, eq(environment.systemId, system.id))
+        .leftJoin(
+          environmentPolicy,
+          eq(environment.policyId, environmentPolicy.id),
+        )
+        .leftJoin(
+          environmentPolicyApproval,
+          and(
+            eq(environmentPolicyApproval.releaseId, latestRelease.id),
+            eq(environmentPolicyApproval.policyId, environmentPolicy.id),
+          ),
+        )
+        .where(eq(environment.id, env.id));
+
+      const releasesByDeployment = _.chain(releases)
+        .groupBy("deployment.id")
+        .mapValues((releases) =>
+          releases.map((r) => ({
+            ...r.release,
+            deployment: r.deployment,
+            environment: r.environment,
+            environmentPolicy: r.environment_policy,
+          })),
+        )
+        .value();
+
+      // const latestRelease = latestReleaseSubQuery(ctx.db);
+      // /*
+      //  * When updating the labels of an environment and retriggering releases
+      //  * we should exclude targets that were already part of the environment (would lead to uninteded duplicate job configs).
+      //  * We need to check if there is a job config matching the release and target
+      //  * in this environment that is not associated with a runbook.
+      //  */
+      // const existingJobConfigs = await ctx.db
+      //   .select()
+      //   .from(deployment)
+      //   .innerJoin(latestRelease, eq(latestRelease.deploymentId, deployment.id))
+      //   .innerJoin(system, eq(system.id, deployment.systemId))
+      //   .innerJoin(environment, eq(environment.systemId, system.id))
+      //   .innerJoin(target, eq(target.workspaceId, system.workspaceId))
+      //   .innerJoin(
+      //     jobConfig,
+      //     and(
+      //       eq(jobConfig.environmentId, environment.id),
+      //       eq(jobConfig.releaseId, latestRelease.id),
+      //       eq(jobConfig.targetId, target.id),
+      //       isNull(jobConfig.runbookId),
+      //     ),
+      //   )
+      //   .where(eq(environment.id, input.id));
+
+      // these are all job configs that have already been created for all releases in all deployments in this environment
+
+      // return ctx.db
+      //   .update(environment)
+      //   .set(input.data)
+      //   .where(eq(environment.id, input.id))
+      //   .returning()
+      //   .then(takeFirst)
+      //   .then((env) =>
+      //     createJobConfigs(ctx.db, "new_target")
+      //       .environments([env.id])
+      //       .filter((jobConfigsInserts) =>
+      //         jobConfigsInserts.filter(
+      //           (jobConfigInsert) =>
+      //             !existingJobConfigs.some(
+      //               (existingJobConfig) =>
+      //                 existingJobConfig.release.id ===
+      //                   jobConfigInsert.releaseId &&
+      //                 existingJobConfig.target.id === jobConfigInsert.targetId,
+      //             ),
+      //         ),
+      //       )
+      //       .filterAsync(isPassingReleaseSequencingCancelPolicy)
+      //       .then(createJobExecutionApprovals)
+      //       .insert()
+      //       .then((jobConfigs) =>
+      //         dispatchJobConfigs(ctx.db)
+      //           .jobConfigs(jobConfigs)
+      //           .filter(isPassingAllPolicies)
+      //           .then(cancelOldJobConfigsOnJobDispatch)
+      //           .dispatch(),
+      //       ),
+      //   );
     }),
 
   delete: protectedProcedure

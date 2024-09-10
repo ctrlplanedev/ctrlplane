@@ -25,7 +25,7 @@ import { isJobConfigInRolloutWindow } from "./gradual-rollout.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingReleaseDependencyPolicy } from "./release-checker.js";
 
-const isSuccessCriteriaPassing = async (
+export const isSuccessCriteriaPassing = async (
   db: Tx,
   policy: EnvironmentPolicy,
   release: Release,
