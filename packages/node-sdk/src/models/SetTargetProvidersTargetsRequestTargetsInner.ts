@@ -25,6 +25,12 @@ export interface SetTargetProvidersTargetsRequestTargetsInner {
    * @type {string}
    * @memberof SetTargetProvidersTargetsRequestTargetsInner
    */
+  identifier: string;
+  /**
+   *
+   * @type {string}
+   * @memberof SetTargetProvidersTargetsRequestTargetsInner
+   */
   name: string;
   /**
    *
@@ -38,12 +44,6 @@ export interface SetTargetProvidersTargetsRequestTargetsInner {
    * @memberof SetTargetProvidersTargetsRequestTargetsInner
    */
   kind: string;
-  /**
-   *
-   * @type {string}
-   * @memberof SetTargetProvidersTargetsRequestTargetsInner
-   */
-  provider: string;
   /**
    *
    * @type {object}
@@ -64,10 +64,11 @@ export interface SetTargetProvidersTargetsRequestTargetsInner {
 export function instanceOfSetTargetProvidersTargetsRequestTargetsInner(
   value: object,
 ): value is SetTargetProvidersTargetsRequestTargetsInner {
+  if (!("identifier" in value) || value["identifier"] === undefined)
+    return false;
   if (!("name" in value) || value["name"] === undefined) return false;
   if (!("version" in value) || value["version"] === undefined) return false;
   if (!("kind" in value) || value["kind"] === undefined) return false;
-  if (!("provider" in value) || value["provider"] === undefined) return false;
   if (!("config" in value) || value["config"] === undefined) return false;
   if (!("labels" in value) || value["labels"] === undefined) return false;
   return true;
@@ -87,10 +88,10 @@ export function SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped(
     return json;
   }
   return {
+    identifier: json["identifier"],
     name: json["name"],
     version: json["version"],
     kind: json["kind"],
-    provider: json["provider"],
     config: json["config"],
     labels: json["labels"],
   };
@@ -103,10 +104,10 @@ export function SetTargetProvidersTargetsRequestTargetsInnerToJSON(
     return value;
   }
   return {
+    identifier: value["identifier"],
     name: value["name"],
     version: value["version"],
     kind: value["kind"],
-    provider: value["provider"],
     config: value["config"],
     labels: value["labels"],
   };

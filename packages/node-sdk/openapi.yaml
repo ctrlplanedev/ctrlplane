@@ -112,13 +112,13 @@ paths:
                   items:
                     type: object
                     properties:
+                      identifier:
+                        type: string
                       name:
                         type: string
                       version:
                         type: string
                       kind:
-                        type: string
-                      provider:
                         type: string
                       config:
                         type: object
@@ -127,10 +127,10 @@ paths:
                         additionalProperties:
                           type: string
                     required:
+                      - identifier
                       - name
                       - version
                       - kind
-                      - provider
                       - config
                       - labels
       responses:

@@ -1,4 +1,6 @@
+import type { SetTargetProvidersTargetsRequestTargetsInner } from "@ctrlplane/node-sdk";
 import { CronJob } from "cron";
+import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -37,12 +39,28 @@ const scan = async () => {
     date: new Date().toISOString(),
   });
 
-  const targets = await getKubernetesClusters();
-  gkeLogger.info(`Found ${targets.length} clusters`, { count: targets.length });
+  const clusters = await getKubernetesClusters();
+  gkeLogger.info(`Found ${clusters.length} clusters`, {
+    count: clusters.length,
+  });
 
-  const namespaces = await getKubernetesNamespace(targets);
+  const namespaces = await getKubernetesNamespace(clusters);
   gkeLogger.info(`Found ${namespaces.length} namespaces`, {
     count: namespaces.length,
+  });
+
+  const targets: SetTargetProvidersTargetsRequestTargetsInner[] = [
+    ...clusters.map((t) => t.target),
+    ...namespaces,
+  ];
+
+  console.log(clusters.map((t) => t.target));
+
+  await api.setTargetProvidersTargets({
+    providerId: id,
+    setTargetProvidersTargetsRequest: {
+      targets: _.uniqBy(targets, (t) => t.identifier),
+    },
   });
 };
 

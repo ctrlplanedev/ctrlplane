@@ -16,12 +16,14 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { getUser } from "~/app/api/v1/auth";
 
 const bodySchema = z.object({
-  targets: z.array(createTarget.omit({ providerId: true })),
+  targets: z.array(
+    createTarget.omit({ lockedAt: true, providerId: true, workspaceId: true }),
+  ),
 });
 
 export const PATCH = async (
   req: NextRequest,
-  { params }: { params: { workspace: string; providerId: string } },
+  { params }: { params: { providerId: string } },
 ) => {
   const query = await db
     .select()
@@ -47,13 +49,20 @@ export const PATCH = async (
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 
   const response = await req.json();
-  const body = bodySchema.parse(response);
+  const body = await bodySchema.parseAsync(response);
 
   const results = await db
     .insert(target)
-    .values(body.targets.map((t) => ({ ...t, providerId: provider.id })))
+    .values(
+      body.targets.map((t) => ({
+        ...t,
+        providerId: provider.id,
+        workspaceId: provider.workspaceId,
+        lockedAt: null,
+      })),
+    )
     .onConflictDoUpdate({
-      target: [target.name, target.providerId],
+      target: [target.identifier, target.workspaceId],
       set: buildConflictUpdateColumns(target, ["labels"]),
     })
     .returning();

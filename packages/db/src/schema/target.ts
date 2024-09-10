@@ -19,7 +19,7 @@ export const target = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     version: text("version").notNull(),
-    name: text("name").notNull().unique(),
+    name: text("name").notNull(),
     kind: text("kind").notNull(),
     identifier: text("identifier").notNull(),
     providerId: uuid("provider_id").references(() => targetProvider.id, {
