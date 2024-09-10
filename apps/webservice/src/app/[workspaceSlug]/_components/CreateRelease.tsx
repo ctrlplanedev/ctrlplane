@@ -23,6 +23,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormRootMessage,
   useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
@@ -39,6 +40,7 @@ import {
 import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
+import { safeFormAwait } from "~/utils/error/safeAwait";
 
 const releaseDependency = z.object({
   targetLabelGroupId: z.string().uuid().optional(),
@@ -109,7 +111,13 @@ export const CreateReleaseDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
-    const release = await create.mutateAsync(data);
+    const [release, error] = await safeFormAwait(
+      create.mutateAsync(data),
+      form,
+      { entityName: "release" },
+    );
+    if (error != null) return;
+
     await utils.release.list.invalidate({ deploymentId: release.deploymentId });
 
     const deployment = deployments.data?.find(
@@ -368,6 +376,7 @@ export const CreateReleaseDialog: React.FC<{
               <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
+          <FormRootMessage />
         </Form>
       </DialogContent>
     </Dialog>

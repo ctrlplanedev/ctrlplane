@@ -23,18 +23,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormRootMessage,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 
 import { api } from "~/trpc/react";
+import { safeFormAwait } from "~/utils/error/safeAwait";
 
 const workspaceForm = z.object({
-  name: z.string().min(3).max(30),
+  name: z
+    .string()
+    .min(3, { message: "Workspace name must be at least 3 characters long." })
+    .max(30, { message: "Workspace Name must be at most 30 characters long." }),
   slug: z
     .string()
-    .min(3)
-    .max(30)
+    .min(3, { message: "URL must be at least 3 characters long." })
+    .max(30, { message: "URL must be at most 30 characters long." })
     .refine((slug) => slug === slugify(slug, { lower: true }), {
       message: "Must be a valid URL",
     }),
@@ -57,7 +62,10 @@ export default function WorkspaceJoin() {
 
   const router = useRouter();
   const onSubmit = form.handleSubmit(async (data) => {
-    await create.mutateAsync(data);
+    const [_, error] = await safeFormAwait(create.mutateAsync(data), form, {
+      entityName: "workspace",
+    });
+    if (error != null) return;
     router.push(`/${data.slug}`);
   });
 
@@ -120,7 +128,7 @@ export default function WorkspaceJoin() {
                   </FormItem>
                 )}
               />
-
+              <FormRootMessage />
               <Button
                 disabled={create.isPending}
                 size="lg"

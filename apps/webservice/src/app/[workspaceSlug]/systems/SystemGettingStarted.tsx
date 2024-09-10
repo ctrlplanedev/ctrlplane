@@ -4,9 +4,10 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { CreateSystemDialog } from "../_components/CreateSystem";
 
-export const SystemGettingStarted: React.FC<{ workspaceId: string }> = ({
-  workspaceId,
-}) => {
+export const SystemGettingStarted: React.FC<{
+  workspaceId: string;
+  workspaceSlug: string;
+}> = ({ workspaceId, workspaceSlug }) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -23,7 +24,10 @@ export const SystemGettingStarted: React.FC<{ workspaceId: string }> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CreateSystemDialog workspaceId={workspaceId}>
+          <CreateSystemDialog
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
+          >
             <Button size="sm">Create System</Button>
           </CreateSystemDialog>
           <Button size="sm" variant="secondary">

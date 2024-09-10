@@ -56,6 +56,7 @@ export const SidebarMain: React.FC<{
 
           <SidebarCreateMenu
             workspaceId={workspace.id}
+            workspaceSlug={workspace.slug}
             systemId={system.data?.id}
             deploymentId={deployment.data?.id}
           />

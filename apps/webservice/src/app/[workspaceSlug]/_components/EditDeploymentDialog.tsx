@@ -25,12 +25,13 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  RootFormMessage,
+  FormRootMessage,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
+import { safeFormAwait } from "~/utils/error/safeAwait";
 
 const deploymentFormSchema = z.object({
   systemId: z.string().uuid({ message: "Invalid system ID format." }),
@@ -67,36 +68,21 @@ export const EditDeploymentDialog: React.FC<
   });
 
   const update = api.deployment.update.useMutation({
-    onError: (error) => {
-      if (error.message.includes("violates unique constraint")) {
-        form.setError("root", {
-          type: "manual",
-          message:
-            "A deployment with this slug already exists. Please choose a different slug.",
-        });
-        return;
-      }
-      form.setError("root", {
-        type: "manual",
-        message: "An unexpected error occurred. Please try again.",
-      });
-    },
     onSuccess: () => {
       router.refresh();
       setOpen(false);
     },
   });
 
-  const onSubmit = form.handleSubmit((data) => {
+  const onSubmit = form.handleSubmit(async (data) => {
     const isDataChanged = !isEqual(data, { name, slug, description });
     if (!isDataChanged) {
       setOpen(false);
       return;
     }
 
-    update.mutate({
-      id,
-      data: { name: data.name, slug: data.slug, description: data.description },
+    await safeFormAwait(update.mutateAsync({ id, data }), form, {
+      entityName: "deployment",
     });
   });
 
@@ -168,7 +154,7 @@ export const EditDeploymentDialog: React.FC<
                 </FormItem>
               )}
             />
-            <RootFormMessage />
+            <FormRootMessage />
             <DialogFooter>
               <CopyButton textToCopy={id} />
               <div className="flex-grow" />

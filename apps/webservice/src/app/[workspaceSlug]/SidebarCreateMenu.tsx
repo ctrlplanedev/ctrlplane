@@ -17,9 +17,10 @@ import { CreateSystemDialog } from "./_components/CreateSystem";
 
 export const SidebarCreateMenu: React.FC<{
   workspaceId: string;
+  workspaceSlug: string;
   deploymentId?: string;
   systemId?: string;
-}> = ({ workspaceId, deploymentId, systemId }) => {
+}> = ({ workspaceId, workspaceSlug, deploymentId, systemId }) => {
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -38,7 +39,10 @@ export const SidebarCreateMenu: React.FC<{
         forceMount
       >
         <DropdownMenuGroup>
-          <CreateSystemDialog workspaceId={workspaceId}>
+          <CreateSystemDialog
+            workspaceId={workspaceId}
+            workspaceSlug={workspaceSlug}
+          >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New System
             </DropdownMenuItem>

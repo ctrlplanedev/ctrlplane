@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import slugify from "slugify";
 import { z } from "zod";
@@ -22,6 +23,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
+  FormRootMessage,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import {
@@ -35,12 +38,27 @@ import {
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
+import { safeFormAwait } from "~/utils/error/safeAwait";
 
 const deploymentForm = z.object({
-  name: z.string().min(3).max(255),
-  slug: z.string().min(3).max(255),
   systemId: z.string().uuid(),
-  description: z.string().default(""),
+  name: z
+    .string()
+    .min(3, { message: "Deployment name must be at least 3 characters long." })
+    .max(255, {
+      message: "Deployment name must be at most 255 characters long.",
+    }),
+  slug: z
+    .string()
+    .min(3, { message: "Slug must be at least 3 characters long." })
+    .max(255, { message: "Slug must be at most 255 characters long." }),
+  description: z
+    .string()
+    .max(255, { message: "Description must be at most 255 characters long." })
+    .optional()
+    .refine((val) => !val || val.length >= 3, {
+      message: "Description must be at least 3 characters long if provided.",
+    }),
 });
 
 type DeploymentFormValues = z.infer<typeof deploymentForm>;
@@ -51,14 +69,32 @@ export const CreateDeploymentDialog: React.FC<{
 }> = ({ children, defaultSystemId = "" }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const create = api.deployment.create.useMutation();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+
+  const create = api.deployment.create.useMutation({
+    onSuccess: (deployment) => {
+      router.refresh();
+      const slug = systems.data?.items.find(
+        (system) => system.id === deployment.systemId,
+      )?.slug;
+      if (slug == null) return;
+      router.push(
+        `/${workspaceSlug}/systems/${slug}/deployments/${deployment.slug}`,
+      );
+      setOpen(false);
+    },
+  });
+
   const form = useForm<DeploymentFormValues>({
+    resolver: zodResolver(deploymentForm),
     defaultValues: {
       systemId: defaultSystemId,
       name: "",
       slug: "",
       description: "",
     },
+    mode: "onChange",
   });
 
   const { systemId, name } = form.watch();
@@ -66,7 +102,6 @@ export const CreateDeploymentDialog: React.FC<{
     () => form.setValue("slug", slugify(name, { lower: true })),
     [form, name],
   );
-  const [open, setOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
     if (defaultSystemId === "") return;
@@ -87,18 +122,13 @@ export const CreateDeploymentDialog: React.FC<{
     form.setValue("systemId", firstSystem.id);
   }, [defaultSystemId, form, systems, systemId]);
 
-  const router = useRouter();
   const onSubmit = form.handleSubmit(async (data) => {
-    const deployment = await create.mutateAsync(data);
-    router.refresh();
-    const slug = systems.data?.items.find(
-      (system) => system.id === deployment.systemId,
-    )?.slug;
-    if (slug == null) return;
-    router.push(
-      `/${workspaceSlug}/systems/${slug}/deployments/${deployment.slug}`,
+    const [_, error] = await safeFormAwait(
+      create.mutateAsync({ ...data, description: data.description ?? "" }),
+      form,
+      { entityName: "deployment" },
     );
-    setOpen(false);
+    if (error != null) return;
   });
 
   return (
@@ -137,6 +167,7 @@ export const CreateDeploymentDialog: React.FC<{
                       </SelectContent>
                     </Select>
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -152,6 +183,7 @@ export const CreateDeploymentDialog: React.FC<{
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -164,6 +196,7 @@ export const CreateDeploymentDialog: React.FC<{
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -176,9 +209,11 @@ export const CreateDeploymentDialog: React.FC<{
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+            <FormRootMessage />
             <DialogFooter>
               <Button type="submit">Create</Button>
             </DialogFooter>

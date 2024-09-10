@@ -13,6 +13,7 @@ import {
 import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
+import { safeAwait } from "~/utils/error/safeAwait";
 
 type DeleteDeploymentProps = {
   id: string;
@@ -31,7 +32,11 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
   const deleteDeployment = api.deployment.delete.useMutation();
 
   const onDelete = async () => {
-    await deleteDeployment.mutateAsync(id);
+    const [_, error] = await safeAwait(deleteDeployment.mutateAsync(id));
+    if (error != null) {
+      console.log(error);
+      return;
+    }
     router.refresh();
     setIsOpen(false);
   };

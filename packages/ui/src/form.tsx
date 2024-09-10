@@ -187,7 +187,7 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = "FormMessage";
 
-const RootFormMessage = () => {
+const FormRootMessage = () => {
   const { formState } = useFormContext();
   const error = formState.errors.root;
 
@@ -208,7 +208,7 @@ export {
   FormDescription,
   FormMessage,
   FormField,
-  RootFormMessage,
+  FormRootMessage,
 };
 
 export { useFieldArray } from "react-hook-form";
