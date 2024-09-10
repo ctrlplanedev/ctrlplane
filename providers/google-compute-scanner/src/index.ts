@@ -54,8 +54,6 @@ const scan = async () => {
     ...namespaces,
   ];
 
-  console.log(clusters.map((t) => t.target));
-
   await api.setTargetProvidersTargets({
     providerId: id,
     setTargetProvidersTargetsRequest: {
