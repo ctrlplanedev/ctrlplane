@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import _ from "lodash";
 
+import { Separator } from "@ctrlplane/ui/separator";
+
 import { api } from "~/trpc/server";
+import { JobExecHistoryChart } from "./JobExecHistoryChart";
 import { SystemGettingStarted } from "./SystemGettingStarted";
 import { SystemBreadcrumbNavbar } from "./SystemsBreadcrumb";
 import { SystemsList } from "./SystemsList";
@@ -25,7 +28,11 @@ export default async function SystemsPage({
       {systemsAll.total === 0 ? (
         <SystemGettingStarted workspaceId={workspace.id} />
       ) : (
-        <SystemsList workspace={workspace} />
+        <>
+          <JobExecHistoryChart workspace={workspace} />
+          <Separator />
+          <SystemsList workspace={workspace} systemsCount={systemsAll.total} />
+        </>
       )}
     </>
   );
