@@ -9,19 +9,13 @@ export const env = createEnv({
     CTRLPLANE_API_URL: z.string().default("http://localhost:3000"),
     CTRLPLANE_API_KEY: z.string(),
     CTRLPLANE_WORKSPACE: z.string(),
-    CTRLPLANE_SCANNER_NAME: z.string().default("offical-google-scanner"),
-    CTRLPLANE_GKE_TARGET_NAME: z
-      .string()
-      .default("gke-{{ projectId }}-{{ cluster.name }}"),
-    CTRLPLANE_COMPUTE_TARGET_NAME: z
-      .string()
-      .default("gc-{{ projectId }}-{{ vm.name }}"),
+    CTRLPLANE_AGENT_NAME: z.string().default("kubernetes-job-agent"),
+
+    KUBE_CONFIG_PATH: z.string().optional(),
+    KUBE_NAMESPACE: z.string().default("default"),
 
     CRON_ENABLED: z.boolean().default(true),
     CRON_TIME: z.string().default("* * * * *"),
-
-    GOOGLE_PROJECT_ID: z.string().min(1),
-    GOOGLE_SCAN_GKE: z.boolean().default(true),
   },
   runtimeEnv: process.env,
 

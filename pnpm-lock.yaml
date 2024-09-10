@@ -1184,9 +1184,6 @@ importers:
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../../packages/validators
-      '@google-cloud/container':
-        specifier: ^5.16.0
-        version: 5.16.0
       '@kubernetes/client-node':
         specifier: ^0.21.0
         version: 0.21.0
@@ -1199,21 +1196,18 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
-      google-auth-library:
-        specifier: ^9.13.0
-        version: 9.14.0
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
       p-retry:
         specifier: ^6.2.0
         version: 6.2.0
-      semver:
-        specifier: ^7.6.2
-        version: 7.6.3
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1227,12 +1221,12 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/lodash':
         specifier: ^4.17.5
         version: 4.17.7
-      '@types/semver':
-        specifier: ^7.5.8
-        version: 7.5.8
       eslint:
         specifier: 'catalog:'
         version: 9.9.1(jiti@1.21.6)
