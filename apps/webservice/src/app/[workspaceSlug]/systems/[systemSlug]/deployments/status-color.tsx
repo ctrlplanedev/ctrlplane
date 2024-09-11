@@ -1,6 +1,5 @@
-import colors from "tailwindcss/colors";
-
 import type { JobExecutionStatus } from "@ctrlplane/db/schema";
+import colors from "tailwindcss/colors";
 
 export const statusColor: Record<JobExecutionStatus | "configured", string> = {
   completed: colors.green[400],
