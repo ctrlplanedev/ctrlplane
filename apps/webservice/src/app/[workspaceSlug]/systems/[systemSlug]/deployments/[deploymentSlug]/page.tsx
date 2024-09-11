@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbInfoCircle, TbLink } from "react-icons/tb";
-import { isPresent } from "ts-is-present";
 
 import { Card } from "@ctrlplane/ui/card";
 import {
@@ -26,23 +25,9 @@ export default async function DeploymentPage({
   const environments = await api.environment.bySystemId(system.id);
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
-  const releases = await api.release.list({ deploymentId: deployment.id });
-  const jobConfigs = await api.job.config.byDeploymentId(deployment.id);
-  const distrubtion = await api.deployment.distrubtionById(deployment.id);
 
   const showPreviousReleaseDistro = 30;
 
-  const distro = _.chain(releases)
-    .map((r) => ({
-      version: r.version,
-      count: distrubtion.filter((d) => d.release.id === r.id).length,
-    }))
-    .take(showPreviousReleaseDistro)
-    .value();
-  const distroPadding = _.range(
-    0,
-    showPreviousReleaseDistro - distro.length,
-  ).map(() => ({ version: "", count: 0 }));
   return (
     <ResizablePanelGroup direction="horizontal">
       <ResizablePanel className="min-w-[950px]">
@@ -52,31 +37,15 @@ export default async function DeploymentPage({
               Distrubtion of the last {showPreviousReleaseDistro} releases
               across all targets
             </div>
-            <DistroBarChart distro={distro} distroPadding={distroPadding} />
+            <DistroBarChart
+              deploymentId={deployment.id}
+              showPreviousReleaseDistro={showPreviousReleaseDistro}
+            />
           </Card>
         </div>
 
         <div className="container mx-auto p-8">
-          <ReleaseTable
-            deployment={deployment}
-            jobConfigs={jobConfigs
-              .filter(
-                (jobConfig) =>
-                  isPresent(jobConfig.environmentId) &&
-                  isPresent(jobConfig.releaseId) &&
-                  isPresent(jobConfig.targetId),
-              )
-              .map((jobConfig) => ({
-                ...jobConfig,
-                environmentId: jobConfig.environmentId!,
-                target: jobConfig.target!,
-                releaseId: jobConfig.releaseId!,
-              }))}
-            releases={releases}
-            environments={environments}
-            workspaceSlug={params.workspaceSlug}
-            systemSlug={system.slug}
-          />
+          <ReleaseTable deployment={deployment} environments={environments} />
         </div>
       </ResizablePanel>
       <ResizableHandle />

@@ -1,20 +1,19 @@
-import type {
-  Deployment,
-  JobConfig,
-  JobExecution,
-  Target,
-} from "@ctrlplane/db/schema";
+"use client";
+
+import type { Deployment } from "@ctrlplane/db/schema";
 import type { ReleaseType } from "semver";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import _ from "lodash";
 import { parse, valid } from "semver";
+import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
-import { api } from "~/trpc/server";
+import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
@@ -78,32 +77,47 @@ const SemverHelperButtons: React.FC<{
 
 export const ReleaseTable: React.FC<{
   deployment: Deployment;
-  jobConfigs: Array<
-    JobConfig & {
-      jobExecution: JobExecution | null;
-      target: Target;
-    }
-  >;
-  releases: { id: string; version: string; createdAt: Date }[];
   environments: {
     id: string;
     name: string;
     targets: { id: string }[];
   }[];
-  workspaceSlug: string;
-  systemSlug: string;
-}> = async ({
-  deployment,
-  jobConfigs,
-  releases,
-  environments,
-  workspaceSlug,
-  systemSlug,
-}) => {
-  const firstRelease = releases.at(0);
-  const distrubtion = await api.deployment.distrubtionById(deployment.id);
-  const releaseIds = releases.map((r) => r.id);
-  const blockedEnvByRelease = await api.release.blockedEnvironments(releaseIds);
+}> = ({ deployment, environments }) => {
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+  const jobConfigsQuery = api.job.config.byDeploymentId.useQuery(
+    deployment.id,
+    { refetchInterval: 2_000 },
+  );
+
+  const releases = api.release.list.useQuery(
+    { deploymentId: deployment.id },
+    { refetchInterval: 10_000 },
+  );
+
+  const jobConfigs = (jobConfigsQuery.data ?? [])
+    .filter(
+      (jobConfig) =>
+        isPresent(jobConfig.environmentId) &&
+        isPresent(jobConfig.releaseId) &&
+        isPresent(jobConfig.targetId),
+    )
+    .map((jobConfig) => ({
+      ...jobConfig,
+      environmentId: jobConfig.environmentId!,
+      target: jobConfig.target!,
+      releaseId: jobConfig.releaseId!,
+    }));
+
+  const firstRelease = releases.data?.at(0);
+  const distrubtion = api.deployment.distrubtionById.useQuery(deployment.id, {
+    refetchInterval: 2_000,
+  });
+  const releaseIds = releases.data?.map((r) => r.id) ?? [];
+  const blockedEnvByRelease =
+    api.release.blockedEnvironments.useQuery(releaseIds);
 
   return (
     <div className="w-full overflow-x-auto">
@@ -147,8 +161,8 @@ export const ReleaseTable: React.FC<{
           </tr>
         </thead>
         <tbody className="roudned-2xl">
-          {releases.map((r, releaseIdx) => {
-            const blockedEnvs = blockedEnvByRelease[r.id] ?? [];
+          {releases.data?.map((r, releaseIdx) => {
+            const blockedEnvs = blockedEnvByRelease.data?.[r.id] ?? [];
             return (
               <tr key={r.id} className="bg-neutral-800/10">
                 <td
@@ -156,7 +170,7 @@ export const ReleaseTable: React.FC<{
                     "sticky left-0 z-10 min-w-[250px] backdrop-blur-lg",
                     "items-center border-b border-l px-4 text-lg",
                     releaseIdx === 0 && "rounded-tl-md border-t",
-                    releaseIdx === releases.length - 1 && "rounded-bl-md",
+                    releaseIdx === releases.data.length - 1 && "rounded-bl-md",
                   )}
                 >
                   {r.version}
@@ -166,11 +180,12 @@ export const ReleaseTable: React.FC<{
                     (t) => t.releaseId === r.id && t.environmentId === env.id,
                   );
 
-                  const hasActiveDeployment = distrubtion.filter(
-                    (d) =>
-                      d.release.id === r.id &&
-                      d.jobConfig.environmentId === env.id,
-                  ).length;
+                  const hasActiveDeployment =
+                    distrubtion.data?.filter(
+                      (d) =>
+                        d.release.id === r.id &&
+                        d.jobConfig.environmentId === env.id,
+                    ).length ?? 0;
                   const hasTargets = env.targets.length > 0;
                   const hasRelease = environmentReleaseJobConfigs.length > 0;
                   const hasJobAgent = deployment.jobAgentId != null;
