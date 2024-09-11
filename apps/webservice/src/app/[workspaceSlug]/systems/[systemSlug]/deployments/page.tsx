@@ -30,6 +30,7 @@ export default async function SystemDeploymentsPage({
             deployments={deployments}
             environments={environments}
             systemSlug={params.systemSlug}
+            workspaceSlug={params.workspaceSlug}
           />
         </div>
       )}

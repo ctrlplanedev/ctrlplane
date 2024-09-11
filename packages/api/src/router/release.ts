@@ -173,10 +173,13 @@ export const releaseRouter = createTRPCRouter({
   blockedEnvironments: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseGet).on(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          input.map((releaseId: any) => ({ type: "release", id: releaseId })),
-        ),
+        Promise.all(
+          (input as string[]).map((releaseId) =>
+            canUser
+              .perform(Permission.ReleaseGet)
+              .on({ type: "release", id: releaseId }),
+          ),
+        ).then((results) => results.every(Boolean)),
     })
     .input(z.array(z.string().uuid()))
     .query(async ({ input }) => {

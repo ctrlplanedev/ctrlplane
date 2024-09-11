@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   Deployment,
   JobConfig,
@@ -8,7 +6,6 @@ import type {
 } from "@ctrlplane/db/schema";
 import type { ReleaseType } from "semver";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
 import _ from "lodash";
 import { parse, valid } from "semver";
 
@@ -17,7 +14,8 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
-import { api } from "~/trpc/react";
+import { api } from "~/trpc/server";
+import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
 const Tb: React.FC<{ children?: React.ReactNode; className?: string }> = ({
@@ -92,20 +90,20 @@ export const ReleaseTable: React.FC<{
     name: string;
     targets: { id: string }[];
   }[];
-}> = ({ deployment, jobConfigs, releases, environments }) => {
+  workspaceSlug: string;
+  systemSlug: string;
+}> = async ({
+  deployment,
+  jobConfigs,
+  releases,
+  environments,
+  workspaceSlug,
+  systemSlug,
+}) => {
   const firstRelease = releases.at(0);
-  const deploy = api.release.deploy.toEnvironment.useMutation();
-  const router = useRouter();
-  const distrubtion = api.deployment.distrubtionById.useQuery(deployment.id, {
-    refetchInterval: 2_000,
-  });
+  const distrubtion = await api.deployment.distrubtionById(deployment.id);
   const releaseIds = releases.map((r) => r.id);
-  const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
-    releaseIds,
-    { enabled: releaseIds.length > 0 },
-  );
-
-  const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
+  const blockedEnvByRelease = await api.release.blockedEnvironments(releaseIds);
 
   return (
     <div className="w-full overflow-x-auto">
@@ -131,7 +129,7 @@ export const ReleaseTable: React.FC<{
                 )}
               >
                 <Link
-                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/environments?selected=${env.id}`}
+                  href={`/${workspaceSlug}/systems/${systemSlug}/environments?selected=${env.id}`}
                 >
                   <div className="flex justify-between">
                     {env.name}
@@ -150,7 +148,7 @@ export const ReleaseTable: React.FC<{
         </thead>
         <tbody className="roudned-2xl">
           {releases.map((r, releaseIdx) => {
-            const blockedEnvs = blockedEnvByRelease.data?.[r.id] ?? [];
+            const blockedEnvs = blockedEnvByRelease[r.id] ?? [];
             return (
               <tr key={r.id} className="bg-neutral-800/10">
                 <td
@@ -168,12 +166,11 @@ export const ReleaseTable: React.FC<{
                     (t) => t.releaseId === r.id && t.environmentId === env.id,
                   );
 
-                  const hasActiveDeployment =
-                    distrubtion.data?.filter(
-                      (d) =>
-                        d.release.id === r.id &&
-                        d.jobConfig.environmentId === env.id,
-                    ).length ?? 0;
+                  const hasActiveDeployment = distrubtion.filter(
+                    (d) =>
+                      d.release.id === r.id &&
+                      d.jobConfig.environmentId === env.id,
+                  ).length;
                   const hasTargets = env.targets.length > 0;
                   const hasRelease = environmentReleaseJobConfigs.length > 0;
                   const hasJobAgent = deployment.jobAgentId != null;
@@ -192,7 +189,7 @@ export const ReleaseTable: React.FC<{
                     <td
                       key={env.id}
                       className={cn(
-                        "h-[55px] w-[200px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
+                        "h-[55px] w-[220px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
                         releaseIdx === 0 && "border-t",
                         idx === environments.length - 1 &&
                           "border-r-neutral-800",
@@ -201,6 +198,11 @@ export const ReleaseTable: React.FC<{
                     >
                       {showRelease && (
                         <Release
+                          workspaceSlug={workspaceSlug}
+                          systemSlug={systemSlug}
+                          deploymentSlug={deployment.slug}
+                          releaseId={r.id}
+                          environment={env}
                           activeDeploymentCount={hasActiveDeployment}
                           name={r.version}
                           deployedAt={
@@ -211,26 +213,7 @@ export const ReleaseTable: React.FC<{
                       )}
 
                       {canDeploy && (
-                        <Button
-                          className={cn(
-                            "w-full border-dashed border-neutral-800/50 bg-transparent text-center text-neutral-800 hover:border-blue-400 hover:bg-transparent hover:text-blue-400",
-                          )}
-                          variant="outline"
-                          size="sm"
-                          onClick={async (e) => {
-                            e.preventDefault();
-
-                            await deploy.mutateAsync({
-                              environmentId: env.id,
-                              releaseId: r.id,
-                            });
-
-                            router.refresh();
-                          }}
-                          disabled={deploy.isPending}
-                        >
-                          Deploy
-                        </Button>
+                        <DeployButton releaseId={r.id} environmentId={env.id} />
                       )}
 
                       {!canDeploy && !hasRelease && (

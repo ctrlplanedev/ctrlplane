@@ -1,10 +1,8 @@
-"use client";
-
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbInfoCircle, TbLink } from "react-icons/tb";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { isPresent } from "ts-is-present";
 
 import { Card } from "@ctrlplane/ui/card";
@@ -13,42 +11,31 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@ctrlplane/ui/resizable";
-import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { api } from "~/trpc/react";
+import { api } from "~/trpc/server";
 import { ReleaseTable } from "../TableRelease";
+import { DistroBarChart } from "./DistroBarChart";
 import { JobAgentMissingAlert } from "./JobAgentMissingAlert";
 
-export default function DeploymentPage({
+export default async function DeploymentPage({
   params,
 }: {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
 }) {
-  const system = api.system.bySlug.useQuery(params);
-  const environments = api.environment.bySystemId.useQuery(
-    system.data?.id ?? "",
-    { enabled: isPresent(system.data) },
-  );
-  const deployment = api.deployment.bySlug.useQuery(params);
-  const releases = api.release.list.useQuery(
-    { deploymentId: deployment.data?.id ?? "" },
-    { enabled: isPresent(deployment.data), refetchInterval: 10_000 },
-  );
-  const jobConfigs = api.job.config.byDeploymentId.useQuery(
-    deployment.data?.id ?? "",
-    { enabled: isPresent(deployment.data), refetchInterval: 2_000 },
-  );
-
-  const distrubtion = api.deployment.distrubtionById.useQuery(
-    deployment.data?.id ?? "",
-    { enabled: isPresent(deployment.data), refetchInterval: 2_000 },
-  );
+  const system = await api.system.bySlug(params);
+  const environments = await api.environment.bySystemId(system.id);
+  const deployment = await api.deployment.bySlug(params);
+  if (deployment == null) return notFound();
+  const releases = await api.release.list({ deploymentId: deployment.id });
+  const jobConfigs = await api.job.config.byDeploymentId(deployment.id);
+  const distrubtion = await api.deployment.distrubtionById(deployment.id);
 
   const showPreviousReleaseDistro = 30;
-  const distro = _.chain(releases.data ?? [])
+
+  const distro = _.chain(releases)
     .map((r) => ({
       version: r.version,
-      count: distrubtion.data?.filter((d) => d.release.id === r.id).length ?? 0,
+      count: distrubtion.filter((d) => d.release.id === r.id).length,
     }))
     .take(showPreviousReleaseDistro)
     .value();
@@ -65,63 +52,40 @@ export default function DeploymentPage({
               Distrubtion of the last {showPreviousReleaseDistro} releases
               across all targets
             </div>
-            {distrubtion.isLoading || distrubtion.data == null ? (
-              <div className="h-[250px] p-6">
-                <Skeleton className="h-full" />
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart
-                  data={[...distro, ...distroPadding]}
-                  margin={{ bottom: -40, top: 30, right: 20, left: -10 }}
-                >
-                  <XAxis
-                    dataKey="version"
-                    type="category"
-                    interval={0}
-                    height={100}
-                    style={{ fontSize: "0.75rem" }}
-                    angle={-45}
-                    textAnchor="end"
-                  />
-                  <YAxis style={{ fontSize: "0.75rem" }} dataKey="count" />
-                  <Bar dataKey="count" fill="#8884d8"></Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <DistroBarChart distro={distro} distroPadding={distroPadding} />
           </Card>
         </div>
 
-        {isPresent(deployment.data) && (
-          <div className="container mx-auto p-8">
-            <ReleaseTable
-              deployment={deployment.data}
-              jobConfigs={(jobConfigs.data ?? [])
-                .filter(
-                  (jobConfig) =>
-                    isPresent(jobConfig.environmentId) &&
-                    isPresent(jobConfig.releaseId) &&
-                    isPresent(jobConfig.targetId),
-                )
-                .map((jobConfig) => ({
-                  ...jobConfig,
-                  environmentId: jobConfig.environmentId!,
-                  target: jobConfig.target!,
-                  releaseId: jobConfig.releaseId!,
-                }))}
-              releases={releases.data ?? []}
-              environments={environments.data ?? []}
-            />
-          </div>
-        )}
+        <div className="container mx-auto p-8">
+          <ReleaseTable
+            deployment={deployment}
+            jobConfigs={jobConfigs
+              .filter(
+                (jobConfig) =>
+                  isPresent(jobConfig.environmentId) &&
+                  isPresent(jobConfig.releaseId) &&
+                  isPresent(jobConfig.targetId),
+              )
+              .map((jobConfig) => ({
+                ...jobConfig,
+                environmentId: jobConfig.environmentId!,
+                target: jobConfig.target!,
+                releaseId: jobConfig.releaseId!,
+              }))}
+            releases={releases}
+            environments={environments}
+            workspaceSlug={params.workspaceSlug}
+            systemSlug={system.slug}
+          />
+        </div>
       </ResizablePanel>
       <ResizableHandle />
       <ResizablePanel>
         <div className="border-b p-6">
-          <h3 className="font-semibold">{deployment.data?.name}</h3>
-          {deployment.data?.description && (
+          <h3 className="font-semibold">{deployment.name}</h3>
+          {deployment.description && (
             <p className="text-sm text-muted-foreground">
-              {deployment.data.description}
+              {deployment.description}
             </p>
           )}
         </div>
@@ -135,16 +99,16 @@ export default function DeploymentPage({
                   <td className="w-[100px] p-1 pr-2 text-muted-foreground">
                     Slug
                   </td>
-                  <td className="px-1">{deployment.data?.slug}</td>
+                  <td className="px-1">{deployment.slug}</td>
                 </tr>
                 <tr>
                   <td className="p-1 pr-2 text-muted-foreground">System</td>
                   <td>
                     <Link
                       className="inline-flex items-center gap-2 rounded-md px-1 hover:bg-neutral-900"
-                      href={`/${params.workspaceSlug}/systems/${system.data?.slug}`}
+                      href={`/${params.workspaceSlug}/systems/${system.slug}`}
                     >
-                      {system.data?.name ?? system.data?.slug}
+                      {system.name}
                       <TbLink className="text-xs text-muted-foreground" />
                     </Link>
                   </td>
@@ -159,8 +123,12 @@ export default function DeploymentPage({
               <TbInfoCircle className="text-muted-foreground" />
             </div>
 
-            {deployment.data?.jobAgentId == null ? (
-              <JobAgentMissingAlert />
+            {deployment.jobAgentId == null ? (
+              <JobAgentMissingAlert
+                workspaceSlug={params.workspaceSlug}
+                systemSlug={system.slug}
+                deploymentSlug={deployment.slug}
+              />
             ) : (
               <table width="100%" style={{ tableLayout: "fixed" }}>
                 <tbody>
@@ -169,14 +137,14 @@ export default function DeploymentPage({
                       Type
                     </td>
                     <td className="px-1">
-                      {capitalCase(deployment.data.agent?.type ?? "")}
+                      {capitalCase(deployment.agent?.type ?? "")}
                     </td>
                   </tr>
                   <tr>
                     <td className="w-[100px] p-1 pr-2 text-muted-foreground">
                       Name
                     </td>
-                    <td className="px-1">{deployment.data.agent?.name}</td>
+                    <td className="px-1">{deployment.agent?.name}</td>
                   </tr>
                 </tbody>
               </table>
