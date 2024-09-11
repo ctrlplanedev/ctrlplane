@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 
-import { api } from "../../../../../trpc/react";
+import { api } from "~/trpc/react";
 
 export const DeployButton: React.FC<{
   releaseId: string;
@@ -21,16 +21,14 @@ export const DeployButton: React.FC<{
       )}
       variant="outline"
       size="sm"
-      onClick={(e) => {
-        e.preventDefault();
-
+      onClick={() =>
         deploy
           .mutateAsync({
             environmentId,
             releaseId,
           })
-          .then(() => router.refresh());
-      }}
+          .then(() => router.refresh())
+      }
       disabled={deploy.isPending}
     >
       Deploy
