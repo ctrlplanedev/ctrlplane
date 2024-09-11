@@ -9,7 +9,7 @@ import { dispatchJobExecutionsQueue } from "./queue.js";
 export type DispatchFilterFunc = (
   db: Tx,
   jobConfigs: JobConfig[],
-) => Promise<JobConfig[]>;
+) => Promise<JobConfig[]> | JobConfig[];
 
 type ThenFunc = (tx: Tx, jobConfigs: JobConfig[]) => Promise<void>;
 

@@ -20,7 +20,7 @@ type FilterFunc = (
   insertJobConfigs: JobConfigInsert[],
 ) => Promise<JobConfigInsert[]>;
 
-type ThenFunc = (tx: Tx, jobConfigs: JobConfig[]) => Promise<void>;
+type ThenFunc = (tx: Tx, jobConfigs: JobConfig[]) => Promise<void> | void;
 
 export const createJobConfigs = (tx: Tx, type: JobConfigType) =>
   new JobConfigBuilder(tx, type);

@@ -184,7 +184,7 @@ const DeploymentTable: React.FC<{
                   <td
                     key={env.id}
                     className={cn(
-                      "h-[55px] w-[200px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
+                      "h-[55px] w-[220px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
                       envIdx === environments.length - 1 &&
                         "border-r-neutral-800",
                       idx === 0 && "border-t",
