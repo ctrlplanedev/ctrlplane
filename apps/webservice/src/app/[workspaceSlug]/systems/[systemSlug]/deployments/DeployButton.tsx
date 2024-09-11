@@ -21,15 +21,15 @@ export const DeployButton: React.FC<{
       )}
       variant="outline"
       size="sm"
-      onClick={async (e) => {
+      onClick={(e) => {
         e.preventDefault();
 
-        await deploy.mutateAsync({
-          environmentId,
-          releaseId,
-        });
-
-        router.refresh();
+        deploy
+          .mutateAsync({
+            environmentId,
+            releaseId,
+          })
+          .then(() => router.refresh());
       }}
       disabled={deploy.isPending}
     >
