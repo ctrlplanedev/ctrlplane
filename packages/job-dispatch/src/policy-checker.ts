@@ -82,25 +82,27 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
     .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
     .where(
       and(
-        inArray(jobConfig.id, jobConfigs.map((t) => t.id).filter(isPresent)),
+        inArray(
+          jobConfig.id,
+          jobConfigs.map((t) => t.id),
+        ),
         isNull(environment.deletedAt),
       ),
     );
 
-  return (
-    await Promise.all(
-      policies.map(async (p) => {
-        if (p.environment_policy == null) return p.job_config;
-        return (await isSuccessCriteriaPassing(
-          db,
-          p.environment_policy,
-          p.release,
-        ))
-          ? p.job_config
-          : null;
-      }),
-    )
-  ).filter(isPresent);
+  return Promise.all(
+    policies.map(async (policy) => {
+      if (!policy.environment_policy) return policy.job_config;
+
+      const isPassing = await isSuccessCriteriaPassing(
+        db,
+        policy.environment_policy,
+        policy.release,
+      );
+
+      return isPassing ? policy.job_config : null;
+    }),
+  ).then((results) => results.filter(isPresent));
 };
 
 /**
@@ -110,7 +112,10 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
  * @returns JobConfigs that pass the approval policy - the approval policy will
  * require manual approval before dispatching if the policy is set to manual.
  */
-const isPassingApprovalPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
+export const isPassingApprovalPolicy = async (
+  db: Tx,
+  jobConfigs: JobConfig[],
+) => {
   if (jobConfigs.length === 0) return [];
   const policies = await db
     .select()
@@ -124,7 +129,10 @@ const isPassingApprovalPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
     )
     .where(
       and(
-        inArray(jobConfig.id, jobConfigs.map((t) => t.id).filter(isPresent)),
+        inArray(
+          jobConfig.id,
+          jobConfigs.map((t) => t.id),
+        ),
         isNull(environment.deletedAt),
       ),
     );
@@ -187,12 +195,32 @@ const exitStatus = [
 ] as any[];
 
 /**
+ * Checks if job configurations pass the release sequencing wait policy.
  *
- * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the release sequencing policy - the release sequencing wait policy
- * will wait for all other active job executions in the environment to complete
- * before dispatching.
+ * This function filters job configurations based on the release sequencing wait
+ * policy. It ensures that new job executions are only dispatched when there are
+ * no active job executions in the same environment. This policy helps maintain
+ * a sequential order of job executions within an environment.
+ *
+ * The function performs the following steps:
+ * 1. If no job configs are provided, it returns an empty array.
+ * 2. It queries the database for active job executions in the affected
+ *    environments.
+ * 3. It applies several conditions to find relevant active job executions:
+ *    - The environment must be one of those in the provided job configs.
+ *    - The environment must not be deleted.
+ *    - The environment policy must have release sequencing set to "wait".
+ *    - The job config must not be one of those provided (to avoid
+ *      self-blocking).
+ *    - The job execution must be in an active state (not completed, failed,
+ *      etc.).
+ * 4. Finally, it filters the input job configs, allowing only those where there
+ *    are no active job executions in the same environment.
+ *
+ * @param db - The database transaction object.
+ * @param jobConfigs - An array of JobConfig objects to be checked.
+ * @returns An array of JobConfig objects that pass the release sequencing wait
+ * policy.
  */
 const isPassingReleaseSequencingWaitPolicy = async (
   db: Tx,
@@ -352,7 +380,7 @@ export const isPassingReleaseWindowPolicy = async (
           ),
         )
         .then((policies) =>
-          policies
+          _.chain(policies)
             .filter(
               ({ environment_policy_release_window }) =>
                 environment_policy_release_window == null ||
@@ -363,13 +391,9 @@ export const isPassingReleaseWindowPolicy = async (
                   environment_policy_release_window.recurrence,
                 ).isInWindow,
             )
-            .reduce(
-              (acc, { job_config }) =>
-                acc.some((t) => t.id === job_config.id)
-                  ? acc
-                  : acc.concat(job_config),
-              [] as JobConfig[],
-            ),
+            .map((m) => m.job_config)
+            .uniqBy((m) => m.id)
+            .value(),
         );
 
 /**
@@ -380,7 +404,7 @@ export const isPassingReleaseWindowPolicy = async (
  * will limit the number of job executions that can be dispatched in an
  * environment.
  */
-export const isPassingConcurrencyPolicy = async (
+const isPassingConcurrencyPolicy = async (
   db: Tx,
   jobConfigs: JobConfig[],
 ): Promise<JobConfig[]> => {
@@ -453,7 +477,33 @@ export const isPassingAllPolicies = async (db: Tx, jobConfigs: JobConfig[]) => {
     isPassingReleaseDependencyPolicy,
   ];
 
-  for (const check of checks) jobConfigs = await check(db, jobConfigs);
+  let passingJobs = jobConfigs;
+  for (const check of checks) passingJobs = await check(db, passingJobs);
 
-  return jobConfigs;
+  return passingJobs;
 };
+
+/**
+ * Critical checks that must pass, and if they fail, we should try to deploy an
+ * earlier release
+ */
+export const criticalChecks = [isPassingLockingPolicy, isPassingApprovalPolicy];
+
+/**
+ * Critical checks that must pass, but don't require trying an earlier release
+ * if they fail
+ */
+export const terminalChecks = [
+  isPassingReleaseDependencyPolicy,
+  isPassingReleaseSequencingWaitPolicy,
+];
+
+/**
+ * Non-critical checks that influence dispatch but don't necessarily prevent it
+ */
+export const nonCriticalChecks = [
+  isPassingCriteriaPolicy,
+  isPassingReleaseWindowPolicy,
+  isPassingConcurrencyPolicy,
+  isPassingJobExecutionRolloutPolicy,
+];

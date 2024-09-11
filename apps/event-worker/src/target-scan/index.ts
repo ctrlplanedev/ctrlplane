@@ -9,12 +9,12 @@ import {
   targetProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
+import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
 import { redis } from "../redis.js";
 import { getGkeTargets } from "./gke.js";
-import { upsertTargets } from "./upsert.js";
 
 const targetScanQueue = new Queue(Channel.TargetScan, { connection: redis });
 const removeTargetJob = (job: Job) =>
@@ -55,7 +55,7 @@ export const createTargetScanWorker = () =>
           tp.target_provider_google,
         );
 
-        await upsertTargets(db, tp.workspace.id, gkeTargets);
+        await upsertTargets(db, gkeTargets);
       }
     },
     {

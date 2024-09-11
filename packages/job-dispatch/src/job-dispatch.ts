@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { JobConfig, JobExecution } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import type { JobExecutionReason } from "./job-execution.js";
@@ -25,8 +25,8 @@ class DispatchBuilder {
     this._then = [];
   }
 
-  filter(func: DispatchFilterFunc) {
-    this._filters.push(func);
+  filter(...func: DispatchFilterFunc[]) {
+    this._filters.push(...func);
     return this;
   }
 
@@ -45,7 +45,7 @@ class DispatchBuilder {
     return this;
   }
 
-  async dispatch() {
+  async dispatch(): Promise<JobExecution[]> {
     let t = this._jobConfigs;
     for (const func of this._filters) t = await func(this.db, t);
 
@@ -55,12 +55,7 @@ class DispatchBuilder {
     for (const func of this._then) await func(this.db, t);
 
     await dispatchJobExecutionsQueue.addBulk(
-      wfs.map((wf) => ({
-        name: wf.id,
-        data: {
-          jobExecutionId: wf.id,
-        },
-      })),
+      wfs.map((wf) => ({ name: wf.id, data: { jobExecutionId: wf.id } })),
     );
 
     return wfs;
