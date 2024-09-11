@@ -221,13 +221,12 @@ export const releaseRouter = createTRPCRouter({
   blockedEnvironments: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        Promise.all(
-          (input as string[]).map((releaseId) =>
-            canUser
-              .perform(Permission.ReleaseGet)
-              .on({ type: "release", id: releaseId }),
-          ),
-        ).then((results) => results.every(Boolean)),
+        canUser.perform(Permission.ReleaseGet).on(
+          ...(input as string[]).map((t) => ({
+            type: "release" as const,
+            id: t,
+          })),
+        ),
     })
     .input(z.array(z.string().uuid()))
     .query(async ({ input }) => {
