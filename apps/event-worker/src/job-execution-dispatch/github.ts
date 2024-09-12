@@ -10,7 +10,7 @@ import { Channel } from "@ctrlplane/validators/events";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
-import { convertStatus, getOctokit } from "../github-utils.js";
+import { convertStatus, getInstallationOctokit } from "../github-utils.js";
 import { redis } from "../redis.js";
 
 const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
@@ -35,8 +35,8 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     .from(githubOrganization)
     .where(
       and(
-        eq(githubOrganization.installationId, config.installationId),
-        eq(githubOrganization.organizationName, config.organizationName),
+        eq(githubOrganization.installationId, parsed.data.installationId),
+        eq(githubOrganization.organizationName, parsed.data.owner),
       ),
     )
     .then(takeFirstOrNull);
@@ -49,7 +49,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     return;
   }
 
-  const octokit = getOctokit();
+  const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {
     await db.update(jobExecution).set({
       status: JobExecutionStatus.InvalidJobAgent,
@@ -60,13 +60,13 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
 
   const installationToken = (await octokit.auth({
     type: "installation",
-    installationId: config.installationId,
+    installationId: parsed.data.installationId,
   })) as { token: string };
 
   await octokit.actions.createWorkflowDispatch({
-    owner: config.login,
-    repo: config.repo,
-    workflow_id: config.workflowId,
+    owner: parsed.data.owner,
+    repo: parsed.data.repo,
+    workflow_id: parsed.data.workflowId,
     ref: ghOrg.branch,
     inputs: {
       job_execution_id: je.id.slice(0, 8),
@@ -77,24 +77,33 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     },
   });
 
-  const { runId, status } = await pRetry(
-    async () => {
-      const runs = await octokit.actions.listWorkflowRuns({
-        owner: config.login,
-        repo: config.repo,
-        workflow_id: config.workflowId,
-      });
+  let runId: number | null = null;
+  let status: string | null = null;
 
-      const run = runs.data.workflow_runs.find((run) =>
-        run.name?.includes(je.id.slice(0, 8)),
-      );
+  try {
+    const { runId: runId_, status: status_ } = await pRetry(
+      async () => {
+        const runs = await octokit.actions.listWorkflowRuns({
+          owner: parsed.data.owner,
+          repo: parsed.data.repo,
+          workflow_id: parsed.data.workflowId,
+          branch: ghOrg.branch,
+        });
 
-      return { runId: run?.id, status: run?.status };
-    },
-    { retries: 15, minTimeout: 1000 },
-  );
+        const run = runs.data.workflow_runs.find((run) =>
+          run.name?.includes(je.id.slice(0, 8)),
+        );
 
-  if (runId == null) {
+        if (run == null) throw new Error("Run not found");
+
+        return { runId: run.id, status: run.status };
+      },
+      { retries: 15, minTimeout: 1000 },
+    );
+
+    runId = runId_;
+    status = status_;
+  } catch (e) {
     await db.update(jobExecution).set({
       status: JobExecutionStatus.ExternalRunNotFound,
       message: `Run ID not found for job execution ${je.id}`,
@@ -102,10 +111,13 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     return;
   }
 
-  await db.update(jobExecution).set({
-    externalRunId: runId.toString(),
-    status: convertStatus(status ?? JobExecutionStatus.Pending),
-  });
+  await db
+    .update(jobExecution)
+    .set({
+      externalRunId: runId.toString(),
+      status: convertStatus(status ?? JobExecutionStatus.Pending),
+    })
+    .where(eq(jobExecution.id, je.id));
 
   await jobExecutionSyncQueue.add(
     je.id,
