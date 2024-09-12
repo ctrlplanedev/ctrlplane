@@ -8,6 +8,7 @@ import {
   buildConflictUpdateColumns,
   inArray,
 } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
 import { environment, target } from "@ctrlplane/db/schema";
 
 import { dispatchJobsForNewTargets } from "./new-target.js";
@@ -52,12 +53,12 @@ const dispatchNewTargets = async (db: Tx, newTargetIds: string[]) => {
 };
 
 export const upsertTargets = async (
-  db: Tx,
+  tx: Tx,
   targetsToInsert: InsertTarget[],
 ) => {
-  const targetsBeforeInsert = await getExistingTargets(db, targetsToInsert);
+  const targetsBeforeInsert = await getExistingTargets(tx, targetsToInsert);
 
-  const targets = await db
+  const targets = await tx
     .insert(target)
     .values(targetsToInsert)
     .onConflictDoUpdate({
@@ -71,7 +72,7 @@ export const upsertTargets = async (
   );
 
   if (newTargets.length > 0)
-    await dispatchNewTargets(
+    dispatchNewTargets(
       db,
       newTargets.map((t) => t.id),
     );

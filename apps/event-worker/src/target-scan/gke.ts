@@ -1,10 +1,13 @@
-import type { TargetProviderGoogle, Workspace } from "@ctrlplane/db/schema";
+import type {
+  InsertTarget,
+  TargetProviderGoogle,
+  Workspace,
+} from "@ctrlplane/db/schema";
 import { CoreV1Api } from "@kubernetes/client-node";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
 
-import type { UpsertTarget } from "./upsert.js";
 import {
   clusterToTarget,
   connectToCluster,
@@ -51,7 +54,7 @@ export const getGkeTargets = async (
     )
     .map((v) => v.value);
 
-  const kubernetesApiTargets: UpsertTarget[] = clusters.flatMap(
+  const kubernetesApiTargets: InsertTarget[] = clusters.flatMap(
     ({ project, clusters }) =>
       clusters.map((cluster) =>
         clusterToTarget(
