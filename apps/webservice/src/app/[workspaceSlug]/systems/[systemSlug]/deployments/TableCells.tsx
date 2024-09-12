@@ -113,10 +113,7 @@ const completedStatus = ["completed", "cancelled", "skipped", "failure"];
 export const Release: React.FC<{
   name: string;
   releaseId: string;
-  environment: {
-    id: string;
-    name: string;
-  };
+  environment: { id: string; name: string };
   activeDeploymentCount?: number;
   deployedAt: Date;
   jobConfigs: Array<

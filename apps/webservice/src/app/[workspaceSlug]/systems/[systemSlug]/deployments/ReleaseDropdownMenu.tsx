@@ -35,14 +35,8 @@ import {
 import { api } from "~/trpc/react";
 
 const RedeployReleaseDialog: React.FC<{
-  release: {
-    id: string;
-    name: string;
-  };
-  environment: {
-    id: string;
-    name: string;
-  };
+  release: { id: string; name: string };
+  environment: { id: string; name: string };
   children: React.ReactNode;
 }> = ({ release, environment, children }) => {
   const router = useRouter();
@@ -85,14 +79,8 @@ const RedeployReleaseDialog: React.FC<{
 };
 
 const ForceReleaseDialog: React.FC<{
-  release: {
-    id: string;
-    name: string;
-  };
-  environment: {
-    id: string;
-    name: string;
-  };
+  release: { id: string; name: string };
+  environment: { id: string; name: string };
   children: React.ReactNode;
 }> = ({ release, environment, children }) => {
   const forceDeploy = api.release.deploy.toEnvironment.useMutation();
@@ -134,14 +122,8 @@ const ForceReleaseDialog: React.FC<{
 };
 
 export const ReleaseDropdownMenu: React.FC<{
-  release: {
-    id: string;
-    name: string;
-  };
-  environment: {
-    id: string;
-    name: string;
-  };
+  release: { id: string; name: string };
+  environment: { id: string; name: string };
   isReleaseCompleted: boolean;
 }> = ({ release, environment, isReleaseCompleted }) => (
   <DropdownMenu>

@@ -25,10 +25,9 @@ export const DistroBarChart: React.FC<{
     }))
     .take(showPreviousReleaseDistro)
     .value();
-  const distroPadding = _.range(
-    0,
-    showPreviousReleaseDistro - distro.length,
-  ).map(() => ({ version: "", count: 0 }));
+  const distroPadding = _.range(showPreviousReleaseDistro - distro.length).map(
+    () => ({ version: "", count: 0 }),
+  );
 
   return (
     <ResponsiveContainer width="100%" height={250}>
