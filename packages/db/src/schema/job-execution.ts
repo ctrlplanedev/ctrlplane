@@ -25,6 +25,7 @@ export const jobConfigType = pgEnum("job_config_type", [
   "api", // calling API
   "redeploy", // redeploying
   "runbook", // triggered via a runbook
+  "force_deploy", // force deploying a release
 ]);
 
 export const jobConfig = pgTable("job_config", {
