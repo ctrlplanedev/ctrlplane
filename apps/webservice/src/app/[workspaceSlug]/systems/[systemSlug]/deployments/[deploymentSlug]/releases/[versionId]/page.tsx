@@ -26,8 +26,9 @@ export default async function ReleasePage({
   };
 }) {
   const release = await api.release.byId(params.versionId);
+  const deployment = await api.deployment.bySlug(params);
 
-  if (release == null) notFound();
+  if (release == null || deployment == null) notFound();
 
   const system = await api.system.bySlug(params);
   const environments = await api.environment.bySystemId(system.id);
@@ -84,7 +85,10 @@ export default async function ReleasePage({
           </Button>
         </div>
 
-        <TargetReleaseTable releaseId={release.id} />
+        <TargetReleaseTable
+          release={release}
+          deploymentName={deployment.name}
+        />
       </ScrollArea>
     </div>
   );
