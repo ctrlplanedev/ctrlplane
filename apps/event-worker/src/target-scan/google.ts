@@ -44,34 +44,39 @@ export const connectToCluster = async (
   clusterName: string,
   clusterLocation: string,
 ) => {
-  const [credentials] = await clusterClient.getCluster({
-    name: `projects/${project}/locations/${clusterLocation}/clusters/${clusterName}`,
-  });
-  const kubeConfig = new KubeConfig();
-  kubeConfig.loadFromOptions({
-    clusters: [
-      {
-        name: clusterName,
-        server: `https://${credentials.endpoint}`,
-        caData: credentials.masterAuth!.clusterCaCertificate!,
-      },
-    ],
-    users: [
-      {
-        name: clusterName,
-        token: (await sourceCredentials.getAccessToken())!,
-      },
-    ],
-    contexts: [
-      {
-        name: clusterName,
-        user: clusterName,
-        cluster: clusterName,
-      },
-    ],
-    currentContext: clusterName,
-  });
-  return kubeConfig;
+  try {
+    const [credentials] = await clusterClient.getCluster({
+      name: `projects/${project}/locations/${clusterLocation}/clusters/${clusterName}`,
+    });
+    const kubeConfig = new KubeConfig();
+    kubeConfig.loadFromOptions({
+      clusters: [
+        {
+          name: clusterName,
+          server: `https://${credentials.endpoint}`,
+          caData: credentials.masterAuth!.clusterCaCertificate!,
+        },
+      ],
+      users: [
+        {
+          name: clusterName,
+          token: (await sourceCredentials.getAccessToken())!,
+        },
+      ],
+      contexts: [
+        {
+          name: clusterName,
+          user: clusterName,
+          cluster: clusterName,
+        },
+      ],
+      currentContext: clusterName,
+    });
+    return kubeConfig;
+  } catch (e) {
+    console.log(JSON.stringify(e, null, 2));
+    throw e;
+  }
 };
 
 export const clusterToTarget = (

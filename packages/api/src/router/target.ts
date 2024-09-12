@@ -166,8 +166,10 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.TargetDelete).on(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unnecessary-type-assertion
-          (input as any).map((t: any) => ({ type: "target" as const, id: t })),
+          ...(input as string[]).map((t) => ({
+            type: "target" as const,
+            id: t,
+          })),
         ),
     })
     .input(z.array(z.string().uuid()))
