@@ -22,13 +22,12 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     refetchInterval: 5_000,
   });
 
-  if (jobConfigQuery.isLoading) {
+  if (jobConfigQuery.isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center py-12">
         <TbLoader2 className="animate-spin" size={32} />
       </div>
     );
-  }
 
   return (
     <Table>
