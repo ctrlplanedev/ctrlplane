@@ -392,7 +392,7 @@ export default function TargetsPage({
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel defaultSize={40} className="min-w-[450px]">
+      <ResizablePanel defaultSize={40} className="flex min-w-[450px] flex-col">
         <div className="flex items-center border-b p-6">
           {target.data?.name ? (
             <Link
@@ -431,9 +431,9 @@ export default function TargetsPage({
             </Button>
           )}
         </div>
-        <div className="p-6">
+        <div className="flex-grow overflow-hidden p-6">
           {target.data && (
-            <Tabs defaultValue="general">
+            <Tabs defaultValue="general" className="flex h-full flex-col">
               <TabsList className="grid w-full grid-cols-2 border">
                 <TabsTrigger value="general" className="m-0">
                   General
@@ -442,10 +442,17 @@ export default function TargetsPage({
                   Deployments
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="general" className="mt-6">
+
+              <TabsContent
+                value="general"
+                className="flex-grow overflow-auto py-6 pb-12"
+              >
                 <TargetGeneral {...target.data} />
               </TabsContent>
-              <TabsContent value="deployments" className="mt-6">
+              <TabsContent
+                value="deployments"
+                className="flex-grow overflow-auto py-6 pb-12"
+              >
                 {targetId && <DeploymentsContent targetId={targetId} />}
               </TabsContent>
             </Tabs>
