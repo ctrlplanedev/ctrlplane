@@ -166,7 +166,6 @@ const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
     );
   }
 
-  console.log(envIds);
   const areAllCompleted =
     jobs?.every((job) => job.jobExecution?.status === "completed") ?? true;
 
