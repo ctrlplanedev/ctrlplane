@@ -10,8 +10,11 @@ import {
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { environment, target } from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 import { dispatchJobsForNewTargets } from "./new-target.js";
+
+const log = logger.child({ label: "upsert-targets" });
 
 const getExistingTargets = (db: Tx, tgs: InsertTarget[]) =>
   db
@@ -77,8 +80,11 @@ export const upsertTargets = async (
       newTargets.map((t) => t.id),
     );
 
-  console.log(
-    `Found ${newTargets.length} new targets out of ${upsertTargets.length} total targets`,
+  const newTargetCount = newTargets.length;
+  const targetsToInsertCount = targetsToInsert.length;
+  log.info(
+    `Found ${newTargetCount} new targets out of ${targetsToInsertCount} total targets`,
+    { newTargetCount, targetsToInsertCount },
   );
 
   return targets;

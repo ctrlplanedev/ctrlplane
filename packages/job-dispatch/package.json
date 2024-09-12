@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "^0.10.1",
     "bullmq": "^5.12.10",

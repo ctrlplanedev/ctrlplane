@@ -23,11 +23,21 @@ export const getGkeTargets = async (
 ) => {
   const { googleServiceAccountEmail } = workspace;
   log.info(
-    `Scaning ${config.projectIds.join(", ")} using ${googleServiceAccountEmail}`,
+    `Scanning ${config.projectIds.join(", ")} using ${googleServiceAccountEmail}`,
     { workspaceId: workspace.id, config, googleServiceAccountEmail },
   );
-  const [googleClusterClient, impersonatedAuthClient] =
-    await getGoogleClusterClient(googleServiceAccountEmail);
+
+  let googleClusterClient, impersonatedAuthClient;
+  try {
+    [googleClusterClient, impersonatedAuthClient] =
+      await getGoogleClusterClient(googleServiceAccountEmail);
+  } catch (error: any) {
+    log.error(`Failed to get Google Cluster Client: ${error.message}`, {
+      error,
+      workspaceId: workspace.id,
+    });
+    throw error;
+  }
 
   const clusters = (
     await Promise.allSettled(
@@ -36,7 +46,8 @@ export const getGkeTargets = async (
           .then((clusters) => ({ project, clusters }))
           .catch((e) => {
             log.error(
-              `Unable to get clusters for project: ${project} - ${String(e)}`,
+              `Unable to get clusters for project: ${project} - ${e.message}`,
+              { error: e, project, workspaceId: workspace.id },
             );
             return { project, clusters: [] };
           }),
@@ -69,15 +80,31 @@ export const getGkeTargets = async (
     await Promise.all(
       clusters.flatMap(({ project, clusters }) => {
         return clusters.flatMap(async (cluster) => {
-          if (cluster.name == null || cluster.location == null) return [];
+          if (cluster.name == null || cluster.location == null) {
+            log.warn(`Skipping cluster with missing name or location`, {
+              project,
+              cluster,
+              workspaceId: workspace.id,
+            });
+            return [];
+          }
 
-          const kubeConfig = await connectToCluster(
-            googleClusterClient,
-            impersonatedAuthClient,
-            project,
-            cluster.name,
-            cluster.location,
-          );
+          let kubeConfig;
+          try {
+            kubeConfig = await connectToCluster(
+              googleClusterClient,
+              impersonatedAuthClient,
+              project,
+              cluster.name,
+              cluster.location,
+            );
+          } catch (error: any) {
+            log.error(
+              `Failed to connect to cluster: ${cluster.name}/${cluster.id} - ${error.message}`,
+              { error, project, cluster, workspaceId: workspace.id },
+            );
+            return [];
+          }
 
           const k8sApi = kubeConfig.makeApiClient(CoreV1Api);
 
@@ -108,11 +135,10 @@ export const getGkeTargets = async (
                   },
                 ),
               );
-          } catch (e) {
-            console.log(JSON.stringify(e, null, 2));
+          } catch (error: any) {
             log.error(
-              `Unable to connect to cluster: ${cluster.name}/${cluster.id} - ${String(e)}`,
-              { error: e },
+              `Unable to list namespaces for cluster: ${cluster.name}/${cluster.id} - ${error.message}`,
+              { error, project, cluster, workspaceId: workspace.id },
             );
             return [];
           }

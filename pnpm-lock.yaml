@@ -803,6 +803,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../validators
