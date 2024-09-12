@@ -171,9 +171,18 @@ const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
   const deployments = api.deployment.byTargetId.useQuery(targetId);
   const targetValues =
     api.deployment.variable.value.byTargetId.useQuery(targetId);
+
+  if (!deployments.data || deployments.data.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground">
+        This target is not part of any deployments.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {deployments.data?.map((deployment) => {
+      {deployments.data.map((deployment) => {
         const deploymentVariables = targetValues.data?.filter(
           (v) => v.deploymentId === deployment.id,
         );
@@ -210,7 +219,7 @@ const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
                 <table className="w-full">
                   <tbody className="text-left">
                     {deploymentVariables.map(({ key, value }) => (
-                      <tr className="text-sm">
+                      <tr className="text-sm" key={key}>
                         <TableCell className="p-3">{key}</TableCell>
                         <TableCell className="p-3">
                           {value ?? (
