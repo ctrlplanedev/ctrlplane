@@ -1,8 +1,5 @@
-"use client";
-
 import type { Deployment, Environment, Target } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { TbCircleFilled, TbRocket, TbTerminal2 } from "react-icons/tb";
 import { isPresent } from "ts-is-present";
 
@@ -11,7 +8,7 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
-import { api } from "~/trpc/react";
+import { api } from "~/trpc/server";
 import { Release } from "./TableCells";
 
 const Tb: React.FC<{ children?: React.ReactNode; className?: string }> = ({
@@ -32,8 +29,9 @@ const EnvTb: React.FC<{
   isFirst?: boolean;
   isLast?: boolean;
   environment: Environment & { targets: Target[] };
-}> = ({ environment: env, isFirst, isLast }) => {
-  const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
+  workspaceSlug: string;
+  systemSlug: string;
+}> = ({ environment: env, isFirst, isLast, workspaceSlug, systemSlug }) => {
   return (
     <Tb
       key={env.id}
@@ -44,7 +42,7 @@ const EnvTb: React.FC<{
       )}
     >
       <Link
-        href={`/${params.workspaceSlug}/systems/${params.systemSlug}/environments?selected=${env.id}`}
+        href={`/${workspaceSlug}/systems/${systemSlug}/environments?selected=${env.id}`}
       >
         <div className="flex justify-between">
           {env.name}
@@ -62,17 +60,25 @@ const EnvTb: React.FC<{
 };
 
 const ReleaseCell: React.FC<{
+  workspaceSlug: string;
+  systemSlug: string;
   environment: Environment & { targets: Target[] };
   release: { id: string; version: string; createdAt: Date } | null;
   deployment: Deployment;
-}> = ({ release, environment: env, deployment }) => {
-  const jobConfigs = api.job.config.byDeploymentAndEnvironment.useQuery({
+}> = async ({
+  release,
+  environment: env,
+  deployment,
+  workspaceSlug,
+  systemSlug,
+}) => {
+  const jobConfigs = await api.job.config.byDeploymentAndEnvironment({
     environmentId: env.id,
     deploymentId: deployment.id,
   });
   const hasTargets = env.targets.length > 0;
   const hasRelease = release != null;
-  const jc = (jobConfigs.data ?? [])
+  const jc = jobConfigs
     .filter(
       (jobConfig) =>
         isPresent(jobConfig.environmentId) &&
@@ -90,9 +96,14 @@ const ReleaseCell: React.FC<{
     <>
       {hasRelease && hasTargets && (
         <Release
+          releaseId={release.id}
+          environment={env}
           name={release.version}
           deployedAt={release.createdAt}
           jobConfigs={jc}
+          workspaceSlug={workspaceSlug}
+          systemSlug={systemSlug}
+          deploymentSlug={deployment.slug}
         />
       )}
 
@@ -115,8 +126,8 @@ const DeploymentTable: React.FC<{
       latestRelease: { id: string; version: string; createdAt: Date } | null;
     }
   >;
-}> = ({ systemSlug, deployments, environments }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  workspaceSlug: string;
+}> = ({ systemSlug, deployments, environments, workspaceSlug }) => {
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-max border-separate border-spacing-0">
@@ -129,6 +140,8 @@ const DeploymentTable: React.FC<{
                 environment={env}
                 isFirst={idx === 0}
                 isLast={idx === environments.length - 1}
+                workspaceSlug={workspaceSlug}
+                systemSlug={systemSlug}
               />
             ))}
           </tr>
@@ -171,7 +184,7 @@ const DeploymentTable: React.FC<{
                   <td
                     key={env.id}
                     className={cn(
-                      "h-[55px] w-[200px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
+                      "h-[55px] w-[220px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
                       envIdx === environments.length - 1 &&
                         "border-r-neutral-800",
                       idx === 0 && "border-t",
@@ -181,6 +194,8 @@ const DeploymentTable: React.FC<{
                       release={r.latestRelease}
                       environment={env}
                       deployment={r}
+                      workspaceSlug={workspaceSlug}
+                      systemSlug={systemSlug}
                     />
                   </td>
                 );

@@ -1,14 +1,10 @@
-"use client";
-
 import type {
   Deployment,
   JobConfig,
   JobExecution,
-  JobExecutionStatus,
   Target,
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { useParams } from "next/navigation";
 import { capitalCase } from "change-case";
 import { format } from "date-fns";
 import _ from "lodash";
@@ -23,15 +19,6 @@ import {
   TbLoader2,
   TbSettingsX,
 } from "react-icons/tb";
-import {
-  Bar,
-  BarChart,
-  Cell,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from "recharts";
-import colors from "tailwindcss/colors";
 import { isPresent } from "ts-is-present";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -41,6 +28,10 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+
+import { DeploymentBarChart } from "./DeploymentBarChart";
+import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
+import { getStatusColor, statusColor } from "./status-color";
 
 const ReleaseIcon: React.FC<{
   jobConfigs: Array<JobConfig & { jobExecution: JobExecution | null }>;
@@ -117,26 +108,12 @@ const ReleaseIcon: React.FC<{
   );
 };
 
-const statusColor: Record<JobExecutionStatus | "configured", string> = {
-  completed: colors.green[400],
-  cancelled: colors.neutral[400],
-  skipped: colors.gray[400],
-  in_progress: colors.blue[400],
-  action_required: colors.yellow[400],
-  pending: colors.cyan[400],
-  failure: colors.red[400],
-  invalid_job_agent: colors.red[400],
-  configured: colors.gray[400],
-  invalid_integration: colors.red[400],
-  external_run_not_found: colors.red[400],
-};
-
-const getStatusColor = (status: string) =>
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  statusColor[status as JobExecutionStatus | "configured"] ?? colors.gray[400];
+const completedStatus = ["completed", "cancelled", "skipped", "failure"];
 
 export const Release: React.FC<{
   name: string;
+  releaseId: string;
+  environment: { id: string; name: string };
   activeDeploymentCount?: number;
   deployedAt: Date;
   jobConfigs: Array<
@@ -146,8 +123,21 @@ export const Release: React.FC<{
       deployment?: Deployment | null;
     }
   >;
+  workspaceSlug: string;
+  systemSlug: string;
+  deploymentSlug: string;
 }> = (props) => {
-  const { name, deployedAt, jobConfigs, activeDeploymentCount } = props;
+  const {
+    name,
+    deployedAt,
+    jobConfigs,
+    activeDeploymentCount,
+    releaseId,
+    environment,
+    workspaceSlug,
+    systemSlug,
+    deploymentSlug,
+  } = props;
   const data = _.chain(jobConfigs)
     .groupBy((r) => r.jobExecution?.status ?? "configured")
     .entries()
@@ -161,86 +151,73 @@ export const Release: React.FC<{
     [d.jobExecution, d.target, d.jobExecution?.message].every(isPresent),
   );
 
-  const params = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  }>();
-
   const firstJobConfig = jobConfigs.at(0);
 
+  const isReleaseCompleted = jobConfigs.every((d) =>
+    completedStatus.includes(d.jobExecution?.status ?? "configured"),
+  );
+
   return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <Link
-          href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${firstJobConfig?.deployment?.slug ?? params.deploymentSlug}/releases/${firstJobConfig?.releaseId}`}
-          className="flex items-center gap-2"
-        >
-          <ReleaseIcon jobConfigs={jobConfigs} />
-          <div className="w-full text-sm">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold">{name}</span>
-              {activeDeploymentCount != null && activeDeploymentCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="rounded-full px-1.5 font-light text-muted-foreground"
-                >
-                  {activeDeploymentCount}
-                </Badge>
-              )}
+    <div className="flex items-center gap-2">
+      <HoverCard>
+        <HoverCardTrigger asChild>
+          <Link
+            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstJobConfig?.deployment?.slug ?? deploymentSlug}/releases/${firstJobConfig?.releaseId}`}
+            className="flex items-center gap-2"
+          >
+            <ReleaseIcon jobConfigs={jobConfigs} />
+            <div className="w-full text-sm">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">{name}</span>
+                {activeDeploymentCount != null && activeDeploymentCount > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full px-1.5 font-light text-muted-foreground"
+                  >
+                    {activeDeploymentCount}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-left text-muted-foreground">
+                {format(deployedAt, "MMM d, hh:mm aa")}
+              </div>
             </div>
-            <div className="text-left text-muted-foreground">
-              {format(deployedAt, "MMM d, hh:mm aa")}
-            </div>
-          </div>
-        </Link>
-      </HoverCardTrigger>
-      <HoverCardContent className="w-[400px]" align="center" side="left">
-        <div className="grid gap-4">
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={data} margin={{ top: 10, left: -25, bottom: -10 }}>
-              <XAxis
-                dataKey="name"
-                type="category"
-                interval={0}
-                height={100}
-                style={{ fontSize: "0.75rem" }}
-                angle={-45}
-                textAnchor="end"
-                tickFormatter={(value) => capitalCase(value as string)}
-              />
-              <YAxis style={{ fontSize: "0.75rem" }} />
-              <Bar dataKey="count" fill="#8884d8">
-                {data.map(({ name }) => (
-                  <Cell key={name} fill={getStatusColor(name)} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          {configuredWithMessages.length > 0 && (
-            <Card className="max-h-[250px] space-y-1 overflow-y-auto p-2 text-sm">
-              {configuredWithMessages.map((d) => (
-                <div key={d.id}>
-                  <div className="flex items-center gap-1">
-                    <TbCircle
-                      fill={getStatusColor(d.jobExecution!.status)}
-                      strokeWidth={0}
-                    />
-                    {d.target.name}
+          </Link>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-[400px]" align="center" side="left">
+          <div className="grid gap-4">
+            <DeploymentBarChart data={data} />
+            {configuredWithMessages.length > 0 && (
+              <Card className="max-h-[250px] space-y-1 overflow-y-auto p-2 text-sm">
+                {configuredWithMessages.map((d) => (
+                  <div key={d.id}>
+                    <div className="flex items-center gap-1">
+                      <TbCircle
+                        fill={getStatusColor(d.jobExecution!.status)}
+                        strokeWidth={0}
+                      />
+                      {d.target.name}
+                    </div>
+                    {d.jobExecution?.message != null &&
+                      d.jobExecution.message !== "" && (
+                        <div className="text-xs text-muted-foreground">
+                          {capitalCase(d.jobExecution.status)} —{" "}
+                          {d.jobExecution.message}
+                        </div>
+                      )}
                   </div>
-                  {d.jobExecution?.message != null &&
-                    d.jobExecution.message !== "" && (
-                      <div className="text-xs text-muted-foreground">
-                        {capitalCase(d.jobExecution.status)} —{" "}
-                        {d.jobExecution.message}
-                      </div>
-                    )}
-                </div>
-              ))}
-            </Card>
-          )}
-        </div>
-      </HoverCardContent>
-    </HoverCard>
+                ))}
+              </Card>
+            )}
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+
+      <ReleaseDropdownMenu
+        release={{ id: releaseId, name }}
+        environment={environment}
+        isReleaseCompleted={isReleaseCompleted}
+      />
+    </div>
   );
 };

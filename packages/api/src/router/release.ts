@@ -1,15 +1,26 @@
+import type { Tx } from "@ctrlplane/db";
+import type { JobConfig } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, desc, eq, inArray, ne, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  ne,
+  notInArray,
+  takeFirst,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   createRelease,
   deployment,
   environment,
   environmentPolicy,
+  jobConfig,
   release,
   releaseDependency,
 } from "@ctrlplane/db/schema";
@@ -17,6 +28,7 @@ import {
   cancelOldJobConfigsOnJobDispatch,
   createJobConfigs,
   createJobExecutionApprovals,
+  createJobExecutions,
   dispatchJobConfigs,
   isPassingAllPolicies,
   isPassingEnvironmentPolicy,
@@ -109,18 +121,54 @@ export const releaseRouter = createTRPCRouter({
               { type: "environment", id: input.environmentId },
             ),
       })
-      .input(z.object({ environmentId: z.string(), releaseId: z.string() }))
+      .input(
+        z.object({
+          environmentId: z.string(),
+          releaseId: z.string(),
+          isForcedRelease: z.boolean().optional(),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
+        const cancelPreviousJobExecutions = async (
+          tx: Tx,
+          jobConfigs: JobConfig[],
+        ) =>
+          tx
+            .select()
+            .from(jobConfig)
+            .where(
+              and(
+                eq(jobConfig.releaseId, input.releaseId),
+                eq(jobConfig.environmentId, input.environmentId),
+                notInArray(
+                  jobConfig.id,
+                  jobConfigs.map((j) => j.id),
+                ),
+              ),
+            )
+            .then((existingJobConfigs) =>
+              createJobExecutions(tx, existingJobConfigs, "cancelled").then(
+                () => {},
+              ),
+            );
+
         const jobConfigs = await createJobConfigs(ctx.db, "redeploy")
           .causedById(ctx.session.user.id)
           .environments([input.environmentId])
           .releases([input.releaseId])
           .filter(isPassingReleaseSequencingCancelPolicy)
+          .then(
+            input.isForcedRelease
+              ? cancelPreviousJobExecutions
+              : createJobExecutionApprovals,
+          )
           .insert();
 
         await dispatchJobConfigs(ctx.db)
           .jobConfigs(jobConfigs)
-          .filter(isPassingAllPolicies)
+          .filter(
+            input.isForcedRelease ? () => jobConfigs : isPassingAllPolicies,
+          )
           .then(cancelOldJobConfigsOnJobDispatch)
           .dispatch();
 
@@ -174,8 +222,10 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.ReleaseGet).on(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          input.map((releaseId: any) => ({ type: "release", id: releaseId })),
+          ...(input as string[]).map((t) => ({
+            type: "release" as const,
+            id: t,
+          })),
         ),
     })
     .input(z.array(z.string().uuid()))
