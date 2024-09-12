@@ -11,21 +11,27 @@ const sourceCredentials = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
 });
 
+export const getImpersonatedClient = async (targetPrincipal: string) =>
+  new Impersonated({
+    sourceClient: await sourceCredentials.getClient(),
+    targetPrincipal,
+    lifetime: 3600,
+    delegates: [],
+    targetScopes: ["https://www.googleapis.com/auth/cloud-platform"],
+  });
+
 export const getGoogleClusterClient = async (
   targetPrincipal?: string | null,
 ) => {
-  const clientOptions: { authClient?: Impersonated } = {};
+  let authClient: Impersonated | undefined;
 
-  if (targetPrincipal !== null)
-    clientOptions.authClient = new Impersonated({
-      sourceClient: await sourceCredentials.getClient(),
-      targetPrincipal: targetPrincipal ?? undefined,
-      lifetime: 3600,
-      delegates: [],
-      targetScopes: ["https://www.googleapis.com/auth/cloud-platform"],
-    });
+  if (targetPrincipal != null)
+    authClient = await getImpersonatedClient(targetPrincipal);
 
-  return new Container.v1.ClusterManagerClient(clientOptions);
+  return [
+    new Container.v1.ClusterManagerClient({ authClient }),
+    authClient,
+  ] as const;
 };
 
 export const getClusters = async (
@@ -40,43 +46,40 @@ export const getClusters = async (
 
 export const connectToCluster = async (
   clusterClient: ClusterManagerClient,
+  authClient: Impersonated | undefined,
   project: string,
   clusterName: string,
   clusterLocation: string,
 ) => {
-  try {
-    const [credentials] = await clusterClient.getCluster({
-      name: `projects/${project}/locations/${clusterLocation}/clusters/${clusterName}`,
-    });
-    const kubeConfig = new KubeConfig();
-    kubeConfig.loadFromOptions({
-      clusters: [
-        {
-          name: clusterName,
-          server: `https://${credentials.endpoint}`,
-          caData: credentials.masterAuth!.clusterCaCertificate!,
-        },
-      ],
-      users: [
-        {
-          name: clusterName,
-          token: (await sourceCredentials.getAccessToken())!,
-        },
-      ],
-      contexts: [
-        {
-          name: clusterName,
-          user: clusterName,
-          cluster: clusterName,
-        },
-      ],
-      currentContext: clusterName,
-    });
-    return kubeConfig;
-  } catch (e) {
-    console.log(JSON.stringify(e, null, 2));
-    throw e;
-  }
+  const [credentials] = await clusterClient.getCluster({
+    name: `projects/${project}/locations/${clusterLocation}/clusters/${clusterName}`,
+  });
+
+  const token = await (authClient != null
+    ? authClient.getAccessToken().then((t) => t.token)
+    : sourceCredentials.getAccessToken());
+  if (token == null) throw new Error("Unable to get kubernetes access token.");
+
+  const kubeConfig = new KubeConfig();
+  kubeConfig.loadFromOptions({
+    clusters: [
+      {
+        name: clusterName,
+        server: `https://${credentials.endpoint}`,
+        caData: credentials.masterAuth!.clusterCaCertificate!,
+      },
+    ],
+    users: [{ name: clusterName, token }],
+    contexts: [
+      {
+        name: clusterName,
+        user: clusterName,
+        cluster: clusterName,
+      },
+    ],
+    currentContext: clusterName,
+  });
+  return kubeConfig;
 };
 
 export const clusterToTarget = (

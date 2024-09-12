@@ -26,9 +26,8 @@ export const getGkeTargets = async (
     `Scaning ${config.projectIds.join(", ")} using ${googleServiceAccountEmail}`,
     { workspaceId: workspace.id, config, googleServiceAccountEmail },
   );
-  const googleClusterClient = await getGoogleClusterClient(
-    googleServiceAccountEmail,
-  );
+  const [googleClusterClient, impersonatedAuthClient] =
+    await getGoogleClusterClient(googleServiceAccountEmail);
 
   const clusters = (
     await Promise.allSettled(
@@ -74,6 +73,7 @@ export const getGkeTargets = async (
 
           const kubeConfig = await connectToCluster(
             googleClusterClient,
+            impersonatedAuthClient,
             project,
             cluster.name,
             cluster.location,
@@ -112,6 +112,7 @@ export const getGkeTargets = async (
             console.log(JSON.stringify(e, null, 2));
             log.error(
               `Unable to connect to cluster: ${cluster.name}/${cluster.id} - ${String(e)}`,
+              { error: e },
             );
             return [];
           }
