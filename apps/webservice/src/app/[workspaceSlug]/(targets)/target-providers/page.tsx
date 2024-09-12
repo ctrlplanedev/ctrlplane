@@ -37,7 +37,7 @@ export default async function TargetProvidersPage({
 
   return (
     <div>
-      <Table className="w-full">
+      <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
