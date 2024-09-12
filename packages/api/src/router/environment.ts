@@ -8,6 +8,7 @@ import {
   arrayContains,
   eq,
   isNull,
+  not,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -35,6 +36,7 @@ import {
   createJobConfigs,
   createJobExecutionApprovals,
   dispatchJobConfigs,
+  dispatchJobsForNewTargets,
   isPassingAllPolicies,
   isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
@@ -563,14 +565,56 @@ export const environmentRouter = createTRPCRouter({
           .on({ type: "environment", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const { targetFilter } = input.data;
+      const isUpdatingTargetFilter = targetFilter != null;
+      if (isUpdatingTargetFilter) {
+        const oldEnv = await ctx.db
+          .select()
+          .from(environment)
+          .innerJoin(system, eq(system.id, environment.systemId))
+          .where(eq(environment.id, input.id))
+          .then(takeFirst);
+
+        const hasTargetFiltersChanged = !_.isEqual(
+          oldEnv.environment.targetFilter,
+          targetFilter,
+        );
+
+        if (hasTargetFiltersChanged) {
+          const newTargets = await ctx.db
+            .select({ id: target.id })
+            .from(target)
+            .where(
+              and(
+                eq(target.workspaceId, oldEnv.system.workspaceId),
+                arrayContains(target.labels, targetFilter),
+                not(
+                  arrayContains(target.labels, oldEnv.environment.targetFilter),
+                ),
+              ),
+            );
+
+          if (newTargets.length > 0) {
+            await dispatchJobsForNewTargets(
+              ctx.db,
+              newTargets.map((t) => t.id),
+              input.id,
+            );
+            console.log(
+              `Found ${newTargets.length} new targets for environment ${input.id}`,
+            );
+          }
+        }
+      }
+
+      return ctx.db
         .update(environment)
         .set(input.data)
         .where(eq(environment.id, input.id))
         .returning()
-        .then(takeFirst),
-    ),
+        .then(takeFirst);
+    }),
 
   delete: protectedProcedure
     .meta({
