@@ -109,6 +109,7 @@ export const getGkeTargets = async (
                 ),
               );
           } catch (e) {
+            console.log(JSON.stringify(e, null, 2));
             log.error(
               `Unable to connect to cluster: ${cluster.name}/${cluster.id} - ${String(e)}`,
             );
@@ -118,6 +119,5 @@ export const getGkeTargets = async (
       }),
     )
   ).flat();
-
   return [...kubernetesApiTargets, ...kubernetesNamespaceTargets];
 };
