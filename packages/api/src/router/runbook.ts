@@ -1,12 +1,21 @@
 import { z } from "zod";
 
-import { takeFirst } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import { createRunbook, createRunbookVariable } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const runbookRouter = createTRPCRouter({
+  bySystemId: protectedProcedure
+    .input(z.string().uuid())
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(SCHEMA.runbook)
+        .where(eq(SCHEMA.runbook.systemId, input)),
+    ),
+
   create: protectedProcedure
     .input(
       createRunbook.extend({
@@ -21,10 +30,14 @@ export const runbookRouter = createTRPCRouter({
           .values(rb)
           .returning()
           .then(takeFirst);
-        const vars = await tx
-          .insert(SCHEMA.runbookVariable)
-          .values(variables.map((v) => ({ ...v, runbookId: runbook.id })))
-          .returning();
+
+        const vars =
+          variables.length === 0
+            ? []
+            : await tx
+                .insert(SCHEMA.runbookVariable)
+                .values(variables.map((v) => ({ ...v, runbookId: runbook.id })))
+                .returning();
         return { ...runbook, variables: vars };
       }),
     ),

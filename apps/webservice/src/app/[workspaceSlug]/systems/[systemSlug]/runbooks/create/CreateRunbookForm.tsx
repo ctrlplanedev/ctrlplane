@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -28,7 +29,7 @@ const createRunbookSchema = z.object({
   name: z.string().min(1),
   description: z.string(),
   variables: z.array(createRunbookVariable),
-  jobAgentId: z.string(),
+  jobAgentId: z.string().uuid({ message: "Must be a valid job agent ID" }),
   jobAgentConfig: z.record(z.any()),
 });
 
@@ -45,16 +46,17 @@ export const CreateRunbook: React.FC<{
   system: System;
   jobAgents: JobAgent[];
 }> = ({ workspace, jobAgents, system }) => {
+  const create = api.runbook.create.useMutation();
   const form = useForm({
     schema: createRunbookSchema,
+    disabled: create.isPending,
     defaultValues,
   });
 
-  const create = api.runbook.create.useMutation();
   const router = useRouter();
   const onSubmit = form.handleSubmit(async (data) => {
-    await create.mutateAsync({ ...data, systemId: system.id });
-    router.push(`/${workspace.slug}/systems/${system.slug}/runbooks`);
+    const rb = await create.mutateAsync({ ...data, systemId: system.id });
+    router.push(`/${workspace.slug}/systems/${system.slug}/runbooks/${rb.id}`);
     router.refresh();
   });
 
@@ -90,6 +92,7 @@ export const CreateRunbook: React.FC<{
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -105,6 +108,7 @@ export const CreateRunbook: React.FC<{
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -132,6 +136,7 @@ export const CreateRunbook: React.FC<{
                     onChange={field.onChange}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -184,6 +189,7 @@ export const CreateRunbook: React.FC<{
         <Separator />
 
         <Button type="submit">Create</Button>
+        <FormRootError />
       </form>
     </Form>
   );

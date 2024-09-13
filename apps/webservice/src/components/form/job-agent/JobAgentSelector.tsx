@@ -16,7 +16,7 @@ import {
 export const JobAgentSelector: React.FC<{
   jobAgents: JobAgent[];
   workspace: { id: string; slug: string };
-  value: string;
+  value?: string;
   onChange: (v: string) => void;
 }> = ({ workspace, value, jobAgents, onChange }) => {
   return (
