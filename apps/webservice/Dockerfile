@@ -35,6 +35,7 @@ COPY packages/db/package.json ./packages/db/package.json
 COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
 
 COPY apps/webservice/package.json ./apps/webservice/package.json
 
@@ -59,5 +60,6 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV AUTH_TRUST_HOST=true
+ENV NODE_ENV=production
 
 CMD HOSTNAME="0.0.0.0" node apps/webservice/server.js

@@ -62,7 +62,6 @@ export interface GetNextJobsRequest {
 }
 
 export interface SetTargetProvidersTargetsOperationRequest {
-  workspace: string;
   providerId: string;
   setTargetProvidersTargetsRequest: SetTargetProvidersTargetsRequest;
 }
@@ -103,6 +102,11 @@ export class DefaultApi extends runtime.BaseAPI {
     const queryParameters: any = {};
 
     const headerParameters: runtime.HTTPHeaders = {};
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
 
     const response = await this.request(
       {
@@ -156,6 +160,11 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const headerParameters: runtime.HTTPHeaders = {};
 
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
     const response = await this.request(
       {
         path: `/v1/job/agents/{agentId}/executions/running`.replace(
@@ -205,6 +214,11 @@ export class DefaultApi extends runtime.BaseAPI {
     const queryParameters: any = {};
 
     const headerParameters: runtime.HTTPHeaders = {};
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
 
     const response = await this.request(
       {
@@ -256,6 +270,11 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const headerParameters: runtime.HTTPHeaders = {};
 
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
     const response = await this.request(
       {
         path: `/v1/job/agents/{agentId}/queue/next`.replace(
@@ -295,13 +314,6 @@ export class DefaultApi extends runtime.BaseAPI {
     requestParameters: SetTargetProvidersTargetsOperationRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<runtime.ApiResponse<void>> {
-    if (requestParameters["workspace"] == null) {
-      throw new runtime.RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling setTargetProvidersTargets().',
-      );
-    }
-
     if (requestParameters["providerId"] == null) {
       throw new runtime.RequiredError(
         "providerId",
@@ -322,17 +334,17 @@ export class DefaultApi extends runtime.BaseAPI {
 
     headerParameters["Content-Type"] = "application/json";
 
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
     const response = await this.request(
       {
-        path: `/v1/{workspace}/target-provider/{providerId}/set`
-          .replace(
-            `{${"workspace"}}`,
-            encodeURIComponent(String(requestParameters["workspace"])),
-          )
-          .replace(
-            `{${"providerId"}}`,
-            encodeURIComponent(String(requestParameters["providerId"])),
-          ),
+        path: `/v1/target-provider/{providerId}/set`.replace(
+          `{${"providerId"}}`,
+          encodeURIComponent(String(requestParameters["providerId"])),
+        ),
         method: "PATCH",
         headers: headerParameters,
         query: queryParameters,
@@ -382,6 +394,11 @@ export class DefaultApi extends runtime.BaseAPI {
     const headerParameters: runtime.HTTPHeaders = {};
 
     headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
 
     const response = await this.request(
       {
@@ -445,6 +462,11 @@ export class DefaultApi extends runtime.BaseAPI {
 
     headerParameters["Content-Type"] = "application/json";
 
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
     const response = await this.request(
       {
         path: `/v1/job/executions/{executionId}`.replace(
@@ -504,6 +526,11 @@ export class DefaultApi extends runtime.BaseAPI {
     const queryParameters: any = {};
 
     const headerParameters: runtime.HTTPHeaders = {};
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
 
     const response = await this.request(
       {

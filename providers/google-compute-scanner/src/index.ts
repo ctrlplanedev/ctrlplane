@@ -1,4 +1,6 @@
+import type { SetTargetProvidersTargetsRequestTargetsInner } from "@ctrlplane/node-sdk";
 import { CronJob } from "cron";
+import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -18,6 +20,7 @@ const getScannerId = async () => {
     });
     return id;
   } catch (error) {
+    console.error(error);
     logger.error(error);
     logger.error(
       `Failed to get scanner ID. This could be caused by incorrect workspace (${env.CTRLPLANE_WORKSPACE}), or API Key`,
@@ -36,12 +39,26 @@ const scan = async () => {
     date: new Date().toISOString(),
   });
 
-  const targets = await getKubernetesClusters();
-  gkeLogger.info(`Found ${targets.length} clusters`, { count: targets.length });
+  const clusters = await getKubernetesClusters();
+  gkeLogger.info(`Found ${clusters.length} clusters`, {
+    count: clusters.length,
+  });
 
-  const namespaces = await getKubernetesNamespace(targets);
+  const namespaces = await getKubernetesNamespace(clusters);
   gkeLogger.info(`Found ${namespaces.length} namespaces`, {
     count: namespaces.length,
+  });
+
+  const targets: SetTargetProvidersTargetsRequestTargetsInner[] = [
+    ...clusters.map((t) => t.target),
+    ...namespaces,
+  ];
+
+  await api.setTargetProvidersTargets({
+    providerId: id,
+    setTargetProvidersTargetsRequest: {
+      targets: _.uniqBy(targets, (t) => t.identifier),
+    },
   });
 };
 

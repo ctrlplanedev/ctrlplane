@@ -56,11 +56,17 @@ export const CreateSystemDialog: React.FC<{
 }> = ({ children, workspaceId, workspaceSlug }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const create = api.system.create.useMutation({});
-  const form = useForm({
-    disabled: create.isPending,
-    schema: systemForm,
-    defaultValues: { name: "", slug: "", description: "" },
+  const utils = api.useUtils();
+  const onSubmit = form.handleSubmit(async (values) => {
+    try {
+      const system = await create.mutateAsync({ workspaceId, ...values });
+      await utils.system.list.invalidate();
+      router.push(`/${workspaceSlug}/systems/${system.slug}`);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+    }
+    setOpen(false);
   });
 
   const { name } = form.watch();

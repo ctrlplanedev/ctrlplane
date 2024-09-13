@@ -7,7 +7,7 @@ export const env = createEnv({
     AUTH_SECRET:
       process.env.NODE_ENV === "production"
         ? z.string().min(1)
-        : z.string().min(1).optional(),
+        : z.string().min(1).default("devmode"),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
   },

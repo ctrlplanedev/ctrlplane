@@ -24,6 +24,7 @@ COPY tooling/typescript/package.json ./tooling/typescript/package.json
 
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/validators/package.json ./packages/validators/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
 COPY apps/job-policy-checker/package.json ./apps/job-policy-checker/package.json
@@ -37,5 +38,7 @@ RUN turbo build --filter=...@ctrlplane/job-policy-checker
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
+
+ENV NODE_ENV=production
 
 CMD node apps/job-policy-checker/dist/index.js

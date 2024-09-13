@@ -1,10 +1,12 @@
+import Link from "next/link";
 import { TbBook } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 
-// import { CreateRunbookDialog } from "../../../_components/CreateRunbook";
-
-export const RunbookGettingStarted: React.FC = () => {
+export const RunbookGettingStarted: React.FC<{
+  workspaceSlug: string;
+  systemSlug: string;
+}> = ({ workspaceSlug, systemSlug }) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -23,9 +25,12 @@ export const RunbookGettingStarted: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* <CreateRunbookDialog defaultSystemId={systemId}> */}
-          <Button size="sm">Create Runbook</Button>
-          {/* </CreateRunbookDialog> */}
+          <Link
+            href={`/${workspaceSlug}/systems/${systemSlug}/runbooks/create`}
+            passHref
+          >
+            <Button size="sm">Create Runbook</Button>
+          </Link>
           <Button size="sm" variant="secondary">
             Documentation
           </Button>

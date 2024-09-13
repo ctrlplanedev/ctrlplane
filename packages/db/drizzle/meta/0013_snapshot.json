@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "id": "32f46733-78fa-46e2-9748-ffb06b1d5ef4",
+=======
+  "id": "9d9c4bfe-499e-482d-9720-b1dd7eaade05",
+>>>>>>> origin
   "prevId": "5073064a-baad-4066-9a2c-41d58077ddc2",
   "version": "6",
   "dialect": "postgresql",
@@ -226,6 +230,15 @@
           "primaryKey": false,
           "notNull": true
         },
+<<<<<<< HEAD
+=======
+        "key_prefix": {
+          "name": "key_prefix",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+>>>>>>> origin
         "expires_at": {
           "name": "expires_at",
           "type": "timestamp with time zone",
@@ -233,7 +246,17 @@
           "notNull": false
         }
       },
+<<<<<<< HEAD
       "indexes": {},
+=======
+      "indexes": {
+        "user_api_key_key_prefix_key_hash_index": {
+          "name": "user_api_key_key_prefix_key_hash_index",
+          "columns": ["key_prefix", "key_hash"],
+          "isUnique": true
+        }
+      },
+>>>>>>> origin
       "foreignKeys": {
         "user_api_key_user_id_user_id_fk": {
           "name": "user_api_key_user_id_user_id_fk",
@@ -2658,6 +2681,7 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
+<<<<<<< HEAD
     },
     "public.value": {
       "name": "value",
@@ -2754,6 +2778,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
+=======
+>>>>>>> origin
     }
   },
   "enums": {

@@ -48,7 +48,6 @@ paths:
                   - workspaceId
         "500":
           description: Internal server error
-
   /v1/{workspace}/target-provider/name/{name}:
     get:
       summary: Upserts a target provider.
@@ -88,17 +87,11 @@ paths:
           description: Provider not found
         "500":
           description: Internal server error
-  /v1/{workspace}/target-provider/{providerId}/set:
+  /v1/target-provider/{providerId}/set:
     patch:
       summary: Sets the target for a provider.
       operationId: setTargetProvidersTargets
       parameters:
-        - name: workspace
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name of the workspace
         - name: providerId
           in: path
           required: true
@@ -119,13 +112,13 @@ paths:
                   items:
                     type: object
                     properties:
+                      identifier:
+                        type: string
                       name:
                         type: string
                       version:
                         type: string
                       kind:
-                        type: string
-                      provider:
                         type: string
                       config:
                         type: object
@@ -134,10 +127,10 @@ paths:
                         additionalProperties:
                           type: string
                     required:
+                      - identifier
                       - name
                       - version
                       - kind
-                      - provider
                       - config
                       - labels
       responses:
@@ -358,3 +351,11 @@ paths:
                     type: boolean
                 required:
                   - success
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+security:
+  - apiKey: []

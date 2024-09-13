@@ -36,4 +36,6 @@ USER nodejs
 
 COPY ./packages/db/drizzle ./packages/db/dist/drizzle
 
+ENV NODE_ENV=production
+
 CMD node packages/db/dist/migrate.js

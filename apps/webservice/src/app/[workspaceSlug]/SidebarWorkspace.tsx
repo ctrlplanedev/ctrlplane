@@ -2,13 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import {
-  TbCategory,
-  TbChevronRight,
-  TbDashboard,
-  TbRocket,
-  TbTarget,
-} from "react-icons/tb";
+import { TbCategory, TbChevronRight, TbRocket, TbTarget } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -29,9 +23,9 @@ export const SidebarWorkspace: React.FC = () => {
         <TbChevronRight className={cn(open && "rotate-90", "transition-all")} />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 text-sm">
-        <SidebarLink href={`/${workspaceSlug}/dashboard`}>
+        {/* <SidebarLink href={`/${workspaceSlug}/dashboard`}>
           <TbDashboard className="text-muted-foreground" /> Dashboard
-        </SidebarLink>
+        </SidebarLink> */}
         <SidebarLink href={`/${workspaceSlug}/systems`} exact>
           <TbCategory className="text-mutesd-foreground" /> Systems
         </SidebarLink>

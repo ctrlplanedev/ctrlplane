@@ -1,25 +1,40 @@
+import type { Tx } from "@ctrlplane/db";
+import type { JobConfig } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, desc, eq, inArray, ne, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  ne,
+  notInArray,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   createRelease,
   deployment,
   environment,
   environmentPolicy,
+  jobConfig,
   release,
   releaseDependency,
+  target,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
   createJobConfigs,
   createJobExecutionApprovals,
+  createJobExecutions,
   dispatchJobConfigs,
   isPassingAllPolicies,
   isPassingEnvironmentPolicy,
+  isPassingLockingPolicy,
   isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -109,22 +124,149 @@ export const releaseRouter = createTRPCRouter({
               { type: "environment", id: input.environmentId },
             ),
       })
-      .input(z.object({ environmentId: z.string(), releaseId: z.string() }))
+      .input(
+        z.object({
+          environmentId: z.string(),
+          releaseId: z.string(),
+          isForcedRelease: z.boolean().optional(),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
-        const jobConfigs = await createJobConfigs(ctx.db, "redeploy")
+        const cancelPreviousJobExecutions = async (
+          tx: Tx,
+          jobConfigs: JobConfig[],
+        ) =>
+          tx
+            .select()
+            .from(jobConfig)
+            .where(
+              and(
+                eq(jobConfig.releaseId, input.releaseId),
+                eq(jobConfig.environmentId, input.environmentId),
+                notInArray(
+                  jobConfig.id,
+                  jobConfigs.map((j) => j.id),
+                ),
+              ),
+            )
+            .then((existingJobConfigs) =>
+              createJobExecutions(tx, existingJobConfigs, "cancelled").then(
+                () => {},
+              ),
+            );
+
+        const jobConfigs = await createJobConfigs(ctx.db, "force_deploy")
           .causedById(ctx.session.user.id)
           .environments([input.environmentId])
           .releases([input.releaseId])
-          .filter(isPassingReleaseSequencingCancelPolicy)
+          .filter(
+            input.isForcedRelease
+              ? (_tx, jobConfigs) => jobConfigs
+              : isPassingReleaseSequencingCancelPolicy,
+          )
+          .then(
+            input.isForcedRelease
+              ? cancelPreviousJobExecutions
+              : createJobExecutionApprovals,
+          )
           .insert();
 
         await dispatchJobConfigs(ctx.db)
           .jobConfigs(jobConfigs)
-          .filter(isPassingAllPolicies)
+          .filter(
+            input.isForcedRelease
+              ? isPassingLockingPolicy
+              : isPassingAllPolicies,
+          )
           .then(cancelOldJobConfigsOnJobDispatch)
           .dispatch();
 
         return jobConfigs;
+      }),
+
+    toTarget: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.ReleaseGet, Permission.TargetUpdate)
+            .on(
+              { type: "release", id: input.releaseId },
+              { type: "target", id: input.targetId },
+            ),
+      })
+      .input(
+        z.object({
+          targetId: z.string().uuid(),
+          releaseId: z.string().uuid(),
+          environmentId: z.string().uuid(),
+          isForcedRelease: z.boolean().optional(),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const t = await ctx.db
+          .select()
+          .from(target)
+          .where(eq(target.id, input.targetId))
+          .then(takeFirstOrNull);
+        if (!t) throw new Error("Target not found");
+
+        if (t.lockedAt != null) throw new Error("Target is locked");
+
+        const rel = await ctx.db
+          .select()
+          .from(release)
+          .where(eq(release.id, input.releaseId))
+          .then(takeFirstOrNull);
+        if (!rel) throw new Error("Release not found");
+
+        const env = await ctx.db
+          .select()
+          .from(environment)
+          .where(eq(environment.id, input.environmentId))
+          .then(takeFirstOrNull);
+        if (!env) throw new Error("Environment not found");
+
+        const jc = await ctx.db
+          .select()
+          .from(jobConfig)
+          .where(
+            and(
+              eq(jobConfig.releaseId, input.releaseId),
+              eq(jobConfig.environmentId, input.environmentId),
+              eq(jobConfig.targetId, input.targetId),
+            ),
+          )
+          .then(takeFirstOrNull);
+
+        const jobConfigs =
+          jc != null
+            ? [jc]
+            : await createJobConfigs(ctx.db, "force_deploy")
+                .causedById(ctx.session.user.id)
+                .environments([env.id])
+                .releases([rel.id])
+                .targets([t.id])
+                .filter(
+                  input.isForcedRelease
+                    ? (_tx, jobConfigs) => jobConfigs
+                    : isPassingReleaseSequencingCancelPolicy,
+                )
+                .then(
+                  input.isForcedRelease
+                    ? () => {}
+                    : createJobExecutionApprovals,
+                )
+                .insert();
+
+        await dispatchJobConfigs(ctx.db)
+          .jobConfigs(jobConfigs)
+          .filter(
+            input.isForcedRelease
+              ? isPassingLockingPolicy
+              : isPassingAllPolicies,
+          )
+          .then(cancelOldJobConfigsOnJobDispatch)
+          .dispatch();
       }),
   }),
 
@@ -174,8 +316,10 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.ReleaseGet).on(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-          input.map((releaseId: any) => ({ type: "release", id: releaseId })),
+          ...(input as string[]).map((t) => ({
+            type: "release" as const,
+            id: t,
+          })),
         ),
     })
     .input(z.array(z.string().uuid()))

@@ -1,4 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   json,
   jsonb,
@@ -19,7 +19,7 @@ export const target = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     version: text("version").notNull(),
-    name: text("name").notNull().unique(),
+    name: text("name").notNull(),
     kind: text("kind").notNull(),
     identifier: text("identifier").notNull(),
     providerId: uuid("provider_id").references(() => targetProvider.id, {
@@ -54,6 +54,8 @@ export const createTarget = createInsertSchema(target, {
   config: z.record(z.any()),
   labels: z.record(z.string()),
 }).omit({ id: true });
+
+export type InsertTarget = InferInsertModel<typeof target>;
 
 export const updateTarget = createTarget.partial();
 

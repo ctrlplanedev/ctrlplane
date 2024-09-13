@@ -40,4 +40,6 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
+ENV NODE_ENV=production
+
 CMD node apps/event-worker/dist/index.js

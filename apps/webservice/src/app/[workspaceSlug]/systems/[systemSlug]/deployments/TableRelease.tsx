@@ -1,16 +1,12 @@
 "use client";
 
-import type {
-  Deployment,
-  JobConfig,
-  JobExecution,
-  Target,
-} from "@ctrlplane/db/schema";
+import type { Deployment } from "@ctrlplane/db/schema";
 import type { ReleaseType } from "semver";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import _ from "lodash";
 import { parse, valid } from "semver";
+import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -18,6 +14,7 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
 import { api } from "~/trpc/react";
+import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
 const Tb: React.FC<{ children?: React.ReactNode; className?: string }> = ({
@@ -80,32 +77,49 @@ const SemverHelperButtons: React.FC<{
 
 export const ReleaseTable: React.FC<{
   deployment: Deployment;
-  jobConfigs: Array<
-    JobConfig & {
-      jobExecution: JobExecution | null;
-      target: Target;
-    }
-  >;
-  releases: { id: string; version: string; createdAt: Date }[];
   environments: {
     id: string;
     name: string;
     targets: { id: string }[];
   }[];
-}> = ({ deployment, jobConfigs, releases, environments }) => {
-  const firstRelease = releases.at(0);
-  const deploy = api.release.deploy.toEnvironment.useMutation();
-  const router = useRouter();
+}> = ({ deployment, environments }) => {
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+  const jobConfigsQuery = api.job.config.byDeploymentId.useQuery(
+    deployment.id,
+    { refetchInterval: 2_000 },
+  );
+
+  const releases = api.release.list.useQuery(
+    { deploymentId: deployment.id },
+    { refetchInterval: 10_000 },
+  );
+
+  const jobConfigs = (jobConfigsQuery.data ?? [])
+    .filter(
+      (jobConfig) =>
+        isPresent(jobConfig.environmentId) &&
+        isPresent(jobConfig.releaseId) &&
+        isPresent(jobConfig.targetId),
+    )
+    .map((jobConfig) => ({
+      ...jobConfig,
+      environmentId: jobConfig.environmentId!,
+      target: jobConfig.target!,
+      releaseId: jobConfig.releaseId!,
+    }));
+
+  const firstRelease = releases.data?.at(0);
   const distrubtion = api.deployment.distrubtionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
   });
-  const releaseIds = releases.map((r) => r.id);
+  const releaseIds = releases.data?.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
     releaseIds,
     { enabled: releaseIds.length > 0 },
   );
-
-  const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
 
   return (
     <div className="w-full overflow-x-auto">
@@ -131,7 +145,7 @@ export const ReleaseTable: React.FC<{
                 )}
               >
                 <Link
-                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/environments?selected=${env.id}`}
+                  href={`/${workspaceSlug}/systems/${systemSlug}/environments?selected=${env.id}`}
                 >
                   <div className="flex justify-between">
                     {env.name}
@@ -149,7 +163,7 @@ export const ReleaseTable: React.FC<{
           </tr>
         </thead>
         <tbody className="roudned-2xl">
-          {releases.map((r, releaseIdx) => {
+          {releases.data?.map((r, releaseIdx) => {
             const blockedEnvs = blockedEnvByRelease.data?.[r.id] ?? [];
             return (
               <tr key={r.id} className="bg-neutral-800/10">
@@ -158,7 +172,7 @@ export const ReleaseTable: React.FC<{
                     "sticky left-0 z-10 min-w-[250px] backdrop-blur-lg",
                     "items-center border-b border-l px-4 text-lg",
                     releaseIdx === 0 && "rounded-tl-md border-t",
-                    releaseIdx === releases.length - 1 && "rounded-bl-md",
+                    releaseIdx === releases.data.length - 1 && "rounded-bl-md",
                   )}
                 >
                   {r.version}
@@ -192,7 +206,7 @@ export const ReleaseTable: React.FC<{
                     <td
                       key={env.id}
                       className={cn(
-                        "h-[55px] w-[200px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
+                        "h-[55px] w-[220px] border-x border-b border-neutral-800 border-x-neutral-800/30 p-2 px-3",
                         releaseIdx === 0 && "border-t",
                         idx === environments.length - 1 &&
                           "border-r-neutral-800",
@@ -201,6 +215,11 @@ export const ReleaseTable: React.FC<{
                     >
                       {showRelease && (
                         <Release
+                          workspaceSlug={workspaceSlug}
+                          systemSlug={systemSlug}
+                          deploymentSlug={deployment.slug}
+                          releaseId={r.id}
+                          environment={env}
                           activeDeploymentCount={hasActiveDeployment}
                           name={r.version}
                           deployedAt={
@@ -211,26 +230,7 @@ export const ReleaseTable: React.FC<{
                       )}
 
                       {canDeploy && (
-                        <Button
-                          className={cn(
-                            "w-full border-dashed border-neutral-800/50 bg-transparent text-center text-neutral-800 hover:border-blue-400 hover:bg-transparent hover:text-blue-400",
-                          )}
-                          variant="outline"
-                          size="sm"
-                          onClick={async (e) => {
-                            e.preventDefault();
-
-                            await deploy.mutateAsync({
-                              environmentId: env.id,
-                              releaseId: r.id,
-                            });
-
-                            router.refresh();
-                          }}
-                          disabled={deploy.isPending}
-                        >
-                          Deploy
-                        </Button>
+                        <DeployButton releaseId={r.id} environmentId={env.id} />
                       )}
 
                       {!canDeploy && !hasRelease && (

@@ -127,6 +127,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ctrlplane/job-dispatch':
+        specifier: workspace:*
+        version: link:../../packages/job-dispatch
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -800,6 +803,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../validators
@@ -1163,6 +1169,70 @@ importers:
       '@types/semver':
         specifier: ^7.5.8
         version: 7.5.8
+      eslint:
+        specifier: 'catalog:'
+        version: 9.9.1(jiti@1.21.6)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.4.5
+        version: 5.5.4
+
+  providers/kubernetes-job-agent:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
+      '@kubernetes/client-node':
+        specifier: ^0.21.0
+        version: 0.21.0
+      '@t3-oss/env-core':
+        specifier: ^0.10.1
+        version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
       eslint:
         specifier: 'catalog:'
         version: 9.9.1(jiti@1.21.6)

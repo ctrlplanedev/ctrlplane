@@ -43,6 +43,7 @@ import {
 
 import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
+import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { useFilters } from "../../_components/filter/Filter";
 import { FilterDropdown } from "../../_components/filter/FilterDropdown";
 import {
@@ -50,7 +51,6 @@ import {
   ContentDialog,
 } from "../../_components/filter/FilterDropdownItems";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
-import { useMatchSorterWithSearch } from "../../_components/useMatchSorter";
 import { LabelFilterDialog } from "./LabelFilterDialog";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
@@ -171,9 +171,18 @@ const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
   const deployments = api.deployment.byTargetId.useQuery(targetId);
   const targetValues =
     api.deployment.variable.value.byTargetId.useQuery(targetId);
+
+  if (!deployments.data || deployments.data.length === 0) {
+    return (
+      <div className="text-center text-sm text-muted-foreground">
+        This target is not part of any deployments.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {deployments.data?.map((deployment) => {
+      {deployments.data.map((deployment) => {
         const deploymentVariables = targetValues.data?.filter(
           (v) => v.deploymentId === deployment.id,
         );
@@ -210,7 +219,7 @@ const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
                 <table className="w-full">
                   <tbody className="text-left">
                     {deploymentVariables.map(({ key, value }) => (
-                      <tr className="text-sm">
+                      <tr className="text-sm" key={key}>
                         <TableCell className="p-3">{key}</TableCell>
                         <TableCell className="p-3">
                           {value ?? (
@@ -392,7 +401,7 @@ export default function TargetsPage({
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel defaultSize={40} className="min-w-[450px]">
+      <ResizablePanel defaultSize={40} className="flex min-w-[450px] flex-col">
         <div className="flex items-center border-b p-6">
           {target.data?.name ? (
             <Link
@@ -431,9 +440,9 @@ export default function TargetsPage({
             </Button>
           )}
         </div>
-        <div className="p-6">
+        <div className="flex-grow overflow-hidden p-6">
           {target.data && (
-            <Tabs defaultValue="general">
+            <Tabs defaultValue="general" className="flex h-full flex-col">
               <TabsList className="grid w-full grid-cols-2 border">
                 <TabsTrigger value="general" className="m-0">
                   General
@@ -442,10 +451,17 @@ export default function TargetsPage({
                   Deployments
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="general" className="mt-6">
+
+              <TabsContent
+                value="general"
+                className="flex-grow overflow-auto py-6 pb-12"
+              >
                 <TargetGeneral {...target.data} />
               </TabsContent>
-              <TabsContent value="deployments" className="mt-6">
+              <TabsContent
+                value="deployments"
+                className="flex-grow overflow-auto py-6 pb-12"
+              >
                 {targetId && <DeploymentsContent targetId={targetId} />}
               </TabsContent>
             </Tabs>

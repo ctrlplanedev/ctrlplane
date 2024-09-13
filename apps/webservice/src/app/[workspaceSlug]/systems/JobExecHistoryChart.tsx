@@ -1,12 +1,11 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import type { Workspace } from "@ctrlplane/db/schema";
 import { startOfDay, sub } from "date-fns";
 import _ from "lodash";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import {
-  Card,
   CardContent,
   CardDescription,
   CardHeader,
@@ -21,14 +20,11 @@ import {
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
 
-export const JobExecHistoryChart: React.FC<{ className?: string }> = ({
-  className,
-}) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const workspaceId = workspace.data?.id ?? "";
-  const jobConfigs = api.job.config.byWorkspaceId.useQuery(workspaceId, {
-    enabled: workspace.isSuccess,
+export const JobExecHistoryChart: React.FC<{
+  workspace: Workspace;
+  className?: string;
+}> = ({ className, workspace }) => {
+  const jobConfigs = api.job.config.byWorkspaceId.useQuery(workspace.id, {
     refetchInterval: 60_000,
   });
 
@@ -44,16 +40,13 @@ export const JobExecHistoryChart: React.FC<{ className?: string }> = ({
     }),
   );
 
-  const targets = api.target.byWorkspaceId.list.useQuery(
-    { workspaceId: workspaceId },
-    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
-  );
-  const deployments = api.deployment.byWorkspaceId.useQuery(workspaceId, {
-    enabled: workspace.isSuccess && workspace.data?.id !== "",
+  const targets = api.target.byWorkspaceId.list.useQuery({
+    workspaceId: workspace.id,
   });
+  const deployments = api.deployment.byWorkspaceId.useQuery(workspace.id, {});
 
   return (
-    <Card className={className}>
+    <div className={className}>
       <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
           <CardTitle>Job executions</CardTitle>
@@ -140,6 +133,6 @@ export const JobExecHistoryChart: React.FC<{ className?: string }> = ({
           </BarChart>
         </ChartContainer>
       </CardContent>
-    </Card>
+    </div>
   );
 };

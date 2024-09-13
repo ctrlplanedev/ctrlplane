@@ -2,7 +2,7 @@
 
 import { Input } from "@ctrlplane/ui/input";
 
-import { useMatchSorterWithSearch } from "../../_components/useMatchSorter";
+import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { useDashboardContext } from "../DashboardContext";
 import { widgets } from "../widgets";
 

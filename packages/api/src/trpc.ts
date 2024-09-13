@@ -21,12 +21,13 @@ export const createTRPCContext = (opts: {
 
 export type Context = ReturnType<typeof createTRPCContext>;
 
+export type AuthorizationCheckFunc<T = any> = (opts: {
+  ctx: Context & { session: Session };
+  input: T;
+  canUser: PermissionChecker;
+}) => boolean | Promise<boolean>;
 export type Meta = {
-  authorizationCheck?: (opts: {
-    ctx: Context & { session: Session };
-    input: any;
-    canUser: PermissionChecker;
-  }) => boolean | Promise<boolean>;
+  authorizationCheck?: AuthorizationCheckFunc;
 };
 
 const t = initTRPC

@@ -4,6 +4,7 @@ import { environmentRouter } from "./router/environment";
 import { githubRouter } from "./router/github/github";
 import { jobRouter } from "./router/job";
 import { releaseRouter } from "./router/release";
+import { runbookRouter } from "./router/runbook";
 import { runtimeRouter } from "./router/runtime";
 import { systemRouter } from "./router/system";
 import { targetRouter } from "./router/target";
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   profile: profileRouter,
   user: userRouter,
   runtime: runtimeRouter,
+  runbook: runbookRouter,
 });
 
 // export type definition of API

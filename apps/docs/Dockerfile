@@ -61,5 +61,6 @@ COPY --from=installer --chown=nodejs:nodejs /app/apps/docs/public ./apps/docs/pu
 
 EXPOSE 3000
 ENV PORT=3000
+ENV NODE_ENV=production
 
 CMD HOSTNAME="0.0.0.0" node apps/docs/server.js

@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import type { Widget } from "./spec";
 import { api } from "~/trpc/react";
-import { useMatchSorter } from "../../_components/useMatchSorter";
+import { useMatchSorter } from "~/utils/useMatchSorter";
 import { MoveButton } from "./HelperButton";
 
 const LabelFilterInput: React.FC<{

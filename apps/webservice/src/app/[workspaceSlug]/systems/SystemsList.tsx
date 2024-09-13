@@ -22,12 +22,13 @@ import { ContentDialog } from "../_components/filter/FilterDropdownItems";
 import { NoFilterMatch } from "../_components/filter/NoFilterMatch";
 import { SystemsTable } from "./SystemsTable";
 
-export const SystemsList: React.FC<{ workspace: Workspace }> = ({
-  workspace,
-}) => {
+export const SystemsList: React.FC<{
+  workspace: Workspace;
+  systemsCount: number;
+}> = ({ workspace, systemsCount }) => {
   const { filters, addFilters, removeFilter, clearFilters } =
     useFilters<SystemFilter>();
-  const systemsAll = api.system.list.useQuery({ workspaceId: workspace.id });
+
   const systems = api.system.list.useQuery({
     workspaceId: workspace.id,
     filters,
@@ -119,7 +120,7 @@ export const SystemsList: React.FC<{ workspace: Workspace }> = ({
 
       {systems.isSuccess && systems.data.total === 0 && (
         <NoFilterMatch
-          numItems={systemsAll.data?.total ?? 0}
+          numItems={systemsCount}
           itemType="system"
           onClear={clearFilters}
         />

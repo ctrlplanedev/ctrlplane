@@ -105,14 +105,17 @@ export const getKubernetesNamespace = async (
       .then((r) => r.body.items.filter((n) => n.metadata != null));
     return namespaces.map((n) =>
       kubernetesNamespaceV1.parse(
-        _.merge(target, {
-          kind: "Namespace",
-          identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,
-          config: { namespace: n.metadata!.name },
-          labels: {
-            "kubernetes/namespace": n.metadata!.name,
+        _.merge(
+          { ...target },
+          {
+            kind: "Namespace",
+            identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,
+            config: { namespace: n.metadata!.name },
+            labels: {
+              "kubernetes/namespace": n.metadata!.name,
+            },
           },
-        }),
+        ),
       ),
     );
   });
