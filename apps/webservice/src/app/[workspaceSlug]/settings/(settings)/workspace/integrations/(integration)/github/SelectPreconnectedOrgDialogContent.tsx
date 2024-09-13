@@ -56,7 +56,7 @@ export const SelectPreconnectedOrgDialogContent: React.FC<
 
     await jobAgentCreate.mutateAsync({
       name: org.login,
-      type: "github",
+      type: "github-app",
       workspaceId,
       config: {
         installationId: org.installationId,
