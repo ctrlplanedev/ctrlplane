@@ -46,6 +46,7 @@ export async function dispatchJobsForNewTargets(
     .targets(newTargetIds)
     .environments([envId])
     .insert();
+  if (jobConfigs.length === 0) return;
 
   const dispatched = await dispatchJobConfigs(db)
     .reason("env_policy_override")

@@ -116,8 +116,10 @@ export const ReleaseTable: React.FC<{
     refetchInterval: 2_000,
   });
   const releaseIds = releases.data?.map((r) => r.id) ?? [];
-  const blockedEnvByRelease =
-    api.release.blockedEnvironments.useQuery(releaseIds);
+  const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
+    releaseIds,
+    { enabled: releaseIds.length > 0 },
+  );
 
   return (
     <div className="w-full overflow-x-auto">
