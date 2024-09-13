@@ -9,3 +9,4 @@ export * from "./release-sequencing.js";
 export * from "./gradual-rollout.js";
 export * from "./new-target.js";
 export * from "./target.js";
+export * from "./lock-checker.js";

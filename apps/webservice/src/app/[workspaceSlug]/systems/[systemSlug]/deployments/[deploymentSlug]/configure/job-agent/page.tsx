@@ -46,7 +46,6 @@ export default function ConfigureJobAgentPage({
       jobAgentId: "",
       jobAgentConfig: {},
     },
-    disabled: deployment.isLoading || jobAgents.isLoading,
   });
 
   const { jobAgentId } = form.watch();
