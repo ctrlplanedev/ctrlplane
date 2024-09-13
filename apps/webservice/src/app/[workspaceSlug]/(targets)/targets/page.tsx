@@ -43,6 +43,7 @@ import {
 
 import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
+import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { useFilters } from "../../_components/filter/Filter";
 import { FilterDropdown } from "../../_components/filter/FilterDropdown";
 import {
@@ -50,7 +51,6 @@ import {
   ContentDialog,
 } from "../../_components/filter/FilterDropdownItems";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
-import { useMatchSorterWithSearch } from "../../_components/useMatchSorter";
 import { LabelFilterDialog } from "./LabelFilterDialog";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";

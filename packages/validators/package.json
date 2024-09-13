@@ -20,6 +20,10 @@
       "types": "./src/jobs/index.ts",
       "default": "./dist/jobs/index.js"
     },
+    "./variables": {
+      "types": "./src/variables/index.ts",
+      "default": "./dist/variables/index.js"
+    },
     "./github": {
       "types": "./src/github/index.ts",
       "default": "./dist/github/index.js"

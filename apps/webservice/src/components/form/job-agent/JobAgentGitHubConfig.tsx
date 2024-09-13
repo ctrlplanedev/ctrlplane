@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
 
-export const ConfigureJobAgentGithub: React.FC<{
+export const JobAgentGitHubConfig: React.FC<{
   value: Record<string, any>;
   jobAgent: JobAgent;
   workspaceId: string;
