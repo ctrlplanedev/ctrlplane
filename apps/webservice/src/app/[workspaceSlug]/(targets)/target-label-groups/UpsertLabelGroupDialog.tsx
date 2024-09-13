@@ -30,7 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-import { useMatchSorter } from "../../_components/useMatchSorter";
+import { useMatchSorter } from "~/utils/useMatchSorter";
 
 const LabelFilterInput: React.FC<{
   value: string;

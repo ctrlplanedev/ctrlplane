@@ -1,12 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { TbBolt, TbPlus } from "react-icons/tb";
+import { TbBolt } from "react-icons/tb";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
-import { Card } from "@ctrlplane/ui/card";
 import {
   Form,
   FormControl,
@@ -21,20 +19,11 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@ctrlplane/ui/resizable";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
 
+import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
+import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
+import { VariablesList } from "~/components/form/job-agent/JobAgentVariableList";
 import { api } from "~/trpc/react";
-import { ConfigureJobAgentGithub } from "./ConfigureJobAgentGithub";
-import {
-  ConfigureJobAgentKubernetesJob,
-  VariablesList,
-} from "./ConfigureJobAgentKubernetesJob";
 
 export default function ConfigureJobAgentPage({
   params,
@@ -100,32 +89,14 @@ export default function ConfigureJobAgentPage({
                   <FormItem>
                     <FormLabel>Job Agent</FormLabel>
                     <FormControl>
-                      <div className="flex items-center gap-2">
-                        <Select value={value} onValueChange={onChange}>
-                          <SelectTrigger className="max-w-[350px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {jobAgents.data?.map((jobAgent) => (
-                              <SelectItem key={jobAgent.id} value={jobAgent.id}>
-                                {jobAgent.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Link
-                          href={`/${params.workspaceSlug}/job-agents/add`}
-                          passHref
-                        >
-                          <Button
-                            className="flex items-center"
-                            variant="outline"
-                            size="icon"
-                          >
-                            <TbPlus />
-                          </Button>
-                        </Link>
-                      </div>
+                      {workspace.data && jobAgents.data && (
+                        <JobAgentSelector
+                          jobAgents={jobAgents.data}
+                          workspace={workspace.data}
+                          value={value}
+                          onChange={onChange}
+                        />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -138,29 +109,14 @@ export default function ConfigureJobAgentPage({
                   <FormItem>
                     <FormLabel>Config</FormLabel>
                     <FormControl>
-                      <Card>
-                        {jobAgent == null && (
-                          <div className="p-2 text-sm text-muted-foreground">
-                            Select a job agent to configure.
-                          </div>
-                        )}
-                        {jobAgent?.type === "kubernetes-job" && (
-                          <ConfigureJobAgentKubernetesJob
-                            value={value}
-                            onChange={onChange}
-                          />
-                        )}
-
-                        {jobAgent?.type === "github-app" &&
-                          workspace.data != null && (
-                            <ConfigureJobAgentGithub
-                              value={value}
-                              jobAgent={jobAgent}
-                              workspaceId={workspace.data.id}
-                              onChange={onChange}
-                            />
-                          )}
-                      </Card>
+                      {workspace.data && (
+                        <JobAgentConfig
+                          workspace={workspace.data}
+                          jobAgent={jobAgent}
+                          value={value}
+                          onChange={onChange}
+                        />
+                      )}
                     </FormControl>
                     <FormMessage />
                   </FormItem>

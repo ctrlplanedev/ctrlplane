@@ -20,8 +20,8 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
-import { useMatchSorterWithSearch } from "~/app/[workspaceSlug]/_components/useMatchSorter";
 import { api } from "~/trpc/react";
+import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ReleaseCell } from "./ReleaseCell";
 
 const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {

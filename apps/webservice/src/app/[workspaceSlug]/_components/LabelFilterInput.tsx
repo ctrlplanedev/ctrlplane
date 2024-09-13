@@ -8,7 +8,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
-import { useMatchSorter } from "./useMatchSorter";
+import { useMatchSorter } from "~/utils/useMatchSorter";
 
 export const LabelFilterInput: React.FC<{
   workspaceId?: string;

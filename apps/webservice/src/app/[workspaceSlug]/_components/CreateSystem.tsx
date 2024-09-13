@@ -58,6 +58,7 @@ export const CreateSystemDialog: React.FC<{
       const system = await create.mutateAsync({ workspaceId, ...values });
       await utils.system.list.invalidate();
       router.push(`/${workspaceSlug}/systems/${system.slug}`);
+      router.refresh();
     } catch (e) {
       console.error(e);
     }
