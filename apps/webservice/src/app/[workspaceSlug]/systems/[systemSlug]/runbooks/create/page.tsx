@@ -22,7 +22,7 @@ export default async function CreateRunbookPage({ params }: PageProps) {
   const system = await api.system.bySlug(params).catch(notFound);
   const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
   return (
-    <div className="h-full overflow-y-auto p-8 pb-24">
+    <div className="h-full overflow-y-auto p-8 py-16 pb-24">
       <CreateRunbook
         jobAgents={jobAgents}
         system={system}

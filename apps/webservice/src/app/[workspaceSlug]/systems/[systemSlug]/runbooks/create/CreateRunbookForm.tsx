@@ -73,7 +73,9 @@ export const CreateRunbook: React.FC<{
             not necessarily tied to specific environments
           </p>
         </div>
+
         <Separator />
+
         <div className="space-y-3">
           <div>General</div>
           <FormField
@@ -134,7 +136,9 @@ export const CreateRunbook: React.FC<{
             )}
           />
         </div>
+
         <Separator />
+
         <div className="space-y-3">
           <div>Agent</div>
 
@@ -176,6 +180,8 @@ export const CreateRunbook: React.FC<{
             )}
           />
         </div>
+
+        <Separator />
 
         <Button type="submit">Create</Button>
       </form>

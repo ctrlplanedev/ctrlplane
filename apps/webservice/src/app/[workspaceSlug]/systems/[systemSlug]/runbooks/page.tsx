@@ -12,7 +12,7 @@ export default function Runbooks({ params }: { params: any }) {
       <TopNav>
         <SystemBreadcrumbNavbar params={params} />
       </TopNav>
-      <RunbookGettingStarted />
+      <RunbookGettingStarted {...params} />
     </>
   );
 }
