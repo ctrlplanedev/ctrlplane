@@ -566,16 +566,23 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironment }))
     .mutation(async ({ ctx, input }) => {
+      const oldEnv = await ctx.db
+        .select()
+        .from(environment)
+        .innerJoin(system, eq(system.id, environment.systemId))
+        .where(eq(environment.id, input.id))
+        .then(takeFirst);
+
+      await ctx.db
+        .update(environment)
+        .set(input.data)
+        .where(eq(environment.id, input.id))
+        .returning()
+        .then(takeFirst);
+
       const { targetFilter } = input.data;
       const isUpdatingTargetFilter = targetFilter != null;
       if (isUpdatingTargetFilter) {
-        const oldEnv = await ctx.db
-          .select()
-          .from(environment)
-          .innerJoin(system, eq(system.id, environment.systemId))
-          .where(eq(environment.id, input.id))
-          .then(takeFirst);
-
         const hasTargetFiltersChanged = !_.isEqual(
           oldEnv.environment.targetFilter,
           targetFilter,
@@ -607,13 +614,6 @@ export const environmentRouter = createTRPCRouter({
           }
         }
       }
-
-      return ctx.db
-        .update(environment)
-        .set(input.data)
-        .where(eq(environment.id, input.id))
-        .returning()
-        .then(takeFirst);
     }),
 
   delete: protectedProcedure
