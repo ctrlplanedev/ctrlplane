@@ -12,7 +12,7 @@ import {
   target,
   updateJob,
 } from "@ctrlplane/db/schema";
-import { onJobExecutionStatusChange } from "@ctrlplane/job-dispatch";
+import { onJobStatusChange } from "@ctrlplane/job-dispatch";
 
 export const GET = async (
   _: NextRequest,
@@ -62,7 +62,7 @@ export const PATCH = async (
       { status: 404 },
     );
 
-  onJobExecutionStatusChange(je).catch(console.error);
+  onJobStatusChange(je).catch(console.error);
 
   return NextResponse.json(je);
 };

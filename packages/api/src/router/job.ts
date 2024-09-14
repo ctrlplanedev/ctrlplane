@@ -3,7 +3,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, desc, eq, isNull, or, takeFirst } from "@ctrlplane/db";
+import { and, asc, desc, eq, isNull, takeFirst } from "@ctrlplane/db";
 import {
   createJobAgent,
   deployment,
@@ -14,21 +14,20 @@ import {
   jobAgent,
   release,
   releaseJobTrigger,
-  runbook,
   system,
   target,
 } from "@ctrlplane/db/schema";
 import {
-  cancelOldJobConfigsOnJobDispatch,
-  dispatchJobConfigs,
-  getRolloutDateForJobConfig,
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  dispatchReleaseJobTriggers,
+  getRolloutDateForReleaseJobTrigger,
   isDateInTimeWindow,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const jobConfigQuery = (tx: Tx) =>
+const releaseJobTriggerQuery = (tx: Tx) =>
   tx
     .select()
     .from(releaseJobTrigger)
@@ -37,15 +36,9 @@ const jobConfigQuery = (tx: Tx) =>
     .leftJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .leftJoin(deployment, eq(release.deploymentId, deployment.id))
     .leftJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(
-      jobAgent,
-      or(
-        eq(jobAgent.id, deployment.jobAgentId),
-        eq(jobAgent.id, runbook.jobAgentId),
-      ),
-    );
+    .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId));
 
-const jobConfigRouter = createTRPCRouter({
+const releaseJobTriggerRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .input(z.string().uuid())
     .meta({
@@ -55,7 +48,7 @@ const jobConfigRouter = createTRPCRouter({
           .on({ type: "workspace", id: input }),
     })
     .query(({ ctx, input }) =>
-      jobConfigQuery(ctx.db)
+      releaseJobTriggerQuery(ctx.db)
         .leftJoin(system, eq(system.id, deployment.systemId))
         .where(
           and(eq(system.workspaceId, input), isNull(environment.deletedAt)),
@@ -91,7 +84,7 @@ const jobConfigRouter = createTRPCRouter({
       }),
     )
     .query(({ ctx, input }) =>
-      jobConfigQuery(ctx.db)
+      releaseJobTriggerQuery(ctx.db)
         .where(
           and(
             eq(deployment.id, input.deploymentId),
@@ -102,7 +95,7 @@ const jobConfigRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.release_job_trigger,
-            jobExecution: t.job,
+            job: t.job,
             jobAgent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
@@ -120,12 +113,12 @@ const jobConfigRouter = createTRPCRouter({
           .on({ type: "deployment", id: input }),
     })
     .query(({ ctx, input }) =>
-      jobConfigQuery(ctx.db)
+      releaseJobTriggerQuery(ctx.db)
         .where(and(eq(deployment.id, input), isNull(environment.deletedAt)))
         .then((data) =>
           data.map((t) => ({
             ...t.release_job_trigger,
-            jobExecution: t.job,
+            job: t.job,
             jobAgent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
@@ -143,7 +136,7 @@ const jobConfigRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
-      jobConfigQuery(ctx.db)
+      releaseJobTriggerQuery(ctx.db)
         .leftJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
@@ -155,10 +148,10 @@ const jobConfigRouter = createTRPCRouter({
         .where(and(eq(release.id, input), isNull(environment.deletedAt)))
         .then((data) =>
           _.chain(data)
-            .groupBy("job_config.id")
+            .groupBy((row) => row.release_job_trigger.id)
             .map((v) => ({
               ...v[0]!.release_job_trigger,
-              jobExecution: v[0]!.job,
+              job: v[0]!.job,
               jobAgent: v[0]!.job_agent,
               target: v[0]!.target,
               release: { ...v[0]!.release, deployment: v[0]!.deployment },
@@ -168,7 +161,7 @@ const jobConfigRouter = createTRPCRouter({
                 v[0]!.release == null ||
                 v[0]!.environment == null
                   ? null
-                  : rolloutDateFromJobConfig(
+                  : rolloutDateFromReleaseJobTrigger(
                       v[0]!.release_job_trigger.targetId,
                       v[0]!.release.id,
                       v[0]!.environment.id,
@@ -184,7 +177,7 @@ const jobConfigRouter = createTRPCRouter({
     ),
 });
 
-const rolloutDateFromJobConfig = (
+const rolloutDateFromReleaseJobTrigger = (
   targetId: string,
   releaseId: string,
   environmentId: string,
@@ -196,7 +189,7 @@ const rolloutDateFromJobConfig = (
     recurrence: string;
   }>,
 ) => {
-  const rolloutDate = getRolloutDateForJobConfig(
+  const rolloutDate = getRolloutDateForReleaseJobTrigger(
     [releaseId, environmentId, targetId].join(":"),
     releaseCreatedAt,
     environmentPolicyDuration,
@@ -249,7 +242,7 @@ const jobAgentRouter = createTRPCRouter({
     ),
 });
 
-const jobExecutionRouter = createTRPCRouter({
+const jobTriggerRouter = createTRPCRouter({
   create: createTRPCRouter({
     byEnvId: protectedProcedure
       .meta({
@@ -268,9 +261,9 @@ const jobExecutionRouter = createTRPCRouter({
             and(eq(releaseJobTrigger.environmentId, input), isNull(job.id)),
           )
           .then((jcs) =>
-            dispatchJobConfigs(ctx.db)
+            dispatchReleaseJobTriggers(ctx.db)
               .releaseTriggers(jcs.map((jc) => jc.release_job_trigger))
-              .then(cancelOldJobConfigsOnJobDispatch)
+              .then(cancelOldReleaseJobTriggersOnJobDispatch)
               .dispatch(),
           ),
       ),
@@ -287,7 +280,7 @@ export const jobRouter = createTRPCRouter({
     })
     .input(z.string())
     .query(({ ctx, input }) =>
-      jobConfigQuery(ctx.db)
+      releaseJobTriggerQuery(ctx.db)
         .where(and(eq(target.id, input), isNull(environment.deletedAt)))
         .limit(1_000)
         .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
@@ -304,7 +297,7 @@ export const jobRouter = createTRPCRouter({
         ),
     ),
 
-  config: jobConfigRouter,
+  config: releaseJobTriggerRouter,
   agent: jobAgentRouter,
-  execution: jobExecutionRouter,
+  trigger: jobTriggerRouter,
 });

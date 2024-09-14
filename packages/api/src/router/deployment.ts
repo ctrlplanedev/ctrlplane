@@ -26,8 +26,8 @@ import {
   workspace,
 } from "@ctrlplane/db/schema";
 import {
-  cancelOldJobConfigsOnJobDispatch,
-  dispatchJobConfigs,
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  dispatchReleaseJobTriggers,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -61,39 +61,36 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(z.string())
     .query(({ ctx, input }) => {
-      const latestCompletedJobExecution = ctx.db
+      const latestCompletedJob = ctx.db
         .select({
           id: job.id,
           status: job.status,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY job_config.target_id, job_config.environment_id ORDER BY job_config.created_at DESC)`.as(
+          rank: sql<number>`ROW_NUMBER() OVER (ORDER BY job.created_at DESC)`.as(
             "rank",
           ),
         })
         .from(job)
         .where(eq(job.status, "completed"))
-        .as("jobExecution");
+        .as("job");
 
       return ctx.db
         .select()
-        .from(latestCompletedJobExecution)
+        .from(latestCompletedJob)
         .innerJoin(
           releaseJobTrigger,
-          eq(releaseJobTrigger.jobId, latestCompletedJobExecution.id),
+          eq(releaseJobTrigger.jobId, latestCompletedJob.id),
         )
         .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .innerJoin(target, eq(target.id, releaseJobTrigger.targetId))
         .where(
-          and(
-            eq(release.deploymentId, input),
-            eq(latestCompletedJobExecution.rank, 1),
-          ),
+          and(eq(release.deploymentId, input), eq(latestCompletedJob.rank, 1)),
         )
         .then((r) =>
           r.map((row) => ({
-            ...row.jobExecution,
+            ...row.job,
             release: row.release,
             target: row.target,
-            jobConfig: row.release_job_trigger,
+            releaseJobTrigger: row.release_job_trigger,
           })),
         );
     }),
@@ -142,13 +139,13 @@ export const deploymentRouter = createTRPCRouter({
                     isNull(releaseJobTrigger.jobId),
                   ),
                 )
-                .then((jobConfigs) =>
-                  dispatchJobConfigs(ctx.db)
+                .then((releaseJobTriggers) =>
+                  dispatchReleaseJobTriggers(ctx.db)
                     .releaseTriggers(
-                      jobConfigs.map((jc) => jc.release_job_trigger),
+                      releaseJobTriggers.map((jc) => jc.release_job_trigger),
                     )
                     .filter(isPassingAllPolicies)
-                    .then(cancelOldJobConfigsOnJobDispatch)
+                    .then(cancelOldReleaseJobTriggersOnJobDispatch)
                     .dispatch()
                     .then(() => d),
                 )
@@ -291,7 +288,7 @@ export const deploymentRouter = createTRPCRouter({
             ...row.deployment,
             environment: row.environment,
             system: row.system,
-            jobConfig: {
+            releaseJobTrigger: {
               ...row.release_job_trigger,
               execution: row.job,
               release: row.release,

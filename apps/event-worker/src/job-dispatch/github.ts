@@ -8,24 +8,24 @@ import { db } from "@ctrlplane/db/client";
 import { githubOrganization, job } from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
 import { configSchema } from "@ctrlplane/validators/github";
-import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { convertStatus, getInstallationOctokit } from "../github-utils.js";
 import { redis } from "../redis.js";
 
-const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
+const jobSyncQueue = new Queue(Channel.JobSync, {
   connection: redis,
 });
 
-export const dispatchGithubJobExecution = async (je: Job) => {
-  console.log(`Dispatching job execution ${je.id}...`);
+export const dispatchGithubJob = async (je: Job) => {
+  console.log(`Dispatching job ${je.id}...`);
 
   const config = je.jobAgentConfig;
   const parsed = configSchema.safeParse(config);
   if (!parsed.success) {
     await db.update(job).set({
-      status: JobExecutionStatus.InvalidJobAgent,
-      message: `Invalid job agent config for job execution ${je.id}: ${parsed.error.message}`,
+      status: JobStatus.InvalidJobAgent,
+      message: `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     });
     return;
   }
@@ -43,8 +43,8 @@ export const dispatchGithubJobExecution = async (je: Job) => {
 
   if (ghOrg == null) {
     await db.update(job).set({
-      status: JobExecutionStatus.InvalidIntegration,
-      message: `GitHub organization not found for job execution ${je.id}`,
+      status: JobStatus.InvalidIntegration,
+      message: `GitHub organization not found for job ${je.id}`,
     });
     return;
   }
@@ -52,7 +52,7 @@ export const dispatchGithubJobExecution = async (je: Job) => {
   const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {
     await db.update(job).set({
-      status: JobExecutionStatus.InvalidJobAgent,
+      status: JobStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
     });
     return;
@@ -69,7 +69,7 @@ export const dispatchGithubJobExecution = async (je: Job) => {
     workflow_id: parsed.data.workflowId,
     ref: ghOrg.branch,
     inputs: {
-      job_id: je.id.slice(0, 8),
+      job_id: je.id,
     },
     headers: {
       "X-GitHub-Api-Version": "2022-11-28",
@@ -91,7 +91,7 @@ export const dispatchGithubJobExecution = async (je: Job) => {
         });
 
         const run = runs.data.workflow_runs.find((run) =>
-          run.name?.includes(je.id.slice(0, 8)),
+          run.name?.includes(je.id),
         );
 
         if (run == null) throw new Error("Run not found");
@@ -105,8 +105,8 @@ export const dispatchGithubJobExecution = async (je: Job) => {
     status = status_;
   } catch (e) {
     await db.update(job).set({
-      status: JobExecutionStatus.ExternalRunNotFound,
-      message: `Run ID not found for job execution ${je.id}`,
+      status: JobStatus.ExternalRunNotFound,
+      message: `Run ID not found for job ${je.id}`,
     });
     return;
   }
@@ -115,13 +115,13 @@ export const dispatchGithubJobExecution = async (je: Job) => {
     .update(job)
     .set({
       externalRunId: runId.toString(),
-      status: convertStatus(status ?? JobExecutionStatus.Pending),
+      status: convertStatus(status ?? JobStatus.Pending),
     })
     .where(eq(job.id, je.id));
 
-  await jobExecutionSyncQueue.add(
+  await jobSyncQueue.add(
     je.id,
-    { jobExecutionId: je.id },
+    { jobId: je.id },
     { repeat: { every: ms("10s") } },
   );
 };

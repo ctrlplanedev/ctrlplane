@@ -13,61 +13,54 @@ import {
   jobAgent,
   release,
   releaseJobTrigger,
-  runbook,
 } from "@ctrlplane/db/schema";
 /**
- * Converts a job config into a job execution which means they can now be
+ * Converts a job config into a job which means they can now be
  * picked up by job agents
  */
 import { logger } from "@ctrlplane/logger";
 
-import { dispatchJobConfigs } from "./job-dispatch.js";
+import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
-import { cancelOldJobConfigsOnJobDispatch } from "./release-sequencing.js";
+import { cancelOldReleaseJobTriggersOnJobDispatch } from "./release-sequencing.js";
 
 export const createTriggeredReleaseJobs = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
   status: JobStatus = "pending",
 ): Promise<Job[]> => {
   logger.info(`Creating triggered release jobs`, {
-    jobConfigsCount: jobConfigs.length,
+    releaseJobTriggersCount: releaseJobTriggers.length,
     status,
   });
 
-  const insertJobExecutions = await db
+  const insertJobs = await db
     .select()
     .from(releaseJobTrigger)
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .innerJoin(
-      jobAgent,
-      or(
-        eq(jobAgent.id, deployment.jobAgentId),
-        eq(jobAgent.id, runbook.jobAgentId),
-      ),
-    )
+    .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
     .where(
       inArray(
         releaseJobTrigger.id,
-        jobConfigs.map((t) => t.id),
+        releaseJobTriggers.map((t) => t.id),
       ),
     );
 
-  logger.debug(`Found job executions to insert`, {
-    count: insertJobExecutions.length,
+  logger.debug(`Found jobs to insert`, {
+    count: insertJobs.length,
   });
 
-  if (insertJobExecutions.length === 0) {
-    logger.info(`No job executions to insert, returning empty array`);
+  if (insertJobs.length === 0) {
+    logger.info(`No jobs to insert, returning empty array`);
     return [];
   }
 
   const jobs = await db
     .insert(job)
     .values(
-      insertJobExecutions.map((d) => ({
-        jobConfigId: d.release_job_trigger.id,
+      insertJobs.map((d) => ({
+        releaseJobTriggerId: d.release_job_trigger.id,
         jobAgentId: d.job_agent.id,
         jobAgentConfig: _.merge(
           d.job_agent.config,
@@ -87,10 +80,7 @@ export const createTriggeredReleaseJobs = async (
         .update(releaseJobTrigger)
         .set({ jobId: job.id })
         .where(
-          eq(
-            releaseJobTrigger.id,
-            insertJobExecutions[index]!.release_job_trigger.id,
-          ),
+          eq(releaseJobTrigger.id, insertJobs[index]!.release_job_trigger.id),
         ),
     ),
   );
@@ -100,7 +90,7 @@ export const createTriggeredReleaseJobs = async (
   return jobs;
 };
 
-export const onJobExecutionStatusChange = async (je: Job) => {
+export const onJobStatusChange = async (je: Job) => {
   if (je.status === "completed") {
     const triggers = await db
       .select()
@@ -113,7 +103,7 @@ export const onJobExecutionStatusChange = async (je: Job) => {
       .where(eq(releaseJobTrigger.jobId, je.id))
       .then(takeFirst);
 
-    const affectedJobConfigs = await db
+    const affectedReleaseJobTriggers = await db
       .select()
       .from(releaseJobTrigger)
       .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
@@ -150,10 +140,12 @@ export const onJobExecutionStatusChange = async (je: Job) => {
         ),
       );
 
-    await dispatchJobConfigs(db)
-      .releaseTriggers(affectedJobConfigs.map((t) => t.release_job_trigger))
+    await dispatchReleaseJobTriggers(db)
+      .releaseTriggers(
+        affectedReleaseJobTriggers.map((t) => t.release_job_trigger),
+      )
       .filter(isPassingAllPolicies)
-      .then(cancelOldJobConfigsOnJobDispatch)
+      .then(cancelOldReleaseJobTriggersOnJobDispatch)
       .dispatch();
   }
 };

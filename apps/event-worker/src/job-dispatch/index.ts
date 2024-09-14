@@ -1,18 +1,18 @@
-import type { DispatchJobExecutionEvent } from "@ctrlplane/validators/events";
+import type { DispatchJobEvent } from "@ctrlplane/validators/events";
 import { Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
-import { JobAgentType, JobExecutionStatus } from "@ctrlplane/validators/jobs";
+import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { redis } from "../redis.js";
-import { dispatchGithubJobExecution } from "./github.js";
+import { dispatchGithubJob } from "./github.js";
 
 export const createDispatchExecutionJobWorker = () =>
-  new Worker<DispatchJobExecutionEvent>(
-    Channel.DispatchJobExecution,
+  new Worker<DispatchJobEvent>(
+    Channel.DispatchJob,
     (job) =>
       db
         .select()
@@ -21,18 +21,20 @@ export const createDispatchExecutionJobWorker = () =>
           schema.jobAgent,
           eq(schema.job.jobAgentId, schema.jobAgent.id),
         )
-        .where(eq(schema.job.id, job.data.jobExecutionId))
+        .where(eq(schema.job.id, job.data.jobId))
         .then(takeFirstOrNull)
         .then((je) => {
           if (je == null) return;
 
+          console.log(">>> je agent type", je.job_agent.type);
+
           try {
             if (je.job_agent.type === String(JobAgentType.GithubApp))
-              dispatchGithubJobExecution(je.job);
+              dispatchGithubJob(je.job);
           } catch (error) {
             db.update(schema.job)
               .set({
-                status: JobExecutionStatus.Failure,
+                status: JobStatus.Failure,
                 message: (error as Error).message,
               })
               .where(eq(schema.job.id, je.job.id));

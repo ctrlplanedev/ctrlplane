@@ -34,9 +34,9 @@ import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
 import { getStatusColor, statusColor } from "./status-color";
 
 const ReleaseIcon: React.FC<{
-  jobConfigs: Array<ReleaseJobTrigger & { jobExecution: Job | null }>;
-}> = ({ jobConfigs }) => {
-  const statues = jobConfigs.map((s) => s.jobExecution?.status);
+  releaseJobTriggers: Array<ReleaseJobTrigger & { job: Job | null }>;
+}> = ({ releaseJobTriggers }) => {
+  const statues = releaseJobTriggers.map((s) => s.job?.status);
 
   const inProgress = statues.some((s) => s === "in_progress");
   if (inProgress)
@@ -116,9 +116,9 @@ export const Release: React.FC<{
   environment: { id: string; name: string };
   activeDeploymentCount?: number;
   deployedAt: Date;
-  jobConfigs: Array<
+  releaseJobTriggers: Array<
     ReleaseJobTrigger & {
-      jobExecution: Job | null;
+      job: Job | null;
       target: Target;
       deployment?: Deployment | null;
     }
@@ -130,7 +130,7 @@ export const Release: React.FC<{
   const {
     name,
     deployedAt,
-    jobConfigs,
+    releaseJobTriggers,
     activeDeploymentCount,
     releaseId,
     environment,
@@ -138,8 +138,8 @@ export const Release: React.FC<{
     systemSlug,
     deploymentSlug,
   } = props;
-  const data = _.chain(jobConfigs)
-    .groupBy((r) => r.jobExecution?.status ?? "configured")
+  const data = _.chain(releaseJobTriggers)
+    .groupBy((r) => r.job?.status ?? "configured")
     .entries()
     .map(([name, value]) => ({ name, count: value.length }))
     .push(...Object.keys(statusColor).map((k) => ({ name: k, count: 0 })))
@@ -147,14 +147,14 @@ export const Release: React.FC<{
     .sortBy((r) => getStatusColor(r.name))
     .value();
 
-  const configuredWithMessages = jobConfigs.filter((d) =>
-    [d.jobExecution, d.target, d.jobExecution?.message].every(isPresent),
+  const configuredWithMessages = releaseJobTriggers.filter((d) =>
+    [d.job, d.target, d.job?.message].every(isPresent),
   );
 
-  const firstJobConfig = jobConfigs.at(0);
+  const firstReleaseJobTrigger = releaseJobTriggers.at(0);
 
-  const isReleaseCompleted = jobConfigs.every((d) =>
-    completedStatus.includes(d.jobExecution?.status ?? "configured"),
+  const isReleaseCompleted = releaseJobTriggers.every((d) =>
+    completedStatus.includes(d.job?.status ?? "configured"),
   );
 
   return (
@@ -162,10 +162,10 @@ export const Release: React.FC<{
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstJobConfig?.deployment?.slug ?? deploymentSlug}/releases/${firstJobConfig?.releaseId}`}
+            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
             className="flex items-center gap-2"
           >
-            <ReleaseIcon jobConfigs={jobConfigs} />
+            <ReleaseIcon releaseJobTriggers={releaseJobTriggers} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-semibold">{name}</span>
@@ -193,18 +193,16 @@ export const Release: React.FC<{
                   <div key={d.id}>
                     <div className="flex items-center gap-1">
                       <TbCircle
-                        fill={getStatusColor(d.jobExecution!.status)}
+                        fill={getStatusColor(d.job!.status)}
                         strokeWidth={0}
                       />
                       {d.target.name}
                     </div>
-                    {d.jobExecution?.message != null &&
-                      d.jobExecution.message !== "" && (
-                        <div className="text-xs text-muted-foreground">
-                          {capitalCase(d.jobExecution.status)} —{" "}
-                          {d.jobExecution.message}
-                        </div>
-                      )}
+                    {d.job?.message != null && d.job.message !== "" && (
+                      <div className="text-xs text-muted-foreground">
+                        {capitalCase(d.job.status)} — {d.job.message}
+                      </div>
+                    )}
                   </div>
                 ))}
               </Card>

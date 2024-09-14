@@ -1,17 +1,16 @@
-import type { JobStatus } from "@ctrlplane/db/schema";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 
-import { JobExecutionStatus as JEStatus } from "@ctrlplane/validators/jobs";
+import { JobStatus as JStatus } from "@ctrlplane/validators/jobs";
 
 import { env } from "./config.js";
 
-export const convertStatus = (status: string): JobStatus => {
-  if (status === "success" || status === "neutral") return JEStatus.Completed;
+export const convertStatus = (status: string): JStatus => {
+  if (status === "success" || status === "neutral") return JStatus.Completed;
   if (status === "queued" || status === "requested" || status === "waiting")
-    return JEStatus.Pending;
-  if (status === "timed_out" || status === "stale") return JEStatus.Failure;
-  return status as JobStatus;
+    return JStatus.Pending;
+  if (status === "timed_out" || status === "stale") return JStatus.Failure;
+  return status as JStatus;
 };
 
 export const getInstallationOctokit = (installationId: number) =>

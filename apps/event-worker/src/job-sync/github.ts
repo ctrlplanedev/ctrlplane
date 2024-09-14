@@ -4,15 +4,15 @@ import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { job } from "@ctrlplane/db/schema";
 import { configSchema } from "@ctrlplane/validators/github";
-import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { convertStatus, getInstallationOctokit } from "../github-utils.js";
 
-export const syncGithubJobExecution = async (je: Job) => {
+export const syncGithubJob = async (je: Job) => {
   if (je.externalRunId == null) {
     await db.update(job).set({
-      status: JobExecutionStatus.ExternalRunNotFound,
-      message: `Run ID not found for job execution ${je.id}`,
+      status: JobStatus.ExternalRunNotFound,
+      message: `Run ID not found for job ${je.id}`,
     });
     return;
   }
@@ -24,7 +24,7 @@ export const syncGithubJobExecution = async (je: Job) => {
 
   if (!parsed.success) {
     await db.update(job).set({
-      status: JobExecutionStatus.InvalidJobAgent,
+      status: JobStatus.InvalidJobAgent,
       message: parsed.error.message,
     });
     return;
@@ -33,7 +33,7 @@ export const syncGithubJobExecution = async (je: Job) => {
   const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {
     await db.update(job).set({
-      status: JobExecutionStatus.InvalidJobAgent,
+      status: JobStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
     });
     return;
@@ -45,11 +45,9 @@ export const syncGithubJobExecution = async (je: Job) => {
     run_id: runId,
   });
 
-  const status = convertStatus(
-    workflowState.status ?? JobExecutionStatus.Pending,
-  );
+  const status = convertStatus(workflowState.status ?? JobStatus.Pending);
 
   await db.update(job).set({ status }).where(eq(job.id, je.id));
 
-  return status === JobExecutionStatus.Completed;
+  return status === JobStatus.Completed;
 };

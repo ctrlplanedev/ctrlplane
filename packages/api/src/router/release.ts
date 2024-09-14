@@ -27,11 +27,11 @@ import {
   target,
 } from "@ctrlplane/db/schema";
 import {
-  cancelOldJobConfigsOnJobDispatch,
-  createJobExecutionApprovals,
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createJobApprovals,
   createReleaseJobTriggers,
   createTriggeredReleaseJobs,
-  dispatchJobConfigs,
+  dispatchReleaseJobTriggers,
   isPassingAllPolicies,
   isPassingEnvironmentPolicy,
   isPassingLockingPolicy,
@@ -132,9 +132,9 @@ export const releaseRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        const cancelPreviousJobExecutions = async (
+        const cancelPreviousJobs = async (
           tx: Tx,
-          jobConfigs: ReleaseJobTrigger[],
+          releaseJobTriggers: ReleaseJobTrigger[],
         ) =>
           tx
             .select()
@@ -145,19 +145,19 @@ export const releaseRouter = createTRPCRouter({
                 eq(releaseJobTrigger.environmentId, input.environmentId),
                 notInArray(
                   releaseJobTrigger.id,
-                  jobConfigs.map((j) => j.id),
+                  releaseJobTriggers.map((j) => j.id),
                 ),
               ),
             )
-            .then((existingJobConfigs) =>
+            .then((existingReleaseJobTriggers) =>
               createTriggeredReleaseJobs(
                 tx,
-                existingJobConfigs,
+                existingReleaseJobTriggers,
                 "cancelled",
               ).then(() => {}),
             );
 
-        const jobConfigs = await createReleaseJobTriggers(
+        const releaseJobTriggers = await createReleaseJobTriggers(
           ctx.db,
           "force_deploy",
         )
@@ -166,27 +166,23 @@ export const releaseRouter = createTRPCRouter({
           .releases([input.releaseId])
           .filter(
             input.isForcedRelease
-              ? (_tx, jobConfigs) => jobConfigs
+              ? (_tx, releaseJobTriggers) => releaseJobTriggers
               : isPassingReleaseSequencingCancelPolicy,
           )
-          .then(
-            input.isForcedRelease
-              ? cancelPreviousJobExecutions
-              : createJobExecutionApprovals,
-          )
+          .then(input.isForcedRelease ? cancelPreviousJobs : createJobApprovals)
           .insert();
 
-        await dispatchJobConfigs(ctx.db)
-          .releaseTriggers(jobConfigs)
+        await dispatchReleaseJobTriggers(ctx.db)
+          .releaseTriggers(releaseJobTriggers)
           .filter(
             input.isForcedRelease
               ? isPassingLockingPolicy
               : isPassingAllPolicies,
           )
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
 
-        return jobConfigs;
+        return releaseJobTriggers;
       }),
 
     toTarget: protectedProcedure
@@ -243,7 +239,7 @@ export const releaseRouter = createTRPCRouter({
           )
           .then(takeFirstOrNull);
 
-        const jobConfigs =
+        const releaseJobTriggers =
           jc != null
             ? [jc]
             : await createReleaseJobTriggers(ctx.db, "force_deploy")
@@ -253,24 +249,20 @@ export const releaseRouter = createTRPCRouter({
                 .targets([t.id])
                 .filter(
                   input.isForcedRelease
-                    ? (_tx, jobConfigs) => jobConfigs
+                    ? (_tx, releaseJobTriggers) => releaseJobTriggers
                     : isPassingReleaseSequencingCancelPolicy,
                 )
-                .then(
-                  input.isForcedRelease
-                    ? () => {}
-                    : createJobExecutionApprovals,
-                )
+                .then(input.isForcedRelease ? () => {} : createJobApprovals)
                 .insert();
 
-        await dispatchJobConfigs(ctx.db)
-          .releaseTriggers(jobConfigs)
+        await dispatchReleaseJobTriggers(ctx.db)
+          .releaseTriggers(releaseJobTriggers)
           .filter(
             input.isForcedRelease
               ? isPassingLockingPolicy
               : isPassingAllPolicies,
           )
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
       }),
   }),
@@ -299,21 +291,24 @@ export const releaseRouter = createTRPCRouter({
             })),
           );
 
-        const jobConfigs = await createReleaseJobTriggers(db, "new_release")
+        const releaseJobTriggers = await createReleaseJobTriggers(
+          db,
+          "new_release",
+        )
           .causedById(ctx.session.user.id)
           .filter(isPassingEnvironmentPolicy)
           .releases([rel.id])
           .filter(isPassingReleaseSequencingCancelPolicy)
-          .then(createJobExecutionApprovals)
+          .then(createJobApprovals)
           .insert();
 
-        await dispatchJobConfigs(db)
-          .releaseTriggers(jobConfigs)
+        await dispatchReleaseJobTriggers(db)
+          .releaseTriggers(releaseJobTriggers)
           .filter(isPassingAllPolicies)
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
 
-        return { ...rel, jobConfigs };
+        return { ...rel, releaseJobTriggers };
       }),
     ),
 

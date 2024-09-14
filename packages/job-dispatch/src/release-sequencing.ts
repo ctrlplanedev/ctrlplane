@@ -16,36 +16,36 @@ import { createTriggeredReleaseJobs } from "./job-creation.js";
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns A Promise that resolves when the job configs are cancelled. Job configs are cancelled
- * if there is a policy on the environment specifying that old job configs should be cancelled
- * upon a new job config being dispatched. It "cancels" the job configs by creating a job execution
+ * @param releaseJobTriggers
+ * @returns A Promise that resolves when the release job triggers are cancelled. release job triggers are cancelled
+ * if there is a policy on the environment specifying that old release job triggers should be cancelled
+ * upon a new job config being dispatched. It "cancels" the release job triggers by creating a job
  * with the status "cancelled".
  */
-export const cancelOldJobConfigsOnJobDispatch = async (
+export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return;
+  if (releaseJobTriggers.length === 0) return;
   const environmentPolicyShouldCanncel = eq(
     environmentPolicy.releaseSequencing,
     "cancel",
   );
   const isAffectedEnvironment = inArray(
     environment.id,
-    jobConfigs.map((t) => t.environmentId).filter(isPresent),
+    releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
-  const isNotDispatchedJobConfig = notInArray(
+  const isNotDispatchedReleaseJobTrigger = notInArray(
     releaseJobTrigger.id,
-    jobConfigs.map((t) => t.id),
+    releaseJobTriggers.map((t) => t.id),
   );
   const isNotDeleted = isNull(environment.deletedAt);
   const isNotSameRelease = notInArray(
     release.id,
-    jobConfigs.map((t) => t.releaseId).filter(isPresent),
+    releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
   );
 
-  const oldJobConfigsToCancel = await db
+  const oldReleaseJobTriggersToCancel = await db
     .select()
     .from(releaseJobTrigger)
     .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
@@ -59,17 +59,17 @@ export const cancelOldJobConfigsOnJobDispatch = async (
       and(
         environmentPolicyShouldCanncel,
         isAffectedEnvironment,
-        isNotDispatchedJobConfig,
+        isNotDispatchedReleaseJobTrigger,
         isNotDeleted,
         isNotSameRelease,
       ),
     );
 
-  if (oldJobConfigsToCancel.length === 0) return;
+  if (oldReleaseJobTriggersToCancel.length === 0) return;
 
   await createTriggeredReleaseJobs(
     db,
-    oldJobConfigsToCancel.map((t) => t.release_job_trigger),
+    oldReleaseJobTriggersToCancel.map((t) => t.release_job_trigger),
     "cancelled",
   );
 };

@@ -103,7 +103,7 @@ const ForceReleaseTargetDialog: React.FC<{
   );
 };
 
-const validForceReleaseJobExecutionStatus = [
+const validForceReleaseJobStatus = [
   "scheduled",
   "action_required",
   "skipped",
@@ -117,14 +117,8 @@ const TargetDropdownMenu: React.FC<{
   environmentId: string | null;
   target: { id: string; name: string; lockedAt: Date | null } | null;
   deploymentName: string;
-  jobExecutionStatus: string;
-}> = ({
-  release,
-  deploymentName,
-  target,
-  environmentId,
-  jobExecutionStatus,
-}) => {
+  jobStatus: string;
+}> = ({ release, deploymentName, target, environmentId, jobStatus }) => {
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -137,9 +131,7 @@ const TargetDropdownMenu: React.FC<{
         <DropdownMenuContent align="end">
           {target.lockedAt == null &&
             environmentId != null &&
-            validForceReleaseJobExecutionStatus.includes(
-              jobExecutionStatus,
-            ) && (
+            validForceReleaseJobStatus.includes(jobStatus) && (
               <ForceReleaseTargetDialog
                 release={release}
                 deploymentName={deploymentName}
@@ -159,9 +151,7 @@ const TargetDropdownMenu: React.FC<{
 
           {target.lockedAt == null &&
             environmentId != null &&
-            !validForceReleaseJobExecutionStatus.includes(
-              jobExecutionStatus,
-            ) && (
+            !validForceReleaseJobStatus.includes(jobStatus) && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -173,7 +163,7 @@ const TargetDropdownMenu: React.FC<{
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    Cannot force release while job execution is active
+                    Cannot force release while job is active
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -210,11 +200,14 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   release,
   deploymentName,
 }) => {
-  const jobConfigQuery = api.job.config.byReleaseId.useQuery(release.id, {
-    refetchInterval: 5_000,
-  });
+  const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
+    release.id,
+    {
+      refetchInterval: 5_000,
+    },
+  );
 
-  if (jobConfigQuery.isLoading)
+  if (releaseJobTriggerQuery.isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center py-12">
         <TbLoader2 className="animate-spin" size={32} />
@@ -224,7 +217,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   return (
     <Table>
       <TableBody>
-        {_.chain(jobConfigQuery.data)
+        {_.chain(releaseJobTriggerQuery.data)
           .groupBy((r) => r.environmentId)
           .entries()
           .map(([envId, jobs]) => (
@@ -250,8 +243,8 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   <TableCell>{job.target?.name}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <JobTableStatusIcon status={job.jobExecution?.status} />
-                      {capitalCase(job.jobExecution?.status ?? "scheduled")}
+                      <JobTableStatusIcon status={job.job?.status} />
+                      {capitalCase(job.job?.status ?? "scheduled")}
                     </div>
                   </TableCell>
                   <TableCell>{job.type}</TableCell>
@@ -261,9 +254,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                       deploymentName={deploymentName}
                       target={job.target}
                       environmentId={job.environmentId}
-                      jobExecutionStatus={
-                        job.jobExecution?.status ?? "scheduled"
-                      }
+                      jobStatus={job.job?.status ?? "scheduled"}
                     />
                   </TableCell>
                 </TableRow>

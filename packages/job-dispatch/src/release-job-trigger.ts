@@ -17,12 +17,12 @@ import {
 
 type FilterFunc = (
   tx: Tx,
-  insertJobConfigs: ReleaseJobTriggerInsert[],
+  insertReleaseJobTriggers: ReleaseJobTriggerInsert[],
 ) => Promise<ReleaseJobTriggerInsert[]> | ReleaseJobTriggerInsert[];
 
 type ThenFunc = (
   tx: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => Promise<void> | void;
 
 export const createReleaseJobTriggers = (tx: Tx, type: ReleaseJobTriggerType) =>
@@ -109,7 +109,7 @@ class ReleaseJobTriggerBuilder {
 
   async values() {
     const latestReleaseSubQuery = this._releaseSubQuery();
-    const jobConfigs = this.releaseIds
+    const releaseJobTriggers = this.releaseIds
       ? this._baseQuery().innerJoin(
           release,
           eq(release.deploymentId, deployment.id),
@@ -122,7 +122,7 @@ class ReleaseJobTriggerBuilder {
           ),
         );
 
-    return jobConfigs.where(this._where());
+    return releaseJobTriggers.where(this._where());
   }
 
   async insert() {
@@ -141,13 +141,13 @@ class ReleaseJobTriggerBuilder {
 
     if (wt.length === 0) return [];
 
-    const jobConfigs = await this.tx
+    const releaseJobTriggers = await this.tx
       .insert(releaseJobTrigger)
       .values(wt)
       .returning();
 
-    for (const func of this._then) await func(this.tx, jobConfigs);
+    for (const func of this._then) await func(this.tx, releaseJobTriggers);
 
-    return jobConfigs;
+    return releaseJobTriggers;
   }
 }

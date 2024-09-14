@@ -11,9 +11,9 @@ import {
   releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
-export const createJobExecutionApprovals = async (
+export const createJobApprovals = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
   const policiesToCheck = await db
     .selectDistinctOn([release.id, environmentPolicy.id])
@@ -29,7 +29,10 @@ export const createJobExecutionApprovals = async (
       ),
     )
     .where(
-      inArray(release.id, jobConfigs.map((t) => t.releaseId).filter(isPresent)),
+      inArray(
+        release.id,
+        releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
+      ),
     );
 
   if (policiesToCheck.length === 0) return;

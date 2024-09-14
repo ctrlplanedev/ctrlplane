@@ -40,7 +40,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const update = api.environment.update.useMutation();
-  const envOverride = api.job.execution.create.byEnvId.useMutation();
+  const envOverride = api.job.trigger.create.byEnvId.useMutation();
 
   const form = useForm<EnvironmentFormValues>({
     resolver: zodResolver(environmentForm),
