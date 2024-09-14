@@ -23,7 +23,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormRootMessage,
+  FormRootError,
   useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
@@ -40,7 +40,6 @@ import {
 import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
-import { safeFormAwait } from "~/utils/error/safeAwait";
 
 const releaseDependency = z.object({
   targetLabelGroupId: z.string().uuid().optional(),
@@ -376,7 +375,7 @@ export const CreateReleaseDialog: React.FC<{
               <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
-          <FormRootMessage />
+          <FormRootError />
         </Form>
       </DialogContent>
     </Dialog>

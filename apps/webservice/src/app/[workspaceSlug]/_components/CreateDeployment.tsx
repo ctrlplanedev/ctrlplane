@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
 import slugify from "slugify";
 import { z } from "zod";
 
+import { deploymentSchema } from "@ctrlplane/db";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -24,7 +23,8 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormRootMessage,
+  FormRootError,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import {
@@ -38,58 +38,28 @@ import {
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-import { safeFormAwait } from "~/utils/error/safeAwait";
 
-const deploymentForm = z.object({
-  systemId: z.string().uuid(),
-  name: z
-    .string()
-    .min(3, { message: "Deployment name must be at least 3 characters long." })
-    .max(255, {
-      message: "Deployment name must be at most 255 characters long.",
-    }),
-  slug: z
-    .string()
-    .min(3, { message: "Slug must be at least 3 characters long." })
-    .max(255, { message: "Slug must be at most 255 characters long." }),
-  description: z
-    .string()
-    .max(255, { message: "Description must be at most 255 characters long." })
-    .optional()
-    .refine((val) => !val || val.length >= 3, {
-      message: "Description must be at least 3 characters long if provided.",
-    }),
-});
-
-type DeploymentFormValues = z.infer<typeof deploymentForm>;
+const deploymentForm = z.object(deploymentSchema.shape);
 
 export const CreateDeploymentDialog: React.FC<{
-  defaultSystemId?: string;
   children?: React.ReactNode;
-}> = ({ children, defaultSystemId = "" }) => {
+  defaultSystemId?: string;
+  onSuccess?: () => void;
+}> = ({ children, defaultSystemId = undefined, onSuccess }) => {
+  const [open, setOpen] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const systems = api.system.list.useQuery(
+    { workspaceId: workspace.data?.id ?? "" },
+    { enabled: workspace.isSuccess },
+  );
+  const createDeployment = api.deployment.create.useMutation();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
 
-  const create = api.deployment.create.useMutation({
-    onSuccess: (deployment) => {
-      router.refresh();
-      const slug = systems.data?.items.find(
-        (system) => system.id === deployment.systemId,
-      )?.slug;
-      if (slug == null) return;
-      router.push(
-        `/${workspaceSlug}/systems/${slug}/deployments/${deployment.slug}`,
-      );
-      setOpen(false);
-    },
-  });
-
-  const form = useForm<DeploymentFormValues>({
-    resolver: zodResolver(deploymentForm),
+  const form = useForm({
+    schema: deploymentForm,
     defaultValues: {
-      systemId: defaultSystemId,
+      systemId: defaultSystemId ?? systems.data?.items[0]?.id,
       name: "",
       slug: "",
       description: "",
@@ -97,38 +67,33 @@ export const CreateDeploymentDialog: React.FC<{
     mode: "onChange",
   });
 
-  const { systemId, name } = form.watch();
-  useEffect(
-    () => form.setValue("slug", slugify(name, { lower: true })),
-    [form, name],
-  );
-  useEffect(() => {
-    if (!open) return;
-    if (defaultSystemId === "") return;
-    window.requestAnimationFrame(() => {
-      form.setFocus("name");
-    });
-  }, [open, form, defaultSystemId]);
+  const { handleSubmit, watch, setValue, setError } = form;
 
-  const systems = api.system.list.useQuery(
-    { workspaceId: workspace.data?.id ?? "" },
-    { enabled: workspace.isSuccess },
-  );
-  useEffect(() => {
-    if (defaultSystemId !== "") return;
-    if (systemId !== "") return;
-    const firstSystem = systems.data?.items.at(0);
-    if (firstSystem == null) return;
-    form.setValue("systemId", firstSystem.id);
-  }, [defaultSystemId, form, systems, systemId]);
+  watch((data, { name: fieldName }) => {
+    if (fieldName === "name")
+      setValue("slug", slugify(data.name ?? "", { lower: true }), {
+        shouldValidate: true,
+      });
+  });
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    const [_, error] = await safeFormAwait(
-      create.mutateAsync({ ...data, description: data.description ?? "" }),
-      form,
-      { entityName: "deployment" },
-    );
-    if (error != null) return;
+  const onSubmit = handleSubmit(async (deployment) => {
+    const systemSlug = systems.data?.items.find(
+      (system) => system.id === deployment.systemId,
+    )?.slug;
+    await createDeployment
+      .mutateAsync({ ...deployment })
+      .then(() => {
+        router.push(
+          `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
+        );
+        setOpen(false);
+        onSuccess?.();
+      })
+      .catch(() => {
+        setError("root", {
+          message: "Deployment with this slug already exists",
+        });
+      });
   });
 
   return (
@@ -213,7 +178,7 @@ export const CreateDeploymentDialog: React.FC<{
                 </FormItem>
               )}
             />
-            <FormRootMessage />
+            <FormRootError />
             <DialogFooter>
               <Button type="submit">Create</Button>
             </DialogFooter>

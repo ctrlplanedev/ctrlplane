@@ -188,18 +188,6 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = "FormMessage";
 
-<<<<<<< HEAD
-const FormRootMessage = () => {
-  const { formState } = useFormContext();
-  const error = formState.errors.root;
-
-  if (!error) return null;
-
-  return (
-    <p className="text-sm font-medium text-destructive">{error.message}</p>
-  );
-};
-=======
 const FormRootError = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
@@ -220,7 +208,6 @@ const FormRootError = React.forwardRef<
   );
 });
 FormRootError.displayName = "FormRootError";
->>>>>>> origin
 
 export {
   useForm,
@@ -232,11 +219,7 @@ export {
   FormDescription,
   FormMessage,
   FormField,
-<<<<<<< HEAD
-  FormRootMessage,
-=======
   FormRootError,
->>>>>>> origin
 };
 
 export { useFieldArray } from "react-hook-form";

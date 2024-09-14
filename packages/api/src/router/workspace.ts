@@ -16,7 +16,6 @@ import {
   createWorkspace,
   entityRole,
   role,
-  rolePermission,
   updateWorkspace,
   user,
   workspace,
@@ -258,18 +257,6 @@ export const workspaceRouter = createTRPCRouter({
     .input(createWorkspace)
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
-        for (const [_, roleData] of Object.entries(predefinedRoles)) {
-          await tx
-            .insert(role)
-            .values({
-              id: roleData.id,
-              name: roleData.name,
-              description:
-                "description" in roleData ? roleData.description : undefined,
-            })
-            .onConflictDoNothing();
-        }
-
         const w = await tx
           .insert(workspace)
           .values(input)
@@ -283,17 +270,6 @@ export const workspaceRouter = createTRPCRouter({
           entityType: "user",
           entityId: ctx.session.user.id,
         });
-
-        const allPermissions = Object.values(Permission);
-        await tx
-          .insert(rolePermission)
-          .values(
-            allPermissions.map((permission) => ({
-              roleId: predefinedRoles.admin.id,
-              permission,
-            })),
-          )
-          .onConflictDoNothing();
 
         await tx
           .update(user)

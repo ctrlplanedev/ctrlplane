@@ -21,7 +21,7 @@ export const DeploymentOptionsDropdown: React.FC<{
   slug: string;
   description: string;
   systemId: string;
-}> = ({ systemId, ...props }) => {
+}> = (props) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   return (
@@ -38,7 +38,7 @@ export const DeploymentOptionsDropdown: React.FC<{
           forceMount
         >
           <DropdownMenuGroup>
-            <EditDeploymentDialog {...props} systemId={systemId}>
+            <EditDeploymentDialog {...props}>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                 <TbEdit className="mr-2" />
                 Edit

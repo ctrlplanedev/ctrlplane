@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import type { Workspace } from "@ctrlplane/db/schema";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import slugify from "slugify";
 import { z } from "zod";
 
+import { systemSchema } from "@ctrlplane/db";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -22,68 +24,55 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormRootMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-import { safeFormAwait } from "~/utils/error/safeAwait";
 
-const systemForm = z.object({
-  name: z
-    .string()
-    .min(3, { message: "System name must be at least 3 characters long." })
-    .max(30, { message: "System Name must be at most 30 characters long." }),
-  slug: z
-    .string()
-    .min(3, { message: "Slug must be at least 3 characters long." })
-    .max(255, { message: "Slug must be at most 255 characters long." }),
-  description: z
-    .string()
-    .max(255, { message: "Description must be at most 255 characters long." })
-    .optional()
-    .refine((val) => !val || val.length >= 3, {
-      message: "Description must be at least 3 characters long if provided.",
-    }),
-});
+const systemForm = z.object(systemSchema.shape);
 
 export const CreateSystemDialog: React.FC<{
   children: React.ReactNode;
-  workspaceId: string;
-  workspaceSlug: string;
-}> = ({ children, workspaceId, workspaceSlug }) => {
+  workspace: Workspace;
+  onSuccess?: () => void;
+}> = ({ children, workspace, onSuccess }) => {
   const [open, setOpen] = useState(false);
+  const createSystem = api.system.create.useMutation();
   const router = useRouter();
-  const utils = api.useUtils();
-  const onSubmit = form.handleSubmit(async (values) => {
-    try {
-      const system = await create.mutateAsync({ workspaceId, ...values });
-      await utils.system.list.invalidate();
-      router.push(`/${workspaceSlug}/systems/${system.slug}`);
-      router.refresh();
-    } catch (e) {
-      console.error(e);
-    }
-    setOpen(false);
+
+  const form = useForm({
+    schema: systemForm,
+    defaultValues: { name: "", slug: "", description: "" },
+    mode: "onChange",
   });
 
-  const { name } = form.watch();
-  useEffect(
-    () => form.setValue("slug", slugify(name, { lower: true })),
-    [form, name],
-  );
+  const { handleSubmit, watch, setValue, setError } = form;
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    const [system, error] = await safeFormAwait(
-      create.mutateAsync({ ...data, workspaceId }),
-      form,
-      { entityName: "system" },
-    );
-    if (error != null) return;
-    router.push(`/${workspaceSlug}/systems/${system.slug}`);
-    setOpen(false);
+  watch((data, { name: fieldName }) => {
+    if (fieldName === "name")
+      setValue("slug", slugify(data.name ?? "", { lower: true }), {
+        shouldValidate: true,
+      });
+  });
+
+  const onSubmit = handleSubmit(async (system) => {
+    const systemSlug = system.slug;
+    await createSystem
+      .mutateAsync({ workspaceId: workspace.id, ...system })
+      .then(() => {
+        router.push(`/${workspace.slug}/systems/${systemSlug}`);
+        router.refresh();
+        setOpen(false);
+        onSuccess?.();
+      })
+      .catch(() => {
+        setError("root", {
+          message: "System with this slug already exists",
+        });
+      });
   });
 
   return (
@@ -104,7 +93,7 @@ export const CreateSystemDialog: React.FC<{
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>System Name</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="Identity Services, Payment Services..."
@@ -120,7 +109,7 @@ export const CreateSystemDialog: React.FC<{
               name="slug"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>System Slug</FormLabel>
+                  <FormLabel>Slug</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="identity-services, payment-services..."
@@ -147,11 +136,11 @@ export const CreateSystemDialog: React.FC<{
                 </FormItem>
               )}
             />
-            <FormRootMessage />
+            <FormRootError />
             <DialogFooter>
               <Button
                 type="submit"
-                disabled={create.isPending}
+                disabled={createSystem.isPending}
                 className="mt-4 w-full"
               >
                 Create system

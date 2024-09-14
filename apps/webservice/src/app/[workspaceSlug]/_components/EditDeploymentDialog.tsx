@@ -2,11 +2,10 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import isEqual from "lodash/isEqual";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { deploymentSchema } from "@ctrlplane/db";
 import { Button } from "@ctrlplane/ui/button";
 import { CopyButton } from "@ctrlplane/ui/copy-button";
 import {
@@ -25,64 +24,46 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormRootMessage,
+  FormRootError,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-import { safeFormAwait } from "~/utils/error/safeAwait";
 
-const deploymentFormSchema = z.object({
-  systemId: z.string().uuid({ message: "Invalid system ID format." }),
-  id: z.string().uuid({ message: "Invalid ID format." }),
-  name: z
-    .string()
-    .min(3, { message: "Name must be at least 3 characters long." })
-    .max(255, { message: "Name must be at most 255 characters long." }),
-  slug: z
-    .string()
-    .min(3, { message: "Slug must be at least 3 characters long." })
-    .max(255, { message: "Slug must be at most 255 characters long." }),
-  description: z
-    .string()
-    .max(255, { message: "Description must be at most 255 characters long." })
-    .optional()
-    .refine((val) => !val || val.length >= 3, {
-      message: "Description must be at least 3 characters long if provided.",
-    }),
-});
+const deploymentForm = z.object(deploymentSchema.shape);
 
-type DeploymentFormValues = z.infer<typeof deploymentFormSchema>;
-
-export const EditDeploymentDialog: React.FC<
-  DeploymentFormValues & { children?: React.ReactNode }
-> = ({ systemId, id, name, slug, description, children }) => {
+export const EditDeploymentDialog: React.FC<{
+  children: React.ReactNode;
+  systemId: string;
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}> = ({ children, ...props }) => {
   const [open, setOpen] = useState(false);
+  const updateDeployment = api.deployment.update.useMutation();
   const router = useRouter();
 
   const form = useForm({
-    resolver: zodResolver(deploymentFormSchema),
-    defaultValues: { systemId, id, name, slug, description },
+    schema: deploymentForm,
+    defaultValues: { ...props },
     mode: "onChange",
   });
 
-  const update = api.deployment.update.useMutation({
-    onSuccess: () => {
-      router.refresh();
-      setOpen(false);
-    },
-  });
+  const { handleSubmit, setError } = form;
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    const isDataChanged = !isEqual(data, { name, slug, description });
+  const onSubmit = handleSubmit(async (data) => {
+    const isDataChanged = !isEqual(data, { ...props });
     if (!isDataChanged) {
-      setOpen(false);
+      setError("root", { message: "No changes made to the deployment." });
       return;
     }
 
-    await safeFormAwait(update.mutateAsync({ id, data }), form, {
-      entityName: "deployment",
+    await updateDeployment.mutateAsync({ id: props.id, data }).then(() => {
+      setOpen(false);
+      router.refresh();
     });
   });
 
@@ -147,16 +128,16 @@ export const EditDeploymentDialog: React.FC<
                 <FormItem>
                   <FormLabel>ID</FormLabel>
                   <Input
-                    value={id}
+                    value={props.id}
                     readOnly
                     className="bg-gray-800 text-gray-100"
                   />
                 </FormItem>
               )}
             />
-            <FormRootMessage />
+            <FormRootError />
             <DialogFooter>
-              <CopyButton textToCopy={id} />
+              <CopyButton textToCopy={props.id} />
               <div className="flex-grow" />
               <Button type="submit">Save</Button>
             </DialogFooter>

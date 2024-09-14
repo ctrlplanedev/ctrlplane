@@ -1,3 +1,4 @@
+import type { Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { TbPlus } from "react-icons/tb";
 
@@ -20,8 +21,12 @@ export const SidebarCreateMenu: React.FC<{
   workspaceSlug: string;
   deploymentId?: string;
   systemId?: string;
-}> = ({ workspaceId, workspaceSlug, deploymentId, systemId }) => {
+}> = (props) => {
   const [open, setOpen] = useState(false);
+  const workspace = {
+    id: props.workspaceId,
+    slug: props.workspaceSlug,
+  } as Workspace;
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -40,23 +45,19 @@ export const SidebarCreateMenu: React.FC<{
       >
         <DropdownMenuGroup>
           <CreateSystemDialog
-            workspaceId={workspaceId}
-            workspaceSlug={workspaceSlug}
+            workspace={workspace}
+            onSuccess={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New System
             </DropdownMenuItem>
           </CreateSystemDialog>
-          <CreateDeploymentDialog defaultSystemId={systemId}>
+          <CreateDeploymentDialog {...props} onSuccess={() => setOpen(false)}>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New Deployment
             </DropdownMenuItem>
           </CreateDeploymentDialog>
-          <CreateReleaseDialog
-            deploymentId={deploymentId}
-            systemId={systemId}
-            onClose={() => setOpen(false)}
-          >
+          <CreateReleaseDialog {...props} onClose={() => setOpen(false)}>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New Release
             </DropdownMenuItem>
