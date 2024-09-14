@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import slugify from "slugify";
 import { z } from "zod";
 
-import { deploymentSchema } from "@ctrlplane/db";
+import { deploymentSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import slugify from "slugify";
 import { z } from "zod";
 
-import { systemSchema } from "@ctrlplane/db";
+import { systemSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,

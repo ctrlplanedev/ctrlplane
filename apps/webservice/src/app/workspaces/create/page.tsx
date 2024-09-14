@@ -8,7 +8,7 @@ import { TbCheck } from "react-icons/tb";
 import slugify from "slugify";
 import { z } from "zod";
 
-import { workspaceSchema } from "@ctrlplane/db";
+import { workspaceSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 import {
