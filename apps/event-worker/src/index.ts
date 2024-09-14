@@ -1,19 +1,19 @@
 import { logger } from "@ctrlplane/logger";
 
-import { createDispatchExecutionJobWorker } from "./job-execution-dispatch/index.js";
-import { createJobExecutionSyncWorker } from "./job-execution-sync/index.js";
+import { createDispatchExecutionJobWorker } from "./job-dispatch/index.js";
+import { createjobSyncWorker } from "./job-sync/index.js";
 import { redis } from "./redis.js";
 import { createTargetScanWorker } from "./target-scan/index.js";
 
 const targetScanWorker = createTargetScanWorker();
-const jobExecutionSyncWorker = createJobExecutionSyncWorker();
+const jobSyncWorker = createjobSyncWorker();
 const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
 
 const shutdown = () => {
   logger.warn("Exiting...");
 
   targetScanWorker.close();
-  jobExecutionSyncWorker.close();
+  jobSyncWorker.close();
   dispatchExecutionJobWorker.close();
 
   redis.quit();

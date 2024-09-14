@@ -72,25 +72,25 @@ const ReleaseCell: React.FC<{
   workspaceSlug,
   systemSlug,
 }) => {
-  const jobConfigs = await api.job.config.byDeploymentAndEnvironment({
+  const releaseJobTriggers = await api.job.config.byDeploymentAndEnvironment({
     environmentId: env.id,
     deploymentId: deployment.id,
   });
   const hasTargets = env.targets.length > 0;
   const hasRelease = release != null;
-  const jc = jobConfigs
+  const jc = releaseJobTriggers
     .filter(
-      (jobConfig) =>
-        isPresent(jobConfig.environmentId) &&
-        isPresent(jobConfig.releaseId) &&
-        isPresent(jobConfig.targetId),
+      (releaseJobTrigger) =>
+        isPresent(releaseJobTrigger.environmentId) &&
+        isPresent(releaseJobTrigger.releaseId) &&
+        isPresent(releaseJobTrigger.targetId),
     )
-    .map((jobConfig) => ({
-      ...jobConfig,
-      environmentId: jobConfig.environmentId!,
-      target: jobConfig.target!,
-      releaseId: jobConfig.releaseId!,
-      deployment: jobConfig.release.deployment!,
+    .map((releaseJobTrigger) => ({
+      ...releaseJobTrigger,
+      environmentId: releaseJobTrigger.environmentId,
+      target: releaseJobTrigger.target!,
+      releaseId: releaseJobTrigger.releaseId,
+      deployment: releaseJobTrigger.release.deployment!,
     }));
   return (
     <>
@@ -100,7 +100,7 @@ const ReleaseCell: React.FC<{
           environment={env}
           name={release.version}
           deployedAt={release.createdAt}
-          jobConfigs={jc}
+          releaseJobTriggers={jc}
           workspaceSlug={workspaceSlug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}

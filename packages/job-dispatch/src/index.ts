@@ -1,5 +1,5 @@
 export * from "./config.js";
-export * from "./job-config.js";
+export * from "./release-job-trigger.js";
 export * from "./job-creation.js";
 export * from "./job-dispatch.js";
 export * from "./policy-checker.js";

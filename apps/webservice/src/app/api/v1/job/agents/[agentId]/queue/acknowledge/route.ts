@@ -20,6 +20,6 @@ export const POST = async (
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
   return NextResponse.json({
-    jobExecution: databaseJobQueue.acknowledge(jd.id),
+    job: databaseJobQueue.acknowledge(jd.id),
   });
 };

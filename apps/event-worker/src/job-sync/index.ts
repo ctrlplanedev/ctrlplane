@@ -1,5 +1,5 @@
 import type { Job } from "@ctrlplane/db/schema";
-import type { DispatchJobExecutionEvent } from "@ctrlplane/validators/events";
+import type { DispatchJobEvent } from "@ctrlplane/validators/events";
 import type { Job as JobMq } from "bullmq";
 import { Queue, Worker } from "bullmq";
 
@@ -7,30 +7,29 @@ import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
-import { JobAgentType, JobExecutionStatus } from "@ctrlplane/validators/jobs";
+import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { redis } from "../redis.js";
-import { syncGithubJobExecution } from "./github.js";
+import { syncGithubJob } from "./github.js";
 
-const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
+const jobSyncQueue = new Queue(Channel.JobSync, {
   connection: redis,
 });
-const removeJobExecutionSyncJob = (job: JobMq) =>
+const removeJobSyncJob = (job: JobMq) =>
   job.repeatJobKey != null
-    ? jobExecutionSyncQueue.removeRepeatableByKey(job.repeatJobKey)
+    ? jobSyncQueue.removeRepeatableByKey(job.repeatJobKey)
     : null;
 
 type SyncFunction = (je: Job) => Promise<boolean | undefined>;
 
 const getSyncFunction = (agentType: string): SyncFunction | null => {
-  if (agentType === String(JobAgentType.GithubApp))
-    return syncGithubJobExecution;
+  if (agentType === String(JobAgentType.GithubApp)) return syncGithubJob;
   return null;
 };
 
-export const createJobExecutionSyncWorker = () =>
-  new Worker<DispatchJobExecutionEvent>(
-    Channel.JobExecutionSync,
+export const createjobSyncWorker = () =>
+  new Worker<DispatchJobEvent>(
+    Channel.JobSync,
     (job) =>
       db
         .select()
@@ -39,7 +38,7 @@ export const createJobExecutionSyncWorker = () =>
           schema.jobAgent,
           eq(schema.job.jobAgentId, schema.jobAgent.id),
         )
-        .where(eq(schema.job.id, job.data.jobExecutionId))
+        .where(eq(schema.job.id, job.data.jobId))
         .then(takeFirstOrNull)
         .then((je) => {
           if (je == null) return;
@@ -49,11 +48,11 @@ export const createJobExecutionSyncWorker = () =>
 
           try {
             syncFunction(je.job).then(
-              (isCompleted) => isCompleted && removeJobExecutionSyncJob(job),
+              (isCompleted) => isCompleted && removeJobSyncJob(job),
             );
           } catch (error) {
             db.update(schema.job).set({
-              status: JobExecutionStatus.Failure,
+              status: JobStatus.Failure,
               message: (error as Error).message,
             });
           }

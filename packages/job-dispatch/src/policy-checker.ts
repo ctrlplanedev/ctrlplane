@@ -21,7 +21,7 @@ import {
   releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
-import { isJobConfigInRolloutWindow } from "./gradual-rollout.js";
+import { isReleaseJobTriggerInRolloutWindow } from "./gradual-rollout.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingReleaseDependencyPolicy } from "./release-checker.js";
 
@@ -66,19 +66,19 @@ const isSuccessCriteriaPassing = async (
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the success criteria policy - the success criteria policy
- * will require a certain number of job executions to pass before dispatching.
- * * If the policy is set to all, all job executions must pass
+ * @param releaseJobTriggers
+ * @returns ReleaseJobTriggers that pass the success criteria policy - the success criteria policy
+ * will require a certain number of jobs to pass before dispatching.
+ * * If the policy is set to all, all jobs must pass
  * * If the policy is set to optional, the job will be dispatched regardless of the success criteria.
- * * If the policy is set to minimum, a certain number of job executions must pass
+ * * If the policy is set to minimum, a certain number of jobs must pass
  *
  */
 const isPassingCriteriaPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
   const policies = await db
     .select()
     .from(releaseJobTrigger)
@@ -89,7 +89,7 @@ const isPassingCriteriaPolicy = async (
       and(
         inArray(
           releaseJobTrigger.id,
-          jobConfigs.map((t) => t.id),
+          releaseJobTriggers.map((t) => t.id),
         ),
         isNull(environment.deletedAt),
       ),
@@ -113,15 +113,15 @@ const isPassingCriteriaPolicy = async (
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the approval policy - the approval policy will
+ * @param releaseJobTriggers
+ * @returns ReleaseJobTriggers that pass the approval policy - the approval policy will
  * require manual approval before dispatching if the policy is set to manual.
  */
 export const isPassingApprovalPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
   const policies = await db
     .select()
     .from(releaseJobTrigger)
@@ -136,7 +136,7 @@ export const isPassingApprovalPolicy = async (
       and(
         inArray(
           releaseJobTrigger.id,
-          jobConfigs.map((t) => t.id),
+          releaseJobTriggers.map((t) => t.id),
         ),
         isNull(environment.deletedAt),
       ),
@@ -154,18 +154,18 @@ export const isPassingApprovalPolicy = async (
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the rollout policy - the rollout policy will
- * only allow a certain percentage of job executions to be dispatched based on
+ * @param releaseJobTriggers
+ * @returns ReleaseJobTriggers that pass the rollout policy - the rollout policy will
+ * only allow a certain percentage of jobs to be dispatched based on
  * the duration of the policy and amount of time since the release was created.
  * This percentage will increase over the rollout window until all job
  * executions are dispatched.
  */
-const isPassingJobExecutionRolloutPolicy = async (
+const isPassingJobRolloutPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
   const policies = await db
     .select()
     .from(releaseJobTrigger)
@@ -176,7 +176,7 @@ const isPassingJobExecutionRolloutPolicy = async (
       and(
         inArray(
           releaseJobTrigger.id,
-          jobConfigs.map((t) => t.id).filter(isPresent),
+          releaseJobTriggers.map((t) => t.id).filter(isPresent),
         ),
         isNull(environment.deletedAt),
       ),
@@ -185,7 +185,7 @@ const isPassingJobExecutionRolloutPolicy = async (
   return policies
     .filter((p) => {
       if (p.environment_policy == null) return true;
-      return isJobConfigInRolloutWindow(
+      return isReleaseJobTriggerInRolloutWindow(
         [p.release.id, p.environment.id, p.release_job_trigger.targetId].join(
           ":",
         ),
@@ -208,51 +208,51 @@ const exitStatus = [
  * Checks if job configurations pass the release sequencing wait policy.
  *
  * This function filters job configurations based on the release sequencing wait
- * policy. It ensures that new job executions are only dispatched when there are
- * no active job executions in the same environment. This policy helps maintain
- * a sequential order of job executions within an environment.
+ * policy. It ensures that new jobs are only dispatched when there are
+ * no active jobs in the same environment. This policy helps maintain
+ * a sequential order of jobs within an environment.
  *
  * The function performs the following steps:
- * 1. If no job configs are provided, it returns an empty array.
- * 2. It queries the database for active job executions in the affected
+ * 1. If no release job triggers are provided, it returns an empty array.
+ * 2. It queries the database for active jobs in the affected
  *    environments.
- * 3. It applies several conditions to find relevant active job executions:
- *    - The environment must be one of those in the provided job configs.
+ * 3. It applies several conditions to find relevant active jobs:
+ *    - The environment must be one of those in the provided release job triggers.
  *    - The environment must not be deleted.
  *    - The environment policy must have release sequencing set to "wait".
  *    - The job config must not be one of those provided (to avoid
  *      self-blocking).
- *    - The job execution must be in an active state (not completed, failed,
+ *    - The job must be in an active state (not completed, failed,
  *      etc.).
- * 4. Finally, it filters the input job configs, allowing only those where there
- *    are no active job executions in the same environment.
+ * 4. Finally, it filters the input release job triggers, allowing only those where there
+ *    are no active jobs in the same environment.
  *
  * @param db - The database transaction object.
- * @param jobConfigs - An array of JobConfig objects to be checked.
- * @returns An array of JobConfig objects that pass the release sequencing wait
+ * @param releaseJobTriggers - An array of ReleaseJobTrigger objects to be checked.
+ * @returns An array of ReleaseJobTrigger objects that pass the release sequencing wait
  * policy.
  */
 const isPassingReleaseSequencingWaitPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
   const isAffectedEnvironment = inArray(
     environment.id,
-    jobConfigs.map((t) => t.environmentId).filter(isPresent),
+    releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
   const isNotDeletedEnvironment = isNull(environment.deletedAt);
   const doesEnvironmentPolicyMatchesStatus = eq(
     environmentPolicy.releaseSequencing,
     "wait",
   );
-  const isNotDispatchedJobConfig = notInArray(
+  const isNotDispatchedReleaseJobTrigger = notInArray(
     releaseJobTrigger.id,
-    jobConfigs.map((t) => t.id).filter(isPresent),
+    releaseJobTriggers.map((t) => t.id).filter(isPresent),
   );
-  const isActiveJobExecution = notInArray(job.status, exitStatus);
+  const isActiveJob = notInArray(job.status, exitStatus);
 
-  const activeJobExecutions = await db
+  const activeJobs = await db
     .select()
     .from(job)
     .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
@@ -266,41 +266,41 @@ const isPassingReleaseSequencingWaitPolicy = async (
         isAffectedEnvironment,
         isNotDeletedEnvironment,
         doesEnvironmentPolicyMatchesStatus,
-        isNotDispatchedJobConfig,
-        isActiveJobExecution,
+        isNotDispatchedReleaseJobTrigger,
+        isActiveJob,
       ),
     );
 
-  return jobConfigs.filter((t) =>
-    activeJobExecutions.every((w) => w.environment.id !== t.environmentId),
+  return releaseJobTriggers.filter((t) =>
+    activeJobs.every((w) => w.environment.id !== t.environmentId),
   );
 };
 
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the release sequencing policy - the release
- * sequencing cancel policy will cancel all other active job executions in the
+ * @param releaseJobTriggers
+ * @returns ReleaseJobTriggers that pass the release sequencing policy - the release
+ * sequencing cancel policy will cancel all other active jobs in the
  * environment.
  */
 export const isPassingReleaseSequencingCancelPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTriggerInsert[],
+  releaseJobTriggers: ReleaseJobTriggerInsert[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
   const isAffectedEnvironment = inArray(
     environment.id,
-    jobConfigs.map((t) => t.environmentId).filter(isPresent),
+    releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
   const isNotDeletedEnvironment = isNull(environment.deletedAt);
   const doesEnvironmentPolicyMatchesStatus = eq(
     environmentPolicy.releaseSequencing,
     "cancel",
   );
-  const isActiveJobExecution = notInArray(job.status, exitStatus);
+  const isActiveJob = notInArray(job.status, exitStatus);
 
-  const activeJobExecutions = await db
+  const activeJobs = await db
     .select()
     .from(job)
     .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
@@ -314,12 +314,12 @@ export const isPassingReleaseSequencingCancelPolicy = async (
         isAffectedEnvironment,
         isNotDeletedEnvironment,
         doesEnvironmentPolicyMatchesStatus,
-        isActiveJobExecution,
+        isActiveJob,
       ),
     );
 
-  return jobConfigs.filter((t) =>
-    activeJobExecutions.every((w) => w.environment.id !== t.environmentId),
+  return releaseJobTriggers.filter((t) =>
+    activeJobs.every((w) => w.environment.id !== t.environmentId),
   );
 };
 
@@ -358,15 +358,15 @@ export const isDateInTimeWindow = (
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the release window policy - the release window
+ * @param releaseJobTriggers
+ * @returns ReleaseJobTriggers that pass the release window policy - the release window
  * policy defines the time window in which a release can be deployed.
  */
 export const isPassingReleaseWindowPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ): Promise<ReleaseJobTrigger[]> =>
-  jobConfigs.length === 0
+  releaseJobTriggers.length === 0
     ? []
     : db
         .select()
@@ -387,7 +387,7 @@ export const isPassingReleaseWindowPolicy = async (
           and(
             inArray(
               releaseJobTrigger.id,
-              jobConfigs.map((t) => t.id).filter(isPresent),
+              releaseJobTriggers.map((t) => t.id).filter(isPresent),
             ),
             isNull(environment.deletedAt),
           ),
@@ -412,18 +412,18 @@ export const isPassingReleaseWindowPolicy = async (
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns JobConfigs that pass the concurrency policy - the concurrency policy
- * will limit the number of job executions that can be dispatched in an
+ * @param releaseJobTriggers
+ * @returns ReleaseJobTriggers that pass the concurrency policy - the concurrency policy
+ * will limit the number of jobs that can be dispatched in an
  * environment.
  */
 const isPassingConcurrencyPolicy = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ): Promise<ReleaseJobTrigger[]> => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
 
-  const activeJobExecutionSubquery = db
+  const activeJobSubquery = db
     .selectDistinct({
       count: sql<number>`count(*)`.as("count"),
       releaseId: releaseJobTrigger.releaseId,
@@ -439,13 +439,10 @@ const isPassingConcurrencyPolicy = async (
     .select()
     .from(releaseJobTrigger)
     .leftJoin(
-      activeJobExecutionSubquery,
+      activeJobSubquery,
       and(
-        eq(releaseJobTrigger.releaseId, activeJobExecutionSubquery.releaseId),
-        eq(
-          releaseJobTrigger.environmentId,
-          activeJobExecutionSubquery.environmentId,
-        ),
+        eq(releaseJobTrigger.releaseId, activeJobSubquery.releaseId),
+        eq(releaseJobTrigger.environmentId, activeJobSubquery.environmentId),
       ),
     )
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
@@ -453,7 +450,7 @@ const isPassingConcurrencyPolicy = async (
     .where(
       inArray(
         releaseJobTrigger.id,
-        jobConfigs.map((t) => t.id),
+        releaseJobTriggers.map((t) => t.id),
       ),
     )
     .then((data) =>
@@ -465,7 +462,7 @@ const isPassingConcurrencyPolicy = async (
         .map((jcs) =>
           // Check if the concurrency policy type is "some"
           jcs[0]!.environment_policy?.concurrencyType === "some"
-            ? // If so, limit the number of job configs based on the concurrency limit
+            ? // If so, limit the number of release job triggers based on the concurrency limit
               jcs.slice(
                 0,
                 Math.max(
@@ -474,7 +471,7 @@ const isPassingConcurrencyPolicy = async (
                     (jcs[0]!.active_job_subquery?.count ?? 0),
                 ),
               )
-            : // If not, return all job configs in the group
+            : // If not, return all release job triggers in the group
               jcs,
         )
         .flatten()
@@ -485,21 +482,21 @@ const isPassingConcurrencyPolicy = async (
 
 export const isPassingAllPolicies = async (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
   const checks = [
     isPassingLockingPolicy,
     isPassingApprovalPolicy,
     isPassingCriteriaPolicy,
     isPassingConcurrencyPolicy,
-    isPassingJobExecutionRolloutPolicy,
+    isPassingJobRolloutPolicy,
     isPassingReleaseSequencingWaitPolicy,
     isPassingReleaseWindowPolicy,
     isPassingReleaseDependencyPolicy,
   ];
 
-  let passingJobs = jobConfigs;
+  let passingJobs = releaseJobTriggers;
   for (const check of checks) passingJobs = await check(db, passingJobs);
 
   return passingJobs;
@@ -527,5 +524,5 @@ export const nonCriticalChecks = [
   isPassingCriteriaPolicy,
   isPassingReleaseWindowPolicy,
   isPassingConcurrencyPolicy,
-  isPassingJobExecutionRolloutPolicy,
+  isPassingJobRolloutPolicy,
 ];

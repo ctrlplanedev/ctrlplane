@@ -46,7 +46,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  jobExecution:
+                  job:
                     type: array
                     items:
                       type: object
@@ -62,12 +62,12 @@ paths:
                           type: object
                         message:
                           type: string
-                        jobConfigId:
+                        releaseJobTriggerId:
                           type: string
                       required:
                         - id
                         - status
                         - message
-                        - jobConfigId
+                        - releaseJobTriggerId
                         - jobAgentId
                         - jobAgentConfig

@@ -12,13 +12,13 @@
  * Do not edit the class manually.
  */
 
-import type { GetNextJobs200ResponseJobExecutionsInner } from "./GetNextJobs200ResponseJobExecutionsInner";
+import type { GetNextJobs200ResponseJobsInner } from "./GetNextJobs200ResponseJobsInner";
 import { mapValues } from "../runtime";
 import {
-  GetNextJobs200ResponseJobExecutionsInnerFromJSON,
-  GetNextJobs200ResponseJobExecutionsInnerFromJSONTyped,
-  GetNextJobs200ResponseJobExecutionsInnerToJSON,
-} from "./GetNextJobs200ResponseJobExecutionsInner";
+  GetNextJobs200ResponseJobsInnerFromJSON,
+  GetNextJobs200ResponseJobsInnerFromJSONTyped,
+  GetNextJobs200ResponseJobsInnerToJSON,
+} from "./GetNextJobs200ResponseJobsInner";
 
 /**
  *
@@ -28,10 +28,10 @@ import {
 export interface GetNextJobs200Response {
   /**
    *
-   * @type {Array<GetNextJobs200ResponseJobExecutionsInner>}
+   * @type {Array<GetNextJobs200ResponseJobsInner>}
    * @memberof GetNextJobs200Response
    */
-  jobExecutions?: Array<GetNextJobs200ResponseJobExecutionsInner>;
+  jobs?: Array<GetNextJobs200ResponseJobsInner>;
 }
 
 /**
@@ -57,11 +57,11 @@ export function GetNextJobs200ResponseFromJSONTyped(
     return json;
   }
   return {
-    jobExecutions:
-      json["jobExecutions"] == null
+    jobs:
+      json["jobs"] == null
         ? undefined
-        : (json["jobExecutions"] as Array<any>).map(
-            GetNextJobs200ResponseJobExecutionsInnerFromJSON,
+        : (json["jobs"] as Array<any>).map(
+            GetNextJobs200ResponseJobsInnerFromJSON,
           ),
   };
 }
@@ -73,11 +73,11 @@ export function GetNextJobs200ResponseToJSON(
     return value;
   }
   return {
-    jobExecutions:
-      value["jobExecutions"] == null
+    jobs:
+      value["jobs"] == null
         ? undefined
-        : (value["jobExecutions"] as Array<any>).map(
-            GetNextJobs200ResponseJobExecutionsInnerToJSON,
+        : (value["jobs"] as Array<any>).map(
+            GetNextJobs200ResponseJobsInnerToJSON,
           ),
   };
 }

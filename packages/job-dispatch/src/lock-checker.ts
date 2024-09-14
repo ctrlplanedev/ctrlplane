@@ -6,7 +6,7 @@ import { releaseJobTrigger, target } from "@ctrlplane/db/schema";
 
 export const isPassingLockingPolicy = (
   db: Tx,
-  jobConfigs: Array<ReleaseJobTrigger>,
+  releaseJobTriggers: Array<ReleaseJobTrigger>,
 ) =>
   db
     .select()
@@ -16,7 +16,7 @@ export const isPassingLockingPolicy = (
       and(
         inArray(
           releaseJobTrigger.id,
-          jobConfigs.map((t) => t.id),
+          releaseJobTriggers.map((t) => t.id),
         ),
         isNull(target.lockedAt),
       ),

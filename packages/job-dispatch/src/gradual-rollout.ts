@@ -12,13 +12,13 @@ const timeWindowPercent = (startDate: Date, duration: number) => {
   return ((now - start) / duration) * 100;
 };
 
-export const isJobConfigInRolloutWindow = (
+export const isReleaseJobTriggerInRolloutWindow = (
   session: string,
   startDate: Date,
   duration: number,
 ) => murmurhash.v3(session, 11) % 100 < timeWindowPercent(startDate, duration);
 
-export const getRolloutDateForJobConfig = (
+export const getRolloutDateForReleaseJobTrigger = (
   session: string,
   startDate: Date,
   duration: number,

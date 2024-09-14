@@ -31,7 +31,7 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
     <Table className="w-full min-w-max border-separate border-spacing-0">
       <TableBody>
         {deployments.data?.map((deployment, idx) => {
-          const jobConfig = jobs.data
+          const releaseJobTrigger = jobs.data
             ?.filter((j) => j.execution != null)
             .filter(
               (j) =>
@@ -58,13 +58,13 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
                   idx === deployments.data.length - 1 && "rounded-br-md",
                 )}
               >
-                {jobConfig && (
+                {releaseJobTrigger && (
                   <ReleaseCell
                     deployment={deployment}
-                    jobConfig={{
-                      ...jobConfig,
-                      release: jobConfig.release,
-                      execution: jobConfig.execution!,
+                    releaseJobTrigger={{
+                      ...releaseJobTrigger,
+                      release: releaseJobTrigger.release,
+                      execution: releaseJobTrigger.execution!,
                     }}
                   />
                 )}

@@ -20,19 +20,22 @@ import {
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
 
-export const JobExecHistoryChart: React.FC<{
+export const JobHistoryChart: React.FC<{
   workspace: Workspace;
   className?: string;
 }> = ({ className, workspace }) => {
-  const jobConfigs = api.job.config.byWorkspaceId.useQuery(workspace.id, {
-    refetchInterval: 60_000,
-  });
+  const releaseJobTriggers = api.job.config.byWorkspaceId.useQuery(
+    workspace.id,
+    {
+      refetchInterval: 60_000,
+    },
+  );
 
   const now = startOfDay(new Date());
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
     (d) => ({
       date: d.toString(),
-      jobs: (jobConfigs.data ?? []).filter(
+      jobs: (releaseJobTriggers.data ?? []).filter(
         (j) =>
           j.execution?.createdAt != null &&
           startOfDay(j.execution.createdAt).toString() === d.toString(),
@@ -58,8 +61,8 @@ export const JobExecHistoryChart: React.FC<{
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {jobConfigs.data?.filter((t) => t.execution != null).length ??
-                "-"}
+              {releaseJobTriggers.data?.filter((t) => t.execution != null)
+                .length ?? "-"}
             </span>
           </div>
 

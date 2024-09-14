@@ -215,7 +215,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  jobExecutions:
+                  jobs:
                     type: array
                     items:
                       type: object
@@ -231,19 +231,19 @@ paths:
                           type: object
                         message:
                           type: string
-                        jobConfigId:
+                        releaseJobTriggerId:
                           type: string
                       required:
                         - id
                         - status
                         - message
-                        - jobConfigId
+                        - releaseJobTriggerId
                         - jobAgentId
                         - jobAgentConfig
   /v1/job/executions/{executionId}:
     get:
-      summary: Get a job execution
-      operationId: getJobExecution
+      summary: Get a job
+      operationId: getJob
       parameters:
         - name: executionId
           in: path
@@ -292,8 +292,8 @@ paths:
                   - externalRunId
                   - config
     patch:
-      summary: Update a job execution
-      operationId: updateJobExecution
+      summary: Update a job
+      operationId: updateJob
       parameters:
         - name: executionId
           in: path

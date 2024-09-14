@@ -15,33 +15,33 @@
 import type {
   AcknowledgeJob200Response,
   GetAgentRunningExecutions200ResponseInner,
-  GetJobExecution200Response,
+  GetJob200Response,
   GetNextJobs200Response,
   SetTargetProvidersTargetsRequest,
+  UpdateJob200Response,
   UpdateJobAgent200Response,
   UpdateJobAgentRequest,
-  UpdateJobExecution200Response,
-  UpdateJobExecutionRequest,
+  UpdateJobRequest,
 } from "../models/index";
 import {
   AcknowledgeJob200ResponseFromJSON,
   AcknowledgeJob200ResponseToJSON,
   GetAgentRunningExecutions200ResponseInnerFromJSON,
   GetAgentRunningExecutions200ResponseInnerToJSON,
-  GetJobExecution200ResponseFromJSON,
-  GetJobExecution200ResponseToJSON,
+  GetJob200ResponseFromJSON,
+  GetJob200ResponseToJSON,
   GetNextJobs200ResponseFromJSON,
   GetNextJobs200ResponseToJSON,
   SetTargetProvidersTargetsRequestFromJSON,
   SetTargetProvidersTargetsRequestToJSON,
+  UpdateJob200ResponseFromJSON,
+  UpdateJob200ResponseToJSON,
   UpdateJobAgent200ResponseFromJSON,
   UpdateJobAgent200ResponseToJSON,
   UpdateJobAgentRequestFromJSON,
   UpdateJobAgentRequestToJSON,
-  UpdateJobExecution200ResponseFromJSON,
-  UpdateJobExecution200ResponseToJSON,
-  UpdateJobExecutionRequestFromJSON,
-  UpdateJobExecutionRequestToJSON,
+  UpdateJobRequestFromJSON,
+  UpdateJobRequestToJSON,
 } from "../models/index";
 import * as runtime from "../runtime";
 
@@ -53,7 +53,7 @@ export interface GetAgentRunningExecutionsRequest {
   agentId: string;
 }
 
-export interface GetJobExecutionRequest {
+export interface GetJobRequest {
   executionId: string;
 }
 
@@ -66,14 +66,14 @@ export interface SetTargetProvidersTargetsOperationRequest {
   setTargetProvidersTargetsRequest: SetTargetProvidersTargetsRequest;
 }
 
+export interface UpdateJobOperationRequest {
+  executionId: string;
+  updateJobRequest: UpdateJobRequest;
+}
+
 export interface UpdateJobAgentOperationRequest {
   workspace: string;
   updateJobAgentRequest: UpdateJobAgentRequest;
-}
-
-export interface UpdateJobExecutionOperationRequest {
-  executionId: string;
-  updateJobExecutionRequest: UpdateJobExecutionRequest;
 }
 
 export interface UpsertTargetProviderRequest {
@@ -198,16 +198,16 @@ export class DefaultApi extends runtime.BaseAPI {
   }
 
   /**
-   * Get a job execution
+   * Get a job
    */
-  async getJobExecutionRaw(
-    requestParameters: GetJobExecutionRequest,
+  async getJobRaw(
+    requestParameters: GetJobRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<runtime.ApiResponse<GetJobExecution200Response>> {
+  ): Promise<runtime.ApiResponse<GetJob200Response>> {
     if (requestParameters["executionId"] == null) {
       throw new runtime.RequiredError(
         "executionId",
-        'Required parameter "executionId" was null or undefined when calling getJobExecution().',
+        'Required parameter "executionId" was null or undefined when calling getJob().',
       );
     }
 
@@ -234,21 +234,18 @@ export class DefaultApi extends runtime.BaseAPI {
     );
 
     return new runtime.JSONApiResponse(response, (jsonValue) =>
-      GetJobExecution200ResponseFromJSON(jsonValue),
+      GetJob200ResponseFromJSON(jsonValue),
     );
   }
 
   /**
-   * Get a job execution
+   * Get a job
    */
-  async getJobExecution(
-    requestParameters: GetJobExecutionRequest,
+  async getJob(
+    requestParameters: GetJobRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<GetJobExecution200Response> {
-    const response = await this.getJobExecutionRaw(
-      requestParameters,
-      initOverrides,
-    );
+  ): Promise<GetJob200Response> {
+    const response = await this.getJobRaw(requestParameters, initOverrides);
     return await response.value();
   }
 
@@ -369,6 +366,68 @@ export class DefaultApi extends runtime.BaseAPI {
   }
 
   /**
+   * Update a job
+   */
+  async updateJobRaw(
+    requestParameters: UpdateJobOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<UpdateJob200Response>> {
+    if (requestParameters["executionId"] == null) {
+      throw new runtime.RequiredError(
+        "executionId",
+        'Required parameter "executionId" was null or undefined when calling updateJob().',
+      );
+    }
+
+    if (requestParameters["updateJobRequest"] == null) {
+      throw new runtime.RequiredError(
+        "updateJobRequest",
+        'Required parameter "updateJobRequest" was null or undefined when calling updateJob().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/job/executions/{executionId}`.replace(
+          `{${"executionId"}}`,
+          encodeURIComponent(String(requestParameters["executionId"])),
+        ),
+        method: "PATCH",
+        headers: headerParameters,
+        query: queryParameters,
+        body: UpdateJobRequestToJSON(requestParameters["updateJobRequest"]),
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse(response, (jsonValue) =>
+      UpdateJob200ResponseFromJSON(jsonValue),
+    );
+  }
+
+  /**
+   * Update a job
+   */
+  async updateJob(
+    requestParameters: UpdateJobOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<UpdateJob200Response> {
+    const response = await this.updateJobRaw(requestParameters, initOverrides);
+    return await response.value();
+  }
+
+  /**
    * Upserts the agent
    */
   async updateJobAgentRaw(
@@ -429,73 +488,6 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<UpdateJobAgent200Response> {
     const response = await this.updateJobAgentRaw(
-      requestParameters,
-      initOverrides,
-    );
-    return await response.value();
-  }
-
-  /**
-   * Update a job execution
-   */
-  async updateJobExecutionRaw(
-    requestParameters: UpdateJobExecutionOperationRequest,
-    initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<runtime.ApiResponse<UpdateJobExecution200Response>> {
-    if (requestParameters["executionId"] == null) {
-      throw new runtime.RequiredError(
-        "executionId",
-        'Required parameter "executionId" was null or undefined when calling updateJobExecution().',
-      );
-    }
-
-    if (requestParameters["updateJobExecutionRequest"] == null) {
-      throw new runtime.RequiredError(
-        "updateJobExecutionRequest",
-        'Required parameter "updateJobExecutionRequest" was null or undefined when calling updateJobExecution().',
-      );
-    }
-
-    const queryParameters: any = {};
-
-    const headerParameters: runtime.HTTPHeaders = {};
-
-    headerParameters["Content-Type"] = "application/json";
-
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] =
-        await this.configuration.apiKey("x-api-key"); // apiKey authentication
-    }
-
-    const response = await this.request(
-      {
-        path: `/v1/job/executions/{executionId}`.replace(
-          `{${"executionId"}}`,
-          encodeURIComponent(String(requestParameters["executionId"])),
-        ),
-        method: "PATCH",
-        headers: headerParameters,
-        query: queryParameters,
-        body: UpdateJobExecutionRequestToJSON(
-          requestParameters["updateJobExecutionRequest"],
-        ),
-      },
-      initOverrides,
-    );
-
-    return new runtime.JSONApiResponse(response, (jsonValue) =>
-      UpdateJobExecution200ResponseFromJSON(jsonValue),
-    );
-  }
-
-  /**
-   * Update a job execution
-   */
-  async updateJobExecution(
-    requestParameters: UpdateJobExecutionOperationRequest,
-    initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<UpdateJobExecution200Response> {
-    const response = await this.updateJobExecutionRaw(
       requestParameters,
       initOverrides,
     );

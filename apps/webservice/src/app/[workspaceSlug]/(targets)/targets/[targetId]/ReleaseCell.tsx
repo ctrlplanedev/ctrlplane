@@ -12,16 +12,16 @@ import { format } from "date-fns";
 import { TbCircleCheck, TbLoader2 } from "react-icons/tb";
 
 const ReleaseIcon: React.FC<{
-  jobExec?: Job;
-}> = ({ jobExec }) => {
-  if (jobExec?.status === "pending" || jobExec?.status === "in_progress")
+  job?: Job;
+}> = ({ job }) => {
+  if (job?.status === "pending" || job?.status === "in_progress")
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
         <TbLoader2 strokeWidth={2} />
       </div>
     );
 
-  if (jobExec?.status === "completed")
+  if (job?.status === "completed")
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
         <TbCircleCheck strokeWidth={2} />
@@ -33,24 +33,26 @@ const ReleaseIcon: React.FC<{
 
 export const ReleaseCell: React.FC<{
   deployment: Deployment;
-  jobConfig: ReleaseJobTrigger & {
+  releaseJobTrigger: ReleaseJobTrigger & {
     release?: Partial<Release>;
     execution?: Job;
   };
-}> = ({ deployment, jobConfig }) => {
+}> = ({ deployment, releaseJobTrigger }) => {
   const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
   return (
     <Link
-      href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${deployment.slug}/releases/${jobConfig.releaseId}`}
+      href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${deployment.slug}/releases/${releaseJobTrigger.releaseId}`}
       className="flex items-center gap-2"
     >
-      <ReleaseIcon jobExec={jobConfig.execution} />
+      <ReleaseIcon job={releaseJobTrigger.execution} />
       <div className="w-full text-sm">
         <div className="flex items-center justify-between">
-          <span className="font-semibold">{jobConfig.release?.version}</span>
+          <span className="font-semibold">
+            {releaseJobTrigger.release?.version}
+          </span>
         </div>
         <div className="text-left text-muted-foreground">
-          {format(jobConfig.createdAt, "MMM d, hh:mm aa")}
+          {format(releaseJobTrigger.createdAt, "MMM d, hh:mm aa")}
         </div>
       </div>
     </Link>

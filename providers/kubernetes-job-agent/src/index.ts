@@ -20,7 +20,7 @@ const renderManifest = (manifestTemplate: string, variables: object) => {
 };
 
 const deployManifest = async (
-  jobExecutionId: string,
+  jobId: string,
   namespace: string,
   manifest: any,
 ) => {
@@ -29,12 +29,12 @@ const deployManifest = async (
     logger.info(`Deploying manifest: ${namespace}/${name}`);
     if (name == null) {
       logger.error("Job name not found in manifest", {
-        jobExecutionId,
+        jobId,
         namespace,
       });
-      await api.updateJobExecution({
-        executionId: jobExecutionId,
-        updateJobExecutionRequest: {
+      await api.updateJob({
+        executionId: jobId,
+        updateJobRequest: {
           status: "invalid_job_agent",
           message: "Job name not found in manifest.",
         },
@@ -44,28 +44,28 @@ const deployManifest = async (
 
     logger.info(`Creating job - ${namespace}/${name}`);
     await getBatchClient().createNamespacedJob(namespace, manifest);
-    await api.updateJobExecution({
-      executionId: jobExecutionId,
-      updateJobExecutionRequest: {
+    await api.updateJob({
+      executionId: jobId,
+      updateJobRequest: {
         status: "in_progress",
         externalRunId: `${namespace}/${name}`,
         message: "Job created successfully.",
       },
     });
     logger.info(`Job created successfully`, {
-      jobExecutionId,
+      jobId,
       namespace,
       name,
     });
   } catch (error: any) {
     logger.error("Error deploying manifest", {
-      jobExecutionId,
+      jobId,
       namespace,
       error: error.message,
     });
-    await api.updateJobExecution({
-      executionId: jobExecutionId,
-      updateJobExecutionRequest: {
+    await api.updateJob({
+      executionId: jobId,
+      updateJobRequest: {
         status: "invalid_job_agent",
         message: error.body?.message || error.message,
       },
@@ -75,24 +75,24 @@ const deployManifest = async (
 
 const spinUpNewJobs = async (agentId: string) => {
   try {
-    const { jobExecutions = [] } = await api.getNextJobs({ agentId });
-    logger.info(`Found ${jobExecutions.length} jobExecution(s) to run.`);
+    const { jobs = [] } = await api.getNextJobs({ agentId });
+    logger.info(`Found ${jobs.length} job(s) to run.`);
     await Promise.allSettled(
-      jobExecutions.map(async (jobExecution) => {
-        logger.info(`Running job execution ${jobExecution.id}`);
+      jobs.map(async (job) => {
+        logger.info(`Running job ${job.id}`);
         try {
-          const je = await api.getJobExecution({
-            executionId: jobExecution.id,
+          const je = await api.getJob({
+            executionId: job.id,
           });
           const manifest = renderManifest(
-            (jobExecution.jobAgentConfig as any).manifest,
+            (job.jobAgentConfig as any).manifest,
             je,
           );
           const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
-          await api.acknowledgeJob({ executionId: jobExecution.id });
-          await deployManifest(jobExecution.id, namespace, manifest);
+          await api.acknowledgeJob({ executionId: job.id });
+          await deployManifest(job.id, namespace, manifest);
         } catch (error: any) {
-          logger.error(`Error processing job execution ${jobExecution.id}`, {
+          logger.error(`Error processing job ${job.id}`, {
             error: error.message,
           });
           throw error;
@@ -125,9 +125,9 @@ const updateExecutionStatus = async (agentId: string) => {
         logger.debug(`Checking status of ${namespace}/${name}`);
         try {
           const { status, message } = await getJobStatus(namespace, name);
-          await api.updateJobExecution({
+          await api.updateJob({
             executionId: exec.id,
-            updateJobExecutionRequest: { status, message },
+            updateJobRequest: { status, message },
           });
           logger.info(`Updated status for ${namespace}/${name}`, {
             status,

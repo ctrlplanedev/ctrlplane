@@ -15,14 +15,17 @@ type EnvironmentNodeProps = NodeProps<
 
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const { data } = node;
-  const jobConfigs = api.job.config.byReleaseId.useQuery(data.release.id, {
-    refetchInterval: 10_000,
-  });
-  const environmentJobs = jobConfigs.data?.filter(
+  const releaseJobTriggers = api.job.config.byReleaseId.useQuery(
+    data.release.id,
+    {
+      refetchInterval: 10_000,
+    },
+  );
+  const environmentJobs = releaseJobTriggers.data?.filter(
     (job) => job.environmentId === data.id,
   );
   const completed = environmentJobs?.filter(
-    (job) => job.jobExecution?.status === "completed",
+    (job) => job.job?.status === "completed",
   );
   return (
     <>
@@ -34,7 +37,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
       >
         {data.label}
 
-        {jobConfigs.data != null && (
+        {releaseJobTriggers.data != null && (
           <Badge
             variant="outline"
             className="rounded-md text-xs text-muted-foreground"

@@ -3,21 +3,24 @@ import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import { createTriggeredReleaseJobs } from "./job-creation.js";
-import { dispatchJobExecutionsQueue } from "./queue.js";
+import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
-  jobConfigs: ReleaseJobTrigger[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => Promise<ReleaseJobTrigger[]> | ReleaseJobTrigger[];
 
-type ThenFunc = (tx: Tx, jobConfigs: ReleaseJobTrigger[]) => Promise<void>;
+type ThenFunc = (
+  tx: Tx,
+  releaseJobTriggers: ReleaseJobTrigger[],
+) => Promise<void>;
 
 class DispatchBuilder {
-  private _releaseTroggers: ReleaseJobTrigger[];
+  private _releaseTriggers: ReleaseJobTrigger[];
   private _filters: DispatchFilterFunc[];
   private _then: ThenFunc[];
   constructor(private db: Tx) {
-    this._releaseTroggers = [];
+    this._releaseTriggers = [];
     this._filters = [];
     this._then = [];
   }
@@ -28,7 +31,7 @@ class DispatchBuilder {
   }
 
   releaseTriggers(t: ReleaseJobTrigger[]) {
-    this._releaseTroggers = t;
+    this._releaseTriggers = t;
     return this;
   }
 
@@ -38,7 +41,7 @@ class DispatchBuilder {
   }
 
   async dispatch(): Promise<Job[]> {
-    let t = this._releaseTroggers;
+    let t = this._releaseTriggers;
     for (const func of this._filters) t = await func(this.db, t);
 
     if (t.length === 0) return [];
@@ -46,12 +49,12 @@ class DispatchBuilder {
 
     for (const func of this._then) await func(this.db, t);
 
-    await dispatchJobExecutionsQueue.addBulk(
-      wfs.map((wf) => ({ name: wf.id, data: { jobExecutionId: wf.id } })),
+    await dispatchJobsQueue.addBulk(
+      wfs.map((wf) => ({ name: wf.id, data: { jobId: wf.id } })),
     );
 
     return wfs;
   }
 }
 
-export const dispatchJobConfigs = (db: Tx) => new DispatchBuilder(db);
+export const dispatchReleaseJobTriggers = (db: Tx) => new DispatchBuilder(db);

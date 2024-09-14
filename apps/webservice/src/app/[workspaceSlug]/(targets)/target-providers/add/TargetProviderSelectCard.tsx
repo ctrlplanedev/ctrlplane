@@ -66,7 +66,7 @@ export const TargetProviderSelectCard: React.FC<{
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="start">
-            <DropdownMenuItem>JobExecutions</DropdownMenuItem>
+            <DropdownMenuItem>Jobs</DropdownMenuItem>
             <DropdownMenuItem>Cloud Function</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

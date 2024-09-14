@@ -19,6 +19,6 @@ export const GET = async (
   return jd == null
     ? NextResponse.json({ error: "Workspace not found" }, { status: 404 })
     : NextResponse.json({
-        jobExecutions: await databaseJobQueue.next(params.agentId),
+        jobs: await databaseJobQueue.next(params.agentId),
       });
 };
