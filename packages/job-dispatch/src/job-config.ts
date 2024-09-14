@@ -25,10 +25,10 @@ type ThenFunc = (
   jobConfigs: ReleaseJobTrigger[],
 ) => Promise<void> | void;
 
-export const createJobConfigs = (tx: Tx, type: ReleaseJobTriggerType) =>
-  new JobConfigBuilder(tx, type);
+export const createReleaseJobTriggers = (tx: Tx, type: ReleaseJobTriggerType) =>
+  new ReleaseJobTriggerBuilder(tx, type);
 
-class JobConfigBuilder {
+class ReleaseJobTriggerBuilder {
   private _causedById?: string;
 
   private environmentIds?: string[];

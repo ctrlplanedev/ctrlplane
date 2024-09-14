@@ -269,8 +269,7 @@ const jobExecutionRouter = createTRPCRouter({
           )
           .then((jcs) =>
             dispatchJobConfigs(ctx.db)
-              .jobConfigs(jcs.map((jc) => jc.release_job_trigger))
-              .reason("env_policy_override")
+              .releaseTriggers(jcs.map((jc) => jc.release_job_trigger))
               .then(cancelOldJobConfigsOnJobDispatch)
               .dispatch(),
           ),

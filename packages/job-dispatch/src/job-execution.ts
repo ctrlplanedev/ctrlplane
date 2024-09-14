@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
+import type { Job, JobStatus, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import { and, eq, inArray, isNull, or, takeFirst } from "@ctrlplane/db";
@@ -20,31 +20,14 @@ import { dispatchJobConfigs } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { cancelOldJobConfigsOnJobDispatch } from "./release-sequencing.js";
 
-type JobExecutionStatusType =
-  | "completed"
-  | "cancelled"
-  | "skipped"
-  | "in_progress"
-  | "action_required"
-  | "pending"
-  | "failure"
-  | "invalid_job_agent";
-
-export type JobExecutionReason =
-  | "policy_passing"
-  | "policy_override"
-  | "env_policy_override"
-  | "config_policy_override";
-
 /**
  * Converts a job config into a job execution which means they can now be
  * picked up by job agents
  */
-export const createJobExecutions = async (
+export const createTriggeredReleaseJobs = async (
   db: Tx,
   jobConfigs: ReleaseJobTrigger[],
-  status: JobExecutionStatusType = "pending",
-  reason?: JobExecutionReason,
+  status: JobStatus = "pending",
 ): Promise<Job[]> => {
   const insertJobExecutions = await db
     .select()
@@ -63,9 +46,14 @@ export const createJobExecutions = async (
         releaseJobTrigger.id,
         jobConfigs.map((t) => t.id),
       ),
-    )
-    .then((ds) =>
-      ds.map((d) => ({
+    );
+
+  if (insertJobExecutions.length === 0) return [];
+
+  const jobs = await db
+    .insert(job)
+    .values(
+      insertJobExecutions.map((d) => ({
         jobConfigId: d.release_job_trigger.id,
         jobAgentId: d.job_agent.id,
         jobAgentConfig: _.merge(
@@ -73,13 +61,26 @@ export const createJobExecutions = async (
           d.deployment?.jobAgentConfig ?? {},
         ),
         status,
-        reason,
       })),
-    );
+    )
+    .returning();
 
-  if (insertJobExecutions.length === 0) return [];
+  // Update releaseJobTrigger with the new job ids
+  await Promise.all(
+    jobs.map((job, index) =>
+      db
+        .update(releaseJobTrigger)
+        .set({ jobId: job.id })
+        .where(
+          eq(
+            releaseJobTrigger.id,
+            insertJobExecutions[index]!.release_job_trigger.id,
+          ),
+        ),
+    ),
+  );
 
-  return db.insert(job).values(insertJobExecutions).returning();
+  return jobs;
 };
 
 export const onJobExecutionStatusChange = async (je: Job) => {
@@ -133,7 +134,7 @@ export const onJobExecutionStatusChange = async (je: Job) => {
       );
 
     await dispatchJobConfigs(db)
-      .jobConfigs(affectedJobConfigs.map((t) => t.release_job_trigger))
+      .releaseTriggers(affectedJobConfigs.map((t) => t.release_job_trigger))
       .filter(isPassingAllPolicies)
       .then(cancelOldJobConfigsOnJobDispatch)
       .dispatch();

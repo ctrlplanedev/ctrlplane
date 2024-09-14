@@ -21,7 +21,7 @@ const run = async () => {
   console.log(`Found [${jobConfigs.length}] job configs to dispatch`);
 
   await dispatchJobConfigs(db)
-    .jobConfigs(jobConfigs)
+    .releaseTriggers(jobConfigs)
     .filter(isPassingAllPolicies)
     .then(cancelOldJobConfigsOnJobDispatch)
     .dispatch();

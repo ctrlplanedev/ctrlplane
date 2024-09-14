@@ -11,7 +11,7 @@ import {
   releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
-import { createJobExecutions } from "./job-execution.js";
+import { createTriggeredReleaseJobs } from "./job-execution.js";
 
 /**
  *
@@ -69,7 +69,7 @@ export const cancelOldJobConfigsOnJobDispatch = async (
 
   if (oldJobConfigsToCancel.length === 0) return;
 
-  await createJobExecutions(
+  await createTriggeredReleaseJobs(
     db,
     oldJobConfigsToCancel.map((t) => t.release_job_trigger),
     "cancelled",

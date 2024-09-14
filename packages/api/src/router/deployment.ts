@@ -144,7 +144,9 @@ export const deploymentRouter = createTRPCRouter({
                 )
                 .then((jobConfigs) =>
                   dispatchJobConfigs(ctx.db)
-                    .jobConfigs(jobConfigs.map((jc) => jc.release_job_trigger))
+                    .releaseTriggers(
+                      jobConfigs.map((jc) => jc.release_job_trigger),
+                    )
                     .filter(isPassingAllPolicies)
                     .then(cancelOldJobConfigsOnJobDispatch)
                     .dispatch()

@@ -28,9 +28,9 @@ import {
 } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
-  createJobConfigs,
   createJobExecutionApprovals,
-  createJobExecutions,
+  createReleaseJobTriggers,
+  createTriggeredReleaseJobs,
   dispatchJobConfigs,
   isPassingAllPolicies,
   isPassingEnvironmentPolicy,
@@ -150,12 +150,17 @@ export const releaseRouter = createTRPCRouter({
               ),
             )
             .then((existingJobConfigs) =>
-              createJobExecutions(tx, existingJobConfigs, "cancelled").then(
-                () => {},
-              ),
+              createTriggeredReleaseJobs(
+                tx,
+                existingJobConfigs,
+                "cancelled",
+              ).then(() => {}),
             );
 
-        const jobConfigs = await createJobConfigs(ctx.db, "force_deploy")
+        const jobConfigs = await createReleaseJobTriggers(
+          ctx.db,
+          "force_deploy",
+        )
           .causedById(ctx.session.user.id)
           .environments([input.environmentId])
           .releases([input.releaseId])
@@ -172,7 +177,7 @@ export const releaseRouter = createTRPCRouter({
           .insert();
 
         await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs)
+          .releaseTriggers(jobConfigs)
           .filter(
             input.isForcedRelease
               ? isPassingLockingPolicy
@@ -241,7 +246,7 @@ export const releaseRouter = createTRPCRouter({
         const jobConfigs =
           jc != null
             ? [jc]
-            : await createJobConfigs(ctx.db, "force_deploy")
+            : await createReleaseJobTriggers(ctx.db, "force_deploy")
                 .causedById(ctx.session.user.id)
                 .environments([env.id])
                 .releases([rel.id])
@@ -259,7 +264,7 @@ export const releaseRouter = createTRPCRouter({
                 .insert();
 
         await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs)
+          .releaseTriggers(jobConfigs)
           .filter(
             input.isForcedRelease
               ? isPassingLockingPolicy
@@ -294,7 +299,7 @@ export const releaseRouter = createTRPCRouter({
             })),
           );
 
-        const jobConfigs = await createJobConfigs(db, "new_release")
+        const jobConfigs = await createReleaseJobTriggers(db, "new_release")
           .causedById(ctx.session.user.id)
           .filter(isPassingEnvironmentPolicy)
           .releases([rel.id])
@@ -303,7 +308,7 @@ export const releaseRouter = createTRPCRouter({
           .insert();
 
         await dispatchJobConfigs(db)
-          .jobConfigs(jobConfigs)
+          .releaseTriggers(jobConfigs)
           .filter(isPassingAllPolicies)
           .then(cancelOldJobConfigsOnJobDispatch)
           .dispatch();

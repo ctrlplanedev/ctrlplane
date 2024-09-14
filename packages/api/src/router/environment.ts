@@ -33,8 +33,8 @@ import {
 } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
-  createJobConfigs,
   createJobExecutionApprovals,
+  createReleaseJobTriggers,
   dispatchJobConfigs,
   dispatchJobsForNewTargets,
   isPassingAllPolicies,
@@ -194,7 +194,7 @@ const policyRouter = createTRPCRouter({
           );
 
         await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs.map((t) => t.release_job_trigger))
+          .releaseTriggers(jobConfigs.map((t) => t.release_job_trigger))
           .filter(isPassingAllPolicies)
           .then(cancelOldJobConfigsOnJobDispatch)
           .dispatch();
@@ -471,7 +471,7 @@ export const environmentRouter = createTRPCRouter({
         .then(takeFirstOrNull);
       if (!rel) throw new Error("Release not found");
 
-      const jobConfigs = await createJobConfigs(ctx.db, "redeploy")
+      const jobConfigs = await createReleaseJobTriggers(ctx.db, "redeploy")
         .causedById(ctx.session.user.id)
         .environments([env.id])
         .releases([rel.release.id])
@@ -480,7 +480,7 @@ export const environmentRouter = createTRPCRouter({
         .insert();
 
       await dispatchJobConfigs(ctx.db)
-        .jobConfigs(jobConfigs)
+        .releaseTriggers(jobConfigs)
         .filter(isPassingAllPolicies)
         .then(cancelOldJobConfigsOnJobDispatch)
         .dispatch();

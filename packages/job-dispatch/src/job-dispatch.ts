@@ -2,8 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import type { JobExecutionReason } from "./job-execution.js";
-import { createJobExecutions } from "./job-execution.js";
+import { createTriggeredReleaseJobs } from "./job-execution.js";
 import { dispatchJobExecutionsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
@@ -14,13 +13,11 @@ export type DispatchFilterFunc = (
 type ThenFunc = (tx: Tx, jobConfigs: ReleaseJobTrigger[]) => Promise<void>;
 
 class DispatchBuilder {
-  private _jobConfigs: ReleaseJobTrigger[];
+  private _releaseTroggers: ReleaseJobTrigger[];
   private _filters: DispatchFilterFunc[];
   private _then: ThenFunc[];
-  private _reason?: JobExecutionReason;
-
   constructor(private db: Tx) {
-    this._jobConfigs = [];
+    this._releaseTroggers = [];
     this._filters = [];
     this._then = [];
   }
@@ -30,13 +27,8 @@ class DispatchBuilder {
     return this;
   }
 
-  jobConfigs(t: ReleaseJobTrigger[]) {
-    this._jobConfigs = t;
-    return this;
-  }
-
-  reason(reason: JobExecutionReason) {
-    this._reason = reason;
+  releaseTriggers(t: ReleaseJobTrigger[]) {
+    this._releaseTroggers = t;
     return this;
   }
 
@@ -46,11 +38,11 @@ class DispatchBuilder {
   }
 
   async dispatch(): Promise<Job[]> {
-    let t = this._jobConfigs;
+    let t = this._releaseTroggers;
     for (const func of this._filters) t = await func(this.db, t);
 
     if (t.length === 0) return [];
-    const wfs = await createJobExecutions(this.db, t, undefined, this._reason);
+    const wfs = await createTriggeredReleaseJobs(this.db, t);
 
     for (const func of this._then) await func(this.db, t);
 
