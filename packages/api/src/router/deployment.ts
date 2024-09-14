@@ -64,14 +64,12 @@ export const deploymentRouter = createTRPCRouter({
       const latestCompletedJobExecution = ctx.db
         .select({
           id: job.id,
-          jobConfigId: job.jobConfigId,
           status: job.status,
           rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY job_config.target_id, job_config.environment_id ORDER BY job_config.created_at DESC)`.as(
             "rank",
           ),
         })
         .from(job)
-        .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.id, job.jobConfigId))
         .where(eq(job.status, "completed"))
         .as("jobExecution");
 
@@ -80,7 +78,7 @@ export const deploymentRouter = createTRPCRouter({
         .from(latestCompletedJobExecution)
         .innerJoin(
           releaseJobTrigger,
-          eq(releaseJobTrigger.id, latestCompletedJobExecution.jobConfigId),
+          eq(releaseJobTrigger.jobId, latestCompletedJobExecution.id),
         )
         .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .innerJoin(target, eq(target.id, releaseJobTrigger.targetId))
@@ -137,9 +135,12 @@ export const deploymentRouter = createTRPCRouter({
                   releaseJobTrigger,
                   eq(releaseJobTrigger.releaseId, release.id),
                 )
-                .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+                .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
                 .where(
-                  and(eq(deployment.id, input.id), isNull(job.jobConfigId)),
+                  and(
+                    eq(deployment.id, input.id),
+                    isNull(releaseJobTrigger.jobId),
+                  ),
                 )
                 .then((jobConfigs) =>
                   dispatchJobConfigs(ctx.db)
@@ -270,7 +271,7 @@ export const deploymentRouter = createTRPCRouter({
           arrayContains(target.labels, environment.targetFilter),
         )
         .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.targetId, target.id))
-        .leftJoin(job, eq(releaseJobTrigger.id, job.jobConfigId))
+        .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
         .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .where(
           and(

@@ -92,13 +92,13 @@ export const onJobExecutionStatusChange = async (je: Job) => {
         environment,
         eq(releaseJobTrigger.environmentId, environment.id),
       )
-      .where(eq(releaseJobTrigger.id, je.jobConfigId))
+      .where(eq(releaseJobTrigger.jobId, je.id))
       .then(takeFirst);
 
     const affectedJobConfigs = await db
       .select()
       .from(releaseJobTrigger)
-      .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+      .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
       .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
       .innerJoin(
         environment,
@@ -114,7 +114,7 @@ export const onJobExecutionStatusChange = async (je: Job) => {
       )
       .where(
         and(
-          isNull(job.jobConfigId),
+          isNull(releaseJobTrigger.jobId),
           isNull(environment.deletedAt),
           or(
             and(

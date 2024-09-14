@@ -121,10 +121,7 @@ export const isPassingReleaseDependencyPolicy = async (
           const dependentJobExecutions = await db
             .select()
             .from(job)
-            .innerJoin(
-              releaseJobTrigger,
-              eq(job.jobConfigId, releaseJobTrigger.id),
-            )
+            .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
             .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
             .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
             .innerJoin(deployment, eq(release.deploymentId, deployment.id))

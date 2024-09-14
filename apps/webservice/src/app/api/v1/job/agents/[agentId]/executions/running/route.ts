@@ -19,7 +19,7 @@ export const GET = async (
   const je = await db
     .select()
     .from(job)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.id, job.jobConfigId))
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
     .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
     .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))

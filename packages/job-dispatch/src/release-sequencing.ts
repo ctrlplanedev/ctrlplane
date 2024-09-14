@@ -49,7 +49,7 @@ export const cancelOldJobConfigsOnJobDispatch = async (
   const oldJobConfigsToCancel = await db
     .select()
     .from(releaseJobTrigger)
-    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
     .innerJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
     .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .innerJoin(

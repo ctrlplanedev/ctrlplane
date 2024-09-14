@@ -45,7 +45,7 @@ const isSuccessCriteriaPassing = async (
         releaseJobTrigger.environmentId,
       ),
     )
-    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
     .groupBy(job.status)
     .where(
       and(
@@ -255,7 +255,7 @@ const isPassingReleaseSequencingWaitPolicy = async (
   const activeJobExecutions = await db
     .select()
     .from(job)
-    .innerJoin(releaseJobTrigger, eq(job.jobConfigId, releaseJobTrigger.id))
+    .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
@@ -303,7 +303,7 @@ export const isPassingReleaseSequencingCancelPolicy = async (
   const activeJobExecutions = await db
     .select()
     .from(job)
-    .innerJoin(releaseJobTrigger, eq(job.jobConfigId, releaseJobTrigger.id))
+    .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
@@ -430,7 +430,7 @@ const isPassingConcurrencyPolicy = async (
       environmentId: releaseJobTrigger.environmentId,
     })
     .from(job)
-    .innerJoin(releaseJobTrigger, eq(job.jobConfigId, releaseJobTrigger.id))
+    .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
     .where(notInArray(job.status, exitStatus))
     .groupBy(releaseJobTrigger.releaseId, releaseJobTrigger.environmentId)
     .as("active_job_subquery");

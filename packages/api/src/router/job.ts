@@ -32,7 +32,7 @@ const jobConfigQuery = (tx: Tx) =>
   tx
     .select()
     .from(releaseJobTrigger)
-    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
     .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
     .leftJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .leftJoin(deployment, eq(release.deploymentId, deployment.id))
@@ -263,7 +263,7 @@ const jobExecutionRouter = createTRPCRouter({
         ctx.db
           .select()
           .from(releaseJobTrigger)
-          .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+          .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
           .where(
             and(eq(releaseJobTrigger.environmentId, input), isNull(job.id)),
           )

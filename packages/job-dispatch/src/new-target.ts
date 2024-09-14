@@ -48,7 +48,7 @@ export async function dispatchJobsForNewTargets(
     .insert();
   if (jobConfigs.length === 0) return;
 
-  const dispatched = await dispatchJobConfigs(db)
+  await dispatchJobConfigs(db)
     .reason("env_policy_override")
     .filter(
       isPassingLockingPolicy,
@@ -57,12 +57,4 @@ export async function dispatchJobsForNewTargets(
     )
     .jobConfigs(jobConfigs)
     .dispatch();
-
-  const notDispatchedConfigs = jobConfigs.filter(
-    (config) =>
-      !dispatched.some((dispatch) => dispatch.jobConfigId === config.id),
-  );
-  console.log(
-    `${notDispatchedConfigs.length} out of ${jobConfigs.length} job configs were not dispatched.`,
-  );
 }

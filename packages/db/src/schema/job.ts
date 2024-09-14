@@ -10,7 +10,6 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 
 import { jobAgent } from "./job-agent.js";
-import { releaseJobTrigger } from "./release.js";
 
 export const jobStatus = pgEnum("job_status", [
   "completed",
@@ -34,9 +33,6 @@ export const jobReason = pgEnum("job_reason", [
 
 export const job = pgTable("job", {
   id: uuid("id").primaryKey().defaultRandom(),
-  jobConfigId: uuid("job_config_id")
-    .notNull()
-    .references(() => releaseJobTrigger.id),
 
   jobAgentId: uuid("job_agent_id")
     .notNull()
@@ -46,7 +42,12 @@ export const job = pgTable("job", {
     .default("{}")
     .$type<Record<string, any>>(),
 
-  externalRunId: text("external_run_id"),
+  externalRunId: text("external_run_id"), // depericated
+  // metadata: jsonb("metadata")
+  //   .notNull()
+  //   .default("{}")
+  //   .$type<Record<string, any>>(),
+
   status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
   reason: jobReason("reason").notNull().default("policy_passing"),
@@ -62,7 +63,6 @@ export const updateJob = createInsertSchema(job)
   .omit({
     id: true,
     jobAgentConfig: true,
-    jobConfigId: true,
     createdAt: true,
     updatedAt: true,
   })

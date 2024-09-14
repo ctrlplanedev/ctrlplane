@@ -13,6 +13,7 @@ import { z } from "zod";
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
+import { job } from "./job.js";
 import { targetLabelGroup } from "./target-group.js";
 import { target } from "./target.js";
 
@@ -84,6 +85,11 @@ export const releaseJobTrigger = pgTable(
   "release_job_trigger",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+
+    jobId: uuid("job_id")
+      .references(() => job.id)
+      .unique(),
+
     type: releaseJobTriggerType("type").notNull(),
     causedById: uuid("caused_by_id").references(() => user.id),
 
