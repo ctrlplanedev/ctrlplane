@@ -111,7 +111,6 @@ export const CreateReleaseDialog: React.FC<{
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
     const release = await create.mutateAsync(data);
-
     await utils.release.list.invalidate({ deploymentId: release.deploymentId });
 
     const deployment = deployments.data?.find(
