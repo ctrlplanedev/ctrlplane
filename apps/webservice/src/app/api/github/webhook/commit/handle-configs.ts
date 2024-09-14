@@ -1,4 +1,6 @@
 import type { GithubOrganization } from "@ctrlplane/db/schema";
+import type { Octokit } from "@octokit/rest";
+import * as yaml from "js-yaml";
 
 import { and, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -8,6 +10,7 @@ import {
   system,
   workspace,
 } from "@ctrlplane/db/schema";
+import { configFile } from "@ctrlplane/validators";
 
 interface DeploymentConfig {
   name: string;
@@ -23,6 +26,38 @@ interface ParsedConfig {
   branch: string;
   deployments: DeploymentConfig[];
 }
+
+interface GetParsedConfigOptions {
+  organization: string;
+  repository: string;
+  path: string;
+  branch: string;
+}
+
+export const getParsedConfig = (
+  { organization, repository, path, branch }: GetParsedConfigOptions,
+  installationOctokit: Octokit,
+) =>
+  installationOctokit.repos
+    .getContent({
+      owner: organization,
+      repo: repository,
+      path,
+      ref: branch,
+    })
+    .then(({ data }) => {
+      if (!("content" in data)) throw new Error("Invalid response data");
+      const content = Buffer.from(data.content, "base64").toString("utf-8");
+      const yamlContent = yaml.load(content);
+      const parsed = configFile.safeParse(yamlContent);
+      if (!parsed.success) throw new Error("Invalid config file");
+      return {
+        ...parsed.data,
+        repositoryName: repository,
+        path,
+        branch,
+      };
+    });
 
 export const handleNewConfigs = async (
   newParsedConfigs: ParsedConfig[],

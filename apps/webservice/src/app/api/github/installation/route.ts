@@ -1,7 +1,5 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { createAppAuth } from "@octokit/auth-app";
-import { Octokit } from "@octokit/rest";
 import {
   BAD_REQUEST,
   INTERNAL_SERVER_ERROR,
@@ -16,38 +14,7 @@ import { user, workspace } from "@ctrlplane/db/schema";
 
 import { env } from "~/env";
 import { api } from "~/trpc/server";
-
-const isValidGithubAppConfiguration =
-  env.GITHUB_BOT_APP_ID != null &&
-  env.GITHUB_BOT_PRIVATE_KEY != null &&
-  env.GITHUB_BOT_CLIENT_ID != null &&
-  env.GITHUB_BOT_CLIENT_SECRET != null;
-
-const octokit = isValidGithubAppConfiguration
-  ? new Octokit({
-      authStrategy: createAppAuth,
-      auth: {
-        appId: env.GITHUB_BOT_APP_ID,
-        privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-        clientId: env.GITHUB_BOT_CLIENT_ID,
-        clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-      },
-    })
-  : null;
-
-const getOctokitInstallation = (installationId: number) =>
-  isValidGithubAppConfiguration
-    ? new Octokit({
-        authStrategy: createAppAuth,
-        auth: {
-          appId: env.GITHUB_BOT_APP_ID,
-          privateKey: env.GITHUB_BOT_PRIVATE_KEY,
-          clientId: env.GITHUB_BOT_CLIENT_ID,
-          clientSecret: env.GITHUB_BOT_CLIENT_SECRET,
-          installationId,
-        },
-      })
-    : null;
+import { getOctokitInstallation, octokit } from "../octokit";
 
 export const GET = async (req: NextRequest) => {
   if (octokit == null)

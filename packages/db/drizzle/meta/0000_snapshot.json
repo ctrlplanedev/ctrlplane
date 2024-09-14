@@ -1,5 +1,5 @@
 {
-  "id": "51c67f09-080f-499d-92ea-021386930df5",
+  "id": "68b25708-2e8e-4230-bd85-4f56a6531ea5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -1765,7 +1765,7 @@
           "tableTo": "release",
           "columnsFrom": ["release_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "release_job_trigger_target_id_target_id_fk": {
@@ -1774,7 +1774,7 @@
           "tableTo": "target",
           "columnsFrom": ["target_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "release_job_trigger_environment_id_environment_id_fk": {
@@ -1783,7 +1783,7 @@
           "tableTo": "environment",
           "columnsFrom": ["environment_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1920,6 +1920,67 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
+    },
+    "public.runbook_job_trigger": {
+      "name": "runbook_job_trigger",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "runbook_id": {
+          "name": "runbook_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "runbook_job_trigger_job_id_job_id_fk": {
+          "name": "runbook_job_trigger_job_id_job_id_fk",
+          "tableFrom": "runbook_job_trigger",
+          "tableTo": "job",
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "runbook_job_trigger_runbook_id_runbook_id_fk": {
+          "name": "runbook_job_trigger_runbook_id_runbook_id_fk",
+          "tableFrom": "runbook_job_trigger",
+          "tableTo": "runbook",
+          "columnsFrom": ["runbook_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "runbook_job_trigger_job_id_unique": {
+          "name": "runbook_job_trigger_job_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["job_id"]
+        }
+      }
     },
     "public.team": {
       "name": "team",
