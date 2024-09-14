@@ -3,9 +3,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
-    // "incremental": true,
-    "lib": ["es2017"]
-    // "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+    "incremental": true,
+    "lib": ["es2017"],
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
   },
   "include": ["*.ts", "src"],
   "exclude": ["node_modules"]
