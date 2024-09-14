@@ -1,8 +1,8 @@
 import type { Tx } from "@ctrlplane/db";
 import type {
-  JobConfig,
-  JobConfigInsert,
-  JobConfigType,
+  ReleaseJobTrigger,
+  ReleaseJobTriggerInsert,
+  ReleaseJobTriggerType,
 } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
@@ -17,12 +17,15 @@ import {
 
 type FilterFunc = (
   tx: Tx,
-  insertJobConfigs: JobConfigInsert[],
-) => Promise<JobConfigInsert[]> | JobConfigInsert[];
+  insertJobConfigs: ReleaseJobTriggerInsert[],
+) => Promise<ReleaseJobTriggerInsert[]> | ReleaseJobTriggerInsert[];
 
-type ThenFunc = (tx: Tx, jobConfigs: JobConfig[]) => Promise<void> | void;
+type ThenFunc = (
+  tx: Tx,
+  jobConfigs: ReleaseJobTrigger[],
+) => Promise<void> | void;
 
-export const createJobConfigs = (tx: Tx, type: JobConfigType) =>
+export const createJobConfigs = (tx: Tx, type: ReleaseJobTriggerType) =>
   new JobConfigBuilder(tx, type);
 
 class JobConfigBuilder {
@@ -37,7 +40,7 @@ class JobConfigBuilder {
 
   constructor(
     private tx: Tx,
-    private type: JobConfigType,
+    private type: ReleaseJobTriggerType,
   ) {}
 
   causedById(id: string) {
@@ -126,7 +129,7 @@ class JobConfigBuilder {
     const vals = await this.values();
     if (vals.length === 0) return [];
 
-    let wt: JobConfigInsert[] = vals.map((v) => ({
+    let wt: ReleaseJobTriggerInsert[] = vals.map((v) => ({
       type: this.type,
       causedById: this._causedById,
       targetId: v.target.id,

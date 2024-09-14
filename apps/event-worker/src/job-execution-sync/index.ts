@@ -1,6 +1,6 @@
-import type { JobExecution } from "@ctrlplane/db/schema";
+import type { Job } from "@ctrlplane/db/schema";
 import type { DispatchJobExecutionEvent } from "@ctrlplane/validators/events";
-import type { Job } from "bullmq";
+import type { Job as JobMq } from "bullmq";
 import { Queue, Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -15,12 +15,12 @@ import { syncGithubJobExecution } from "./github.js";
 const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
   connection: redis,
 });
-const removeJobExecutionSyncJob = (job: Job) =>
+const removeJobExecutionSyncJob = (job: JobMq) =>
   job.repeatJobKey != null
     ? jobExecutionSyncQueue.removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-type SyncFunction = (je: JobExecution) => Promise<boolean | undefined>;
+type SyncFunction = (je: Job) => Promise<boolean | undefined>;
 
 const getSyncFunction = (agentType: string): SyncFunction | null => {
   if (agentType === String(JobAgentType.GithubApp))

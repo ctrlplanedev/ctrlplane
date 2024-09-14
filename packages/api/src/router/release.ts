@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
@@ -134,7 +134,7 @@ export const releaseRouter = createTRPCRouter({
       .mutation(async ({ ctx, input }) => {
         const cancelPreviousJobExecutions = async (
           tx: Tx,
-          jobConfigs: JobConfig[],
+          jobConfigs: ReleaseJobTrigger[],
         ) =>
           tx
             .select()

@@ -1,7 +1,7 @@
 import type {
   Deployment,
-  JobConfig,
-  JobExecution,
+  Job,
+  ReleaseJobTrigger,
   Target,
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
@@ -34,7 +34,7 @@ import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
 import { getStatusColor, statusColor } from "./status-color";
 
 const ReleaseIcon: React.FC<{
-  jobConfigs: Array<JobConfig & { jobExecution: JobExecution | null }>;
+  jobConfigs: Array<ReleaseJobTrigger & { jobExecution: Job | null }>;
 }> = ({ jobConfigs }) => {
   const statues = jobConfigs.map((s) => s.jobExecution?.status);
 
@@ -117,8 +117,8 @@ export const Release: React.FC<{
   activeDeploymentCount?: number;
   deployedAt: Date;
   jobConfigs: Array<
-    JobConfig & {
-      jobExecution: JobExecution | null;
+    ReleaseJobTrigger & {
+      jobExecution: Job | null;
       target: Target;
       deployment?: Deployment | null;
     }

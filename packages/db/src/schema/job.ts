@@ -12,7 +12,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { jobAgent } from "./job-agent.js";
 import { releaseJobTrigger } from "./release.js";
 
-export const jobExecutionStatus = pgEnum("job_status", [
+export const jobStatus = pgEnum("job_status", [
   "completed",
   "cancelled",
   "skipped",
@@ -25,7 +25,7 @@ export const jobExecutionStatus = pgEnum("job_status", [
   "external_run_not_found",
 ]);
 
-export const jobExecutionReason = pgEnum("job_reason", [
+export const jobReason = pgEnum("job_reason", [
   "policy_passing",
   "policy_override",
   "env_policy_override",
@@ -47,18 +47,18 @@ export const job = pgTable("job", {
     .$type<Record<string, any>>(),
 
   externalRunId: text("external_run_id"),
-  status: jobExecutionStatus("status").notNull().default("pending"),
+  status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
-  reason: jobExecutionReason("reason").notNull().default("policy_passing"),
+  reason: jobReason("reason").notNull().default("policy_passing"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at")
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
 
-export type JobExecutionStatus = JobExecution["status"];
-export type JobExecution = InferSelectModel<typeof job>;
-export const updateJobExecution = createInsertSchema(job)
+export type Job = InferSelectModel<typeof job>;
+export type JobStatus = Job["status"];
+export const updateJob = createInsertSchema(job)
   .omit({
     id: true,
     jobAgentConfig: true,

@@ -1,7 +1,7 @@
-import type { JobExecutionStatus } from "@ctrlplane/db/schema";
+import type { JobStatus } from "@ctrlplane/db/schema";
 import { TbCircleCheck, TbCircleX, TbClock, TbLoader2 } from "react-icons/tb";
 
-export const JobTableStatusIcon: React.FC<{ status?: JobExecutionStatus }> = ({
+export const JobTableStatusIcon: React.FC<{ status?: JobStatus }> = ({
   status,
 }) => {
   if (status === "completed")

@@ -1,4 +1,4 @@
-import type { JobExecution } from "@ctrlplane/db/schema";
+import type { Job } from "@ctrlplane/db/schema";
 
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -8,7 +8,7 @@ import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
 import { convertStatus, getInstallationOctokit } from "../github-utils.js";
 
-export const syncGithubJobExecution = async (je: JobExecution) => {
+export const syncGithubJobExecution = async (je: Job) => {
   if (je.externalRunId == null) {
     await db.update(job).set({
       status: JobExecutionStatus.ExternalRunNotFound,

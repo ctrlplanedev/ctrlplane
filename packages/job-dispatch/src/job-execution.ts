@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig, JobExecution } from "@ctrlplane/db/schema";
+import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import { and, eq, inArray, isNull, or, takeFirst } from "@ctrlplane/db";
@@ -42,10 +42,10 @@ export type JobExecutionReason =
  */
 export const createJobExecutions = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
   status: JobExecutionStatusType = "pending",
   reason?: JobExecutionReason,
-): Promise<JobExecution[]> => {
+): Promise<Job[]> => {
   const insertJobExecutions = await db
     .select()
     .from(releaseJobTrigger)
@@ -82,7 +82,7 @@ export const createJobExecutions = async (
   return db.insert(job).values(insertJobExecutions).returning();
 };
 
-export const onJobExecutionStatusChange = async (je: JobExecution) => {
+export const onJobExecutionStatusChange = async (je: Job) => {
   if (je.status === "completed") {
     const config = await db
       .select()

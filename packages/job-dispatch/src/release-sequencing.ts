@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
@@ -24,7 +24,7 @@ import { createJobExecutions } from "./job-execution.js";
  */
 export const cancelOldJobConfigsOnJobDispatch = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
 ) => {
   if (jobConfigs.length === 0) return;
   const hasNoJobExecution = isNull(job.id);

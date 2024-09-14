@@ -1,9 +1,9 @@
 import type { Tx } from "@ctrlplane/db";
 import type {
   EnvironmentPolicy,
-  JobConfig,
-  JobConfigInsert,
   Release,
+  ReleaseJobTrigger,
+  ReleaseJobTriggerInsert,
 } from "@ctrlplane/db/schema";
 import { addMonths, addWeeks, isBefore, isWithinInterval } from "date-fns";
 import _ from "lodash";
@@ -74,7 +74,10 @@ const isSuccessCriteriaPassing = async (
  * * If the policy is set to minimum, a certain number of job executions must pass
  *
  */
-const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
+const isPassingCriteriaPolicy = async (
+  db: Tx,
+  jobConfigs: ReleaseJobTrigger[],
+) => {
   if (jobConfigs.length === 0) return [];
   const policies = await db
     .select()
@@ -116,7 +119,7 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
  */
 export const isPassingApprovalPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
 ) => {
   if (jobConfigs.length === 0) return [];
   const policies = await db
@@ -160,7 +163,7 @@ export const isPassingApprovalPolicy = async (
  */
 const isPassingJobExecutionRolloutPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
 ) => {
   if (jobConfigs.length === 0) return [];
   const policies = await db
@@ -231,7 +234,7 @@ const exitStatus = [
  */
 const isPassingReleaseSequencingWaitPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
 ) => {
   if (jobConfigs.length === 0) return [];
   const isAffectedEnvironment = inArray(
@@ -283,7 +286,7 @@ const isPassingReleaseSequencingWaitPolicy = async (
  */
 export const isPassingReleaseSequencingCancelPolicy = async (
   db: Tx,
-  jobConfigs: JobConfigInsert[],
+  jobConfigs: ReleaseJobTriggerInsert[],
 ) => {
   if (jobConfigs.length === 0) return [];
   const isAffectedEnvironment = inArray(
@@ -361,8 +364,8 @@ export const isDateInTimeWindow = (
  */
 export const isPassingReleaseWindowPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
-): Promise<JobConfig[]> =>
+  jobConfigs: ReleaseJobTrigger[],
+): Promise<ReleaseJobTrigger[]> =>
   jobConfigs.length === 0
     ? []
     : db
@@ -416,8 +419,8 @@ export const isPassingReleaseWindowPolicy = async (
  */
 const isPassingConcurrencyPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
-): Promise<JobConfig[]> => {
+  jobConfigs: ReleaseJobTrigger[],
+): Promise<ReleaseJobTrigger[]> => {
   if (jobConfigs.length === 0) return [];
 
   const activeJobExecutionSubquery = db
@@ -480,7 +483,10 @@ const isPassingConcurrencyPolicy = async (
     );
 };
 
-export const isPassingAllPolicies = async (db: Tx, jobConfigs: JobConfig[]) => {
+export const isPassingAllPolicies = async (
+  db: Tx,
+  jobConfigs: ReleaseJobTrigger[],
+) => {
   if (jobConfigs.length === 0) return [];
   const checks = [
     isPassingLockingPolicy,

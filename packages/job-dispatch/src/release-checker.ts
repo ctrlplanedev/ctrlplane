@@ -1,5 +1,8 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig, JobConfigInsert } from "@ctrlplane/db/schema";
+import type {
+  ReleaseJobTrigger,
+  ReleaseJobTriggerInsert,
+} from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
@@ -25,7 +28,7 @@ import {
  */
 export const isPassingEnvironmentPolicy = async (
   db: Tx,
-  wf: JobConfigInsert[],
+  wf: ReleaseJobTriggerInsert[],
 ) => {
   const envIds = wf.map((v) => v.environmentId).filter(isPresent);
   const policies = await db
@@ -63,7 +66,7 @@ export const isPassingEnvironmentPolicy = async (
 
 export const isPassingReleaseDependencyPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
 ) => {
   if (jobConfigs.length === 0) return [];
 

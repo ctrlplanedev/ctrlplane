@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig, JobExecution } from "@ctrlplane/db/schema";
+import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import type { JobExecutionReason } from "./job-execution.js";
@@ -8,13 +8,13 @@ import { dispatchJobExecutionsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
-  jobConfigs: JobConfig[],
-) => Promise<JobConfig[]> | JobConfig[];
+  jobConfigs: ReleaseJobTrigger[],
+) => Promise<ReleaseJobTrigger[]> | ReleaseJobTrigger[];
 
-type ThenFunc = (tx: Tx, jobConfigs: JobConfig[]) => Promise<void>;
+type ThenFunc = (tx: Tx, jobConfigs: ReleaseJobTrigger[]) => Promise<void>;
 
 class DispatchBuilder {
-  private _jobConfigs: JobConfig[];
+  private _jobConfigs: ReleaseJobTrigger[];
   private _filters: DispatchFilterFunc[];
   private _then: ThenFunc[];
   private _reason?: JobExecutionReason;
@@ -30,7 +30,7 @@ class DispatchBuilder {
     return this;
   }
 
-  jobConfigs(t: JobConfig[]) {
+  jobConfigs(t: ReleaseJobTrigger[]) {
     this._jobConfigs = t;
     return this;
   }
@@ -45,7 +45,7 @@ class DispatchBuilder {
     return this;
   }
 
-  async dispatch(): Promise<JobExecution[]> {
+  async dispatch(): Promise<Job[]> {
     let t = this._jobConfigs;
     for (const func of this._filters) t = await func(this.db, t);
 

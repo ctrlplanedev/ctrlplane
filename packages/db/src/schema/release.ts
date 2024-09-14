@@ -71,7 +71,7 @@ export const createRelease = createInsertSchema(release)
       .default([]),
   });
 
-export const jobConfigType = pgEnum("job_config_type", [
+export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
   "new_release", //  release was created
   "new_target", // new target was added to an env
   "target_changed",
@@ -84,7 +84,7 @@ export const releaseJobTrigger = pgTable(
   "release_job_trigger",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    type: jobConfigType("type").notNull(),
+    type: releaseJobTriggerType("type").notNull(),
     causedById: uuid("caused_by_id").references(() => user.id),
 
     releaseId: uuid("release_id")
@@ -102,6 +102,8 @@ export const releaseJobTrigger = pgTable(
   () => ({}),
 );
 
-export type JobConfig = InferSelectModel<typeof releaseJobTrigger>;
-export type JobConfigType = JobConfig["type"];
-export type JobConfigInsert = InferInsertModel<typeof releaseJobTrigger>;
+export type ReleaseJobTrigger = InferSelectModel<typeof releaseJobTrigger>;
+export type ReleaseJobTriggerType = ReleaseJobTrigger["type"];
+export type ReleaseJobTriggerInsert = InferInsertModel<
+  typeof releaseJobTrigger
+>;

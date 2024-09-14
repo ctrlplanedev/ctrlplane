@@ -2,9 +2,9 @@
 
 import type {
   Deployment,
-  JobConfig,
-  JobExecution,
+  Job,
   Release,
+  ReleaseJobTrigger,
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import { TbCircleCheck, TbLoader2 } from "react-icons/tb";
 
 const ReleaseIcon: React.FC<{
-  jobExec?: JobExecution;
+  jobExec?: Job;
 }> = ({ jobExec }) => {
   if (jobExec?.status === "pending" || jobExec?.status === "in_progress")
     return (
@@ -33,9 +33,9 @@ const ReleaseIcon: React.FC<{
 
 export const ReleaseCell: React.FC<{
   deployment: Deployment;
-  jobConfig: JobConfig & {
+  jobConfig: ReleaseJobTrigger & {
     release?: Partial<Release>;
-    execution?: JobExecution;
+    execution?: Job;
   };
 }> = ({ deployment, jobConfig }) => {
   const params = useParams<{ workspaceSlug: string; systemSlug: string }>();

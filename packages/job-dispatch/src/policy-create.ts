@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
@@ -13,7 +13,7 @@ import {
 
 export const createJobExecutionApprovals = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  jobConfigs: ReleaseJobTrigger[],
 ) => {
   const policiesToCheck = await db
     .selectDistinctOn([release.id, environmentPolicy.id])

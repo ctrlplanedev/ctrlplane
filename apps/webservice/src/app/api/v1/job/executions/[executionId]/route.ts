@@ -10,7 +10,7 @@ import {
   release,
   releaseJobTrigger,
   target,
-  updateJobExecution,
+  updateJob,
 } from "@ctrlplane/db/schema";
 import { onJobExecutionStatusChange } from "@ctrlplane/job-dispatch";
 
@@ -40,7 +40,7 @@ export const GET = async (
   return NextResponse.json(je);
 };
 
-const bodySchema = updateJobExecution;
+const bodySchema = updateJob;
 
 export const PATCH = async (
   req: NextRequest,

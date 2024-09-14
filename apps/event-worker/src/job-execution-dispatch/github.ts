@@ -1,4 +1,4 @@
-import type { JobExecution } from "@ctrlplane/db/schema";
+import type { Job } from "@ctrlplane/db/schema";
 import { Queue } from "bullmq";
 import ms from "ms";
 import pRetry from "p-retry";
@@ -17,7 +17,7 @@ const jobExecutionSyncQueue = new Queue(Channel.JobExecutionSync, {
   connection: redis,
 });
 
-export const dispatchGithubJobExecution = async (je: JobExecution) => {
+export const dispatchGithubJobExecution = async (je: Job) => {
   console.log(`Dispatching job execution ${je.id}...`);
 
   const config = je.jobAgentConfig;
