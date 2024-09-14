@@ -29,7 +29,7 @@ export const GET = async (
     .where(and(eq(job.id, params.executionId), isNull(environment.deletedAt)))
     .then(takeFirst)
     .then((row) => ({
-      ...row.job_execution,
+      ...row.job,
       config: row.job_config,
       environment: row.environment,
       target: row.target,

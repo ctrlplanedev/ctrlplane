@@ -39,7 +39,7 @@ export const GET = async (
     )
     .then((rows) =>
       rows.map((row) => ({
-        ...row.job_execution,
+        ...row.job,
         config: row.job_config,
         environment: row.environment,
         target: row.target,

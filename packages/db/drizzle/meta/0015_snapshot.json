@@ -2066,8 +2066,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.job_execution": {
-      "name": "job_execution",
+    "public.job": {
+      "name": "job",
       "schema": "",
       "columns": {
         "id": {
@@ -2104,7 +2104,7 @@
         },
         "status": {
           "name": "status",
-          "type": "job_execution_status",
+          "type": "job_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -2118,7 +2118,7 @@
         },
         "reason": {
           "name": "reason",
-          "type": "job_execution_reason",
+          "type": "job_reason",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
@@ -2141,18 +2141,18 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "job_execution_job_config_id_job_config_id_fk": {
-          "name": "job_execution_job_config_id_job_config_id_fk",
-          "tableFrom": "job_execution",
+        "job_job_config_id_job_config_id_fk": {
+          "name": "job_job_config_id_job_config_id_fk",
+          "tableFrom": "job",
           "tableTo": "job_config",
           "columnsFrom": ["job_config_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "job_execution_job_agent_id_job_agent_id_fk": {
-          "name": "job_execution_job_agent_id_job_agent_id_fk",
-          "tableFrom": "job_execution",
+        "job_job_agent_id_job_agent_id_fk": {
+          "name": "job_job_agent_id_job_agent_id_fk",
+          "tableFrom": "job",
           "tableTo": "job_agent",
           "columnsFrom": ["job_agent_id"],
           "columnsTo": ["id"],
@@ -2720,8 +2720,8 @@
         "force_deploy"
       ]
     },
-    "public.job_execution_reason": {
-      "name": "job_execution_reason",
+    "public.job_reason": {
+      "name": "job_reason",
       "schema": "public",
       "values": [
         "policy_passing",
@@ -2730,8 +2730,8 @@
         "config_policy_override"
       ]
     },
-    "public.job_execution_status": {
-      "name": "job_execution_status",
+    "public.job_status": {
+      "name": "job_status",
       "schema": "public",
       "values": [
         "completed",

@@ -28,14 +28,14 @@ export const createDispatchExecutionJobWorker = () =>
 
           try {
             if (je.job_agent.type === String(JobAgentType.GithubApp))
-              dispatchGithubJobExecution(je.job_execution);
+              dispatchGithubJobExecution(je.job);
           } catch (error) {
             db.update(schema.job)
               .set({
                 status: JobExecutionStatus.Failure,
                 message: (error as Error).message,
               })
-              .where(eq(schema.job.id, je.job_execution.id));
+              .where(eq(schema.job.id, je.job.id));
           }
         }),
     {

@@ -53,13 +53,13 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."job_execution_reason" AS ENUM('policy_passing', 'policy_override', 'env_policy_override', 'config_policy_override');
+ CREATE TYPE "public"."job_reason" AS ENUM('policy_passing', 'policy_override', 'env_policy_override', 'config_policy_override');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."job_execution_status" AS ENUM('completed', 'cancelled', 'skipped', 'in_progress', 'action_required', 'pending', 'failure', 'invalid_job_agent');
+ CREATE TYPE "public"."job_status" AS ENUM('completed', 'cancelled', 'skipped', 'in_progress', 'action_required', 'pending', 'failure', 'invalid_job_agent');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -333,15 +333,15 @@ CREATE TABLE IF NOT EXISTS "job_config" (
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "job_execution" (
+CREATE TABLE IF NOT EXISTS "job" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"job_config_id" uuid NOT NULL,
 	"job_agent_id" uuid NOT NULL,
 	"job_agent_config" json DEFAULT '{}' NOT NULL,
 	"external_run_id" text,
-	"status" "job_execution_status" DEFAULT 'pending' NOT NULL,
+	"status" "job_status" DEFAULT 'pending' NOT NULL,
 	"message" text,
-	"reason" "job_execution_reason" DEFAULT 'policy_passing' NOT NULL,
+	"reason" "job_reason" DEFAULT 'policy_passing' NOT NULL,
 	"created_at" timestamp DEFAULT now(),
 	"updated_at" timestamp DEFAULT now()
 );
@@ -682,13 +682,13 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "job_execution" ADD CONSTRAINT "job_execution_job_config_id_job_config_id_fk" FOREIGN KEY ("job_config_id") REFERENCES "public"."job_config"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "job" ADD CONSTRAINT "job_job_config_id_job_config_id_fk" FOREIGN KEY ("job_config_id") REFERENCES "public"."job_config"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "job_execution" ADD CONSTRAINT "job_execution_job_agent_id_job_agent_id_fk" FOREIGN KEY ("job_agent_id") REFERENCES "public"."job_agent"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "job" ADD CONSTRAINT "job_job_agent_id_job_agent_id_fk" FOREIGN KEY ("job_agent_id") REFERENCES "public"."job_agent"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

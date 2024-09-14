@@ -3,7 +3,7 @@ import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { jobAgent } from "./job-execution.js";
+import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
 
 export const runbook = pgTable("runbook", {

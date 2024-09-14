@@ -69,7 +69,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     workflow_id: parsed.data.workflowId,
     ref: ghOrg.branch,
     inputs: {
-      job_execution_id: je.id.slice(0, 8),
+      job_id: je.id.slice(0, 8),
     },
     headers: {
       "X-GitHub-Api-Version": "2022-11-28",

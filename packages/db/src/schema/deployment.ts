@@ -5,7 +5,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { githubConfigFile } from "./github.js";
-import { jobAgent } from "./job-execution.js";
+import { jobAgent } from "./job-agent.js";
 import { release } from "./release.js";
 import { system } from "./system.js";
 

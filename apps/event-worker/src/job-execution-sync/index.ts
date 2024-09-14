@@ -48,7 +48,7 @@ export const createJobExecutionSyncWorker = () =>
           if (syncFunction == null) return;
 
           try {
-            syncFunction(je.job_execution).then(
+            syncFunction(je.job).then(
               (isCompleted) => isCompleted && removeJobExecutionSyncJob(job),
             );
           } catch (error) {

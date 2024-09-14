@@ -419,7 +419,7 @@ const isPassingConcurrencyPolicy = async (
     .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
     .where(notInArray(job.status, exitStatus))
     .groupBy(jobConfig.releaseId, jobConfig.environmentId)
-    .as("active_job_execution_subquery");
+    .as("active_job_subquery");
 
   return db
     .select()
@@ -451,7 +451,7 @@ const isPassingConcurrencyPolicy = async (
                 Math.max(
                   0,
                   jcs[0]!.environment_policy.concurrencyLimit -
-                    (jcs[0]!.active_job_execution_subquery?.count ?? 0),
+                    (jcs[0]!.active_job_subquery?.count ?? 0),
                 ),
               )
             : // If not, return all job configs in the group

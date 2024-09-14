@@ -65,7 +65,7 @@ const jobConfigRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.job_config,
-            execution: t.job_execution,
+            execution: t.job,
             agent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
@@ -102,7 +102,7 @@ const jobConfigRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.job_config,
-            jobExecution: t.job_execution,
+            jobExecution: t.job,
             jobAgent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
@@ -125,7 +125,7 @@ const jobConfigRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.job_config,
-            jobExecution: t.job_execution,
+            jobExecution: t.job,
             jobAgent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
@@ -158,7 +158,7 @@ const jobConfigRouter = createTRPCRouter({
             .groupBy("job_config.id")
             .map((v) => ({
               ...v[0]!.job_config,
-              jobExecution: v[0]!.job_execution,
+              jobExecution: v[0]!.job,
               jobAgent: v[0]!.job_agent,
               target: v[0]!.target,
               release: { ...v[0]!.release, deployment: v[0]!.deployment },
@@ -294,7 +294,7 @@ export const jobRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.job_config,
-            execution: t.job_execution,
+            execution: t.job,
             agent: t.job_agent,
             target: t.target,
             deployment: t.deployment,
