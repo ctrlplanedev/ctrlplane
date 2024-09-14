@@ -35,7 +35,6 @@ const jobConfigQuery = (tx: Tx) =>
     .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
     .leftJoin(target, eq(jobConfig.targetId, target.id))
     .leftJoin(release, eq(jobConfig.releaseId, release.id))
-    .leftJoin(runbook, eq(jobConfig.runbookId, runbook.id))
     .leftJoin(deployment, eq(release.deploymentId, deployment.id))
     .leftJoin(environment, eq(jobConfig.environmentId, environment.id))
     .innerJoin(
@@ -70,7 +69,6 @@ const jobConfigRouter = createTRPCRouter({
             agent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
-            runbook: t.runbook,
             environment: t.environment,
           })),
         ),
@@ -108,7 +106,6 @@ const jobConfigRouter = createTRPCRouter({
             jobAgent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
-            runbook: t.runbook,
             environment: t.environment,
           })),
         ),
@@ -132,7 +129,6 @@ const jobConfigRouter = createTRPCRouter({
             jobAgent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
-            runbook: t.runbook,
             environment: t.environment,
           })),
         ),
@@ -166,7 +162,6 @@ const jobConfigRouter = createTRPCRouter({
               jobAgent: v[0]!.job_agent,
               target: v[0]!.target,
               release: { ...v[0]!.release, deployment: v[0]!.deployment },
-              runbook: v[0]!.runbook,
               environment: v[0]!.environment,
               rolloutDate:
                 v[0]!.job_config.targetId == null ||
@@ -306,7 +301,6 @@ export const jobRouter = createTRPCRouter({
             target: t.target,
             deployment: t.deployment,
             release: { ...t.release },
-            runbook: t.runbook,
             environment: t.environment,
           })),
         ),

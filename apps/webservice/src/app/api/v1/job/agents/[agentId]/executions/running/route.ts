@@ -9,7 +9,6 @@ import {
   jobConfig,
   jobExecution,
   release,
-  runbook,
   target,
 } from "@ctrlplane/db/schema";
 
@@ -22,7 +21,6 @@ export const GET = async (
     .from(jobExecution)
     .innerJoin(jobConfig, eq(jobConfig.id, jobExecution.jobConfigId))
     .leftJoin(environment, eq(environment.id, jobConfig.environmentId))
-    .leftJoin(runbook, eq(runbook.id, jobConfig.runbookId))
     .leftJoin(target, eq(target.id, jobConfig.targetId))
     .leftJoin(release, eq(release.id, jobConfig.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
@@ -44,7 +42,6 @@ export const GET = async (
         ...row.job_execution,
         config: row.job_config,
         environment: row.environment,
-        runbook: row.runbook,
         target: row.target,
         deployment: row.deployment,
         release: row.release,

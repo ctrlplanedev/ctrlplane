@@ -29,13 +29,7 @@ export const createJobExecutionApprovals = async (
       ),
     )
     .where(
-      and(
-        inArray(
-          release.id,
-          jobConfigs.map((t) => t.releaseId).filter(isPresent),
-        ),
-        isNull(jobConfig.runbookId),
-      ),
+      inArray(release.id, jobConfigs.map((t) => t.releaseId).filter(isPresent)),
     );
 
   if (policiesToCheck.length === 0) return;

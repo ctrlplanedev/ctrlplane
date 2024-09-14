@@ -27,9 +27,7 @@ export const isPassingEnvironmentPolicy = async (
   db: Tx,
   wf: JobConfigInsert[],
 ) => {
-  const noRunbooks = wf.filter((v) => !isPresent(v.runbookId));
-
-  const envIds = noRunbooks.map((v) => v.environmentId).filter(isPresent);
+  const envIds = wf.map((v) => v.environmentId).filter(isPresent);
   const policies = await db
     .select()
     .from(environment)
@@ -39,7 +37,7 @@ export const isPassingEnvironmentPolicy = async (
     )
     .where(and(inArray(environment.id, envIds), isNull(environment.deletedAt)));
 
-  const releaseIds = noRunbooks.map((v) => v.releaseId).filter(isPresent);
+  const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);
   const rels = await db
     .select()
     .from(release)

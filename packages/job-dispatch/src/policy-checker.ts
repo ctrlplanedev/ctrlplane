@@ -46,7 +46,6 @@ const isSuccessCriteriaPassing = async (
     .groupBy(jobExecution.status)
     .where(
       and(
-        isNull(jobConfig.runbookId),
         eq(environmentPolicyDeployment.policyId, policy.id),
         eq(jobConfig.releaseId, release.id),
       ),

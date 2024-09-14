@@ -51,7 +51,6 @@ export const createJobExecutions = async (
     .from(jobConfig)
     .leftJoin(release, eq(release.id, jobConfig.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .leftJoin(runbook, eq(runbook.id, jobConfig.runbookId))
     .innerJoin(
       jobAgent,
       or(
@@ -72,7 +71,6 @@ export const createJobExecutions = async (
         jobAgentConfig: _.merge(
           d.job_agent.config,
           d.deployment?.jobAgentConfig ?? {},
-          d.runbook?.jobAgentConfig ?? {},
         ),
         status,
         reason,
@@ -111,7 +109,6 @@ export const onJobExecutionStatusChange = async (je: JobExecution) => {
       .where(
         and(
           isNull(jobExecution.jobConfigId),
-          isNull(jobConfig.runbookId),
           isNull(environment.deletedAt),
           or(
             and(

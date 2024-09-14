@@ -14,7 +14,6 @@ import { z } from "zod";
 import { user } from "./auth.js";
 import { environment } from "./environment.js";
 import { release } from "./release.js";
-import { runbook } from "./runbook.js";
 import { target } from "./target.js";
 import { workspace } from "./workspace.js";
 
@@ -35,7 +34,6 @@ export const jobConfig = pgTable("job_config", {
   releaseId: uuid("release_id").references(() => release.id),
   targetId: uuid("target_id").references(() => target.id),
   environmentId: uuid("environment_id").references(() => environment.id),
-  runbookId: uuid("runbook_id").references(() => runbook.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
