@@ -34,17 +34,3 @@ export const createWorkspace = createInsertSchema(workspace, {
 export const updateWorkspace = createWorkspace.partial();
 
 export type Workspace = InferSelectModel<typeof workspace>;
-
-// const workspaceForm = z.object({
-//   name: z
-//     .string()
-//     .min(3, { message: "Workspace name must be at least 3 characters long." })
-//     .max(30, { message: "Workspace Name must be at most 30 characters long." }),
-//   slug: z
-//     .string()
-//     .min(3, { message: "URL must be at least 3 characters long." })
-//     .max(30, { message: "URL must be at most 30 characters long." })
-//     .refine((slug) => slug === slugify(slug, { lower: true }), {
-//       message: "Must be a valid URL",
-//     }),
-// });
