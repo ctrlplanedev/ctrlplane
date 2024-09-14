@@ -12,8 +12,8 @@ import {
   environmentPolicyReleaseWindow,
   job,
   jobAgent,
-  jobConfig,
   release,
+  releaseJobTrigger,
   runbook,
   system,
   target,
@@ -31,12 +31,12 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 const jobConfigQuery = (tx: Tx) =>
   tx
     .select()
-    .from(jobConfig)
-    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
-    .leftJoin(target, eq(jobConfig.targetId, target.id))
-    .leftJoin(release, eq(jobConfig.releaseId, release.id))
+    .from(releaseJobTrigger)
+    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+    .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .leftJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .leftJoin(deployment, eq(release.deploymentId, deployment.id))
-    .leftJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .leftJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       jobAgent,
       or(
@@ -60,7 +60,7 @@ const jobConfigRouter = createTRPCRouter({
         .where(
           and(eq(system.workspaceId, input), isNull(environment.deletedAt)),
         )
-        .orderBy(asc(jobConfig.createdAt))
+        .orderBy(asc(releaseJobTrigger.createdAt))
         .limit(1_000)
         .then((data) =>
           data.map((t) => ({
@@ -263,9 +263,11 @@ const jobExecutionRouter = createTRPCRouter({
       .mutation(({ ctx, input }) =>
         ctx.db
           .select()
-          .from(jobConfig)
-          .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
-          .where(and(eq(jobConfig.environmentId, input), isNull(job.id)))
+          .from(releaseJobTrigger)
+          .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+          .where(
+            and(eq(releaseJobTrigger.environmentId, input), isNull(job.id)),
+          )
           .then((jcs) =>
             dispatchJobConfigs(ctx.db)
               .jobConfigs(jcs.map((jc) => jc.job_config))
@@ -290,7 +292,7 @@ export const jobRouter = createTRPCRouter({
       jobConfigQuery(ctx.db)
         .where(and(eq(target.id, input), isNull(environment.deletedAt)))
         .limit(1_000)
-        .orderBy(desc(job.createdAt), desc(jobConfig.createdAt))
+        .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
         .then((data) =>
           data.map((t) => ({
             ...t.job_config,

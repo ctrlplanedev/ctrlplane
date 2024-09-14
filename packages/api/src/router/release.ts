@@ -21,9 +21,9 @@ import {
   deployment,
   environment,
   environmentPolicy,
-  jobConfig,
   release,
   releaseDependency,
+  releaseJobTrigger,
   target,
 } from "@ctrlplane/db/schema";
 import {
@@ -138,13 +138,13 @@ export const releaseRouter = createTRPCRouter({
         ) =>
           tx
             .select()
-            .from(jobConfig)
+            .from(releaseJobTrigger)
             .where(
               and(
-                eq(jobConfig.releaseId, input.releaseId),
-                eq(jobConfig.environmentId, input.environmentId),
+                eq(releaseJobTrigger.releaseId, input.releaseId),
+                eq(releaseJobTrigger.environmentId, input.environmentId),
                 notInArray(
-                  jobConfig.id,
+                  releaseJobTrigger.id,
                   jobConfigs.map((j) => j.id),
                 ),
               ),
@@ -228,12 +228,12 @@ export const releaseRouter = createTRPCRouter({
 
         const jc = await ctx.db
           .select()
-          .from(jobConfig)
+          .from(releaseJobTrigger)
           .where(
             and(
-              eq(jobConfig.releaseId, input.releaseId),
-              eq(jobConfig.environmentId, input.environmentId),
-              eq(jobConfig.targetId, input.targetId),
+              eq(releaseJobTrigger.releaseId, input.releaseId),
+              eq(releaseJobTrigger.environmentId, input.environmentId),
+              eq(releaseJobTrigger.targetId, input.targetId),
             ),
           )
           .then(takeFirstOrNull);

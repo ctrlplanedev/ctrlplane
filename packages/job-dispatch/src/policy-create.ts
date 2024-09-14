@@ -7,8 +7,8 @@ import {
   environment,
   environmentPolicy,
   environmentPolicyApproval,
-  jobConfig,
   release,
+  releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
 export const createJobExecutionApprovals = async (
@@ -17,9 +17,9 @@ export const createJobExecutionApprovals = async (
 ) => {
   const policiesToCheck = await db
     .selectDistinctOn([release.id, environmentPolicy.id])
-    .from(jobConfig)
-    .innerJoin(release, eq(jobConfig.releaseId, release.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .from(releaseJobTrigger)
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
       and(

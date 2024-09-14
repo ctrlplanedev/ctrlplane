@@ -2,7 +2,7 @@ import { CronJob } from "cron";
 
 import { eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { job, jobConfig } from "@ctrlplane/db/schema";
+import { job, releaseJobTrigger } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
   dispatchJobConfigs,
@@ -14,8 +14,8 @@ import { env } from "./config.js";
 const run = async () => {
   const jobConfigs = await db
     .select()
-    .from(jobConfig)
-    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
+    .from(releaseJobTrigger)
+    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
     .where(isNull(job.jobConfigId));
 
   if (jobConfigs.length === 0) return;

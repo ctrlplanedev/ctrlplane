@@ -22,8 +22,8 @@ import {
   environmentPolicyApproval,
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
-  jobConfig,
   release,
+  releaseJobTrigger,
   setPolicyReleaseWindow,
   system,
   target,
@@ -182,7 +182,10 @@ const policyRouter = createTRPCRouter({
             environment,
             eq(environment.policyId, environmentPolicy.id),
           )
-          .innerJoin(jobConfig, eq(jobConfig.environmentId, environment.id))
+          .innerJoin(
+            releaseJobTrigger,
+            eq(releaseJobTrigger.environmentId, environment.id),
+          )
           .where(
             and(
               eq(environmentPolicyApproval.id, envApproval.id),

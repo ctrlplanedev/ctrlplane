@@ -10,9 +10,9 @@ import {
   environment,
   environmentPolicy,
   job,
-  jobConfig,
   release,
   releaseDependency,
+  releaseJobTrigger,
   target,
   targetLabelGroup,
 } from "@ctrlplane/db/schema";
@@ -69,11 +69,11 @@ export const isPassingReleaseDependencyPolicy = async (
 
   const jcs = await db
     .select()
-    .from(jobConfig)
-    .leftJoin(target, eq(jobConfig.targetId, target.id))
+    .from(releaseJobTrigger)
+    .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
     .leftJoin(
       releaseDependency,
-      eq(releaseDependency.releaseId, jobConfig.releaseId),
+      eq(releaseDependency.releaseId, releaseJobTrigger.releaseId),
     )
     .leftJoin(
       targetLabelGroup,
@@ -81,7 +81,7 @@ export const isPassingReleaseDependencyPolicy = async (
     )
     .where(
       inArray(
-        jobConfig.id,
+        releaseJobTrigger.id,
         jobConfigs.map((jc) => jc.id),
       ),
     )
@@ -118,9 +118,12 @@ export const isPassingReleaseDependencyPolicy = async (
           const dependentJobExecutions = await db
             .select()
             .from(job)
-            .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
-            .innerJoin(target, eq(jobConfig.targetId, target.id))
-            .innerJoin(release, eq(jobConfig.releaseId, release.id))
+            .innerJoin(
+              releaseJobTrigger,
+              eq(job.jobConfigId, releaseJobTrigger.id),
+            )
+            .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+            .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
             .innerJoin(deployment, eq(release.deploymentId, deployment.id))
             .where(
               and(

@@ -10,8 +10,8 @@ import { and, arrayContains, eq, inArray, isNull, sql } from "@ctrlplane/db";
 import {
   deployment,
   environment,
-  jobConfig,
   release,
+  releaseJobTrigger,
   target,
 } from "@ctrlplane/db/schema";
 
@@ -138,7 +138,10 @@ class JobConfigBuilder {
 
     if (wt.length === 0) return [];
 
-    const jobConfigs = await this.tx.insert(jobConfig).values(wt).returning();
+    const jobConfigs = await this.tx
+      .insert(releaseJobTrigger)
+      .values(wt)
+      .returning();
 
     for (const func of this._then) await func(this.tx, jobConfigs);
 

@@ -7,8 +7,8 @@ import {
   environment,
   environmentPolicy,
   job,
-  jobConfig,
   release,
+  releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
 import { createJobExecutions } from "./job-execution.js";
@@ -37,7 +37,7 @@ export const cancelOldJobConfigsOnJobDispatch = async (
     jobConfigs.map((t) => t.environmentId).filter(isPresent),
   );
   const isNotDispatchedJobConfig = notInArray(
-    jobConfig.id,
+    releaseJobTrigger.id,
     jobConfigs.map((t) => t.id),
   );
   const isNotDeleted = isNull(environment.deletedAt);
@@ -48,10 +48,10 @@ export const cancelOldJobConfigsOnJobDispatch = async (
 
   const oldJobConfigsToCancel = await db
     .select()
-    .from(jobConfig)
-    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
-    .innerJoin(environment, eq(environment.id, jobConfig.environmentId))
-    .innerJoin(release, eq(release.id, jobConfig.releaseId))
+    .from(releaseJobTrigger)
+    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+    .innerJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
+    .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .innerJoin(
       environmentPolicy,
       eq(environment.policyId, environmentPolicy.id),

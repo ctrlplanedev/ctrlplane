@@ -18,8 +18,8 @@ import {
   environment,
   job,
   jobAgent,
-  jobConfig,
   release,
+  releaseJobTrigger,
   system,
   target,
   updateDeployment,
@@ -71,7 +71,7 @@ export const deploymentRouter = createTRPCRouter({
           ),
         })
         .from(job)
-        .innerJoin(jobConfig, eq(jobConfig.id, job.jobConfigId))
+        .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.id, job.jobConfigId))
         .where(eq(job.status, "completed"))
         .as("jobExecution");
 
@@ -79,11 +79,11 @@ export const deploymentRouter = createTRPCRouter({
         .select()
         .from(latestCompletedJobExecution)
         .innerJoin(
-          jobConfig,
-          eq(jobConfig.id, latestCompletedJobExecution.jobConfigId),
+          releaseJobTrigger,
+          eq(releaseJobTrigger.id, latestCompletedJobExecution.jobConfigId),
         )
-        .innerJoin(release, eq(release.id, jobConfig.releaseId))
-        .innerJoin(target, eq(target.id, jobConfig.targetId))
+        .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
+        .innerJoin(target, eq(target.id, releaseJobTrigger.targetId))
         .where(
           and(
             eq(release.deploymentId, input),
@@ -133,8 +133,11 @@ export const deploymentRouter = createTRPCRouter({
                 .select()
                 .from(deployment)
                 .innerJoin(release, eq(release.deploymentId, deployment.id))
-                .innerJoin(jobConfig, eq(jobConfig.releaseId, release.id))
-                .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
+                .innerJoin(
+                  releaseJobTrigger,
+                  eq(releaseJobTrigger.releaseId, release.id),
+                )
+                .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
                 .where(
                   and(eq(deployment.id, input.id), isNull(job.jobConfigId)),
                 )
@@ -266,9 +269,9 @@ export const deploymentRouter = createTRPCRouter({
           target,
           arrayContains(target.labels, environment.targetFilter),
         )
-        .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
-        .leftJoin(job, eq(jobConfig.id, job.jobConfigId))
-        .leftJoin(release, eq(release.id, jobConfig.releaseId))
+        .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.targetId, target.id))
+        .leftJoin(job, eq(releaseJobTrigger.id, job.jobConfigId))
+        .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .where(
           and(
             eq(target.id, input),
@@ -279,7 +282,7 @@ export const deploymentRouter = createTRPCRouter({
             ),
           ),
         )
-        .orderBy(deployment.id, jobConfig.createdAt)
+        .orderBy(deployment.id, releaseJobTrigger.createdAt)
         .then((r) =>
           r.map((row) => ({
             ...row.deployment,

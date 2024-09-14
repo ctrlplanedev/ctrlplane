@@ -17,8 +17,8 @@ import {
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
   job,
-  jobConfig,
   release,
+  releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
 import { isJobConfigInRolloutWindow } from "./gradual-rollout.js";
@@ -37,17 +37,20 @@ const isSuccessCriteriaPassing = async (
       status: job.status,
       count: sql<number>`count(*)`,
     })
-    .from(jobConfig)
+    .from(releaseJobTrigger)
     .innerJoin(
       environmentPolicyDeployment,
-      eq(environmentPolicyDeployment.environmentId, jobConfig.environmentId),
+      eq(
+        environmentPolicyDeployment.environmentId,
+        releaseJobTrigger.environmentId,
+      ),
     )
-    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
+    .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
     .groupBy(job.status)
     .where(
       and(
         eq(environmentPolicyDeployment.policyId, policy.id),
-        eq(jobConfig.releaseId, release.id),
+        eq(releaseJobTrigger.releaseId, release.id),
       ),
     );
 
@@ -75,14 +78,14 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
   if (jobConfigs.length === 0) return [];
   const policies = await db
     .select()
-    .from(jobConfig)
-    .innerJoin(release, eq(jobConfig.releaseId, release.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .from(releaseJobTrigger)
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
     .where(
       and(
         inArray(
-          jobConfig.id,
+          releaseJobTrigger.id,
           jobConfigs.map((t) => t.id),
         ),
         isNull(environment.deletedAt),
@@ -118,9 +121,9 @@ export const isPassingApprovalPolicy = async (
   if (jobConfigs.length === 0) return [];
   const policies = await db
     .select()
-    .from(jobConfig)
-    .innerJoin(release, eq(jobConfig.releaseId, release.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .from(releaseJobTrigger)
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
     .leftJoin(
       environmentPolicyApproval,
@@ -129,7 +132,7 @@ export const isPassingApprovalPolicy = async (
     .where(
       and(
         inArray(
-          jobConfig.id,
+          releaseJobTrigger.id,
           jobConfigs.map((t) => t.id),
         ),
         isNull(environment.deletedAt),
@@ -162,13 +165,16 @@ const isPassingJobExecutionRolloutPolicy = async (
   if (jobConfigs.length === 0) return [];
   const policies = await db
     .select()
-    .from(jobConfig)
-    .innerJoin(release, eq(jobConfig.releaseId, release.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .from(releaseJobTrigger)
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
     .where(
       and(
-        inArray(jobConfig.id, jobConfigs.map((t) => t.id).filter(isPresent)),
+        inArray(
+          releaseJobTrigger.id,
+          jobConfigs.map((t) => t.id).filter(isPresent),
+        ),
         isNull(environment.deletedAt),
       ),
     );
@@ -236,7 +242,7 @@ const isPassingReleaseSequencingWaitPolicy = async (
     "wait",
   );
   const isNotDispatchedJobConfig = notInArray(
-    jobConfig.id,
+    releaseJobTrigger.id,
     jobConfigs.map((t) => t.id).filter(isPresent),
   );
   const isActiveJobExecution = notInArray(job.status, exitStatus);
@@ -244,8 +250,8 @@ const isPassingReleaseSequencingWaitPolicy = async (
   const activeJobExecutions = await db
     .select()
     .from(job)
-    .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .innerJoin(releaseJobTrigger, eq(job.jobConfigId, releaseJobTrigger.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
       eq(environment.policyId, environmentPolicy.id),
@@ -292,8 +298,8 @@ export const isPassingReleaseSequencingCancelPolicy = async (
   const activeJobExecutions = await db
     .select()
     .from(job)
-    .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .innerJoin(releaseJobTrigger, eq(job.jobConfigId, releaseJobTrigger.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
       eq(environment.policyId, environmentPolicy.id),
@@ -359,8 +365,11 @@ export const isPassingReleaseWindowPolicy = async (
     ? []
     : db
         .select()
-        .from(jobConfig)
-        .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+        .from(releaseJobTrigger)
+        .innerJoin(
+          environment,
+          eq(releaseJobTrigger.environmentId, environment.id),
+        )
         .leftJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
@@ -372,7 +381,7 @@ export const isPassingReleaseWindowPolicy = async (
         .where(
           and(
             inArray(
-              jobConfig.id,
+              releaseJobTrigger.id,
               jobConfigs.map((t) => t.id).filter(isPresent),
             ),
             isNull(environment.deletedAt),
@@ -412,30 +421,33 @@ const isPassingConcurrencyPolicy = async (
   const activeJobExecutionSubquery = db
     .selectDistinct({
       count: sql<number>`count(*)`.as("count"),
-      releaseId: jobConfig.releaseId,
-      environmentId: jobConfig.environmentId,
+      releaseId: releaseJobTrigger.releaseId,
+      environmentId: releaseJobTrigger.environmentId,
     })
     .from(job)
-    .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
+    .innerJoin(releaseJobTrigger, eq(job.jobConfigId, releaseJobTrigger.id))
     .where(notInArray(job.status, exitStatus))
-    .groupBy(jobConfig.releaseId, jobConfig.environmentId)
+    .groupBy(releaseJobTrigger.releaseId, releaseJobTrigger.environmentId)
     .as("active_job_subquery");
 
   return db
     .select()
-    .from(jobConfig)
+    .from(releaseJobTrigger)
     .leftJoin(
       activeJobExecutionSubquery,
       and(
-        eq(jobConfig.releaseId, activeJobExecutionSubquery.releaseId),
-        eq(jobConfig.environmentId, activeJobExecutionSubquery.environmentId),
+        eq(releaseJobTrigger.releaseId, activeJobExecutionSubquery.releaseId),
+        eq(
+          releaseJobTrigger.environmentId,
+          activeJobExecutionSubquery.environmentId,
+        ),
       ),
     )
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
     .where(
       inArray(
-        jobConfig.id,
+        releaseJobTrigger.id,
         jobConfigs.map((t) => t.id),
       ),
     )

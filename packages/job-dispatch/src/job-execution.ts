@@ -11,8 +11,8 @@ import {
   environmentPolicyDeployment,
   job,
   jobAgent,
-  jobConfig,
   release,
+  releaseJobTrigger,
   runbook,
 } from "@ctrlplane/db/schema";
 
@@ -48,8 +48,8 @@ export const createJobExecutions = async (
 ): Promise<JobExecution[]> => {
   const insertJobExecutions = await db
     .select()
-    .from(jobConfig)
-    .leftJoin(release, eq(release.id, jobConfig.releaseId))
+    .from(releaseJobTrigger)
+    .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
     .innerJoin(
       jobAgent,
@@ -60,7 +60,7 @@ export const createJobExecutions = async (
     )
     .where(
       inArray(
-        jobConfig.id,
+        releaseJobTrigger.id,
         jobConfigs.map((t) => t.id),
       ),
     )
@@ -86,18 +86,24 @@ export const onJobExecutionStatusChange = async (je: JobExecution) => {
   if (je.status === "completed") {
     const config = await db
       .select()
-      .from(jobConfig)
-      .innerJoin(release, eq(jobConfig.releaseId, release.id))
-      .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
-      .where(eq(jobConfig.id, je.jobConfigId))
+      .from(releaseJobTrigger)
+      .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+      .innerJoin(
+        environment,
+        eq(releaseJobTrigger.environmentId, environment.id),
+      )
+      .where(eq(releaseJobTrigger.id, je.jobConfigId))
       .then(takeFirst);
 
     const affectedJobConfigs = await db
       .select()
-      .from(jobConfig)
-      .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
-      .innerJoin(release, eq(jobConfig.releaseId, release.id))
-      .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+      .from(releaseJobTrigger)
+      .leftJoin(job, eq(job.jobConfigId, releaseJobTrigger.id))
+      .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+      .innerJoin(
+        environment,
+        eq(releaseJobTrigger.environmentId, environment.id),
+      )
       .innerJoin(
         environmentPolicy,
         eq(environment.policyId, environmentPolicy.id),
@@ -112,7 +118,7 @@ export const onJobExecutionStatusChange = async (je: JobExecution) => {
           isNull(environment.deletedAt),
           or(
             and(
-              eq(jobConfig.releaseId, config.release.id),
+              eq(releaseJobTrigger.releaseId, config.release.id),
               eq(
                 environmentPolicyDeployment.environmentId,
                 config.environment.id,

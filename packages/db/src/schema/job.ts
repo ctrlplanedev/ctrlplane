@@ -21,23 +21,8 @@ export const jobConfigType = pgEnum("job_config_type", [
   "target_changed",
   "api", // calling API
   "redeploy", // redeploying
-  "runbook", // triggered via a runbook
   "force_deploy", // force deploying a release
 ]);
-
-export const jobConfig = pgTable("job_config", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  type: jobConfigType("type").notNull(),
-  causedById: uuid("caused_by_id").references(() => user.id),
-  releaseId: uuid("release_id").references(() => release.id),
-  targetId: uuid("target_id").references(() => target.id),
-  environmentId: uuid("environment_id").references(() => environment.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export type JobConfig = InferSelectModel<typeof jobConfig>;
-export type JobConfigType = JobConfig["type"];
-export type JobConfigInsert = InferInsertModel<typeof jobConfig>;
 
 export const jobExecutionStatus = pgEnum("job_status", [
   "completed",
@@ -63,7 +48,7 @@ export const job = pgTable("job", {
   id: uuid("id").primaryKey().defaultRandom(),
   jobConfigId: uuid("job_config_id")
     .notNull()
-    .references(() => jobConfig.id),
+    .references(() => releaseJobTrigger.id),
 
   jobAgentId: uuid("job_agent_id")
     .notNull()
@@ -84,9 +69,7 @@ export const job = pgTable("job", {
 });
 
 export type JobExecutionStatus = JobExecution["status"];
-
 export type JobExecution = InferSelectModel<typeof job>;
-
 export const updateJobExecution = createInsertSchema(job)
   .omit({
     id: true,
@@ -96,3 +79,29 @@ export const updateJobExecution = createInsertSchema(job)
     updatedAt: true,
   })
   .partial();
+
+export const releaseJobTrigger = pgTable(
+  "job_config",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    type: jobConfigType("type").notNull(),
+    causedById: uuid("caused_by_id").references(() => user.id),
+
+    releaseId: uuid("release_id")
+      .references(() => release.id)
+      .notNull(),
+    targetId: uuid("target_id")
+      .references(() => target.id)
+      .notNull(),
+    environmentId: uuid("environment_id")
+      .references(() => environment.id)
+      .notNull(),
+
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  () => ({}),
+);
+
+export type JobConfig = InferSelectModel<typeof releaseJobTrigger>;
+export type JobConfigType = JobConfig["type"];
+export type JobConfigInsert = InferInsertModel<typeof releaseJobTrigger>;

@@ -7,8 +7,8 @@ import {
   deployment,
   environment,
   job,
-  jobConfig,
   release,
+  releaseJobTrigger,
   target,
   updateJobExecution,
 } from "@ctrlplane/db/schema";
@@ -21,10 +21,10 @@ export const GET = async (
   const je = await db
     .select()
     .from(job)
-    .innerJoin(jobConfig, eq(jobConfig.id, job.jobConfigId))
-    .leftJoin(environment, eq(environment.id, jobConfig.environmentId))
-    .leftJoin(target, eq(target.id, jobConfig.targetId))
-    .leftJoin(release, eq(release.id, jobConfig.releaseId))
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.id, job.jobConfigId))
+    .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
+    .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
+    .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
     .where(and(eq(job.id, params.executionId), isNull(environment.deletedAt)))
     .then(takeFirst)
