@@ -1,2 +1,0 @@
-ALTER TABLE "user_api_key" ADD COLUMN "key_prefix" text NOT NULL;--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "user_api_key_key_prefix_key_hash_index" ON "user_api_key" ("key_prefix","key_hash");

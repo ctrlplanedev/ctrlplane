@@ -1,1 +1,0 @@
-ALTER TABLE "target" DROP CONSTRAINT "target_name_unique";
