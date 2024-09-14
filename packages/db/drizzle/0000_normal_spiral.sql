@@ -334,6 +334,14 @@ CREATE TABLE IF NOT EXISTS "runbook" (
 	"job_agent_config" jsonb DEFAULT '{}' NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "runbook_job_trigger" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"job_id" uuid,
+	"runbook_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "runbook_job_trigger_job_id_unique" UNIQUE("job_id")
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "team" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"text" text NOT NULL,
@@ -679,19 +687,19 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "release_job_trigger" ADD CONSTRAINT "release_job_trigger_release_id_release_id_fk" FOREIGN KEY ("release_id") REFERENCES "public"."release"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "release_job_trigger" ADD CONSTRAINT "release_job_trigger_release_id_release_id_fk" FOREIGN KEY ("release_id") REFERENCES "public"."release"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "release_job_trigger" ADD CONSTRAINT "release_job_trigger_target_id_target_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."target"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "release_job_trigger" ADD CONSTRAINT "release_job_trigger_target_id_target_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."target"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "release_job_trigger" ADD CONSTRAINT "release_job_trigger_environment_id_environment_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environment"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "release_job_trigger" ADD CONSTRAINT "release_job_trigger_environment_id_environment_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environment"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -710,6 +718,18 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "runbook" ADD CONSTRAINT "runbook_job_agent_id_job_agent_id_fk" FOREIGN KEY ("job_agent_id") REFERENCES "public"."job_agent"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "runbook_job_trigger" ADD CONSTRAINT "runbook_job_trigger_job_id_job_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."job"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "runbook_job_trigger" ADD CONSTRAINT "runbook_job_trigger_runbook_id_runbook_id_fk" FOREIGN KEY ("runbook_id") REFERENCES "public"."runbook"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;

@@ -1,21 +1,13 @@
 import type { Job } from "@ctrlplane/db/schema";
-import { Queue } from "bullmq";
-import ms from "ms";
 import pRetry from "p-retry";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { githubOrganization, job } from "@ctrlplane/db/schema";
-import { Channel } from "@ctrlplane/validators/events";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { convertStatus, getInstallationOctokit } from "../github-utils.js";
-import { redis } from "../redis.js";
-
-const jobSyncQueue = new Queue(Channel.JobSync, {
-  connection: redis,
-});
 
 export const dispatchGithubJob = async (je: Job) => {
   console.log(`Dispatching job ${je.id}...`);
@@ -118,10 +110,4 @@ export const dispatchGithubJob = async (je: Job) => {
       status: convertStatus(status ?? JobStatus.Pending),
     })
     .where(eq(job.id, je.id));
-
-  await jobSyncQueue.add(
-    je.id,
-    { jobId: je.id },
-    { repeat: { every: ms("10s") } },
-  );
 };

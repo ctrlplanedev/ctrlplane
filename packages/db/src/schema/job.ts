@@ -42,7 +42,7 @@ export const job = pgTable("job", {
     .default("{}")
     .$type<Record<string, any>>(),
 
-  externalRunId: text("external_run_id"), // depericated
+  externalRunId: text("external_run_id"),
   // metadata: jsonb("metadata")
   //   .notNull()
   //   .default("{}")
