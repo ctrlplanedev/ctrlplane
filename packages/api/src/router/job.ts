@@ -64,7 +64,7 @@ const jobConfigRouter = createTRPCRouter({
         .limit(1_000)
         .then((data) =>
           data.map((t) => ({
-            ...t.job_config,
+            ...t.release_job_trigger,
             execution: t.job,
             agent: t.job_agent,
             target: t.target,
@@ -101,7 +101,7 @@ const jobConfigRouter = createTRPCRouter({
         )
         .then((data) =>
           data.map((t) => ({
-            ...t.job_config,
+            ...t.release_job_trigger,
             jobExecution: t.job,
             jobAgent: t.job_agent,
             target: t.target,
@@ -124,7 +124,7 @@ const jobConfigRouter = createTRPCRouter({
         .where(and(eq(deployment.id, input), isNull(environment.deletedAt)))
         .then((data) =>
           data.map((t) => ({
-            ...t.job_config,
+            ...t.release_job_trigger,
             jobExecution: t.job,
             jobAgent: t.job_agent,
             target: t.target,
@@ -157,20 +157,19 @@ const jobConfigRouter = createTRPCRouter({
           _.chain(data)
             .groupBy("job_config.id")
             .map((v) => ({
-              ...v[0]!.job_config,
+              ...v[0]!.release_job_trigger,
               jobExecution: v[0]!.job,
               jobAgent: v[0]!.job_agent,
               target: v[0]!.target,
               release: { ...v[0]!.release, deployment: v[0]!.deployment },
               environment: v[0]!.environment,
               rolloutDate:
-                v[0]!.job_config.targetId == null ||
                 v[0]!.environment_policy == null ||
                 v[0]!.release == null ||
                 v[0]!.environment == null
                   ? null
                   : rolloutDateFromJobConfig(
-                      v[0]!.job_config.targetId,
+                      v[0]!.release_job_trigger.targetId,
                       v[0]!.release.id,
                       v[0]!.environment.id,
                       v[0]!.release.createdAt,
@@ -270,7 +269,7 @@ const jobExecutionRouter = createTRPCRouter({
           )
           .then((jcs) =>
             dispatchJobConfigs(ctx.db)
-              .jobConfigs(jcs.map((jc) => jc.job_config))
+              .jobConfigs(jcs.map((jc) => jc.release_job_trigger))
               .reason("env_policy_override")
               .then(cancelOldJobConfigsOnJobDispatch)
               .dispatch(),
@@ -295,7 +294,7 @@ export const jobRouter = createTRPCRouter({
         .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
         .then((data) =>
           data.map((t) => ({
-            ...t.job_config,
+            ...t.release_job_trigger,
             execution: t.job,
             agent: t.job_agent,
             target: t.target,

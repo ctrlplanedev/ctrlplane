@@ -1,4 +1,4 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type { InferSelectModel } from "drizzle-orm";
 import {
   json,
   pgEnum,
@@ -9,20 +9,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { user } from "./auth.js";
-import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
-import { release } from "./release.js";
-import { target } from "./target.js";
-
-export const jobConfigType = pgEnum("job_config_type", [
-  "new_release", //  release was created
-  "new_target", // new target was added to an env
-  "target_changed",
-  "api", // calling API
-  "redeploy", // redeploying
-  "force_deploy", // force deploying a release
-]);
+import { releaseJobTrigger } from "./release.js";
 
 export const jobExecutionStatus = pgEnum("job_status", [
   "completed",
@@ -79,29 +67,3 @@ export const updateJobExecution = createInsertSchema(job)
     updatedAt: true,
   })
   .partial();
-
-export const releaseJobTrigger = pgTable(
-  "job_config",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-    type: jobConfigType("type").notNull(),
-    causedById: uuid("caused_by_id").references(() => user.id),
-
-    releaseId: uuid("release_id")
-      .references(() => release.id)
-      .notNull(),
-    targetId: uuid("target_id")
-      .references(() => target.id)
-      .notNull(),
-    environmentId: uuid("environment_id")
-      .references(() => environment.id)
-      .notNull(),
-
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  () => ({}),
-);
-
-export type JobConfig = InferSelectModel<typeof releaseJobTrigger>;
-export type JobConfigType = JobConfig["type"];
-export type JobConfigInsert = InferInsertModel<typeof releaseJobTrigger>;

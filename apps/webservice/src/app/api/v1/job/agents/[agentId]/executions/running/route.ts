@@ -40,7 +40,7 @@ export const GET = async (
     .then((rows) =>
       rows.map((row) => ({
         ...row.job,
-        config: row.job_config,
+        config: row.release_job_trigger,
         environment: row.environment,
         target: row.target,
         deployment: row.deployment,

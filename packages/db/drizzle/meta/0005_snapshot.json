@@ -1938,7 +1938,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.job_config": {
+    "public.release_job_trigger": {
       "name": "job_config",
       "schema": "",
       "columns": {
@@ -2542,7 +2542,7 @@
       "schema": "public",
       "values": ["regex", "semver"]
     },
-    "public.job_config_type": {
+    "public.release_job_trigger_type": {
       "name": "job_config_type",
       "schema": "public",
       "values": [

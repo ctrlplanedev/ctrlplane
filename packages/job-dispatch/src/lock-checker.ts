@@ -18,4 +18,4 @@ export const isPassingLockingPolicy = (db: Tx, jobConfigs: Array<JobConfig>) =>
         isNull(target.lockedAt),
       ),
     )
-    .then((data) => data.map((d) => d.job_config));
+    .then((data) => data.map((d) => d.release_job_trigger));

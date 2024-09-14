@@ -66,7 +66,7 @@ export const createJobExecutions = async (
     )
     .then((ds) =>
       ds.map((d) => ({
-        jobConfigId: d.job_config.id,
+        jobConfigId: d.release_job_trigger.id,
         jobAgentId: d.job_agent.id,
         jobAgentConfig: _.merge(
           d.job_agent.config,
@@ -133,7 +133,7 @@ export const onJobExecutionStatusChange = async (je: JobExecution) => {
       );
 
     await dispatchJobConfigs(db)
-      .jobConfigs(affectedJobConfigs.map((t) => t.job_config))
+      .jobConfigs(affectedJobConfigs.map((t) => t.release_job_trigger))
       .filter(isPassingAllPolicies)
       .then(cancelOldJobConfigsOnJobDispatch)
       .dispatch();

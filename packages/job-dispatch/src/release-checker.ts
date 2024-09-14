@@ -89,7 +89,7 @@ export const isPassingReleaseDependencyPolicy = async (
       _.chain(rows)
         .groupBy("job_config.id")
         .map((jc) => ({
-          jobConfig: jc[0]!.job_config,
+          jobConfig: jc[0]!.release_job_trigger,
           target: jc[0]!.target,
           releaseDependencies: jc
             .map((v) => ({

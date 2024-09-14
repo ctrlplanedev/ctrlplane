@@ -71,7 +71,7 @@ export const cancelOldJobConfigsOnJobDispatch = async (
 
   await createJobExecutions(
     db,
-    oldJobConfigsToCancel.map((t) => t.job_config),
+    oldJobConfigsToCancel.map((t) => t.release_job_trigger),
     "cancelled",
   );
 };

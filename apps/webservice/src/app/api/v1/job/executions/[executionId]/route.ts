@@ -30,7 +30,7 @@ export const GET = async (
     .then(takeFirst)
     .then((row) => ({
       ...row.job,
-      config: row.job_config,
+      config: row.release_job_trigger,
       environment: row.environment,
       target: row.target,
       deployment: row.deployment,

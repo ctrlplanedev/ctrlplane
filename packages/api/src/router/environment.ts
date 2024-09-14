@@ -194,7 +194,7 @@ const policyRouter = createTRPCRouter({
           );
 
         await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs.map((t) => t.job_config))
+          .jobConfigs(jobConfigs.map((t) => t.release_job_trigger))
           .filter(isPassingAllPolicies)
           .then(cancelOldJobConfigsOnJobDispatch)
           .dispatch();

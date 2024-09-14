@@ -94,7 +94,7 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
 
   return Promise.all(
     policies.map(async (policy) => {
-      if (!policy.environment_policy) return policy.job_config;
+      if (!policy.environment_policy) return policy.release_job_trigger;
 
       const isPassing = await isSuccessCriteriaPassing(
         db,
@@ -102,7 +102,7 @@ const isPassingCriteriaPolicy = async (db: Tx, jobConfigs: JobConfig[]) => {
         policy.release,
       );
 
-      return isPassing ? policy.job_config : null;
+      return isPassing ? policy.release_job_trigger : null;
     }),
   ).then((results) => results.filter(isPresent));
 };
@@ -145,7 +145,7 @@ export const isPassingApprovalPolicy = async (
       if (p.environment_policy.approvalRequirement === "automatic") return true;
       return p.environment_policy_approval?.status === "approved";
     })
-    .map((p) => p.job_config);
+    .map((p) => p.release_job_trigger);
 };
 
 /**
@@ -183,12 +183,14 @@ const isPassingJobExecutionRolloutPolicy = async (
     .filter((p) => {
       if (p.environment_policy == null) return true;
       return isJobConfigInRolloutWindow(
-        [p.release.id, p.environment.id, p.job_config.targetId].join(":"),
+        [p.release.id, p.environment.id, p.release_job_trigger.targetId].join(
+          ":",
+        ),
         p.release.createdAt,
         p.environment_policy.duration,
       );
     })
-    .map((p) => p.job_config);
+    .map((p) => p.release_job_trigger);
 };
 
 const exitStatus = [
@@ -399,7 +401,7 @@ export const isPassingReleaseWindowPolicy = async (
                   environment_policy_release_window.recurrence,
                 ).isInWindow,
             )
-            .map((m) => m.job_config)
+            .map((m) => m.release_job_trigger)
             .uniqBy((m) => m.id)
             .value(),
         );
@@ -453,7 +455,10 @@ const isPassingConcurrencyPolicy = async (
     )
     .then((data) =>
       _.chain(data)
-        .groupBy((j) => [j.job_config.releaseId, j.job_config.environmentId])
+        .groupBy((j) => [
+          j.release_job_trigger.releaseId,
+          j.release_job_trigger.environmentId,
+        ])
         .map((jcs) =>
           // Check if the concurrency policy type is "some"
           jcs[0]!.environment_policy?.concurrencyType === "some"
@@ -470,7 +475,7 @@ const isPassingConcurrencyPolicy = async (
               jcs,
         )
         .flatten()
-        .map((jc) => jc.job_config)
+        .map((jc) => jc.release_job_trigger)
         .value(),
     );
 };

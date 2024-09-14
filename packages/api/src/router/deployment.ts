@@ -95,7 +95,7 @@ export const deploymentRouter = createTRPCRouter({
             ...row.jobExecution,
             release: row.release,
             target: row.target,
-            jobConfig: row.job_config,
+            jobConfig: row.release_job_trigger,
           })),
         );
     }),
@@ -143,7 +143,7 @@ export const deploymentRouter = createTRPCRouter({
                 )
                 .then((jobConfigs) =>
                   dispatchJobConfigs(ctx.db)
-                    .jobConfigs(jobConfigs.map((jc) => jc.job_config))
+                    .jobConfigs(jobConfigs.map((jc) => jc.release_job_trigger))
                     .filter(isPassingAllPolicies)
                     .then(cancelOldJobConfigsOnJobDispatch)
                     .dispatch()
@@ -289,7 +289,7 @@ export const deploymentRouter = createTRPCRouter({
             environment: row.environment,
             system: row.system,
             jobConfig: {
-              ...row.job_config,
+              ...row.release_job_trigger,
               execution: row.job,
               release: row.release,
             },
