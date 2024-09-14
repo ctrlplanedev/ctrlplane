@@ -9,7 +9,6 @@ import {
   jobConfig,
   jobExecution,
   release,
-  runbook,
   target,
   updateJobExecution,
 } from "@ctrlplane/db/schema";
