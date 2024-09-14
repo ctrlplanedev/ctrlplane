@@ -110,12 +110,7 @@ export const CreateReleaseDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
-    const [release, error] = await safeFormAwait(
-      create.mutateAsync(data),
-      form,
-      { entityName: "release" },
-    );
-    if (error != null) return;
+    const release = await create.mutateAsync(data);
 
     await utils.release.list.invalidate({ deploymentId: release.deploymentId });
 
