@@ -138,11 +138,7 @@ export const CreateSystemDialog: React.FC<{
             />
             <FormRootError />
             <DialogFooter>
-              <Button
-                type="submit"
-                disabled={createSystem.isPending}
-                className="mt-4 w-full"
-              >
+              <Button type="submit" disabled={createSystem.isPending}>
                 Create system
               </Button>
             </DialogFooter>
