@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
-  "id": "32f46733-78fa-46e2-9748-ffb06b1d5ef4",
-=======
   "id": "9d9c4bfe-499e-482d-9720-b1dd7eaade05",
->>>>>>> origin
   "prevId": "5073064a-baad-4066-9a2c-41d58077ddc2",
   "version": "6",
   "dialect": "postgresql",
@@ -230,15 +226,12 @@
           "primaryKey": false,
           "notNull": true
         },
-<<<<<<< HEAD
-=======
         "key_prefix": {
           "name": "key_prefix",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
->>>>>>> origin
         "expires_at": {
           "name": "expires_at",
           "type": "timestamp with time zone",
@@ -246,9 +239,6 @@
           "notNull": false
         }
       },
-<<<<<<< HEAD
-      "indexes": {},
-=======
       "indexes": {
         "user_api_key_key_prefix_key_hash_index": {
           "name": "user_api_key_key_prefix_key_hash_index",
@@ -256,7 +246,6 @@
           "isUnique": true
         }
       },
->>>>>>> origin
       "foreignKeys": {
         "user_api_key_user_id_user_id_fk": {
           "name": "user_api_key_user_id_user_id_fk",
@@ -2681,105 +2670,6 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
-<<<<<<< HEAD
-    },
-    "public.value": {
-      "name": "value",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "value_set_id": {
-          "name": "value_set_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "value": {
-          "name": "value",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {
-        "value_value_set_id_key_value_index": {
-          "name": "value_value_set_id_key_value_index",
-          "columns": ["value_set_id", "key", "value"],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "value_value_set_id_value_set_id_fk": {
-          "name": "value_value_set_id_value_set_id_fk",
-          "tableFrom": "value",
-          "tableTo": "value_set",
-          "columnsFrom": ["value_set_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-    },
-    "public.value_set": {
-      "name": "value_set",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "system_id": {
-          "name": "system_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "value_set_system_id_system_id_fk": {
-          "name": "value_set_system_id_system_id_fk",
-          "tableFrom": "value_set",
-          "tableTo": "system",
-          "columnsFrom": ["system_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
-=======
->>>>>>> origin
     }
   },
   "enums": {
