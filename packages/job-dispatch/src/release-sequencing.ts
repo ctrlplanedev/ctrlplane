@@ -27,7 +27,6 @@ export const cancelOldJobConfigsOnJobDispatch = async (
   jobConfigs: ReleaseJobTrigger[],
 ) => {
   if (jobConfigs.length === 0) return;
-  const hasNoJobExecution = isNull(job.id);
   const environmentPolicyShouldCanncel = eq(
     environmentPolicy.releaseSequencing,
     "cancel",
@@ -58,7 +57,6 @@ export const cancelOldJobConfigsOnJobDispatch = async (
     )
     .where(
       and(
-        hasNoJobExecution,
         environmentPolicyShouldCanncel,
         isAffectedEnvironment,
         isNotDispatchedJobConfig,

@@ -94,13 +94,13 @@ export const releaseJobTrigger = pgTable(
     causedById: uuid("caused_by_id").references(() => user.id),
 
     releaseId: uuid("release_id")
-      .references(() => release.id)
+      .references(() => release.id, { onDelete: "cascade" })
       .notNull(),
     targetId: uuid("target_id")
-      .references(() => target.id)
+      .references(() => target.id, { onDelete: "cascade" })
       .notNull(),
     environmentId: uuid("environment_id")
-      .references(() => environment.id)
+      .references(() => environment.id, { onDelete: "cascade" })
       .notNull(),
 
     createdAt: timestamp("created_at").notNull().defaultNow(),

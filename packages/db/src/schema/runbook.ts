@@ -1,9 +1,10 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { jobAgent } from "./job-agent.js";
+import { job } from "./job.js";
 import { system } from "./system.js";
 
 export const runbook = pgTable("runbook", {
@@ -30,3 +31,17 @@ const runbookInsert = createInsertSchema(runbook, {
 export const createRunbook = runbookInsert;
 export const updateRunbook = runbookInsert.partial();
 export type Runbook = InferSelectModel<typeof runbook>;
+
+export const runbookJobTrigger = pgTable("runbook_job_trigger", {
+  id: uuid("id").primaryKey().defaultRandom(),
+
+  jobId: uuid("job_id")
+    .references(() => job.id, { onDelete: "cascade" })
+    .unique(),
+
+  runbookId: uuid("runbook_id")
+    .references(() => runbook.id, { onDelete: "cascade" })
+    .notNull(),
+
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
