@@ -17,16 +17,11 @@ import { CreateReleaseDialog } from "./_components/CreateRelease";
 import { CreateSystemDialog } from "./_components/CreateSystem";
 
 export const SidebarCreateMenu: React.FC<{
-  workspaceId: string;
-  workspaceSlug: string;
+  workspace: Workspace;
   deploymentId?: string;
   systemId?: string;
 }> = (props) => {
   const [open, setOpen] = useState(false);
-  const workspace = {
-    id: props.workspaceId,
-    slug: props.workspaceSlug,
-  } as Workspace;
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -45,7 +40,7 @@ export const SidebarCreateMenu: React.FC<{
       >
         <DropdownMenuGroup>
           <CreateSystemDialog
-            workspace={workspace}
+            workspace={props.workspace}
             onSuccess={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
