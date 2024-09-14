@@ -16,9 +16,9 @@ import {
   createDeployment,
   deployment,
   environment,
+  job,
   jobAgent,
   jobConfig,
-  jobExecution,
   release,
   system,
   target,
@@ -63,16 +63,16 @@ export const deploymentRouter = createTRPCRouter({
     .query(({ ctx, input }) => {
       const latestCompletedJobExecution = ctx.db
         .select({
-          id: jobExecution.id,
-          jobConfigId: jobExecution.jobConfigId,
-          status: jobExecution.status,
+          id: job.id,
+          jobConfigId: job.jobConfigId,
+          status: job.status,
           rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY job_config.target_id, job_config.environment_id ORDER BY job_config.created_at DESC)`.as(
             "rank",
           ),
         })
-        .from(jobExecution)
-        .innerJoin(jobConfig, eq(jobConfig.id, jobExecution.jobConfigId))
-        .where(eq(jobExecution.status, "completed"))
+        .from(job)
+        .innerJoin(jobConfig, eq(jobConfig.id, job.jobConfigId))
+        .where(eq(job.status, "completed"))
         .as("jobExecution");
 
       return ctx.db
@@ -134,15 +134,9 @@ export const deploymentRouter = createTRPCRouter({
                 .from(deployment)
                 .innerJoin(release, eq(release.deploymentId, deployment.id))
                 .innerJoin(jobConfig, eq(jobConfig.releaseId, release.id))
-                .leftJoin(
-                  jobExecution,
-                  eq(jobExecution.jobConfigId, jobConfig.id),
-                )
+                .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
                 .where(
-                  and(
-                    eq(deployment.id, input.id),
-                    isNull(jobExecution.jobConfigId),
-                  ),
+                  and(eq(deployment.id, input.id), isNull(job.jobConfigId)),
                 )
                 .then((jobConfigs) =>
                   dispatchJobConfigs(ctx.db)
@@ -273,19 +267,15 @@ export const deploymentRouter = createTRPCRouter({
           arrayContains(target.labels, environment.targetFilter),
         )
         .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
-        .leftJoin(jobExecution, eq(jobConfig.id, jobExecution.jobConfigId))
+        .leftJoin(job, eq(jobConfig.id, job.jobConfigId))
         .leftJoin(release, eq(release.id, jobConfig.releaseId))
         .where(
           and(
             eq(target.id, input),
             isNull(environment.deletedAt),
             or(
-              isNull(jobExecution.id),
-              inArray(jobExecution.status, [
-                "completed",
-                "pending",
-                "in_progress",
-              ]),
+              isNull(job.id),
+              inArray(job.status, ["completed", "pending", "in_progress"]),
             ),
           ),
         )

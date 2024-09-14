@@ -2,7 +2,7 @@ import { CronJob } from "cron";
 
 import { eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { jobConfig, jobExecution } from "@ctrlplane/db/schema";
+import { job, jobConfig } from "@ctrlplane/db/schema";
 import {
   cancelOldJobConfigsOnJobDispatch,
   dispatchJobConfigs,
@@ -15,8 +15,8 @@ const run = async () => {
   const jobConfigs = await db
     .select()
     .from(jobConfig)
-    .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
-    .where(isNull(jobExecution.jobConfigId));
+    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
+    .where(isNull(job.jobConfigId));
 
   if (jobConfigs.length === 0) return;
   console.log(`Found [${jobConfigs.length}] job configs to dispatch`);

@@ -6,8 +6,8 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   environment,
+  job,
   jobConfig,
-  jobExecution,
   release,
   target,
 } from "@ctrlplane/db/schema";
@@ -18,16 +18,16 @@ export const GET = async (
 ) => {
   const je = await db
     .select()
-    .from(jobExecution)
-    .innerJoin(jobConfig, eq(jobConfig.id, jobExecution.jobConfigId))
+    .from(job)
+    .innerJoin(jobConfig, eq(jobConfig.id, job.jobConfigId))
     .leftJoin(environment, eq(environment.id, jobConfig.environmentId))
     .leftJoin(target, eq(target.id, jobConfig.targetId))
     .leftJoin(release, eq(release.id, jobConfig.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
     .where(
       and(
-        eq(jobExecution.jobAgentId, params.agentId),
-        notInArray(jobExecution.status, [
+        eq(job.jobAgentId, params.agentId),
+        notInArray(job.status, [
           "failure",
           "cancelled",
           "skipped",

@@ -3,7 +3,7 @@ import { Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { jobAgent, jobExecution } from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
 import { JobAgentType, JobExecutionStatus } from "@ctrlplane/validators/jobs";
 
@@ -16,9 +16,12 @@ export const createDispatchExecutionJobWorker = () =>
     (job) =>
       db
         .select()
-        .from(jobExecution)
-        .innerJoin(jobAgent, eq(jobExecution.jobAgentId, jobAgent.id))
-        .where(eq(jobExecution.id, job.data.jobExecutionId))
+        .from(schema.job)
+        .innerJoin(
+          schema.jobAgent,
+          eq(schema.job.jobAgentId, schema.jobAgent.id),
+        )
+        .where(eq(schema.job.id, job.data.jobExecutionId))
         .then(takeFirstOrNull)
         .then((je) => {
           if (je == null) return;
@@ -27,12 +30,12 @@ export const createDispatchExecutionJobWorker = () =>
             if (je.job_agent.type === String(JobAgentType.GithubApp))
               dispatchGithubJobExecution(je.job_execution);
           } catch (error) {
-            db.update(jobExecution)
+            db.update(schema.job)
               .set({
                 status: JobExecutionStatus.Failure,
                 message: (error as Error).message,
               })
-              .where(eq(jobExecution.id, je.job_execution.id));
+              .where(eq(schema.job.id, je.job_execution.id));
           }
         }),
     {

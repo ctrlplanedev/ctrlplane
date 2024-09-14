@@ -10,9 +10,9 @@ import {
   environment,
   environmentPolicy,
   environmentPolicyReleaseWindow,
+  job,
   jobAgent,
   jobConfig,
-  jobExecution,
   release,
   runbook,
   system,
@@ -32,7 +32,7 @@ const jobConfigQuery = (tx: Tx) =>
   tx
     .select()
     .from(jobConfig)
-    .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
+    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
     .leftJoin(target, eq(jobConfig.targetId, target.id))
     .leftJoin(release, eq(jobConfig.releaseId, release.id))
     .leftJoin(deployment, eq(release.deploymentId, deployment.id))
@@ -264,10 +264,8 @@ const jobExecutionRouter = createTRPCRouter({
         ctx.db
           .select()
           .from(jobConfig)
-          .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
-          .where(
-            and(eq(jobConfig.environmentId, input), isNull(jobExecution.id)),
-          )
+          .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
+          .where(and(eq(jobConfig.environmentId, input), isNull(job.id)))
           .then((jcs) =>
             dispatchJobConfigs(ctx.db)
               .jobConfigs(jcs.map((jc) => jc.job_config))
@@ -292,7 +290,7 @@ export const jobRouter = createTRPCRouter({
       jobConfigQuery(ctx.db)
         .where(and(eq(target.id, input), isNull(environment.deletedAt)))
         .limit(1_000)
-        .orderBy(desc(jobExecution.createdAt), desc(jobConfig.createdAt))
+        .orderBy(desc(job.createdAt), desc(jobConfig.createdAt))
         .then((data) =>
           data.map((t) => ({
             ...t.job_config,

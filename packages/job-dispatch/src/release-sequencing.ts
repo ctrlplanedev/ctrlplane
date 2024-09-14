@@ -6,8 +6,8 @@ import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
 import {
   environment,
   environmentPolicy,
+  job,
   jobConfig,
-  jobExecution,
   release,
 } from "@ctrlplane/db/schema";
 
@@ -27,7 +27,7 @@ export const cancelOldJobConfigsOnJobDispatch = async (
   jobConfigs: JobConfig[],
 ) => {
   if (jobConfigs.length === 0) return;
-  const hasNoJobExecution = isNull(jobExecution.id);
+  const hasNoJobExecution = isNull(job.id);
   const environmentPolicyShouldCanncel = eq(
     environmentPolicy.releaseSequencing,
     "cancel",
@@ -49,7 +49,7 @@ export const cancelOldJobConfigsOnJobDispatch = async (
   const oldJobConfigsToCancel = await db
     .select()
     .from(jobConfig)
-    .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
+    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
     .innerJoin(environment, eq(environment.id, jobConfig.environmentId))
     .innerJoin(release, eq(release.id, jobConfig.releaseId))
     .innerJoin(

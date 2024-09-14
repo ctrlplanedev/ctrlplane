@@ -61,7 +61,7 @@ export const jobExecutionReason = pgEnum("job_execution_reason", [
   "config_policy_override",
 ]);
 
-export const jobExecution = pgTable("job_execution", {
+export const job = pgTable("job_execution", {
   id: uuid("id").primaryKey().defaultRandom(),
   jobConfigId: uuid("job_config_id")
     .notNull()
@@ -87,9 +87,9 @@ export const jobExecution = pgTable("job_execution", {
 
 export type JobExecutionStatus = JobExecution["status"];
 
-export type JobExecution = InferSelectModel<typeof jobExecution>;
+export type JobExecution = InferSelectModel<typeof job>;
 
-export const updateJobExecution = createInsertSchema(jobExecution)
+export const updateJobExecution = createInsertSchema(job)
   .omit({
     id: true,
     jobAgentConfig: true,

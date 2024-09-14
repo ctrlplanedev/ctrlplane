@@ -16,8 +16,8 @@ import {
   environmentPolicyApproval,
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
+  job,
   jobConfig,
-  jobExecution,
   release,
 } from "@ctrlplane/db/schema";
 
@@ -34,7 +34,7 @@ const isSuccessCriteriaPassing = async (
 
   const wf = await db
     .select({
-      status: jobExecution.status,
+      status: job.status,
       count: sql<number>`count(*)`,
     })
     .from(jobConfig)
@@ -42,8 +42,8 @@ const isSuccessCriteriaPassing = async (
       environmentPolicyDeployment,
       eq(environmentPolicyDeployment.environmentId, jobConfig.environmentId),
     )
-    .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
-    .groupBy(jobExecution.status)
+    .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
+    .groupBy(job.status)
     .where(
       and(
         eq(environmentPolicyDeployment.policyId, policy.id),
@@ -239,12 +239,12 @@ const isPassingReleaseSequencingWaitPolicy = async (
     jobConfig.id,
     jobConfigs.map((t) => t.id).filter(isPresent),
   );
-  const isActiveJobExecution = notInArray(jobExecution.status, exitStatus);
+  const isActiveJobExecution = notInArray(job.status, exitStatus);
 
   const activeJobExecutions = await db
     .select()
-    .from(jobExecution)
-    .innerJoin(jobConfig, eq(jobExecution.jobConfigId, jobConfig.id))
+    .from(job)
+    .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
     .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
@@ -287,12 +287,12 @@ export const isPassingReleaseSequencingCancelPolicy = async (
     environmentPolicy.releaseSequencing,
     "cancel",
   );
-  const isActiveJobExecution = notInArray(jobExecution.status, exitStatus);
+  const isActiveJobExecution = notInArray(job.status, exitStatus);
 
   const activeJobExecutions = await db
     .select()
-    .from(jobExecution)
-    .innerJoin(jobConfig, eq(jobExecution.jobConfigId, jobConfig.id))
+    .from(job)
+    .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
     .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
@@ -415,9 +415,9 @@ const isPassingConcurrencyPolicy = async (
       releaseId: jobConfig.releaseId,
       environmentId: jobConfig.environmentId,
     })
-    .from(jobExecution)
-    .innerJoin(jobConfig, eq(jobExecution.jobConfigId, jobConfig.id))
-    .where(notInArray(jobExecution.status, exitStatus))
+    .from(job)
+    .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
+    .where(notInArray(job.status, exitStatus))
     .groupBy(jobConfig.releaseId, jobConfig.environmentId)
     .as("active_job_execution_subquery");
 

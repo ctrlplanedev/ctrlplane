@@ -6,8 +6,8 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   environment,
+  job,
   jobConfig,
-  jobExecution,
   release,
   target,
   updateJobExecution,
@@ -20,18 +20,13 @@ export const GET = async (
 ) => {
   const je = await db
     .select()
-    .from(jobExecution)
-    .innerJoin(jobConfig, eq(jobConfig.id, jobExecution.jobConfigId))
+    .from(job)
+    .innerJoin(jobConfig, eq(jobConfig.id, job.jobConfigId))
     .leftJoin(environment, eq(environment.id, jobConfig.environmentId))
     .leftJoin(target, eq(target.id, jobConfig.targetId))
     .leftJoin(release, eq(release.id, jobConfig.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .where(
-      and(
-        eq(jobExecution.id, params.executionId),
-        isNull(environment.deletedAt),
-      ),
-    )
+    .where(and(eq(job.id, params.executionId), isNull(environment.deletedAt)))
     .then(takeFirst)
     .then((row) => ({
       ...row.job_execution,
@@ -55,9 +50,9 @@ export const PATCH = async (
   const body = bodySchema.parse(response);
 
   const je = await db
-    .update(jobExecution)
+    .update(job)
     .set(body)
-    .where(and(eq(jobExecution.id, params.executionId)))
+    .where(and(eq(job.id, params.executionId)))
     .returning()
     .then(takeFirstOrNull);
 

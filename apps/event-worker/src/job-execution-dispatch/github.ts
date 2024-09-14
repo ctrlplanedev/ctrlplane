@@ -5,7 +5,7 @@ import pRetry from "p-retry";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { githubOrganization, jobExecution } from "@ctrlplane/db/schema";
+import { githubOrganization, job } from "@ctrlplane/db/schema";
 import { Channel } from "@ctrlplane/validators/events";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobExecutionStatus } from "@ctrlplane/validators/jobs";
@@ -23,7 +23,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
   const config = je.jobAgentConfig;
   const parsed = configSchema.safeParse(config);
   if (!parsed.success) {
-    await db.update(jobExecution).set({
+    await db.update(job).set({
       status: JobExecutionStatus.InvalidJobAgent,
       message: `Invalid job agent config for job execution ${je.id}: ${parsed.error.message}`,
     });
@@ -42,7 +42,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     .then(takeFirstOrNull);
 
   if (ghOrg == null) {
-    await db.update(jobExecution).set({
+    await db.update(job).set({
       status: JobExecutionStatus.InvalidIntegration,
       message: `GitHub organization not found for job execution ${je.id}`,
     });
@@ -51,7 +51,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
 
   const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {
-    await db.update(jobExecution).set({
+    await db.update(job).set({
       status: JobExecutionStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
     });
@@ -104,7 +104,7 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
     runId = runId_;
     status = status_;
   } catch (e) {
-    await db.update(jobExecution).set({
+    await db.update(job).set({
       status: JobExecutionStatus.ExternalRunNotFound,
       message: `Run ID not found for job execution ${je.id}`,
     });
@@ -112,12 +112,12 @@ export const dispatchGithubJobExecution = async (je: JobExecution) => {
   }
 
   await db
-    .update(jobExecution)
+    .update(job)
     .set({
       externalRunId: runId.toString(),
       status: convertStatus(status ?? JobExecutionStatus.Pending),
     })
-    .where(eq(jobExecution.id, je.id));
+    .where(eq(job.id, je.id));
 
   await jobExecutionSyncQueue.add(
     je.id,

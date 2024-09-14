@@ -9,8 +9,8 @@ import {
   deployment,
   environment,
   environmentPolicy,
+  job,
   jobConfig,
-  jobExecution,
   release,
   releaseDependency,
   target,
@@ -117,14 +117,14 @@ export const isPassingReleaseDependencyPolicy = async (
 
           const dependentJobExecutions = await db
             .select()
-            .from(jobExecution)
-            .innerJoin(jobConfig, eq(jobExecution.jobConfigId, jobConfig.id))
+            .from(job)
+            .innerJoin(jobConfig, eq(job.jobConfigId, jobConfig.id))
             .innerJoin(target, eq(jobConfig.targetId, target.id))
             .innerJoin(release, eq(jobConfig.releaseId, release.id))
             .innerJoin(deployment, eq(release.deploymentId, deployment.id))
             .where(
               and(
-                eq(jobExecution.status, "completed"),
+                eq(job.status, "completed"),
                 eq(deployment.id, releaseDep.deploymentId),
                 sql.raw(
                   `

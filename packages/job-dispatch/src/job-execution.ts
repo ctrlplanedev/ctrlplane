@@ -9,9 +9,9 @@ import {
   environment,
   environmentPolicy,
   environmentPolicyDeployment,
+  job,
   jobAgent,
   jobConfig,
-  jobExecution,
   release,
   runbook,
 } from "@ctrlplane/db/schema";
@@ -79,7 +79,7 @@ export const createJobExecutions = async (
 
   if (insertJobExecutions.length === 0) return [];
 
-  return db.insert(jobExecution).values(insertJobExecutions).returning();
+  return db.insert(job).values(insertJobExecutions).returning();
 };
 
 export const onJobExecutionStatusChange = async (je: JobExecution) => {
@@ -95,7 +95,7 @@ export const onJobExecutionStatusChange = async (je: JobExecution) => {
     const affectedJobConfigs = await db
       .select()
       .from(jobConfig)
-      .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
+      .leftJoin(job, eq(job.jobConfigId, jobConfig.id))
       .innerJoin(release, eq(jobConfig.releaseId, release.id))
       .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
       .innerJoin(
@@ -108,7 +108,7 @@ export const onJobExecutionStatusChange = async (je: JobExecution) => {
       )
       .where(
         and(
-          isNull(jobExecution.jobConfigId),
+          isNull(job.jobConfigId),
           isNull(environment.deletedAt),
           or(
             and(
