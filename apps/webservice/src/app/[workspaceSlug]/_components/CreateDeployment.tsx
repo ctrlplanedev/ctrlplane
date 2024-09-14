@@ -39,7 +39,7 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const deploymentForm = z.object(deploymentSchema.shape);
+const deploymentForm = z.object(deploymentSchema.omit({ id: true }).shape);
 
 export const CreateDeploymentDialog: React.FC<{
   children?: React.ReactNode;
@@ -78,10 +78,17 @@ export const CreateDeploymentDialog: React.FC<{
 
   const onSubmit = handleSubmit(async (deployment) => {
     const systemSlug = systems.data?.items.find(
-      (system) => system.id === deployment.systemId,
+      (system) => system.id === form.getValues("systemId"),
     )?.slug;
     await createDeployment
-      .mutateAsync({ ...deployment })
+      .mutateAsync(
+        deployment as {
+          systemId: string;
+          name: string;
+          slug: string;
+          description: string;
+        },
+      )
       .then(() => {
         router.push(
           `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
