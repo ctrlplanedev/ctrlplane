@@ -24,7 +24,7 @@ export const SystemGettingStarted: React.FC<{
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CreateSystemDialog workspace={props.workspace}>
+          <CreateSystemDialog {...props}>
             <Button size="sm">Create System</Button>
           </CreateSystemDialog>
           <Button size="sm" variant="secondary">
