@@ -11,20 +11,21 @@ export const variableSet = pgTable("variable_set", {
   description: text("description"),
   systemId: uuid("system_id")
     .notNull()
-    .references(() => system.id),
+    .references(() => system.id, { onDelete: "cascade" }),
 });
 
 export const variableSetValue = pgTable(
   "variable_set_value",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
-    key: text("key"),
     variableSetId: uuid("variable_set_id")
       .notNull()
-      .references(() => variableSet.id),
+      .references(() => variableSet.id, { onDelete: "cascade" }),
+
+    key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.variableSetId, t.key, t.value) }),
+  (t) => ({ uniq: uniqueIndex().on(t.variableSetId, t.key) }),
 );
 
 export type VariableSet = InferInsertModel<typeof variableSet>;

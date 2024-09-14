@@ -47,9 +47,7 @@ export const createTriggeredReleaseJobs = async (
       ),
     );
 
-  logger.debug(`Found jobs to insert`, {
-    count: insertJobs.length,
-  });
+  logger.debug(`Found jobs to insert`, { count: insertJobs.length });
 
   if (insertJobs.length === 0) {
     logger.info(`No jobs to insert, returning empty array`);

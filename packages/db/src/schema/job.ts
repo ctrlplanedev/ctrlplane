@@ -1,10 +1,11 @@
-import type { InferSelectModel } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   json,
   pgEnum,
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -67,3 +68,22 @@ export const updateJob = createInsertSchema(job)
     updatedAt: true,
   })
   .partial();
+
+export const jobVariable = pgTable(
+  "job_variable",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => job.id),
+    key: text("key").notNull(),
+    value: json("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.jobId, t.key) }),
+);
+
+export type JobVariable = InferInsertModel<typeof jobVariable>;
+export const createJobVariable = createInsertSchema(jobVariable).omit({
+  id: true,
+});
+export const updateJobVariable = createJobVariable.partial();
