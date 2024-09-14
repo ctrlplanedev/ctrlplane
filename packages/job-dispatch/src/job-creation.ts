@@ -15,20 +15,26 @@ import {
   releaseJobTrigger,
   runbook,
 } from "@ctrlplane/db/schema";
+/**
+ * Converts a job config into a job execution which means they can now be
+ * picked up by job agents
+ */
+import { logger } from "@ctrlplane/logger";
 
 import { dispatchJobConfigs } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { cancelOldJobConfigsOnJobDispatch } from "./release-sequencing.js";
 
-/**
- * Converts a job config into a job execution which means they can now be
- * picked up by job agents
- */
 export const createTriggeredReleaseJobs = async (
   db: Tx,
   jobConfigs: ReleaseJobTrigger[],
   status: JobStatus = "pending",
 ): Promise<Job[]> => {
+  logger.info(`Creating triggered release jobs`, {
+    jobConfigsCount: jobConfigs.length,
+    status,
+  });
+
   const insertJobExecutions = await db
     .select()
     .from(releaseJobTrigger)
@@ -48,7 +54,14 @@ export const createTriggeredReleaseJobs = async (
       ),
     );
 
-  if (insertJobExecutions.length === 0) return [];
+  logger.debug(`Found job executions to insert`, {
+    count: insertJobExecutions.length,
+  });
+
+  if (insertJobExecutions.length === 0) {
+    logger.info(`No job executions to insert, returning empty array`);
+    return [];
+  }
 
   const jobs = await db
     .insert(job)
@@ -65,6 +78,8 @@ export const createTriggeredReleaseJobs = async (
     )
     .returning();
 
+  logger.info(`Inserted jobs`, { count: jobs.length });
+
   // Update releaseJobTrigger with the new job ids
   await Promise.all(
     jobs.map((job, index) =>
@@ -80,12 +95,14 @@ export const createTriggeredReleaseJobs = async (
     ),
   );
 
+  logger.info(`Updated releaseJobTrigger with new job ids`);
+
   return jobs;
 };
 
 export const onJobExecutionStatusChange = async (je: Job) => {
   if (je.status === "completed") {
-    const config = await db
+    const triggers = await db
       .select()
       .from(releaseJobTrigger)
       .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
@@ -119,15 +136,15 @@ export const onJobExecutionStatusChange = async (je: Job) => {
           isNull(environment.deletedAt),
           or(
             and(
-              eq(releaseJobTrigger.releaseId, config.release.id),
+              eq(releaseJobTrigger.releaseId, triggers.release.id),
               eq(
                 environmentPolicyDeployment.environmentId,
-                config.environment.id,
+                triggers.environment.id,
               ),
             ),
             and(
               eq(environmentPolicy.releaseSequencing, "wait"),
-              eq(environment.id, config.environment.id),
+              eq(environment.id, triggers.environment.id),
             ),
           ),
         ),

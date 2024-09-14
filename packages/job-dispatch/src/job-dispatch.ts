@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { createTriggeredReleaseJobs } from "./job-execution.js";
+import { createTriggeredReleaseJobs } from "./job-creation.js";
 import { dispatchJobExecutionsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
