@@ -2,6 +2,7 @@ import type { JobStatus } from "@ctrlplane/db/schema";
 import colors from "tailwindcss/colors";
 
 export const statusColor: Record<JobStatus | "configured", string> = {
+  triggered: colors.neutral[400],
   completed: colors.green[400],
   cancelled: colors.neutral[400],
   skipped: colors.gray[400],
