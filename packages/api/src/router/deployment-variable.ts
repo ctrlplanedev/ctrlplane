@@ -15,12 +15,12 @@ import {
   deployment,
   deploymentVariable,
   deploymentVariableValue,
+  deploymentVariableValueTarget,
+  deploymentVariableValueTargetFilter,
   environment,
   system,
   target,
   updateDeploymentVariable,
-  variableDeploymentValueTarget,
-  variableDeploymentValueTargetFilter,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -65,16 +65,16 @@ const valueRouter = createTRPCRouter({
           .select()
           .from(deploymentVariableValue)
           .innerJoin(
-            variableDeploymentValueTarget,
+            deploymentVariableValueTarget,
             eq(
               deploymentVariableValue.id,
-              variableDeploymentValueTarget.variableValueId,
+              deploymentVariableValueTarget.variableValueId,
             ),
           )
           .where(
             and(
               eq(deploymentVariableValue.variableId, input.variableId),
-              eq(variableDeploymentValueTarget.targetId, input.targetId),
+              eq(deploymentVariableValueTarget.targetId, input.targetId),
             ),
           )
           .then(takeFirstOrNull);
@@ -84,14 +84,14 @@ const valueRouter = createTRPCRouter({
           return;
 
         return ctx.db
-          .delete(variableDeploymentValueTarget)
+          .delete(deploymentVariableValueTarget)
           .where(
             and(
               eq(
-                variableDeploymentValueTarget.variableValueId,
+                deploymentVariableValueTarget.variableValueId,
                 vv.deployment_variable_value.id,
               ),
-              eq(variableDeploymentValueTarget.targetId, input.targetId),
+              eq(deploymentVariableValueTarget.targetId, input.targetId),
             ),
           )
           .returning();
@@ -111,7 +111,7 @@ const valueRouter = createTRPCRouter({
         .then(takeFirst);
 
       return ctx.db
-        .insert(variableDeploymentValueTarget)
+        .insert(deploymentVariableValueTarget)
         .values({
           variableValueId: value.id,
           targetId: input.targetId,
@@ -137,16 +137,16 @@ const valueRouter = createTRPCRouter({
           eq(deploymentVariable.id, deploymentVariableValue.variableId),
         )
         .leftJoin(
-          variableDeploymentValueTarget,
+          deploymentVariableValueTarget,
           eq(
             deploymentVariableValue.id,
-            variableDeploymentValueTarget.variableValueId,
+            deploymentVariableValueTarget.variableValueId,
           ),
         )
         .leftJoin(
-          variableDeploymentValueTargetFilter,
+          deploymentVariableValueTargetFilter,
           eq(
-            variableDeploymentValueTargetFilter.variableValueId,
+            deploymentVariableValueTargetFilter.variableValueId,
             deploymentVariableValue.id,
           ),
         )
@@ -245,9 +245,9 @@ export const deploymentVariableRouter = createTRPCRouter({
           eq(deploymentVariable.id, deploymentVariableValue.variableId),
         )
         .leftJoin(
-          variableDeploymentValueTarget,
+          deploymentVariableValueTarget,
           eq(
-            variableDeploymentValueTarget.variableValueId,
+            deploymentVariableValueTarget.variableValueId,
             deploymentVariableValue.id,
           ),
         )

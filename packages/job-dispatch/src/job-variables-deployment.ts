@@ -72,16 +72,16 @@ const determineReleaseVariableValue = async (
     .select()
     .from(SCHEMA.deploymentVariableValue)
     .innerJoin(
-      SCHEMA.variableDeploymentValueTarget,
+      SCHEMA.deploymentVariableValueTarget,
       eq(
-        SCHEMA.variableDeploymentValueTarget.variableValueId,
+        SCHEMA.deploymentVariableValueTarget.variableValueId,
         SCHEMA.deploymentVariableValue.id,
       ),
     )
     .where(
       and(
         eq(SCHEMA.deploymentVariableValue.variableId, variableId),
-        eq(SCHEMA.variableDeploymentValueTarget.targetId, jobTarget.id),
+        eq(SCHEMA.deploymentVariableValueTarget.targetId, jobTarget.id),
       ),
     )
     .then(takeFirstOrNull);
@@ -93,9 +93,9 @@ const determineReleaseVariableValue = async (
     .select()
     .from(SCHEMA.deploymentVariableValue)
     .innerJoin(
-      SCHEMA.variableDeploymentValueTargetFilter,
+      SCHEMA.deploymentVariableValueTargetFilter,
       eq(
-        SCHEMA.variableDeploymentValueTargetFilter.variableValueId,
+        SCHEMA.deploymentVariableValueTargetFilter.variableValueId,
         SCHEMA.deploymentVariableValue.id,
       ),
     )
@@ -103,7 +103,7 @@ const determineReleaseVariableValue = async (
       SCHEMA.target,
       arrayContains(
         SCHEMA.target.labels,
-        SCHEMA.variableDeploymentValueTargetFilter.labels,
+        SCHEMA.deploymentVariableValueTargetFilter.labels,
       ),
     )
     .where(
