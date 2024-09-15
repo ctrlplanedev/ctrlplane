@@ -9,7 +9,7 @@ import { addMonths, addWeeks, isBefore, isWithinInterval } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, notInArray, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, ne, notInArray, sql } from "@ctrlplane/db";
 import {
   environment,
   environmentPolicy,
@@ -45,7 +45,7 @@ const isSuccessCriteriaPassing = async (
         releaseJobTrigger.environmentId,
       ),
     )
-    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
+    .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
     .groupBy(job.status)
     .where(
       and(
@@ -250,7 +250,10 @@ const isPassingReleaseSequencingWaitPolicy = async (
     releaseJobTrigger.id,
     releaseJobTriggers.map((t) => t.id).filter(isPresent),
   );
-  const isActiveJob = notInArray(job.status, exitStatus);
+  const isActiveJob = and(
+    notInArray(job.status, exitStatus),
+    ne(job.status, "triggered"),
+  );
 
   const activeJobs = await db
     .select()
@@ -298,7 +301,10 @@ export const isPassingReleaseSequencingCancelPolicy = async (
     environmentPolicy.releaseSequencing,
     "cancel",
   );
-  const isActiveJob = notInArray(job.status, exitStatus);
+  const isActiveJob = and(
+    notInArray(job.status, exitStatus),
+    ne(job.status, "triggered"),
+  );
 
   const activeJobs = await db
     .select()
@@ -423,6 +429,11 @@ const isPassingConcurrencyPolicy = async (
 ): Promise<ReleaseJobTrigger[]> => {
   if (releaseJobTriggers.length === 0) return [];
 
+  const isActiveJob = and(
+    notInArray(job.status, exitStatus),
+    ne(job.status, "triggered"),
+  );
+
   const activeJobSubquery = db
     .selectDistinct({
       count: sql<number>`count(*)`.as("count"),
@@ -431,7 +442,7 @@ const isPassingConcurrencyPolicy = async (
     })
     .from(job)
     .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
-    .where(notInArray(job.status, exitStatus))
+    .where(isActiveJob)
     .groupBy(releaseJobTrigger.releaseId, releaseJobTrigger.environmentId)
     .as("active_job_subquery");
 

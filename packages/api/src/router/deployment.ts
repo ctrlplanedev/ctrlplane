@@ -7,7 +7,6 @@ import {
   eq,
   inArray,
   isNull,
-  or,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -132,12 +131,9 @@ export const deploymentRouter = createTRPCRouter({
                   releaseJobTrigger,
                   eq(releaseJobTrigger.releaseId, release.id),
                 )
-                .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
+                .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
                 .where(
-                  and(
-                    eq(deployment.id, input.id),
-                    isNull(releaseJobTrigger.jobId),
-                  ),
+                  and(eq(deployment.id, input.id), eq(job.status, "triggered")),
                 )
                 .then((releaseJobTriggers) =>
                   dispatchReleaseJobTriggers(ctx.db)
@@ -276,10 +272,12 @@ export const deploymentRouter = createTRPCRouter({
           and(
             eq(target.id, input),
             isNull(environment.deletedAt),
-            or(
-              isNull(job.id),
-              inArray(job.status, ["completed", "pending", "in_progress"]),
-            ),
+            inArray(job.status, [
+              "completed",
+              "pending",
+              "in_progress",
+              "triggered",
+            ]),
           ),
         )
         .orderBy(deployment.id, releaseJobTrigger.createdAt)

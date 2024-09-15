@@ -23,7 +23,7 @@ export const createVariables = async (tx: Tx, jobId: string): Promise<void> => {
   const job = await tx
     .select()
     .from(SCHEMA.job)
-    .leftJoin(
+    .innerJoin(
       SCHEMA.releaseJobTrigger,
       eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
     )
@@ -45,22 +45,11 @@ export const createVariables = async (tx: Tx, jobId: string): Promise<void> => {
   if (job == null) throw new Error(`Job with id ${jobId} not found`);
 
   const jobVariables: SCHEMA.JobVariable[] =
-    job.release_job_trigger != null
-      ? await determineVariablesForReleaseJob(tx, {
-          ...job.job,
-          releaseJobTrigger: job.release_job_trigger,
-        })
-      : job.runbook_job_trigger != null
-        ? await determineVariablesForRunbookJob(tx)
-        : [];
+    await determineVariablesForReleaseJob(tx, {
+      ...job.job,
+      releaseJobTrigger: job.release_job_trigger,
+    });
 
   if (jobVariables.length > 0)
     await tx.insert(SCHEMA.jobVariable).values(jobVariables);
-};
-
-const determineVariablesForRunbookJob = async (
-  _: Tx,
-  // eslint-disable-next-line @typescript-eslint/require-await
-): Promise<SCHEMA.JobVariable[]> => {
-  throw new Error("not implemented");
 };

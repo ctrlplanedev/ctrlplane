@@ -1,8 +1,8 @@
 import { CronJob } from "cron";
 
-import { isNull } from "@ctrlplane/db";
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { releaseJobTrigger } from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   dispatchReleaseJobTriggers,
@@ -14,8 +14,10 @@ import { env } from "./config.js";
 const run = async () => {
   const releaseJobTriggers = await db
     .select()
-    .from(releaseJobTrigger)
-    .where(isNull(releaseJobTrigger.jobId));
+    .from(schema.releaseJobTrigger)
+    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
+    .where(eq(schema.job.status, "triggered"))
+    .then((rows) => rows.map((row) => row.release_job_trigger));
 
   if (releaseJobTriggers.length === 0) return;
   console.log(

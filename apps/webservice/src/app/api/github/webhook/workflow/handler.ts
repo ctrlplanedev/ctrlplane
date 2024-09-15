@@ -1,8 +1,9 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { onJobCompletion } from "@ctrlplane/job-dispatch";
 
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
 const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
@@ -30,8 +31,12 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
       ? convertConclusion(conclusion)
       : convertStatus(externalStatus);
 
-  return db
+  const job = await db
     .update(schema.job)
     .set({ status })
-    .where(eq(schema.job.externalRunId, id.toString()));
+    .where(eq(schema.job.externalRunId, id.toString()))
+    .returning()
+    .then(takeFirst);
+
+  if (job.status === "completed") await onJobCompletion(job);
 };

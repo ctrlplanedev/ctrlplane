@@ -101,6 +101,14 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
+  const isTriggered = statues.some((s) => s === "triggered");
+  if (isTriggered)
+    return (
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+        <TbClock strokeWidth={2} />
+      </div>
+    );
+
   return (
     <div className="rounded-full bg-green-400 p-1 dark:text-black">
       <TbCircleCheck strokeWidth={2} />

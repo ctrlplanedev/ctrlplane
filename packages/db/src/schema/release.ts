@@ -87,6 +87,7 @@ export const releaseJobTrigger = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
 
     jobId: uuid("job_id")
+      .notNull()
       .references(() => job.id)
       .unique(),
 

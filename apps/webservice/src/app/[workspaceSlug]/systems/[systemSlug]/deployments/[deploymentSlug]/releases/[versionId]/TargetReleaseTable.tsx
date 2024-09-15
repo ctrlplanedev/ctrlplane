@@ -243,8 +243,8 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   <TableCell>{job.target?.name}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <JobTableStatusIcon status={job.job?.status} />
-                      {capitalCase(job.job?.status ?? "scheduled")}
+                      <JobTableStatusIcon status={job.job.status} />
+                      {capitalCase(job.job.status)}
                     </div>
                   </TableCell>
                   <TableCell>{job.type}</TableCell>
@@ -254,7 +254,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                       deploymentName={deploymentName}
                       target={job.target}
                       environmentId={job.environmentId}
-                      jobStatus={job.job?.status ?? "scheduled"}
+                      jobStatus={job.job.status}
                     />
                   </TableCell>
                 </TableRow>

@@ -6,6 +6,7 @@ import { Queue, Worker } from "bullmq";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { onJobCompletion } from "@ctrlplane/job-dispatch";
 import { Channel } from "@ctrlplane/validators/events";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -47,9 +48,11 @@ export const createjobSyncWorker = () =>
           if (syncFunction == null) return;
 
           try {
-            syncFunction(je.job).then(
-              (isCompleted) => isCompleted && removeJobSyncJob(job),
-            );
+            syncFunction(je.job).then(async (isCompleted) => {
+              if (!isCompleted) return;
+              removeJobSyncJob(job);
+              await onJobCompletion(je.job);
+            });
           } catch (error) {
             db.update(schema.job).set({
               status: JobStatus.Failure,

@@ -11,8 +11,6 @@ import {
   releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
-import { createTriggeredReleaseJobs } from "./job-creation.js";
-
 /**
  *
  * @param db
@@ -48,7 +46,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   const oldReleaseJobTriggersToCancel = await db
     .select()
     .from(releaseJobTrigger)
-    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
+    .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
     .innerJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
     .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .innerJoin(
@@ -63,13 +61,12 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
         isNotDeleted,
         isNotSameRelease,
       ),
-    );
-
+    )
+    .then((r) => r.map((t) => t.job.id));
   if (oldReleaseJobTriggersToCancel.length === 0) return;
 
-  await createTriggeredReleaseJobs(
-    db,
-    oldReleaseJobTriggersToCancel.map((t) => t.release_job_trigger),
-    "cancelled",
-  );
+  await db
+    .update(job)
+    .set({ status: "cancelled" })
+    .where(inArray(job.id, oldReleaseJobTriggersToCancel));
 };

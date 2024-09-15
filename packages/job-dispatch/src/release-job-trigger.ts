@@ -4,12 +4,15 @@ import type {
   ReleaseJobTriggerInsert,
   ReleaseJobTriggerType,
 } from "@ctrlplane/db/schema";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, arrayContains, eq, inArray, isNull, sql } from "@ctrlplane/db";
 import {
   deployment,
   environment,
+  job,
+  jobAgent,
   release,
   releaseJobTrigger,
   target,
@@ -135,15 +138,48 @@ class ReleaseJobTriggerBuilder {
       targetId: v.target.id,
       environmentId: v.environment.id,
       releaseId: v.release.id,
+      jobId: "",
     }));
 
     for (const func of this._filters) wt = await func(this.tx, wt);
 
     if (wt.length === 0) return [];
 
+    const releases = await this.tx
+      .select()
+      .from(release)
+      .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+      .innerJoin(jobAgent, eq(deployment.jobAgentId, jobAgent.id))
+      .where(
+        inArray(
+          release.id,
+          wt.map((t) => t.releaseId),
+        ),
+      );
+
+    const jobInserts = wt
+      .map((t) => {
+        const release = releases.find((r) => r.release.id === t.releaseId);
+        if (!release) return null;
+        return {
+          jobAgentId: release.job_agent.id,
+          jobAgentConfig: _.merge(
+            release.job_agent.config,
+            release.deployment.jobAgentConfig,
+          ),
+        };
+      })
+      .filter(isPresent);
+
+    const jobs = await this.tx.insert(job).values(jobInserts).returning();
+    const wtWithJobId = wt.map((t, index) => ({
+      ...t,
+      jobId: jobs[index]!.id,
+    }));
+
     const releaseJobTriggers = await this.tx
       .insert(releaseJobTrigger)
-      .values(wt)
+      .values(wtWithJobId)
       .returning();
 
     for (const func of this._then) await func(this.tx, releaseJobTriggers);

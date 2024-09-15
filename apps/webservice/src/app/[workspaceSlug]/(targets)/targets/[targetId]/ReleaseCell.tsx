@@ -9,11 +9,18 @@ import type {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
-import { TbCircleCheck, TbLoader2 } from "react-icons/tb";
+import { TbCircleCheck, TbClock, TbLoader2 } from "react-icons/tb";
 
 const ReleaseIcon: React.FC<{
   job?: Job;
 }> = ({ job }) => {
+  if (job?.status === "triggered")
+    return (
+      <div className="rounded-full bg-blue-400 p-1 dark:text-black">
+        <TbClock strokeWidth={2} />
+      </div>
+    );
+
   if (job?.status === "pending" || job?.status === "in_progress")
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
