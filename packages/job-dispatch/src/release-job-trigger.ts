@@ -171,6 +171,7 @@ class ReleaseJobTriggerBuilder {
       })
       .filter(isPresent);
 
+    if (jobInserts.length === 0) return [];
     const jobs = await this.tx.insert(job).values(jobInserts).returning();
     const wtWithJobId = wt.map((t, index) => ({
       ...t,
