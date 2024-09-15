@@ -135,7 +135,7 @@ export const releaseRouter = createTRPCRouter({
         const cancelPreviousJobs = async (
           tx: Tx,
           releaseJobTriggers: ReleaseJobTrigger[],
-        ): Promise<void> =>
+        ) =>
           tx
             .select()
             .from(releaseJobTrigger)
@@ -158,9 +158,9 @@ export const releaseRouter = createTRPCRouter({
                     job.id,
                     existingReleaseJobTriggers.map((t) => t.jobId),
                   ),
-                ),
-            )
-            .then(() => {});
+                )
+                .then(() => {}),
+            );
 
         const releaseJobTriggers = await createReleaseJobTriggers(
           ctx.db,

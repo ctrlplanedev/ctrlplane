@@ -32,10 +32,8 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
       <TableBody>
         {deployments.data?.map((deployment, idx) => {
           const releaseJobTrigger = jobs.data
-            ?.filter((j) => j.job != null)
-            .filter(
-              (j) =>
-                j.job?.status === "completed" || j.job?.status === "pending",
+            ?.filter(
+              (j) => j.job.status === "completed" || j.job.status === "pending",
             )
             .find((j) => j.deployment?.id === deployment.id);
 
@@ -63,7 +61,7 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
                     releaseJobTrigger={{
                       ...releaseJobTrigger,
                       release: releaseJobTrigger.release,
-                      job: releaseJobTrigger.job!,
+                      job: releaseJobTrigger.job,
                     }}
                   />
                 )}

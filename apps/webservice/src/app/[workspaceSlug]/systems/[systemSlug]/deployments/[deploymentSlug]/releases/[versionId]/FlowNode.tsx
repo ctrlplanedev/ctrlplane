@@ -25,7 +25,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
     (job) => job.environmentId === data.id,
   );
   const completed = environmentJobs?.filter(
-    (job) => job.job?.status === "completed",
+    (job) => job.job.status === "completed",
   );
   return (
     <>

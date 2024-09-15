@@ -1,15 +1,15 @@
 import type { Tx } from "@ctrlplane/db";
-import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
-import {
-  environment,
-  environmentPolicy,
-  job,
-  release,
-  releaseJobTrigger,
-} from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
+
+const exitStatus: schema.JobStatus[] = [
+  "completed",
+  "failure",
+  "cancelled",
+  "skipped",
+];
 
 /**
  *
@@ -22,36 +22,43 @@ import {
  */
 export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return;
   const environmentPolicyShouldCanncel = eq(
-    environmentPolicy.releaseSequencing,
+    schema.environmentPolicy.releaseSequencing,
     "cancel",
   );
   const isAffectedEnvironment = inArray(
-    environment.id,
+    schema.environment.id,
     releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
   const isNotDispatchedReleaseJobTrigger = notInArray(
-    releaseJobTrigger.id,
+    schema.releaseJobTrigger.id,
     releaseJobTriggers.map((t) => t.id),
   );
-  const isNotDeleted = isNull(environment.deletedAt);
+  const isNotDeleted = isNull(schema.environment.deletedAt);
   const isNotSameRelease = notInArray(
-    release.id,
+    schema.release.id,
     releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
   );
+  const isNotAlreadyCompleted = notInArray(schema.job.status, exitStatus);
 
   const oldReleaseJobTriggersToCancel = await db
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
-    .innerJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
-    .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
+    .from(schema.releaseJobTrigger)
+    .innerJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
     .innerJoin(
-      environmentPolicy,
-      eq(environment.policyId, environmentPolicy.id),
+      schema.environment,
+      eq(schema.environment.id, schema.releaseJobTrigger.environmentId),
+    )
+    .innerJoin(
+      schema.release,
+      eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+    )
+    .innerJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .where(
       and(
@@ -60,13 +67,14 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
         isNotDispatchedReleaseJobTrigger,
         isNotDeleted,
         isNotSameRelease,
+        isNotAlreadyCompleted,
       ),
     )
     .then((r) => r.map((t) => t.job.id));
   if (oldReleaseJobTriggersToCancel.length === 0) return;
 
   await db
-    .update(job)
+    .update(schema.job)
     .set({ status: "cancelled" })
-    .where(inArray(job.id, oldReleaseJobTriggersToCancel));
+    .where(inArray(schema.job.id, oldReleaseJobTriggersToCancel));
 };

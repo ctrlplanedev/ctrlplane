@@ -38,5 +38,5 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     .returning()
     .then(takeFirst);
 
-  if (job.status === "completed") await onJobCompletion(job);
+  if (job.status === "completed") return onJobCompletion(job);
 };

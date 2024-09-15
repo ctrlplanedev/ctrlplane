@@ -152,7 +152,7 @@ const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
 
   if (successType === "some") {
     const passing =
-      jobs?.filter((job) => job.job?.status === "completed").length ?? 0;
+      jobs?.filter((job) => job.job.status === "completed").length ?? 0;
 
     const isMinSatified = passing >= successMinimum;
     return (
@@ -164,7 +164,7 @@ const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
   }
 
   const areAllCompleted =
-    jobs?.every((job) => job.job?.status === "completed") ?? true;
+    jobs?.every((job) => job.job.status === "completed") ?? true;
 
   return (
     <div className="flex items-center gap-2">
