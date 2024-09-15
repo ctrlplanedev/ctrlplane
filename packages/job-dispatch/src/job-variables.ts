@@ -5,6 +5,19 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { determineVariablesForReleaseJob } from "./job-variables-deployment.js";
 
+/**
+ * Creates variables for a given job.
+ *
+ * This function fetches the job and its associated deployment, then determines
+ * the appropriate variables based on whether it's a release job or a runbook
+ * job. If variables are found, they are inserted into the database.
+ *
+ * @param {Tx} tx - The database transaction object.
+ * @param {string} jobId - The ID of the job for which to create variables.
+ * @returns {Promise<void>} A promise that resolves when the operation is
+ * complete.
+ * @throws {Error} If the job with the given ID is not found.
+ */
 export const createVariables = async (tx: Tx, jobId: string): Promise<void> => {
   // Fetch the job and its associated deployment
   const job = await tx

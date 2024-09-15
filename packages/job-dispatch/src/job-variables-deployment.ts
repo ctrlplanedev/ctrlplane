@@ -38,30 +38,31 @@ export const determineVariablesForReleaseJob = async (
 
   await Promise.all(
     variables.map(async (variable) => {
-      const value = await determineVariableValue(
+      const value = await determineReleaseVariableValue(
         tx,
         variable.deployment_variable.id,
         jobTarget,
       );
 
-      if (value) {
+      if (value != null) {
         jobVariables.push({
           jobId: job.id,
           key: variable.deployment_variable.key,
           value: value.value,
         });
-      } else {
-        logger.warn(
-          `No value found for variable ${variable.deployment_variable.key} in job ${job.id}`,
-        );
+        return;
       }
+
+      logger.warn(
+        `No value found for variable ${variable.deployment_variable.key} in job ${job.id}`,
+      );
     }),
   );
 
   return jobVariables;
 };
 
-const determineVariableValue = async (
+const determineReleaseVariableValue = async (
   tx: Tx,
   variableId: string,
   jobTarget: Target,
