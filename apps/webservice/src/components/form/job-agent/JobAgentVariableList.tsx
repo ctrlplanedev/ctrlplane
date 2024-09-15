@@ -13,13 +13,10 @@ const variableOptions = [
   { key: "system.id", description: "System ID" },
   { key: "workspace.name", description: "Workspace Name" },
   { key: "workspace.id", description: "Workspace ID" },
-  { key: "execution.id", description: "Execution ID" },
-  {
-    key: "execution.externalRunId",
-    description: "Execution External Run ID",
-  },
-  { key: "execution.status", description: "Execution Status" },
-  { key: "execution.message", description: "Execution Message" },
+  { key: "job.id", description: "Job ID" },
+  { key: "job.externalRunId", description: "Job External Run ID" },
+  { key: "job.status", description: "Job Status" },
+  { key: "job.message", description: "Job Message" },
 ];
 export const VariablesList: React.FC = () => {
   const { search, setSearch, result } = useMatchSorterWithSearch(

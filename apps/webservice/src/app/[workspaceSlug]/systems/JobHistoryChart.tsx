@@ -37,8 +37,8 @@ export const JobHistoryChart: React.FC<{
       date: d.toString(),
       jobs: (releaseJobTriggers.data ?? []).filter(
         (j) =>
-          j.execution?.createdAt != null &&
-          startOfDay(j.execution.createdAt).toString() === d.toString(),
+          j.job?.createdAt != null &&
+          startOfDay(j.job.createdAt).toString() === d.toString(),
       ).length,
     }),
   );
@@ -61,8 +61,8 @@ export const JobHistoryChart: React.FC<{
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releaseJobTriggers.data?.filter((t) => t.execution != null)
-                .length ?? "-"}
+              {releaseJobTriggers.data?.filter((t) => t.job != null).length ??
+                "-"}
             </span>
           </div>
 

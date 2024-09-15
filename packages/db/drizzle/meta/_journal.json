@@ -8,6 +8,13 @@
       "when": 1726423570600,
       "tag": "0000_aberrant_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1726365566100,
+      "tag": "0002_powerful_viper",
+      "breakpoints": true
     }
   ]
 }
