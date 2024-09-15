@@ -58,7 +58,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.release_job_trigger,
-            execution: t.job,
+            job: t.job,
             agent: t.job_agent,
             target: t.target,
             release: { ...t.release, deployment: t.deployment },
@@ -287,7 +287,7 @@ export const jobRouter = createTRPCRouter({
         .then((data) =>
           data.map((t) => ({
             ...t.release_job_trigger,
-            execution: t.job,
+            job: t.job,
             agent: t.job_agent,
             target: t.target,
             deployment: t.deployment,

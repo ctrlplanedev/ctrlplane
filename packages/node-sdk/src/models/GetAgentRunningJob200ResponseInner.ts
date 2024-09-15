@@ -16,87 +16,87 @@ import { mapValues } from '../runtime';
 /**
  * 
  * @export
- * @interface GetAgentRunningExecutions200ResponseInner
+ * @interface GetAgentRunningJob200ResponseInner
  */
-export interface GetAgentRunningExecutions200ResponseInner {
+export interface GetAgentRunningJob200ResponseInner {
     /**
      * 
      * @type {string}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     id: string;
     /**
      * 
      * @type {string}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     status: string;
     /**
      * 
      * @type {string}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     message: string;
     /**
      * 
      * @type {string}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     jobAgentId: string;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     jobAgentConfig: object;
     /**
      * 
      * @type {string}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     externalRunId: string | null;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     release?: object;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     deployment?: object;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     config: object;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     runbook?: object;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     target?: object;
     /**
      * 
      * @type {object}
-     * @memberof GetAgentRunningExecutions200ResponseInner
+     * @memberof GetAgentRunningJob200ResponseInner
      */
     environment?: object;
 }
 
 /**
- * Check if a given object implements the GetAgentRunningExecutions200ResponseInner interface.
+ * Check if a given object implements the GetAgentRunningJob200ResponseInner interface.
  */
-export function instanceOfGetAgentRunningExecutions200ResponseInner(value: object): value is GetAgentRunningExecutions200ResponseInner {
+export function instanceOfGetAgentRunningJob200ResponseInner(value: object): value is GetAgentRunningJob200ResponseInner {
     if (!('id' in value) || value['id'] === undefined) return false;
     if (!('status' in value) || value['status'] === undefined) return false;
     if (!('message' in value) || value['message'] === undefined) return false;
@@ -107,11 +107,11 @@ export function instanceOfGetAgentRunningExecutions200ResponseInner(value: objec
     return true;
 }
 
-export function GetAgentRunningExecutions200ResponseInnerFromJSON(json: any): GetAgentRunningExecutions200ResponseInner {
-    return GetAgentRunningExecutions200ResponseInnerFromJSONTyped(json, false);
+export function GetAgentRunningJob200ResponseInnerFromJSON(json: any): GetAgentRunningJob200ResponseInner {
+    return GetAgentRunningJob200ResponseInnerFromJSONTyped(json, false);
 }
 
-export function GetAgentRunningExecutions200ResponseInnerFromJSONTyped(json: any, ignoreDiscriminator: boolean): GetAgentRunningExecutions200ResponseInner {
+export function GetAgentRunningJob200ResponseInnerFromJSONTyped(json: any, ignoreDiscriminator: boolean): GetAgentRunningJob200ResponseInner {
     if (json == null) {
         return json;
     }
@@ -132,7 +132,7 @@ export function GetAgentRunningExecutions200ResponseInnerFromJSONTyped(json: any
     };
 }
 
-export function GetAgentRunningExecutions200ResponseInnerToJSON(value?: GetAgentRunningExecutions200ResponseInner | null): any {
+export function GetAgentRunningJob200ResponseInnerToJSON(value?: GetAgentRunningJob200ResponseInner | null): any {
     if (value == null) {
         return value;
     }

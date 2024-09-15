@@ -290,7 +290,7 @@ export const deploymentRouter = createTRPCRouter({
             system: row.system,
             releaseJobTrigger: {
               ...row.release_job_trigger,
-              execution: row.job,
+              job: row.job,
               release: row.release,
             },
           })),

@@ -198,10 +198,9 @@ const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
               <div
                 className={cn(
                   "shrink-0 rounded-full px-2 text-xs",
-                  deployment.releaseJobTrigger.execution === null &&
+                  deployment.releaseJobTrigger.job == null &&
                     "bg-neutral-800 text-muted-foreground",
-                  deployment.releaseJobTrigger.execution?.status ===
-                    "completed" &&
+                  deployment.releaseJobTrigger.job?.status === "completed" &&
                     "bg-green-500/30 text-green-400 text-muted-foreground",
                 )}
               >

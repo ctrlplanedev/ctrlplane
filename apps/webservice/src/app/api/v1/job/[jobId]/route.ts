@@ -16,7 +16,7 @@ import { onJobStatusChange } from "@ctrlplane/job-dispatch";
 
 export const GET = async (
   _: NextRequest,
-  { params }: { params: { executionId: string } },
+  { params }: { params: { jobId: string } },
 ) => {
   const je = await db
     .select()
@@ -26,7 +26,7 @@ export const GET = async (
     .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .where(and(eq(job.id, params.executionId), isNull(environment.deletedAt)))
+    .where(and(eq(job.id, params.jobId), isNull(environment.deletedAt)))
     .then(takeFirst)
     .then((row) => ({
       ...row.job,
@@ -44,7 +44,7 @@ const bodySchema = updateJob;
 
 export const PATCH = async (
   req: NextRequest,
-  { params }: { params: { executionId: string } },
+  { params }: { params: { jobId: string } },
 ) => {
   const response = await req.json();
   const body = bodySchema.parse(response);
@@ -52,7 +52,7 @@ export const PATCH = async (
   const je = await db
     .update(job)
     .set(body)
-    .where(and(eq(job.id, params.executionId)))
+    .where(and(eq(job.id, params.jobId)))
     .returning()
     .then(takeFirstOrNull);
 

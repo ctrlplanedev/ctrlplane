@@ -35,7 +35,7 @@ export const ReleaseCell: React.FC<{
   deployment: Deployment;
   releaseJobTrigger: ReleaseJobTrigger & {
     release?: Partial<Release>;
-    execution?: Job;
+    job?: Job;
   };
 }> = ({ deployment, releaseJobTrigger }) => {
   const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
@@ -44,7 +44,7 @@ export const ReleaseCell: React.FC<{
       href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${deployment.slug}/releases/${releaseJobTrigger.releaseId}`}
       className="flex items-center gap-2"
     >
-      <ReleaseIcon job={releaseJobTrigger.execution} />
+      <ReleaseIcon job={releaseJobTrigger.job} />
       <div className="w-full text-sm">
         <div className="flex items-center justify-between">
           <span className="font-semibold">

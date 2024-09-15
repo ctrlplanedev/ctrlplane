@@ -5,8 +5,8 @@ import { databaseJobQueue } from "@ctrlplane/job-dispatch/queue";
 
 export const POST = async (
   _: NextRequest,
-  { params }: { params: { executionId: string } },
+  { params }: { params: { jobId: string } },
 ) => {
-  await databaseJobQueue.acknowledge(params.executionId);
+  await databaseJobQueue.acknowledge(params.jobId);
   return NextResponse.json({ sucess: true });
 };
