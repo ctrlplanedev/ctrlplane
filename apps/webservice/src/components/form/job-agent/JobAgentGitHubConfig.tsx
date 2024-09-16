@@ -64,12 +64,11 @@ export const JobAgentGitHubConfig: React.FC<{
   };
 
   useEffect(() => {
-    if (workflows.data != null && value.workflowId != null) {
+    if (workflows.data != null && value.workflowId != null)
       setWorkflow(
         workflows.data.data.workflows.find((w) => w.id === value.workflowId)
           ?.name ?? null,
       );
-    }
   }, [workflows.data, value.workflowId]);
 
   return (
