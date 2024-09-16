@@ -1,66 +1,100 @@
-import { Callout } from "nextra/components";
+# Understanding Deployments in Ctrlplane
 
-# Deployments
+Deployments in Ctrlplane are the central organizing principle for managing and
+orchestrating the release of your software or infrastructure across various
+environments within a system. A deployment represents a complete, end-to-end process
+for delivering changes to your system, encompassing everything from the initial
+code commit to the final production release.
 
-Deployments are the core component of Ctrlplane, orchestrating the delivery of
-your applications across various environments and targets. They encapsulate the
-configuration, workflows, and triggers required to automate and manage the
-entire release lifecycle.
+## What is a Deployment?
 
-## Key Components
+A deployment in Ctrlplane is:
 
-A Ctrlplane deployment consists of:
+1. **A Logical Unit**: It typically represents a single service, application, or
+   piece of infrastructure.
 
-- **System:** High-level categorization (e.g., "Microservices," "Data Pipeline")
-- **Release:** Specific version or build to be deployed
-- **Environments:** Deployment stages (e.g., "Dev," "Staging," "Prod")
-- **Targets:** Deployment destinations (e.g., K8s clusters, VM groups, FaaS)
-- **Workflows:** Automated tasks executed during deployment
-- **Job Agents:** Integrations triggering external CI/CD pipelines
-- **Policies (Optional):** Rules governing the deployment process
+2. **System-Bound**: Each deployment is assigned to a specific system, which contains
+   multiple environments (e.g., QA, Staging, Production). When you create a deployment,
+   it automatically becomes part of all environments within that system.
 
-## Deployment Process
+3. **Version Control**: It manages multiple releases (versions) of your software
+   or infrastructure configuration.
 
-1. **Release Creation:** Initiate a new release with version/build number
-2. **Workflow Triggering:** Automatic activation of environment-specific workflows
-3. **Job Agent Activation:** Triggers sent to external CI/CD systems
-4. **Pipeline Execution:** External systems deploy to specified targets
-5. **Status Tracking:** Real-time monitoring of deployment progress
+4. **Pipeline Definition**: It includes a defined CI/CD pipeline that outlines
+   the steps for building, testing, and deploying your changes.
 
-<Callout type="info">
-  Best practice: Use a single deployment with a pipeline supporting multiple
-  targets, rather than separate deployments for each target.
-</Callout>
+5. **Release Manager**: It groups and organizes releases, providing a historical
+   view of all deployments.
 
-## Key Benefits
+## Key Components of a Deployment
 
-- **Automation:** Minimizes manual intervention and error potential
-- **Flexibility:** Supports various deployment strategies and complexities
-- **Integration:** Seamless connection with existing CI/CD toolchains
-- **Visibility:** Real-time deployment status and progress tracking
-- **Control:** Policy enforcement and approval workflows
+A deployment in Ctrlplane typically includes:
 
-## Example: Microservices Deployment
+1. **Releases**: Individual versions of your software or infrastructure
+   configuration.
 
-Consider a microservices architecture with environments (Dev, Staging, Prod) and
-multiple regional Kubernetes clusters. Configure a Ctrlplane deployment with:
+2. **CI/CD Pipeline**: The defined process for deploying releases.
 
-1. System: "Microservices Platform"
-2. Environments: Dev, Staging, Prod
-3. Targets: Regional K8s clusters
-4. Job Agents: Configured for GitLab CI/CD
-5. Policies: Require approvals for Staging and Prod
+3. **System and Environment Association**: The deployment is part of all
+   environments within its assigned system, allowing for consistent deployment
+   across different stages.
 
-When creating a release, Ctrlplane orchestrates:
+4. **Job Configurations**: Specifications for the jobs that will be created and
+   run for each release and target.
 
-1. Dev deployment via GitLab CI/CD
-2. Staging deployment after approval
-3. Production rollout across regions
+5. **Variables**: Target-specific variables that allow the same pipeline to
+   be used across different environments.
 
-## Key Takeaways
+## Systems, Environments, and Target Filtering
 
-- Deployments centralize release management across diverse environments and
-  systems
-- Ctrlplane complements existing CI/CD tools, providing higher-level
-  orchestration
-- Achieve streamlined, efficient, and reliable deployment processes at scale
+Ctrlplane uses a hierarchical structure to manage deployments:
+
+1. **Systems**: The top-level organizational unit. A system contains multiple
+   environments and is associated with one or more deployments.
+
+2. **Environments**: Subsets of a system (e.g., QA, Staging, Production). Each
+   environment can be configured with specific settings and policies.
+
+3. **Environment Configuration**: Each environment is configured with label
+   filters to determine which targets fall under that environment. This allows
+   for fine-grained control over where deployments are applied.
+
+4. **Target Filtering**: When a release is created, Ctrlplane uses the
+   environment's label filters to identify matching targets. It then runs the
+   appropriate jobs for each of these targets.
+
+5. **Inter-Environment Policies**: Environments are connected by policies that
+   determine when and how jobs should run. These policies control the
+   progression of deployments through environments (e.g., from Staging to
+   Production).
+
+## Deployment Workflow
+
+1. **Deployment Creation**: A deployment is created and assigned to a system.
+
+2. **Release Initiation**: A new release is created within the deployment.
+
+3. **Environment Processing**: For each environment in the system:
+
+   - The environment's label filters are applied to identify relevant targets.
+   - Jobs are created for each matching target based on the deployment's job
+     definitions.
+
+4. **Policy Enforcement**: Inter-environment policies determine when jobs can
+   run, allowing for controlled progression through environments.
+
+5. **Job Execution**: Jobs are executed on the identified targets, applying the
+   release changes.
+
+## Creating and Managing Deployments
+
+Deployments can be created and managed in two primary ways:
+
+1. **Manual Creation**: Through the Ctrlplane UI or API, specifying the system
+   it belongs to.
+
+2. **Automated Creation**: By including a `.ctrlplane.yaml` file in your Git
+   repository. This method allows for automatic deployment creation when new
+   repositories are added, with system assignment specified in the configuration.
+
+Example `.ctrlplane.yaml`:
