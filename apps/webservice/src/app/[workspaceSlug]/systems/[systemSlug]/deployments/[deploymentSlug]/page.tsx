@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
-import { TbInfoCircle, TbLink } from "react-icons/tb";
+import { TbEdit, TbInfoCircle, TbLink } from "react-icons/tb";
 
+import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 import {
   ResizableHandle,
@@ -14,6 +15,7 @@ import {
 import { api } from "~/trpc/server";
 import { ReleaseTable } from "../TableRelease";
 import { DistroBarChart } from "./DistroBarChart";
+import { EditAgentConfigDialog } from "./EditAgentConfigDialog";
 import { JobAgentMissingAlert } from "./JobAgentMissingAlert";
 
 export default async function DeploymentPage({
@@ -21,10 +23,13 @@ export default async function DeploymentPage({
 }: {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
 }) {
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) return notFound();
   const system = await api.system.bySlug(params);
   const environments = await api.environment.bySystemId(system.id);
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
+  const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
 
   const showPreviousReleaseDistro = 30;
 
@@ -49,7 +54,7 @@ export default async function DeploymentPage({
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel>
+      <ResizablePanel className="min-w-[250px]">
         <div className="border-b p-6">
           <h3 className="font-semibold">{deployment.name}</h3>
           {deployment.description && (
@@ -92,31 +97,51 @@ export default async function DeploymentPage({
               <TbInfoCircle className="text-muted-foreground" />
             </div>
 
-            {deployment.jobAgentId == null ? (
+            {deployment.agent == null ? (
               <JobAgentMissingAlert
                 workspaceSlug={params.workspaceSlug}
                 systemSlug={system.slug}
                 deploymentSlug={deployment.slug}
               />
             ) : (
-              <table width="100%" style={{ tableLayout: "fixed" }}>
-                <tbody>
-                  <tr>
-                    <td className="w-[100px] p-1 pr-2 text-muted-foreground">
-                      Type
-                    </td>
-                    <td className="px-1">
-                      {capitalCase(deployment.agent?.type ?? "")}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="w-[100px] p-1 pr-2 text-muted-foreground">
-                      Name
-                    </td>
-                    <td className="px-1">{deployment.agent?.name}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <>
+                <table width="100%" style={{ tableLayout: "fixed" }}>
+                  <tbody>
+                    <tr>
+                      <td className="w-[100px] p-1 pr-2 text-muted-foreground">
+                        Type
+                      </td>
+                      <td className="px-1">
+                        {capitalCase(deployment.agent.type)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="w-[100px] p-1 pr-2 text-muted-foreground">
+                        Name
+                      </td>
+                      <td className="px-1">{deployment.agent.name}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                {deployment.agent.type === "github-app" && (
+                  <div className="mt-2">
+                    <EditAgentConfigDialog
+                      jobAgent={deployment.agent}
+                      value={deployment.jobAgentConfig}
+                      jobAgents={jobAgents}
+                      workspace={workspace}
+                      deploymentId={deployment.id}
+                    >
+                      <Button
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <TbEdit size={16} /> Edit
+                      </Button>
+                    </EditAgentConfigDialog>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
