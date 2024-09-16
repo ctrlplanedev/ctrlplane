@@ -14,3 +14,11 @@ export enum JobStatus {
   InvalidIntegration = "invalid_integration",
   ExternalRunNotFound = "external_run_not_found",
 }
+
+export const exitedStatus = [
+  JobStatus.Completed,
+  JobStatus.InvalidJobAgent,
+  JobStatus.Failure,
+  JobStatus.Cancelled,
+  JobStatus.Skipped,
+];
