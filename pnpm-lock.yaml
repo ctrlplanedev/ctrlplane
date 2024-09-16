@@ -1270,7 +1270,7 @@ importers:
         version: link:../../packages/node-sdk
       '@t3-oss/env-core':
         specifier: ^0.10.1
-        version: 0.10.1(typescript@5.5.4)(zod@3.23.8)
+        version: 0.10.1(typescript@5.6.2)(zod@3.23.8)
       cron:
         specifier: ^3.1.7
         version: 3.1.7
@@ -1283,6 +1283,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      node-fetch:
+        specifier: ^3.3.2
+        version: 3.3.2
       p-retry:
         specifier: ^6.2.0
         version: 6.2.0
@@ -1303,17 +1306,17 @@ importers:
         specifier: ^4.17.5
         version: 4.17.7
       '@types/node':
-        specifier: ^20.12.9
-        version: 20.16.1
+        specifier: catalog:node22
+        version: 22.5.5
       '@vitest/coverage-v8':
         specifier: ^2.1.1
-        version: 2.1.1(vitest@2.1.1(@types/node@20.16.1)(jsdom@25.0.0))
+        version: 2.1.1(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
       eslint:
         specifier: 'catalog:'
         version: 9.10.0(jiti@1.21.6)
       eslint-plugin-vitest:
         specifier: ^0.5.4
-        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.5.4)(vitest@2.1.1(@types/node@20.16.1)(jsdom@25.0.0))
+        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
       jsdom:
         specifier: ^25.0.0
         version: 25.0.0
@@ -1321,17 +1324,17 @@ importers:
         specifier: 'catalog:'
         version: 3.3.3
       typescript:
-        specifier: ^5.4.5
-        version: 5.5.4
+        specifier: ^5.6.2
+        version: 5.6.2
       vite:
         specifier: ^5.4.5
-        version: 5.4.5(@types/node@20.16.1)
+        version: 5.4.5(@types/node@22.5.5)
       vite-tsconfig-paths:
         specifier: ^5.0.1
-        version: 5.0.1(typescript@5.5.4)(vite@5.4.5(@types/node@20.16.1))
+        version: 5.0.1(typescript@5.6.2)(vite@5.4.5(@types/node@22.5.5))
       vitest:
         specifier: ^2.1.1
-        version: 2.1.1(@types/node@20.16.1)(jsdom@25.0.0)
+        version: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
 
   tooling/eslint:
     dependencies:
@@ -8925,11 +8928,6 @@ packages:
       typescript:
         optional: true
 
-  typescript@5.5.4:
-    resolution: {integrity: sha512-Mtq29sKDAEYP7aljRgtPOpTvOfbwRWlS6dPRzwjdE+C0R4brX/GUyhHSecbHMFLNBLcJIPt9nl9yG5TZ1weH+Q==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
   typescript@5.6.2:
     resolution: {integrity: sha512-NW8ByodCSNCwZeghjN3o+JX5OFH0Ojg6sadjEKY4huZ52TqbJTJnDo5+Tw98lSy63NZvi4n+ez5m2u5d4PkZyw==}
     engines: {node: '>=14.17'}
@@ -12240,11 +12238,11 @@ snapshots:
       '@swc/counter': 0.1.3
       tslib: 2.7.0
 
-  '@t3-oss/env-core@0.10.1(typescript@5.5.4)(zod@3.23.8)':
+  '@t3-oss/env-core@0.10.1(typescript@5.6.2)(zod@3.23.8)':
     dependencies:
       zod: 3.23.8
     optionalDependencies:
-      typescript: 5.5.4
+      typescript: 5.6.2
 
   '@t3-oss/env-core@0.11.1(typescript@5.6.2)(zod@3.23.8)':
     dependencies:
@@ -12373,13 +12371,13 @@ snapshots:
   '@types/body-parser@1.19.5':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@types/caseless@0.12.5': {}
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@types/cookie-parser@1.4.7':
     dependencies:
@@ -12522,7 +12520,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.5':
     dependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       '@types/qs': 6.9.15
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.4
@@ -12539,7 +12537,7 @@ snapshots:
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@types/hast@2.3.10':
     dependencies:
@@ -12628,7 +12626,7 @@ snapshots:
   '@types/request@2.48.12':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.1
 
@@ -12639,19 +12637,19 @@ snapshots:
   '@types/send@0.17.4':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@types/serve-static@1.15.7':
     dependencies:
       '@types/http-errors': 2.0.4
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       '@types/send': 0.17.4
 
   '@types/shimmer@1.2.0': {}
 
   '@types/through@0.0.33':
     dependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@types/tinycolor2@1.4.6': {}
 
@@ -12726,7 +12724,7 @@ snapshots:
 
   '@typescript-eslint/types@8.3.0': {}
 
-  '@typescript-eslint/typescript-estree@7.18.0(typescript@5.5.4)':
+  '@typescript-eslint/typescript-estree@7.18.0(typescript@5.6.2)':
     dependencies:
       '@typescript-eslint/types': 7.18.0
       '@typescript-eslint/visitor-keys': 7.18.0
@@ -12735,9 +12733,9 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.6.3
-      ts-api-utils: 1.3.0(typescript@5.5.4)
+      ts-api-utils: 1.3.0(typescript@5.6.2)
     optionalDependencies:
-      typescript: 5.5.4
+      typescript: 5.6.2
     transitivePeerDependencies:
       - supports-color
 
@@ -12756,12 +12754,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@typescript-eslint/utils@7.18.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.5.4)':
+  '@typescript-eslint/utils@7.18.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)':
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@9.10.0(jiti@1.21.6))
       '@typescript-eslint/scope-manager': 7.18.0
       '@typescript-eslint/types': 7.18.0
-      '@typescript-eslint/typescript-estree': 7.18.0(typescript@5.5.4)
+      '@typescript-eslint/typescript-estree': 7.18.0(typescript@5.6.2)
       eslint: 9.10.0(jiti@1.21.6)
     transitivePeerDependencies:
       - supports-color
@@ -12800,7 +12798,7 @@ snapshots:
       '@opentelemetry/sdk-metrics': 1.25.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-trace-base': 1.25.1(@opentelemetry/api@1.9.0)
 
-  '@vitest/coverage-v8@2.1.1(vitest@2.1.1(@types/node@20.16.1)(jsdom@25.0.0))':
+  '@vitest/coverage-v8@2.1.1(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))':
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@bcoe/v8-coverage': 0.2.3
@@ -12814,7 +12812,7 @@ snapshots:
       std-env: 3.7.0
       test-exclude: 7.0.1
       tinyrainbow: 1.2.0
-      vitest: 2.1.1(@types/node@20.16.1)(jsdom@25.0.0)
+      vitest: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -12825,13 +12823,13 @@ snapshots:
       chai: 5.1.1
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.1(@vitest/spy@2.1.1)(vite@5.4.5(@types/node@20.16.1))':
+  '@vitest/mocker@2.1.1(@vitest/spy@2.1.1)(vite@5.4.5(@types/node@22.5.5))':
     dependencies:
       '@vitest/spy': 2.1.1
       estree-walker: 3.0.3
       magic-string: 0.30.11
     optionalDependencies:
-      vite: 5.4.5(@types/node@20.16.1)
+      vite: 5.4.5(@types/node@22.5.5)
 
   '@vitest/pretty-format@2.1.1':
     dependencies:
@@ -14264,12 +14262,12 @@ snapshots:
       dotenv: 16.0.3
       eslint: 9.10.0(jiti@1.21.6)
 
-  eslint-plugin-vitest@0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.5.4)(vitest@2.1.1(@types/node@20.16.1)(jsdom@25.0.0)):
+  eslint-plugin-vitest@0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0)):
     dependencies:
-      '@typescript-eslint/utils': 7.18.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.5.4)
+      '@typescript-eslint/utils': 7.18.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
       eslint: 9.10.0(jiti@1.21.6)
     optionalDependencies:
-      vitest: 2.1.1(@types/node@20.16.1)(jsdom@25.0.0)
+      vitest: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -16853,7 +16851,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       long: 5.2.3
 
   protocols@2.0.1: {}
@@ -17986,10 +17984,6 @@ snapshots:
 
   trough@2.2.0: {}
 
-  ts-api-utils@1.3.0(typescript@5.5.4):
-    dependencies:
-      typescript: 5.5.4
-
   ts-api-utils@1.3.0(typescript@5.6.2):
     dependencies:
       typescript: 5.6.2
@@ -18039,9 +18033,9 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 
-  tsconfck@3.1.3(typescript@5.5.4):
+  tsconfck@3.1.3(typescript@5.6.2):
     optionalDependencies:
-      typescript: 5.5.4
+      typescript: 5.6.2
 
   tsconfig-paths@3.15.0:
     dependencies:
@@ -18178,8 +18172,6 @@ snapshots:
     transitivePeerDependencies:
       - eslint
       - supports-color
-
-  typescript@5.5.4: {}
 
   typescript@5.6.2: {}
 
@@ -18441,12 +18433,12 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-node@2.1.1(@types/node@20.16.1):
+  vite-node@2.1.1(@types/node@22.5.5):
     dependencies:
       cac: 6.7.14
       debug: 4.3.6
       pathe: 1.1.2
-      vite: 5.4.5(@types/node@20.16.1)
+      vite: 5.4.5(@types/node@22.5.5)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -18458,30 +18450,30 @@ snapshots:
       - supports-color
       - terser
 
-  vite-tsconfig-paths@5.0.1(typescript@5.5.4)(vite@5.4.5(@types/node@20.16.1)):
+  vite-tsconfig-paths@5.0.1(typescript@5.6.2)(vite@5.4.5(@types/node@22.5.5)):
     dependencies:
       debug: 4.3.6
       globrex: 0.1.2
-      tsconfck: 3.1.3(typescript@5.5.4)
+      tsconfck: 3.1.3(typescript@5.6.2)
     optionalDependencies:
-      vite: 5.4.5(@types/node@20.16.1)
+      vite: 5.4.5(@types/node@22.5.5)
     transitivePeerDependencies:
       - supports-color
       - typescript
 
-  vite@5.4.5(@types/node@20.16.1):
+  vite@5.4.5(@types/node@22.5.5):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.47
       rollup: 4.21.1
     optionalDependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       fsevents: 2.3.3
 
-  vitest@2.1.1(@types/node@20.16.1)(jsdom@25.0.0):
+  vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0):
     dependencies:
       '@vitest/expect': 2.1.1
-      '@vitest/mocker': 2.1.1(@vitest/spy@2.1.1)(vite@5.4.5(@types/node@20.16.1))
+      '@vitest/mocker': 2.1.1(@vitest/spy@2.1.1)(vite@5.4.5(@types/node@22.5.5))
       '@vitest/pretty-format': 2.1.1
       '@vitest/runner': 2.1.1
       '@vitest/snapshot': 2.1.1
@@ -18496,11 +18488,11 @@ snapshots:
       tinyexec: 0.3.0
       tinypool: 1.0.1
       tinyrainbow: 1.2.0
-      vite: 5.4.5(@types/node@20.16.1)
-      vite-node: 2.1.1(@types/node@20.16.1)
+      vite: 5.4.5(@types/node@22.5.5)
+      vite-node: 2.1.1(@types/node@22.5.5)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       jsdom: 25.0.0
     transitivePeerDependencies:
       - less

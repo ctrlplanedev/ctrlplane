@@ -29,6 +29,7 @@
     "dotenv": "^16.4.5",
     "handlebars": "^4.7.8",
     "lodash": "^4.17.21",
+    "node-fetch": "^3.3.2",
     "p-retry": "^6.2.0",
     "zod": "catalog:"
   },
@@ -37,7 +38,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/lodash": "^4.17.5",
-    "@types/node": "^20.12.9",
+    "@types/node": "catalog:node22",
     "@vitest/coverage-v8": "^2.1.1",
     "eslint": "catalog:",
     "eslint-plugin-vitest": "^0.5.4",

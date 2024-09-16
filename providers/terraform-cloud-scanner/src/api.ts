@@ -1,12 +1,10 @@
 import type { FailedAttemptError } from "p-retry";
-import pRetry, { AbortError } from "p-retry";
+import pRetry from "p-retry";
 
 import { logger } from "@ctrlplane/logger";
 
-import type { ApiError, ApiResponse, Variable, Workspace } from "./types.js";
+import type { ApiResponse, Variable, Workspace } from "./types.js";
 import { env } from "./config.js";
-
-const GLOBAL_TIMEOUT = 60 * 1000;
 
 /**
  * Fetch JSON with retry and exponential backoff, respecting a global timeout.
@@ -20,58 +18,13 @@ async function fetchJson<ResponseType>(
   url: string,
   options: RequestInit = {},
 ): Promise<ResponseType> {
-  const startTime = Date.now();
-
   return pRetry(
     async () => {
-      const elapsedTime = Date.now() - startTime;
-      const remainingTime = GLOBAL_TIMEOUT - elapsedTime;
-
-      if (remainingTime <= 0) {
-        throw new AbortError("Global timeout of 60 seconds exceeded.");
-      }
-
-      const ATTEMPT_TIMEOUT = Math.min(remainingTime, 30 * 1000);
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => {
-        controller.abort();
-      }, ATTEMPT_TIMEOUT);
-
-      try {
-        const response = await fetch(url, {
-          ...options,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeout);
-
-        const contentType = response.headers.get("content-type");
-
-        if (!contentType?.toLowerCase().includes("json"))
-          throw new AbortError(`Unexpected content type: ${contentType}`);
-
-        const responseBody: unknown = await response.json();
-
-        if (!response.ok) {
-          const errorBody = responseBody as ApiError;
-          const errorMessage = errorBody.errors
-            .map((e) => `${e.status} ${e.title}: ${e.detail}`)
-            .join("; ");
-          throw new AbortError(`API Error: ${errorMessage}`);
-        }
-
-        return responseBody as ResponseType;
-      } catch (error) {
-        clearTimeout(timeout);
-
-        if ((error as any).name === "AbortError")
-          throw new AbortError("Request timed out.");
-        if (error instanceof TypeError && error.message === "Failed to fetch")
-          throw error;
-        if (error instanceof Error && /5\d\d/.test(error.message)) throw error;
-        throw new AbortError((error as Error).message);
-      }
+      const response = await fetch(url, {
+        ...options,
+      });
+      const responseBody: unknown = await response.json();
+      return responseBody as ResponseType;
     },
     {
       retries: 4,
@@ -79,18 +32,12 @@ async function fetchJson<ResponseType>(
       minTimeout: 4000,
       maxTimeout: 32000,
       onFailedAttempt: (error: FailedAttemptError) => {
-        if (error instanceof AbortError) {
-          logger.warn(
-            `Fetch attempt ${error.attemptNumber} aborted: ${error.message}`,
-          );
-        } else {
-          logger.warn(
-            `Fetch attempt ${error.attemptNumber} failed. There are ${
-              error.retriesLeft
-            } retries left.`,
-            { error: error.message },
-          );
-        }
+        logger.warn(
+          `Fetch attempt ${error.attemptNumber} failed. There are ${
+            error.retriesLeft
+          } retries left.`,
+          { error: error.message },
+        );
       },
     },
   );
