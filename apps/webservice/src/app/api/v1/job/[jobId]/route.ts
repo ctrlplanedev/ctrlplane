@@ -13,6 +13,7 @@ import {
   updateJob,
 } from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const GET = async (
   _: NextRequest,
@@ -62,7 +63,8 @@ export const PATCH = async (
       { status: 404 },
     );
 
-  if (je.status === "completed") onJobCompletion(je).catch(console.error);
+  if (je.status === JobStatus.Completed)
+    onJobCompletion(je).catch(console.error);
 
   return NextResponse.json(je);
 };

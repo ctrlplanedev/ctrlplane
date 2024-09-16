@@ -28,6 +28,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
@@ -38,7 +39,7 @@ const ReleaseIcon: React.FC<{
 }> = ({ releaseJobTriggers }) => {
   const statues = releaseJobTriggers.map((s) => s.job?.status);
 
-  const inProgress = statues.some((s) => s === "in_progress");
+  const inProgress = statues.some((s) => s === JobStatus.InProgress);
   if (inProgress)
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
@@ -46,7 +47,7 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  const hasAnyFailed = statues.some((s) => s === "failure");
+  const hasAnyFailed = statues.some((s) => s === JobStatus.Failure);
   if (hasAnyFailed)
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
@@ -54,14 +55,14 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  if (statues.some((s) => s === "invalid_job_agent"))
+  if (statues.some((s) => s === JobStatus.InvalidJobAgent))
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
         <TbSettingsX strokeWidth={2} />
       </div>
     );
 
-  const allPending = statues.every((s) => s === "pending");
+  const allPending = statues.every((s) => s === JobStatus.Pending);
   if (allPending)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
@@ -69,7 +70,7 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  const isComplete = statues.every((s) => s === "completed");
+  const isComplete = statues.every((s) => s === JobStatus.Completed);
   if (isComplete)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
@@ -77,7 +78,7 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  const isRollingOut = statues.some((s) => s === "completed");
+  const isRollingOut = statues.some((s) => s === JobStatus.Completed);
   if (isRollingOut)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
@@ -93,7 +94,7 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  const isCancelled = statues.some((s) => s === "cancelled");
+  const isCancelled = statues.some((s) => s === JobStatus.Cancelled);
   if (isCancelled)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
@@ -108,7 +109,12 @@ const ReleaseIcon: React.FC<{
   );
 };
 
-const completedStatus = ["completed", "cancelled", "skipped", "failure"];
+const completedStatus: JobStatus[] = [
+  JobStatus.Completed,
+  JobStatus.Cancelled,
+  JobStatus.Skipped,
+  JobStatus.Failure,
+];
 
 export const Release: React.FC<{
   name: string;
@@ -118,7 +124,7 @@ export const Release: React.FC<{
   deployedAt: Date;
   releaseJobTriggers: Array<
     ReleaseJobTrigger & {
-      job: Job | null;
+      job: Job;
       target: Target;
       deployment?: Deployment | null;
     }
@@ -139,7 +145,7 @@ export const Release: React.FC<{
     deploymentSlug,
   } = props;
   const data = _.chain(releaseJobTriggers)
-    .groupBy((r) => r.job?.status ?? "configured")
+    .groupBy((r) => r.job.status)
     .entries()
     .map(([name, value]) => ({ name, count: value.length }))
     .push(...Object.keys(statusColor).map((k) => ({ name: k, count: 0 })))
@@ -148,13 +154,13 @@ export const Release: React.FC<{
     .value();
 
   const configuredWithMessages = releaseJobTriggers.filter((d) =>
-    [d.job, d.target, d.job?.message].every(isPresent),
+    [d.job, d.target, d.job.message].every(isPresent),
   );
 
   const firstReleaseJobTrigger = releaseJobTriggers.at(0);
 
   const isReleaseCompleted = releaseJobTriggers.every((d) =>
-    completedStatus.includes(d.job?.status ?? "configured"),
+    completedStatus.includes(d.job.status as JobStatus),
   );
 
   return (
@@ -193,12 +199,12 @@ export const Release: React.FC<{
                   <div key={d.id}>
                     <div className="flex items-center gap-1">
                       <TbCircle
-                        fill={getStatusColor(d.job!.status)}
+                        fill={getStatusColor(d.job.status)}
                         strokeWidth={0}
                       />
                       {d.target.name}
                     </div>
-                    {d.job?.message != null && d.job.message !== "" && (
+                    {d.job.message != null && d.job.message !== "" && (
                       <div className="text-xs text-muted-foreground">
                         {capitalCase(d.job.status)} — {d.job.message}
                       </div>

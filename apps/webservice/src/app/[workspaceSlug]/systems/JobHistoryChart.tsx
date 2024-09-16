@@ -62,7 +62,7 @@ export const JobHistoryChart: React.FC<{
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
               {releaseJobTriggers.data?.filter(
-                (t) => t.job.status !== "pending",
+                (t) => t.job.status !== JobStatus.Pending,
               ).length ?? "-"}
             </span>
           </div>

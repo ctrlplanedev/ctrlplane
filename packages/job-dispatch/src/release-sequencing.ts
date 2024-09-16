@@ -3,12 +3,13 @@ import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 const exitStatus: schema.JobStatus[] = [
-  "completed",
-  "failure",
-  "cancelled",
-  "skipped",
+  JobStatus.Completed,
+  JobStatus.Failure,
+  JobStatus.Cancelled,
+  JobStatus.Skipped,
 ];
 
 /**
