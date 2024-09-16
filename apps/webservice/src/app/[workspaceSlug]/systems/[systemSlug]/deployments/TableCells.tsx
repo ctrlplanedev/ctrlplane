@@ -64,7 +64,7 @@ const ReleaseIcon: React.FC<{
   const allPending = statues.every((s) => s === "pending");
   if (allPending)
     return (
-      <div className="rounded-full bg-cyan-400 p-1 dark:text-black">
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
         <TbHistoryToggle strokeWidth={2} />
       </div>
     );
@@ -98,14 +98,6 @@ const ReleaseIcon: React.FC<{
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
         <TbCircleX strokeWidth={2} />
-      </div>
-    );
-
-  const isTriggered = statues.some((s) => s === "triggered");
-  if (isTriggered)
-    return (
-      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <TbClock strokeWidth={2} />
       </div>
     );
 

@@ -24,6 +24,7 @@ import {
   isDateInTimeWindow,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -260,7 +261,7 @@ const jobTriggerRouter = createTRPCRouter({
           .where(
             and(
               eq(releaseJobTrigger.environmentId, input),
-              eq(job.status, "triggered"),
+              eq(job.status, JobStatus.Pending),
             ),
           )
           .then((jcs) =>

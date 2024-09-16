@@ -8,6 +8,7 @@ import {
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { env } from "./config.js";
 
@@ -16,7 +17,7 @@ const run = async () => {
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
-    .where(eq(schema.job.status, "triggered"))
+    .where(eq(schema.job.status, JobStatus.Pending))
     .then((rows) => rows.map((row) => row.release_job_trigger));
 
   if (releaseJobTriggers.length === 0) return;

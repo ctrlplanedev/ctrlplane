@@ -16,6 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@ctrlplane/ui/chart";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
@@ -36,7 +37,7 @@ export const JobHistoryChart: React.FC<{
       jobs: (releaseJobTriggers.data ?? []).filter(
         (j) =>
           j.job.createdAt != null &&
-          j.job.status !== "triggered" &&
+          j.job.status !== JobStatus.Pending &&
           startOfDay(j.job.createdAt).toString() === d.toString(),
       ).length,
     }),
@@ -61,7 +62,7 @@ export const JobHistoryChart: React.FC<{
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
               {releaseJobTriggers.data?.filter(
-                (t) => t.job.status !== "triggered",
+                (t) => t.job.status !== "pending",
               ).length ?? "-"}
             </span>
           </div>

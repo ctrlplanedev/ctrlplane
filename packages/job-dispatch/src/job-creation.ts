@@ -1,25 +1,26 @@
 import type { Tx } from "@ctrlplane/db";
-import type { Job, JobStatus, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import { and, eq, inArray, isNotNull, or, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  deployment,
-  environment,
-  environmentPolicy,
-  environmentPolicyDeployment,
-  job,
-  jobAgent,
-  release,
-  releaseDependency,
-  releaseJobTrigger,
-} from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
+// import {
+//   deployment,
+//   environment,
+//   environmentPolicy,
+//   environmentPolicyDeployment,
+//   job,
+//   jobAgent,
+//   release,
+//   releaseDependency,
+//   releaseJobTrigger,
+// } from "@ctrlplane/db/schema";
 /**
  * Converts a job config into a job which means they can now be
  * picked up by job agents
  */
 import { logger } from "@ctrlplane/logger";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
@@ -27,9 +28,9 @@ import { cancelOldReleaseJobTriggersOnJobDispatch } from "./release-sequencing.j
 
 export const createTriggeredReleaseJobs = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
-  status: JobStatus = "pending",
-): Promise<Job[]> => {
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
+  status: schema.JobStatus = JobStatus.Pending,
+): Promise<schema.Job[]> => {
   logger.info(`Creating triggered release jobs`, {
     releaseJobTriggersCount: releaseJobTriggers.length,
     status,
@@ -37,13 +38,22 @@ export const createTriggeredReleaseJobs = async (
 
   const insertJobs = await db
     .select()
-    .from(releaseJobTrigger)
-    .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
-    .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+    .from(schema.releaseJobTrigger)
+    .leftJoin(
+      schema.release,
+      eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+    )
+    .leftJoin(
+      schema.deployment,
+      eq(schema.deployment.id, schema.release.deploymentId),
+    )
+    .innerJoin(
+      schema.jobAgent,
+      eq(schema.jobAgent.id, schema.deployment.jobAgentId),
+    )
     .where(
       inArray(
-        releaseJobTrigger.id,
+        schema.releaseJobTrigger.id,
         releaseJobTriggers.map((t) => t.id),
       ),
     );
@@ -56,7 +66,7 @@ export const createTriggeredReleaseJobs = async (
   }
 
   const jobs = await db
-    .insert(job)
+    .insert(schema.job)
     .values(
       insertJobs.map((d) => ({
         releaseJobTriggerId: d.release_job_trigger.id,
@@ -76,10 +86,13 @@ export const createTriggeredReleaseJobs = async (
   await Promise.all(
     jobs.map((job, index) =>
       db
-        .update(releaseJobTrigger)
+        .update(schema.releaseJobTrigger)
         .set({ jobId: job.id })
         .where(
-          eq(releaseJobTrigger.id, insertJobs[index]!.release_job_trigger.id),
+          eq(
+            schema.releaseJobTrigger.id,
+            insertJobs[index]!.release_job_trigger.id,
+          ),
         ),
     ),
   );
@@ -104,65 +117,90 @@ export const createTriggeredReleaseJobs = async (
  *
  * @param je
  */
-export const onJobCompletion = async (je: Job) => {
+export const onJobCompletion = async (je: schema.Job) => {
   const triggers = await db
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-    .where(eq(releaseJobTrigger.jobId, je.id))
+    .from(schema.releaseJobTrigger)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.release.deploymentId, schema.deployment.id),
+    )
+    .where(eq(schema.releaseJobTrigger.jobId, je.id))
     .then(takeFirst);
+
+  const isDependentOnTriggerForCriteria = and(
+    eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
+    eq(
+      schema.environmentPolicyDeployment.environmentId,
+      triggers.environment.id,
+    ),
+  );
+
+  const isWaitingOnPreviousReleasesInSameEnvironment = and(
+    eq(schema.environmentPolicy.releaseSequencing, "wait"),
+    eq(schema.environment.id, triggers.environment.id),
+  );
+
+  const isWaitingOnConcurrencyRequirementInSameRelease = and(
+    eq(schema.environmentPolicy.concurrencyType, "some"),
+    eq(schema.environment.id, triggers.environment.id),
+    eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
+  );
+
+  const isDependentOnVersionOfTriggerDeployment = isNotNull(
+    schema.releaseDependency.id,
+  );
 
   const affectedReleaseJobTriggers = await db
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
-    .leftJoin(
-      environmentPolicyDeployment,
-      eq(environmentPolicyDeployment.policyId, environmentPolicy.id),
+    .from(schema.releaseJobTrigger)
+    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
     )
     .leftJoin(
-      releaseDependency,
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
+    )
+    .leftJoin(
+      schema.environmentPolicyDeployment,
+      eq(
+        schema.environmentPolicyDeployment.policyId,
+        schema.environmentPolicy.id,
+      ),
+    )
+    .leftJoin(
+      schema.releaseDependency,
       and(
-        eq(releaseDependency.releaseId, releaseJobTrigger.releaseId),
-        eq(releaseDependency.deploymentId, triggers.deployment.id),
+        eq(
+          schema.releaseDependency.releaseId,
+          schema.releaseJobTrigger.releaseId,
+        ),
+        eq(schema.releaseDependency.deploymentId, triggers.deployment.id),
       ),
     )
     .where(
       and(
-        eq(job.status, "triggered"),
+        eq(schema.job.status, JobStatus.Pending),
         or(
-          // this release has a criteria requirement, i.e. "n from QA need to pass"
-          // and the completed job is part of the environment that needs to pass
-          and(
-            eq(releaseJobTrigger.releaseId, triggers.release.id),
-            eq(
-              environmentPolicyDeployment.environmentId,
-              triggers.environment.id,
-            ),
-          ),
-          // this release is waiting on previous releases in the same environment to finish,
-          // and the completed job is part of this environment
-          and(
-            eq(environmentPolicy.releaseSequencing, "wait"),
-            eq(environment.id, triggers.environment.id),
-          ),
-          // this release and environment has a concurrency requirement,
-          // and the completed job is part of this environment and release
-          and(
-            eq(environmentPolicy.concurrencyType, "some"),
-            eq(environment.id, triggers.environment.id),
-            eq(releaseJobTrigger.releaseId, triggers.release.id),
-          ),
-          // this release has a version dependency on another deployment,
-          // and the completed job is part of a release in that other deployment
-          isNotNull(releaseDependency.id),
+          isDependentOnTriggerForCriteria,
+          isWaitingOnPreviousReleasesInSameEnvironment,
+          isWaitingOnConcurrencyRequirementInSameRelease,
+          isDependentOnVersionOfTriggerDeployment,
         ),
       ),
     );
+
+  console.log({ affectedReleaseJobTriggers });
 
   await dispatchReleaseJobTriggers(db)
     .releaseTriggers(

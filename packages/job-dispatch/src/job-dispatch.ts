@@ -3,6 +3,7 @@ import _ from "lodash";
 
 import { inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { dispatchJobsQueue } from "./queue.js";
 
@@ -64,7 +65,7 @@ class DispatchBuilder {
 
     await this.db
       .update(schema.job)
-      .set({ status: "pending" })
+      .set({ status: JobStatus.InProgress })
       .where(
         inArray(
           schema.job.id,

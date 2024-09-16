@@ -59,7 +59,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."job_status" AS ENUM('completed', 'cancelled', 'skipped', 'in_progress', 'action_required', 'pending', 'failure', 'invalid_job_agent', 'invalid_integration', 'external_run_not_found', 'triggered');
+ CREATE TYPE "public"."job_status" AS ENUM('completed', 'cancelled', 'skipped', 'in_progress', 'action_required', 'pending', 'failure', 'invalid_job_agent', 'invalid_integration', 'external_run_not_found');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -142,6 +142,12 @@ CREATE TABLE IF NOT EXISTS "deployment_variable" (
 	"description" text DEFAULT '' NOT NULL,
 	"deployment_id" uuid NOT NULL,
 	"schema" jsonb
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "deployment_variable_set" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"deployment_id" uuid NOT NULL,
+	"variable_set_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "deployment_variable_value" (
@@ -359,7 +365,7 @@ CREATE TABLE IF NOT EXISTS "job" (
 	"job_agent_id" uuid NOT NULL,
 	"job_agent_config" json DEFAULT '{}' NOT NULL,
 	"external_run_id" text,
-	"status" "job_status" DEFAULT 'triggered' NOT NULL,
+	"status" "job_status" DEFAULT 'pending' NOT NULL,
 	"message" text,
 	"reason" "job_reason" DEFAULT 'policy_passing' NOT NULL,
 	"created_at" timestamp DEFAULT now(),
@@ -491,6 +497,18 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "deployment_variable" ADD CONSTRAINT "deployment_variable_deployment_id_deployment_id_fk" FOREIGN KEY ("deployment_id") REFERENCES "public"."deployment"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "deployment_variable_set" ADD CONSTRAINT "deployment_variable_set_deployment_id_deployment_id_fk" FOREIGN KEY ("deployment_id") REFERENCES "public"."deployment"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "deployment_variable_set" ADD CONSTRAINT "deployment_variable_set_variable_set_id_variable_set_id_fk" FOREIGN KEY ("variable_set_id") REFERENCES "public"."variable_set"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -839,6 +857,7 @@ END $$;
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "user_api_key_key_prefix_key_hash_index" ON "user_api_key" ("key_prefix","key_hash");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_deployment_id_key_index" ON "deployment_variable" ("deployment_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_set_deployment_id_variable_set_id_index" ON "deployment_variable_set" ("deployment_id","variable_set_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_variable_id_value_index" ON "deployment_variable_value" ("variable_id","value");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_target_variable_value_id_target_id_index" ON "deployment_variable_value_target" ("variable_value_id","target_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_system_id_slug_index" ON "deployment" ("system_id","slug");--> statement-breakpoint

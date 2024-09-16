@@ -30,6 +30,7 @@ import {
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
@@ -133,7 +134,10 @@ export const deploymentRouter = createTRPCRouter({
                 )
                 .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
                 .where(
-                  and(eq(deployment.id, input.id), eq(job.status, "triggered")),
+                  and(
+                    eq(deployment.id, input.id),
+                    eq(job.status, JobStatus.Pending),
+                  ),
                 )
                 .then((releaseJobTriggers) =>
                   dispatchReleaseJobTriggers(ctx.db)
@@ -273,10 +277,9 @@ export const deploymentRouter = createTRPCRouter({
             eq(target.id, input),
             isNull(environment.deletedAt),
             inArray(job.status, [
-              "completed",
-              "pending",
-              "in_progress",
-              "triggered",
+              JobStatus.Completed,
+              JobStatus.Pending,
+              JobStatus.InProgress,
             ]),
           ),
         )

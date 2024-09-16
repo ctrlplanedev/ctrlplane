@@ -23,7 +23,6 @@ export const jobStatus = pgEnum("job_status", [
   "invalid_job_agent",
   "invalid_integration",
   "external_run_not_found",
-  "triggered",
 ]);
 
 export const jobReason = pgEnum("job_reason", [
@@ -50,7 +49,7 @@ export const job = pgTable("job", {
   //   .default("{}")
   //   .$type<Record<string, any>>(),
 
-  status: jobStatus("status").notNull().default("triggered"),
+  status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
   reason: jobReason("reason").notNull().default("policy_passing"),
   createdAt: timestamp("created_at").defaultNow(),

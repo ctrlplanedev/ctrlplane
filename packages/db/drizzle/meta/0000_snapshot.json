@@ -1,5 +1,5 @@
 {
-  "id": "63e6f93b-d526-48b8-ab70-fd849271472b",
+  "id": "e07f4cb4-a32b-436c-9534-fc267b458ae1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -440,6 +440,60 @@
           "columnsFrom": ["deployment_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.deployment_variable_set": {
+      "name": "deployment_variable_set",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deployment_id": {
+          "name": "deployment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "variable_set_id": {
+          "name": "variable_set_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "deployment_variable_set_deployment_id_variable_set_id_index": {
+          "name": "deployment_variable_set_deployment_id_variable_set_id_index",
+          "columns": ["deployment_id", "variable_set_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "deployment_variable_set_deployment_id_deployment_id_fk": {
+          "name": "deployment_variable_set_deployment_id_deployment_id_fk",
+          "tableFrom": "deployment_variable_set",
+          "tableTo": "deployment",
+          "columnsFrom": ["deployment_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deployment_variable_set_variable_set_id_variable_set_id_fk": {
+          "name": "deployment_variable_set_variable_set_id_variable_set_id_fk",
+          "tableFrom": "deployment_variable_set",
+          "tableTo": "variable_set",
+          "columnsFrom": ["variable_set_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -2111,7 +2165,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'triggered'"
+          "default": "'pending'"
         },
         "message": {
           "name": "message",
@@ -2845,8 +2899,7 @@
         "failure",
         "invalid_job_agent",
         "invalid_integration",
-        "external_run_not_found",
-        "triggered"
+        "external_run_not_found"
       ]
     },
     "public.entity_type": {

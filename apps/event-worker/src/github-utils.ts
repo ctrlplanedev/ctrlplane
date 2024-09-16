@@ -8,7 +8,7 @@ import { env } from "./config.js";
 export const convertStatus = (status: string): JStatus => {
   if (status === "success" || status === "neutral") return JStatus.Completed;
   if (status === "queued" || status === "requested" || status === "waiting")
-    return JStatus.Pending;
+    return JStatus.InProgress;
   if (status === "timed_out" || status === "stale") return JStatus.Failure;
   return status as JStatus;
 };
