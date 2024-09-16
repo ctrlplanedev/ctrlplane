@@ -29,7 +29,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "bullmq": "^5.12.10",
-    "date-fns": "^3.6.0",
+    "date-fns": "catalog:",
     "ioredis": "^5.4.1",
     "lodash": "^4.17.21",
     "ms": "^2.1.3",

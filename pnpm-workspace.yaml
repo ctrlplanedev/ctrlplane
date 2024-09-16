@@ -8,17 +8,19 @@ catalog:
   eslint: ^9.10.0
   typescript-eslint: ^8.3.0
   prettier: ^3.3.3
-  tailwindcss: ^3.4.10
-  typescript: ^5.5.4
+  tailwindcss: ^3.4.11
+  typescript: ^5.6.2
   zod: ^3.23.8
   "@t3-oss/env-core": ^0.11.1
   "@t3-oss/env-nextjs": ^0.11.1
+  "date-fns": ^3.6.0
+  "@octokit/rest": ^20.1.1
 
 catalogs:
   react18:
     react: 18.3.1
     react-dom: 18.3.1
-    "@types/react": ^18.3.3
+    "@types/react": ^18.3.5
     "@types/react-dom": ^18.3.0
   node22:
     "@types/node": ^22.5.5
