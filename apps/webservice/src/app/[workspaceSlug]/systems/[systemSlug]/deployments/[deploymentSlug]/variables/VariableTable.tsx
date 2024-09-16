@@ -37,7 +37,11 @@ export const VariableTable: React.FC<{
   const del = api.deployment.variable.value.delete.useMutation();
   const router = useRouter();
   const { result, search, setSearch } = useMatchSorterWithSearch(variables, {
-    keys: ["key", "description"],
+    keys: [
+      "key",
+      "description",
+      (i) => i.values.map((v) => JSON.stringify(v.value)),
+    ],
   });
   return (
     <>
@@ -85,7 +89,7 @@ export const VariableTable: React.FC<{
                 </TableRow>
                 {variable.values.map((v, idx) => (
                   <TableRow
-                    key={v.id}
+                    key={v.id ?? idx}
                     className={
                       idx !== variable.values.length - 1
                         ? "border-b-neutral-900"
