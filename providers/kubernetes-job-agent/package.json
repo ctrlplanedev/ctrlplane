@@ -22,13 +22,8 @@
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/node-sdk": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-<<<<<<< HEAD
     "@kubernetes/client-node": "^0.22.0",
-    "@t3-oss/env-core": "^0.10.1",
-=======
-    "@kubernetes/client-node": "^0.21.0",
     "@t3-oss/env-core": "catalog:",
->>>>>>> 882b10b1581e2129f566909b051762e1f113248c
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
     "handlebars": "^4.7.8",
