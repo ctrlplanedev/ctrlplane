@@ -5,9 +5,16 @@ import type {
   DeploymentVariableValue,
 } from "@ctrlplane/db/schema";
 import { Fragment } from "react";
+import { useRouter } from "next/navigation";
 import { TbDotsVertical, TbPlus } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ctrlplane/ui/dropdown-menu";
 import { Input } from "@ctrlplane/ui/input";
 import {
   Table,
@@ -18,6 +25,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { AddVariableValueDialog } from "../AddVariableValueDialog";
 
@@ -26,6 +34,8 @@ type VariableData = DeploymentVariable & { values: DeploymentVariableValue[] };
 export const VariableTable: React.FC<{
   variables: VariableData[];
 }> = ({ variables }) => {
+  const del = api.deployment.variable.value.delete.useMutation();
+  const router = useRouter();
   const { result, search, setSearch } = useMatchSorterWithSearch(variables, {
     keys: ["key", "description"],
   });
@@ -87,26 +97,43 @@ export const VariableTable: React.FC<{
                     </TableCell>
                     <TableCell className="space-x-2">
                       {/* {v.deployments.map((d) => (
-                      <div
-                        key={d.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-blue-400 hover:bg-blue-500/15"
-                      >
-                        <TbShip /> {d.name}
-                      </div>
-                    ))}
-                    {v.systems.map((d) => (
-                      <div
-                        key={d.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-green-400 hover:bg-green-500/15"
-                      >
-                        <TbCategory /> {d.name}
-                      </div>
-                    ))} */}
+                        <div
+                          key={d.id}
+                          className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-blue-400 hover:bg-blue-500/15"
+                        >
+                          <TbShip /> {d.name}
+                        </div>
+                      ))}
+                      {v.systems.map((d) => (
+                        <div
+                          key={d.id}
+                          className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-green-400 hover:bg-green-500/15"
+                        >
+                          <TbCategory /> {d.name}
+                        </div>
+                      ))} */}
                     </TableCell>
                     <TableCell className="w-10">
-                      <Button variant="ghost" size="icon">
-                        <TbDotsVertical />
-                      </Button>
+                      {v.id != null && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <TbDotsVertical />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                if (v.id == null) return;
+                                await del.mutateAsync(v.id);
+                                router.refresh();
+                              }}
+                            >
+                              <span>Delete</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
