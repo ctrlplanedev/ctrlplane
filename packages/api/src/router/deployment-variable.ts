@@ -45,6 +45,37 @@ const valueRouter = createTRPCRouter({
       ctx.db.insert(deploymentVariableValue).values(input).returning(),
     ),
 
+  delete: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, ctx, input }) => {
+        const value = await ctx.db
+          .select()
+          .from(deploymentVariableValue)
+          .innerJoin(
+            deploymentVariable,
+            eq(deploymentVariableValue.variableId, deploymentVariable.id),
+          )
+          .where(eq(deploymentVariableValue.id, input))
+          .then(takeFirst);
+        return canUser.perform(Permission.DeploymentUpdate).on({
+          type: "deployment",
+          id: value.deployment_variable.deploymentId,
+        });
+      },
+    })
+    .input(z.string().uuid())
+    .mutation(async ({ ctx, input }) => {
+      // Note: Due to cascading deletes set up in the schema, this will also delete:
+      // - All deploymentVariableValueTarget entries for this value
+      // - All deploymentVariableValueTargetFilter entries for those targets
+
+      return ctx.db
+        .delete(deploymentVariableValue)
+        .where(eq(deploymentVariableValue.id, input))
+        .returning()
+        .then(takeFirstOrNull);
+    }),
+
   setTarget: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

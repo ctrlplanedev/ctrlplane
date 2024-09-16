@@ -1,56 +1,86 @@
 # Systems
 
-In Ctrlplane, a system is a high-level abstraction for organizing and managing
-related deployments. It's designed to streamline your CI/CD pipelines and
-enforce consistency across your infrastructure.
+Systems in Ctrlplane are the highest level of organizational units, designed to
+group related deployments and environments together. They provide a structured
+approach to managing complex deployment pipelines and enforcing consistency
+across your infrastructure.
 
-## Key Concepts
+## Key Features of Systems
 
-- **Logical Grouping:** Systems categorize deployments based on shared
-  attributes or purposes.
-- **Environment Standardization:** All deployments within a system use the same
-  set of environments (e.g., Dev, QA, Staging, Production).
-- **Policy Enforcement:** Systems apply uniform environment policies across all
-  associated deployments.
+- **Deployment Organization:** Systems contain information about all associated
+  deployments, allowing for centralized management.
+- **Environment Standardization:** All deployments within a system share the
+  same set of environments, ensuring consistency across the deployment pipeline.
+- **Scalability:** Systems can accommodate as many deployments and environments
+  as needed, supporting growth and complexity in your infrastructure.
+- **Deployment Cycle Alignment:** Commonly used to group applications with
+  similar deployment cycles, facilitating coordinated releases.
+- **Access Control:** Systems provide a natural boundary for implementing
+  role-based access control (RBAC) policies.
 
-## Benefits for DevOps
+## System Structure
 
-1. **Scalable Management:** Centralize environment and policy configurations at
-   the system level, reducing overhead when managing multiple deployments.
-2. **Consistent Workflows:** Ensure standardized deployment processes across
-   related projects.
-3. **Simplified Governance:** Implement and enforce policies uniformly across
-   all deployments within a system.
-4. **Efficient Onboarding:** Quickly set up new deployments with pre-configured
-   environments and policies.
+1. **Deployments:** Each system can contain multiple deployments, representing
+   different applications or services.
+2. **Environments:** Systems define a set of environments (e.g., Development,
+   QA, Staging, Production) that are shared across all associated deployments.
+3. **Policies:** System-level policies can be applied to govern deployment
+   processes across all included deployments and environments.
+4. **Configurations:** Shared configurations can be defined at the system level
+   and inherited by deployments.
 
-## Implementation
+## Benefits of Using Systems
 
-1. **System Creation:** Define a system with its required environments (e.g.,
-   Dev, QA, Staging, Production).
-2. **Policy Configuration:** Set up environment policies at the system level
-   (e.g., approval processes, security checks, deployment windows).
-3. **Deployment Association:** Link deployments to the appropriate system,
-   automatically inheriting its environments and policies.
+- **Consistency:** Enforce uniform environments and deployment processes across
+  related projects.
+- **Simplified Management:** Centralize configuration and policy management at
+  the system level.
+- **Efficient Onboarding:** Quickly set up new deployments with pre-configured
+  environments and policies.
+- **Coordinated Releases:** Facilitate synchronized deployments for applications
+  with interdependencies.
+- **Improved Visibility:** Gain a holistic view of related deployments and their
+  statuses.
+- **Streamlined Governance:** Apply security and compliance policies
+  consistently across all deployments within a system.
 
 ## Best Practices
 
-- Group deployments logically based on application, team, or business function.
-- Regularly review and update system-level policies to maintain security and
-  compliance.
-- Use systems to enforce standardization across your organization's deployment
-  processes.
-- Leverage system-level configurations to implement infrastructure-as-code
-  principles for your CI/CD pipelines.
+1. **Logical Grouping:** Create systems based on application domains, teams, or
+   deployment cycles.
+2. **Standardized Environments:** Define a consistent set of environments that
+   make sense for your development and release processes.
+3. **Policy Enforcement:** Implement system-wide policies to ensure compliance
+   and security across all deployments.
+4. **Regular Review:** Periodically assess and update system configurations to
+   align with evolving organizational needs.
 
-## Integration Points
+## Example Use Case
 
-- CI/CD Tools: Systems can be integrated with popular CI/CD tools to enforce
-  policies and standardize deployment workflows.
-- Infrastructure-as-Code: Use Ctrlplane's API or CLI to programmatically manage
-  systems and their configurations.
-- Monitoring and Logging: Implement consistent monitoring and logging practices
-  across all deployments within a system.
+A typical use of systems might involve grouping all microservices for a
+particular product:
 
-By leveraging Ctrlplane's systems, DevOps engineers can achieve greater
-consistency, scalability, and control over their deployment processes.
+- **System:** "E-commerce Platform"
+
+  - **Environments:** Dev, QA, Staging, Production
+
+  - **Deployments:**
+
+    - User Authentication Service
+    - Product Catalog Service
+    - Order Processing Service
+    - Payment Gateway Service
+
+  - **Shared Configurations:**
+
+    - Database connection strings
+    - API gateway settings
+
+  - **System-wide Policies:**
+
+    - Automated rollback on failed deployments
+    - Required approvals for production deployments
+
+By organizing these services under one system, you ensure they all progress
+through the same environments and adhere to consistent deployment policies,
+facilitating a coordinated release process for the entire e-commerce platform.

@@ -1,23 +1,23 @@
-"use client";
+import { notFound } from "next/navigation";
 
-import { api } from "~/trpc/react";
+import { api } from "~/trpc/server";
 import { VariableTable } from "./VariableTable";
 
-export default function VariablesPage({
+export default async function VariablesPage({
   params,
 }: {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
 }) {
-  const deployment = api.deployment.bySlug.useQuery(params);
-  const variables = api.deployment.variable.byDeploymentId.useQuery(
-    deployment.data?.id ?? "",
-    { enabled: deployment.isSuccess },
-  );
+  const deployment = await api.deployment.bySlug(params);
+  if (deployment == null) notFound();
+  const variables = await api.deployment.variable.byDeploymentId(deployment.id);
   return (
-    <div>
-      <VariableTable variables={variables.data ?? []} />
-
-      <div className="container mx-auto p-8"></div>
-    </div>
+    <>
+      <div className="h-full overflow-y-auto pb-[100px]">
+        <div className="min-h-full">
+          <VariableTable variables={variables} />
+        </div>
+      </div>
+    </>
   );
 }
