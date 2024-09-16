@@ -40,7 +40,7 @@
   "dependencies": {
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "^0.10.1",
-    "drizzle-orm": "^0.30.10",
+    "drizzle-orm": "^0.33.0",
     "drizzle-zod": "^0.5.1",
     "pg": "^8.11.5",
     "zod": "catalog:"
@@ -49,13 +49,13 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
-    "@types/node": "^20.12.9",
+    "@types/node": "catalog:node22",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "^7.4.2",
-    "drizzle-kit": "^0.21.1",
+    "drizzle-kit": "^0.24.2",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "typescript": "^5.4.5"
+    "typescript": "^5.6.2"
   },
   "prettier": "@ctrlplane/prettier-config"
 }

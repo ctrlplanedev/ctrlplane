@@ -38,7 +38,7 @@
     "@types/bcryptjs": "^2.4.6",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "typescript": "^5.4.5"
+    "typescript": "^5.6.2"
   },
   "prettier": "@ctrlplane/prettier-config"
 }
