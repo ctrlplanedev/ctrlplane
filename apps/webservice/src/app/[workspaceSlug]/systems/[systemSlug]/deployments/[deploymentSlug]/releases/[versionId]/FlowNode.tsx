@@ -6,6 +6,7 @@ import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -25,14 +26,13 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
     (job) => job.environmentId === data.id,
   );
   const completed = environmentJobs?.filter(
-    (job) => job.job.status === "completed",
+    (job) => job.job.status === JobStatus.Completed,
   );
   return (
     <>
       <div
         className={cn(
           "flex w-[250px] items-center justify-between gap-2 rounded-md border bg-neutral-900 px-2.5 py-1",
-          //   isSelected && "border-green-500",
         )}
       >
         {data.label}
