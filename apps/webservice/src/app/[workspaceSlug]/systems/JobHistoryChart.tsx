@@ -16,6 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@ctrlplane/ui/chart";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
@@ -26,9 +27,7 @@ export const JobHistoryChart: React.FC<{
 }> = ({ className, workspace }) => {
   const releaseJobTriggers = api.job.config.byWorkspaceId.useQuery(
     workspace.id,
-    {
-      refetchInterval: 60_000,
-    },
+    { refetchInterval: 60_000 },
   );
 
   const now = startOfDay(new Date());
@@ -37,7 +36,8 @@ export const JobHistoryChart: React.FC<{
       date: d.toString(),
       jobs: (releaseJobTriggers.data ?? []).filter(
         (j) =>
-          j.job?.createdAt != null &&
+          j.job.createdAt != null &&
+          j.job.status !== JobStatus.Pending &&
           startOfDay(j.job.createdAt).toString() === d.toString(),
       ).length,
     }),
@@ -61,8 +61,9 @@ export const JobHistoryChart: React.FC<{
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releaseJobTriggers.data?.filter((t) => t.job != null).length ??
-                "-"}
+              {releaseJobTriggers.data?.filter(
+                (t) => t.job.status !== JobStatus.Pending,
+              ).length ?? "-"}
             </span>
           </div>
 

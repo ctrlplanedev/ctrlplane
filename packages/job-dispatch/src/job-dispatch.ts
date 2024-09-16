@@ -1,22 +1,24 @@
 import type { Tx } from "@ctrlplane/db";
-import type { Job, ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { createTriggeredReleaseJobs } from "./job-creation.js";
+import { inArray } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
+
 import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
-) => Promise<ReleaseJobTrigger[]> | ReleaseJobTrigger[];
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
+) => Promise<schema.ReleaseJobTrigger[]> | schema.ReleaseJobTrigger[];
 
 type ThenFunc = (
   tx: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => Promise<void>;
 
 class DispatchBuilder {
-  private _releaseTriggers: ReleaseJobTrigger[];
+  private _releaseTriggers: schema.ReleaseJobTrigger[];
   private _filters: DispatchFilterFunc[];
   private _then: ThenFunc[];
   constructor(private db: Tx) {
@@ -30,7 +32,7 @@ class DispatchBuilder {
     return this;
   }
 
-  releaseTriggers(t: ReleaseJobTrigger[]) {
+  releaseTriggers(t: schema.ReleaseJobTrigger[]) {
     this._releaseTriggers = t;
     return this;
   }
@@ -40,18 +42,36 @@ class DispatchBuilder {
     return this;
   }
 
-  async dispatch(): Promise<Job[]> {
+  async dispatch(): Promise<schema.Job[]> {
     let t = this._releaseTriggers;
     for (const func of this._filters) t = await func(this.db, t);
 
     if (t.length === 0) return [];
-    const wfs = await createTriggeredReleaseJobs(this.db, t);
+    const wfs = await this.db
+      .select()
+      .from(schema.job)
+      .where(
+        inArray(
+          schema.job.id,
+          t.map((t) => t.jobId),
+        ),
+      );
 
     for (const func of this._then) await func(this.db, t);
 
     await dispatchJobsQueue.addBulk(
       wfs.map((wf) => ({ name: wf.id, data: { jobId: wf.id } })),
     );
+
+    await this.db
+      .update(schema.job)
+      .set({ status: JobStatus.InProgress })
+      .where(
+        inArray(
+          schema.job.id,
+          wfs.map((j) => j.id),
+        ),
+      );
 
     return wfs;
   }

@@ -9,19 +9,28 @@ import type {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
-import { TbCircleCheck, TbLoader2 } from "react-icons/tb";
+import { TbCircleCheck, TbClock, TbLoader2 } from "react-icons/tb";
+
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 const ReleaseIcon: React.FC<{
   job?: Job;
 }> = ({ job }) => {
-  if (job?.status === "pending" || job?.status === "in_progress")
+  if (job?.status === JobStatus.Pending)
+    return (
+      <div className="rounded-full bg-blue-400 p-1 dark:text-black">
+        <TbClock strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.InProgress)
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
         <TbLoader2 strokeWidth={2} />
       </div>
     );
 
-  if (job?.status === "completed")
+  if (job?.status === JobStatus.Completed)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
         <TbCircleCheck strokeWidth={2} />

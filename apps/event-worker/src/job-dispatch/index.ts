@@ -26,8 +26,6 @@ export const createDispatchExecutionJobWorker = () =>
         .then((je) => {
           if (je == null) return;
 
-          console.log(">>> je agent type", je.job_agent.type);
-
           try {
             if (je.job_agent.type === String(JobAgentType.GithubApp))
               dispatchGithubJob(je.job);

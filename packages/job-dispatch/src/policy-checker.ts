@@ -1,25 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
-import type {
-  EnvironmentPolicy,
-  Release,
-  ReleaseJobTrigger,
-  ReleaseJobTriggerInsert,
-} from "@ctrlplane/db/schema";
 import { addMonths, addWeeks, isBefore, isWithinInterval } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, notInArray, sql } from "@ctrlplane/db";
-import {
-  environment,
-  environmentPolicy,
-  environmentPolicyApproval,
-  environmentPolicyDeployment,
-  environmentPolicyReleaseWindow,
-  job,
-  release,
-  releaseJobTrigger,
-} from "@ctrlplane/db/schema";
+import { and, eq, inArray, isNull, ne, notInArray, sql } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { isReleaseJobTriggerInRolloutWindow } from "./gradual-rollout.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
@@ -27,39 +13,40 @@ import { isPassingReleaseDependencyPolicy } from "./release-checker.js";
 
 const isSuccessCriteriaPassing = async (
   db: Tx,
-  policy: EnvironmentPolicy,
-  release: Release,
+  policy: schema.EnvironmentPolicy,
+  release: schema.Release,
 ) => {
   if (policy.successType === "optional") return true;
 
   const wf = await db
     .select({
-      status: job.status,
+      status: schema.job.status,
       count: sql<number>`count(*)`,
     })
-    .from(releaseJobTrigger)
+    .from(schema.releaseJobTrigger)
     .innerJoin(
-      environmentPolicyDeployment,
+      schema.environmentPolicyDeployment,
       eq(
-        environmentPolicyDeployment.environmentId,
-        releaseJobTrigger.environmentId,
+        schema.environmentPolicyDeployment.environmentId,
+        schema.releaseJobTrigger.environmentId,
       ),
     )
-    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
-    .groupBy(job.status)
+    .innerJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
+    .groupBy(schema.job.status)
     .where(
       and(
-        eq(environmentPolicyDeployment.policyId, policy.id),
-        eq(releaseJobTrigger.releaseId, release.id),
+        eq(schema.environmentPolicyDeployment.policyId, policy.id),
+        eq(schema.releaseJobTrigger.releaseId, release.id),
       ),
     );
 
   if (policy.successType === "all")
     return wf.every(({ status, count }) =>
-      status === "completed" ? true : count === 0,
+      status === JobStatus.Completed ? true : count === 0,
     );
 
-  const completed = wf.find((w) => w.status === "completed")?.count ?? 0;
+  const completed =
+    wf.find((w) => w.status === JobStatus.Completed)?.count ?? 0;
   return completed >= policy.successMinimum;
 };
 
@@ -76,22 +63,31 @@ const isSuccessCriteriaPassing = async (
  */
 const isPassingCriteriaPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const policies = await db
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
+    .from(schema.releaseJobTrigger)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .leftJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
+    )
     .where(
       and(
         inArray(
-          releaseJobTrigger.id,
+          schema.releaseJobTrigger.id,
           releaseJobTriggers.map((t) => t.id),
         ),
-        isNull(environment.deletedAt),
+        isNull(schema.environment.deletedAt),
       ),
     );
 
@@ -119,26 +115,35 @@ const isPassingCriteriaPolicy = async (
  */
 export const isPassingApprovalPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const policies = await db
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
+    .from(schema.releaseJobTrigger)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
     .leftJoin(
-      environmentPolicyApproval,
-      eq(environmentPolicyApproval.releaseId, release.id),
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
+    )
+    .leftJoin(
+      schema.environmentPolicyApproval,
+      eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
     )
     .where(
       and(
         inArray(
-          releaseJobTrigger.id,
+          schema.releaseJobTrigger.id,
           releaseJobTriggers.map((t) => t.id),
         ),
-        isNull(environment.deletedAt),
+        isNull(schema.environment.deletedAt),
       ),
     );
 
@@ -163,22 +168,31 @@ export const isPassingApprovalPolicy = async (
  */
 const isPassingJobRolloutPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const policies = await db
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
+    .from(schema.releaseJobTrigger)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .leftJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
+    )
     .where(
       and(
         inArray(
-          releaseJobTrigger.id,
+          schema.releaseJobTrigger.id,
           releaseJobTriggers.map((t) => t.id).filter(isPresent),
         ),
-        isNull(environment.deletedAt),
+        isNull(schema.environment.deletedAt),
       ),
     );
 
@@ -197,11 +211,11 @@ const isPassingJobRolloutPolicy = async (
 };
 
 const exitStatus = [
-  "completed",
-  "invalid_job_agent",
-  "failure",
-  "cancelled",
-  "skipped",
+  JobStatus.Completed,
+  JobStatus.InvalidJobAgent,
+  JobStatus.Failure,
+  JobStatus.Cancelled,
+  JobStatus.Skipped,
 ] as any[];
 
 /**
@@ -234,32 +248,41 @@ const exitStatus = [
  */
 const isPassingReleaseSequencingWaitPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const isAffectedEnvironment = inArray(
-    environment.id,
+    schema.environment.id,
     releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
-  const isNotDeletedEnvironment = isNull(environment.deletedAt);
+  const isNotDeletedEnvironment = isNull(schema.environment.deletedAt);
   const doesEnvironmentPolicyMatchesStatus = eq(
-    environmentPolicy.releaseSequencing,
+    schema.environmentPolicy.releaseSequencing,
     "wait",
   );
   const isNotDispatchedReleaseJobTrigger = notInArray(
-    releaseJobTrigger.id,
+    schema.releaseJobTrigger.id,
     releaseJobTriggers.map((t) => t.id).filter(isPresent),
   );
-  const isActiveJob = notInArray(job.status, exitStatus);
+  const isActiveJob = and(
+    notInArray(schema.job.status, exitStatus),
+    ne(schema.job.status, JobStatus.Pending),
+  );
 
   const activeJobs = await db
     .select()
-    .from(job)
-    .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
+    .from(schema.job)
     .innerJoin(
-      environmentPolicy,
-      eq(environment.policyId, environmentPolicy.id),
+      schema.releaseJobTrigger,
+      eq(schema.job.id, schema.releaseJobTrigger.jobId),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .where(
       and(
@@ -286,28 +309,37 @@ const isPassingReleaseSequencingWaitPolicy = async (
  */
 export const isPassingReleaseSequencingCancelPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTriggerInsert[],
+  releaseJobTriggers: schema.ReleaseJobTriggerInsert[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const isAffectedEnvironment = inArray(
-    environment.id,
+    schema.environment.id,
     releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
-  const isNotDeletedEnvironment = isNull(environment.deletedAt);
+  const isNotDeletedEnvironment = isNull(schema.environment.deletedAt);
   const doesEnvironmentPolicyMatchesStatus = eq(
-    environmentPolicy.releaseSequencing,
+    schema.environmentPolicy.releaseSequencing,
     "cancel",
   );
-  const isActiveJob = notInArray(job.status, exitStatus);
+  const isActiveJob = and(
+    notInArray(schema.job.status, exitStatus),
+    ne(schema.job.status, JobStatus.Pending),
+  );
 
   const activeJobs = await db
     .select()
-    .from(job)
-    .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
+    .from(schema.job)
     .innerJoin(
-      environmentPolicy,
-      eq(environment.policyId, environmentPolicy.id),
+      schema.releaseJobTrigger,
+      eq(schema.job.id, schema.releaseJobTrigger.jobId),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .where(
       and(
@@ -364,32 +396,35 @@ export const isDateInTimeWindow = (
  */
 export const isPassingReleaseWindowPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
-): Promise<ReleaseJobTrigger[]> =>
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
+): Promise<schema.ReleaseJobTrigger[]> =>
   releaseJobTriggers.length === 0
     ? []
     : db
         .select()
-        .from(releaseJobTrigger)
+        .from(schema.releaseJobTrigger)
         .innerJoin(
-          environment,
-          eq(releaseJobTrigger.environmentId, environment.id),
+          schema.environment,
+          eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
         )
         .leftJoin(
-          environmentPolicy,
-          eq(environment.policyId, environmentPolicy.id),
+          schema.environmentPolicy,
+          eq(schema.environment.policyId, schema.environmentPolicy.id),
         )
         .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+          schema.environmentPolicyReleaseWindow,
+          eq(
+            schema.environmentPolicyReleaseWindow.policyId,
+            schema.environmentPolicy.id,
+          ),
         )
         .where(
           and(
             inArray(
-              releaseJobTrigger.id,
+              schema.releaseJobTrigger.id,
               releaseJobTriggers.map((t) => t.id).filter(isPresent),
             ),
-            isNull(environment.deletedAt),
+            isNull(schema.environment.deletedAt),
           ),
         )
         .then((policies) =>
@@ -419,37 +454,57 @@ export const isPassingReleaseWindowPolicy = async (
  */
 const isPassingConcurrencyPolicy = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
-): Promise<ReleaseJobTrigger[]> => {
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
+): Promise<schema.ReleaseJobTrigger[]> => {
   if (releaseJobTriggers.length === 0) return [];
+
+  const isActiveJob = and(
+    notInArray(schema.job.status, exitStatus),
+    ne(schema.job.status, JobStatus.Pending),
+  );
 
   const activeJobSubquery = db
     .selectDistinct({
       count: sql<number>`count(*)`.as("count"),
-      releaseId: releaseJobTrigger.releaseId,
-      environmentId: releaseJobTrigger.environmentId,
+      releaseId: schema.releaseJobTrigger.releaseId,
+      environmentId: schema.releaseJobTrigger.environmentId,
     })
-    .from(job)
-    .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
-    .where(notInArray(job.status, exitStatus))
-    .groupBy(releaseJobTrigger.releaseId, releaseJobTrigger.environmentId)
+    .from(schema.job)
+    .innerJoin(
+      schema.releaseJobTrigger,
+      eq(schema.job.id, schema.releaseJobTrigger.jobId),
+    )
+    .where(isActiveJob)
+    .groupBy(
+      schema.releaseJobTrigger.releaseId,
+      schema.releaseJobTrigger.environmentId,
+    )
     .as("active_job_subquery");
 
   return db
     .select()
-    .from(releaseJobTrigger)
+    .from(schema.releaseJobTrigger)
     .leftJoin(
       activeJobSubquery,
       and(
-        eq(releaseJobTrigger.releaseId, activeJobSubquery.releaseId),
-        eq(releaseJobTrigger.environmentId, activeJobSubquery.environmentId),
+        eq(schema.releaseJobTrigger.releaseId, activeJobSubquery.releaseId),
+        eq(
+          schema.releaseJobTrigger.environmentId,
+          activeJobSubquery.environmentId,
+        ),
       ),
     )
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .leftJoin(environmentPolicy, eq(environment.policyId, environmentPolicy.id))
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .leftJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
+    )
     .where(
       inArray(
-        releaseJobTrigger.id,
+        schema.releaseJobTrigger.id,
         releaseJobTriggers.map((t) => t.id),
       ),
     )
@@ -482,7 +537,7 @@ const isPassingConcurrencyPolicy = async (
 
 export const isPassingAllPolicies = async (
   db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const checks = [

@@ -144,6 +144,12 @@ CREATE TABLE IF NOT EXISTS "deployment_variable" (
 	"schema" jsonb
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "deployment_variable_set" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"deployment_id" uuid NOT NULL,
+	"variable_set_id" uuid NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "deployment_variable_value" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"variable_id" uuid NOT NULL,
@@ -307,7 +313,7 @@ CREATE TABLE IF NOT EXISTS "release_dependency" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "release_job_trigger" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"job_id" uuid,
+	"job_id" uuid NOT NULL,
 	"type" "release_job_trigger_type" NOT NULL,
 	"caused_by_id" uuid,
 	"release_id" uuid NOT NULL,
@@ -366,6 +372,13 @@ CREATE TABLE IF NOT EXISTS "job" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "job_variable" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"job_id" uuid NOT NULL,
+	"key" text NOT NULL,
+	"value" json NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "workspace" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
@@ -383,8 +396,8 @@ CREATE TABLE IF NOT EXISTS "variable_set" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "variable_set_value" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"key" text,
 	"variable_set_id" uuid NOT NULL,
+	"key" text NOT NULL,
 	"value" text NOT NULL
 );
 --> statement-breakpoint
@@ -484,6 +497,18 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "deployment_variable" ADD CONSTRAINT "deployment_variable_deployment_id_deployment_id_fk" FOREIGN KEY ("deployment_id") REFERENCES "public"."deployment"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "deployment_variable_set" ADD CONSTRAINT "deployment_variable_set_deployment_id_deployment_id_fk" FOREIGN KEY ("deployment_id") REFERENCES "public"."deployment"("id") ON DELETE no action ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "deployment_variable_set" ADD CONSTRAINT "deployment_variable_set_variable_set_id_variable_set_id_fk" FOREIGN KEY ("variable_set_id") REFERENCES "public"."variable_set"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -759,13 +784,19 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "variable_set" ADD CONSTRAINT "variable_set_system_id_system_id_fk" FOREIGN KEY ("system_id") REFERENCES "public"."system"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "job_variable" ADD CONSTRAINT "job_variable_job_id_job_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."job"("id") ON DELETE no action ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "variable_set_value" ADD CONSTRAINT "variable_set_value_variable_set_id_variable_set_id_fk" FOREIGN KEY ("variable_set_id") REFERENCES "public"."variable_set"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "variable_set" ADD CONSTRAINT "variable_set_system_id_system_id_fk" FOREIGN KEY ("system_id") REFERENCES "public"."system"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "variable_set_value" ADD CONSTRAINT "variable_set_value_variable_set_id_variable_set_id_fk" FOREIGN KEY ("variable_set_id") REFERENCES "public"."variable_set"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -826,6 +857,7 @@ END $$;
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "user_api_key_key_prefix_key_hash_index" ON "user_api_key" ("key_prefix","key_hash");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_deployment_id_key_index" ON "deployment_variable" ("deployment_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_set_deployment_id_variable_set_id_index" ON "deployment_variable_set" ("deployment_id","variable_set_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_variable_id_value_index" ON "deployment_variable_value" ("variable_id","value");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_target_variable_value_id_target_id_index" ON "deployment_variable_value_target" ("variable_value_id","target_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "deployment_system_id_slug_index" ON "deployment" ("system_id","slug");--> statement-breakpoint
@@ -841,7 +873,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS "release_deployment_id_version_index" ON "rele
 CREATE UNIQUE INDEX IF NOT EXISTS "release_dependency_release_id_deployment_id_target_label_group_id_index" ON "release_dependency" ("release_id","deployment_id","target_label_group_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "system_workspace_id_slug_index" ON "system" ("workspace_id","slug");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "team_member_team_id_user_id_index" ON "team_member" ("team_id","user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "variable_set_value_variable_set_id_key_value_index" ON "variable_set_value" ("variable_set_id","key","value");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "job_variable_job_id_key_index" ON "job_variable" ("job_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "variable_set_value_variable_set_id_key_index" ON "variable_set_value" ("variable_set_id","key");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "runbook_variable_runbook_id_key_index" ON "runbook_variable" ("runbook_id","key");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "entity_role_role_id_entity_type_entity_id_scope_id_scope_type_index" ON "entity_role" ("role_id","entity_type","entity_id","scope_id","scope_type");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "role_permission_role_id_permission_index" ON "role_permission" ("role_id","permission");--> statement-breakpoint

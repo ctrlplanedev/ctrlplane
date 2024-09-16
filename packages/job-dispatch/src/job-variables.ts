@@ -53,7 +53,6 @@ export const createVariables = async (tx: Tx, jobId: string): Promise<void> => {
       : job.runbook_job_trigger != null
         ? await determineVariablesForRunbookJob(tx)
         : [];
-
   if (jobVariables.length > 0)
     await tx.insert(SCHEMA.jobVariable).values(jobVariables);
 };

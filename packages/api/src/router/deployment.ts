@@ -7,7 +7,6 @@ import {
   eq,
   inArray,
   isNull,
-  or,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -31,6 +30,7 @@ import {
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
@@ -132,11 +132,11 @@ export const deploymentRouter = createTRPCRouter({
                   releaseJobTrigger,
                   eq(releaseJobTrigger.releaseId, release.id),
                 )
-                .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
+                .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
                 .where(
                   and(
                     eq(deployment.id, input.id),
-                    isNull(releaseJobTrigger.jobId),
+                    eq(job.status, JobStatus.Pending),
                   ),
                 )
                 .then((releaseJobTriggers) =>
@@ -276,10 +276,11 @@ export const deploymentRouter = createTRPCRouter({
           and(
             eq(target.id, input),
             isNull(environment.deletedAt),
-            or(
-              isNull(job.id),
-              inArray(job.status, ["completed", "pending", "in_progress"]),
-            ),
+            inArray(job.status, [
+              JobStatus.Completed,
+              JobStatus.Pending,
+              JobStatus.InProgress,
+            ]),
           ),
         )
         .orderBy(deployment.id, releaseJobTrigger.createdAt)

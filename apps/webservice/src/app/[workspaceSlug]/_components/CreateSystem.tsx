@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
 import slugify from "slugify";
 import { z } from "zod";
 
@@ -22,6 +21,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
@@ -34,8 +34,6 @@ const systemForm = z.object({
   description: z.string().default(""),
 });
 
-type SystemFormValues = z.infer<typeof systemForm>;
-
 export const CreateSystemDialog: React.FC<{
   children: React.ReactNode;
   workspaceId: string;
@@ -43,7 +41,8 @@ export const CreateSystemDialog: React.FC<{
   const [open, setOpen] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const create = api.system.create.useMutation();
-  const form = useForm<SystemFormValues>({
+  const form = useForm({
+    schema: systemForm,
     defaultValues: {
       name: "",
       slug: "",

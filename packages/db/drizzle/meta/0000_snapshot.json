@@ -1,5 +1,5 @@
 {
-  "id": "68b25708-2e8e-4230-bd85-4f56a6531ea5",
+  "id": "e07f4cb4-a32b-436c-9534-fc267b458ae1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "6",
   "dialect": "postgresql",
@@ -440,6 +440,60 @@
           "columnsFrom": ["deployment_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.deployment_variable_set": {
+      "name": "deployment_variable_set",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "deployment_id": {
+          "name": "deployment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "variable_set_id": {
+          "name": "variable_set_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "deployment_variable_set_deployment_id_variable_set_id_index": {
+          "name": "deployment_variable_set_deployment_id_variable_set_id_index",
+          "columns": ["deployment_id", "variable_set_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "deployment_variable_set_deployment_id_deployment_id_fk": {
+          "name": "deployment_variable_set_deployment_id_deployment_id_fk",
+          "tableFrom": "deployment_variable_set",
+          "tableTo": "deployment",
+          "columnsFrom": ["deployment_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "deployment_variable_set_variable_set_id_variable_set_id_fk": {
+          "name": "deployment_variable_set_variable_set_id_variable_set_id_fk",
+          "tableFrom": "deployment_variable_set",
+          "tableTo": "variable_set",
+          "columnsFrom": ["variable_set_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1698,7 +1752,7 @@
           "name": "job_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "type": {
           "name": "type",
@@ -2157,6 +2211,57 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
+    "public.job_variable": {
+      "name": "job_variable",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "job_variable_job_id_key_index": {
+          "name": "job_variable_job_id_key_index",
+          "columns": ["job_id", "key"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "job_variable_job_id_job_id_fk": {
+          "name": "job_variable_job_id_job_id_fk",
+          "tableFrom": "job_variable",
+          "tableTo": "job",
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "public.workspace": {
       "name": "workspace",
       "schema": "",
@@ -2236,7 +2341,7 @@
           "tableTo": "system",
           "columnsFrom": ["system_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -2254,15 +2359,15 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "key": {
-          "name": "key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "variable_set_id": {
           "name": "variable_set_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -2274,9 +2379,9 @@
         }
       },
       "indexes": {
-        "variable_set_value_variable_set_id_key_value_index": {
-          "name": "variable_set_value_variable_set_id_key_value_index",
-          "columns": ["variable_set_id", "key", "value"],
+        "variable_set_value_variable_set_id_key_index": {
+          "name": "variable_set_value_variable_set_id_key_index",
+          "columns": ["variable_set_id", "key"],
           "isUnique": true
         }
       },
@@ -2287,7 +2392,7 @@
           "tableTo": "variable_set",
           "columnsFrom": ["variable_set_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

@@ -1,8 +1,10 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { onJobCompletion } from "@ctrlplane/job-dispatch";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
 const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
@@ -16,11 +18,8 @@ const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
 
 const convertStatus = (
   status: WorkflowRunEvent["workflow_run"]["status"],
-): schema.JobStatus => {
-  if (status === "completed") return "completed";
-  if (status === "in_progress") return "in_progress";
-  return "pending";
-};
+): schema.JobStatus =>
+  status === JobStatus.Completed ? JobStatus.Completed : JobStatus.InProgress;
 
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const { id, status: externalStatus, conclusion } = event.workflow_run;
@@ -30,8 +29,12 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
       ? convertConclusion(conclusion)
       : convertStatus(externalStatus);
 
-  return db
+  const job = await db
     .update(schema.job)
     .set({ status })
-    .where(eq(schema.job.externalRunId, id.toString()));
+    .where(eq(schema.job.externalRunId, id.toString()))
+    .returning()
+    .then(takeFirst);
+
+  if (job.status === JobStatus.Completed) return onJobCompletion(job);
 };

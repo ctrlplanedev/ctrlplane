@@ -24,6 +24,7 @@ import {
   isDateInTimeWindow,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -31,7 +32,7 @@ const releaseJobTriggerQuery = (tx: Tx) =>
   tx
     .select()
     .from(releaseJobTrigger)
-    .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
+    .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
     .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
     .leftJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .leftJoin(deployment, eq(release.deploymentId, deployment.id))
@@ -256,9 +257,12 @@ const jobTriggerRouter = createTRPCRouter({
         ctx.db
           .select()
           .from(releaseJobTrigger)
-          .leftJoin(job, eq(job.id, releaseJobTrigger.jobId))
+          .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
           .where(
-            and(eq(releaseJobTrigger.environmentId, input), isNull(job.id)),
+            and(
+              eq(releaseJobTrigger.environmentId, input),
+              eq(job.status, JobStatus.Pending),
+            ),
           )
           .then((jcs) =>
             dispatchReleaseJobTriggers(ctx.db)

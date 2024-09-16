@@ -21,6 +21,7 @@ import {
   deployment,
   environment,
   environmentPolicy,
+  job,
   release,
   releaseDependency,
   releaseJobTrigger,
@@ -30,7 +31,6 @@ import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
   createReleaseJobTriggers,
-  createTriggeredReleaseJobs,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
   isPassingEnvironmentPolicy,
@@ -150,11 +150,16 @@ export const releaseRouter = createTRPCRouter({
               ),
             )
             .then((existingReleaseJobTriggers) =>
-              createTriggeredReleaseJobs(
-                tx,
-                existingReleaseJobTriggers,
-                "cancelled",
-              ).then(() => {}),
+              tx
+                .update(job)
+                .set({ status: "cancelled" })
+                .where(
+                  inArray(
+                    job.id,
+                    existingReleaseJobTriggers.map((t) => t.jobId),
+                  ),
+                )
+                .then(() => {}),
             );
 
         const releaseJobTriggers = await createReleaseJobTriggers(
