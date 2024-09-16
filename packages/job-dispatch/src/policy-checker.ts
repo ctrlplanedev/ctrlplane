@@ -33,28 +33,3 @@ export const isPassingAllPolicies = async (
 
   return passingJobs;
 };
-
-/**
- * Critical checks that must pass, and if they fail, we should try to deploy an
- * earlier release
- */
-export const criticalChecks = [isPassingLockingPolicy, isPassingApprovalPolicy];
-
-/**
- * Critical checks that must pass, but don't require trying an earlier release
- * if they fail
- */
-export const terminalChecks = [
-  isPassingReleaseDependencyPolicy,
-  isPassingReleaseSequencingWaitPolicy,
-];
-
-/**
- * Non-critical checks that influence dispatch but don't necessarily prevent it
- */
-export const nonCriticalChecks = [
-  isPassingCriteriaPolicy,
-  isPassingReleaseWindowPolicy,
-  isPassingConcurrencyPolicy,
-  isPassingJobRolloutPolicy,
-];
