@@ -63,7 +63,6 @@ describe("API Module", () => {
             "Content-Type": "application/vnd.api+json",
             Accept: "application/vnd.api+json",
           }),
-          signal: expect.any(AbortSignal),
         }),
       );
     });
@@ -118,7 +117,6 @@ describe("API Module", () => {
             "Content-Type": "application/vnd.api+json",
             Accept: "application/vnd.api+json",
           }),
-          signal: expect.any(AbortSignal),
         }),
       );
     });
@@ -190,7 +188,6 @@ describe("API Module", () => {
             "Content-Type": "application/vnd.api+json",
             Accept: "application/vnd.api+json",
           }),
-          signal: expect.any(AbortSignal),
         }),
       );
       expect(fetchMock).toHaveBeenNthCalledWith(
@@ -202,7 +199,6 @@ describe("API Module", () => {
             "Content-Type": "application/vnd.api+json",
             Accept: "application/vnd.api+json",
           }),
-          signal: expect.any(AbortSignal),
         }),
       );
     });

@@ -8,7 +8,6 @@ import type { Variable, Workspace } from "./types.js";
 import { listVariables, listWorkspaces } from "./api.js";
 import { env } from "./config.js";
 import { api } from "./sdk.js";
-import { omitNullUndefined } from "./utils.js";
 
 const workspaceTemplate = handlebars.compile(
   env.CTRLPLANE_WORKSPACE_TARGET_NAME,
@@ -35,20 +34,11 @@ export async function scan() {
       logger.info(
         `  Found ${variables.length} variables in workspace '${workspace.attributes.name}'`,
       );
-      const { terraformVariables, envVariables } = processVariables(variables);
+      const variableLabels = processVariables(variables);
       const tagLabels = processWorkspaceTags(workspace.attributes["tag-names"]);
       const vcsRepoLabels = processVcsRepo(workspace.attributes["vcs-repo"]);
       const link = buildWorkspaceLink(workspace);
       const targetName = workspaceTemplate({ workspace });
-
-      const labels = buildLabels(
-        workspace,
-        terraformVariables,
-        envVariables,
-        tagLabels,
-        vcsRepoLabels,
-        link,
-      );
 
       const target: SetTargetProvidersTargetsRequestTargetsInner = {
         version: "terraform/v1",
@@ -58,7 +48,14 @@ export async function scan() {
         config: {
           workspaceId: workspace.id,
         },
-        labels,
+        labels: {
+          "terraform/organization": env.TFE_ORGANIZATION,
+          "terraform/workspace-name": workspace.attributes.name,
+          ...variableLabels,
+          ...tagLabels,
+          ...vcsRepoLabels,
+          "ctrlplane/link": link,
+        },
       };
 
       targets.push(target);
@@ -94,22 +91,17 @@ export async function scan() {
  * @param variables The array of variables to process.
  * @returns An object containing terraformVariables and envVariables.
  */
-function processVariables(variables: Variable[]) {
-  return variables.reduce(
-    (acc, { attributes: { key, value, category } }) => {
-      if (category === "terraform") {
-        acc.terraformVariables[`var/${key}`] = value;
-      } else {
-        acc.envVariables[`env/${key}`] = value;
-      }
-      return acc;
-    },
-    {
-      terraformVariables: {} as Record<string, string>,
-      envVariables: {} as Record<string, string>,
-    },
+const processVariables = (variables: Variable[]) =>
+  Object.fromEntries(
+    variables.map((variable) => {
+      return [
+        variable.attributes.category === "terraform"
+          ? `var/${variable.attributes.key}`
+          : `env/${variable.attributes.key}`,
+        variable.attributes.value,
+      ];
+    }),
   );
-}
 
 /**
  * Processes workspace tags into prefixed label objects.
@@ -139,34 +131,6 @@ function processVcsRepo(
     ...(branch && { "vcs-repo/branch": branch }),
     ...(repoUrl && { "vcs-repo/repository-http-url": repoUrl }),
   };
-}
-
-/**
- * Builds labels for the target.
- * @param workspace The workspace object.
- * @param terraformVariables The Terraform variables.
- * @param envVariables The environment variables.
- * @param tagLabels The workspace tag labels.
- * @param vcsRepoLabels The VCS repository labels.
- * @returns An object containing all labels.
- */
-function buildLabels(
-  workspace: Workspace,
-  terraformVariables: Record<string, string>,
-  envVariables: Record<string, string>,
-  tagLabels: Record<string, string>,
-  vcsRepoLabels: Record<string, string>,
-  link: string,
-) {
-  return omitNullUndefined({
-    "terraform/organization": env.TFE_ORGANIZATION,
-    "terraform/workspace-name": workspace.attributes.name,
-    ...terraformVariables,
-    ...envVariables,
-    ...tagLabels,
-    ...vcsRepoLabels,
-    "ctrlplane/link": link,
-  });
 }
 
 /**

@@ -14,7 +14,7 @@ import { env } from "./config.js";
  * @returns The JSON response parsed as ResponseType.
  * @throws An error if all retry attempts fail or if the global timeout is exceeded.
  */
-async function fetchJson<ResponseType>(
+async function fetchRetry<ResponseType>(
   url: string,
   options: RequestInit = {},
 ): Promise<ResponseType> {
@@ -60,9 +60,9 @@ export async function listWorkspaces(): Promise<Workspace[]> {
   let nextPageUrl: string | null =
     `${apiUrl}/organizations/${env.TFE_ORGANIZATION}/workspaces`;
 
-  while (nextPageUrl) {
+  while (nextPageUrl != null) {
     try {
-      const data: ApiResponse<Workspace[]> = await fetchJson<
+      const data: ApiResponse<Workspace[]> = await fetchRetry<
         ApiResponse<Workspace[]>
       >(nextPageUrl, { headers });
       workspaces.push(...data.data);
@@ -97,7 +97,7 @@ export async function listVariables(workspaceId: string): Promise<Variable[]> {
 
   while (nextPageUrl) {
     try {
-      const data: ApiResponse<Variable[]> = await fetchJson<
+      const data: ApiResponse<Variable[]> = await fetchRetry<
         ApiResponse<Variable[]>
       >(nextPageUrl, { headers });
       variables.push(...data.data);
