@@ -17,7 +17,7 @@
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@google-cloud/container": "^5.16.0",
-    "@kubernetes/client-node": "^0.21.0",
+    "@kubernetes/client-node": "^0.22.0",
     "@octokit/auth-app": "^7.1.0",
     "@octokit/rest": "^20.1.1",
     "@t3-oss/env-core": "^0.10.1",
