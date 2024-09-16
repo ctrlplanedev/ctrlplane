@@ -39,7 +39,7 @@
   },
   "dependencies": {
     "@ctrlplane/validators": "workspace:*",
-    "@t3-oss/env-core": "^0.10.1",
+    "@t3-oss/env-core": "catalog:",
     "drizzle-orm": "^0.33.0",
     "drizzle-zod": "^0.5.1",
     "pg": "^8.11.5",

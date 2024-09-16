@@ -29,7 +29,7 @@
     "@opentelemetry/api-logs": "^0.52.1",
     "@opentelemetry/instrumentation": "^0.52.1",
     "@opentelemetry/sdk-logs": "^0.52.1",
-    "@t3-oss/env-nextjs": "^0.10.1",
+    "@t3-oss/env-nextjs": "catalog:",
     "@tailwindcss/typography": "^0.5.13",
     "@tanstack/react-query": "^5.35.5",
     "@tanstack/react-table": "^8.17.3",

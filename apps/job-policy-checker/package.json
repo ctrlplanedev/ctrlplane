@@ -16,7 +16,7 @@
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-    "@t3-oss/env-core": "^0.10.1",
+    "@t3-oss/env-core": "catalog:",
     "cron": "^3.1.7",
     "zod": "catalog:"
   },

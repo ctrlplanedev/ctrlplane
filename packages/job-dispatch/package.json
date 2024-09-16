@@ -27,7 +27,7 @@
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-    "@t3-oss/env-core": "^0.10.1",
+    "@t3-oss/env-core": "catalog:",
     "bullmq": "^5.12.10",
     "date-fns": "^3.6.0",
     "ioredis": "^5.4.1",

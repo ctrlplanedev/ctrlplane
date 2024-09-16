@@ -24,7 +24,7 @@
     "@ctrlplane/validators": "workspace:*",
     "@google-cloud/container": "^5.16.0",
     "@kubernetes/client-node": "^0.21.0",
-    "@t3-oss/env-core": "^0.10.1",
+    "@t3-oss/env-core": "catalog:",
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
     "google-auth-library": "^9.13.0",

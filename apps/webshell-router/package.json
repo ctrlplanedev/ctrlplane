@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
-    "@t3-oss/env-core": "^0.10.1",
+    "@t3-oss/env-core": "catalog:",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
