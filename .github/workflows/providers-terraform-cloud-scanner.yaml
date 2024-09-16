@@ -1,4 +1,4 @@
-name: Providers / Google Compute Scanner
+name: Providers / Terraform Cloud Scanner
 
 on:
   pull_request:
