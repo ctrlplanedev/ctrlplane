@@ -31,7 +31,8 @@ export const authConfig: NextAuthConfig = {
   ],
   callbacks: {
     session: (opts) => {
-      if (!("user" in opts)) throw "unreachable with session strategy";
+      if (!("user" in opts))
+        throw new Error("unreachable with session strategy");
       return {
         ...opts.session,
         token: opts.token,

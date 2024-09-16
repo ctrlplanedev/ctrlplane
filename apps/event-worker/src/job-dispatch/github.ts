@@ -95,7 +95,7 @@ export const dispatchGithubJob = async (je: Job) => {
 
     runId = runId_;
     status = status_;
-  } catch (e) {
+  } catch {
     await db.update(job).set({
       status: JobStatus.ExternalRunNotFound,
       message: `Run ID not found for job ${je.id}`,
