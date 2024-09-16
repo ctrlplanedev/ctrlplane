@@ -1,5 +1,8 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig, JobConfigInsert } from "@ctrlplane/db/schema";
+import type {
+  ReleaseJobTrigger,
+  ReleaseJobTriggerInsert,
+} from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
@@ -9,10 +12,10 @@ import {
   deployment,
   environment,
   environmentPolicy,
-  jobConfig,
-  jobExecution,
+  job,
   release,
   releaseDependency,
+  releaseJobTrigger,
   target,
   targetLabelGroup,
 } from "@ctrlplane/db/schema";
@@ -21,11 +24,11 @@ import {
  *
  * @param db
  * @param wf
- * @returns A promise that resolves to the job configs that pass the regex or semver policy, if any.
+ * @returns A promise that resolves to the release job triggers that pass the regex or semver policy, if any.
  */
 export const isPassingEnvironmentPolicy = async (
   db: Tx,
-  wf: JobConfigInsert[],
+  wf: ReleaseJobTriggerInsert[],
 ) => {
   const envIds = wf.map((v) => v.environmentId).filter(isPresent);
   const policies = await db
@@ -63,17 +66,17 @@ export const isPassingEnvironmentPolicy = async (
 
 export const isPassingReleaseDependencyPolicy = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return [];
+  if (releaseJobTriggers.length === 0) return [];
 
   const jcs = await db
     .select()
-    .from(jobConfig)
-    .leftJoin(target, eq(jobConfig.targetId, target.id))
+    .from(releaseJobTrigger)
+    .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
     .leftJoin(
       releaseDependency,
-      eq(releaseDependency.releaseId, jobConfig.releaseId),
+      eq(releaseDependency.releaseId, releaseJobTrigger.releaseId),
     )
     .leftJoin(
       targetLabelGroup,
@@ -81,15 +84,15 @@ export const isPassingReleaseDependencyPolicy = async (
     )
     .where(
       inArray(
-        jobConfig.id,
-        jobConfigs.map((jc) => jc.id),
+        releaseJobTrigger.id,
+        releaseJobTriggers.map((jc) => jc.id),
       ),
     )
     .then((rows) =>
       _.chain(rows)
-        .groupBy("job_config.id")
+        .groupBy((row) => row.release_job_trigger.id)
         .map((jc) => ({
-          jobConfig: jc[0]!.job_config,
+          releaseJobTrigger: jc[0]!.release_job_trigger,
           target: jc[0]!.target,
           releaseDependencies: jc
             .map((v) => ({
@@ -104,7 +107,7 @@ export const isPassingReleaseDependencyPolicy = async (
   return Promise.all(
     jcs.map(async (jc) => {
       if (jc.releaseDependencies.length === 0 || jc.target == null)
-        return jc.jobConfig;
+        return jc.releaseJobTrigger;
 
       const t = jc.target;
 
@@ -115,16 +118,16 @@ export const isPassingReleaseDependencyPolicy = async (
 
           const targetLabelsForGroup = _.chain(t.labels).pick(tlg.keys).value();
 
-          const dependentJobExecutions = await db
+          const dependentJobs = await db
             .select()
-            .from(jobExecution)
-            .innerJoin(jobConfig, eq(jobExecution.jobConfigId, jobConfig.id))
-            .innerJoin(target, eq(jobConfig.targetId, target.id))
-            .innerJoin(release, eq(jobConfig.releaseId, release.id))
+            .from(job)
+            .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
+            .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+            .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
             .innerJoin(deployment, eq(release.deploymentId, deployment.id))
             .where(
               and(
-                eq(jobExecution.status, "completed"),
+                eq(job.status, "completed"),
                 eq(deployment.id, releaseDep.deploymentId),
                 sql.raw(
                   `
@@ -138,7 +141,7 @@ export const isPassingReleaseDependencyPolicy = async (
               ),
             );
 
-          return dependentJobExecutions.some((je) =>
+          return dependentJobs.some((je) =>
             releaseDep.ruleType === "semver"
               ? satisfies(je.release.version, releaseDep.rule)
               : new RegExp(releaseDep.rule).test(je.release.version),
@@ -148,7 +151,7 @@ export const isPassingReleaseDependencyPolicy = async (
 
       const isAllDependenciesMet =
         numDepsPassing === jc.releaseDependencies.length;
-      return isAllDependenciesMet ? jc.jobConfig : null;
+      return isAllDependenciesMet ? jc.releaseJobTrigger : null;
     }),
   ).then((v) => v.filter(isPresent));
 };

@@ -1,5 +1,5 @@
 # https://github.com/WhiskeySockets/Baileys/issues/1003#issuecomment-2306467419
-ARG NODE_VERSION=20 
+ARG NODE_VERSION=20
 FROM node:${NODE_VERSION}-alpine
 
 RUN apk add --no-cache libc6-compat python3 make g++ bash nano

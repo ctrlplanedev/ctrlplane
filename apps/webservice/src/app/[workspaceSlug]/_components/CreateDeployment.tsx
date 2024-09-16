@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
 import slugify from "slugify";
 import { z } from "zod";
 
@@ -22,6 +21,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import {
@@ -40,10 +40,8 @@ const deploymentForm = z.object({
   name: z.string().min(3).max(255),
   slug: z.string().min(3).max(255),
   systemId: z.string().uuid(),
-  description: z.string().default(""),
+  description: z.string(),
 });
-
-type DeploymentFormValues = z.infer<typeof deploymentForm>;
 
 export const CreateDeploymentDialog: React.FC<{
   defaultSystemId?: string;
@@ -52,7 +50,8 @@ export const CreateDeploymentDialog: React.FC<{
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const create = api.deployment.create.useMutation();
-  const form = useForm<DeploymentFormValues>({
+  const form = useForm({
+    schema: deploymentForm,
     defaultValues: {
       systemId: defaultSystemId,
       name: "",

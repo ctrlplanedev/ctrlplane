@@ -1,53 +1,73 @@
-# Workflow
+# Jobs
 
-In Ctrlplane, **workflows** represent the execution of your existing deployment
-pipelines. Ctrlplane does not aim to replace your existing pipeline tools (e.g.,
-GitHub Actions, GitLab CI/CD, Jenkins); instead, it complements them by
-providing a powerful trigger mechanism and integrations.
+Jobs in Ctrlplane represent external running processes, typically integrating
+with your existing CI/CD tools such as GitHub Actions, GitLab CI/CD, Kubernetes
+Jobs, Argo Workflows, and others. These jobs reflect the status of processes
+running in external systems, providing a centralized view of your deployment
+activities across various platforms.
 
-Workflows can be automatically triggered by various events within Ctrlplane:
+## Purpose of Jobs in Ctrlplane
 
-- **New Releases:** When you create a new release of your software, Ctrlplane
-  can trigger workflows to deploy that release to specific environments.
-- **New Targets:** The addition of new targets (e.g., a
-  newly discovered Kubernetes cluster) can initiate workflows to deploy your
-  software to that target.
-- **Target Updates:** If a target changes (e.g., a
-  configuration update), Ctrlplane can trigger workflows to re-deploy your
-  software or perform other necessary actions.
+The primary purpose of jobs in Ctrlplane is to:
+
+1. Reflect the status of external processes
+2. Provide a unified view of deployment activities
+3. Enable orchestration and coordination across different CI/CD tools
+
+It's important to note that Ctrlplane is not meant to replace your existing
+CI/CD tools, but rather to complement them by providing additional orchestration
+capabilities.
+
+## Job Creation Triggers
+
+Jobs in Ctrlplane can be created by various events:
+
+- New releases
+- New targets added to an environment
+- Changes in filtering labels of an environment or target
+- Manual intervention
+- Triggering of a runbook
 
 ## Job Agents
 
-Job agents are the core of Ctrlplane's integration capabilities. They are
-responsible for triggering your existing pipelines in external systems.
-Ctrlplane supports a variety of job agents for popular CI/CD platforms,
-allowing you to seamlessly integrate with your preferred tools.
+Job agents are the key components that facilitate the integration between
+Ctrlplane and external CI/CD systems. When a job needs to be triggered,
+Ctrlplane uses the appropriate job agent to initiate the process in the
+underlying CI/CD tool.
 
-Each deployment in Ctrlplane can be configured with one job agents. This means
-you can tailor your triggers and workflows to the specific requirements of each
-deployment.
+Job agents are responsible for:
 
-## How It Works
+1. Triggering jobs in the external system
+2. Keeping the job status in Ctrlplane synchronized with the external system
 
-1. **Configuration:** When setting up your deployment, you select and configure
-   the appropriate jobs. This involves specifying the provider (e.g.,
-   GitHub, GitLab, Jenkins), credentials, and any other necessary details.
-2. **Trigger Event:** When a trigger event occurs (e.g., new release, new
-   target), Ctrlplane identifies the relevant deployments and their associated
-   job agents.
-3. **Job Agent Activation:** Ctrlplane activates the configured job agents,
-   sending the necessary information to trigger the corresponding pipelines in
-   your external systems.
-4. **Pipeline Execution:** Your existing pipelines run as they normally would,
-   deploying your software, running tests, or performing other actions defined
-   within your pipeline.
+## Benefits of Using Ctrlplane for Job Management
 
-## Key Points
+While it's recommended to use the native interfaces of your CI/CD tools for
+real-time information, Ctrlplane offers several advantages:
 
-- Workflows in Ctrlplane represent the execution of your existing pipelines.
-- Job Agents enable seamless integration with various CI/CD platforms.
-- Each deployment can be configured with specific job agents to tailor the
-  triggering mechanism.
+1. **Centralized View:** Ctrlplane provides a unified interface to monitor jobs
+   across different CI/CD platforms.
+2. **Advanced Orchestration:** Based on configured policies, targets, and
+   environments, Ctrlplane can orchestrate complex deployment scenarios that may
+   involve multiple CI/CD systems.
+3. **Automated Triggering:** Ctrlplane can automatically trigger jobs based on
+   various events, reducing manual intervention.
+4. **Cross-Platform Coordination:** Ctrlplane can coordinate jobs across
+   different CI/CD platforms, enabling more complex deployment strategies.
 
-Ctrlplane complements your existing pipelines, providing a powerful trigger
-mechanism and centralized management.
+## Best Practices
+
+1. **Use Native Tools for Detailed Monitoring:** While Ctrlplane provides status
+   updates, use the native interfaces of your CI/CD tools for detailed,
+   real-time information about job execution.
+2. **Leverage Ctrlplane for Orchestration:** Use Ctrlplane's features to
+   orchestrate complex deployment scenarios that involve multiple systems or
+   stages.
+3. **Regular Synchronization:** Ensure that your job agents are configured to
+   regularly synchronize status information between Ctrlplane and your CI/CD
+   tools.
+
+By leveraging jobs and job agents in Ctrlplane, you can streamline your
+deployment processes, gain better visibility across your CI/CD landscape, and
+implement more sophisticated deployment strategies that span multiple tools and
+platforms.

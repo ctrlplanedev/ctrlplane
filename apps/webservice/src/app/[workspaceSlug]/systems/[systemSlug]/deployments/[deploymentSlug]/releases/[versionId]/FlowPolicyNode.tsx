@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -146,16 +147,13 @@ const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
     refetchInterval: 10_000,
   });
   const envIds = policyDeployments.map((p) => p.environmentId);
-  const jobs = allJobs.data?.filter((j) =>
-    envIds.includes(j.environmentId ?? ""),
-  );
+  const jobs = allJobs.data?.filter((j) => envIds.includes(j.environmentId));
 
   if (successType === "optional") return null;
 
   if (successType === "some") {
     const passing =
-      jobs?.filter((job) => job.jobExecution?.status === "completed").length ??
-      0;
+      jobs?.filter((job) => job.job.status === JobStatus.Completed).length ?? 0;
 
     const isMinSatified = passing >= successMinimum;
     return (
@@ -167,7 +165,7 @@ const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
   }
 
   const areAllCompleted =
-    jobs?.every((job) => job.jobExecution?.status === "completed") ?? true;
+    jobs?.every((job) => job.job.status === JobStatus.Completed) ?? true;
 
   return (
     <div className="flex items-center gap-2">

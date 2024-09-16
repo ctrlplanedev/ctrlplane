@@ -1,12 +1,10 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
 import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { githubConfigFile } from "./github.js";
-import { jobAgent } from "./job-execution.js";
-import { release } from "./release.js";
+import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
 
 export const deployment = pgTable(
@@ -33,14 +31,6 @@ export const deployment = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );
-
-export const deploymentRelations = relations(deployment, ({ many, one }) => ({
-  system: one(system, {
-    fields: [deployment.systemId],
-    references: [system.id],
-  }),
-  releases: many(release),
-}));
 
 const deploymentInsert = createInsertSchema(deployment, {
   slug: z.string().min(1),

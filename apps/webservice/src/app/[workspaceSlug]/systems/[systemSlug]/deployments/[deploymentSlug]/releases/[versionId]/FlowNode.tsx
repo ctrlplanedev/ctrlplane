@@ -6,6 +6,7 @@ import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -15,26 +16,28 @@ type EnvironmentNodeProps = NodeProps<
 
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const { data } = node;
-  const jobConfigs = api.job.config.byReleaseId.useQuery(data.release.id, {
-    refetchInterval: 10_000,
-  });
-  const environmentJobs = jobConfigs.data?.filter(
+  const releaseJobTriggers = api.job.config.byReleaseId.useQuery(
+    data.release.id,
+    {
+      refetchInterval: 10_000,
+    },
+  );
+  const environmentJobs = releaseJobTriggers.data?.filter(
     (job) => job.environmentId === data.id,
   );
   const completed = environmentJobs?.filter(
-    (job) => job.jobExecution?.status === "completed",
+    (job) => job.job.status === JobStatus.Completed,
   );
   return (
     <>
       <div
         className={cn(
           "flex w-[250px] items-center justify-between gap-2 rounded-md border bg-neutral-900 px-2.5 py-1",
-          //   isSelected && "border-green-500",
         )}
       >
         {data.label}
 
-        {jobConfigs.data != null && (
+        {releaseJobTriggers.data != null && (
           <Badge
             variant="outline"
             className="rounded-md text-xs text-muted-foreground"

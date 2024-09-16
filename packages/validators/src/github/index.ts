@@ -6,3 +6,8 @@ export const configSchema = z.object({
   repo: z.string().min(1),
   workflowId: z.number(),
 });
+
+export enum GithubEvent {
+  Push = "push",
+  WorkflowRun = "workflow_run",
+}

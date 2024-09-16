@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
@@ -31,12 +32,11 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
     <Table className="w-full min-w-max border-separate border-spacing-0">
       <TableBody>
         {deployments.data?.map((deployment, idx) => {
-          const jobConfig = jobs.data
-            ?.filter((j) => j.execution != null)
-            .filter(
+          const releaseJobTrigger = jobs.data
+            ?.filter(
               (j) =>
-                j.execution?.status === "completed" ||
-                j.execution?.status === "pending",
+                j.job.status === JobStatus.Completed ||
+                j.job.status === JobStatus.Pending,
             )
             .find((j) => j.deployment?.id === deployment.id);
 
@@ -58,13 +58,13 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
                   idx === deployments.data.length - 1 && "rounded-br-md",
                 )}
               >
-                {jobConfig && (
+                {releaseJobTrigger && (
                   <ReleaseCell
                     deployment={deployment}
-                    jobConfig={{
-                      ...jobConfig,
-                      release: jobConfig.release,
-                      execution: jobConfig.execution!,
+                    releaseJobTrigger={{
+                      ...releaseJobTrigger,
+                      release: releaseJobTrigger.release,
+                      job: releaseJobTrigger.job,
                     }}
                   />
                 )}

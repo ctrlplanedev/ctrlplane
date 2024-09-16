@@ -1,40 +1,107 @@
 # Environments
 
-In Ctrlplane, environments are logical groupings of targets, essential for
-structuring your CI/CD pipeline. Common examples:
+Environments in Ctrlplane are logical groupings of targets that represent
+distinct stages in your software deployment pipeline. They are defined at the
+system level and play a crucial role in organizing and managing the deployment
+process across various infrastructure components.
 
-- **QA**: For thorough testing and validation
-- **Staging**: Pre-production environment mirroring production
-- **Production**: Live environment for end-users
+## Key Concepts
 
-Benefits:
+### System-Level Definition
 
-- Clear separation of deployment stages
-- Efficient version management across environments
-- Granular policy enforcement for environment transitions
+Environments are defined at the system level, ensuring consistency across all
+deployments within a system. This approach allows for standardized progression
+of releases through predefined stages.
 
-## Environment Policies
+### Environment Policies
 
-Configurable settings to control inter-environment deployments:
+Environment policies determine how deployments move from one environment's
+targets to the next. These policies can include:
 
-- **Approval Workflows**: Implement manual gates (e.g., Staging to Production)
-- **Deployment Windows**: Schedule deployments for specific timeframes
-- **Rate Limiting**: Set concurrent deployment limits or caps within time
-  periods
-- **Version Validation**: Use regex or Semver patterns to validate deployment
-  versions
+- Approval workflows
+- Automated checks
+- Rollback strategies
+- Deployment windows
 
-## Target-Environment Association
+### Target Filters
 
-Targets are dynamically assigned to environments using a label-based system:
+Each environment uses target filters to dynamically determine which targets are
+associated with it. This feature allows for flexible and automatic assignment of
+targets to environments based on their characteristics.
 
-1. Define labels on targets
-2. Set up environment filters to match these labels
-3. Upon registration, targets are automatically added to matching environments
-4. Associated workflows trigger automatically
+## Dynamic Target Association
 
-## Key Takeaways
+The use of target filters enables dynamic addition and removal of targets from
+environments. As a result:
 
-- Environments provide structured control over the deployment pipeline
-- Policies enhance governance and security for environment transitions
-- Label-based system allows flexible, dynamic target-environment associations
+1. Pipelines and deployments automatically run against newly added targets.
+2. New software releases or upgrades are automatically applied to relevant
+   targets.
+
+This dynamic association ensures that your deployment process remains agile and
+responsive to changes in your infrastructure.
+
+## Scalability for Distributed Systems
+
+In large-scale distributed systems, you may have multiple production
+environments, each corresponding to a different deployment region. This setup
+allows for:
+
+- Staggered rollouts across regions
+- Region-specific configurations
+- Improved fault isolation
+
+For example, you might have production environments like `prod-us-west`,
+`prod-us-east`, `prod-eu-central`, each with its own set of targets and
+potentially different rollout schedules.
+
+## Benefits of Using Environments
+
+1. **Structured Deployment Process**: Clearly defined stages for software
+   progression.
+2. **Consistency**: Standardized environments across all deployments in a
+   system.
+3. **Flexibility**: Dynamic target association allows for easy scaling and
+   infrastructure changes.
+4. **Control**: Environment policies provide fine-grained control over the
+   deployment process.
+5. **Visibility**: Clear overview of where software versions are deployed across
+   your infrastructure.
+
+## Example Environment Setup
+
+A typical environment setup might include:
+
+1. **Development**: For ongoing development work
+2. **QA**: For quality assurance and testing
+3. **Staging**: A pre-production environment mirroring production
+4. **Production**: Multiple production environments for different regions
+
+Each of these environments would have its own target filters and policies,
+ensuring that software progresses through the pipeline in a controlled and
+consistent manner.
+
+## Implementation in Ctrlplane
+
+In Ctrlplane, environments are typically managed through the UI or API. The
+environment configuration includes:
+
+1. Name and description
+2. Target filters
+3. Associated policies
+4. Any environment-specific variables or configurations
+
+For example, creating an environment might involve setting up target filters
+like:
+
+```yaml
+environment: staging
+region: us-west
+```
+
+This would automatically associate all targets with matching labels to the
+staging environment in the US West region.
+
+By leveraging environments effectively in Ctrlplane, you can create a robust,
+scalable, and flexible deployment pipeline that adapts to your infrastructure
+needs while maintaining control and visibility over your software releases.

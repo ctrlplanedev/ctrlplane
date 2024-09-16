@@ -3,11 +3,11 @@ import type { Tx } from "@ctrlplane/db";
 import { and, arrayContains, eq, inArray } from "@ctrlplane/db";
 import { environment, target } from "@ctrlplane/db/schema";
 
-import { createJobConfigs } from "./job-config.js";
-import { dispatchJobConfigs } from "./job-dispatch.js";
+import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingApprovalPolicy } from "./policy-checker.js";
 import { isPassingReleaseDependencyPolicy } from "./release-checker.js";
+import { createReleaseJobTriggers } from "./release-job-trigger.js";
 
 /**
  * Asserts that all given targets are part of the specified environment.
@@ -42,27 +42,18 @@ export async function dispatchJobsForNewTargets(
 ): Promise<void> {
   await assertTargetsInEnvironment(db, newTargetIds, envId);
 
-  const jobConfigs = await createJobConfigs(db, "new_target")
+  const releaseJobTriggers = await createReleaseJobTriggers(db, "new_target")
     .targets(newTargetIds)
     .environments([envId])
     .insert();
-  if (jobConfigs.length === 0) return;
+  if (releaseJobTriggers.length === 0) return;
 
-  const dispatched = await dispatchJobConfigs(db)
-    .reason("env_policy_override")
+  await dispatchReleaseJobTriggers(db)
     .filter(
       isPassingLockingPolicy,
       isPassingApprovalPolicy,
       isPassingReleaseDependencyPolicy,
     )
-    .jobConfigs(jobConfigs)
+    .releaseTriggers(releaseJobTriggers)
     .dispatch();
-
-  const notDispatchedConfigs = jobConfigs.filter(
-    (config) =>
-      !dispatched.some((dispatch) => dispatch.jobConfigId === config.id),
-  );
-  console.log(
-    `${notDispatchedConfigs.length} out of ${jobConfigs.length} job configs were not dispatched.`,
-  );
 }

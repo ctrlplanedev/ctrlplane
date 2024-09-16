@@ -14,6 +14,6 @@ export const getSession = async (req: IncomingMessage) => {
   };
   const res = await fetch(env.AUTH_URL, options);
   const data = (await res.json()) as Session | null;
-  if (!res.ok) throw data;
+  if (!res.ok) throw new Error("Failed to get session");
   return data;
 };

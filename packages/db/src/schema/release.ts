@@ -1,5 +1,4 @@
-import type { InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   pgEnum,
   pgTable,
@@ -11,8 +10,12 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
+import { environment } from "./environment.js";
+import { job } from "./job.js";
 import { targetLabelGroup } from "./target-group.js";
+import { target } from "./target.js";
 
 export const releaseDependencyRuleType = pgEnum(
   "release_dependency_rule_type",
@@ -69,9 +72,45 @@ export const createRelease = createInsertSchema(release)
       .default([]),
   });
 
-export const releaseRelations = relations(release, ({ one }) => ({
-  deployment: one(deployment, {
-    fields: [release.deploymentId],
-    references: [deployment.id],
-  }),
-}));
+export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
+  "new_release", //  release was created
+  "new_target", // new target was added to an env
+  "target_changed",
+  "api", // calling API
+  "redeploy", // redeploying
+  "force_deploy", // force deploying a release
+]);
+
+export const releaseJobTrigger = pgTable(
+  "release_job_trigger",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+
+    jobId: uuid("job_id")
+      .notNull()
+      .references(() => job.id)
+      .unique(),
+
+    type: releaseJobTriggerType("type").notNull(),
+    causedById: uuid("caused_by_id").references(() => user.id),
+
+    releaseId: uuid("release_id")
+      .references(() => release.id, { onDelete: "cascade" })
+      .notNull(),
+    targetId: uuid("target_id")
+      .references(() => target.id, { onDelete: "cascade" })
+      .notNull(),
+    environmentId: uuid("environment_id")
+      .references(() => environment.id, { onDelete: "cascade" })
+      .notNull(),
+
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  () => ({}),
+);
+
+export type ReleaseJobTrigger = InferSelectModel<typeof releaseJobTrigger>;
+export type ReleaseJobTriggerType = ReleaseJobTrigger["type"];
+export type ReleaseJobTriggerInsert = InferInsertModel<
+  typeof releaseJobTrigger
+>;

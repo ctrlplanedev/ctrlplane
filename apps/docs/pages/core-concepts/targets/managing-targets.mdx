@@ -1,0 +1,185 @@
+# Managing Targets
+
+As your adoption of Ctrlplane grows, you may find yourself managing hundreds or
+even thousands of targets. This scale of operation requires efficient tools and
+strategies to maintain visibility, control, and agility. Ctrlplane offers
+several features to help you manage large numbers of targets effectively.
+
+## Target Groups
+
+Target Groups are a powerful feature that allow you to organize and manage your
+targets based on their labels. This grouping mechanism makes it easy to
+categorize and find similar targets, providing a more efficient way to manage
+your infrastructure at scale.
+
+### How Target Groups Work
+
+Target Groups use the labels assigned to your targets to automatically group
+them together. Each unique combination of labels can form a distinct group,
+allowing for flexible and dynamic categorization.
+
+### Creating Target Groups
+
+Target Groups are created automatically based on the labels you assign to your
+targets. To effectively use Target Groups:
+
+1. Plan your labeling strategy to reflect meaningful categories for your
+   infrastructure.
+2. Consistently apply labels to your targets as you add them to your system.
+3. Use the Target Groups view in the dashboard to see how your targets are
+   organized.
+
+### Use Cases for Target Groups
+
+Target Groups can be incredibly versatile. Here are some common use cases:
+
+1. **Region-based Grouping**: Group targets by geographical region or data
+   center location.
+
+   - Example labels: `region: us-west`, `region: eu-central`
+
+2. **Infrastructure Size**: Categorize targets by their resource allocation or
+   capacity.
+
+   - Example labels: `size: small`, `size: medium`, `size: large`
+
+3. **Kubernetes Version**: Group targets running different versions of
+   Kubernetes.
+
+   - Example labels: `kubernetes/version: 1.22`, `kubernetes/version: 1.23`
+
+4. **Customer Segmentation**: For multi-tenant systems, group targets by
+   customer or business size.
+
+   - Example labels: `customer: acme-corp`, `business-size: enterprise`
+
+5. **Service Type**: Group targets by the primary service they run.
+   - Example labels: `service: web-server`, `service: database`, `service:
+cache`
+
+### Benefits of Using Target Groups
+
+1. **Improved Organization**: Easily manage large numbers of targets by grouping
+   them logically.
+2. **Efficient Operations**: Quickly identify and work with specific subsets of
+   your infrastructure.
+3. **Consistent Management**: Apply policies, updates, or actions to entire
+   groups of similar targets.
+4. **Enhanced Visibility**: Gain better insights into your infrastructure
+   composition and distribution.
+
+### Best Practices for Target Groups
+
+1. **Consistent Labeling**: Develop and adhere to a consistent labeling strategy
+   across your organization.
+2. **Meaningful Labels**: Choose labels that provide valuable information and
+   aid in practical grouping.
+3. **Avoid Over-Complexity**: While labels are powerful, too many can lead to
+   overly complex groupings. Aim for a balance.
+4. **Regular Review**: Periodically review and update your labeling strategy as
+   your infrastructure evolves.
+
+By effectively using Target Groups, you can significantly improve your ability
+to manage, monitor, and maintain your infrastructure, especially as it grows in
+size and complexity.
+
+## Target Views
+
+Target Views are a powerful feature that allow you to create, save, and reuse
+filters for your targets. These views provide a convenient way to organize and
+manage large sets of targets, making it easier to focus on specific subsets of
+your infrastructure.
+
+### Creating a Target View
+
+To create a Target View:
+
+1. Navigate to the Targets section in your dashboard.
+2. Apply the desired filters to your targets.
+3. Click on the "Save View" button.
+4. Give your view a name and description.
+
+### Using Target Views
+
+Once created, Target Views can be accessed from the Targets page. You can:
+
+- Quickly switch between different views to focus on specific target subsets.
+- Use views as a starting point for further filtering or actions.
+- Share views with team members to ensure consistent target selection across
+  your organization.
+
+### Example Use Cases
+
+1. **Environment-based Views**: Create views for different environments (e.g.,
+   Production, Staging, Development).
+2. **Region-based Views**: Organize targets by geographical regions or data
+   centers.
+3. **Service-based Views**: Group targets by the services they run.
+4. **Status-based Views**: Filter targets based on their current status or
+   health.
+
+### Updating and Managing Views
+
+You can edit or delete existing views as your infrastructure evolves:
+
+- To update a view, apply new filters and save over the existing view.
+- To delete a view, select it and use the delete option in the view management interface.
+
+Target Views are a valuable tool for maintaining organization and efficiency in your target management workflow, especially as your infrastructure grows in size and complexity.
+
+## Locking Targets
+
+Target locking is a crucial feature that allows you to temporarily prevent any
+pipelines from running against specific targets. This is particularly useful for
+maintenance, troubleshooting, or when you need to ensure that a target remains
+in a stable state.
+
+### How Target Locking Works
+
+When you lock a target:
+
+1. All scheduled and ongoing pipeline runs against that target are immediately
+   halted.
+2. New pipeline runs cannot be initiated for the locked target.
+3. The target remains locked until it is manually unlocked.
+
+### When to Use Target Locking
+
+Consider locking a target in the following scenarios:
+
+- During critical maintenance periods
+- When investigating issues that require a stable environment
+- To prevent accidental deployments or changes
+- When preparing for major updates or migrations
+
+### Locking a Target
+
+To lock a target:
+
+1. Navigate to the Targets section in your dashboard.
+2. Find the target you want to lock.
+3. Click on the "Lock" button.
+4. Optionally, provide a reason for locking the target.
+
+### Unlocking a Target
+
+To unlock a target:
+
+1. Go to the Targets section and find the locked target.
+2. Click on the "Unlock" button or toggle.
+3. Confirm the action to unlock the target.
+
+### Best Practices
+
+- Always provide a reason when locking a target to inform team members.
+- Regularly review locked targets to ensure they are unlocked when no longer
+  needed.
+- Use target locking in conjunction with your change management processes.
+
+### Permissions and Auditing
+
+- Typically, locking and unlocking targets requires elevated permissions.
+- All lock and unlock actions are logged for auditing purposes.
+
+By using target locking judiciously, you can maintain better control over your
+infrastructure and prevent unintended changes during critical periods.

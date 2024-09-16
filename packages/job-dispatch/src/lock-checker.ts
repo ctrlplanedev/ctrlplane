@@ -1,21 +1,24 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
-import { jobConfig, target } from "@ctrlplane/db/schema";
+import { releaseJobTrigger, target } from "@ctrlplane/db/schema";
 
-export const isPassingLockingPolicy = (db: Tx, jobConfigs: Array<JobConfig>) =>
+export const isPassingLockingPolicy = (
+  db: Tx,
+  releaseJobTriggers: Array<ReleaseJobTrigger>,
+) =>
   db
     .select()
-    .from(jobConfig)
-    .innerJoin(target, eq(jobConfig.targetId, target.id))
+    .from(releaseJobTrigger)
+    .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
     .where(
       and(
         inArray(
-          jobConfig.id,
-          jobConfigs.map((t) => t.id),
+          releaseJobTrigger.id,
+          releaseJobTriggers.map((t) => t.id),
         ),
         isNull(target.lockedAt),
       ),
     )
-    .then((data) => data.map((d) => d.job_config));
+    .then((data) => data.map((d) => d.release_job_trigger));
