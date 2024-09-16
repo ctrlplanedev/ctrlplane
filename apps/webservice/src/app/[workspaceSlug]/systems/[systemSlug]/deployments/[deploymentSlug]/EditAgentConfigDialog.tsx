@@ -4,7 +4,6 @@ import type * as schema from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import _ from "lodash";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -107,7 +106,7 @@ export const EditAgentConfigDialog: React.FC<EditAgentConfigDialogProps> = ({
                         className="w-[462px]"
                         jobAgent={jobAgent}
                         value={value}
-                        onChange={(v) => onChange(_.merge(value, v))}
+                        onChange={onChange}
                         workspaceId={workspace.id}
                       />
                     </div>
