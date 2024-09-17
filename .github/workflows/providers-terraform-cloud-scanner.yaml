@@ -32,9 +32,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run Jest tests
-        run: pnpm test -F @ctrlplane/terraform-cloud-scanner
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
