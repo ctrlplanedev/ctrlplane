@@ -40,7 +40,7 @@ jobs:
       - name: Setup
         uses: ./tooling/github/setup
 
-      - name: Run Jest tests
+      - name: Run Vite Tests
         run: pnpm test
 
   format:
