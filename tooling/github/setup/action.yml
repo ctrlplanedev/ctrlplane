@@ -13,5 +13,8 @@ runs:
     - shell: bash
       run: pnpm add -g turbo
 
+    - name: Copy .npmrc
+      run: cp .npmrc $HOME/.npmrc
+
     - shell: bash
       run: pnpm install
