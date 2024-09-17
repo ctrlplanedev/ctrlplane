@@ -45,6 +45,7 @@ export const EditDeploymentDialog: React.FC<{
   const [open, setOpen] = useState(false);
   const updateDeployment = api.deployment.update.useMutation();
   const router = useRouter();
+  const { systemId, id, name, slug, description } = props;
 
   const form = useForm({
     schema: deploymentForm,
@@ -55,16 +56,33 @@ export const EditDeploymentDialog: React.FC<{
   const { handleSubmit, setError } = form;
 
   const onSubmit = handleSubmit(async (data) => {
-    const isDataChanged = !isEqual(data, { ...props });
+    const isDataChanged = !isEqual(data, {
+      id,
+      name,
+      slug,
+      description,
+      systemId,
+    });
+    console.log("isDataChanged", isDataChanged);
+    console.log("data", data);
+    console.log("props", props);
+
     if (!isDataChanged) {
       setError("root", { message: "No changes made to the deployment." });
       return;
     }
 
-    await updateDeployment.mutateAsync({ id: props.id, data }).then(() => {
-      setOpen(false);
-      router.refresh();
-    });
+    await updateDeployment
+      .mutateAsync({ id: props.id, data })
+      .then(() => {
+        setOpen(false);
+        router.refresh();
+      })
+      .catch(() => {
+        setError("root", {
+          message: "Deployment with this slug already exists",
+        });
+      });
   });
 
   return (
