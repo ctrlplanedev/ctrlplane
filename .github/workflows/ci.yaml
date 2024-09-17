@@ -40,7 +40,7 @@ jobs:
       - name: Setup
         uses: ./tooling/github/setup
 
-      - name: Build
+      - name: Build Test Dependencies
         run: pnpm run build -F @ctrlplane/node-sdk -F @ctrlplane/logger
 
       - name: Run Vite Tests
