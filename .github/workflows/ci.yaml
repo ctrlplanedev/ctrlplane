@@ -40,9 +40,6 @@ jobs:
       - name: Setup
         uses: ./tooling/github/setup
 
-      - name: Check Installed Packages
-        run: pnpm list
-
       - name: Run Vite Tests
         run: pnpm test
 
