@@ -18,8 +18,16 @@
         ".vercel/output/**"
       ]
     },
+    "build:tests": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "cache": false
+    },
     "dev": {
       "persistent": true,
+      "cache": false
+    },
+    "test": {
       "cache": false
     },
     "format": {

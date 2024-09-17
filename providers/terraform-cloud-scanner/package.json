@@ -12,6 +12,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
+    "build:tests": "tsc",
     "dev": "tsx watch --clear-screen=false src/index.ts",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",

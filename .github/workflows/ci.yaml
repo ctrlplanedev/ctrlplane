@@ -41,10 +41,10 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Build Test Dependencies
-        run: pnpm run build -F @ctrlplane/node-sdk -F @ctrlplane/logger
+        run: turbo build:tests
 
       - name: Run Vite Tests
-        run: pnpm test
+        run: turbo test
 
   format:
     name: Format
