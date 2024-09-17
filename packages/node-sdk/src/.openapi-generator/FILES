@@ -1,4 +1,3 @@
-.openapi-generator-ignore
 apis/DefaultApi.ts
 apis/index.ts
 index.ts
@@ -13,5 +12,7 @@ models/UpdateJob200Response.ts
 models/UpdateJobAgent200Response.ts
 models/UpdateJobAgentRequest.ts
 models/UpdateJobRequest.ts
+models/UpsertTargetProviderTargetsRequest.ts
+models/UpsertTargetProviderTargetsRequestTargetsInner.ts
 models/index.ts
 runtime.ts

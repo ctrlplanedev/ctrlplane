@@ -22,6 +22,7 @@ import type {
   UpdateJobAgent200Response,
   UpdateJobAgentRequest,
   UpdateJobRequest,
+  UpsertTargetProviderTargetsRequest,
 } from "../models/index";
 import {
   AcknowledgeJob200ResponseFromJSON,
@@ -42,6 +43,8 @@ import {
   UpdateJobAgentRequestToJSON,
   UpdateJobRequestFromJSON,
   UpdateJobRequestToJSON,
+  UpsertTargetProviderTargetsRequestFromJSON,
+  UpsertTargetProviderTargetsRequestToJSON,
 } from "../models/index";
 import * as runtime from "../runtime";
 
@@ -79,6 +82,12 @@ export interface UpdateJobAgentOperationRequest {
 export interface UpsertTargetProviderRequest {
   workspace: string;
   name: string;
+}
+
+export interface UpsertTargetProviderTargetsOperationRequest {
+  workspace: string;
+  name: string;
+  upsertTargetProviderTargetsRequest: UpsertTargetProviderTargetsRequest;
 }
 
 /**
@@ -553,6 +562,85 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<UpdateJobAgent200Response> {
     const response = await this.upsertTargetProviderRaw(
+      requestParameters,
+      initOverrides,
+    );
+    return await response.value();
+  }
+
+  /**
+   * Upserts targets for a target provider.
+   */
+  async upsertTargetProviderTargetsRaw(
+    requestParameters: UpsertTargetProviderTargetsOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<UpsertTargetProviderTargetsRequest>> {
+    if (requestParameters["workspace"] == null) {
+      throw new runtime.RequiredError(
+        "workspace",
+        'Required parameter "workspace" was null or undefined when calling upsertTargetProviderTargets().',
+      );
+    }
+
+    if (requestParameters["name"] == null) {
+      throw new runtime.RequiredError(
+        "name",
+        'Required parameter "name" was null or undefined when calling upsertTargetProviderTargets().',
+      );
+    }
+
+    if (requestParameters["upsertTargetProviderTargetsRequest"] == null) {
+      throw new runtime.RequiredError(
+        "upsertTargetProviderTargetsRequest",
+        'Required parameter "upsertTargetProviderTargetsRequest" was null or undefined when calling upsertTargetProviderTargets().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/{workspace}/target-provider/name/{name}/upsert-targets`
+          .replace(
+            `{${"workspace"}}`,
+            encodeURIComponent(String(requestParameters["workspace"])),
+          )
+          .replace(
+            `{${"name"}}`,
+            encodeURIComponent(String(requestParameters["name"])),
+          ),
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: UpsertTargetProviderTargetsRequestToJSON(
+          requestParameters["upsertTargetProviderTargetsRequest"],
+        ),
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse(response, (jsonValue) =>
+      UpsertTargetProviderTargetsRequestFromJSON(jsonValue),
+    );
+  }
+
+  /**
+   * Upserts targets for a target provider.
+   */
+  async upsertTargetProviderTargets(
+    requestParameters: UpsertTargetProviderTargetsOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<UpsertTargetProviderTargetsRequest> {
+    const response = await this.upsertTargetProviderTargetsRaw(
       requestParameters,
       initOverrides,
     );

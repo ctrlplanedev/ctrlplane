@@ -11,3 +11,5 @@ export * from "./UpdateJob200Response";
 export * from "./UpdateJobAgent200Response";
 export * from "./UpdateJobAgentRequest";
 export * from "./UpdateJobRequest";
+export * from "./UpsertTargetProviderTargetsRequest";
+export * from "./UpsertTargetProviderTargetsRequestTargetsInner";

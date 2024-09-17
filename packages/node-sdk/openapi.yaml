@@ -87,6 +87,92 @@ paths:
           description: Provider not found
         "500":
           description: Internal server error
+  /v1/{workspace}/target-provider/name/{name}/upsert-targets:
+    post:
+      summary: Upserts targets for a target provider.
+      operationId: upsertTargetProviderTargets
+      parameters:
+        - name: workspace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the workspace
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the target provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                targets:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                      name:
+                        type: string
+                      version:
+                        type: string
+                      kind:
+                        type: string
+                      config:
+                        type: object
+                      labels:
+                        type: object
+                        additionalProperties:
+                          type: string
+                    required:
+                      - identifier
+                      - name
+                      - version
+                      - kind
+      responses:
+        "200":
+          description: Successfully updated the targets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  targets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        identifier:
+                          type: string
+                        name:
+                          type: string
+                        version:
+                          type: string
+                        kind:
+                          type: string
+                        config:
+                          type: object
+                        labels:
+                          type: object
+                          additionalProperties:
+                            type: string
+                      required:
+                        - identifier
+                        - name
+                        - version
+                        - kind
+        "400":
+          description: Invalid request
+        "404":
+          description: Target provider not found
+        "500":
+          description: Internal server error
   /v1/target-provider/{providerId}/set:
     patch:
       summary: Sets the target for a provider.
