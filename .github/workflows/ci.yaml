@@ -41,7 +41,7 @@ jobs:
         uses: ./tooling/github/setup
 
       - name: Build
-        run: pnpm run build
+        run: pnpm run build -F @ctrlplane/node-sdk -F @ctrlplane/logger
 
       - name: Run Vite Tests
         run: pnpm test
