@@ -40,10 +40,7 @@ jobs:
       - name: Setup
         uses: ./tooling/github/setup
 
-      - name: Build Test Dependencies
-        run: turbo build:tests
-
-      - name: Run Vite Tests
+      - name: Run Tests
         run: turbo test
 
   format:
