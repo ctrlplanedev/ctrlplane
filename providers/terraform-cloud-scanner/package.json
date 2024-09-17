@@ -17,7 +17,7 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "test": "vitest",
+    "test": "vitest --run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest run --coverage"
   },
