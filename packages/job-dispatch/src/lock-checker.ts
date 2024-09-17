@@ -1,12 +1,11 @@
-import type { Tx } from "@ctrlplane/db";
-import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
-
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import { releaseJobTrigger, target } from "@ctrlplane/db/schema";
 
-export const isPassingLockingPolicy = (
-  db: Tx,
-  releaseJobTriggers: Array<ReleaseJobTrigger>,
+import type { ReleaseIdPolicyChecker } from "./policies/utils";
+
+export const isPassingLockingPolicy: ReleaseIdPolicyChecker = (
+  db,
+  releaseJobTriggers,
 ) =>
   db
     .select()

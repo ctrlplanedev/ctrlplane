@@ -33,9 +33,9 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingEnvironmentPolicy,
   isPassingLockingPolicy,
   isPassingReleaseSequencingCancelPolicy,
+  isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -301,7 +301,7 @@ export const releaseRouter = createTRPCRouter({
           "new_release",
         )
           .causedById(ctx.session.user.id)
-          .filter(isPassingEnvironmentPolicy)
+          .filter(isPassingReleaseStringCheckPolicy)
           .releases([rel.id])
           .filter(isPassingReleaseSequencingCancelPolicy)
           .then(createJobApprovals)

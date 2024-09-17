@@ -5,8 +5,8 @@ import { environment, target } from "@ctrlplane/db/schema";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
-import { isPassingApprovalPolicy } from "./policy-checker.js";
-import { isPassingReleaseDependencyPolicy } from "./release-checker.js";
+import { isPassingApprovalPolicy } from "./policies/manual-approval.js";
+import { isPassingReleaseDependencyPolicy } from "./policies/release-dependency.js";
 import { createReleaseJobTriggers } from "./release-job-trigger.js";
 
 /**

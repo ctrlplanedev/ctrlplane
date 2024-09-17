@@ -91,6 +91,7 @@ export default function ConfigureJobAgentPage({
                     <FormControl>
                       {workspace.data && jobAgents.data && (
                         <JobAgentSelector
+                          className="max-w-[350px]"
                           jobAgents={jobAgents.data}
                           workspace={workspace.data}
                           value={value}
