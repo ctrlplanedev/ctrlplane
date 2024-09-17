@@ -1,7 +1,5 @@
 import type { IncomingMessage } from "http";
 import type { Session } from "next-auth";
-import type { RequestInit } from "node-fetch";
-import fetch from "node-fetch";
 
 import { env } from "./config";
 

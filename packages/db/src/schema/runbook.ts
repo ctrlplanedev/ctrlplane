@@ -39,6 +39,7 @@ export const runbookJobTrigger = pgTable(
 
     jobId: uuid("job_id")
       .references(() => job.id, { onDelete: "cascade" })
+      .notNull()
       .unique(),
 
     runbookId: uuid("runbook_id")
