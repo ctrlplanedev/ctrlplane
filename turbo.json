@@ -19,7 +19,7 @@
       ]
     },
     "build:tests": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build:tests"],
       "outputs": ["dist/**"],
       "cache": false
     },

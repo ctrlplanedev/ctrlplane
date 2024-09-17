@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "build:tests": "tsc",
     "build:tsc": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
