@@ -9,7 +9,7 @@ export type ChoiceVariableConfigType = z.infer<typeof ChoiceVariableConfig>;
 
 export const StringVariableConfig = z.object({
   type: z.literal("string"),
-  inputType: z.enum(["code-editor", "text-editor", "text-area", "text"]),
+  inputType: z.enum(["text-area", "text"]),
   minLength: z.number().optional(),
   maxLength: z.number().optional(),
   default: z.string().optional(),

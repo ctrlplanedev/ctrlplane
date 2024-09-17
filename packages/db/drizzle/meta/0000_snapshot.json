@@ -1,7 +1,7 @@
 {
-  "id": "e07f4cb4-a32b-436c-9534-fc267b458ae1",
+  "id": "e07314fc-e18c-455c-aa24-58e497330abe",
   "prevId": "00000000-0000-0000-0000-000000000000",
-  "version": "6",
+  "version": "7",
   "dialect": "postgresql",
   "tables": {
     "public.account": {
@@ -242,8 +242,24 @@
       "indexes": {
         "user_api_key_key_prefix_key_hash_index": {
           "name": "user_api_key_key_prefix_key_hash_index",
-          "columns": ["key_prefix", "key_hash"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "key_prefix",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -428,8 +444,24 @@
       "indexes": {
         "deployment_variable_deployment_id_key_index": {
           "name": "deployment_variable_deployment_id_key_index",
-          "columns": ["deployment_id", "key"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "deployment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -473,8 +505,24 @@
       "indexes": {
         "deployment_variable_set_deployment_id_variable_set_id_index": {
           "name": "deployment_variable_set_deployment_id_variable_set_id_index",
-          "columns": ["deployment_id", "variable_set_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "deployment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "variable_set_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -527,8 +575,24 @@
       "indexes": {
         "deployment_variable_value_variable_id_value_index": {
           "name": "deployment_variable_value_variable_id_value_index",
-          "columns": ["variable_id", "value"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "variable_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "value",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -572,8 +636,24 @@
       "indexes": {
         "deployment_variable_value_target_variable_value_id_target_id_index": {
           "name": "deployment_variable_value_target_variable_value_id_target_id_index",
-          "columns": ["variable_value_id", "target_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "variable_value_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -696,8 +776,24 @@
       "indexes": {
         "deployment_system_id_slug_index": {
           "name": "deployment_system_id_slug_index",
-          "columns": ["system_id", "slug"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "system_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -758,8 +854,24 @@
       "indexes": {
         "deployment_meta_dependency_depends_on_id_deployment_id_index": {
           "name": "deployment_meta_dependency_depends_on_id_deployment_id_index",
-          "columns": ["depends_on_id", "deployment_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "depends_on_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deployment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1007,8 +1119,24 @@
       "indexes": {
         "environment_policy_approval_policy_id_release_id_index": {
           "name": "environment_policy_approval_policy_id_release_id_index",
-          "columns": ["policy_id", "release_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "policy_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1061,8 +1189,24 @@
       "indexes": {
         "environment_policy_deployment_policy_id_environment_id_index": {
           "name": "environment_policy_deployment_policy_id_environment_id_index",
-          "columns": ["policy_id", "environment_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "policy_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "environment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1186,8 +1330,30 @@
       "indexes": {
         "unique_organization_repository_path": {
           "name": "unique_organization_repository_path",
-          "columns": ["organization_id", "repository_name", "path"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "repository_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "path",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1272,8 +1438,24 @@
       "indexes": {
         "unique_installation_workspace": {
           "name": "unique_installation_workspace",
-          "columns": ["installation_id", "workspace_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "installation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1421,8 +1603,24 @@
       "indexes": {
         "target_identifier_workspace_id_index": {
           "name": "target_identifier_workspace_id_index",
-          "columns": ["identifier", "workspace_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1487,8 +1685,30 @@
       "indexes": {
         "target_schema_version_kind_workspace_id_index": {
           "name": "target_schema_version_kind_workspace_id_index",
-          "columns": ["version", "kind", "workspace_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1539,8 +1759,24 @@
       "indexes": {
         "target_provider_workspace_id_name_index": {
           "name": "target_provider_workspace_id_name_index",
-          "columns": ["workspace_id", "name"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1637,8 +1873,24 @@
       "indexes": {
         "release_deployment_id_version_index": {
           "name": "release_deployment_id_version_index",
-          "columns": ["deployment_id", "version"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "deployment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1701,8 +1953,30 @@
       "indexes": {
         "release_dependency_release_id_deployment_id_target_label_group_id_index": {
           "name": "release_dependency_release_id_deployment_id_target_label_group_id_index",
-          "columns": ["release_id", "deployment_id", "target_label_group_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deployment_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_label_group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1890,8 +2164,24 @@
       "indexes": {
         "system_workspace_id_slug_index": {
           "name": "system_workspace_id_slug_index",
-          "columns": ["workspace_id", "slug"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2102,8 +2392,24 @@
       "indexes": {
         "team_member_team_id_user_id_index": {
           "name": "team_member_team_id_user_id_index",
-          "columns": ["team_id", "user_id"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2244,8 +2550,24 @@
       "indexes": {
         "job_variable_job_id_key_index": {
           "name": "job_variable_job_id_key_index",
-          "columns": ["job_id", "key"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "job_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2381,8 +2703,24 @@
       "indexes": {
         "variable_set_value_variable_set_id_key_index": {
           "name": "variable_set_value_variable_set_id_key_index",
-          "columns": ["variable_set_id", "key"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "variable_set_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2585,8 +2923,24 @@
       "indexes": {
         "runbook_variable_runbook_id_key_index": {
           "name": "runbook_variable_runbook_id_key_index",
-          "columns": ["runbook_id", "key"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "runbook_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2651,13 +3005,41 @@
         "entity_role_role_id_entity_type_entity_id_scope_id_scope_type_index": {
           "name": "entity_role_role_id_entity_type_entity_id_scope_id_scope_type_index",
           "columns": [
-            "role_id",
-            "entity_type",
-            "entity_id",
-            "scope_id",
-            "scope_type"
+            {
+              "expression": "role_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
-          "isUnique": true
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2746,8 +3128,24 @@
       "indexes": {
         "role_permission_role_id_permission_index": {
           "name": "role_permission_role_id_permission_index",
-          "columns": ["role_id", "permission"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "role_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "permission",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2804,8 +3202,24 @@
       "indexes": {
         "job_agent_workspace_id_name_index": {
           "name": "job_agent_workspace_id_name_index",
-          "columns": ["workspace_id", "name"],
-          "isUnique": true
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2926,6 +3340,7 @@
     }
   },
   "schemas": {},
+  "sequences": {},
   "_meta": {
     "columns": {},
     "schemas": {},

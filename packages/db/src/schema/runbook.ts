@@ -32,16 +32,30 @@ export const createRunbook = runbookInsert;
 export const updateRunbook = runbookInsert.partial();
 export type Runbook = InferSelectModel<typeof runbook>;
 
-export const runbookJobTrigger = pgTable("runbook_job_trigger", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const runbookJobTrigger = pgTable(
+  "runbook_job_trigger",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  jobId: uuid("job_id")
-    .references(() => job.id, { onDelete: "cascade" })
-    .unique(),
+    jobId: uuid("job_id")
+      .references(() => job.id, { onDelete: "cascade" })
+      .notNull()
+      .unique(),
 
-  runbookId: uuid("runbook_id")
-    .references(() => runbook.id, { onDelete: "cascade" })
-    .notNull(),
+    runbookId: uuid("runbook_id")
+      .references(() => runbook.id, { onDelete: "cascade" })
+      .notNull(),
 
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  () => ({}),
+);
+
+export type RunbookJobTrigger = InferSelectModel<typeof runbookJobTrigger>;
+
+export const createRunbookJobTrigger = createInsertSchema(
+  runbookJobTrigger,
+).omit({
+  id: true,
 });
+export const updateRunbookJobTrigger = createRunbookJobTrigger.partial();

@@ -26,6 +26,52 @@ import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { cancelOldReleaseJobTriggersOnJobDispatch } from "./release-sequencing.js";
 
+export const createTriggeredRunbookJob = async (
+  db: Tx,
+  runbook: schema.Runbook,
+  variableValues: Record<string, any>,
+): Promise<schema.Job> => {
+  logger.info(`Triger triggered runbook job ${runbook.name}`, {
+    runbook,
+    variableValues,
+  });
+
+  if (runbook.jobAgentId == null)
+    throw new Error("Cannot dispatch runbooks without agents.");
+
+  const jobAgent = await db
+    .select()
+    .from(schema.jobAgent)
+    .where(eq(schema.jobAgent.id, runbook.jobAgentId))
+    .then(takeFirst);
+
+  const job = await db
+    .insert(schema.job)
+    .values({
+      jobAgentId: jobAgent.id,
+      jobAgentConfig: _.merge(jobAgent.config, runbook.jobAgentConfig),
+      status: JobStatus.Pending,
+    })
+    .returning()
+    .then(takeFirst);
+
+  await db
+    .insert(schema.runbookJobTrigger)
+    .values({ jobId: job.id, runbookId: runbook.id });
+
+  logger.info(`Created triggered runbook job`, { jobId: job.id });
+
+  await db.insert(schema.jobVariable).values(
+    Object.entries(variableValues).map(([key, value]) => ({
+      key,
+      value,
+      jobId: job.id,
+    })),
+  );
+
+  return job;
+};
+
 export const createTriggeredReleaseJobs = async (
   db: Tx,
   releaseJobTriggers: schema.ReleaseJobTrigger[],
@@ -69,7 +115,6 @@ export const createTriggeredReleaseJobs = async (
     .insert(schema.job)
     .values(
       insertJobs.map((d) => ({
-        releaseJobTriggerId: d.release_job_trigger.id,
         jobAgentId: d.job_agent.id,
         jobAgentConfig: _.merge(
           d.job_agent.config,

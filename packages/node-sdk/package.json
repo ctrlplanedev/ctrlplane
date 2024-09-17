@@ -1,7 +1,7 @@
 {
   "name": "@ctrlplane/node-sdk",
   "private": false,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -18,9 +18,6 @@
     "lint": "eslint",
     "typecheck": "tsc",
     "generate": "openapi-generator-cli generate"
-  },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",

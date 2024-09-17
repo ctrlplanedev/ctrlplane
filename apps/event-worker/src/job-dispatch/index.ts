@@ -23,12 +23,12 @@ export const createDispatchExecutionJobWorker = () =>
         )
         .where(eq(schema.job.id, job.data.jobId))
         .then(takeFirstOrNull)
-        .then((je) => {
+        .then(async (je) => {
           if (je == null) return;
 
           try {
             if (je.job_agent.type === String(JobAgentType.GithubApp))
-              dispatchGithubJob(je.job);
+              await dispatchGithubJob(je.job);
           } catch (error) {
             db.update(schema.job)
               .set({
