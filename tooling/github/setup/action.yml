@@ -4,7 +4,7 @@ description: "Common setup steps for Actions"
 runs:
   using: composite
   steps:
-    - uses: pnpm/action-setup@v2
+    - uses: pnpm/action-setup@v4
     - uses: actions/setup-node@v4
       with:
         node-version: 22
@@ -12,9 +12,6 @@ runs:
 
     - shell: bash
       run: pnpm add -g turbo
-
-    - name: Copy .npmrc
-      run: cp .npmrc $HOME/.npmrc
 
     - shell: bash
       run: pnpm install
