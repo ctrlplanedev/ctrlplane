@@ -47,11 +47,7 @@ catalogs:
   react18:
     '@types/react':
       specifier: ^18.3.5
-<<<<<<< HEAD
       version: 18.3.6
-=======
-      version: 18.3.5
->>>>>>> origin
     '@types/react-dom':
       specifier: ^18.3.0
       version: 18.3.0
@@ -12356,7 +12352,7 @@ snapshots:
 
   '@types/cors@2.8.17':
     dependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@types/d3-array@3.2.1': {}
 
@@ -12563,7 +12559,7 @@ snapshots:
 
   '@types/pg@8.11.6':
     dependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
       pg-protocol: 1.6.1
       pg-types: 4.0.2
 
@@ -12634,7 +12630,7 @@ snapshots:
 
   '@types/ws@8.5.12':
     dependencies:
-      '@types/node': 20.16.1
+      '@types/node': 22.5.5
 
   '@typescript-eslint/eslint-plugin@8.3.0(@typescript-eslint/parser@8.3.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)':
     dependencies:
@@ -16721,7 +16717,7 @@ snapshots:
   postcss@8.4.31:
     dependencies:
       nanoid: 3.3.7
-      picocolors: 1.0.1
+      picocolors: 1.1.0
       source-map-js: 1.2.0
 
   postcss@8.4.41:
