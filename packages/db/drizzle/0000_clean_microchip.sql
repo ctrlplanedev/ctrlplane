@@ -855,27 +855,27 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "user_api_key_key_prefix_key_hash_index" ON "user_api_key" ("key_prefix","key_hash");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_deployment_id_key_index" ON "deployment_variable" ("deployment_id","key");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_set_deployment_id_variable_set_id_index" ON "deployment_variable_set" ("deployment_id","variable_set_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_variable_id_value_index" ON "deployment_variable_value" ("variable_id","value");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_target_variable_value_id_target_id_index" ON "deployment_variable_value_target" ("variable_value_id","target_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "deployment_system_id_slug_index" ON "deployment" ("system_id","slug");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "deployment_meta_dependency_depends_on_id_deployment_id_index" ON "deployment_meta_dependency" ("depends_on_id","deployment_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "environment_policy_approval_policy_id_release_id_index" ON "environment_policy_approval" ("policy_id","release_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "environment_policy_deployment_policy_id_environment_id_index" ON "environment_policy_deployment" ("policy_id","environment_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "unique_organization_repository_path" ON "github_config_file" ("organization_id","repository_name","path");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "unique_installation_workspace" ON "github_organization" ("installation_id","workspace_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "target_identifier_workspace_id_index" ON "target" ("identifier","workspace_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "target_schema_version_kind_workspace_id_index" ON "target_schema" ("version","kind","workspace_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "target_provider_workspace_id_name_index" ON "target_provider" ("workspace_id","name");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "release_deployment_id_version_index" ON "release" ("deployment_id","version");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "release_dependency_release_id_deployment_id_target_label_group_id_index" ON "release_dependency" ("release_id","deployment_id","target_label_group_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "system_workspace_id_slug_index" ON "system" ("workspace_id","slug");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "team_member_team_id_user_id_index" ON "team_member" ("team_id","user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "job_variable_job_id_key_index" ON "job_variable" ("job_id","key");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "variable_set_value_variable_set_id_key_index" ON "variable_set_value" ("variable_set_id","key");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "runbook_variable_runbook_id_key_index" ON "runbook_variable" ("runbook_id","key");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "entity_role_role_id_entity_type_entity_id_scope_id_scope_type_index" ON "entity_role" ("role_id","entity_type","entity_id","scope_id","scope_type");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "role_permission_role_id_permission_index" ON "role_permission" ("role_id","permission");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "job_agent_workspace_id_name_index" ON "job_agent" ("workspace_id","name");
+CREATE UNIQUE INDEX IF NOT EXISTS "user_api_key_key_prefix_key_hash_index" ON "user_api_key" USING btree ("key_prefix","key_hash");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_deployment_id_key_index" ON "deployment_variable" USING btree ("deployment_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_set_deployment_id_variable_set_id_index" ON "deployment_variable_set" USING btree ("deployment_id","variable_set_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_variable_id_value_index" ON "deployment_variable_value" USING btree ("variable_id","value");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_variable_value_target_variable_value_id_target_id_index" ON "deployment_variable_value_target" USING btree ("variable_value_id","target_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_system_id_slug_index" ON "deployment" USING btree ("system_id","slug");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "deployment_meta_dependency_depends_on_id_deployment_id_index" ON "deployment_meta_dependency" USING btree ("depends_on_id","deployment_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "environment_policy_approval_policy_id_release_id_index" ON "environment_policy_approval" USING btree ("policy_id","release_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "environment_policy_deployment_policy_id_environment_id_index" ON "environment_policy_deployment" USING btree ("policy_id","environment_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "unique_organization_repository_path" ON "github_config_file" USING btree ("organization_id","repository_name","path");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "unique_installation_workspace" ON "github_organization" USING btree ("installation_id","workspace_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "target_identifier_workspace_id_index" ON "target" USING btree ("identifier","workspace_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "target_schema_version_kind_workspace_id_index" ON "target_schema" USING btree ("version","kind","workspace_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "target_provider_workspace_id_name_index" ON "target_provider" USING btree ("workspace_id","name");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "release_deployment_id_version_index" ON "release" USING btree ("deployment_id","version");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "release_dependency_release_id_deployment_id_target_label_group_id_index" ON "release_dependency" USING btree ("release_id","deployment_id","target_label_group_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "system_workspace_id_slug_index" ON "system" USING btree ("workspace_id","slug");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "team_member_team_id_user_id_index" ON "team_member" USING btree ("team_id","user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "job_variable_job_id_key_index" ON "job_variable" USING btree ("job_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "variable_set_value_variable_set_id_key_index" ON "variable_set_value" USING btree ("variable_set_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "runbook_variable_runbook_id_key_index" ON "runbook_variable" USING btree ("runbook_id","key");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "entity_role_role_id_entity_type_entity_id_scope_id_scope_type_index" ON "entity_role" USING btree ("role_id","entity_type","entity_id","scope_id","scope_type");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "role_permission_role_id_permission_index" ON "role_permission" USING btree ("role_id","permission");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "job_agent_workspace_id_name_index" ON "job_agent" USING btree ("workspace_id","name");
