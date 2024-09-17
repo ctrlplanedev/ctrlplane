@@ -46,7 +46,7 @@ export const CreateSystemDialog: React.FC<{
   const form = useForm({
     schema: systemForm,
     defaultValues: { name: "", slug: "", description: "" },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   const { handleSubmit, watch, setValue, setError } = form;

@@ -64,7 +64,7 @@ export const CreateDeploymentDialog: React.FC<{
       slug: "",
       description: "",
     },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   const { handleSubmit, watch, setValue, setError } = form;

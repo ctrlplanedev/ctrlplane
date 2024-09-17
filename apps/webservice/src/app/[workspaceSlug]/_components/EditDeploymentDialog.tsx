@@ -49,7 +49,7 @@ export const EditDeploymentDialog: React.FC<{
   const form = useForm({
     schema: deploymentForm,
     defaultValues: { ...props },
-    mode: "onChange",
+    mode: "onSubmit",
   });
 
   const { handleSubmit, setError } = form;
