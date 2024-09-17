@@ -32,7 +32,7 @@ export async function scan() {
 
       const variables: Variable[] = await listVariables(workspace.id);
       logger.info(
-        `  Found ${variables.length} variables in workspace '${workspace.attributes.name}'`,
+        ` Found ${variables.length} variables in workspace '${workspace.attributes.name}'`,
       );
       const variableLabels = processVariables(variables);
       const tagLabels = processWorkspaceTags(workspace.attributes["tag-names"]);
@@ -49,8 +49,8 @@ export async function scan() {
           workspaceId: workspace.id,
         },
         labels: {
-          "tf/organization": env.TFE_ORGANIZATION,
-          "tf/workspace-name": workspace.attributes.name,
+          "tfc/organization": env.TFE_ORGANIZATION,
+          "tfc/workspace-name": workspace.attributes.name,
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
@@ -96,8 +96,8 @@ const processVariables = (variables: Variable[]) =>
     variables.map((variable) => {
       return [
         variable.attributes.category === "terraform"
-          ? `tf/var/${variable.attributes.key}`
-          : `tf/env/${variable.attributes.key}`,
+          ? `tfc/var/${variable.attributes.key}`
+          : `tfc/env/${variable.attributes.key}`,
         variable.attributes.value || "",
       ];
     }),
@@ -108,11 +108,8 @@ const processVariables = (variables: Variable[]) =>
  * @param tags The array of tag names associated with the workspace.
  * @returns An object containing prefixed tag labels.
  */
-function processWorkspaceTags(tags?: string[]) {
-  return tags
-    ? Object.fromEntries(tags.map((tag) => [`tf/tags/${tag}`, "true"]))
-    : {};
-}
+const processWorkspaceTags = (tags: string[] = []) =>
+  Object.fromEntries(tags.map((tag) => [`tfc/tags/${tag}`, "true"]));
 
 /**
  * Processes VCS repository information into labels.
@@ -127,9 +124,9 @@ function processVcsRepo(
   const { identifier, branch, "repository-http-url": repoUrl } = vcsRepo;
 
   return {
-    ...(identifier && { "tf/vcs-repo/identifier": identifier }),
-    ...(branch && { "tf/vcs-repo/branch": branch }),
-    ...(repoUrl && { "tf/vcs-repo/repository-http-url": repoUrl }),
+    ...(identifier && { "tfc/vcs-repo/identifier": identifier }),
+    ...(branch && { "tfc/vcs-repo/branch": branch }),
+    ...(repoUrl && { "tfc/vcs-repo/repository-http-url": repoUrl }),
   };
 }
 

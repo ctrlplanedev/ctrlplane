@@ -6,6 +6,12 @@ import { logger } from "@ctrlplane/logger";
 import type { ApiResponse, Variable, Workspace } from "./types.js";
 import { env } from "./config.js";
 
+const COMMON_HEADERS = {
+  Authorization: `Bearer ${env.TFE_TOKEN}`,
+  "Content-Type": "application/vnd.api+json",
+  Accept: "application/vnd.api+json",
+};
+
 /**
  * Fetch JSON with retry and exponential backoff, respecting a global timeout.
  *
@@ -14,17 +20,16 @@ import { env } from "./config.js";
  * @returns The JSON response parsed as ResponseType.
  * @throws An error if all retry attempts fail or if the global timeout is exceeded.
  */
-async function fetchRetry<ResponseType>(
+async function fetchRetry<T>(
   url: string,
   options: RequestInit = {},
-): Promise<ResponseType> {
+): Promise<ApiResponse<T>> {
   return pRetry(
     async () => {
       const response = await fetch(url, {
         ...options,
       });
-      const responseBody: unknown = await response.json();
-      return responseBody as ResponseType;
+      return response.json() as Promise<ApiResponse<T>>;
     },
     {
       retries: 4,
@@ -50,11 +55,6 @@ async function fetchRetry<ResponseType>(
  */
 export async function listWorkspaces(): Promise<Workspace[]> {
   const apiUrl = env.TFE_API_URL;
-  const headers = {
-    Authorization: `Bearer ${env.TFE_TOKEN}`,
-    "Content-Type": "application/vnd.api+json",
-    Accept: "application/vnd.api+json",
-  };
 
   const workspaces: Workspace[] = [];
   let nextPageUrl: string | null =
@@ -62,9 +62,9 @@ export async function listWorkspaces(): Promise<Workspace[]> {
 
   while (nextPageUrl != null) {
     try {
-      const data: ApiResponse<Workspace[]> = await fetchRetry<
-        ApiResponse<Workspace[]>
-      >(nextPageUrl, { headers });
+      const data: ApiResponse<Workspace[]> = await fetchRetry(nextPageUrl, {
+        headers: COMMON_HEADERS,
+      });
       workspaces.push(...data.data);
       nextPageUrl = data.links?.next ?? null;
     } catch (error) {
@@ -85,21 +85,15 @@ export async function listWorkspaces(): Promise<Workspace[]> {
  * @throws Will throw an error if the API request fails.
  */
 export async function listVariables(workspaceId: string): Promise<Variable[]> {
-  const apiUrl = env.TFE_API_URL;
-  const headers = {
-    Authorization: `Bearer ${env.TFE_TOKEN}`,
-    "Content-Type": "application/vnd.api+json",
-    Accept: "application/vnd.api+json",
-  };
-
   const variables: Variable[] = [];
-  let nextPageUrl: string | null = `${apiUrl}/workspaces/${workspaceId}/vars`;
+  let nextPageUrl: string | null =
+    `${env.TFE_API_URL}/workspaces/${workspaceId}/vars`;
 
-  while (nextPageUrl) {
+  while (nextPageUrl != null) {
     try {
-      const data: ApiResponse<Variable[]> = await fetchRetry<
-        ApiResponse<Variable[]>
-      >(nextPageUrl, { headers });
+      const data: ApiResponse<Variable[]> = await fetchRetry(nextPageUrl, {
+        headers: COMMON_HEADERS,
+      });
       variables.push(...data.data);
       nextPageUrl = data.links?.next ?? null;
     } catch (error) {

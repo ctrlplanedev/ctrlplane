@@ -14,7 +14,7 @@ export const env = createEnv({
       .default("offical-terraform-cloud-scanner"),
     CTRLPLANE_WORKSPACE_TARGET_NAME: z
       .string()
-      .default("workspace-{{ workspace.attributes.name }}"),
+      .default("tfc-{{ workspace.attributes.name }}"),
 
     TFE_TOKEN: z.string().min(1),
     TFE_ORGANIZATION: z.string().min(1),
