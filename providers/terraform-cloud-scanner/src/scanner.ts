@@ -49,8 +49,8 @@ export async function scan() {
           workspaceId: workspace.id,
         },
         labels: {
-          "terraform/organization": env.TFE_ORGANIZATION,
-          "terraform/workspace-name": workspace.attributes.name,
+          "tf/organization": env.TFE_ORGANIZATION,
+          "tf/workspace-name": workspace.attributes.name,
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
@@ -96,9 +96,9 @@ const processVariables = (variables: Variable[]) =>
     variables.map((variable) => {
       return [
         variable.attributes.category === "terraform"
-          ? `var/${variable.attributes.key}`
-          : `env/${variable.attributes.key}`,
-        variable.attributes.value,
+          ? `tf/var/${variable.attributes.key}`
+          : `tf/env/${variable.attributes.key}`,
+        variable.attributes.value || "",
       ];
     }),
   );
@@ -110,7 +110,7 @@ const processVariables = (variables: Variable[]) =>
  */
 function processWorkspaceTags(tags?: string[]) {
   return tags
-    ? Object.fromEntries(tags.map((tag) => [`tags/${tag}`, "true"]))
+    ? Object.fromEntries(tags.map((tag) => [`tf/tags/${tag}`, "true"]))
     : {};
 }
 
@@ -127,9 +127,9 @@ function processVcsRepo(
   const { identifier, branch, "repository-http-url": repoUrl } = vcsRepo;
 
   return {
-    ...(identifier && { "vcs-repo/identifier": identifier }),
-    ...(branch && { "vcs-repo/branch": branch }),
-    ...(repoUrl && { "vcs-repo/repository-http-url": repoUrl }),
+    ...(identifier && { "tf/vcs-repo/identifier": identifier }),
+    ...(branch && { "tf/vcs-repo/branch": branch }),
+    ...(repoUrl && { "tf/vcs-repo/repository-http-url": repoUrl }),
   };
 }
 
