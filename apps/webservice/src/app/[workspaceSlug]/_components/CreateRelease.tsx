@@ -122,11 +122,11 @@ export const CreateReleaseDialog: React.FC<{
     );
     setOpen(false);
 
-    const numOfJobConfigs = release.jobConfigs.length;
+    const numOfReleaseJobTriggers = release.releaseJobTriggers.length;
     toast(
-      numOfJobConfigs === 0
+      numOfReleaseJobTriggers === 0
         ? `No targets to deploy release too.`
-        : `Dispatching ${release.jobConfigs.length} job configuration${release.jobConfigs.length > 1 ? "s" : ""}.`,
+        : `Dispatching ${release.releaseJobTriggers.length} job configuration${release.releaseJobTriggers.length > 1 ? "s" : ""}.`,
       {
         dismissible: true,
         duration: 2_000,

@@ -1,4 +1,4 @@
-import type { JobAgent, JobExecution } from "@ctrlplane/db/schema";
+import type { Job, JobAgent } from "@ctrlplane/db/schema";
 
 export interface JobQueue {
   /**
@@ -7,14 +7,14 @@ export interface JobQueue {
    * @param jobs Array of jobs to add to the queue.
    * @returns A promise that resolves when the task is successfully enqueued.
    */
-  enqueue(agentId: JobAgent["id"], jobs: JobExecution[]): void;
+  enqueue(agentId: JobAgent["id"], jobs: Job[]): void;
 
   /**
    * Acknowledge the processing of a task.
    * @param jobExcutionId The ID of the message/task to be acknowledged.
    * @returns A promise that resolves when the task is successfully acknowledged.
    */
-  acknowledge(jobExcutionId: JobExecution["id"]): Promise<void>;
+  acknowledge(jobExcutionId: Job["id"]): Promise<void>;
 
   /**
    * Retrieve the next jobs ready to be processed for a specific agent. it
@@ -22,5 +22,5 @@ export interface JobQueue {
    * @param agentId The ID of the agent agent.
    * @returns A promise that resolves with the next jobs
    */
-  next(agentId: string): Promise<JobExecution[]>;
+  next(agentId: string): Promise<Job[]>;
 }

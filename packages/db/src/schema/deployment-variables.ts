@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { deployment } from "./deployment.js";
 import { target } from "./target.js";
+import { variableSet } from "./variable-sets.js";
 
 export const deploymentVariable = pgTable(
   "deployment_variable",
@@ -48,7 +49,7 @@ export const createDeploymentVariableValue = createInsertSchema(
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
 
-export const variableDeploymentValueTargetFilter = pgTable(
+export const deploymentVariableValueTargetFilter = pgTable(
   "deployment_variable_value_target_filter",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
@@ -59,15 +60,15 @@ export const variableDeploymentValueTargetFilter = pgTable(
   },
 );
 export type DeploymentVariableValueTargetFilter = InferInsertModel<
-  typeof variableDeploymentValueTargetFilter
+  typeof deploymentVariableValueTargetFilter
 >;
 export const createDeploymentVariableValueTargetFilter = createInsertSchema(
-  variableDeploymentValueTargetFilter,
+  deploymentVariableValueTargetFilter,
 ).omit({ id: true });
 export const updateDeploymentVariableValueTargetFilter =
   createDeploymentVariableValueTargetFilter.partial();
 
-export const variableDeploymentValueTarget = pgTable(
+export const deploymentVariableValueTarget = pgTable(
   "deployment_variable_value_target",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
@@ -81,10 +82,24 @@ export const variableDeploymentValueTarget = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.variableValueId, t.targetId) }),
 );
 export type DeploymentVariableValueTarget = InferInsertModel<
-  typeof variableDeploymentValueTarget
+  typeof deploymentVariableValueTarget
 >;
 export const createDeploymentVariableValueTarget = createInsertSchema(
-  variableDeploymentValueTarget,
+  deploymentVariableValueTarget,
 ).omit({ id: true });
 export const updateDeploymentVariableValueTarget =
   createDeploymentVariableValueTarget.partial();
+
+export const deploymentVariableSet = pgTable(
+  "deployment_variable_set",
+  {
+    id: uuid("id").notNull().primaryKey().defaultRandom(),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id),
+    variableSetId: uuid("variable_set_id")
+      .notNull()
+      .references(() => variableSet.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.variableSetId) }),
+);

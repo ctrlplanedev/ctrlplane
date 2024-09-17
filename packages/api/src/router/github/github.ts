@@ -1,3 +1,4 @@
+import type { RestEndpointMethodTypes } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
@@ -112,14 +113,27 @@ const reposRouter = createTRPCRouter({
             installationId: installation.id,
           })) as { token: string };
 
-          const { data } = await installationOctokit.repos.listForOrg({
-            org: input.owner,
-            headers: {
-              "X-GitHub-Api-Version": "2022-11-28",
-              authorization: `Bearer ${installationToken.token}`,
-            },
-          });
-          return data;
+          type Repo =
+            RestEndpointMethodTypes["repos"]["listForOrg"]["response"]["data"][number];
+          const repos: Repo[] = [];
+
+          const getRepos = async (page: number) => {
+            const { data } = await installationOctokit.repos.listForOrg({
+              org: input.owner,
+              per_page: 100,
+              page,
+              headers: {
+                "X-GitHub-Api-Version": "2022-11-28",
+                authorization: `Bearer ${installationToken.token}`,
+              },
+            });
+            repos.push(...data);
+            if (data.length < 100) return;
+            return getRepos(page + 1);
+          };
+
+          await getRepos(1);
+          return repos;
         }),
     ),
 

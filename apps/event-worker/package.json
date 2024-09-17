@@ -17,10 +17,10 @@
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@google-cloud/container": "^5.16.0",
-    "@kubernetes/client-node": "^0.21.0",
+    "@kubernetes/client-node": "^0.22.0",
     "@octokit/auth-app": "^7.1.0",
-    "@octokit/rest": "^20.1.1",
-    "@t3-oss/env-core": "^0.10.1",
+    "@octokit/rest": "catalog:",
+    "@t3-oss/env-core": "catalog:",
     "bullmq": "^5.12.10",
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
@@ -38,12 +38,12 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/lodash": "^4.17.5",
     "@types/ms": "^0.7.34",
-    "@types/node": "^20.12.9",
+    "@types/node": "catalog:node20",
     "@types/semver": "^7.5.8",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.6.2"
   },
   "prettier": "@ctrlplane/prettier-config"
 }

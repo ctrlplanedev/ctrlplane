@@ -16,7 +16,7 @@
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-    "@t3-oss/env-core": "^0.10.1",
+    "@t3-oss/env-core": "catalog:",
     "cron": "^3.1.7",
     "zod": "catalog:"
   },
@@ -27,7 +27,7 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
+    "typescript": "^5.6.2"
   },
   "prettier": "@ctrlplane/prettier-config"
 }

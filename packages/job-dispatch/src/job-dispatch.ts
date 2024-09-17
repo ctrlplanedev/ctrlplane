@@ -1,26 +1,29 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig, JobExecution } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import type { JobExecutionReason } from "./job-execution.js";
-import { createJobExecutions } from "./job-execution.js";
-import { dispatchJobExecutionsQueue } from "./queue.js";
+import { eq, inArray, takeFirst } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
+
+import { createTriggeredRunbookJob } from "./job-creation.js";
+import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
   db: Tx,
-  jobConfigs: JobConfig[],
-) => Promise<JobConfig[]> | JobConfig[];
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
+) => Promise<schema.ReleaseJobTrigger[]> | schema.ReleaseJobTrigger[];
 
-type ThenFunc = (tx: Tx, jobConfigs: JobConfig[]) => Promise<void>;
+type ThenFunc = (
+  tx: Tx,
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
+) => Promise<void>;
 
 class DispatchBuilder {
-  private _jobConfigs: JobConfig[];
+  private _releaseTriggers: schema.ReleaseJobTrigger[];
   private _filters: DispatchFilterFunc[];
   private _then: ThenFunc[];
-  private _reason?: JobExecutionReason;
-
   constructor(private db: Tx) {
-    this._jobConfigs = [];
+    this._releaseTriggers = [];
     this._filters = [];
     this._then = [];
   }
@@ -30,13 +33,8 @@ class DispatchBuilder {
     return this;
   }
 
-  jobConfigs(t: JobConfig[]) {
-    this._jobConfigs = t;
-    return this;
-  }
-
-  reason(reason: JobExecutionReason) {
-    this._reason = reason;
+  releaseTriggers(t: schema.ReleaseJobTrigger[]) {
+    this._releaseTriggers = t;
     return this;
   }
 
@@ -45,21 +43,54 @@ class DispatchBuilder {
     return this;
   }
 
-  async dispatch(): Promise<JobExecution[]> {
-    let t = this._jobConfigs;
+  async dispatch(): Promise<schema.Job[]> {
+    let t = this._releaseTriggers;
     for (const func of this._filters) t = await func(this.db, t);
 
     if (t.length === 0) return [];
-    const wfs = await createJobExecutions(this.db, t, undefined, this._reason);
+    const wfs = await this.db
+      .select()
+      .from(schema.job)
+      .where(
+        inArray(
+          schema.job.id,
+          t.map((t) => t.jobId),
+        ),
+      );
 
     for (const func of this._then) await func(this.db, t);
 
-    await dispatchJobExecutionsQueue.addBulk(
-      wfs.map((wf) => ({ name: wf.id, data: { jobExecutionId: wf.id } })),
+    await dispatchJobsQueue.addBulk(
+      wfs.map((wf) => ({ name: wf.id, data: { jobId: wf.id } })),
     );
+
+    await this.db
+      .update(schema.job)
+      .set({ status: JobStatus.InProgress })
+      .where(
+        inArray(
+          schema.job.id,
+          wfs.map((j) => j.id),
+        ),
+      );
 
     return wfs;
   }
 }
 
-export const dispatchJobConfigs = (db: Tx) => new DispatchBuilder(db);
+export const dispatchReleaseJobTriggers = (db: Tx) => new DispatchBuilder(db);
+
+export const dispatchRunbook = async (
+  db: Tx,
+  runbookId: string,
+  values: Record<string, any>,
+) => {
+  const runbook = await db
+    .select()
+    .from(schema.runbook)
+    .where(eq(schema.runbook.id, runbookId))
+    .then(takeFirst);
+  const job = await createTriggeredRunbookJob(db, runbook, values);
+  await dispatchJobsQueue.add(job.id, { jobId: job.id });
+  return job;
+};

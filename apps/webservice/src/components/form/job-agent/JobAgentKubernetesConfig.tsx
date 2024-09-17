@@ -18,7 +18,7 @@ loader.init().then((monaco) => {
 const defaultManifest = `apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ release.version }}-{{ target.name }} # Unique ID for the jobExecution
+  name: {{ release.version }}-{{ target.name }} # Unique ID for the job
   namespace: ctrlplane
 spec:
   ttlSecondsAfterFinished: 120

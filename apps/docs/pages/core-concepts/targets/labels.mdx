@@ -1,27 +1,57 @@
-# Labels
+# Target Labels
 
-Labels are key-value pairs attached to Targets. They provide a
-flexible way to categorize and identify your Targets based on their
-characteristics. Examples of labels might include:
+Target labels in Ctrlplane are key-value pairs that provide a flexible way to
+categorize and organize your deployment targets. They play a crucial role in
+defining deployment strategies, filtering targets, and applying configurations
+selectively.
+
+## Understanding Target Labels
+
+Labels are metadata attached to targets, allowing you to group and select
+targets based on various criteria. They are particularly useful for:
+
+- Organizing targets by environment, region, or purpose
+- Applying configurations to specific groups of targets
+- Filtering targets for deployment or management tasks
+- Applying variable values to specific targets during deployment
+
+## How Labels Work in Ctrlplane
+
+1. **Definition**: Labels are defined as key-value pairs on individual targets.
+2. **Flexibility**: You can assign multiple labels to a single target.
+3. **Querying**: Ctrlplane allows you to query and filter targets based on their
+   labels.
+4. **Selective Application**: Use labels to apply configurations or run
+   deployments on specific subsets of targets.
+
+## Examples of Target Labels
+
+Here are some common examples of how you might use labels in Ctrlplane:
 
 ```yaml
-region: us-west-2
-type: eks
+environment: production
+region: us-west
+role: web-server
 tier: frontend
-customer: acme-corp
+---
+environment: staging
+region: eu-central
+role: database
+tier: backend
 ```
 
-## Filtering with Labels
+## Best Practices for Using Labels
 
-Environments use label selectors to determine which Targets should
-trigger their associated workflows. A label selector is a simple expression that
-filters Targets based on their labels.
+1. **Consistency**: Establish a consistent labeling scheme across your
+   organization.
+2. **Granularity**: Use labels that provide the right level of detail for your
+   needs.
+3. **Documentation**: Maintain clear documentation of your label taxonomy.
+4. **Avoid Overloading**: Don't try to encode too much information in a single
+   label.
+5. **Regular Review**: Periodically review and update your labeling strategy as
+   your infrastructure evolves.
 
-## App Labels
-
-These are common labels that can be added to targets. which will
-provide some functionaility in the UI. Each kind will also have specific.
-
-| Label                      | Description                                                                                                                                                                                   |
-| :------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ctrlplane.dev/deployment` | System slug and deployment slug. This pairing is used to trace the resource back to its originating deployment. This information is essential for visualizing dependencies between resources. |
+By effectively using target labels in Ctrlplane, you can create more flexible,
+manageable, and scalable deployment strategies that adapt to your organization's
+evolving needs.

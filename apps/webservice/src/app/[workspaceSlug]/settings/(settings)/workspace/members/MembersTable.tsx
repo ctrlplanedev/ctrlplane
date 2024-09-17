@@ -78,11 +78,7 @@ const InviteLinkSection: React.FC<{
     copy(link);
     setClickedCopy(true);
     setTimeout(() => setClickedCopy(false), 1000);
-    create.mutate({
-      roleId,
-      workspaceId: workspace.id,
-      token,
-    });
+    create.mutate({ roleId, workspaceId: workspace.id, token });
   };
 
   return (

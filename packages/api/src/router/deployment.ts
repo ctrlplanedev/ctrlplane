@@ -7,7 +7,6 @@ import {
   eq,
   inArray,
   isNull,
-  or,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -16,21 +15,22 @@ import {
   createDeployment,
   deployment,
   environment,
+  job,
   jobAgent,
-  jobConfig,
-  jobExecution,
   release,
+  releaseJobTrigger,
   system,
   target,
   updateDeployment,
   workspace,
 } from "@ctrlplane/db/schema";
 import {
-  cancelOldJobConfigsOnJobDispatch,
-  dispatchJobConfigs,
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  dispatchReleaseJobTriggers,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
@@ -61,41 +61,36 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(z.string())
     .query(({ ctx, input }) => {
-      const latestCompletedJobExecution = ctx.db
+      const latestCompletedJob = ctx.db
         .select({
-          id: jobExecution.id,
-          jobConfigId: jobExecution.jobConfigId,
-          status: jobExecution.status,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY job_config.target_id, job_config.environment_id ORDER BY job_config.created_at DESC)`.as(
+          id: job.id,
+          status: job.status,
+          rank: sql<number>`ROW_NUMBER() OVER (ORDER BY job.created_at DESC)`.as(
             "rank",
           ),
         })
-        .from(jobExecution)
-        .innerJoin(jobConfig, eq(jobConfig.id, jobExecution.jobConfigId))
-        .where(eq(jobExecution.status, "completed"))
-        .as("jobExecution");
+        .from(job)
+        .where(eq(job.status, "completed"))
+        .as("job");
 
       return ctx.db
         .select()
-        .from(latestCompletedJobExecution)
+        .from(latestCompletedJob)
         .innerJoin(
-          jobConfig,
-          eq(jobConfig.id, latestCompletedJobExecution.jobConfigId),
+          releaseJobTrigger,
+          eq(releaseJobTrigger.jobId, latestCompletedJob.id),
         )
-        .innerJoin(release, eq(release.id, jobConfig.releaseId))
-        .innerJoin(target, eq(target.id, jobConfig.targetId))
+        .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
+        .innerJoin(target, eq(target.id, releaseJobTrigger.targetId))
         .where(
-          and(
-            eq(release.deploymentId, input),
-            eq(latestCompletedJobExecution.rank, 1),
-          ),
+          and(eq(release.deploymentId, input), eq(latestCompletedJob.rank, 1)),
         )
         .then((r) =>
           r.map((row) => ({
-            ...row.jobExecution,
+            ...row.job,
             release: row.release,
             target: row.target,
-            jobConfig: row.job_config,
+            releaseJobTrigger: row.release_job_trigger,
           })),
         );
     }),
@@ -133,22 +128,24 @@ export const deploymentRouter = createTRPCRouter({
                 .select()
                 .from(deployment)
                 .innerJoin(release, eq(release.deploymentId, deployment.id))
-                .innerJoin(jobConfig, eq(jobConfig.releaseId, release.id))
-                .leftJoin(
-                  jobExecution,
-                  eq(jobExecution.jobConfigId, jobConfig.id),
+                .innerJoin(
+                  releaseJobTrigger,
+                  eq(releaseJobTrigger.releaseId, release.id),
                 )
+                .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
                 .where(
                   and(
                     eq(deployment.id, input.id),
-                    isNull(jobExecution.jobConfigId),
+                    eq(job.status, JobStatus.Pending),
                   ),
                 )
-                .then((jobConfigs) =>
-                  dispatchJobConfigs(ctx.db)
-                    .jobConfigs(jobConfigs.map((jc) => jc.job_config))
+                .then((releaseJobTriggers) =>
+                  dispatchReleaseJobTriggers(ctx.db)
+                    .releaseTriggers(
+                      releaseJobTriggers.map((jc) => jc.release_job_trigger),
+                    )
                     .filter(isPassingAllPolicies)
-                    .then(cancelOldJobConfigsOnJobDispatch)
+                    .then(cancelOldReleaseJobTriggersOnJobDispatch)
                     .dispatch()
                     .then(() => d),
                 )
@@ -272,32 +269,29 @@ export const deploymentRouter = createTRPCRouter({
           target,
           arrayContains(target.labels, environment.targetFilter),
         )
-        .leftJoin(jobConfig, eq(jobConfig.targetId, target.id))
-        .leftJoin(jobExecution, eq(jobConfig.id, jobExecution.jobConfigId))
-        .leftJoin(release, eq(release.id, jobConfig.releaseId))
+        .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.targetId, target.id))
+        .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
+        .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .where(
           and(
             eq(target.id, input),
             isNull(environment.deletedAt),
-            or(
-              isNull(jobExecution.id),
-              inArray(jobExecution.status, [
-                "completed",
-                "pending",
-                "in_progress",
-              ]),
-            ),
+            inArray(job.status, [
+              JobStatus.Completed,
+              JobStatus.Pending,
+              JobStatus.InProgress,
+            ]),
           ),
         )
-        .orderBy(deployment.id, jobConfig.createdAt)
+        .orderBy(deployment.id, releaseJobTrigger.createdAt)
         .then((r) =>
           r.map((row) => ({
             ...row.deployment,
             environment: row.environment,
             system: row.system,
-            jobConfig: {
-              ...row.job_config,
-              execution: row.job_execution,
+            releaseJobTrigger: {
+              ...row.release_job_trigger,
+              job: row.job,
               release: row.release,
             },
           })),

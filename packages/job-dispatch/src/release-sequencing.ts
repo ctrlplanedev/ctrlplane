@@ -1,79 +1,81 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
-import {
-  environment,
-  environmentPolicy,
-  jobConfig,
-  jobExecution,
-  release,
-} from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import { createJobExecutions } from "./job-execution.js";
+const exitStatus: schema.JobStatus[] = [
+  JobStatus.Completed,
+  JobStatus.Failure,
+  JobStatus.Cancelled,
+  JobStatus.Skipped,
+];
 
 /**
  *
  * @param db
- * @param jobConfigs
- * @returns A Promise that resolves when the job configs are cancelled. Job configs are cancelled
- * if there is a policy on the environment specifying that old job configs should be cancelled
- * upon a new job config being dispatched. It "cancels" the job configs by creating a job execution
+ * @param releaseJobTriggers
+ * @returns A Promise that resolves when the release job triggers are cancelled. release job triggers are cancelled
+ * if there is a policy on the environment specifying that old release job triggers should be cancelled
+ * upon a new job config being dispatched. It "cancels" the release job triggers by creating a job
  * with the status "cancelled".
  */
-export const cancelOldJobConfigsOnJobDispatch = async (
+export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
-  if (jobConfigs.length === 0) return;
-  const hasNoJobExecution = isNull(jobExecution.id);
-  const isNotRunbook = isNull(jobConfig.runbookId);
+  if (releaseJobTriggers.length === 0) return;
   const environmentPolicyShouldCanncel = eq(
-    environmentPolicy.releaseSequencing,
+    schema.environmentPolicy.releaseSequencing,
     "cancel",
   );
   const isAffectedEnvironment = inArray(
-    environment.id,
-    jobConfigs.map((t) => t.environmentId).filter(isPresent),
+    schema.environment.id,
+    releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
   );
-  const isNotDispatchedJobConfig = notInArray(
-    jobConfig.id,
-    jobConfigs.map((t) => t.id),
+  const isNotDispatchedReleaseJobTrigger = notInArray(
+    schema.releaseJobTrigger.id,
+    releaseJobTriggers.map((t) => t.id),
   );
-  const isNotDeleted = isNull(environment.deletedAt);
+  const isNotDeleted = isNull(schema.environment.deletedAt);
   const isNotSameRelease = notInArray(
-    release.id,
-    jobConfigs.map((t) => t.releaseId).filter(isPresent),
+    schema.release.id,
+    releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
   );
+  const isNotAlreadyCompleted = notInArray(schema.job.status, exitStatus);
 
-  const oldJobConfigsToCancel = await db
+  const oldReleaseJobTriggersToCancel = await db
     .select()
-    .from(jobConfig)
-    .leftJoin(jobExecution, eq(jobExecution.jobConfigId, jobConfig.id))
-    .innerJoin(environment, eq(environment.id, jobConfig.environmentId))
-    .innerJoin(release, eq(release.id, jobConfig.releaseId))
+    .from(schema.releaseJobTrigger)
+    .innerJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
     .innerJoin(
-      environmentPolicy,
-      eq(environment.policyId, environmentPolicy.id),
+      schema.environment,
+      eq(schema.environment.id, schema.releaseJobTrigger.environmentId),
+    )
+    .innerJoin(
+      schema.release,
+      eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+    )
+    .innerJoin(
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .where(
       and(
-        hasNoJobExecution,
-        isNotRunbook,
         environmentPolicyShouldCanncel,
         isAffectedEnvironment,
-        isNotDispatchedJobConfig,
+        isNotDispatchedReleaseJobTrigger,
         isNotDeleted,
         isNotSameRelease,
+        isNotAlreadyCompleted,
       ),
-    );
+    )
+    .then((r) => r.map((t) => t.job.id));
+  if (oldReleaseJobTriggersToCancel.length === 0) return;
 
-  if (oldJobConfigsToCancel.length === 0) return;
-
-  await createJobExecutions(
-    db,
-    oldJobConfigsToCancel.map((t) => t.job_config),
-    "cancelled",
-  );
+  await db
+    .update(schema.job)
+    .set({ status: "cancelled" })
+    .where(inArray(schema.job.id, oldReleaseJobTriggersToCancel));
 };

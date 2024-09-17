@@ -2,7 +2,7 @@ export enum JobAgentType {
   GithubApp = "github-app",
 }
 
-export enum JobExecutionStatus {
+export enum JobStatus {
   Completed = "completed",
   Cancelled = "cancelled",
   Skipped = "skipped",
@@ -14,3 +14,11 @@ export enum JobExecutionStatus {
   InvalidIntegration = "invalid_integration",
   ExternalRunNotFound = "external_run_not_found",
 }
+
+export const exitedStatus = [
+  JobStatus.Completed,
+  JobStatus.InvalidJobAgent,
+  JobStatus.Failure,
+  JobStatus.Cancelled,
+  JobStatus.Skipped,
+];

@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
@@ -21,21 +21,21 @@ import {
   deployment,
   environment,
   environmentPolicy,
-  jobConfig,
+  job,
   release,
   releaseDependency,
+  releaseJobTrigger,
   target,
 } from "@ctrlplane/db/schema";
 import {
-  cancelOldJobConfigsOnJobDispatch,
-  createJobConfigs,
-  createJobExecutionApprovals,
-  createJobExecutions,
-  dispatchJobConfigs,
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createJobApprovals,
+  createReleaseJobTriggers,
+  dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingEnvironmentPolicy,
   isPassingLockingPolicy,
   isPassingReleaseSequencingCancelPolicy,
+  isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -132,56 +132,62 @@ export const releaseRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        const cancelPreviousJobExecutions = async (
+        const cancelPreviousJobs = async (
           tx: Tx,
-          jobConfigs: JobConfig[],
+          releaseJobTriggers: ReleaseJobTrigger[],
         ) =>
           tx
             .select()
-            .from(jobConfig)
+            .from(releaseJobTrigger)
             .where(
               and(
-                eq(jobConfig.releaseId, input.releaseId),
-                eq(jobConfig.environmentId, input.environmentId),
+                eq(releaseJobTrigger.releaseId, input.releaseId),
+                eq(releaseJobTrigger.environmentId, input.environmentId),
                 notInArray(
-                  jobConfig.id,
-                  jobConfigs.map((j) => j.id),
+                  releaseJobTrigger.id,
+                  releaseJobTriggers.map((j) => j.id),
                 ),
               ),
             )
-            .then((existingJobConfigs) =>
-              createJobExecutions(tx, existingJobConfigs, "cancelled").then(
-                () => {},
-              ),
+            .then((existingReleaseJobTriggers) =>
+              tx
+                .update(job)
+                .set({ status: "cancelled" })
+                .where(
+                  inArray(
+                    job.id,
+                    existingReleaseJobTriggers.map((t) => t.jobId),
+                  ),
+                )
+                .then(() => {}),
             );
 
-        const jobConfigs = await createJobConfigs(ctx.db, "force_deploy")
+        const releaseJobTriggers = await createReleaseJobTriggers(
+          ctx.db,
+          "force_deploy",
+        )
           .causedById(ctx.session.user.id)
           .environments([input.environmentId])
           .releases([input.releaseId])
           .filter(
             input.isForcedRelease
-              ? (_tx, jobConfigs) => jobConfigs
+              ? (_tx, releaseJobTriggers) => releaseJobTriggers
               : isPassingReleaseSequencingCancelPolicy,
           )
-          .then(
-            input.isForcedRelease
-              ? cancelPreviousJobExecutions
-              : createJobExecutionApprovals,
-          )
+          .then(input.isForcedRelease ? cancelPreviousJobs : createJobApprovals)
           .insert();
 
-        await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs)
+        await dispatchReleaseJobTriggers(ctx.db)
+          .releaseTriggers(releaseJobTriggers)
           .filter(
             input.isForcedRelease
               ? isPassingLockingPolicy
               : isPassingAllPolicies,
           )
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
 
-        return jobConfigs;
+        return releaseJobTriggers;
       }),
 
     toTarget: protectedProcedure
@@ -228,44 +234,40 @@ export const releaseRouter = createTRPCRouter({
 
         const jc = await ctx.db
           .select()
-          .from(jobConfig)
+          .from(releaseJobTrigger)
           .where(
             and(
-              eq(jobConfig.releaseId, input.releaseId),
-              eq(jobConfig.environmentId, input.environmentId),
-              eq(jobConfig.targetId, input.targetId),
+              eq(releaseJobTrigger.releaseId, input.releaseId),
+              eq(releaseJobTrigger.environmentId, input.environmentId),
+              eq(releaseJobTrigger.targetId, input.targetId),
             ),
           )
           .then(takeFirstOrNull);
 
-        const jobConfigs =
+        const releaseJobTriggers =
           jc != null
             ? [jc]
-            : await createJobConfigs(ctx.db, "force_deploy")
+            : await createReleaseJobTriggers(ctx.db, "force_deploy")
                 .causedById(ctx.session.user.id)
                 .environments([env.id])
                 .releases([rel.id])
                 .targets([t.id])
                 .filter(
                   input.isForcedRelease
-                    ? (_tx, jobConfigs) => jobConfigs
+                    ? (_tx, releaseJobTriggers) => releaseJobTriggers
                     : isPassingReleaseSequencingCancelPolicy,
                 )
-                .then(
-                  input.isForcedRelease
-                    ? () => {}
-                    : createJobExecutionApprovals,
-                )
+                .then(input.isForcedRelease ? () => {} : createJobApprovals)
                 .insert();
 
-        await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs)
+        await dispatchReleaseJobTriggers(ctx.db)
+          .releaseTriggers(releaseJobTriggers)
           .filter(
             input.isForcedRelease
               ? isPassingLockingPolicy
               : isPassingAllPolicies,
           )
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
       }),
   }),
@@ -294,21 +296,24 @@ export const releaseRouter = createTRPCRouter({
             })),
           );
 
-        const jobConfigs = await createJobConfigs(db, "new_release")
+        const releaseJobTriggers = await createReleaseJobTriggers(
+          db,
+          "new_release",
+        )
           .causedById(ctx.session.user.id)
-          .filter(isPassingEnvironmentPolicy)
+          .filter(isPassingReleaseStringCheckPolicy)
           .releases([rel.id])
           .filter(isPassingReleaseSequencingCancelPolicy)
-          .then(createJobExecutionApprovals)
+          .then(createJobApprovals)
           .insert();
 
-        await dispatchJobConfigs(db)
-          .jobConfigs(jobConfigs)
+        await dispatchReleaseJobTriggers(db)
+          .releaseTriggers(releaseJobTriggers)
           .filter(isPassingAllPolicies)
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
 
-        return { ...rel, jobConfigs };
+        return { ...rel, releaseJobTriggers };
       }),
     ),
 

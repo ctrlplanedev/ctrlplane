@@ -51,7 +51,7 @@ const isValidRegex = (str: string) => {
   try {
     new RegExp(str);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -60,7 +60,7 @@ const isValidDuration = (str: string) => {
   try {
     ms(str);
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -363,7 +363,7 @@ export const SidebarPhasePanel: React.FC<{
                       <RadioGroupItem value="all" />
                     </FormControl>
                     <FormLabel className="flex items-center gap-2 font-normal">
-                      All job executions can run concurrently
+                      All jobs can run concurrently
                     </FormLabel>
                   </FormItem>
                   <FormItem className="flex items-center space-x-3 space-y-0">
@@ -384,7 +384,7 @@ export const SidebarPhasePanel: React.FC<{
                         }
                         className="border-b-1 h-6 w-16 text-xs"
                       />
-                      job executions can run concurrently
+                      jobs can run concurrently
                     </FormLabel>
                   </FormItem>
                 </RadioGroup>

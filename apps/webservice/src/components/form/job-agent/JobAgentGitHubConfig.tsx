@@ -1,17 +1,11 @@
 "use client";
 
 import type { JobAgent } from "@ctrlplane/db/schema";
-import { useState } from "react";
-import { TbGitPullRequest, TbSelector } from "react-icons/tb";
+import { useEffect, useState } from "react";
+import { TbSelector } from "react-icons/tb";
 
+import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@ctrlplane/ui/card";
 import {
   Command,
   CommandGroup,
@@ -28,7 +22,8 @@ export const JobAgentGitHubConfig: React.FC<{
   jobAgent: JobAgent;
   workspaceId: string;
   onChange: (v: Record<string, any>) => void;
-}> = ({ value, jobAgent, workspaceId, onChange }) => {
+  className?: string;
+}> = ({ value, jobAgent, workspaceId, onChange, className }) => {
   const repos = api.github.organizations.repos.list.useQuery({
     owner: jobAgent.config.owner,
     installationId: jobAgent.config.installationId,
@@ -68,96 +63,94 @@ export const JobAgentGitHubConfig: React.FC<{
     });
   };
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-1">
-          <TbGitPullRequest /> Configure a github action
-        </CardTitle>
-        <CardDescription>
-          Select a github action to run for this deployment.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <Popover open={repoOpen} onOpenChange={setRepoOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={repoOpen}
-              className="w-[250px] items-center justify-start gap-2 px-2"
-            >
-              <TbSelector />
-              <span className="overflow-hidden text-ellipsis">
-                {repo ?? "Select repo..."}
-              </span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0">
-            <Command>
-              <CommandInput placeholder="Search repo..." />
-              <CommandGroup>
-                <CommandList>
-                  {repos.data?.map((repo) => (
-                    <CommandItem
-                      key={repo.id}
-                      value={repo.name}
-                      onSelect={(currentValue) => {
-                        setRepo(currentValue);
-                        setRepoOpen(false);
-                      }}
-                    >
-                      {repo.name}
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
+  useEffect(() => {
+    if (workflows.data != null && value.workflowId != null)
+      setWorkflow(
+        workflows.data.data.workflows.find((w) => w.id === value.workflowId)
+          ?.name ?? null,
+      );
+  }, [workflows.data, value.workflowId]);
 
-        <Popover open={workflowOpen} onOpenChange={setWorkflowOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={workflowOpen}
-              className="w-[250px] items-center justify-start gap-2 px-2"
-            >
-              <TbSelector />
-              <span className="overflow-hidden text-ellipsis">
-                {workflow ?? "Select workflow..."}
-              </span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[250px] p-0">
-            <Command>
-              <CommandInput placeholder="Search workflow..." />
-              <CommandGroup>
-                <CommandList>
-                  {(workflows.data == null ||
-                    workflows.data.data.total_count === 0) && (
-                    <CommandItem disabled>No workflows found</CommandItem>
-                  )}
-                  {workflows.data?.data.workflows.map((wf) => (
-                    <CommandItem
-                      key={wf.id}
-                      value={wf.name}
-                      onSelect={(currentValue) => {
-                        setWorkflow(currentValue);
-                        setWorkflowOpen(false);
-                        handleFormChange(currentValue);
-                      }}
-                    >
-                      {wf.name}
-                    </CommandItem>
-                  ))}
-                </CommandList>
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </CardContent>
-    </Card>
+  return (
+    <>
+      <Popover open={repoOpen} onOpenChange={setRepoOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={repoOpen}
+            className={cn("items-center justify-start gap-2 px-2", className)}
+          >
+            <TbSelector />
+            <span className="overflow-hidden text-ellipsis">
+              {repo ?? "Select repo..."}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className={cn("p-0", className)}>
+          <Command>
+            <CommandInput placeholder="Search repo..." />
+            <CommandGroup>
+              <CommandList>
+                {repos.data?.map((repo) => (
+                  <CommandItem
+                    key={repo.id}
+                    value={repo.name}
+                    onSelect={(currentValue) => {
+                      setRepo(currentValue);
+                      setRepoOpen(false);
+                    }}
+                  >
+                    {repo.name}
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <Popover open={workflowOpen} onOpenChange={setWorkflowOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={workflowOpen}
+            className={cn("items-center justify-start gap-2 px-2", className)}
+          >
+            <TbSelector />
+            <span className="overflow-hidden text-ellipsis">
+              {workflow ?? "Select workflow..."}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className={cn("p-0", className)}>
+          <Command>
+            <CommandInput placeholder="Search workflow..." />
+            <CommandGroup>
+              <CommandList>
+                {(workflows.data == null ||
+                  workflows.data.data.total_count === 0) && (
+                  <CommandItem disabled>No workflows found</CommandItem>
+                )}
+                {workflows.data?.data.workflows.map((wf) => (
+                  <CommandItem
+                    key={wf.id}
+                    value={wf.name}
+                    onSelect={(currentValue) => {
+                      setWorkflow(currentValue);
+                      setWorkflowOpen(false);
+                      handleFormChange(currentValue);
+                    }}
+                  >
+                    {wf.name}
+                  </CommandItem>
+                ))}
+              </CommandList>
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </>
   );
 };

@@ -20,7 +20,7 @@ const renderManifest = (manifestTemplate: string, variables: object) => {
 };
 
 const deployManifest = async (
-  jobExecutionId: string,
+  jobId: string,
   namespace: string,
   manifest: any,
 ) => {
@@ -29,12 +29,12 @@ const deployManifest = async (
     logger.info(`Deploying manifest: ${namespace}/${name}`);
     if (name == null) {
       logger.error("Job name not found in manifest", {
-        jobExecutionId,
+        jobId,
         namespace,
       });
-      await api.updateJobExecution({
-        executionId: jobExecutionId,
-        updateJobExecutionRequest: {
+      await api.updateJob({
+        jobId,
+        updateJobRequest: {
           status: "invalid_job_agent",
           message: "Job name not found in manifest.",
         },
@@ -44,28 +44,28 @@ const deployManifest = async (
 
     logger.info(`Creating job - ${namespace}/${name}`);
     await getBatchClient().createNamespacedJob(namespace, manifest);
-    await api.updateJobExecution({
-      executionId: jobExecutionId,
-      updateJobExecutionRequest: {
+    await api.updateJob({
+      jobId,
+      updateJobRequest: {
         status: "in_progress",
         externalRunId: `${namespace}/${name}`,
         message: "Job created successfully.",
       },
     });
     logger.info(`Job created successfully`, {
-      jobExecutionId,
+      jobId,
       namespace,
       name,
     });
   } catch (error: any) {
     logger.error("Error deploying manifest", {
-      jobExecutionId,
+      jobId,
       namespace,
-      error: error.message,
+      error,
     });
-    await api.updateJobExecution({
-      executionId: jobExecutionId,
-      updateJobExecutionRequest: {
+    await api.updateJob({
+      jobId,
+      updateJobRequest: {
         status: "invalid_job_agent",
         message: error.body?.message || error.message,
       },
@@ -75,25 +75,26 @@ const deployManifest = async (
 
 const spinUpNewJobs = async (agentId: string) => {
   try {
-    const { jobExecutions = [] } = await api.getNextJobs({ agentId });
-    logger.info(`Found ${jobExecutions.length} jobExecution(s) to run.`);
+    const { jobs = [] } = await api.getNextJobs({ agentId });
+    logger.info(`Found ${jobs.length} job(s) to run.`);
     await Promise.allSettled(
-      jobExecutions.map(async (jobExecution) => {
-        logger.info(`Running job execution ${jobExecution.id}`);
+      jobs.map(async (job) => {
+        logger.info(`Running job ${job.id}`);
+        logger.debug(`Job details:`, { job });
         try {
-          const je = await api.getJobExecution({
-            executionId: jobExecution.id,
-          });
+          const je = await api.getJob({ jobId: job.id });
           const manifest = renderManifest(
-            (jobExecution.jobAgentConfig as any).manifest,
+            (job.jobAgentConfig as any).manifest,
             je,
           );
+
           const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
-          await api.acknowledgeJob({ executionId: jobExecution.id });
-          await deployManifest(jobExecution.id, namespace, manifest);
+          await api.acknowledgeJob({ jobId: job.id });
+          await deployManifest(job.id, namespace, manifest);
         } catch (error: any) {
-          logger.error(`Error processing job execution ${jobExecution.id}`, {
+          logger.error(`Error processing job ${job.id}`, {
             error: error.message,
+            stack: error.stack,
           });
           throw error;
         }
@@ -104,20 +105,21 @@ const spinUpNewJobs = async (agentId: string) => {
       agentId,
       error: error.message,
     });
+    throw error;
   }
 };
 
 const updateExecutionStatus = async (agentId: string) => {
   try {
-    const executions = await api.getAgentRunningExecutions({ agentId });
-    logger.info(`Found ${executions.length} running execution(s)`);
+    const jobs = await api.getAgentRunningJob({ agentId });
+    logger.info(`Found ${jobs.length} running execution(s)`);
     await Promise.allSettled(
-      executions.map(async (exec) => {
-        const [namespace, name] = exec.externalRunId?.split("/") ?? [];
+      jobs.map(async (job) => {
+        const [namespace, name] = job.externalRunId?.split("/") ?? [];
         if (namespace == null || name == null) {
           logger.error("Invalid external run ID", {
-            executionId: exec.id,
-            externalRunId: exec.externalRunId,
+            jobId: job.id,
+            externalRunId: job.externalRunId,
           });
           return;
         }
@@ -125,9 +127,9 @@ const updateExecutionStatus = async (agentId: string) => {
         logger.debug(`Checking status of ${namespace}/${name}`);
         try {
           const { status, message } = await getJobStatus(namespace, name);
-          await api.updateJobExecution({
-            executionId: exec.id,
-            updateJobExecutionRequest: { status, message },
+          await api.updateJob({
+            jobId: job.id,
+            updateJobRequest: { status, message },
           });
           logger.info(`Updated status for ${namespace}/${name}`, {
             status,

@@ -22,8 +22,8 @@ import {
   environmentPolicyApproval,
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
-  jobConfig,
   release,
+  releaseJobTrigger,
   setPolicyReleaseWindow,
   system,
   target,
@@ -32,11 +32,11 @@ import {
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
 import {
-  cancelOldJobConfigsOnJobDispatch,
-  createJobConfigs,
-  createJobExecutionApprovals,
-  dispatchJobConfigs,
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createJobApprovals,
+  createReleaseJobTriggers,
   dispatchJobsForNewTargets,
+  dispatchReleaseJobTriggers,
   isPassingAllPolicies,
   isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
@@ -171,7 +171,7 @@ const policyRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        const jobConfigs = await ctx.db
+        const releaseJobTriggers = await ctx.db
           .select()
           .from(environmentPolicyApproval)
           .innerJoin(
@@ -182,7 +182,10 @@ const policyRouter = createTRPCRouter({
             environment,
             eq(environment.policyId, environmentPolicy.id),
           )
-          .innerJoin(jobConfig, eq(jobConfig.environmentId, environment.id))
+          .innerJoin(
+            releaseJobTrigger,
+            eq(releaseJobTrigger.environmentId, environment.id),
+          )
           .where(
             and(
               eq(environmentPolicyApproval.id, envApproval.id),
@@ -190,10 +193,10 @@ const policyRouter = createTRPCRouter({
             ),
           );
 
-        await dispatchJobConfigs(ctx.db)
-          .jobConfigs(jobConfigs.map((t) => t.job_config))
+        await dispatchReleaseJobTriggers(ctx.db)
+          .releaseTriggers(releaseJobTriggers.map((t) => t.release_job_trigger))
           .filter(isPassingAllPolicies)
-          .then(cancelOldJobConfigsOnJobDispatch)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
       }),
 
@@ -468,24 +471,27 @@ export const environmentRouter = createTRPCRouter({
         .then(takeFirstOrNull);
       if (!rel) throw new Error("Release not found");
 
-      const jobConfigs = await createJobConfigs(ctx.db, "redeploy")
+      const releaseJobTriggers = await createReleaseJobTriggers(
+        ctx.db,
+        "redeploy",
+      )
         .causedById(ctx.session.user.id)
         .environments([env.id])
         .releases([rel.release.id])
         .filter(isPassingReleaseSequencingCancelPolicy)
-        .then(createJobExecutionApprovals)
+        .then(createJobApprovals)
         .insert();
 
-      await dispatchJobConfigs(ctx.db)
-        .jobConfigs(jobConfigs)
+      await dispatchReleaseJobTriggers(ctx.db)
+        .releaseTriggers(releaseJobTriggers)
         .filter(isPassingAllPolicies)
-        .then(cancelOldJobConfigsOnJobDispatch)
+        .then(cancelOldReleaseJobTriggersOnJobDispatch)
         .dispatch();
 
       return {
         environment: env,
         release: { ...rel.release, deployment: rel.deployment },
-        jobConfigs,
+        releaseJobTriggers,
       };
     }),
 

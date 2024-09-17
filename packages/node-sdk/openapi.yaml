@@ -142,10 +142,10 @@ paths:
           description: Deployment target not found
         "500":
           description: Internal server error
-  /v1/job/agents/{agentId}/executions/running:
+  /v1/job-agents/{agentId}/jobs/running:
     get:
-      summary: Get a running agents execution
-      operationId: getAgentRunningExecutions
+      summary: Get a agents running jobs
+      operationId: getAgentRunningJob
       parameters:
         - name: agentId
           in: path
@@ -196,7 +196,7 @@ paths:
                     - jobAgentConfig
                     - externalRunId
                     - config
-  /v1/job/agents/{agentId}/queue/next:
+  /v1/job-agents/{agentId}/queue/next:
     get:
       summary: Get the next jobs
       operationId: getNextJobs
@@ -215,7 +215,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  jobExecutions:
+                  jobs:
                     type: array
                     items:
                       type: object
@@ -231,21 +231,21 @@ paths:
                           type: object
                         message:
                           type: string
-                        jobConfigId:
+                        releaseJobTriggerId:
                           type: string
                       required:
                         - id
                         - status
                         - message
-                        - jobConfigId
+                        - releaseJobTriggerId
                         - jobAgentId
                         - jobAgentConfig
-  /v1/job/executions/{executionId}:
+  /v1/job/{jobId}:
     get:
-      summary: Get a job execution
-      operationId: getJobExecution
+      summary: Get a job
+      operationId: getJob
       parameters:
-        - name: executionId
+        - name: jobId
           in: path
           required: true
           schema:
@@ -292,10 +292,10 @@ paths:
                   - externalRunId
                   - config
     patch:
-      summary: Update a job execution
-      operationId: updateJobExecution
+      summary: Update a job
+      operationId: updateJob
       parameters:
-        - name: executionId
+        - name: jobId
           in: path
           required: true
           schema:
@@ -328,12 +328,12 @@ paths:
                     type: string
                 required:
                   - id
-  /v1/job/executions/{executionId}/acknowledge:
+  /v1/job/{jobId}/acknowledge:
     post:
       summary: Acknowledge a job
       operationId: acknowledgeJob
       parameters:
-        - name: executionId
+        - name: jobId
           in: path
           required: true
           schema:

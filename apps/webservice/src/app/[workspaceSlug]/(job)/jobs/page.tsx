@@ -11,12 +11,12 @@ export default async function JobsPage({
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
 
-  const jobConfigs = await api.job.config.byWorkspaceId(workspace.id);
+  const releaseJobTriggers = await api.job.config.byWorkspaceId(workspace.id);
 
-  if (jobConfigs.length === 0) return <JobsGettingStarted />;
+  if (releaseJobTriggers.length === 0) return <JobsGettingStarted />;
   return (
     <div>
-      {jobConfigs.map((d) => (
+      {releaseJobTriggers.map((d) => (
         <div key={d.id}>
           {d.environment?.name} / {d.target?.name} / {d.release.version}
         </div>

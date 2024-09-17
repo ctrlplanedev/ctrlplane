@@ -87,7 +87,7 @@ export const ReleaseTable: React.FC<{
     workspaceSlug: string;
     systemSlug: string;
   }>();
-  const jobConfigsQuery = api.job.config.byDeploymentId.useQuery(
+  const releaseJobTriggersQuery = api.job.config.byDeploymentId.useQuery(
     deployment.id,
     { refetchInterval: 2_000 },
   );
@@ -97,18 +97,18 @@ export const ReleaseTable: React.FC<{
     { refetchInterval: 10_000 },
   );
 
-  const jobConfigs = (jobConfigsQuery.data ?? [])
+  const releaseJobTriggers = (releaseJobTriggersQuery.data ?? [])
     .filter(
-      (jobConfig) =>
-        isPresent(jobConfig.environmentId) &&
-        isPresent(jobConfig.releaseId) &&
-        isPresent(jobConfig.targetId),
+      (releaseJobTrigger) =>
+        isPresent(releaseJobTrigger.environmentId) &&
+        isPresent(releaseJobTrigger.releaseId) &&
+        isPresent(releaseJobTrigger.targetId),
     )
-    .map((jobConfig) => ({
-      ...jobConfig,
-      environmentId: jobConfig.environmentId!,
-      target: jobConfig.target!,
-      releaseId: jobConfig.releaseId!,
+    .map((releaseJobTrigger) => ({
+      ...releaseJobTrigger,
+      environmentId: releaseJobTrigger.environmentId,
+      target: releaseJobTrigger.target!,
+      releaseId: releaseJobTrigger.releaseId,
     }));
 
   const firstRelease = releases.data?.at(0);
@@ -178,18 +178,20 @@ export const ReleaseTable: React.FC<{
                   {r.version}
                 </td>
                 {environments.map((env, idx) => {
-                  const environmentReleaseJobConfigs = jobConfigs.filter(
-                    (t) => t.releaseId === r.id && t.environmentId === env.id,
-                  );
+                  const environmentReleaseReleaseJobTriggers =
+                    releaseJobTriggers.filter(
+                      (t) => t.releaseId === r.id && t.environmentId === env.id,
+                    );
 
                   const hasActiveDeployment =
                     distrubtion.data?.filter(
                       (d) =>
                         d.release.id === r.id &&
-                        d.jobConfig.environmentId === env.id,
+                        d.releaseJobTrigger.environmentId === env.id,
                     ).length ?? 0;
                   const hasTargets = env.targets.length > 0;
-                  const hasRelease = environmentReleaseJobConfigs.length > 0;
+                  const hasRelease =
+                    environmentReleaseReleaseJobTriggers.length > 0;
                   const hasJobAgent = deployment.jobAgentId != null;
                   const isBlockedByPolicyEvaluation = blockedEnvs.includes(
                     env.id,
@@ -223,9 +225,11 @@ export const ReleaseTable: React.FC<{
                           activeDeploymentCount={hasActiveDeployment}
                           name={r.version}
                           deployedAt={
-                            environmentReleaseJobConfigs[0]!.createdAt
+                            environmentReleaseReleaseJobTriggers[0]!.createdAt
                           }
-                          jobConfigs={environmentReleaseJobConfigs}
+                          releaseJobTriggers={
+                            environmentReleaseReleaseJobTriggers
+                          }
                         />
                       )}
 

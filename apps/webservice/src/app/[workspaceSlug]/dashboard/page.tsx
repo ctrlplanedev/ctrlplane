@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Card } from "@ctrlplane/ui/card";
 
 import { api } from "../../../trpc/server";
-import { JobExecHistoryChart } from "../systems/JobExecHistoryChart";
+import { JobHistoryChart } from "../systems/JobHistoryChart";
 import { TargetAnnotationPieChart } from "./TargetAnnotationPieChart";
 
 type PageProps = {
@@ -27,7 +27,7 @@ export default async function Dashboard({
   if (workspace == null) return notFound();
   return (
     <div className="grid grid-cols-3 gap-8 p-8">
-      <JobExecHistoryChart className="col-span-3" workspace={workspace} />
+      <JobHistoryChart className="col-span-3" workspace={workspace} />
       <TargetAnnotationPieChart workspaceId={workspace.id} />
       <Card>test</Card>
     </div>

@@ -1,3 +1,4 @@
+import type { DispatchJobEvent } from "@ctrlplane/validators/events";
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
 
@@ -7,7 +8,9 @@ import { env } from "./config.js";
 
 const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
 
-export const dispatchJobExecutionsQueue = new Queue(
-  Channel.DispatchJobExecution,
-  { connection },
+export const dispatchJobsQueue = new Queue<DispatchJobEvent>(
+  Channel.DispatchJob,
+  {
+    connection,
+  },
 );

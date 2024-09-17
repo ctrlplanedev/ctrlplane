@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { JobConfig } from "@ctrlplane/db/schema";
+import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
@@ -7,19 +7,19 @@ import {
   environment,
   environmentPolicy,
   environmentPolicyApproval,
-  jobConfig,
   release,
+  releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
-export const createJobExecutionApprovals = async (
+export const createJobApprovals = async (
   db: Tx,
-  jobConfigs: JobConfig[],
+  releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
   const policiesToCheck = await db
     .selectDistinctOn([release.id, environmentPolicy.id])
-    .from(jobConfig)
-    .innerJoin(release, eq(jobConfig.releaseId, release.id))
-    .innerJoin(environment, eq(jobConfig.environmentId, environment.id))
+    .from(releaseJobTrigger)
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       environmentPolicy,
       and(
@@ -29,12 +29,9 @@ export const createJobExecutionApprovals = async (
       ),
     )
     .where(
-      and(
-        inArray(
-          release.id,
-          jobConfigs.map((t) => t.releaseId).filter(isPresent),
-        ),
-        isNull(jobConfig.runbookId),
+      inArray(
+        release.id,
+        releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
       ),
     );
 
