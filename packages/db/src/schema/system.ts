@@ -37,9 +37,9 @@ export const system = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.slug) }),
 );
 
-export const createSystem = createInsertSchema(system, {
-  ...systemSchema.shape,
-}).omit({ id: true });
+export const createSystem = createInsertSchema(system, systemSchema.shape).omit(
+  { id: true },
+);
 
 export const updateSystem = createSystem.partial();
 

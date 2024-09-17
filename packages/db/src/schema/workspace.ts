@@ -27,9 +27,10 @@ export const workspaceSchema = z.object({
     }),
 });
 
-export const createWorkspace = createInsertSchema(workspace, {
-  ...workspaceSchema.shape,
-}).omit({ id: true });
+export const createWorkspace = createInsertSchema(
+  workspace,
+  workspaceSchema.shape,
+).omit({ id: true });
 
 export const updateWorkspace = createWorkspace.partial();
 

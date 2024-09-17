@@ -94,30 +94,6 @@ const inviteRouter = createTRPCRouter({
       })
       .input(
         z.object({
-          name: z.string(),
-          description: z.string().optional(),
-        }),
-      )
-      .mutation(async ({ ctx, input }) =>
-        ctx.db
-          .insert(workspace)
-          .values({
-            name: input.name,
-            slug: input.name,
-          })
-          .returning()
-          .then(takeFirst),
-      ),
-
-    createInvite: protectedProcedure
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.IamSetPolicy)
-            .on({ type: "workspace", id: input.workspaceId }),
-      })
-      .input(
-        z.object({
           roleId: z.string().uuid(),
           workspaceId: z.string().uuid(),
           token: z.string().uuid(),
