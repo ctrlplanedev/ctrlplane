@@ -1,10 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { inArray } from "@ctrlplane/db";
+import { eq, inArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
+import { createTriggeredRunbookJob } from "./job-creation.js";
 import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
@@ -78,3 +79,18 @@ class DispatchBuilder {
 }
 
 export const dispatchReleaseJobTriggers = (db: Tx) => new DispatchBuilder(db);
+
+export const dispatchRunbook = async (
+  db: Tx,
+  runbookId: string,
+  values: Record<string, any>,
+) => {
+  const runbook = await db
+    .select()
+    .from(schema.runbook)
+    .where(eq(schema.runbook.id, runbookId))
+    .then(takeFirst);
+  const job = await createTriggeredRunbookJob(db, runbook, values);
+  await dispatchJobsQueue.add(job.id, { jobId: job.id });
+  return job;
+};

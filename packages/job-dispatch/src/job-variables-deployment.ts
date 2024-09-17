@@ -9,9 +9,36 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
-export const determineVariablesForReleaseJob = async (
+export const createReleaseVariables = async (
+  tx: Tx,
+  jobId: string,
+): Promise<void> => {
+  // Fetch the job and its associated deployment
+  const job = await tx
+    .select()
+    .from(schema.job)
+    .innerJoin(
+      schema.releaseJobTrigger,
+      eq(schema.releaseJobTrigger.jobId, schema.job.id),
+    )
+    .where(eq(schema.job.id, jobId))
+    .then(takeFirstOrNull);
+
+  if (job == null) throw new Error(`Job with id ${jobId} not found`);
+
+  const jobVariables = await determineVariablesForReleaseJob(tx, {
+    ...job.job,
+    releaseJobTrigger: job.release_job_trigger,
+  });
+
+  if (jobVariables.length > 0)
+    await tx.insert(schema.jobVariable).values(jobVariables);
+};
+
+const determineVariablesForReleaseJob = async (
   tx: Tx,
   job: SCHEMA.Job & { releaseJobTrigger: SCHEMA.ReleaseJobTrigger },
 ): Promise<SCHEMA.JobVariable[]> => {
