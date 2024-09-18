@@ -56,7 +56,7 @@ const LabelFilterInput: React.FC<{
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="max-h-[300px] w-[23rem]  overflow-auto p-0 text-sm"
+          className="max-h-[300px] w-[23rem] overflow-auto p-0 text-sm"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {filteredLabels.map((k) => (
