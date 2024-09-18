@@ -26,7 +26,7 @@ export default async function SystemsPage({
         <SystemBreadcrumbNavbar params={params} />
       </TopNav>
       {systemsAll.total === 0 ? (
-        <SystemGettingStarted workspaceId={workspace.id} />
+        <SystemGettingStarted workspace={workspace} />
       ) : (
         <>
           <JobHistoryChart workspace={workspace} />

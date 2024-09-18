@@ -23,6 +23,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormRootError,
   useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
@@ -368,6 +369,7 @@ export const CreateReleaseDialog: React.FC<{
               <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
+          <FormRootError />
         </Form>
       </DialogContent>
     </Dialog>

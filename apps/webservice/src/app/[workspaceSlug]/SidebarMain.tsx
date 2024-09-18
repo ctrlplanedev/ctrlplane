@@ -55,7 +55,7 @@ export const SidebarMain: React.FC<{
           </SearchDialog>
 
           <SidebarCreateMenu
-            workspaceId={workspace.id}
+            workspace={workspace}
             systemId={system.data?.id}
             deploymentId={deployment.data?.id}
           />

@@ -83,7 +83,7 @@ export const SidebarSystems: React.FC<{
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-1">
         {systems.length === 0 && (
-          <CreateSystemDialog workspaceId={workspace.id}>
+          <CreateSystemDialog workspace={workspace}>
             <Button
               className="flex w-full items-center justify-start gap-1.5 text-left"
               variant="ghost"

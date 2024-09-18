@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import type { Workspace } from "@ctrlplane/db/schema";
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import slugify from "slugify";
 import { z } from "zod";
 
+import { systemSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -21,6 +23,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -28,47 +32,48 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const systemForm = z.object({
-  name: z.string().min(3).max(255),
-  slug: z.string().min(3).max(255),
-  description: z.string().default(""),
-});
+const systemForm = z.object(systemSchema.shape);
 
 export const CreateSystemDialog: React.FC<{
   children: React.ReactNode;
-  workspaceId: string;
-}> = ({ children, workspaceId }) => {
+  workspace: Workspace;
+  onSuccess?: () => void;
+}> = ({ children, workspace, onSuccess }) => {
   const [open, setOpen] = useState(false);
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const create = api.system.create.useMutation();
+  const createSystem = api.system.create.useMutation();
+  const router = useRouter();
+
   const form = useForm({
     schema: systemForm,
-    defaultValues: {
-      name: "",
-      slug: "",
-      description: "",
-    },
+    defaultValues: { name: "", slug: "", description: "" },
+    mode: "onSubmit",
   });
 
-  const router = useRouter();
-  const utils = api.useUtils();
-  const onSubmit = form.handleSubmit(async (values) => {
-    try {
-      const system = await create.mutateAsync({ workspaceId, ...values });
-      await utils.system.list.invalidate();
-      router.push(`/${workspaceSlug}/systems/${system.slug}`);
-      router.refresh();
-    } catch (e) {
-      console.error(e);
-    }
-    setOpen(false);
+  const { handleSubmit, watch, setValue, setError } = form;
+
+  watch((data, { name: fieldName }) => {
+    if (fieldName === "name")
+      setValue("slug", slugify(data.name ?? "", { lower: true }), {
+        shouldValidate: true,
+      });
   });
 
-  const { name } = form.watch();
-  useEffect(
-    () => form.setValue("slug", slugify(name, { lower: true })),
-    [form, name],
-  );
+  const onSubmit = handleSubmit(async (system) => {
+    const systemSlug = system.slug;
+    await createSystem
+      .mutateAsync({ workspaceId: workspace.id, ...system })
+      .then(() => {
+        router.push(`/${workspace.slug}/systems/${systemSlug}`);
+        router.refresh();
+        setOpen(false);
+        onSuccess?.();
+      })
+      .catch(() => {
+        setError("root", {
+          message: "System with this slug already exists",
+        });
+      });
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -79,11 +84,10 @@ export const CreateSystemDialog: React.FC<{
             <DialogHeader>
               <DialogTitle>New System</DialogTitle>
               <DialogDescription>
-                Systems are a group of processes, releases, and runbooks for an
+                Systems are a group of processes, releases, and runbooks for
                 applications or services.
               </DialogDescription>
             </DialogHeader>
-
             <FormField
               control={form.control}
               name="name"
@@ -96,6 +100,7 @@ export const CreateSystemDialog: React.FC<{
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -111,6 +116,7 @@ export const CreateSystemDialog: React.FC<{
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -121,13 +127,20 @@ export const CreateSystemDialog: React.FC<{
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="" {...field} />
+                    <Textarea
+                      placeholder="Describe your system..."
+                      {...field}
+                    />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+            <FormRootError />
             <DialogFooter>
-              <Button type="submit">Create</Button>
+              <Button type="submit" disabled={createSystem.isPending}>
+                Create system
+              </Button>
             </DialogFooter>
           </form>
         </Form>

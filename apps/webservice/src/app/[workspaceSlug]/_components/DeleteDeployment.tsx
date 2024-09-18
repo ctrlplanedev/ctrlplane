@@ -31,7 +31,7 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
   const deleteDeployment = api.deployment.delete.useMutation();
 
   const onDelete = async () => {
-    await deleteDeployment.mutateAsync(id);
+    await deleteDeployment.mutateAsync(id).catch(console.error);
     router.refresh();
     setIsOpen(false);
   };

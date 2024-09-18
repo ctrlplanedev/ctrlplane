@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { signOut, useSession } from "next-auth/react";
+import { useForm } from "react-hook-form";
 import { TbCheck } from "react-icons/tb";
 import slugify from "slugify";
 import { z } from "zod";
 
+import { workspaceSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 import {
@@ -23,42 +25,42 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  useForm,
+  FormRootError,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 
 import { api } from "~/trpc/react";
 
-const workspaceForm = z.object({
-  name: z.string().min(3).max(30),
-  slug: z
-    .string()
-    .min(3)
-    .max(30)
-    .refine((slug) => slug === slugify(slug, { lower: true }), {
-      message: "Must be a valid URL",
-    }),
-});
+const workspaceForm = z.object(workspaceSchema.shape);
+type WorkspaceFormValues = z.infer<typeof workspaceForm>;
 
 export default function WorkspaceJoin() {
   const { data: session } = useSession();
   const create = api.workspace.create.useMutation();
-  const form = useForm({
-    disabled: create.isPending,
-    schema: workspaceForm,
+  const router = useRouter();
+
+  const form = useForm<WorkspaceFormValues>({
+    resolver: zodResolver(workspaceForm),
     defaultValues: { name: "", slug: "" },
   });
 
-  const { name } = form.watch();
-  useEffect(
-    () => form.setValue("slug", slugify(name, { lower: true })),
-    [form, name],
-  );
+  const { handleSubmit, watch, setValue, setError } = form;
 
-  const router = useRouter();
-  const onSubmit = form.handleSubmit(async (data) => {
-    await create.mutateAsync(data);
-    router.push(`/${data.slug}`);
+  watch((data, { name: fieldName }) => {
+    if (fieldName === "name")
+      setValue("slug", slugify(data.name ?? "", { lower: true }));
+  });
+
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      await create.mutateAsync(data);
+      router.push(`/${data.slug}`);
+    } catch {
+      setError("root", {
+        message: "Workspace with this name already exists",
+        type: "manual",
+      });
+    }
   });
 
   return (
@@ -120,7 +122,7 @@ export default function WorkspaceJoin() {
                   </FormItem>
                 )}
               />
-
+              <FormRootError />
               <Button
                 disabled={create.isPending}
                 size="lg"

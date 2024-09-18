@@ -10,19 +10,27 @@ export const workspace = pgTable("workspace", {
   googleServiceAccountEmail: text("google_service_account_email"),
 });
 
-export const createWorkspace = createInsertSchema(workspace, {
-  name: z.string().max(50).min(3),
+export const workspaceSchema = z.object({
+  name: z
+    .string()
+    .min(3, { message: "Workspace name must be at least 3 characters long." })
+    .max(30, { message: "Workspace Name must be at most 30 characters long." }),
   slug: z
     .string()
-    .min(3)
-    .max(50)
+    .min(3, { message: "URL must be at least 3 characters long." })
+    .max(50, { message: "URL must be at most 50 characters long." })
     .refine((slug) => slug === slug.toLowerCase(), {
       message: "Slug must be lowercase",
     })
     .refine((slug) => !slug.includes(" "), {
       message: "Slug cannot contain spaces",
     }),
-}).omit({ id: true });
+});
+
+export const createWorkspace = createInsertSchema(
+  workspace,
+  workspaceSchema.shape,
+).omit({ id: true });
 
 export const updateWorkspace = createWorkspace.partial();
 
