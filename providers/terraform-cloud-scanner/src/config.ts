@@ -20,7 +20,7 @@ export const env = createEnv({
 
     CONCURRENT_REQUESTS: z.number().default(10),
 
-    CRON_ENABLED: z.boolean().default(true),
+    CRON_ENABLED: z.string().default("true"),
     CRON_TIME: z.string().default("*/5 * * * *"),
   },
   runtimeEnv: process.env,
