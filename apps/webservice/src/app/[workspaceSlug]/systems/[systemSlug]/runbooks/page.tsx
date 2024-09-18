@@ -9,9 +9,16 @@ import { RunbookRow } from "./RunbookRow";
 
 export const metadata: Metadata = { title: "Runbooks - Systems" };
 
-export default async function Runbooks({ params }: { params: any }) {
+export default async function Runbooks({
+  params,
+}: {
+  params: { workspaceSlug: string; systemSlug: string };
+}) {
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) return notFound();
   const system = await api.system.bySlug(params).catch(notFound);
   const runbooks = await api.runbook.bySystemId(system.id);
+  const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
 
   return (
     <>
@@ -24,7 +31,12 @@ export default async function Runbooks({ params }: { params: any }) {
       ) : (
         <>
           {runbooks.map((r) => (
-            <RunbookRow key={r.id} runbook={r} />
+            <RunbookRow
+              key={r.id}
+              runbook={r}
+              jobAgents={jobAgents}
+              workspace={workspace}
+            />
           ))}
         </>
       )}

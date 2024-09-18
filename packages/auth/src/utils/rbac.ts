@@ -93,22 +93,6 @@ const getReleaseScopes = async (id: string) => {
   ];
 };
 
-const getRunbookScope = async (id: string) => {
-  const result = await db
-    .select()
-    .from(workspace)
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(runbook, eq(runbook.systemId, system.id))
-    .where(eq(runbook.id, id))
-    .then(takeFirst);
-
-  return [
-    { type: "runbook" as const, id: result.runbook.id },
-    { type: "system" as const, id: result.system.id },
-    { type: "workspace" as const, id: result.workspace.id },
-  ];
-};
-
 const getEnvironmentScopes = async (id: string) => {
   const result = await db
     .select()
@@ -215,6 +199,22 @@ const getDeploymentScopes = async (id: string) => {
   ];
 };
 
+const getRunbookScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(runbook, eq(runbook.systemId, system.id))
+    .where(eq(runbook.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "runbook" as const, id: result.runbook.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 const getSystemScopes = async (id: string) => {
   const result = await db
     .select()
@@ -262,12 +262,12 @@ export const scopeHandlers: Record<
   target: getTargetScopes,
   targetProvider: getTargetProviderScopes,
   deployment: getDeploymentScopes,
+  runbook: getRunbookScopes,
   system: getSystemScopes,
   workspace: getWorkspaceScopes,
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
   release: getReleaseScopes,
-  runbook: getRunbookScope,
   targetLabelGroup: getTargetLabelGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,

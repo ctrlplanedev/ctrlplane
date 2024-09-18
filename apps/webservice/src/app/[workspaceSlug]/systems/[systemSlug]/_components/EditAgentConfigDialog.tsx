@@ -21,14 +21,16 @@ import { Form, FormField, useForm } from "@ctrlplane/ui/form";
 import { JobAgentGitHubConfig } from "~/components/form/job-agent/JobAgentGitHubConfig";
 import { JobAgentKubernetesConfig } from "~/components/form/job-agent/JobAgentKubernetesConfig";
 import { JobAgentSelectorInput } from "~/components/form/job-agent/JobAgentSelector";
-import { api } from "~/trpc/react";
 
 type EditAgentConfigDialogProps = {
   jobAgents: schema.JobAgent[];
   jobAgent: schema.JobAgent;
   value: Record<string, any>;
   workspace: { id: string; slug: string };
-  deploymentId: string;
+  onSubmit: (data: {
+    jobAgentId: string;
+    config: Record<string, any>;
+  }) => Promise<void>;
   children: React.ReactNode;
 };
 
@@ -37,7 +39,7 @@ export const EditAgentConfigDialog: React.FC<EditAgentConfigDialogProps> = ({
   jobAgent,
   value,
   workspace,
-  deploymentId,
+  onSubmit,
   children,
 }) => {
   const form = useForm({
@@ -51,22 +53,16 @@ export const EditAgentConfigDialog: React.FC<EditAgentConfigDialogProps> = ({
     },
   });
   const [open, setOpen] = useState(false);
-
-  const updateDeployment = api.deployment.update.useMutation();
   const router = useRouter();
 
-  const onSubmit = form.handleSubmit((data) =>
-    updateDeployment
-      .mutateAsync({
-        id: deploymentId,
-        data: {
-          jobAgentConfig: data.config,
-        },
-      })
-      .then(() => {
-        router.refresh();
-        setOpen(false);
-      }),
+  const onFormSubmit = form.handleSubmit((data) =>
+    onSubmit({
+      jobAgentId: data.jobAgentId,
+      config: data.config,
+    }).then(() => {
+      router.refresh();
+      setOpen(false);
+    }),
   );
 
   const { jobAgentId } = form.watch();
@@ -83,7 +79,7 @@ export const EditAgentConfigDialog: React.FC<EditAgentConfigDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={onSubmit} className="space-y-3">
+          <form onSubmit={onFormSubmit} className="space-y-3">
             <FormField
               control={form.control}
               name="jobAgentId"

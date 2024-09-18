@@ -1,6 +1,7 @@
 "use client";
 
-import type { Runbook, RunbookVariable } from "@ctrlplane/db/schema";
+import type * as schema from "@ctrlplane/db/schema";
+import { useState } from "react";
 import { TbDotsVertical } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -11,11 +12,21 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { api } from "~/trpc/react";
+import { EditAgentConfigDialog } from "../_components/EditAgentConfigDialog";
 import { TriggerRunbookDialog } from "./TriggerRunbook";
 
 export const RunbookRow: React.FC<{
-  runbook: Runbook & { variables: RunbookVariable[] };
-}> = ({ runbook }) => {
+  runbook: schema.Runbook & {
+    variables: schema.RunbookVariable[];
+    jobAgent: schema.JobAgent | null;
+  };
+  workspace: schema.Workspace;
+  jobAgents: schema.JobAgent[];
+}> = ({ runbook, workspace, jobAgents }) => {
+  const updateRunbook = api.runbook.update.useMutation();
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="flex items-center justify-between border-b p-4">
       <div>
@@ -23,7 +34,7 @@ export const RunbookRow: React.FC<{
         <p className="text-sm text-muted-foreground">{runbook.description}</p>
       </div>
 
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
             <TbDotsVertical />
@@ -35,6 +46,29 @@ export const RunbookRow: React.FC<{
               Trigger Runbook
             </DropdownMenuItem>
           </TriggerRunbookDialog>
+          {runbook.jobAgent != null && (
+            <EditAgentConfigDialog
+              jobAgent={runbook.jobAgent}
+              workspace={workspace}
+              jobAgents={jobAgents}
+              value={runbook.jobAgentConfig}
+              onSubmit={(data) =>
+                updateRunbook
+                  .mutateAsync({
+                    id: runbook.id,
+                    data: {
+                      jobAgentId: data.jobAgentId,
+                      jobAgentConfig: data.config,
+                    },
+                  })
+                  .then(() => setOpen(false))
+              }
+            >
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Edit Job Agent
+              </DropdownMenuItem>
+            </EditAgentConfigDialog>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

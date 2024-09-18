@@ -44,6 +44,10 @@ export const runbookRouter = createTRPCRouter({
           SCHEMA.runbookVariable,
           eq(SCHEMA.runbookVariable.runbookId, SCHEMA.runbook.id),
         )
+        .leftJoin(
+          SCHEMA.jobAgent,
+          eq(SCHEMA.runbook.jobAgentId, SCHEMA.jobAgent.id),
+        )
         .where(eq(SCHEMA.runbook.systemId, input))
         .then((rbs) =>
           _.chain(rbs)
@@ -51,6 +55,7 @@ export const runbookRouter = createTRPCRouter({
             .map((rb) => ({
               ...rb[0]!.runbook,
               variables: rb.map((v) => v.runbook_variable).filter(isPresent),
+              jobAgent: rb[0]!.job_agent,
             }))
             .value(),
         ),
@@ -60,7 +65,7 @@ export const runbookRouter = createTRPCRouter({
     .meta({
       authorizationCheck: async ({ canUser, input }) =>
         canUser
-          .perform(Permission.RunbookUpdate)
+          .perform(Permission.RunbookCreate)
           .on({ type: "system", id: input.systemId }),
     })
     .input(createRunbook.extend({ variables: z.array(createRunbookVariable) }))
@@ -82,5 +87,26 @@ export const runbookRouter = createTRPCRouter({
                 .returning();
         return { ...runbook, variables: vars };
       }),
+    ),
+
+  update: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.RunbookUpdate).on({
+          type: "runbook",
+          id: input.id,
+        }),
+    })
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: SCHEMA.updateRunbook,
+      }),
+    )
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .update(SCHEMA.runbook)
+        .set(input.data)
+        .where(eq(SCHEMA.runbook.id, input.id)),
     ),
 });
