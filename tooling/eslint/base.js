@@ -2,6 +2,7 @@
 
 import eslint from "@eslint/js";
 import importPlugin from "eslint-plugin-import";
+import vitest from "eslint-plugin-vitest";
 import tseslint from "typescript-eslint";
 
 /**
@@ -41,6 +42,20 @@ export const restrictEnvAccess = tseslint.config({
       },
     ],
   },
+});
+
+/**
+ * All packages that leverage vitest should use this rule
+ */
+/** @type {Awaited<import('typescript-eslint').Config>} */
+export const vitestEslintConfig = tseslint.config({
+  files: ["__tests__/**", "tests/**"],
+  plugins: { vitest },
+  rules: {
+    ...vitest.configs.recommended.rules,
+    "vitest/max-nested-describe": ["error", { max: 3 }],
+  },
+  ignores: ["dist/**", "__tests__/**", "coverage/**"],
 });
 
 export default tseslint.config(

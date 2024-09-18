@@ -342,7 +342,7 @@ CREATE TABLE IF NOT EXISTS "runbook" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "runbook_job_trigger" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"job_id" uuid,
+	"job_id" uuid NOT NULL,
 	"runbook_id" uuid NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "runbook_job_trigger_job_id_unique" UNIQUE("job_id")

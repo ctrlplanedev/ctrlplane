@@ -20,15 +20,14 @@ COPY pnpm-*.yaml .
 
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/node-sdk/package.json ./packages/node-sdk/package.json
-COPY packages/validators/package.json ./packages/validators/package.json
-COPY providers/google-compute-scanner/package.json ./providers/google-compute-scanner/package.json
+COPY providers/terraform-cloud-scanner/package.json ./providers/terraform-cloud-scanner/package.json
 
 RUN pnpm install --frozen-lockfile
 COPY . .
-RUN turbo build --filter=...@ctrlplane/google-compute-scanner
+RUN turbo build --filter=...@ctrlplane/terraform-cloud-scanner
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-CMD ["node", "providers/google-compute-scanner/dist/index.js"]
+CMD ["node", "providers/terraform-cloud-scanner/dist/index.js"]

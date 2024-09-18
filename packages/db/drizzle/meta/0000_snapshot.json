@@ -1,5 +1,5 @@
 {
-  "id": "e07314fc-e18c-455c-aa24-58e497330abe",
+  "id": "1b277419-e0fb-4693-8d0c-ef96864252a0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -2280,7 +2280,7 @@
           "name": "job_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "runbook_id": {
           "name": "runbook_id",
