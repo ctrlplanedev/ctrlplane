@@ -9,21 +9,15 @@ logger.info(
   `Starting Terraform Cloud scanner for organization '${env.TFE_ORGANIZATION}' in workspace '${env.CTRLPLANE_WORKSPACE}'`,
 );
 
-const runScan = () =>
-  scan().catch((error) => {
-    const scanType = env.CRON_ENABLED === true ? "Scheduled" : "One-time";
-    logger.error(`${scanType} scan failed:`, error);
-    process.exit(1);
-  });
+scan().catch((error) => {
+  logger.error("Initial scan failed:", error);
+});
 
-env.CRON_ENABLED === true
-  ? (() => {
-      logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
-      new CronJob(env.CRON_TIME, runScan).start();
-    })()
-  : (() => {
-      logger.info("Cron job disabled. Running in one-time execution mode.");
-      runScan()
-        .then(() => logger.info("One-time scan completed. Exiting."))
-        .finally(() => process.exit(0));
-    })();
+if (env.CRON_ENABLED === true) {
+  logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
+  new CronJob(env.CRON_TIME, () => {
+    scan().catch((error) => {
+      logger.error("Scheduled scan failed:", error);
+    });
+  }).start();
+}
