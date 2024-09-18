@@ -6,7 +6,8 @@
   "exports": {
     "./base": "./base.js",
     "./nextjs": "./nextjs.js",
-    "./react": "./react.js"
+    "./react": "./react.js",
+    "./vitest": "./vitest.js"
   },
   "scripts": {
     "clean": "rm -rf .turbo node_modules",

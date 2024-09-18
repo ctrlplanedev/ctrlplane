@@ -8,5 +8,5 @@
     "types": ["node", "vitest", "vitest/globals"]
   },
   "include": ["*.ts", "src", "src/__tests__/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "coverage"]
 }

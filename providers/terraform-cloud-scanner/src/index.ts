@@ -7,7 +7,6 @@ import { scan } from "./scanner.js";
 
 logger.info(
   `Starting Terraform Cloud scanner for organization '${env.TFE_ORGANIZATION}' in workspace '${env.CTRLPLANE_WORKSPACE}'`,
-  { environment: env },
 );
 
 scan().catch((error) => {
