@@ -138,13 +138,10 @@ const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
   throw Error("invalid label conditions");
 };
 
-export function createTargetLabelConditions(
+export function targetMatchsLabel(
   tx: Tx,
   labels: LabelCondition,
 ): SQL<unknown> | undefined {
   if (Object.keys(labels).length === 0) return undefined;
-
-  const conditions = buildCondition(tx, labels);
-
-  return conditions;
+  return Object.keys(labels).length === 0 ? buildCondition(tx, labels);
 }
