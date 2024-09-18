@@ -13,7 +13,7 @@ scan().catch((error) => {
   logger.error("Initial scan failed:", error);
 });
 
-if (env.CRON_ENABLED?.toLowerCase() === "true") {
+if (env.CRON_ENABLED.toLowerCase() === "true") {
   logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
   new CronJob(env.CRON_TIME, () => {
     scan().catch((error) => {
