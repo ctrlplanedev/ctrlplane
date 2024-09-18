@@ -88,20 +88,6 @@ export const targetLabel = pgTable(
 );
 
 const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
-  if ("value" in cond)
-    return exists(
-      tx
-        .select()
-        .from(targetLabel)
-        .where(
-          and(
-            eq(targetLabel.targetId, target.id),
-            eq(targetLabel.label, cond.label),
-            eq(targetLabel.value, cond.value),
-          ),
-        ),
-    );
-
   if (cond.operator === "regex")
     return exists(
       tx
@@ -135,6 +121,20 @@ const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
     return cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
   }
 
+  if ("value" in cond)
+    return exists(
+      tx
+        .select()
+        .from(targetLabel)
+        .where(
+          and(
+            eq(targetLabel.targetId, target.id),
+            eq(targetLabel.label, cond.label),
+            eq(targetLabel.value, cond.value),
+          ),
+        ),
+    );
+
   throw Error("invalid label conditions");
 };
 
@@ -142,6 +142,7 @@ export function targetMatchsLabel(
   tx: Tx,
   labels: LabelCondition,
 ): SQL<unknown> | undefined {
-  if (Object.keys(labels).length === 0) return undefined;
-  return Object.keys(labels).length === 0 ? buildCondition(tx, labels);
+  return Object.keys(labels).length === 0
+    ? buildCondition(tx, labels)
+    : undefined;
 }
