@@ -13,9 +13,9 @@ import {
 } from "@ctrlplane/ui/resizable";
 
 import { api } from "~/trpc/server";
+import { EditAgentConfigDialog } from "../../_components/EditAgentConfigDialog";
 import { ReleaseTable } from "../TableRelease";
 import { DistroBarChart } from "./DistroBarChart";
-import { EditAgentConfigDialog } from "./EditAgentConfigDialog";
 import { JobAgentMissingAlert } from "./JobAgentMissingAlert";
 
 export default async function DeploymentPage({
@@ -130,7 +130,16 @@ export default async function DeploymentPage({
                       value={deployment.jobAgentConfig}
                       jobAgents={jobAgents}
                       workspace={workspace}
-                      deploymentId={deployment.id}
+                      onSubmit={async (data) => {
+                        "use server";
+                        await api.deployment.update({
+                          id: deployment.id,
+                          data: {
+                            jobAgentId: data.jobAgentId,
+                            jobAgentConfig: data.config,
+                          },
+                        });
+                      }}
                     >
                       <Button
                         variant="outline"

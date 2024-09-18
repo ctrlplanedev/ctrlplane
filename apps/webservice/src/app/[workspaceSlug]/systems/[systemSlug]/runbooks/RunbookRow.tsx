@@ -1,21 +1,26 @@
-"use client";
-
-import type { Runbook, RunbookVariable } from "@ctrlplane/db/schema";
+import type * as schema from "@ctrlplane/db/schema";
 import { TbDotsVertical } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { api } from "~/trpc/server";
+import { EditAgentConfigDialog } from "../_components/EditAgentConfigDialog";
+import { RunbookDropdownMenuItem } from "./RunbookDropdownMenuItem";
 import { TriggerRunbookDialog } from "./TriggerRunbook";
 
 export const RunbookRow: React.FC<{
-  runbook: Runbook & { variables: RunbookVariable[] };
-}> = ({ runbook }) => {
+  runbook: schema.Runbook & {
+    variables: schema.RunbookVariable[];
+    jobAgent: schema.JobAgent | null;
+  };
+  workspace: schema.Workspace;
+  jobAgents: schema.JobAgent[];
+}> = ({ runbook, workspace, jobAgents }) => {
   return (
     <div className="flex items-center justify-between border-b p-4">
       <div>
@@ -31,10 +36,28 @@ export const RunbookRow: React.FC<{
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <TriggerRunbookDialog runbook={runbook}>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              Trigger Runbook
-            </DropdownMenuItem>
+            <RunbookDropdownMenuItem>Trigger Runbook</RunbookDropdownMenuItem>
           </TriggerRunbookDialog>
+          {runbook.jobAgent != null && (
+            <EditAgentConfigDialog
+              jobAgent={runbook.jobAgent}
+              workspace={workspace}
+              jobAgents={jobAgents}
+              value={runbook.jobAgentConfig}
+              onSubmit={async (data) => {
+                "use server";
+                await api.runbook.update({
+                  id: runbook.id,
+                  data: {
+                    jobAgentId: data.jobAgentId,
+                    jobAgentConfig: data.config,
+                  },
+                });
+              }}
+            >
+              <RunbookDropdownMenuItem>Edit Job Agent</RunbookDropdownMenuItem>
+            </EditAgentConfigDialog>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

@@ -24,11 +24,6 @@ import {
   updateDeployment,
   workspace,
 } from "@ctrlplane/db/schema";
-import {
-  cancelOldReleaseJobTriggersOnJobDispatch,
-  dispatchReleaseJobTriggers,
-  isPassingAllPolicies,
-} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -119,38 +114,7 @@ export const deploymentRouter = createTRPCRouter({
       ctx.db
         .update(deployment)
         .set(input.data)
-        .where(eq(deployment.id, input.id))
-        .returning()
-        .then(takeFirst)
-        .then((d) =>
-          input.data.jobAgentConfig != null
-            ? ctx.db
-                .select()
-                .from(deployment)
-                .innerJoin(release, eq(release.deploymentId, deployment.id))
-                .innerJoin(
-                  releaseJobTrigger,
-                  eq(releaseJobTrigger.releaseId, release.id),
-                )
-                .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
-                .where(
-                  and(
-                    eq(deployment.id, input.id),
-                    eq(job.status, JobStatus.Pending),
-                  ),
-                )
-                .then((releaseJobTriggers) =>
-                  dispatchReleaseJobTriggers(ctx.db)
-                    .releaseTriggers(
-                      releaseJobTriggers.map((jc) => jc.release_job_trigger),
-                    )
-                    .filter(isPassingAllPolicies)
-                    .then(cancelOldReleaseJobTriggersOnJobDispatch)
-                    .dispatch()
-                    .then(() => d),
-                )
-            : d,
-        ),
+        .where(eq(deployment.id, input.id)),
     ),
 
   delete: protectedProcedure

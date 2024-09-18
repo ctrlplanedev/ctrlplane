@@ -43,6 +43,7 @@ export const scopeType = pgEnum("scope_type", [
   "variableSet",
   "system",
   "deployment",
+  "runbook",
   "jobAgent",
 ]);
 export const scopeTypeSchema = z.enum(scopeType.enumValues);
