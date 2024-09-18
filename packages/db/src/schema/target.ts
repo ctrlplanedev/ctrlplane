@@ -1,3 +1,4 @@
+import type { LabelCondition } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, or, sql } from "drizzle-orm";
 import {
@@ -13,9 +14,7 @@ import { and, eq } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { LabelCondition } from "@ctrlplane/validators/targets";
-
-import { Tx } from "../common.js";
+import type { Tx } from "../common.js";
 import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -140,9 +139,9 @@ const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
 
 export function targetMatchsLabel(
   tx: Tx,
-  labels: LabelCondition,
+  labels?: LabelCondition | null,
 ): SQL<unknown> | undefined {
-  return Object.keys(labels).length === 0
-    ? buildCondition(tx, labels)
-    : undefined;
+  return labels == null || Object.keys(labels).length === 0
+    ? undefined
+    : buildCondition(tx, labels);
 }

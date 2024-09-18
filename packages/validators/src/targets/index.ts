@@ -26,17 +26,19 @@ export const likeCondition = z.object({
 
 export type LikeCondition = z.infer<typeof likeCondition>;
 
-export const comparisonCondition = z.object({
-  operator: z.literal("or").or(z.literal("and")),
-  conditions: z.lazy<any>(() =>
-    z.union([
-      likeCondition,
-      regexCondition,
-      equalsCondition,
-      comparisonCondition,
-    ]),
-  ),
-});
+export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
+  z.object({
+    operator: z.literal("or").or(z.literal("and")),
+    conditions: z.array(
+      z.union([
+        likeCondition,
+        regexCondition,
+        equalsCondition,
+        comparisonCondition,
+      ]),
+    ),
+  }),
+);
 
 export type ComparisonCondition = {
   operator: "and" | "or";

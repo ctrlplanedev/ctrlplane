@@ -1,4 +1,7 @@
+import type { LabelCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
+import type { z } from "zod";
+import { sql } from "drizzle-orm";
 import {
   bigint,
   integer,
@@ -12,7 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { LabelCondition, labelConditions } from "@ctrlplane/validators/targets";
+import { labelConditions } from "@ctrlplane/validators/targets";
 
 import { release } from "./release.js";
 import { system } from "./system.js";
@@ -28,19 +31,19 @@ export const environment = pgTable("environment", {
     onDelete: "set null",
   }),
   targetFilter: jsonb("target_filter")
-    .notNull()
-    .default("{}")
-    .$type<LabelCondition>(),
+    .$type<LabelCondition | null>()
+    .default(sql`NULL`),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  targetFilter: labelConditions,
+  targetFilter: labelConditions.nullable().optional(),
 }).omit({ id: true });
 
 export const updateEnvironment = createEnvironment.partial();
+export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
 export const approvalRequirement = pgEnum(
   "environment_policy_approval_requirement",
