@@ -110,10 +110,13 @@ const processVariables = (variables: Variable[]) =>
  */
 const processWorkspaceTags = (tags: string[] = []) =>
   Object.fromEntries(
-    tags.map((tag) => [
-      `terraform-cloud/tag/${tag.split(":")[0]}`,
-      tag.includes(":") ? tag.slice(tag.indexOf(":") + 1) : "true",
-    ]),
+    tags.map((tag) => {
+      const [key, ...rest] = tag.split(":");
+      return [
+        `terraform-cloud/tag/${key}`,
+        rest.length ? rest.join(":") : "true",
+      ];
+    }),
   );
 
 /**
