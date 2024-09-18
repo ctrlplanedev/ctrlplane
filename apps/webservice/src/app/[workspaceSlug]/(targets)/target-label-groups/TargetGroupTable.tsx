@@ -59,7 +59,10 @@ export const TargetGroupsTable: React.FC<{
               </div>
             </TableCell>
             <TableCell>{labelGroup.targets}</TableCell>
-            <TableCell className="flex justify-end">
+            <TableCell
+              className="flex justify-end"
+              onClick={(e) => e.stopPropagation()}
+            >
               <DropdownMenu
                 open={openDropdownId === labelGroup.targetLabelGroup.id}
                 onOpenChange={(open) => {

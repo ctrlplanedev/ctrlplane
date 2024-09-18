@@ -38,12 +38,12 @@ export const DeleteLabelGroupDialog: React.FC<{
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => {
+            onClick={() =>
               deleteLabelGroup
                 .mutateAsync(id)
                 .then(() => setOpen(false))
-                .then(() => router.refresh());
-            }}
+                .then(() => router.refresh())
+            }
           >
             Delete
           </AlertDialogAction>
