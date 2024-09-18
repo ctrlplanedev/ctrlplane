@@ -112,10 +112,8 @@ const processWorkspaceTags = (tags: string[] = []) =>
   Object.fromEntries(
     tags.map((tag) => {
       const [key, ...rest] = tag.split(":");
-      return [
-        `terraform-cloud/tag/${key}`,
-        rest.length ? rest.join(":") : "true",
-      ];
+      const value = rest.length > 0 ? rest.join(":") : "true";
+      return [`terraform-cloud/tag/${key}`, value];
     }),
   );
 
