@@ -9,9 +9,7 @@ export const env = createEnv({
     CTRLPLANE_API_URL: z.string().default("http://localhost:3000"),
     CTRLPLANE_API_KEY: z.string(),
     CTRLPLANE_WORKSPACE: z.string(),
-    CTRLPLANE_SCANNER_NAME: z
-      .string()
-      .default("offical-terraform-cloud-scanner"),
+    CTRLPLANE_SCANNER_NAME: z.string().default("terraform-cloud-scanner"),
     CTRLPLANE_WORKSPACE_TARGET_NAME: z
       .string()
       .default("tfc-{{ workspace.attributes.name }}"),
