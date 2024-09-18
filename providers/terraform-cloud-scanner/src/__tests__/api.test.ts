@@ -42,7 +42,6 @@ describe("API Module", () => {
         links: {},
       };
 
-      // Mock the fetch response
       fetchMock.mockResolvedValueOnce(
         new Response(JSON.stringify(mockWorkspaces), {
           status: 200,
@@ -50,10 +49,8 @@ describe("API Module", () => {
         }),
       );
 
-      // Call the function under test
       const workspaces = await listWorkspaces();
 
-      // Assertions
       expect(workspaces).toEqual(mockWorkspaces.data);
       expect(fetchMock).toHaveBeenCalledWith(
         "https://mock.api.url/organizations/mock-organization/workspaces",
