@@ -43,7 +43,6 @@ export const scopeType = pgEnum("scope_type", [
   "variableSet",
   "system",
   "deployment",
-  "runbook",
   "jobAgent",
   "runbook",
 ]);
