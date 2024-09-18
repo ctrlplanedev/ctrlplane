@@ -59,4 +59,4 @@ ENV PORT=3000
 ENV AUTH_TRUST_HOST=true
 ENV NODE_ENV=production
 
-CMD ["HOSTNAME=0.0.0.0", "node", "apps/webservice/server.js"]
+CMD HOSTNAME="0.0.0.0" node apps/webservice/server.js
