@@ -22,6 +22,11 @@
       "persistent": true,
       "cache": false
     },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "cache": false
+    },
     "format": {
       "outputs": ["node_modules/.cache/.prettiercache"],
       "outputLogs": "new-only"

@@ -4,5 +4,10 @@
       "mode": "auto"
     }
   ],
-  "cSpell.words": ["deployables"]
+  "cSpell.words": ["deployables"],
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "prettier.printWidth": 80
+  }
 }

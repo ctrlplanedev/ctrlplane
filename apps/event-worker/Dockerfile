@@ -42,4 +42,4 @@ USER nodejs
 
 ENV NODE_ENV=production
 
-CMD node apps/event-worker/dist/index.js
+CMD ["node", "apps/event-worker/dist/index.js"]
