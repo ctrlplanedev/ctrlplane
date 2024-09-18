@@ -98,7 +98,7 @@ const processVariables = (variables: Variable[]) =>
       .filter((variable) => variable.attributes.sensitive === false)
       .map((variable) => {
         return [
-          `terraform-cloud/variables:${variable.attributes.key}`,
+          `terraform-cloud/variables/${variable.attributes.key}`,
           variable.attributes.value,
         ];
       }),
