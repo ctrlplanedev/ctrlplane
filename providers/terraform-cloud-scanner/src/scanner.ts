@@ -109,7 +109,12 @@ const processVariables = (variables: Variable[]) =>
  * @returns An object containing prefixed tag labels.
  */
 const processWorkspaceTags = (tags: string[] = []) =>
-  Object.fromEntries(tags.map((tag) => [`terraform-cloud/tag/${tag}`, "true"]));
+  Object.fromEntries(
+    tags.map((tag) => [
+      `terraform-cloud/tag/${tag.split(":")[0]}`,
+      tag.includes(":") ? tag.slice(tag.indexOf(":") + 1) : "true",
+    ]),
+  );
 
 /**
  * Processes VCS repository information into labels.
