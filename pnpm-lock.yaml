@@ -1349,6 +1349,9 @@ importers:
       eslint-plugin-react-hooks:
         specifier: beta
         version: 5.1.0-beta-26f2496093-20240514(eslint@9.10.0(jiti@1.21.6))
+      eslint-plugin-vitest:
+        specifier: 'catalog:'
+        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
       typescript-eslint:
         specifier: 'catalog:'
         version: 8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
