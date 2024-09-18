@@ -3,6 +3,7 @@
 import type { TargetLabelGroup, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TbDots } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -29,6 +30,7 @@ export const TargetGroupsTable: React.FC<{
   labelGroups: { targets: number; targetLabelGroup: TargetLabelGroup }[];
 }> = ({ workspace, labelGroups }) => {
   const [openDropdownId, setOpenDropdownId] = useState("");
+  const router = useRouter();
   return (
     <Table className="w-full">
       <TableHeader>
@@ -43,18 +45,19 @@ export const TargetGroupsTable: React.FC<{
           <TableRow
             key={labelGroup.targetLabelGroup.id}
             className="cursor-pointer border-b-neutral-800/50"
+            onClick={() =>
+              router.push(
+                `/${workspace.slug}/target-label-groups/${labelGroup.targetLabelGroup.id}`,
+              )
+            }
           >
             <TableCell>{labelGroup.targetLabelGroup.name}</TableCell>
             <TableCell>
-              <Link
-                href={`/${workspace.slug}/target-label-groups/${labelGroup.targetLabelGroup.id}`}
-              >
-                <div className="flex flex-col font-mono text-xs text-red-400">
-                  {labelGroup.targetLabelGroup.keys.map((key) => (
-                    <span key={key}>{key}</span>
-                  ))}
-                </div>
-              </Link>
+              <div className="flex flex-col font-mono text-xs text-red-400">
+                {labelGroup.targetLabelGroup.keys.map((key) => (
+                  <span key={key}>{key}</span>
+                ))}
+              </div>
             </TableCell>
             <TableCell>{labelGroup.targets}</TableCell>
             <TableCell className="flex justify-end">

@@ -98,7 +98,7 @@ export const UpsertLabelGroupDialog: React.FC<{
   const createLabelGroup = api.target.labelGroup.upsert.useMutation();
   const utils = api.useUtils();
   const [input, setInput] = useState("");
-
+  const router = useRouter();
   const form = useForm({
     schema: labelGroupFormSchema,
     defaultValues: values ?? {
@@ -127,10 +127,10 @@ export const UpsertLabelGroupDialog: React.FC<{
       })
       .then(() => utils.target.labelGroup.groups.invalidate())
       .then(() => parentClose?.())
-      .then(() => setOpen(false)),
+      .then(() => setOpen(false))
+      .then(() => router.refresh()),
   );
 
-  const router = useRouter();
   return (
     <Dialog
       open={open}
