@@ -49,12 +49,12 @@ export async function scan() {
           workspaceId: workspace.id,
         },
         labels: {
-          "terraform-cloud/organization": env.TFE_ORGANIZATION,
-          "terraform-cloud/workspace-name": workspace.attributes.name,
+          "terraform-cloud:organization": env.TFE_ORGANIZATION,
+          "terraform-cloud:workspace-name": workspace.attributes.name,
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
-          "ctrlplane/link": link,
+          "ctrlplane:urls": JSON.stringify(link),
         },
       };
 
@@ -96,8 +96,8 @@ const processVariables = (variables: Variable[]) =>
     variables.map((variable) => {
       return [
         variable.attributes.category === "terraform"
-          ? `terraform-cloud/variables/${variable.attributes.key}`
-          : `terraform-cloud/environment-variables/${variable.attributes.key}`,
+          ? `terraform-cloud:variables:${variable.attributes.key}`
+          : `terraform-cloud:environment-variables:${variable.attributes.key}`,
         variable.attributes.value || "",
       ];
     }),
@@ -110,7 +110,7 @@ const processVariables = (variables: Variable[]) =>
  */
 const processWorkspaceTags = (tags: string[] = []) =>
   Object.fromEntries(
-    tags.map((tag) => [`terraform-cloud/tags/${tag}`, "true"]),
+    tags.map((tag) => [`terraform-cloud:tags:${tag}`, "true"]),
   );
 
 /**
@@ -126,9 +126,9 @@ function processVcsRepo(
   const { identifier, branch, "repository-http-url": repoUrl } = vcsRepo;
 
   return {
-    ...(identifier && { "terraform-cloud/vcs-repo/identifier": identifier }),
-    ...(branch && { "terraform-cloud/vcs-repo/branch": branch }),
-    ...(repoUrl && { "terraform-cloud/vcs-repo/repository-http-url": repoUrl }),
+    ...(identifier && { "terraform-cloud:vcs-repo:identifier": identifier }),
+    ...(branch && { "terraform-cloud:vcs-repo:branch": branch }),
+    ...(repoUrl && { "terraform-cloud:vcs-repo:repository-http-url": repoUrl }),
   };
 }
 
@@ -137,10 +137,12 @@ function processVcsRepo(
  * @param workspace The workspace object.
  * @returns The URL string to the workspace.
  */
-function buildWorkspaceLink(workspace: Workspace): string {
-  return `https://app.terraform.io/app/${encodeURIComponent(
-    env.TFE_ORGANIZATION,
-  )}/workspaces/${encodeURIComponent(workspace.attributes.name)}`;
+function buildWorkspaceLink(workspace: Workspace): Record<string, string> {
+  return {
+    "Terraform Workspace": `https://app.terraform.io/app/${encodeURIComponent(
+      env.TFE_ORGANIZATION,
+    )}/workspaces/${encodeURIComponent(workspace.attributes.name)}`,
+  };
 }
 
 /**
