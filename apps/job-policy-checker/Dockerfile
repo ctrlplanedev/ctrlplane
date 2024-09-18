@@ -41,4 +41,4 @@ USER nodejs
 
 ENV NODE_ENV=production
 
-CMD node apps/job-policy-checker/dist/index.js
+CMD ["node", "apps/job-policy-checker/dist/index.js"]

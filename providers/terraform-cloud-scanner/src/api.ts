@@ -13,12 +13,12 @@ const COMMON_HEADERS = {
 };
 
 /**
- * Fetch JSON with retry and exponential backoff, respecting a global timeout.
+ * Fetch JSON with retry and exponential backoff.
  *
  * @param url - The URL to fetch.
  * @param options - Fetch options.
  * @returns The JSON response parsed as ResponseType.
- * @throws An error if all retry attempts fail or if the global timeout is exceeded.
+ * @throws An error if all retry attempts fail.
  */
 async function fetchRetry<T>(
   url: string,

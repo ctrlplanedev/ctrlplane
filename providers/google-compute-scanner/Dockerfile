@@ -31,4 +31,4 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 USER nodejs
 
-CMD node providers/google-compute-scanner/dist/index.js
+CMD ["node", "providers/google-compute-scanner/dist/index.js"]
