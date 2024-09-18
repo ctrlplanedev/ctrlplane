@@ -56,7 +56,7 @@ const LabelFilterInput: React.FC<{
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="max-h-[300px] overflow-x-auto p-0 text-sm"
+          className="max-h-[300px] w-[23rem] overflow-auto p-0 text-sm"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           {filteredLabels.map((k) => (
@@ -200,24 +200,28 @@ export const UpsertLabelGroupDialog: React.FC<{
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <LabelFilterInput
-                value={input}
-                workspaceId={workspaceId}
-                onChange={setInput}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={input === ""}
-                onClick={() => {
-                  append({ value: input });
-                  setInput("");
-                }}
-              >
-                Add Label
-              </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex-grow">
+                <LabelFilterInput
+                  value={input}
+                  workspaceId={workspaceId}
+                  onChange={setInput}
+                />
+              </div>
+              <div className="ml-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={input === ""}
+                  onClick={() => {
+                    append({ value: input });
+                    setInput("");
+                  }}
+                >
+                  Add Label
+                </Button>
+              </div>
             </div>
 
             <DialogFooter>
