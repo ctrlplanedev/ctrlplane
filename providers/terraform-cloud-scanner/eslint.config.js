@@ -1,5 +1,7 @@
-import baseConfig, { requireJsSuffix } from "@ctrlplane/eslint-config/base";
-import { vitestEslintConfig } from "@ctrlplane/eslint-config/vitest";
+import baseConfig, {
+  requireJsSuffix,
+  vitestEslintConfig,
+} from "@ctrlplane/eslint-config/base";
 
 /** @type {import('typescript-eslint').Config} */
 export default [
