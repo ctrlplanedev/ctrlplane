@@ -11,19 +11,19 @@ logger.info(
 
 const runScan = () =>
   scan().catch((error) => {
-    logger.error(
-      env.CRON_ENABLED ? "Scheduled scan failed:" : "One-time scan failed:",
-      error,
-    );
+    const scanType = env.CRON_ENABLED === true ? "Scheduled" : "One-time";
+    logger.error(`${scanType} scan failed:`, error);
+    process.exit(1);
   });
 
-if (env.CRON_ENABLED) {
-  logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
-  new CronJob(env.CRON_TIME, runScan).start();
-} else {
-  logger.info("Cron job disabled. Running in one-time execution mode.");
-  runScan().finally(() => {
-    logger.info("One-time scan completed. Exiting.");
-    process.exit(0);
-  });
-}
+env.CRON_ENABLED === true
+  ? (() => {
+      logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
+      new CronJob(env.CRON_TIME, runScan).start();
+    })()
+  : (() => {
+      logger.info("Cron job disabled. Running in one-time execution mode.");
+      runScan()
+        .then(() => logger.info("One-time scan completed. Exiting."))
+        .finally(() => process.exit(0));
+    })();
