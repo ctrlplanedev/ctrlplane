@@ -13,6 +13,8 @@ import { and, eq } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { LabelCondition } from "@ctrlplane/validators/targets";
+
 import { Tx } from "../common.js";
 import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
@@ -30,15 +32,11 @@ export const target = pgTable(
     }),
     workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => workspace.id),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     config: jsonb("config")
       .notNull()
       .default("{}")
       .$type<Record<string, any>>(),
-    labels: jsonb("labels")
-      .notNull()
-      .default("{}")
-      .$type<Record<string, string>>(),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
       () => new Date(),
@@ -55,7 +53,6 @@ export const createTarget = createInsertSchema(target, {
   kind: z.string().min(1),
   providerId: z.string().uuid(),
   config: z.record(z.any()),
-  labels: z.record(z.string()),
 }).omit({ id: true });
 
 export type InsertTarget = InferInsertModel<typeof target>;
@@ -89,40 +86,6 @@ export const targetLabel = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.label, t.targetId) }),
 );
-
-const equalsCondition = z.object({
-  label: z.string().min(1),
-  value: z.string().min(1),
-  operator: z.literal("equals").optional(),
-});
-
-const regexCondition = z.object({
-  label: z.string().min(1),
-  pattern: z.string().min(1),
-  operator: z.literal("regex"),
-});
-
-const likeCondition = z.object({
-  label: z.string().min(1),
-  pattern: z.string().min(1),
-  operator: z.literal("like"),
-});
-
-const comparisonCondition = z.object({
-  operator: z.literal("and").or(z.literal("or")),
-  conditions: z.array(
-    z.union([likeCondition, regexCondition, equalsCondition]),
-  ),
-});
-
-const labelConditions = z.union([
-  equalsCondition,
-  regexCondition,
-  likeCondition,
-  comparisonCondition,
-]);
-
-type LabelCondition = z.infer<typeof labelConditions>;
 
 const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
   if ("value" in cond)
@@ -175,11 +138,14 @@ const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
   throw Error("invalid label conditions");
 };
 
-export async function findTargetsByLabels(tx: Tx, labels: LabelCondition) {
-  if (Object.keys(labels).length === 0) return null;
+export function createTargetLabelConditions(
+  tx: Tx,
+  labels: LabelCondition,
+): SQL<unknown> | undefined {
+  if (Object.keys(labels).length === 0) return undefined;
 
   const conditions = [];
-  for (const [label, value] of Object.entries(labels)) {
+  for (const [label, value] of Object.entries(labels))
     conditions.push(
       exists(
         tx
@@ -194,7 +160,6 @@ export async function findTargetsByLabels(tx: Tx, labels: LabelCondition) {
           ),
       ),
     );
-  }
 
-  return conditions.length === 1 ? conditions[0] : and(...conditions);
+  return and(...conditions);
 }

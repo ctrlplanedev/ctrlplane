@@ -11,7 +11,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { record, z } from "zod";
+
+import { LabelCondition, labelConditions } from "@ctrlplane/validators/targets";
 
 import { release } from "./release.js";
 import { system } from "./system.js";
@@ -29,14 +30,14 @@ export const environment = pgTable("environment", {
   targetFilter: jsonb("target_filter")
     .notNull()
     .default("{}")
-    .$type<Record<string, string>>(),
+    .$type<LabelCondition>(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  targetFilter: record(z.string(), z.string()),
+  targetFilter: labelConditions,
 }).omit({ id: true });
 
 export const updateEnvironment = createEnvironment.partial();

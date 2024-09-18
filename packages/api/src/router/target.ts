@@ -16,12 +16,14 @@ import {
 } from "@ctrlplane/db";
 import {
   createTarget,
+  createTargetLabelConditions,
   target,
   targetProvider,
   updateTarget,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { EqualCondition, LabelCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { targetLabelGroupRouter } from "./target-label-group";
@@ -90,15 +92,30 @@ export const targetRouter = createTRPCRouter({
         const kindFilters = (input.filters ?? [])
           .filter((f) => f.key === "kind")
           .map((f) => eq(target.kind, f.value));
-        const labelFilters = (input.filters ?? [])
+        const labelFilters: EqualCondition[][] = (input.filters ?? [])
           .filter((f) => f.key === "labels")
-          .map((f) => arrayContains(target.labels, f.value));
+          .map((t) => Object.entries(t.value))
+          .map((t) =>
+            t.map(([label, value]) => ({ label, value: value as string })),
+          );
+
+        const targetConditions = createTargetLabelConditions(ctx.db, {
+          operator: "or",
+          conditions: labelFilters.map((labelGroup) => ({
+            operator: "and" as const,
+            conditions: labelGroup.map(({ label, value }) => ({
+              label,
+              value,
+              operator: "equals" as const,
+            })),
+          })),
+        });
 
         const checks = [
           workspaceIdCheck,
           or(...nameFilters),
           or(...kindFilters),
-          or(...labelFilters),
+          targetConditions,
         ].filter(isPresent);
 
         const items = targetQuery(ctx.db, checks)
