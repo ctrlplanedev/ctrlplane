@@ -49,8 +49,8 @@ export async function scan() {
           workspaceId: workspace.id,
         },
         labels: {
-          "tfc/organization": env.TFE_ORGANIZATION,
-          "tfc/workspace-name": workspace.attributes.name,
+          "terraform-cloud/organization": env.TFE_ORGANIZATION,
+          "terraform-cloud/workspace-name": workspace.attributes.name,
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
@@ -96,8 +96,8 @@ const processVariables = (variables: Variable[]) =>
     variables.map((variable) => {
       return [
         variable.attributes.category === "terraform"
-          ? `tfc/var/${variable.attributes.key}`
-          : `tfc/env/${variable.attributes.key}`,
+          ? `terraform-cloud/variables/${variable.attributes.key}`
+          : `terraform-cloud/environment-variables/${variable.attributes.key}`,
         variable.attributes.value || "",
       ];
     }),
@@ -109,7 +109,9 @@ const processVariables = (variables: Variable[]) =>
  * @returns An object containing prefixed tag labels.
  */
 const processWorkspaceTags = (tags: string[] = []) =>
-  Object.fromEntries(tags.map((tag) => [`tfc/tags/${tag}`, "true"]));
+  Object.fromEntries(
+    tags.map((tag) => [`terraform-cloud/tags/${tag}`, "true"]),
+  );
 
 /**
  * Processes VCS repository information into labels.
@@ -124,9 +126,9 @@ function processVcsRepo(
   const { identifier, branch, "repository-http-url": repoUrl } = vcsRepo;
 
   return {
-    ...(identifier && { "tfc/vcs-repo/identifier": identifier }),
-    ...(branch && { "tfc/vcs-repo/branch": branch }),
-    ...(repoUrl && { "tfc/vcs-repo/repository-http-url": repoUrl }),
+    ...(identifier && { "terraform-cloud/vcs-repo/identifier": identifier }),
+    ...(branch && { "terraform-cloud/vcs-repo/branch": branch }),
+    ...(repoUrl && { "terraform-cloud/vcs-repo/repository-http-url": repoUrl }),
   };
 }
 
