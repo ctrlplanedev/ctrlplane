@@ -1,13 +1,11 @@
 ARG NODE_VERSION=22
 FROM node:${NODE_VERSION}-alpine AS base
 
-
 FROM base AS builder
 RUN apk add --no-cache libc6-compat
 RUN apk update
 
 RUN npm install -g turbo
-
 
 FROM base AS installer
 
@@ -47,7 +45,6 @@ COPY . .
 
 RUN turbo build --filter=...@ctrlplane/docs
 
-
 FROM base AS runner
 WORKDIR /app
 
@@ -62,5 +59,5 @@ COPY --from=installer --chown=nodejs:nodejs /app/apps/docs/public ./apps/docs/pu
 EXPOSE 3000
 ENV PORT=3000
 ENV NODE_ENV=production
-
-CMD HOSTNAME="0.0.0.0" node apps/docs/server.js
+ENV HOSTNAME=0.0.0.0
+CMD ["node", "apps/docs/server.js"]

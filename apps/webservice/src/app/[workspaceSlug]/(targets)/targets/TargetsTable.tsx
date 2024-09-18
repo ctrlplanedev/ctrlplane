@@ -109,7 +109,10 @@ const columns: ColumnDef<Target>[] = [
     id: "updatedAt",
     header: "Last Sync",
     accessorKey: "updatedAt",
-    cell: (info) => formatDistanceToNowStrict(info.getValue<Date>()),
+    cell: (info) =>
+      info.getValue() != null
+        ? formatDistanceToNowStrict(info.getValue<Date>())
+        : "",
   },
 ];
 

@@ -241,10 +241,8 @@ export const workspaceRouter = createTRPCRouter({
 
         await tx.insert(entityRole).values({
           roleId: predefinedRoles.admin.id,
-
           scopeType: "workspace",
           scopeId: w.id,
-
           entityType: "user",
           entityId: ctx.session.user.id,
         });

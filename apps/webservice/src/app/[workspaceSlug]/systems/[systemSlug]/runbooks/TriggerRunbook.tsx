@@ -4,6 +4,7 @@ import type { Runbook, RunbookVariable } from "@ctrlplane/db/schema";
 import type { StringVariableConfigType } from "@ctrlplane/validators/variables";
 import type { ReactNode } from "react";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -19,6 +20,8 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Textarea } from "@ctrlplane/ui/textarea";
+
+import { api } from "~/trpc/react";
 
 const VariableStringInput: React.FC<
   StringVariableConfigType & {
@@ -66,15 +69,18 @@ export const TriggerRunbookDialog: React.FC<TriggerRunbookDialogProps> = ({
   runbook,
   children,
 }) => {
-  const handleTriggerRunbook = () => {
-    // Logic to trigger the provided runbook
+  const trigger = api.runbook.trigger.useMutation();
+  const [variables, setVariables] = useState<Record<string, any>>({});
+  const router = useRouter();
+
+  const handleTriggerRunbook = async () => {
+    await trigger.mutateAsync({ runbookId: runbook.id, variables });
+    router.refresh();
   };
 
-  const [values, setValues] = useState<Record<string, any>>({});
-
-  const getValue = (k: string) => values[k];
+  const getValue = (k: string) => variables[k];
   const onChange = (k: string) => (v: string) =>
-    setValues((a) => ({ ...a, [k]: v }));
+    setVariables((a) => ({ ...a, [k]: v }));
 
   return (
     <Dialog>
@@ -106,7 +112,7 @@ export const TriggerRunbookDialog: React.FC<TriggerRunbookDialogProps> = ({
             </div>
           ))}
         </div>
-        <pre>{JSON.stringify(values, null, 2)}</pre>
+        <pre>{JSON.stringify(variables, null, 2)}</pre>
         <DialogFooter>
           <Button variant="secondary">Cancel</Button>
           <Button onClick={handleTriggerRunbook}>Trigger</Button>

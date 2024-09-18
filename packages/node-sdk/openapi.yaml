@@ -259,23 +259,11 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: string
-                  status:
-                    type: string
-                  message:
-                    type: string
-                  jobAgentId:
-                    type: string
-                  jobAgentConfig:
+                  job:
                     type: object
-                  externalRunId:
-                    type: string
                   release:
                     type: object
                   deployment:
-                    type: object
-                  config:
                     type: object
                   runbook:
                     type: object
@@ -283,14 +271,11 @@ paths:
                     type: object
                   environment:
                     type: object
+                  variable:
+                    type: object
                 required:
-                  - id
-                  - status
-                  - message
-                  - jobAgentId
-                  - jobAgentConfig
-                  - externalRunId
-                  - config
+                  - job
+                  - variable
     patch:
       summary: Update a job
       operationId: updateJob

@@ -2,11 +2,10 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
 import isEqual from "lodash/isEqual";
-import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { deploymentSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import { CopyButton } from "@ctrlplane/ui/copy-button";
 import {
@@ -24,41 +23,66 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
+  FormRootError,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const deploymentForm = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(3).max(255),
-  slug: z.string().min(3).max(255),
-  description: z.string().optional(),
-});
+const deploymentForm = z.object(deploymentSchema.shape);
 
-type DeploymentFormValues = z.infer<typeof deploymentForm>;
-
-export const EditDeploymentDialog: React.FC<
-  DeploymentFormValues & { children?: React.ReactNode }
-> = ({ id, name, slug, description, children }) => {
-  const router = useRouter();
-  const update = api.deployment.update.useMutation();
+export const EditDeploymentDialog: React.FC<{
+  children: React.ReactNode;
+  systemId: string;
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}> = ({ children, ...props }) => {
   const [open, setOpen] = useState(false);
+  const updateDeployment = api.deployment.update.useMutation();
+  const router = useRouter();
+  const { systemId, id, name, slug, description } = props;
 
   const form = useForm({
-    resolver: zodResolver(deploymentForm),
-    defaultValues: { id, name, slug, description },
+    schema: deploymentForm,
+    defaultValues: { ...props },
+    mode: "onSubmit",
   });
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    setOpen(false);
-    const isDataChanged = !isEqual(data, { name, slug, description });
-    if (!isDataChanged) return;
+  const { handleSubmit, setError } = form;
 
-    await update.mutateAsync({ id, data });
+  const onSubmit = handleSubmit(async (data) => {
+    const isDataChanged = !isEqual(data, {
+      id,
+      name,
+      slug,
+      description,
+      systemId,
+    });
+    console.log("isDataChanged", isDataChanged);
+    console.log("data", data);
+    console.log("props", props);
 
-    router.refresh();
+    if (!isDataChanged) {
+      setError("root", { message: "No changes made to the deployment." });
+      return;
+    }
+
+    await updateDeployment
+      .mutateAsync({ id: props.id, data })
+      .then(() => {
+        setOpen(false);
+        router.refresh();
+      })
+      .catch(() => {
+        setError("root", {
+          message: "Deployment with this slug already exists",
+        });
+      });
   });
 
   return (
@@ -85,6 +109,7 @@ export const EditDeploymentDialog: React.FC<
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -97,6 +122,7 @@ export const EditDeploymentDialog: React.FC<
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -109,6 +135,7 @@ export const EditDeploymentDialog: React.FC<
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -119,15 +146,16 @@ export const EditDeploymentDialog: React.FC<
                 <FormItem>
                   <FormLabel>ID</FormLabel>
                   <Input
-                    value={id}
+                    value={props.id}
                     readOnly
                     className="bg-gray-800 text-gray-100"
                   />
                 </FormItem>
               )}
             />
+            <FormRootError />
             <DialogFooter>
-              <CopyButton textToCopy={id} />
+              <CopyButton textToCopy={props.id} />
               <div className="flex-grow" />
               <Button type="submit">Save</Button>
             </DialogFooter>

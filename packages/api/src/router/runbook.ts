@@ -5,17 +5,35 @@ import { z } from "zod";
 import { eq, takeFirst } from "@ctrlplane/db";
 import { createRunbook, createRunbookVariable } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { dispatchRunbook } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const runbookRouter = createTRPCRouter({
-  trigger: protectedProcedure.input(z.string()).mutation(() => {}),
+  trigger: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser
+          .perform(Permission.RunbookTrigger)
+          .on({ type: "runbook", id: input.runbookId }),
+    })
+    .input(
+      z.object({
+        runbookId: z.string().uuid(),
+        variables: z.record(z.any()),
+      }),
+    )
+    .mutation(({ ctx, input: { runbookId, variables } }) =>
+      dispatchRunbook(ctx.db, runbookId, variables),
+    ),
 
   bySystemId: protectedProcedure
     .meta({
       authorizationCheck: async ({ canUser, input }) =>
-        canUser.perform(Permission.SystemGet).on({ type: "system", id: input }),
+        canUser
+          .perform(Permission.RunbookList)
+          .on({ type: "system", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>

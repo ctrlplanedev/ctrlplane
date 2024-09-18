@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import slugify from "slugify";
 import { z } from "zod";
 
+import { deploymentSchema } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -21,6 +22,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -36,68 +39,68 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const deploymentForm = z.object({
-  name: z.string().min(3).max(255),
-  slug: z.string().min(3).max(255),
-  systemId: z.string().uuid(),
-  description: z.string(),
-});
+const deploymentForm = z.object(deploymentSchema.omit({ id: true }).shape);
 
 export const CreateDeploymentDialog: React.FC<{
-  defaultSystemId?: string;
   children?: React.ReactNode;
-}> = ({ children, defaultSystemId = "" }) => {
+  defaultSystemId?: string;
+  onSuccess?: () => void;
+}> = ({ children, defaultSystemId = undefined, onSuccess }) => {
+  const [open, setOpen] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const create = api.deployment.create.useMutation();
-  const form = useForm({
-    schema: deploymentForm,
-    defaultValues: {
-      systemId: defaultSystemId,
-      name: "",
-      slug: "",
-      description: "",
-    },
-  });
-
-  const { systemId, name } = form.watch();
-  useEffect(
-    () => form.setValue("slug", slugify(name, { lower: true })),
-    [form, name],
-  );
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (!open) return;
-    if (defaultSystemId === "") return;
-    window.requestAnimationFrame(() => {
-      form.setFocus("name");
-    });
-  }, [open, form, defaultSystemId]);
-
   const systems = api.system.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },
     { enabled: workspace.isSuccess },
   );
-  useEffect(() => {
-    if (defaultSystemId !== "") return;
-    if (systemId !== "") return;
-    const firstSystem = systems.data?.items.at(0);
-    if (firstSystem == null) return;
-    form.setValue("systemId", firstSystem.id);
-  }, [defaultSystemId, form, systems, systemId]);
-
+  const createDeployment = api.deployment.create.useMutation();
   const router = useRouter();
-  const onSubmit = form.handleSubmit(async (data) => {
-    const deployment = await create.mutateAsync(data);
-    router.refresh();
-    const slug = systems.data?.items.find(
-      (system) => system.id === deployment.systemId,
+
+  const form = useForm({
+    schema: deploymentForm,
+    defaultValues: {
+      systemId: defaultSystemId ?? systems.data?.items[0]?.id,
+      name: "",
+      slug: "",
+      description: "",
+    },
+    mode: "onSubmit",
+  });
+
+  const { handleSubmit, watch, setValue, setError } = form;
+
+  watch((data, { name: fieldName }) => {
+    if (fieldName === "name")
+      setValue("slug", slugify(data.name ?? "", { lower: true }), {
+        shouldTouch: true,
+      });
+  });
+
+  const onSubmit = handleSubmit(async (deployment) => {
+    const systemSlug = systems.data?.items.find(
+      (system) => system.id === form.getValues("systemId"),
     )?.slug;
-    if (slug == null) return;
-    router.push(
-      `/${workspaceSlug}/systems/${slug}/deployments/${deployment.slug}`,
-    );
-    setOpen(false);
+    await createDeployment
+      .mutateAsync(
+        deployment as {
+          systemId: string;
+          name: string;
+          slug: string;
+          description: string;
+        },
+      )
+      .then(() => {
+        router.push(
+          `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
+        );
+        setOpen(false);
+        onSuccess?.();
+      })
+      .catch(() => {
+        setError("root", {
+          message: "Deployment with this slug already exists",
+        });
+      });
   });
 
   return (
@@ -136,6 +139,7 @@ export const CreateDeploymentDialog: React.FC<{
                       </SelectContent>
                     </Select>
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -151,6 +155,7 @@ export const CreateDeploymentDialog: React.FC<{
                       {...field}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -163,6 +168,7 @@ export const CreateDeploymentDialog: React.FC<{
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -175,9 +181,11 @@ export const CreateDeploymentDialog: React.FC<{
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
+            <FormRootError />
             <DialogFooter>
               <Button type="submit">Create</Button>
             </DialogFooter>

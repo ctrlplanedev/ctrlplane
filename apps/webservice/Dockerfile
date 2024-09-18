@@ -1,7 +1,6 @@
 ARG NODE_VERSION=20
 FROM node:${NODE_VERSION}-alpine AS base
 
-
 FROM base AS builder
 
 RUN apk add --no-cache libc6-compat python3 make g++
@@ -11,7 +10,6 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 RUN npm install -g turbo
 RUN corepack enable pnpm
-
 
 FROM builder AS installer
 
@@ -44,7 +42,6 @@ COPY . .
 
 RUN turbo build --filter=...@ctrlplane/webservice
 
-
 FROM base AS runner
 WORKDIR /app
 
@@ -61,5 +58,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV AUTH_TRUST_HOST=true
 ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 
-CMD HOSTNAME="0.0.0.0" node apps/webservice/server.js
+CMD ["node", "apps/webservice/server.js"]

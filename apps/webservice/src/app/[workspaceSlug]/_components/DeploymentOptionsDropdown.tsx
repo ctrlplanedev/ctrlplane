@@ -20,6 +20,7 @@ export const DeploymentOptionsDropdown: React.FC<{
   name: string;
   slug: string;
   description: string;
+  systemId: string;
 }> = (props) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -43,7 +44,7 @@ export const DeploymentOptionsDropdown: React.FC<{
                 Edit
               </DropdownMenuItem>
             </EditDeploymentDialog>
-            <DropdownMenuItem onSelect={() => setDeleteDialogOpen(true)}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <TbTrash className="mr-2" />
               Delete
             </DropdownMenuItem>

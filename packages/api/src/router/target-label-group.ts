@@ -23,7 +23,7 @@ export const targetLabelGroupRouter = createTRPCRouter({
         })
         .from(targetLabelGroup)
         .innerJoin(workspace, eq(targetLabelGroup.workspaceId, workspace.id))
-        .innerJoin(target, sql`${target.labels} ?& ${targetLabelGroup.keys}`)
+        .leftJoin(target, sql`${target.labels} ?& ${targetLabelGroup.keys}`)
         .where(eq(workspace.id, input))
         .groupBy(workspace.id, targetLabelGroup.id)
         .orderBy(asc(targetLabelGroup.name)),
