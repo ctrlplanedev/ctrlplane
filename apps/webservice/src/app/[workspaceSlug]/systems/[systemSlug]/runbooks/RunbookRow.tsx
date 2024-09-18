@@ -1,16 +1,19 @@
+"use client";
+
 import type * as schema from "@ctrlplane/db/schema";
+import { useState } from "react";
 import { TbDotsVertical } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import { api } from "~/trpc/server";
+import { api } from "~/trpc/react";
 import { EditAgentConfigDialog } from "../_components/EditAgentConfigDialog";
-import { RunbookDropdownMenuItem } from "./RunbookDropdownMenuItem";
 import { TriggerRunbookDialog } from "./TriggerRunbook";
 
 export const RunbookRow: React.FC<{
@@ -21,6 +24,9 @@ export const RunbookRow: React.FC<{
   workspace: schema.Workspace;
   jobAgents: schema.JobAgent[];
 }> = ({ runbook, workspace, jobAgents }) => {
+  const updateRunbook = api.runbook.update.useMutation();
+  const [open, setOpen] = useState(false);
+
   return (
     <div className="flex items-center justify-between border-b p-4">
       <div>
@@ -28,7 +34,7 @@ export const RunbookRow: React.FC<{
         <p className="text-sm text-muted-foreground">{runbook.description}</p>
       </div>
 
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
             <TbDotsVertical />
@@ -36,7 +42,9 @@ export const RunbookRow: React.FC<{
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <TriggerRunbookDialog runbook={runbook}>
-            <RunbookDropdownMenuItem>Trigger Runbook</RunbookDropdownMenuItem>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Trigger Runbook
+            </DropdownMenuItem>
           </TriggerRunbookDialog>
           {runbook.jobAgent != null && (
             <EditAgentConfigDialog
@@ -44,18 +52,21 @@ export const RunbookRow: React.FC<{
               workspace={workspace}
               jobAgents={jobAgents}
               value={runbook.jobAgentConfig}
-              onSubmit={async (data) => {
-                "use server";
-                await api.runbook.update({
-                  id: runbook.id,
-                  data: {
-                    jobAgentId: data.jobAgentId,
-                    jobAgentConfig: data.config,
-                  },
-                });
-              }}
+              onSubmit={(data) =>
+                updateRunbook
+                  .mutateAsync({
+                    id: runbook.id,
+                    data: {
+                      jobAgentId: data.jobAgentId,
+                      jobAgentConfig: data.config,
+                    },
+                  })
+                  .then(() => setOpen(false))
+              }
             >
-              <RunbookDropdownMenuItem>Edit Job Agent</RunbookDropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                Edit Job Agent
+              </DropdownMenuItem>
             </EditAgentConfigDialog>
           )}
         </DropdownMenuContent>
