@@ -37,12 +37,6 @@ const columns: ColumnDef<JobAgent>[] = [
     accessorKey: "type",
     cell: (info) => info.getValue(),
   },
-  // {
-  //   id: "updatedAt",
-  //   header: "Last Sync",
-  //   accessorKey: "updatedAt",
-  //   cell: (info) => formatDistanceToNowStrict(info.getValue<Date>()),
-  // },
 ];
 
 export const JobAgentsTable: React.FC<{

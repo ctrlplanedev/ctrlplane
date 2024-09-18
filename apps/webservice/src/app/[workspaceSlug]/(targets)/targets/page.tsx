@@ -65,6 +65,10 @@ const TargetGeneral: React.FC<Target & { provider: TargetProvider | null }> = (
     keys: ["0", "1"],
   });
   const link = target.labels["ctrlplane/url"];
+  const links =
+    target.labels["ctrlplane/urls"] != null
+      ? (JSON.parse(target.labels["ctrlplane/urls"]) as Record<string, string>)
+      : null;
   return (
     <div className="space-y-4 text-sm">
       <div className="space-y-2">
@@ -124,17 +128,37 @@ const TargetGeneral: React.FC<Target & { provider: TargetProvider | null }> = (
               </td>
             </tr>
             <tr>
-              <td className="p-1 pr-2 text-muted-foreground">Link</td>
+              <td className="p-1 pr-2 align-top text-muted-foreground">
+                Links
+              </td>
               <td>
-                {link == null ? (
-                  <span className="text-muted-foreground">Not set</span>
+                {link == null && links == null ? (
+                  <span className="cursor-help italic text-gray-500">
+                    Not set
+                  </span>
                 ) : (
-                  <a
-                    href={link}
-                    className="inline-block w-full overflow-hidden text-ellipsis text-nowrap hover:text-blue-400"
-                  >
-                    {link}
-                  </a>
+                  <>
+                    {link != null && (
+                      <a
+                        href={link}
+                        className="inline-block w-full overflow-hidden text-ellipsis text-nowrap hover:text-blue-400"
+                      >
+                        {link}
+                      </a>
+                    )}
+
+                    {links != null &&
+                      Object.entries(links).map(([name, url]) => (
+                        <a
+                          key={name}
+                          referrerPolicy="no-referrer"
+                          href={url}
+                          className="inline-block w-full overflow-hidden text-ellipsis text-nowrap text-blue-300 hover:text-blue-400"
+                        >
+                          {name}
+                        </a>
+                      ))}
+                  </>
                 )}
               </td>
             </tr>
