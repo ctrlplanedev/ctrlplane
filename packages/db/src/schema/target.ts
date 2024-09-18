@@ -144,22 +144,7 @@ export function createTargetLabelConditions(
 ): SQL<unknown> | undefined {
   if (Object.keys(labels).length === 0) return undefined;
 
-  const conditions = [];
-  for (const [label, value] of Object.entries(labels))
-    conditions.push(
-      exists(
-        tx
-          .select()
-          .from(targetLabel)
-          .where(
-            and(
-              eq(targetLabel.targetId, target.id),
-              eq(targetLabel.label, label),
-              sql`${targetLabel.value} ~ ${value}`,
-            ),
-          ),
-      ),
-    );
+  const conditions = buildCondition(tx, labels);
 
-  return and(...conditions);
+  return conditions;
 }
