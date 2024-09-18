@@ -1,4 +1,4 @@
-import { notFound, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import { Badge } from "@ctrlplane/ui/badge";
 

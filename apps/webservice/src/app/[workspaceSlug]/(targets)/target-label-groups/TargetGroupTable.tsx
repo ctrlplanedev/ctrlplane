@@ -2,7 +2,6 @@
 
 import type { TargetLabelGroup, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TbDots } from "react-icons/tb";
 
