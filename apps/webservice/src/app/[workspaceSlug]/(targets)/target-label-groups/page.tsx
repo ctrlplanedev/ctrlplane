@@ -31,7 +31,9 @@ export default async function TargetLabelGroupPages({
         </UpsertLabelGroupDialog>
       </div>
 
-      <TargetGroupsTable workspace={workspace} labelGroups={labelGroups} />
+      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
+        <TargetGroupsTable workspace={workspace} labelGroups={labelGroups} />
+      </div>
     </div>
   );
 }
