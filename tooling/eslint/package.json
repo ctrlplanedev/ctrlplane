@@ -20,6 +20,7 @@
     "eslint-plugin-jsx-a11y": "^6.9.0",
     "eslint-plugin-react": "^7.35.0",
     "eslint-plugin-react-hooks": "beta",
+    "eslint-plugin-vitest": "catalog:",
     "typescript-eslint": "catalog:"
   },
   "devDependencies": {
