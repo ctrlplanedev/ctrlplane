@@ -7,8 +7,11 @@ import {
   deployment,
   environment,
   job,
+  jobVariable,
   release,
   releaseJobTrigger,
+  runbook,
+  runbookJobTrigger,
   target,
   updateJob,
 } from "@ctrlplane/db/schema";
@@ -22,7 +25,9 @@ export const GET = async (
   const je = await db
     .select()
     .from(job)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+    .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
+    .leftJoin(runbook, eq(runbookJobTrigger.runbookId, runbook.id))
+    .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
     .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
     .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
@@ -30,15 +35,21 @@ export const GET = async (
     .where(and(eq(job.id, params.jobId), isNull(environment.deletedAt)))
     .then(takeFirst)
     .then((row) => ({
-      ...row.job,
-      config: row.release_job_trigger,
+      job: row.job,
+      runbook: row.runbook,
       environment: row.environment,
       target: row.target,
       deployment: row.deployment,
       release: row.release,
     }));
 
-  return NextResponse.json(je);
+  const variabes = await db
+    .select()
+    .from(jobVariable)
+    .where(eq(jobVariable.jobId, params.jobId));
+  const variable = Object.fromEntries(variabes.map((v) => [v.key, v.value]));
+
+  return NextResponse.json({ ...je, variable });
 };
 
 const bodySchema = updateJob;

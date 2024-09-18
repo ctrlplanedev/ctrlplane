@@ -31,6 +31,7 @@ const deployManifest = async (
       logger.error("Job name not found in manifest", {
         jobId,
         namespace,
+        manifest,
       });
       await api.updateJob({
         jobId,

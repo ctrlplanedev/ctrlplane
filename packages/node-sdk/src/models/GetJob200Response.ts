@@ -22,40 +22,10 @@ import { mapValues } from "../runtime";
 export interface GetJob200Response {
   /**
    *
-   * @type {string}
-   * @memberof GetJob200Response
-   */
-  id: string;
-  /**
-   *
-   * @type {string}
-   * @memberof GetJob200Response
-   */
-  status: string;
-  /**
-   *
-   * @type {string}
-   * @memberof GetJob200Response
-   */
-  message: string;
-  /**
-   *
-   * @type {string}
-   * @memberof GetJob200Response
-   */
-  jobAgentId: string;
-  /**
-   *
    * @type {object}
    * @memberof GetJob200Response
    */
-  jobAgentConfig: object;
-  /**
-   *
-   * @type {string}
-   * @memberof GetJob200Response
-   */
-  externalRunId: string;
+  job: object;
   /**
    *
    * @type {object}
@@ -68,12 +38,6 @@ export interface GetJob200Response {
    * @memberof GetJob200Response
    */
   deployment?: object;
-  /**
-   *
-   * @type {object}
-   * @memberof GetJob200Response
-   */
-  config: object;
   /**
    *
    * @type {object}
@@ -92,6 +56,12 @@ export interface GetJob200Response {
    * @memberof GetJob200Response
    */
   environment?: object;
+  /**
+   *
+   * @type {object}
+   * @memberof GetJob200Response
+   */
+  variable: object;
 }
 
 /**
@@ -100,16 +70,8 @@ export interface GetJob200Response {
 export function instanceOfGetJob200Response(
   value: object,
 ): value is GetJob200Response {
-  if (!("id" in value) || value["id"] === undefined) return false;
-  if (!("status" in value) || value["status"] === undefined) return false;
-  if (!("message" in value) || value["message"] === undefined) return false;
-  if (!("jobAgentId" in value) || value["jobAgentId"] === undefined)
-    return false;
-  if (!("jobAgentConfig" in value) || value["jobAgentConfig"] === undefined)
-    return false;
-  if (!("externalRunId" in value) || value["externalRunId"] === undefined)
-    return false;
-  if (!("config" in value) || value["config"] === undefined) return false;
+  if (!("job" in value) || value["job"] === undefined) return false;
+  if (!("variable" in value) || value["variable"] === undefined) return false;
   return true;
 }
 
@@ -125,18 +87,13 @@ export function GetJob200ResponseFromJSONTyped(
     return json;
   }
   return {
-    id: json["id"],
-    status: json["status"],
-    message: json["message"],
-    jobAgentId: json["jobAgentId"],
-    jobAgentConfig: json["jobAgentConfig"],
-    externalRunId: json["externalRunId"],
+    job: json["job"],
     release: json["release"] == null ? undefined : json["release"],
     deployment: json["deployment"] == null ? undefined : json["deployment"],
-    config: json["config"],
     runbook: json["runbook"] == null ? undefined : json["runbook"],
     target: json["target"] == null ? undefined : json["target"],
     environment: json["environment"] == null ? undefined : json["environment"],
+    variable: json["variable"],
   };
 }
 
@@ -145,17 +102,12 @@ export function GetJob200ResponseToJSON(value?: GetJob200Response | null): any {
     return value;
   }
   return {
-    id: value["id"],
-    status: value["status"],
-    message: value["message"],
-    jobAgentId: value["jobAgentId"],
-    jobAgentConfig: value["jobAgentConfig"],
-    externalRunId: value["externalRunId"],
+    job: value["job"],
     release: value["release"],
     deployment: value["deployment"],
-    config: value["config"],
     runbook: value["runbook"],
     target: value["target"],
     environment: value["environment"],
+    variable: value["variable"],
   };
 }

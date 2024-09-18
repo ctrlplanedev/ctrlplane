@@ -11,6 +11,7 @@ import {
   release,
   role,
   rolePermission,
+  runbook,
   system,
   target,
   targetLabelGroup,
@@ -87,6 +88,22 @@ const getReleaseScopes = async (id: string) => {
   return [
     { type: "release" as const, id: result.release.id },
     { type: "deployment" as const, id: result.deployment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
+const getRunbookScope = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(runbook, eq(runbook.systemId, system.id))
+    .where(eq(runbook.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "runbook" as const, id: result.runbook.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
@@ -250,6 +267,7 @@ export const scopeHandlers: Record<
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
   release: getReleaseScopes,
+  runbook: getRunbookScope,
   targetLabelGroup: getTargetLabelGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
