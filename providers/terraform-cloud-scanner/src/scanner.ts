@@ -87,20 +87,21 @@ export async function scan() {
 }
 
 /**
- * Processes variables into Terraform variables and environment variables.
+ * Processes variables into Terraform variables.
  * @param variables The array of variables to process.
- * @returns An object containing terraformVariables and envVariables.
+ * @returns An object containing terraformVariables.
  */
 const processVariables = (variables: Variable[]) =>
   Object.fromEntries(
-    variables.map((variable) => {
-      return [
-        variable.attributes.category === "terraform"
-          ? `terraform-cloud/variables:${variable.attributes.key}`
-          : `terraform-cloud/environment-variables:${variable.attributes.key}`,
-        variable.attributes.value || "",
-      ];
-    }),
+    variables
+      .filter((variable) => variable.attributes.category === "terraform")
+      .filter((variable) => variable.attributes.sensitive === false)
+      .map((variable) => {
+        return [
+          `terraform-cloud/variables:${variable.attributes.key}`,
+          variable.attributes.value,
+        ];
+      }),
   );
 
 /**
