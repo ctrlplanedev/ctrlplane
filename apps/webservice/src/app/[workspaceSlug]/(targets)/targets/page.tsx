@@ -193,8 +193,7 @@ const TargetGeneral: React.FC<
 
 const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
   const deployments = api.deployment.byTargetId.useQuery(targetId);
-  const targetValues =
-    api.deployment.variable.value.byTargetId.useQuery(targetId);
+  const targetValues = api.deployment.variable.byTargetId.useQuery(targetId);
 
   if (!deployments.data || deployments.data.length === 0) {
     return (
@@ -246,11 +245,7 @@ const DeploymentsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
                     {deploymentVariables.map(({ key, value }) => (
                       <tr className="text-sm" key={key}>
                         <TableCell className="p-3">{key}</TableCell>
-                        <TableCell className="p-3">
-                          {value ?? (
-                            <div className="italic text-neutral-500">NULL</div>
-                          )}
-                        </TableCell>
+                        <TableCell className="p-3">{value.value}</TableCell>
                         <TableHead />
                       </tr>
                     ))}
