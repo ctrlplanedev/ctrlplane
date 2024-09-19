@@ -1,10 +1,22 @@
 import type { Tx } from "@ctrlplane/db";
-import type { InsertTarget } from "@ctrlplane/db/schema";
+import type { InsertTarget, Target } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { and, buildConflictUpdateColumns, inArray } from "@ctrlplane/db";
+import {
+  and,
+  buildConflictUpdateColumns,
+  eq,
+  inArray,
+  isNotNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { environment, target, targetLabel } from "@ctrlplane/db/schema";
+import {
+  environment,
+  system,
+  target,
+  targetLabel,
+  targetMatchsLabel,
+} from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import { dispatchJobsForNewTargets } from "./new-target.js";
@@ -28,25 +40,41 @@ const getExistingTargets = (db: Tx, tgs: InsertTarget[]) =>
       ),
     );
 
-const dispatchNewTargets = async (db: Tx, newTargetIds: string[]) => {
-  const envs = await db
-    .select()
+const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
+  const [firstTarget] = newTargets;
+  if (firstTarget == null) return;
+
+  const workspaceId = firstTarget.workspaceId;
+
+  const workspaceEnvs = await db
+    .select({ id: environment.id, targetFilter: environment.targetFilter })
     .from(environment)
-    .innerJoin(target, targetMatchsLabel(target, environment.targetFilter))
-    .where(inArray(target.id, newTargetIds))
-    .then((envs) =>
-      _.chain(envs)
-        .groupBy((e) => e.environment.id)
-        .entries()
-        .value(),
+    .innerJoin(system, eq(system.id, environment.systemId))
+    .where(
+      and(
+        eq(system.workspaceId, workspaceId),
+        isNotNull(environment.targetFilter),
+      ),
     );
 
-  for (const [env, tgs] of envs) {
-    dispatchJobsForNewTargets(
-      db,
-      tgs.map((t) => t.target.id),
-      env,
-    );
+  const targetIds = newTargets.map((t) => t.id);
+  for (const env of workspaceEnvs) {
+    db.select()
+      .from(target)
+      .where(
+        and(
+          inArray(target.id, targetIds),
+          targetMatchsLabel(db, env.targetFilter),
+        ),
+      )
+      .then((tgs) => {
+        if (tgs.length === 0) return;
+        dispatchJobsForNewTargets(
+          db,
+          tgs.map((t) => t.id),
+          env.id,
+        );
+      });
   }
 };
 
@@ -54,7 +82,6 @@ export const upsertTargets = async (
   tx: Tx,
   targetsToInsert: Array<InsertTarget & { labels?: Record<string, string> }>,
 ) => {
-  console.log(targetsToInsert);
   const targetsBeforeInsert = await getExistingTargets(tx, targetsToInsert);
 
   const targets = await tx
@@ -123,11 +150,7 @@ export const upsertTargets = async (
     (t) => !targetsBeforeInsert.some((et) => et.identifier === t.identifier),
   );
 
-  if (newTargets.length > 0)
-    dispatchNewTargets(
-      db,
-      newTargets.map((t) => t.id),
-    );
+  if (newTargets.length > 0) dispatchNewTargets(db, newTargets);
 
   const newTargetCount = newTargets.length;
   const targetsToInsertCount = targetsToInsert.length;

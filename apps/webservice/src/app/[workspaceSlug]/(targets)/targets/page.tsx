@@ -55,9 +55,9 @@ import { LabelFilterDialog } from "./LabelFilterDialog";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
-const TargetGeneral: React.FC<Target & { provider: TargetProvider | null }> = (
-  target,
-) => {
+const TargetGeneral: React.FC<
+  Target & { labels: Record<string, string>; provider: TargetProvider | null }
+> = (target) => {
   const labels = Object.entries(target.labels).sort(([keyA], [keyB]) =>
     keyA.localeCompare(keyB),
   );

@@ -1,7 +1,20 @@
 import { z } from "zod";
 
-import { asc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
-import { target, targetLabelGroup, workspace } from "@ctrlplane/db/schema";
+import {
+  and,
+  asc,
+  eq,
+  inArray,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
+import {
+  target,
+  targetLabel,
+  targetLabelGroup,
+  workspace,
+} from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -15,19 +28,25 @@ export const targetLabelGroupRouter = createTRPCRouter({
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(({ ctx, input }) => {
+      return ctx.db
         .select({
-          targets: sql<number>`count(${target.id})`.mapWith(Number),
+          targets: sql<number>`count(distinct ${target.id})`.mapWith(Number),
           targetLabelGroup,
         })
         .from(targetLabelGroup)
         .innerJoin(workspace, eq(targetLabelGroup.workspaceId, workspace.id))
-        .leftJoin(target, sql`${target.labels} ?& ${targetLabelGroup.keys}`)
-        .where(eq(workspace.id, input))
-        .groupBy(workspace.id, targetLabelGroup.id)
-        .orderBy(asc(targetLabelGroup.name)),
-    ),
+        .leftJoin(target, eq(target.workspaceId, workspace.id))
+        .leftJoin(targetLabel, eq(targetLabel.targetId, target.id))
+        .where(
+          and(
+            eq(workspace.id, input),
+            sql`"target_label"."label" = ANY (${targetLabelGroup.keys})`,
+          ),
+        )
+        .groupBy(targetLabelGroup.id)
+        .orderBy(asc(targetLabelGroup.name));
+    }),
 
   byId: protectedProcedure
     .meta({
@@ -48,23 +67,20 @@ export const targetLabelGroupRouter = createTRPCRouter({
 
       const groups = await ctx.db
         .select({
-          targets: sql<number>`count(${target.id})`.mapWith(Number),
+          targets: sql<number>`count(distinct ${target.id})`.mapWith(Number),
           ...Object.fromEntries(
-            group.keys.map((k) => [
-              k,
-              sql.raw(`"target"."labels" ->> '${k}'`).as(k),
-            ]),
+            group.keys.map((k) => [k, sql.raw(`"target_label"."value"`).as(k)]),
           ),
         })
         .from(target)
+        .innerJoin(targetLabel, eq(targetLabel.targetId, target.id))
         .where(
-          sql.raw(
-            `"target"."labels" ?& array[${group.keys.map((k) => `'${k}'`).join(",")}]`,
+          and(
+            inArray(targetLabel.label, group.keys),
+            eq(target.workspaceId, group.workspaceId),
           ),
         )
-        .groupBy(
-          ...group.keys.map((k) => sql.raw(`"target"."labels" ->> '${k}'`)),
-        );
+        .groupBy(targetLabel.value);
 
       return {
         ...group,

@@ -1,29 +1,28 @@
 import type { SQL, Tx } from "@ctrlplane/db";
+import type { EqualCondition } from "@ctrlplane/validators/targets";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import {
   and,
-  arrayContains,
   asc,
   eq,
   inArray,
   like,
   or,
-  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
   createTarget,
-  createTargetLabelConditions,
   target,
+  targetLabel,
+  targetMatchsLabel,
   targetProvider,
   updateTarget,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { EqualCondition, LabelCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { targetLabelGroupRouter } from "./target-label-group";
@@ -48,17 +47,26 @@ export const targetRouter = createTRPCRouter({
         canUser.perform(Permission.TargetGet).on({ type: "target", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(async ({ ctx, input }) => {
+      const labels = await ctx.db
+        .select()
+        .from(targetLabel)
+        .where(eq(targetLabel.targetId, input))
+        .then((lbs) =>
+          Object.fromEntries(lbs.map((lb) => [lb.label, lb.value])),
+        );
+      return ctx.db
         .select()
         .from(target)
         .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
         .where(eq(target.id, input))
         .then(takeFirstOrNull)
         .then((a) =>
-          a == null ? null : { ...a.target, provider: a.target_provider },
-        ),
-    ),
+          a == null
+            ? null
+            : { ...a.target, labels, provider: a.target_provider },
+        );
+    }),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
@@ -99,14 +107,14 @@ export const targetRouter = createTRPCRouter({
             t.map(([label, value]) => ({ label, value: value as string })),
           );
 
-        const targetConditions = createTargetLabelConditions(ctx.db, {
+        const targetConditions = targetMatchsLabel(ctx.db, {
           operator: "or",
           conditions: labelFilters.map((labelGroup) => ({
-            operator: "and" as const,
+            operator: "and",
             conditions: labelGroup.map(({ label, value }) => ({
               label,
               value,
-              operator: "equals" as const,
+              operator: "equals",
             })),
           })),
         });
@@ -204,8 +212,9 @@ export const targetRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
-        .selectDistinct({ key: sql<string>`jsonb_object_keys(labels)` })
+        .selectDistinct({ key: targetLabel.label })
         .from(target)
+        .innerJoin(targetLabel, eq(targetLabel.targetId, target.id))
         .where(eq(target.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),
