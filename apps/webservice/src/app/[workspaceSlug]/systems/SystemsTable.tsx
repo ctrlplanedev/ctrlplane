@@ -2,13 +2,16 @@
 
 import type { System } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Fragment } from "react";
 import { useRouter } from "next/navigation";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { TbDotsVertical } from "react-icons/tb";
 
+import { Button } from "@ctrlplane/ui/button";
 import {
   Table,
   TableBody,
@@ -17,6 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+
+import { SystemActionsDropdown } from "./SystemActionsDropdown";
 
 const columns: ColumnDef<System>[] = [
   {
@@ -59,7 +64,7 @@ export const SystemsTable: React.FC<{
       <TableBody>
         {table.getRowModel().rows.map((row) => (
           <TableRow
-            className="cursor-pointer border-b-neutral-800/50"
+            className="flex cursor-pointer justify-between border-b-neutral-800/50 hover:bg-inherit"
             key={row.id}
             onClick={() =>
               router.push(
@@ -68,9 +73,18 @@ export const SystemsTable: React.FC<{
             }
           >
             {row.getVisibleCells().map((cell) => (
-              <TableCell key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
+              <Fragment key={cell.id}>
+                <TableCell>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </TableCell>
+                <TableCell>
+                  <SystemActionsDropdown system={cell.row.original}>
+                    <Button variant="ghost" size="icon">
+                      <TbDotsVertical />
+                    </Button>
+                  </SystemActionsDropdown>
+                </TableCell>
+              </Fragment>
             ))}
           </TableRow>
         ))}
