@@ -14,11 +14,13 @@ import {
 import {
   createEntityRole,
   createWorkspace,
+  createWorkspaceEmailDomainMatching,
   entityRole,
   role,
   updateWorkspace,
   user,
   workspace,
+  workspaceEmailDomainMatching,
   workspaceInviteToken,
 } from "@ctrlplane/db/schema";
 import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
@@ -202,14 +204,71 @@ const iamRouter = createTRPCRouter({
     ),
 });
 
+const workspaceEmailDomainMatchingRouter = createTRPCRouter({
+  byWorkspaceId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceUpdate)
+          .on({ type: "workspace", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(workspaceEmailDomainMatching)
+        .where(eq(workspaceEmailDomainMatching.workspaceId, input)),
+    ),
+
+  create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceUpdate)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .input(createWorkspaceEmailDomainMatching)
+    .mutation(({ ctx, input }) =>
+      ctx.db.insert(workspaceEmailDomainMatching).values(input),
+    ),
+
+  delete: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ ctx, canUser, input }) => {
+        const workspaceRecord = await ctx.db
+          .select()
+          .from(workspaceEmailDomainMatching)
+          .where(eq(workspaceEmailDomainMatching.workspaceId, input))
+          .then(takeFirstOrNull);
+        if (!workspaceRecord) throw new Error("Workspace not found");
+        return canUser
+          .perform(Permission.WorkspaceUpdate)
+          .on({ type: "workspace", id: workspaceRecord.workspaceId });
+      },
+    })
+    .input(z.string().uuid())
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .delete(workspaceEmailDomainMatching)
+        .where(eq(workspaceEmailDomainMatching.id, input)),
+    ),
+});
+
 export const workspaceRouter = createTRPCRouter({
   invite: inviteRouter,
   members: membersRouter,
   integrations: integrationsRouter,
+  emailDomainMatching: workspaceEmailDomainMatchingRouter,
 
   iam: iamRouter,
 
   roles: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceListMembers)
+          .on({ type: "workspace", id: input }),
+    })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -219,6 +278,12 @@ export const workspaceRouter = createTRPCRouter({
     ),
 
   update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceUpdate)
+          .on({ type: "workspace", id: input.id }),
+    })
     .input(z.object({ id: z.string().uuid(), data: updateWorkspace }))
     .mutation(async ({ ctx, input }) =>
       ctx.db

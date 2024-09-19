@@ -15,6 +15,20 @@
       "when": 1726624108221,
       "tag": "0001_wide_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1726698604353,
+      "tag": "0002_simple_umar",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1726700010201,
+      "tag": "0003_amused_bucky",
+      "breakpoints": true
     }
   ]
 }
