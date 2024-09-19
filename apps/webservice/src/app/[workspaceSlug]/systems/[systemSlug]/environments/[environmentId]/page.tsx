@@ -3,14 +3,6 @@ import { TbTarget } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@ctrlplane/ui/table";
 
 import { api } from "~/trpc/server";
 import { PieTargetsByKind, PieTargetsByProvider } from "./TargetCharts";
@@ -23,10 +15,6 @@ export default async function EnvironmentPage({
   const environment = await api.environment.byId(params.environmentId);
   if (environment == null) notFound();
 
-  const targets = await api.environment.target.byEnvironmentId(
-    params.environmentId,
-  );
-
   return (
     <>
       <div className="border-b p-4 px-8 text-xl">{environment.name}</div>
@@ -35,7 +23,7 @@ export default async function EnvironmentPage({
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           Targets{" "}
           <Badge variant="secondary" className="rounded-full">
-            {targets.length}
+            {0}
           </Badge>
         </h2>
         <div className="grid grid-cols-6 gap-4">
@@ -46,7 +34,7 @@ export default async function EnvironmentPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="">
-              <PieTargetsByKind targets={targets} />
+              <PieTargetsByKind targets={[]} />
             </CardContent>
           </Card>
 
@@ -57,11 +45,11 @@ export default async function EnvironmentPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="">
-              <PieTargetsByProvider targets={targets} />
+              <PieTargetsByProvider targets={[]} />
             </CardContent>
           </Card>
         </div>
-        <Card className="">
+        {/* <Card className="">
           <Table>
             <TableHeader>
               <TableRow>
@@ -71,7 +59,7 @@ export default async function EnvironmentPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {targets.map((target) => (
+              {([]).map((target) => (
                 <TableRow key={target.id}>
                   <TableCell>{target.name}</TableCell>
                   <TableCell>
@@ -81,7 +69,7 @@ export default async function EnvironmentPage({
               ))}
             </TableBody>
           </Table>
-        </Card>
+        </Card> */}
       </div>
     </>
   );
