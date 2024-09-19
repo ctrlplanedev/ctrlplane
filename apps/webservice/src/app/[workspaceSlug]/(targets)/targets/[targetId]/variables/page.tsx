@@ -90,7 +90,7 @@ const VariableRow: React.FC<{
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async ({ value }) => {
     await set.mutateAsync({ value, variableId, targetId });
-    await utils.deployment.variable.value.byTargetId.invalidate(targetId);
+    await utils.deployment.variable.byTargetId.invalidate(targetId);
     setEdit(false);
   });
 
@@ -146,7 +146,7 @@ const VariableRow: React.FC<{
                       variableId,
                       targetId,
                     });
-                    await utils.deployment.variable.value.byTargetId.invalidate(
+                    await utils.deployment.variable.byTargetId.invalidate(
                       targetId,
                     );
                     setEdit(false);
@@ -207,9 +207,6 @@ export default function VariablePage({
   params: { targetId: string };
 }) {
   const deployments = api.deployment.byTargetId.useQuery(params.targetId);
-  const targetValues = api.deployment.variable.value.byTargetId.useQuery(
-    params.targetId,
-  );
   const variables = api.deployment.variable.byTargetId.useQuery(
     params.targetId,
   );
@@ -229,21 +226,17 @@ export default function VariablePage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {targetValues.data
+                {variables.data
                   ?.filter((v) => v.deploymentId === deployment.id)
-                  .map(({ id, key, value, description, variableId }) => (
+                  .map((v) => (
                     <VariableRow
-                      key={id}
-                      variableId={variableId}
+                      key={v.id}
+                      variableId={v.id}
                       targetId={params.targetId}
-                      varKey={key}
-                      value={value}
-                      description={description}
-                      possibleValues={
-                        variables.data
-                          ?.find((v) => v.id === id)
-                          ?.values.map((v) => v.value) ?? []
-                      }
+                      varKey={v.key}
+                      value={v.value.value}
+                      description={v.description}
+                      possibleValues={v.possibleValues}
                     />
                   ))}
               </TableBody>
