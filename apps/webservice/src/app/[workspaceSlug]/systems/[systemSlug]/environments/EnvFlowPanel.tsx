@@ -62,11 +62,16 @@ const AddEnvironmentButton: React.FC<{
   });
 
   const { targetFilter } = form.watch();
-  const targets = api.environment.target.byFilter.useQuery({
+  const targets = api.target.byWorkspaceId.list.useQuery({
     workspaceId, // Assuming systemId is the workspaceId
-    labels: Object.fromEntries(
-      targetFilter.map(({ key, value }) => [key, value]),
-    ),
+    filters: [
+      {
+        key: "labels",
+        value: Object.fromEntries(
+          targetFilter.map(({ key, value }) => [key, value]),
+        ),
+      },
+    ],
   });
 
   const { fields } = useFieldArray({
@@ -77,11 +82,19 @@ const AddEnvironmentButton: React.FC<{
   const { addNodes, addEdges } = useReactFlow();
   const { x, y } = useViewport();
   const onSubmit = form.handleSubmit(async (values) => {
-    const targetFilter = Object.fromEntries(
-      values.targetFilter.map(({ key, value }) => [key, value]),
-    );
     setOpen(false);
-    const env = await create.mutateAsync({ ...values, systemId, targetFilter });
+
+    const env = await create.mutateAsync({
+      ...values,
+      systemId,
+      targetFilter: {
+        operator: "and",
+        conditions: values.targetFilter.map(({ key, value }) => ({
+          label: key,
+          value,
+        })),
+      },
+    });
     addNodes({
       id: env.id,
       type: NodeType.Environment,
@@ -163,7 +176,7 @@ const AddEnvironmentButton: React.FC<{
                   render={({ field: { onChange, value } }) => (
                     <FormItem>
                       <FormLabel className={cn(index !== 0 && "sr-only")}>
-                        Target Filter ({targets.data?.length ?? "-"})
+                        Target Filter ({targets.data?.total ?? "-"})
                       </FormLabel>
                       <FormControl>
                         <div className="flex items-center gap-2">

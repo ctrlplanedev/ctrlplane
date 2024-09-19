@@ -1,5 +1,6 @@
 "use client";
 
+import type { EqualCondition } from "@ctrlplane/validators/targets";
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -47,12 +48,9 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     defaultValues: {
       name: node.data.label,
       description: node.data.description,
-      targetFilter: Object.entries(
-        node.data.targetFilter as Record<string, string>,
-      ).map(([key, value]) => ({
-        key,
-        value,
-      })),
+      targetFilter: (
+        (node.data.targetFilter?.conditions ?? []) as EqualCondition[]
+      ).map((item) => ({ key: item.label, value: item.value })),
     },
     mode: "onChange",
   });
@@ -62,26 +60,28 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     form.setValue("description", node.data.description);
     form.setValue(
       "targetFilter",
-      Object.entries(node.data.targetFilter as Record<string, string>).map(
-        ([key, value]) => ({
-          key,
-          value,
-        }),
+      ((node.data.targetFilter?.conditions ?? []) as EqualCondition[]).map(
+        (item) => ({ key: item.label, value: item.value }),
       ),
     );
   }, [node.data.label, node.data.description, node.data.targetFilter, form]);
 
   const { targetFilter } = form.watch();
-  const targets = api.environment.target.byFilter.useQuery(
+
+  const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      labels: Object.fromEntries(
-        targetFilter.map(({ key, value }) => [key, value]),
-      ),
+      filters: [
+        {
+          key: "labels",
+          value: Object.fromEntries(
+            targetFilter.map(({ key, value }) => [key, value]),
+          ),
+        },
+      ],
     },
     { enabled: workspace.data != null },
   );
-
   const { fields, append, remove } = useFieldArray({
     name: "targetFilter",
     control: form.control,
@@ -91,10 +91,19 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     setNodes((nodes) => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
-      const targetFilter = Object.fromEntries(
-        values.targetFilter.map(({ key, value }) => [key, value]),
-      );
-      update.mutate({ id: node.id, data: { ...values, targetFilter } });
+      update.mutate({
+        id: node.id,
+        data: {
+          ...values,
+          targetFilter: {
+            operator: "and",
+            conditions: values.targetFilter.map(({ key, value }) => ({
+              label: key,
+              value,
+            })),
+          },
+        },
+      });
       return nodes.map((n) =>
         n.id === selectedNodeId
           ? {
@@ -161,7 +170,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
               render={({ field: { onChange, value } }) => (
                 <FormItem>
                   <FormLabel className={cn(index !== 0 && "sr-only")}>
-                    Target Filter ({targets.data?.length ?? "-"})
+                    Target Filter ({targets.data?.total ?? "-"})
                   </FormLabel>
                   <FormControl>
                     <LabelFilterInput

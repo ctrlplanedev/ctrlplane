@@ -92,7 +92,6 @@ class ReleaseJobTriggerBuilder {
     return this.tx
       .select()
       .from(environment)
-      .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
       .innerJoin(deployment, eq(deployment.systemId, environment.systemId));
   }
 
@@ -110,7 +109,7 @@ class ReleaseJobTriggerBuilder {
       .as("release");
   }
 
-  async values() {
+  async _values() {
     const latestReleaseSubQuery = this._releaseSubQuery();
     const releaseJobTriggers = this.releaseIds
       ? this._baseQuery().innerJoin(
@@ -129,7 +128,7 @@ class ReleaseJobTriggerBuilder {
   }
 
   async insert() {
-    const vals = await this.values();
+    const vals = await this._values();
     if (vals.length === 0) return [];
 
     let wt: ReleaseJobTriggerInsert[] = vals.map((v) => ({

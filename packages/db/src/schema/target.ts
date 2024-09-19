@@ -15,7 +15,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import type { Tx } from "../common.js";
-import { environment } from "./environment.js";
 import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
 

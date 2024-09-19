@@ -471,7 +471,19 @@ export const environmentRouter = createTRPCRouter({
           and(eq(environment.systemId, input), isNull(environment.deletedAt)),
         );
 
-      return envs.map((e) => ({ ...e.environment, system: e.system }));
+      return await Promise.all(
+        envs.map(async (e) => ({
+          ...e.environment,
+          system: e.system,
+          targets:
+            e.environment.targetFilter != null
+              ? await ctx.db
+                  .select()
+                  .from(target)
+                  .where(targetMatchsLabel(ctx.db, e.environment.targetFilter))
+              : [],
+        })),
+      );
     }),
 
   create: protectedProcedure
