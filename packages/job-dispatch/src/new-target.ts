@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, arrayContains, eq, inArray } from "@ctrlplane/db";
-import { environment, target } from "@ctrlplane/db/schema";
+import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { environment, target, targetMatchsLabel } from "@ctrlplane/db/schema";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
@@ -21,10 +21,16 @@ async function assertTargetsInEnvironment(
   targetIds: string[],
   envId: string,
 ): Promise<void> {
+  const env = await db
+    .select()
+    .from(environment)
+    .where(eq(environment.id, envId))
+    .then(takeFirst);
+
   const targetsInEnv = await db
     .select({ id: target.id })
     .from(environment)
-    .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
+    .innerJoin(target, targetMatchsLabel(db, env.targetFilter))
     .where(and(eq(environment.id, envId), inArray(target.id, targetIds)));
   const targetsInEnvIds = new Set(targetsInEnv.map((t) => t.id));
   const allTargetsInEnv = targetIds.every((id) => targetsInEnvIds.has(id));

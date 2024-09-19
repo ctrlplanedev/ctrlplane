@@ -7,7 +7,7 @@ import type {
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, arrayContains, eq, inArray, isNull, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, sql } from "@ctrlplane/db";
 import {
   deployment,
   environment,
@@ -15,7 +15,9 @@ import {
   jobAgent,
   release,
   releaseJobTrigger,
+  system,
   target,
+  targetMatchsLabel,
 } from "@ctrlplane/db/schema";
 
 type FilterFunc = (
@@ -80,7 +82,6 @@ class ReleaseJobTriggerBuilder {
     return and(
       ...[
         this.releaseIds && inArray(release.id, this.releaseIds),
-        this.targetIds && inArray(target.id, this.targetIds),
         this.environmentIds && inArray(environment.id, this.environmentIds),
       ].filter(isPresent),
       isNull(environment.deletedAt),
@@ -92,8 +93,8 @@ class ReleaseJobTriggerBuilder {
     return this.tx
       .select()
       .from(environment)
-      .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
-      .innerJoin(deployment, eq(deployment.systemId, environment.systemId));
+      .innerJoin(deployment, eq(deployment.systemId, environment.systemId))
+      .innerJoin(system, eq(environment.systemId, system.id));
   }
 
   _releaseSubQuery() {
@@ -125,7 +126,29 @@ class ReleaseJobTriggerBuilder {
           ),
         );
 
-    return releaseJobTriggers.where(this._where());
+    const releases = await releaseJobTriggers.where(this._where());
+    return Promise.all(
+      releases.map(async (release) => {
+        const { targetFilter } = release.environment;
+        const { workspaceId } = release.system;
+        const targets = await this.tx
+          .select()
+          .from(target)
+          .where(
+            and(
+              targetMatchsLabel(this.tx, targetFilter),
+              eq(target.workspaceId, workspaceId),
+              isNull(target.lockedAt),
+              this.targetIds && inArray(target.id, this.targetIds),
+            ),
+          );
+
+        return targets.map((target) => ({
+          ...release,
+          target,
+        }));
+      }),
+    ).then((result) => result.flat());
   }
 
   async insert() {

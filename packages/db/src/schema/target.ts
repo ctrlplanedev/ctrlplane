@@ -52,7 +52,16 @@ export const createTarget = createInsertSchema(target, {
   kind: z.string().min(1),
   providerId: z.string().uuid(),
   config: z.record(z.any()),
-}).omit({ id: true });
+})
+  .omit({ id: true })
+  .extend({
+    labels: z.array(
+      z.object({
+        label: z.string().min(1),
+        value: z.string().min(1),
+      }),
+    ),
+  });
 
 export type InsertTarget = InferInsertModel<typeof target>;
 

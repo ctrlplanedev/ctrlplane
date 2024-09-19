@@ -1,14 +1,7 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import {
-  and,
-  arrayContains,
-  eq,
-  sql,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
@@ -20,6 +13,7 @@ import {
   environment,
   system,
   target,
+  targetMatchsLabel,
   updateDeploymentVariable,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -153,6 +147,14 @@ const valueRouter = createTRPCRouter({
   byTargetId: protectedProcedure
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
+      const envTargetFilter = await ctx.db
+        .select({ targetFilter: environment.targetFilter })
+        .from(environment)
+        .innerJoin(system, eq(system.id, environment.systemId))
+        .innerJoin(deployment, eq(deployment.systemId, system.id))
+        .where(eq(environment.id, input))
+        .then(takeFirst);
+
       const variableValuesQuery = ctx.db
         .selectDistinctOn([deploymentVariable.id], {
           variableId: deploymentVariable.id,
@@ -181,14 +183,9 @@ const valueRouter = createTRPCRouter({
             deploymentVariableValue.id,
           ),
         )
-        .leftJoin(
-          deployment,
-          eq(deployment.id, deploymentVariable.deploymentId),
-        )
-        .leftJoin(environment, eq(environment.systemId, deployment.systemId))
         .innerJoin(
           target,
-          arrayContains(target.labels, environment.targetFilter),
+          targetMatchsLabel(ctx.db, envTargetFilter.targetFilter),
         )
         .where(eq(target.id, input))
         .as("variable_values_query");
@@ -226,7 +223,15 @@ export const deploymentVariableRouter = createTRPCRouter({
           .on({ type: "target", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) => {
+    .query(async ({ ctx, input }) => {
+      const envTargetFilter = await ctx.db
+        .select({ targetFilter: environment.targetFilter })
+        .from(environment)
+        .innerJoin(system, eq(system.id, environment.systemId))
+        .innerJoin(deployment, eq(deployment.systemId, system.id))
+        .where(eq(environment.id, input))
+        .then(takeFirst);
+
       return ctx.db
         .select()
         .from(deploymentVariable)
@@ -242,7 +247,7 @@ export const deploymentVariableRouter = createTRPCRouter({
         .innerJoin(environment, eq(environment.systemId, system.id))
         .innerJoin(
           target,
-          arrayContains(target.labels, environment.targetFilter),
+          targetMatchsLabel(ctx.db, envTargetFilter.targetFilter),
         )
         .where(eq(target.id, input))
         .then((rows) => {

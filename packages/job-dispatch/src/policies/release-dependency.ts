@@ -4,7 +4,7 @@ import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, sql } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import {
   deployment,
   job,
@@ -12,7 +12,9 @@ import {
   releaseDependency,
   releaseJobTrigger,
   target,
+  targetLabel,
   targetLabelGroup,
+  targetMatchsLabel,
 } from "@ctrlplane/db/schema";
 
 export const isPassingReleaseDependencyPolicy = async (
@@ -25,6 +27,7 @@ export const isPassingReleaseDependencyPolicy = async (
     .select()
     .from(releaseJobTrigger)
     .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .leftJoin(targetLabel, eq(targetLabel.targetId, target.id))
     .leftJoin(
       releaseDependency,
       eq(releaseDependency.releaseId, releaseJobTrigger.releaseId),
@@ -44,13 +47,28 @@ export const isPassingReleaseDependencyPolicy = async (
         .groupBy((row) => row.release_job_trigger.id)
         .map((jc) => ({
           releaseJobTrigger: jc[0]!.release_job_trigger,
-          target: jc[0]!.target,
-          releaseDependencies: jc
-            .map((v) => ({
-              releaseDependency: v.release_dependency,
-              targetLabelGroup: v.target_label_group,
-            }))
-            .filter((v) => v.releaseDependency != null),
+          target:
+            jc[0]!.target != null
+              ? {
+                  ...jc[0]!.target,
+                  labels: _.uniqBy(
+                    jc.map((v) => v.target_label).filter(isPresent),
+                    (v) => v.id,
+                  ),
+                }
+              : null,
+          releaseDependencies: _.uniqBy(
+            jc
+              .map((v) => ({
+                releaseDependency: v.release_dependency,
+                targetLabelGroup: v.target_label_group,
+              }))
+              .filter(
+                (v) =>
+                  v.releaseDependency != null && v.targetLabelGroup != null,
+              ),
+            (rd) => rd.releaseDependency?.id,
+          ),
         }))
         .value(),
     );
@@ -67,8 +85,6 @@ export const isPassingReleaseDependencyPolicy = async (
           const { releaseDependency: releaseDep, targetLabelGroup: tlg } = rd;
           if (releaseDep == null || tlg == null) return true;
 
-          const targetLabelsForGroup = _.chain(t.labels).pick(tlg.keys).value();
-
           const dependentJobs = await db
             .select()
             .from(job)
@@ -80,15 +96,10 @@ export const isPassingReleaseDependencyPolicy = async (
               and(
                 eq(job.status, "completed"),
                 eq(deployment.id, releaseDep.deploymentId),
-                sql.raw(
-                  `
-              "target"."labels" @> jsonb_build_object(${Object.entries(
-                targetLabelsForGroup,
-              )
-                .map(([k, v]) => `'${k}', '${v}'`)
-                .join(",")})
-              `,
-                ),
+                targetMatchsLabel(db, {
+                  operator: "and",
+                  conditions: t.labels,
+                }),
               ),
             );
 

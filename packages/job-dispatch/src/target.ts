@@ -2,14 +2,15 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertTarget } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import {
-  and,
-  arrayContains,
-  buildConflictUpdateColumns,
-  inArray,
-} from "@ctrlplane/db";
+import { and, buildConflictUpdateColumns, eq, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { environment, target } from "@ctrlplane/db/schema";
+import {
+  environment,
+  system,
+  target,
+  targetLabel,
+  targetMatchsLabel,
+} from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import { dispatchJobsForNewTargets } from "./new-target.js";
@@ -34,25 +35,46 @@ const getExistingTargets = (db: Tx, tgs: InsertTarget[]) =>
     );
 
 const dispatchNewTargets = async (db: Tx, newTargetIds: string[]) => {
+  const targets = await db
+    .select({
+      workspaceId: target.workspaceId,
+    })
+    .from(target)
+    .leftJoin(targetLabel, eq(targetLabel.targetId, target.id))
+    .where(inArray(target.id, newTargetIds));
+
   const envs = await db
     .select()
     .from(environment)
-    .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
-    .where(inArray(target.id, newTargetIds))
-    .then((envs) =>
-      _.chain(envs)
-        .groupBy((e) => e.environment.id)
-        .entries()
-        .value(),
+    .innerJoin(system, eq(environment.systemId, system.id))
+    .where(
+      inArray(
+        system.workspaceId,
+        targets.map((t) => t.workspaceId),
+      ),
     );
 
-  for (const [env, tgs] of envs) {
-    dispatchJobsForNewTargets(
-      db,
-      tgs.map((t) => t.target.id),
-      env,
-    );
-  }
+  await Promise.all(
+    envs.map((env) =>
+      db
+        .select()
+        .from(target)
+        .where(
+          and(
+            inArray(target.id, newTargetIds),
+            eq(target.workspaceId, env.system.workspaceId),
+            targetMatchsLabel(db, env.environment.targetFilter),
+          ),
+        )
+        .then((tgs) =>
+          dispatchJobsForNewTargets(
+            db,
+            tgs.map((t) => t.id),
+            env.environment.id,
+          ),
+        ),
+    ),
+  );
 };
 
 export const upsertTargets = async (

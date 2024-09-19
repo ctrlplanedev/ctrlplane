@@ -1,10 +1,10 @@
 import type { SQL, Tx } from "@ctrlplane/db";
+import type { EqualCondition } from "@ctrlplane/validators/targets";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import {
   and,
-  arrayContains,
   asc,
   eq,
   inArray,
@@ -16,14 +16,13 @@ import {
 } from "@ctrlplane/db";
 import {
   createTarget,
-  createTargetLabelConditions,
   target,
+  targetMatchsLabel,
   targetProvider,
   updateTarget,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { EqualCondition, LabelCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { targetLabelGroupRouter } from "./target-label-group";
@@ -99,7 +98,7 @@ export const targetRouter = createTRPCRouter({
             t.map(([label, value]) => ({ label, value: value as string })),
           );
 
-        const targetConditions = createTargetLabelConditions(ctx.db, {
+        const targetConditions = targetMatchsLabel(ctx.db, {
           operator: "or",
           conditions: labelFilters.map((labelGroup) => ({
             operator: "and" as const,
