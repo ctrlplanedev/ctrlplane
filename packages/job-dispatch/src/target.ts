@@ -2,12 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertTarget } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import {
-  and,
-  arrayContains,
-  buildConflictUpdateColumns,
-  inArray,
-} from "@ctrlplane/db";
+import { and, buildConflictUpdateColumns, inArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { environment, target, targetLabel } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
@@ -37,7 +32,7 @@ const dispatchNewTargets = async (db: Tx, newTargetIds: string[]) => {
   const envs = await db
     .select()
     .from(environment)
-    .innerJoin(target, arrayContains(target.labels, environment.targetFilter))
+    .innerJoin(target, targetMatchsLabel(target, environment.targetFilter))
     .where(inArray(target.id, newTargetIds))
     .then((envs) =>
       _.chain(envs)
@@ -57,8 +52,9 @@ const dispatchNewTargets = async (db: Tx, newTargetIds: string[]) => {
 
 export const upsertTargets = async (
   tx: Tx,
-  targetsToInsert: Array<InsertTarget & { labels: Record<string, string> }>,
+  targetsToInsert: Array<InsertTarget & { labels?: Record<string, string> }>,
 ) => {
+  console.log(targetsToInsert);
   const targetsBeforeInsert = await getExistingTargets(tx, targetsToInsert);
 
   const targets = await tx
@@ -66,16 +62,20 @@ export const upsertTargets = async (
     .values(targetsToInsert)
     .onConflictDoUpdate({
       target: [target.identifier, target.workspaceId],
-      set: buildConflictUpdateColumns(target, ["name", "version", "kind"]),
+      set: buildConflictUpdateColumns(target, [
+        "name",
+        "version",
+        "kind",
+        "config",
+      ]),
     })
     .returning();
 
   const targetLabelValues = targetsToInsert.flatMap((targetToInsert) => {
-    const { identifier, workspaceId, labels } = targetToInsert;
+    const { identifier, workspaceId, labels = [] } = targetToInsert;
     const targetId = targets.find(
       (t) => t.identifier === identifier && t.workspaceId === workspaceId,
     )?.id;
-
     if (targetId == null) return [];
 
     return Object.entries(labels).map(([label, value]) => ({
@@ -104,7 +104,14 @@ export const upsertTargets = async (
       ),
   );
 
-  await tx.insert(targetLabel).values(targetLabelValues);
+  await tx
+    .insert(targetLabel)
+    .values(targetLabelValues)
+    .onConflictDoUpdate({
+      target: [targetLabel.targetId, targetLabel.label],
+      set: buildConflictUpdateColumns(targetLabel, ["value"]),
+    });
+
   await tx.delete(targetLabel).where(
     inArray(
       targetLabel.id,
