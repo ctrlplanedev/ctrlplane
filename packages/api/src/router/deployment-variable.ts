@@ -2,7 +2,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, isNotNull, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
@@ -188,12 +188,9 @@ export const deploymentVariableRouter = createTRPCRouter({
         )
         .innerJoin(
           deploymentVariableValueTargetFilter,
-          and(
-            eq(
-              deploymentVariableValueTargetFilter.variableValueId,
-              deploymentVariableValue.id,
-            ),
-            isNotNull(deploymentVariableValueTargetFilter.targetFilter),
+          eq(
+            deploymentVariableValueTargetFilter.variableValueId,
+            deploymentVariableValue.id,
           ),
         )
         .then((rows) =>

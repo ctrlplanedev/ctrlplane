@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, isNotNull, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 export const createReleaseVariables = async (
@@ -110,12 +110,7 @@ const determineReleaseVariableValue = async (
         schema.deploymentVariableValue.id,
       ),
     )
-    .where(
-      and(
-        eq(schema.deploymentVariableValue.variableId, variableId),
-        isNotNull(schema.deploymentVariableValueTargetFilter.targetFilter),
-      ),
-    )
+    .where(eq(schema.deploymentVariableValue.variableId, variableId))
     .then(takeFirstOrNull);
 
   if (deploymentVariableValue != null) {
