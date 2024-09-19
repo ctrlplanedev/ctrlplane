@@ -9,7 +9,7 @@ import {
   inArray,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { environment, target } from "@ctrlplane/db/schema";
+import { environment, target, targetLabel } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
 import { dispatchJobsForNewTargets } from "./new-target.js";
@@ -57,7 +57,7 @@ const dispatchNewTargets = async (db: Tx, newTargetIds: string[]) => {
 
 export const upsertTargets = async (
   tx: Tx,
-  targetsToInsert: InsertTarget[],
+  targetsToInsert: Array<InsertTarget & { labels: Record<string, string> }>,
 ) => {
   const targetsBeforeInsert = await getExistingTargets(tx, targetsToInsert);
 
@@ -66,9 +66,51 @@ export const upsertTargets = async (
     .values(targetsToInsert)
     .onConflictDoUpdate({
       target: [target.identifier, target.workspaceId],
-      set: buildConflictUpdateColumns(target, ["labels"]),
+      set: buildConflictUpdateColumns(target, ["name", "version", "kind"]),
     })
     .returning();
+
+  const targetLabelValues = targetsToInsert.flatMap((targetToInsert) => {
+    const { identifier, workspaceId, labels } = targetToInsert;
+    const targetId = targets.find(
+      (t) => t.identifier === identifier && t.workspaceId === workspaceId,
+    )?.id;
+
+    if (targetId == null) return [];
+
+    return Object.entries(labels).map(([label, value]) => ({
+      targetId,
+      label,
+      value,
+    }));
+  });
+
+  const existingTargetLabels = await tx
+    .select()
+    .from(targetLabel)
+    .where(
+      inArray(
+        targetLabel.targetId,
+        targets.map((t) => t.id),
+      ),
+    );
+
+  const labelsToDelete = existingTargetLabels.filter(
+    (label) =>
+      !targetLabelValues.some(
+        (newLabel) =>
+          newLabel.targetId === label.targetId &&
+          newLabel.label === label.label,
+      ),
+  );
+
+  await tx.insert(targetLabel).values(targetLabelValues);
+  await tx.delete(targetLabel).where(
+    inArray(
+      targetLabel.id,
+      labelsToDelete.map((l) => l.id),
+    ),
+  );
 
   const newTargets = targets.filter(
     (t) => !targetsBeforeInsert.some((et) => et.identifier === t.identifier),
