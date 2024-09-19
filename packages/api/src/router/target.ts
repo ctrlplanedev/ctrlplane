@@ -10,6 +10,7 @@ import {
   inArray,
   like,
   or,
+  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -30,11 +31,21 @@ import { targetProviderRouter } from "./target-provider";
 
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
-    .select()
+    .select({
+      target: target,
+      targetProvider: targetProvider,
+      workspace: workspace,
+      targetLabels: sql<
+        Record<string, string>
+      >`jsonb_object_agg(target_label.label,
+       target_label.value)`.as("target_labels"),
+    })
     .from(target)
     .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
     .innerJoin(workspace, eq(target.workspaceId, workspace.id))
+    .innerJoin(targetLabel, eq(targetLabel.targetId, target.id))
     .where(and(...checks))
+    .groupBy(target.id, targetProvider.id, workspace.id)
     .orderBy(asc(target.kind), asc(target.name));
 
 export const targetRouter = createTRPCRouter({
@@ -130,7 +141,11 @@ export const targetRouter = createTRPCRouter({
           .limit(input.limit)
           .offset(input.offset)
           .then((t) =>
-            t.map((a) => ({ ...a.target, provider: a.target_provider })),
+            t.map((a) => ({
+              ...a.target,
+              provider: a.targetProvider,
+              labels: a.targetLabels,
+            })),
           );
         const total = targetQuery(ctx.db, checks).then((t) => t.length);
 

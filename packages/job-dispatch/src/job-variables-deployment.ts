@@ -124,6 +124,7 @@ const determineReleaseVariableValue = async (
             .targetFilter,
         ),
       )
+      .limit(1)
       .then(takeFirstOrNull);
 
     if (filterMatch != null)
