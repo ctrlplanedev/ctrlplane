@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const workspace = pgTable("workspace", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   googleServiceAccountEmail: text("google_service_account_email"),
