@@ -4,16 +4,8 @@ import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, sql } from "@ctrlplane/db";
-import {
-  deployment,
-  job,
-  release,
-  releaseDependency,
-  releaseJobTrigger,
-  target,
-  targetLabelGroup,
-} from "@ctrlplane/db/schema";
+import { and, eq, inArray } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 
 export const isPassingReleaseDependencyPolicy = async (
   db: Tx,
@@ -23,19 +15,32 @@ export const isPassingReleaseDependencyPolicy = async (
 
   const jcs = await db
     .select()
-    .from(releaseJobTrigger)
-    .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .from(schema.releaseJobTrigger)
     .leftJoin(
-      releaseDependency,
-      eq(releaseDependency.releaseId, releaseJobTrigger.releaseId),
+      schema.target,
+      eq(schema.releaseJobTrigger.targetId, schema.target.id),
     )
     .leftJoin(
-      targetLabelGroup,
-      eq(releaseDependency.targetLabelGroupId, targetLabelGroup.id),
+      schema.targetLabel,
+      eq(schema.targetLabel.targetId, schema.target.id),
+    )
+    .leftJoin(
+      schema.releaseDependency,
+      eq(
+        schema.releaseDependency.releaseId,
+        schema.releaseJobTrigger.releaseId,
+      ),
+    )
+    .leftJoin(
+      schema.targetLabelGroup,
+      eq(
+        schema.releaseDependency.targetLabelGroupId,
+        schema.targetLabelGroup.id,
+      ),
     )
     .where(
       inArray(
-        releaseJobTrigger.id,
+        schema.releaseJobTrigger.id,
         releaseJobTriggers.map((jc) => jc.id),
       ),
     )
@@ -45,12 +50,24 @@ export const isPassingReleaseDependencyPolicy = async (
         .map((jc) => ({
           releaseJobTrigger: jc[0]!.release_job_trigger,
           target: jc[0]!.target,
-          releaseDependencies: jc
+          releaseDependencies: _.chain(jc)
+            .filter(
+              (v) =>
+                v.release_dependency != null && v.target_label_group != null,
+            )
+            .groupBy((v) => v.release_dependency!.id)
             .map((v) => ({
-              releaseDependency: v.release_dependency,
-              targetLabelGroup: v.target_label_group,
+              releaseDependency: v[0]!.release_dependency!,
+              targetLabelGroup: v[0]!.target_label_group!,
             }))
-            .filter((v) => v.releaseDependency != null),
+            .value(),
+          targetLabels: _.chain(jc)
+            .filter((v) => v.target_label != null)
+            .groupBy((v) => v.target_label!.id)
+            .map((v) => ({
+              ...v[0]!.target_label!,
+            }))
+            .value(),
         }))
         .value(),
     );
@@ -60,35 +77,43 @@ export const isPassingReleaseDependencyPolicy = async (
       if (jc.releaseDependencies.length === 0 || jc.target == null)
         return jc.releaseJobTrigger;
 
-      const t = jc.target;
+      const { targetLabels } = jc;
 
       const numDepsPassing = await Promise.all(
         jc.releaseDependencies.map(async (rd) => {
           const { releaseDependency: releaseDep, targetLabelGroup: tlg } = rd;
-          if (releaseDep == null || tlg == null) return true;
 
-          const targetLabelsForGroup = _.chain(t.labels).pick(tlg.keys).value();
+          const relevantTargetLabels = targetLabels.filter((tl) =>
+            tlg.keys.includes(tl.label),
+          );
 
           const dependentJobs = await db
             .select()
-            .from(job)
-            .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
-            .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
-            .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-            .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+            .from(schema.job)
+            .innerJoin(
+              schema.releaseJobTrigger,
+              eq(schema.job.id, schema.releaseJobTrigger.jobId),
+            )
+            .innerJoin(
+              schema.target,
+              eq(schema.releaseJobTrigger.targetId, schema.target.id),
+            )
+            .innerJoin(
+              schema.release,
+              eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+            )
+            .innerJoin(
+              schema.deployment,
+              eq(schema.release.deploymentId, schema.deployment.id),
+            )
             .where(
               and(
-                eq(job.status, "completed"),
-                eq(deployment.id, releaseDep.deploymentId),
-                sql.raw(
-                  `
-              "target"."labels" @> jsonb_build_object(${Object.entries(
-                targetLabelsForGroup,
-              )
-                .map(([k, v]) => `'${k}', '${v}'`)
-                .join(",")})
-              `,
-                ),
+                eq(schema.job.status, "completed"),
+                eq(schema.deployment.id, releaseDep.deploymentId),
+                schema.targetMatchsLabel(db, {
+                  operator: "and",
+                  conditions: relevantTargetLabels,
+                }),
               ),
             );
 
