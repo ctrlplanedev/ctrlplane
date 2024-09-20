@@ -71,7 +71,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."scope_type" AS ENUM('release', 'target', 'targetProvider', 'targetLabelGroup', 'workspace', 'environment', 'environmentPolicy', 'variableSet', 'system', 'deployment', 'jobAgent');
+ CREATE TYPE "public"."scope_type" AS ENUM('release', 'target', 'targetProvider', 'targetLabelGroup', 'workspace', 'environment', 'environmentPolicy', 'variableSet', 'system', 'deployment', 'jobAgent', 'runbook');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS "deployment_variable_value_target" (
 CREATE TABLE IF NOT EXISTS "deployment_variable_value_target_filter" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"variable_value_id" uuid NOT NULL,
-	"labels" jsonb NOT NULL
+	"target_filter" jsonb NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "deployment" (
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS "environment" (
 	"name" text NOT NULL,
 	"description" text DEFAULT '',
 	"policy_id" uuid,
-	"target_filter" jsonb DEFAULT '{}' NOT NULL,
+	"target_filter" jsonb DEFAULT NULL,
 	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
@@ -268,9 +268,15 @@ CREATE TABLE IF NOT EXISTS "target" (
 	"provider_id" uuid,
 	"workspace_id" uuid NOT NULL,
 	"config" jsonb DEFAULT '{}' NOT NULL,
-	"labels" jsonb DEFAULT '{}' NOT NULL,
 	"locked_at" timestamp with time zone,
 	"updated_at" timestamp with time zone
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "target_label" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"target_id" uuid NOT NULL,
+	"label" text NOT NULL,
+	"value" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "target_schema" (
@@ -419,6 +425,10 @@ CREATE TABLE IF NOT EXISTS "target_label_group" (
 	"keys" text[] NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "target_label_group_keys" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "runbook_variable" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"key" text NOT NULL,
@@ -448,7 +458,7 @@ CREATE TABLE IF NOT EXISTS "role" (
 CREATE TABLE IF NOT EXISTS "role_permission" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"role_id" uuid NOT NULL,
-	"permission" text
+	"permission" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "job_agent" (
@@ -652,7 +662,13 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "target" ADD CONSTRAINT "target_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE no action ON UPDATE no action;
+ ALTER TABLE "target" ADD CONSTRAINT "target_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "target_label" ADD CONSTRAINT "target_label_target_id_target_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."target"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -867,6 +883,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS "environment_policy_deployment_policy_id_envir
 CREATE UNIQUE INDEX IF NOT EXISTS "unique_organization_repository_path" ON "github_config_file" USING btree ("organization_id","repository_name","path");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "unique_installation_workspace" ON "github_organization" USING btree ("installation_id","workspace_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "target_identifier_workspace_id_index" ON "target" USING btree ("identifier","workspace_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "target_label_label_target_id_index" ON "target_label" USING btree ("label","target_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "target_schema_version_kind_workspace_id_index" ON "target_schema" USING btree ("version","kind","workspace_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "target_provider_workspace_id_name_index" ON "target_provider" USING btree ("workspace_id","name");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "release_deployment_id_version_index" ON "release" USING btree ("deployment_id","version");--> statement-breakpoint

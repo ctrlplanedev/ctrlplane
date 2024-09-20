@@ -14,7 +14,9 @@ import { getUser } from "~/app/api/v1/auth";
 
 const bodySchema = z.object({
   targets: z.array(
-    createTarget.omit({ lockedAt: true, providerId: true, workspaceId: true }),
+    createTarget
+      .omit({ lockedAt: true, providerId: true, workspaceId: true })
+      .extend({ labels: z.record(z.string()).optional() }),
   ),
 });
 

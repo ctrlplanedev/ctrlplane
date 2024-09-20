@@ -1,3 +1,4 @@
+import type { LabelCondition } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -56,7 +57,7 @@ export const deploymentVariableValueTargetFilter = pgTable(
     variableValueId: uuid("variable_value_id")
       .notNull()
       .references(() => deploymentVariableValue.id, { onDelete: "cascade" }),
-    labels: jsonb("labels").notNull().$type<Record<string, string>>(),
+    targetFilter: jsonb("target_filter").$type<LabelCondition>().notNull(),
   },
 );
 export type DeploymentVariableValueTargetFilter = InferInsertModel<

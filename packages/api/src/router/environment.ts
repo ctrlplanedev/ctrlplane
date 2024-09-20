@@ -5,7 +5,6 @@ import { z } from "zod";
 
 import {
   and,
-  arrayContains,
   eq,
   isNull,
   not,
@@ -27,7 +26,7 @@ import {
   setPolicyReleaseWindow,
   system,
   target,
-  targetProvider,
+  targetMatchsLabel,
   updateEnvironment,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
@@ -370,74 +369,11 @@ export const createEnv = async (
   db: Tx,
   input: z.infer<typeof createEnvironment>,
 ) => {
-  const env = await db
-    .insert(environment)
-    .values(input)
-    .returning()
-    .then(takeFirst);
-
-  return db
-    .update(environment)
-    .set({ targetFilter: { "environment-id": env.id } })
-    .where(eq(environment.id, env.id))
-    .returning()
-    .then(takeFirst);
+  return db.insert(environment).values(input).returning().then(takeFirst);
 };
-
-const tragetRouter = createTRPCRouter({
-  byEnvironmentId: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.TargetList)
-          .on({ type: "environment", id: input }),
-    })
-    .input(z.string())
-    .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(environment)
-        .innerJoin(
-          target,
-          arrayContains(target.labels, environment.targetFilter),
-        )
-        .leftJoin(targetProvider, eq(targetProvider.id, target.providerId))
-        .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
-        .then((d) =>
-          d.map((d) => ({ ...d.target, provider: d.target_provider })),
-        ),
-    ),
-
-  byFilter: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.TargetList)
-          .on({ type: "workspace", id: input.workspaceId }),
-    })
-    .input(
-      z.object({
-        workspaceId: z.string().uuid(),
-        labels: z.record(z.string()),
-      }),
-    )
-    .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(target)
-        .where(
-          and(
-            arrayContains(target.labels, input.labels),
-            eq(target.workspaceId, input.workspaceId),
-          ),
-        ),
-    ),
-});
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
-
-  target: tragetRouter,
 
   deploy: protectedProcedure
     .meta({
@@ -531,24 +467,23 @@ export const environmentRouter = createTRPCRouter({
         .select()
         .from(environment)
         .innerJoin(system, eq(system.id, environment.systemId))
-        .leftJoin(
-          target,
-          and(
-            arrayContains(target.labels, environment.targetFilter),
-            eq(target.workspaceId, system.workspaceId),
-          ),
-        )
         .where(
           and(eq(environment.systemId, input), isNull(environment.deletedAt)),
         );
 
-      return _.chain(envs)
-        .groupBy((d) => d.environment.id)
-        .map((envs) => ({
-          ...envs.at(0)!.environment,
-          targets: envs.map((e) => e.target).filter(isPresent),
-        }))
-        .value();
+      return await Promise.all(
+        envs.map(async (e) => ({
+          ...e.environment,
+          system: e.system,
+          targets:
+            e.environment.targetFilter != null
+              ? await ctx.db
+                  .select()
+                  .from(target)
+                  .where(targetMatchsLabel(ctx.db, e.environment.targetFilter))
+              : [],
+        })),
+      );
     }),
 
   create: protectedProcedure
@@ -595,16 +530,18 @@ export const environmentRouter = createTRPCRouter({
         );
 
         if (hasTargetFiltersChanged) {
+          const oldQuery = targetMatchsLabel(
+            ctx.db,
+            oldEnv.environment.targetFilter,
+          );
           const newTargets = await ctx.db
             .select({ id: target.id })
             .from(target)
             .where(
               and(
                 eq(target.workspaceId, oldEnv.system.workspaceId),
-                arrayContains(target.labels, targetFilter),
-                not(
-                  arrayContains(target.labels, oldEnv.environment.targetFilter),
-                ),
+                targetMatchsLabel(ctx.db, targetFilter),
+                oldQuery && not(oldQuery),
               ),
             );
 

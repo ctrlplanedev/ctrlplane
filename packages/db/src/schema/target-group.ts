@@ -13,4 +13,8 @@ export const targetLabelGroup = pgTable("target_label_group", {
   keys: text("keys").array().notNull(),
 });
 
+export const targetLabelGroupKeys = pgTable("target_label_group_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+});
+
 export type TargetLabelGroup = InferSelectModel<typeof targetLabelGroup>;
