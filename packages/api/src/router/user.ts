@@ -8,19 +8,16 @@ import { createUser, scopeType, user, userApiKey } from "@ctrlplane/db/schema";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const profileRouter = createTRPCRouter({
-  update: protectedProcedure.input(createUser).mutation(({ ctx, input }) =>
-    ctx.db
-      .update(user)
-      .set({
-        ...(input.activeWorkspaceId && {
-          activeWorkspaceId: input.activeWorkspaceId,
-        }),
-        ...(input.username && { username: input.username }),
-      })
-      .where(eq(user.id, ctx.session.user.id))
-      .returning()
-      .then(takeFirst),
-  ),
+  update: protectedProcedure
+    .input(createUser)
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .update(user)
+        .set(createUser.parse(input))
+        .where(eq(user.id, ctx.session.user.id))
+        .returning()
+        .then(takeFirst),
+    ),
 });
 
 export const userRouter = createTRPCRouter({
