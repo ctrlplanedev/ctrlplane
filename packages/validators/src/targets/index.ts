@@ -60,6 +60,10 @@ export type MetadataCondition =
   | RegexCondition
   | EqualCondition;
 
-export enum SpecialMetadataKey {
-  CtrlplaneLinks = "ctrlplane/links",
+export enum ReservedMetadataKey {
+  ExternalId = "ctrlplane/external-id",
+  Links = "ctrlplane/links",
+  ParentTargetIdentifier = "ctrlplane/parent-target-identifier",
+  KubernetesVersion = "kubernetes/version",
+  KubernetesFlavor = "kubernetes/flavor",
 }
