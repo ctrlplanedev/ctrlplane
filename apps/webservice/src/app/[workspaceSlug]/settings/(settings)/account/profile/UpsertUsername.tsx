@@ -15,7 +15,7 @@ export const UpsertUsername: React.FC<{
 }> = ({ user, className }) => {
   const [username, setUsername] = useState(user.username);
   const [cachedUsername, setCachedUsername] = useState(user.username);
-  const updateProfile = api.profile.update.useMutation();
+  const update = api.profile.update.useMutation();
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     setCachedUsername(e.target.value);
