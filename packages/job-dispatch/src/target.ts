@@ -101,7 +101,6 @@ export const upsertTargets = async (
 
   const targetMetadataValues = targetsToInsert.flatMap((targetToInsert) => {
     const { identifier, workspaceId, metadata = [] } = targetToInsert;
-    console.log(`>>> metadata for ${identifier}`, metadata);
     const targetId = targets.find(
       (t) => t.identifier === identifier && t.workspaceId === workspaceId,
     )?.id;

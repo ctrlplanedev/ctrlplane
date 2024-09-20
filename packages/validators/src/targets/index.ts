@@ -59,3 +59,7 @@ export type MetadataCondition =
   | LikeCondition
   | RegexCondition
   | EqualCondition;
+
+export enum SpecialMetadataKey {
+  CtrlplaneLinks = "ctrlplane/links",
+}

@@ -40,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
+import { SpecialMetadataKey } from "@ctrlplane/validators/targets";
 
 import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
@@ -64,13 +65,11 @@ const TargetGeneral: React.FC<
   const { search, setSearch, result } = useMatchSorterWithSearch(metadata, {
     keys: ["0", "1"],
   });
-  const link = target.metadata["ctrlplane/link"];
   const links =
-    target.metadata["ctrlplane/links"] != null
-      ? (JSON.parse(target.metadata["ctrlplane/links"]) as Record<
-          string,
-          string
-        >)
+    target.metadata[SpecialMetadataKey.CtrlplaneLinks] != null
+      ? (JSON.parse(
+          target.metadata[SpecialMetadataKey.CtrlplaneLinks],
+        ) as Record<string, string>)
       : null;
   return (
     <div className="space-y-4 text-sm">
@@ -135,32 +134,22 @@ const TargetGeneral: React.FC<
                 Links
               </td>
               <td>
-                {link == null && links == null ? (
+                {links == null ? (
                   <span className="cursor-help italic text-gray-500">
                     Not set
                   </span>
                 ) : (
                   <>
-                    {link != null && (
+                    {Object.entries(links).map(([name, url]) => (
                       <a
-                        href={link}
-                        className="inline-block w-full overflow-hidden text-ellipsis text-nowrap hover:text-blue-400"
+                        key={name}
+                        referrerPolicy="no-referrer"
+                        href={url}
+                        className="inline-block w-full overflow-hidden text-ellipsis text-nowrap text-blue-300 hover:text-blue-400"
                       >
-                        {link}
+                        {name}
                       </a>
-                    )}
-
-                    {links != null &&
-                      Object.entries(links).map(([name, url]) => (
-                        <a
-                          key={name}
-                          referrerPolicy="no-referrer"
-                          href={url}
-                          className="inline-block w-full overflow-hidden text-ellipsis text-nowrap text-blue-300 hover:text-blue-400"
-                        >
-                          {name}
-                        </a>
-                      ))}
+                    ))}
                   </>
                 )}
               </td>
