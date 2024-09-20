@@ -9,7 +9,6 @@ import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/server";
 import { GithubRedirectButton } from "./GithubRedirectButton";
-import { UpsertUsername } from "./UpsertUsername";
 
 const defaultAvatar = "/apple-touch-icon.png";
 
@@ -55,22 +54,10 @@ export default async function AccountSettingProfilePage() {
                 <Input readOnly value={email} className="w-64" />
               </div>
             </li>
-            <li className="border-b pb-6">
+            <li className="pb-6">
               <div className="flex flex-col justify-between lg:flex-row lg:items-center lg:space-x-8">
                 <Label>Full name</Label>
                 <Input readOnly value={name ?? ""} className="w-64" />
-              </div>
-            </li>
-            <li className="pb-6">
-              <div className="flex flex-col justify-between lg:flex-row lg:items-center lg:space-x-8">
-                <span>
-                  <Label>Username</Label>
-                  <p className="text-sm text-gray-400 md:w-64">
-                    Nickname or first name, however you want to be called in
-                    Ctrlplane
-                  </p>
-                </span>
-                <UpsertUsername user={user} className="w-64" />
               </div>
             </li>
           </section>

@@ -18,7 +18,6 @@ import { workspace } from "./workspace.js";
 export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
-  username: varchar("username", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
   emailVerified: timestamp("emailVerified", { withTimezone: true }),
   image: varchar("image", { length: 255 }),
@@ -31,7 +30,6 @@ export type User = InferSelectModel<typeof user>;
 
 export const createUser = createInsertSchema(user, {
   name: z.string().min(1).max(255),
-  username: z.string().min(1).max(255),
   email: z.string().email(),
   activeWorkspaceId: z.string().uuid().optional(),
 }).omit({ id: true });
