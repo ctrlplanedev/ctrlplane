@@ -21,9 +21,9 @@ export const RelationshipsContent: React.FC<{
   });
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <div className="text-sm">Children</div>
-        <Card>
+      <div className="space-y-2 text-sm">
+        <div>Children</div>
+        <Card className="px-3 py-2">
           {childrenTargets.data?.items.map((t) => (
             <div key={t.id}>
               {t.name} {t.kind}

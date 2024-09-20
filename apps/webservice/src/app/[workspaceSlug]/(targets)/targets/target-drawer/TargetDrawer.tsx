@@ -9,13 +9,12 @@ import {
   TbLock,
   TbLockOpen,
   TbPackage,
-  TbTag,
   TbTopologyStar3,
   TbVariable,
 } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
@@ -56,49 +55,60 @@ export const TargetDrawer: React.FC<{
         showBar={false}
         className="left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none"
       >
-        {target != null && (
-          <>
-            <div className="border-b p-6">
-              <div className="flex items-center">
-                <DrawerTitle className="flex-grow">{target.name}</DrawerTitle>
-                <Button
-                  variant="outline"
-                  className="gap-1"
-                  onClick={() =>
-                    (target.lockedAt != null ? unlockTarget : lockTarget)
-                      .mutateAsync(target.id)
-                      .then(() => utils.target.byId.invalidate(targetId))
-                  }
-                >
-                  {target.lockedAt != null ? (
-                    <>
-                      <TbLockOpen /> Unlocked
-                    </>
-                  ) : (
-                    <>
-                      <TbLock /> Lock
-                    </>
-                  )}
-                </Button>
-              </div>
+        <div className="border-b p-6">
+          <div className="flex items-center ">
+            <DrawerTitle className="flex-grow">{target?.name}</DrawerTitle>
+          </div>
+          {target != null && (
+            <div className="mt-3 flex flex-wrap gap-2">
               {links != null && (
-                <div className="mt-2 flex flex-wrap gap-2">
+                <>
                   {Object.entries(links).map(([label, url]) => (
                     <Link
                       key={label}
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-1 text-sm text-muted-foreground hover:bg-neutral-700 hover:text-white"
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "sm",
+                        className: "gap-1",
+                      })}
+                      // className="flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-1 text-sm text-muted-foreground hover:bg-neutral-700 hover:text-white"
                     >
-                      <TbExternalLink className="h-4 w-4" />
+                      <TbExternalLink />
                       {label}
                     </Link>
                   ))}
-                </div>
+                </>
               )}
-            </div>
 
+              <Button
+                variant="outline"
+                className="gap-1"
+                size="sm"
+                onClick={() =>
+                  (target.lockedAt != null ? unlockTarget : lockTarget)
+                    .mutateAsync(target.id)
+                    .then(() => utils.target.byId.invalidate(targetId))
+                }
+              >
+                {target.lockedAt != null ? (
+                  <>
+                    <TbLockOpen /> Unlocked
+                  </>
+                ) : (
+                  <>
+                    <TbLock /> Lock
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {target != null && (
+          <>
             <div className="flex w-full gap-6 p-6">
               <div className="space-y-1">
                 <Button
@@ -152,19 +162,6 @@ export const TargetDrawer: React.FC<{
                 >
                   <TbVariable className="h-4 w-4" />
                   Variables
-                </Button>
-                <Button
-                  onClick={() => setActiveTab("metadata")}
-                  variant="ghost"
-                  className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0  pr-4",
-                    activeTab === "metadata"
-                      ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <TbTag className="h-4 w-4" />
-                  Metadata
                 </Button>
                 <Button
                   onClick={() => setActiveTab("relationships")}
