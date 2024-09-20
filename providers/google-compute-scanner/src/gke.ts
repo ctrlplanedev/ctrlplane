@@ -88,7 +88,7 @@ export const getKubernetesClusters = async (): Promise<
 
           "google/self-link": cluster.selfLink,
           "google/location": cluster.location,
-          "google/autopilot": cluster.autopilot?.enabled,
+          "google/autopilot": String(cluster.autopilot?.enabled ?? false),
 
           "kubernetes/status": cluster.status,
           "kubernetes/node-count": String(cluster.currentNodeCount ?? 0),

@@ -119,11 +119,11 @@ export const clusterToTarget = (
       "google/self-link": cluster.selfLink,
       "google/project": project,
       "google/location": cluster.location,
-      "google/autopilot": cluster.autopilot?.enabled,
+      "google/autopilot": String(cluster.autopilot?.enabled ?? false),
 
       [ReservedMetadataKey.KubernetesFlavor]: "gke",
       [ReservedMetadataKey.KubernetesVersion]:
-        masterVersion.version.split("-")[0],
+        masterVersion.version.split("-")[0] ?? "",
 
       "kubernetes/status": cluster.status,
       "kubernetes/node-count": String(cluster.currentNodeCount ?? "unknown"),
