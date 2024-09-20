@@ -72,91 +72,120 @@ export const OverviewContent: React.FC<{
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="text-sm">Properties</div>
-        <table
-          width="100%"
-          className="text-xs"
-          style={{ tableLayout: "fixed" }}
-        >
-          <tbody>
-            <tr>
-              <td className="w-[130px] p-1 pr-2 text-muted-foreground">
-                Identifier
-              </td>
-              <td>{target.identifier}</td>
-            </tr>
-            <tr>
-              <td className="w-[130px] p-1 pr-2 text-muted-foreground">Name</td>
-              <td>{target.name}</td>
-            </tr>
-            <tr>
-              <td className="p-1 pr-2 text-muted-foreground">Version</td>
-              <td>{target.version}</td>
-            </tr>
-            <tr>
-              <td className="p-1 pr-2 text-muted-foreground">Kind</td>
-              <td>{target.kind}</td>
-            </tr>
-            <tr>
-              <td className="p-1 pr-2 text-muted-foreground">
-                Target Provider
-              </td>
-              <td>
-                {target.provider != null ? (
-                  target.provider.name
-                ) : (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <table
+              width="100%"
+              className="text-xs"
+              style={{ tableLayout: "fixed" }}
+            >
+              <tbody>
+                <tr>
+                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
+                    Identifier
+                  </td>
+                  <td>{target.identifier}</td>
+                </tr>
+                <tr>
+                  <td className="p-1 pr-2 text-muted-foreground">Name</td>
+                  <td>{target.name}</td>
+                </tr>
+                <tr>
+                  <td className="p-1 pr-2 text-muted-foreground">Version</td>
+                  <td>{target.version}</td>
+                </tr>
+                <tr>
+                  <td className="p-1 pr-2 text-muted-foreground">Kind</td>
+                  <td>{target.kind}</td>
+                </tr>
+                <tr>
+                  <td className="p-1 pr-2 text-muted-foreground">
+                    Target Provider
+                  </td>
+                  <td>
+                    {target.provider != null ? (
+                      target.provider.name
+                    ) : (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="cursor-help italic text-gray-500">
+                              Not set
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p className="max-w-[250px]">
+                              The next target provider to insert a target with
+                              the same identifier will become the owner of this
+                              target.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="p-1 pr-2 text-muted-foreground">Last Sync</td>
+                  <td>
+                    {target.updatedAt &&
+                      format(target.updatedAt, "MM/dd/yyyy mm:hh:ss")}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-1 pr-2 align-top text-muted-foreground">
+                    Links
+                  </td>
+                  <td>
+                    {links == null ? (
+                      <span className="cursor-help italic text-gray-500">
+                        Not set
+                      </span>
+                    ) : (
+                      <>
+                        {Object.entries(links).map(([name, url]) => (
+                          <a
+                            key={name}
+                            referrerPolicy="no-referrer"
+                            href={url}
+                            className="inline-block w-full overflow-hidden text-ellipsis text-nowrap text-blue-300 hover:text-blue-400"
+                          >
+                            {name}
+                          </a>
+                        ))}
+                      </>
+                    )}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <table
+              width="100%"
+              className="text-xs"
+              style={{ tableLayout: "fixed" }}
+            >
+              <tbody>
+                <tr>
+                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
+                    External ID
+                  </td>
+                  <td>
+                    <div className="overflow-hidden text-ellipsis whitespace-nowrap">
+                      {target.metadata[ReservedMetadataKey.ExternalId] ?? (
                         <span className="cursor-help italic text-gray-500">
                           Not set
                         </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-[250px]">
-                          The next target provider to insert a target with the
-                          same identifier will become the owner of this target.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </td>
-            </tr>
-
-            <tr>
-              <td className="p-1 pr-2 text-muted-foreground">Last Sync</td>
-              <td>
-                {target.updatedAt &&
-                  format(target.updatedAt, "MM/dd/yyyy mm:hh:ss")}
-              </td>
-            </tr>
-            <tr>
-              <td className="p-1 pr-2 align-top text-muted-foreground">
-                Links
-              </td>
-              <td>
-                {links == null ? (
-                  <span className="cursor-help italic text-gray-500">
-                    Not set
-                  </span>
-                ) : (
-                  <>
-                    {Object.entries(links).map(([name, url]) => (
-                      <a
-                        key={name}
-                        referrerPolicy="no-referrer"
-                        href={url}
-                        className="inline-block w-full overflow-hidden text-ellipsis text-nowrap text-blue-300 hover:text-blue-400"
-                      >
-                        {name}
-                      </a>
-                    ))}
-                  </>
-                )}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <div>

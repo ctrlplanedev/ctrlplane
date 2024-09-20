@@ -20,8 +20,31 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { DeploymentsContent } from "./DeploymentContent";
+import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
 import { RelationshipsContent } from "./RelationshipContent";
+import { VariableContent } from "./VariablesContent";
+
+const TabButton: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}> = ({ active, onClick, icon, label }) => (
+  <Button
+    onClick={onClick}
+    variant="ghost"
+    className={cn(
+      "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
+      active
+        ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
+        : "text-muted-foreground",
+    )}
+  >
+    {icon}
+    {label}
+  </Button>
+);
 
 export const TargetDrawer: React.FC<{
   isOpen: boolean;
@@ -74,7 +97,6 @@ export const TargetDrawer: React.FC<{
                         size: "sm",
                         className: "gap-1",
                       })}
-                      // className="flex items-center gap-1 rounded-md bg-neutral-800 px-2 py-1 text-sm text-muted-foreground hover:bg-neutral-700 hover:text-white"
                     >
                       <TbExternalLink />
                       {label}
@@ -111,74 +133,39 @@ export const TargetDrawer: React.FC<{
           <>
             <div className="flex w-full gap-6 p-6">
               <div className="space-y-1">
-                <Button
+                <TabButton
+                  active={activeTab === "overview"}
                   onClick={() => setActiveTab("overview")}
-                  variant="ghost"
-                  className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
-                    activeTab === "overview"
-                      ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <TbInfoCircle className="h-4 w-4" />
-                  Overview
-                </Button>
-                <Button
+                  icon={<TbInfoCircle className="h-4 w-4" />}
+                  label="Overview"
+                />
+                <TabButton
+                  active={activeTab === "deployments"}
                   onClick={() => setActiveTab("deployments")}
-                  variant="ghost"
-                  className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
-                    activeTab === "deployments"
-                      ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <TbPackage className="h-4 w-4" />
-                  Deployments
-                </Button>
-                <Button
+                  icon={<TbPackage className="h-4 w-4" />}
+                  label="Deployments"
+                />
+                <TabButton
+                  active={activeTab === "jobs"}
                   onClick={() => setActiveTab("jobs")}
-                  variant="ghost"
-                  className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
-                    activeTab === "jobs"
-                      ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <TbHistory className="h-4 w-4" />
-                  Job History
-                </Button>
-                <Button
+                  icon={<TbHistory className="h-4 w-4" />}
+                  label="Job History"
+                />
+                <TabButton
+                  active={activeTab === "variables"}
                   onClick={() => setActiveTab("variables")}
-                  variant="ghost"
-                  className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
-                    activeTab === "variables"
-                      ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <TbVariable className="h-4 w-4" />
-                  Variables
-                </Button>
-                <Button
+                  icon={<TbVariable className="h-4 w-4" />}
+                  label="Variables"
+                />
+                <TabButton
+                  active={activeTab === "relationships"}
                   onClick={() => setActiveTab("relationships")}
-                  variant="ghost"
-                  className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-4",
-                    activeTab === "relationships"
-                      ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <TbTopologyStar3 className="h-4 w-4" />
-                  Relationships
-                </Button>
+                  icon={<TbTopologyStar3 className="h-4 w-4" />}
+                  label="Relationships"
+                />
               </div>
               <div className="w-full overflow-auto">
-                {activeTab === "deployment" && (
+                {activeTab === "deployments" && (
                   <DeploymentsContent targetId={target.id} />
                 )}
                 {activeTab === "overview" && (
@@ -186,6 +173,10 @@ export const TargetDrawer: React.FC<{
                 )}
                 {activeTab === "relationships" && (
                   <RelationshipsContent target={target} />
+                )}
+                {activeTab === "jobs" && <JobsContent targetId={target.id} />}
+                {activeTab === "variables" && (
+                  <VariableContent targetId={target.id} />
                 )}
               </div>
             </div>
