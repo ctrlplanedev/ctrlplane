@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "react-icons/si";
 
 import { auth } from "@ctrlplane/auth";
@@ -12,13 +12,20 @@ import { GithubRedirectButton } from "./GithubRedirectButton";
 
 const defaultAvatar = "/apple-touch-icon.png";
 
-export default async function AccountSettingProfilePage() {
+export default async function AccountSettingProfilePage({
+  params,
+}: {
+  params: { workspaceSlug: string };
+}) {
+  const { workspaceSlug } = params;
   const session = await auth();
   if (session == null) redirect("/login");
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) return notFound();
+
   const user = await api.user.viewer();
-  const { activeWorkspaceId, image, name, email } = user;
+  const { image, name, email } = user;
   const githubUser = await api.github.user.byUserId(session.user.id);
-  const workspace = await api.workspace.byId(activeWorkspaceId ?? "");
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
       <div className="container mx-auto max-w-2xl space-y-8 py-8">
@@ -83,7 +90,7 @@ export default async function AccountSettingProfilePage() {
                   variant="secondary"
                   className="w-32"
                   githubUserId={githubUser?.userId ?? ""}
-                  workspace={workspace ?? null}
+                  workspace={workspace}
                 />
               </div>
             </li>

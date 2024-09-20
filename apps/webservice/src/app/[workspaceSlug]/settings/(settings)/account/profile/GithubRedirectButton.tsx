@@ -9,7 +9,7 @@ export const GithubRedirectButton: React.FC<{
   variant?: React.ComponentProps<typeof Button>["variant"];
   className?: string;
   githubUserId: string;
-  workspace: Workspace | null;
+  workspace: Workspace;
 }> = ({ variant, className, githubUserId, workspace }) => {
   const router = useRouter();
 
@@ -18,7 +18,6 @@ export const GithubRedirectButton: React.FC<{
       variant={variant}
       className={className}
       onClick={() =>
-        workspace !== null &&
         router.push(`/${workspace.slug}/settings/workspace/integrations/github`)
       }
     >
