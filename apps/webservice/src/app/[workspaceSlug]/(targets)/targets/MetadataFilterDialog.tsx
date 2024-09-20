@@ -60,7 +60,7 @@ export const MetadataFilterDialog: React.FC<{
       operator: "and" as const,
       targetFilter: (filter?.conditions as
         | (LikeCondition | RegexCondition | EqualCondition)[]
-        | undefined) ?? [{ key: "", value: "", operator: "equals" as const }],
+        | undefined) ?? [{ key: "", value: "", operator: "equals" }],
     },
   });
 
@@ -70,11 +70,10 @@ export const MetadataFilterDialog: React.FC<{
   });
 
   const onSubmit = form.handleSubmit((values) => {
-    const cond: ComparisonCondition = {
+    const cond = {
       operator: values.operator,
       conditions: values.targetFilter,
     };
-
     onChange?.({ key: "metadata", value: cond });
     setOpen(false);
   });
