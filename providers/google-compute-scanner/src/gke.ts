@@ -8,7 +8,10 @@ import _ from "lodash";
 import { SemVer } from "semver";
 
 import { logger } from "@ctrlplane/logger";
-import { kubernetesNamespaceV1 } from "@ctrlplane/validators/targets";
+import {
+  kubernetesNamespaceV1,
+  ReservedMetadataKey,
+} from "@ctrlplane/validators/targets";
 
 import { env } from "./config.js";
 import { connectToCluster } from "./gke-connect.js";
@@ -75,11 +78,17 @@ export const getKubernetesClusters = async (): Promise<
           },
         },
         metadata: omitNullUndefined({
-          "ctrlplane/links": JSON.stringify({ "Google Console": appUrl }),
-          "ctrlplane/external-id": cluster.id ?? "",
+          [ReservedMetadataKey.Links]: JSON.stringify({
+            "Google Console": appUrl,
+          }),
+          [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
+          [ReservedMetadataKey.KubernetesFlavor]: "gke",
+          [ReservedMetadataKey.KubernetesVersion]:
+            masterVersion.version.split("-")[0],
 
-          "kubernetes/flavor": "gke",
-          "kubernetes/version": masterVersion.version,
+          "google/self-link": cluster.selfLink,
+          "google/location": cluster.location,
+          "google/autopilot": cluster.autopilot?.enabled,
 
           "kubernetes/status": cluster.status,
           "kubernetes/node-count": String(cluster.currentNodeCount ?? 0),
@@ -139,6 +148,7 @@ export const getKubernetesNamespace = async (
             metadata: {
               "ctrlplane/parent-target-identifier": target.identifier,
               "kubernetes/namespace": n.metadata!.name,
+              ...n.metadata?.labels,
             },
           }),
         ),

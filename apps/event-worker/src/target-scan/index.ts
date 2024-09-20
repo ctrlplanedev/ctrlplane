@@ -40,6 +40,7 @@ export const createTargetScanWorker = () =>
         .then(takeFirstOrNull);
 
       if (tp == null) {
+        logger.error(`Target provider with ID ${targetProviderId} not found.`);
         await removeTargetJob(job);
         return;
       }
@@ -50,12 +51,17 @@ export const createTargetScanWorker = () =>
 
       if (tp.target_provider_google != null) {
         logger.info("Found Google config, scanning for GKE targets");
-        const gkeTargets = await getGkeTargets(
-          tp.workspace,
-          tp.target_provider_google,
-        );
-
-        await upsertTargets(db, tp.target_provider.id, gkeTargets);
+        try {
+          const gkeTargets = await getGkeTargets(
+            tp.workspace,
+            tp.target_provider_google,
+          );
+          await upsertTargets(db, tp.target_provider.id, gkeTargets);
+        } catch (error: any) {
+          logger.error(`Error scanning GKE targets: ${error.message}`, {
+            error,
+          });
+        }
       }
     },
     {

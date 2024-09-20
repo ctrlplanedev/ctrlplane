@@ -8,6 +8,7 @@ import { CoreV1Api } from "@kubernetes/client-node";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
+import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import {
   clusterToTarget,
@@ -129,7 +130,7 @@ export const getGkeTargets = async (
                     namespace: n.metadata!.name,
                   },
                   metadata: {
-                    "ctrlplane/parent-target-identifier":
+                    [ReservedMetadataKey.ParentTargetIdentifier]:
                       clusterTarget.identifier,
                     ...n.metadata?.labels,
                     "kubernetes/namespace": n.metadata!.name ?? "",
@@ -148,5 +149,8 @@ export const getGkeTargets = async (
       }),
     )
   ).flat();
+  log.info(
+    `Found ${kubernetesApiTargets.length} API targets and ${kubernetesNamespaceTargets.length} Namespace targets.`,
+  );
   return [...kubernetesApiTargets, ...kubernetesNamespaceTargets];
 };

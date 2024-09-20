@@ -5,6 +5,8 @@ import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
+import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+
 import { omitNullUndefined } from "../utils.js";
 
 const sourceCredentials = new GoogleAuth({
@@ -111,16 +113,17 @@ export const clusterToTarget = (
       },
     },
     metadata: omitNullUndefined({
-      "ctrlplane/links": JSON.stringify({ "Google Console": appUrl }),
-      "ctrlplane/external-id": cluster.id ?? "",
+      [ReservedMetadataKey.Links]: JSON.stringify({ "Google Console": appUrl }),
+      [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
 
       "google/self-link": cluster.selfLink,
       "google/project": project,
       "google/location": cluster.location,
       "google/autopilot": cluster.autopilot?.enabled,
 
-      "kubernetes/flavor": "gke",
-      "kubernetes/version": masterVersion.version.split("-")[0],
+      [ReservedMetadataKey.KubernetesFlavor]: "gke",
+      [ReservedMetadataKey.KubernetesVersion]:
+        masterVersion.version.split("-")[0],
 
       "kubernetes/status": cluster.status,
       "kubernetes/node-count": String(cluster.currentNodeCount ?? "unknown"),
