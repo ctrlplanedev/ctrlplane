@@ -51,6 +51,10 @@ export async function scan() {
         metadata: {
           "terraform-cloud/organization": env.TFE_ORGANIZATION,
           "terraform-cloud/workspace-name": workspace.attributes.name,
+          "terraform-cloud/workspace-auto-apply": String(
+            workspace.attributes["auto-apply"] ?? false,
+          ),
+          "terraform/version": workspace.attributes["terraform-version"] ?? "",
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
