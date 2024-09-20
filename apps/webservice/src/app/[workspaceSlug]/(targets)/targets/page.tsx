@@ -25,7 +25,7 @@ import {
 } from "../../_components/filter/FilterDropdownItems";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
 import { MetadataFilterDialog } from "./MetadataFilterDialog";
-import { TargetDrawer } from "./TargetDrawer";
+import { TargetDrawer } from "./target-drawer/TargetDrawer";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
