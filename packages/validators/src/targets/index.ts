@@ -12,7 +12,7 @@ export type EqualCondition = z.infer<typeof equalsCondition>;
 
 export const regexCondition = z.object({
   key: z.string().min(1),
-  pattern: z.string().min(1),
+  value: z.string().min(1),
   operator: z.literal("regex"),
 });
 
@@ -20,7 +20,7 @@ export type RegexCondition = z.infer<typeof regexCondition>;
 
 export const likeCondition = z.object({
   key: z.string().min(1),
-  pattern: z.string().min(1),
+  value: z.string().min(1),
   operator: z.literal("like"),
 });
 

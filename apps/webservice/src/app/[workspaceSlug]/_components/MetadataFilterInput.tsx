@@ -1,21 +1,33 @@
 "use client";
 
+import type {
+  EqualCondition,
+  LikeCondition,
+  RegexCondition,
+} from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { TbX } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
 
 export const MetadataFilterInput: React.FC<{
   workspaceId?: string;
-  value: { key: string; value: string };
-  onChange: (value: { key: string; value: string }) => void;
+  value: EqualCondition | LikeCondition | RegexCondition;
+  onChange: (value: EqualCondition | LikeCondition | RegexCondition) => void;
   onRemove?: () => void;
-  numInputs: number;
+  numInputs?: number;
 }> = ({ workspaceId, value, onChange, onRemove, numInputs }) => {
   const [open, setOpen] = useState(false);
   const metadataKeys = api.target.metadataKeys.useQuery(workspaceId ?? "", {
@@ -27,46 +39,82 @@ export const MetadataFilterInput: React.FC<{
   );
   return (
     <div className="flex items-center gap-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          onClick={(e) => e.stopPropagation()}
-          className="flex-grow"
-        >
-          <Input
-            placeholder="Key"
-            value={value.key}
-            onChange={(e) => onChange({ ...value, key: e.target.value })}
-          />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="max-h-[300px] overflow-x-auto p-0 text-sm"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          {filteredMetadataKeys.map((k) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              key={k}
-              className="w-full rounded-none text-left"
-              onClick={(e) => {
-                e.preventDefault();
-                onChange({ ...value, key: k });
-              }}
+      <div className="grid grid-cols-8">
+        <div className="col-span-3">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+              onClick={(e) => e.stopPropagation()}
+              className="flex-grow rounded-r-none"
             >
-              <div className="w-full">{k}</div>
-            </Button>
-          ))}
-        </PopoverContent>
-      </Popover>
-      <div className="flex-grow">
-        <Input
-          placeholder="Value"
-          value={value.value}
-          onChange={(e) => onChange({ ...value, value: e.target.value })}
-        />
+              <Input
+                placeholder="Key"
+                value={value.key}
+                onChange={(e) =>
+                  onChange({
+                    ...value,
+                    key: e.target.value,
+                  })
+                }
+                className="rounded-r-none"
+              />
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="max-h-[300px] overflow-x-auto p-0 text-sm"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              {filteredMetadataKeys.map((k) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  key={k}
+                  className="w-full rounded-none text-left"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onChange({ ...value, key: k });
+                  }}
+                >
+                  <div className="w-full">{k}</div>
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="col-span-2">
+          <Select
+            value={value.operator}
+            onValueChange={(v: "equals" | "regex" | "like") =>
+              onChange({ ...value, operator: v })
+            }
+          >
+            <SelectTrigger className="rounded-none">
+              <SelectValue placeholder="Operator" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="equals">Equals</SelectItem>
+              <SelectItem value="regex">Regex</SelectItem>
+              <SelectItem value="like">Like</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="col-span-3">
+          <Input
+            placeholder={
+              value.operator === "regex"
+                ? "^[a-zA-Z]+$"
+                : value.operator === "like"
+                  ? "%value%"
+                  : "Value"
+            }
+            value={value.value}
+            onChange={(e) => onChange({ ...value, value: e.target.value })}
+            className="rounded-l-none"
+          />
+        </div>
       </div>
-      {numInputs > 1 && (
+
+      {(numInputs == null || numInputs > 1) && (
         <Button
           variant="ghost"
           size="icon"

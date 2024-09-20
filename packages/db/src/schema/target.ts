@@ -95,7 +95,7 @@ const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
           and(
             eq(targetMetadata.targetId, target.id),
             eq(targetMetadata.key, cond.key),
-            sql`${targetMetadata.value} ~ ${cond.pattern}`,
+            sql`${targetMetadata.value} ~ ${cond.value}`,
           ),
         ),
     );
@@ -109,7 +109,7 @@ const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
           and(
             eq(targetMetadata.targetId, target.id),
             eq(targetMetadata.key, cond.key),
-            like(targetMetadata.value, cond.pattern),
+            like(targetMetadata.value, cond.value),
           ),
         ),
     );

@@ -1,5 +1,4 @@
 import type { SQL, Tx } from "@ctrlplane/db";
-import type { EqualCondition } from "@ctrlplane/validators/targets";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -24,6 +23,7 @@ import {
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { comparisonCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { targetMetadataGroupRouter } from "./target-metadata-group";
@@ -96,6 +96,7 @@ export const targetRouter = createTRPCRouter({
               }),
             )
             .optional(),
+          metadataFilters: z.array(comparisonCondition).optional(),
           limit: z.number().default(500),
           offset: z.number().default(0),
         }),
@@ -109,23 +110,10 @@ export const targetRouter = createTRPCRouter({
         const kindFilters = (input.filters ?? [])
           .filter((f) => f.key === "kind")
           .map((f) => eq(target.kind, f.value));
-        const metadataFilters: EqualCondition[][] = (input.filters ?? [])
-          .filter((f) => f.key === "metadata")
-          .map((t) => Object.entries(t.value))
-          .map((t) =>
-            t.map(([key, value]) => ({ key, value: value as string })),
-          );
 
         const targetConditions = targetMatchesMetadata(ctx.db, {
-          operator: "or",
-          conditions: metadataFilters.map((metadataGroup) => ({
-            operator: "and",
-            conditions: metadataGroup.map(({ key, value }) => ({
-              key,
-              value,
-              operator: "equals",
-            })),
-          })),
+          operator: "and",
+          conditions: input.metadataFilters ?? [],
         });
 
         const checks = [

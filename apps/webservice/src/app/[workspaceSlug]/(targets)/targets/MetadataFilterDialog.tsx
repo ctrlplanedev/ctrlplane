@@ -1,3 +1,10 @@
+import type {
+  ComparisonCondition,
+  EqualCondition,
+  LikeCondition,
+  RegexCondition,
+} from "@ctrlplane/validators/targets";
+import { useState } from "react";
 import _ from "lodash";
 import { z } from "zod";
 
@@ -17,26 +24,43 @@ import {
   useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
+import {
+  equalsCondition,
+  likeCondition,
+  regexCondition,
+} from "@ctrlplane/validators/targets";
 
+import type { TargetFilter } from "./TargetFilter";
 import { MetadataFilterInput } from "../../_components/MetadataFilterInput";
 
 const metadataFilterForm = z.object({
+  operator: z.enum(["and", "or"]),
   targetFilter: z.array(
-    z.object({
-      key: z.string(),
-      value: z.string(),
-    }),
+    z.union([likeCondition, regexCondition, equalsCondition]),
   ),
 });
 
 export const MetadataFilterDialog: React.FC<{
   children: React.ReactNode;
-  onChange?: (key: string, value: Record<string, string>) => void;
-}> = ({ children, onChange }) => {
+  workspaceId: string;
+  onChange?: (filter: TargetFilter) => void;
+  filter?: ComparisonCondition;
+}> = ({ children, workspaceId, onChange, filter }) => {
+  const [open, setOpen] = useState(false);
   const form = useForm({
     schema: metadataFilterForm,
     defaultValues: {
-      targetFilter: [{ key: "", value: "" }],
+      operator: "and" as const,
+      targetFilter: (filter?.conditions as
+        | (LikeCondition | RegexCondition | EqualCondition)[]
+        | undefined) ?? [{ key: "", value: "", operator: "equals" as const }],
     },
   });
 
@@ -45,23 +69,49 @@ export const MetadataFilterDialog: React.FC<{
     name: "targetFilter",
   });
 
-  const onSubmit = form.handleSubmit((values) =>
-    onChange?.(
-      "metadata",
-      _.chain(values.targetFilter).keyBy("key").mapValues("value").value(),
-    ),
-  );
+  const onSubmit = form.handleSubmit((values) => {
+    const cond: ComparisonCondition = {
+      operator: values.operator,
+      conditions: values.targetFilter,
+    };
+
+    onChange?.({ key: "metadata", value: cond });
+    setOpen(false);
+  });
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
             <DialogTitle>Filter by metadata</DialogTitle>
 
-            {fields.map((_, index) => (
+            {fields.length > 1 && (
               <FormField
+                control={form.control}
+                name="operator"
+                render={({ field: { onChange, value } }) => (
+                  <FormItem className="w-24">
+                    <FormControl>
+                      <Select value={value} onValueChange={onChange}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="and">And</SelectItem>
+                          <SelectItem value="or">Or</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {fields.map((field, index) => (
+              <FormField
+                key={field.id}
                 control={form.control}
                 name={`targetFilter.${index}`}
                 render={({ field: { onChange, value } }) => (
@@ -69,6 +119,7 @@ export const MetadataFilterDialog: React.FC<{
                     <FormControl>
                       <MetadataFilterInput
                         value={value}
+                        workspaceId={workspaceId}
                         onChange={onChange}
                         onRemove={() => remove(index)}
                         numInputs={fields.length}
@@ -83,7 +134,7 @@ export const MetadataFilterDialog: React.FC<{
               variant="outline"
               size="sm"
               className="mt-4"
-              onClick={() => append({ key: "", value: "" })}
+              onClick={() => append({ key: "", value: "", operator: "equals" })}
             >
               Add Metadata Key
             </Button>
