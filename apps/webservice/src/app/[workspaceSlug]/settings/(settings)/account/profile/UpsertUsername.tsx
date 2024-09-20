@@ -9,13 +9,10 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
-export function UpsertUsername({
-  user,
-  className,
-}: {
+export const UpsertUsername: React.FC<{
   user: User;
   className?: string;
-}) {
+}> = ({ user, className }) => {
   const [username, setUsername] = useState(user.username);
   const [cachedUsername, setCachedUsername] = useState(user.username);
   const updateProfile = api.profile.update.useMutation();
@@ -44,4 +41,4 @@ export function UpsertUsername({
       onBlur={handleBlur}
     />
   );
-}
+};

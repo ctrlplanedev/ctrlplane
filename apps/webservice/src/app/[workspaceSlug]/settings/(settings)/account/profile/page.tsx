@@ -92,7 +92,7 @@ export default async function AccountSettingProfilePage() {
                   </p>
                 </span>
                 <GithubRedirectButton
-                  variant="outline"
+                  variant="secondary"
                   className="w-32"
                   githubUserId={githubUser?.userId ?? ""}
                 />
