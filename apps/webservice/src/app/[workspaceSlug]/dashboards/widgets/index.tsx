@@ -1,6 +1,6 @@
 import type { Widget } from "./spec";
 import { MOVE_BUTTON_CLASS_NAME } from "../DashboardGrid";
-import { WidgetTargetLabelCount } from "./TargetWidgets";
+import { WidgetTargetMetadataCount } from "./TargetWidgets";
 import { WidgetHeading } from "./TextHeading";
 
 export * from "./spec";
@@ -19,6 +19,6 @@ export const widgets: Record<string, Widget> = {
       );
     },
   },
-  "target-annotation-pie": WidgetTargetLabelCount,
+  "target-annotation-pie": WidgetTargetMetadataCount,
   heading: WidgetHeading,
 };

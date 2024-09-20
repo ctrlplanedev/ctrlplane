@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
 
-export const LabelFilterInput: React.FC<{
+export const MetadataFilterInput: React.FC<{
   workspaceId?: string;
   value: { key: string; value: string };
   onChange: (value: { key: string; value: string }) => void;
@@ -18,10 +18,13 @@ export const LabelFilterInput: React.FC<{
   numInputs: number;
 }> = ({ workspaceId, value, onChange, onRemove, numInputs }) => {
   const [open, setOpen] = useState(false);
-  const labelsKey = api.target.labelKeys.useQuery(workspaceId ?? "", {
+  const metadataKeys = api.target.metadataKeys.useQuery(workspaceId ?? "", {
     enabled: workspaceId != null,
   });
-  const filteredLabels = useMatchSorter(labelsKey.data ?? [], value.key);
+  const filteredMetadataKeys = useMatchSorter(
+    metadataKeys.data ?? [],
+    value.key,
+  );
   return (
     <div className="flex items-center gap-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -40,7 +43,7 @@ export const LabelFilterInput: React.FC<{
           className="max-h-[300px] overflow-x-auto p-0 text-sm"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {filteredLabels.map((k) => (
+          {filteredMetadataKeys.map((k) => (
             <Button
               variant="ghost"
               size="sm"

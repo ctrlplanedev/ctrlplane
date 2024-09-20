@@ -103,6 +103,8 @@ export const dispatchGithubJob = async (je: Job) => {
     return;
   }
 
+  console.log(`>>> runId: ${runId}, status: ${status}`);
+
   await db
     .update(job)
     .set({

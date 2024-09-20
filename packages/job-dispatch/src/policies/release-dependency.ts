@@ -21,8 +21,8 @@ export const isPassingReleaseDependencyPolicy = async (
       eq(schema.releaseJobTrigger.targetId, schema.target.id),
     )
     .leftJoin(
-      schema.targetLabel,
-      eq(schema.targetLabel.targetId, schema.target.id),
+      schema.targetMetadata,
+      eq(schema.targetMetadata.targetId, schema.target.id),
     )
     .leftJoin(
       schema.releaseDependency,
@@ -32,10 +32,10 @@ export const isPassingReleaseDependencyPolicy = async (
       ),
     )
     .leftJoin(
-      schema.targetLabelGroup,
+      schema.targetMetadataGroup,
       eq(
-        schema.releaseDependency.targetLabelGroupId,
-        schema.targetLabelGroup.id,
+        schema.releaseDependency.targetMetadataGroupId,
+        schema.targetMetadataGroup.id,
       ),
     )
     .where(
@@ -53,19 +53,19 @@ export const isPassingReleaseDependencyPolicy = async (
           releaseDependencies: _.chain(jc)
             .filter(
               (v) =>
-                v.release_dependency != null && v.target_label_group != null,
+                v.release_dependency != null && v.target_metadata_group != null,
             )
             .groupBy((v) => v.release_dependency!.id)
             .map((v) => ({
               releaseDependency: v[0]!.release_dependency!,
-              targetLabelGroup: v[0]!.target_label_group!,
+              targetMetadataGroup: v[0]!.target_metadata_group!,
             }))
             .value(),
-          targetLabels: _.chain(jc)
-            .filter((v) => v.target_label != null)
-            .groupBy((v) => v.target_label!.id)
+          targetMetadata: _.chain(jc)
+            .filter((v) => v.target_metadata != null)
+            .groupBy((v) => v.target_metadata!.id)
             .map((v) => ({
-              ...v[0]!.target_label!,
+              ...v[0]!.target_metadata!,
             }))
             .value(),
         }))
@@ -77,14 +77,15 @@ export const isPassingReleaseDependencyPolicy = async (
       if (jc.releaseDependencies.length === 0 || jc.target == null)
         return jc.releaseJobTrigger;
 
-      const { targetLabels } = jc;
+      const { targetMetadata } = jc;
 
       const numDepsPassing = await Promise.all(
         jc.releaseDependencies.map(async (rd) => {
-          const { releaseDependency: releaseDep, targetLabelGroup: tlg } = rd;
+          const { releaseDependency: releaseDep, targetMetadataGroup: tlg } =
+            rd;
 
-          const relevantTargetLabels = targetLabels.filter((tl) =>
-            tlg.keys.includes(tl.label),
+          const relevantTargetMetadata = targetMetadata.filter((tm) =>
+            tlg.keys.includes(tm.key),
           );
 
           const dependentJobs = await db
@@ -110,9 +111,9 @@ export const isPassingReleaseDependencyPolicy = async (
               and(
                 eq(schema.job.status, "completed"),
                 eq(schema.deployment.id, releaseDep.deploymentId),
-                schema.targetMatchsLabel(db, {
+                schema.targetMatchesMetadata(db, {
                   operator: "and",
-                  conditions: relevantTargetLabels,
+                  conditions: relevantTargetMetadata,
                 }),
               ),
             );

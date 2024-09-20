@@ -46,7 +46,7 @@ export const SidebarWorkspace: React.FC = () => {
             <SidebarLink href={`/${workspaceSlug}/target-providers`}>
               Providers
             </SidebarLink>
-            <SidebarLink href={`/${workspaceSlug}/target-label-groups`}>
+            <SidebarLink href={`/${workspaceSlug}/target-metadata-groups`}>
               Groups
             </SidebarLink>
           </div>

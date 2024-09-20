@@ -1,4 +1,4 @@
-import type { LabelCondition } from "@ctrlplane/validators/targets";
+import type { MetadataCondition } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, or, sql } from "drizzle-orm";
 import {
@@ -72,31 +72,30 @@ export const targetSchema = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
 
-export const targetLabel = pgTable(
-  "target_label",
+export const targetMetadata = pgTable(
+  "target_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
     targetId: uuid("target_id")
       .references(() => target.id, { onDelete: "cascade" })
       .notNull(),
-
-    label: text("label").notNull(),
+    key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.label, t.targetId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.targetId) }),
 );
 
-const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
+const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === "regex")
     return exists(
       tx
         .select()
-        .from(targetLabel)
+        .from(targetMetadata)
         .where(
           and(
-            eq(targetLabel.targetId, target.id),
-            eq(targetLabel.label, cond.label),
-            sql`${targetLabel.value} ~ ${cond.pattern}`,
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+            sql`${targetMetadata.value} ~ ${cond.pattern}`,
           ),
         ),
     );
@@ -105,12 +104,12 @@ const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
     return exists(
       tx
         .select()
-        .from(targetLabel)
+        .from(targetMetadata)
         .where(
           and(
-            eq(targetLabel.targetId, target.id),
-            eq(targetLabel.label, cond.label),
-            like(targetLabel.value, cond.pattern),
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+            like(targetMetadata.value, cond.pattern),
           ),
         ),
     );
@@ -124,24 +123,24 @@ const buildCondition = (tx: Tx, cond: LabelCondition): SQL => {
     return exists(
       tx
         .select()
-        .from(targetLabel)
+        .from(targetMetadata)
         .where(
           and(
-            eq(targetLabel.targetId, target.id),
-            eq(targetLabel.label, cond.label),
-            eq(targetLabel.value, cond.value),
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+            eq(targetMetadata.value, cond.value),
           ),
         ),
     );
 
-  throw Error("invalid label conditions");
+  throw Error("invalid metadata conditions");
 };
 
-export function targetMatchsLabel(
+export function targetMatchesMetadata(
   tx: Tx,
-  labels?: LabelCondition | null,
+  metadata?: MetadataCondition | null,
 ): SQL<unknown> | undefined {
-  return labels == null || Object.keys(labels).length === 0
+  return metadata == null || Object.keys(metadata).length === 0
     ? undefined
-    : buildCondition(tx, labels);
+    : buildCondition(tx, metadata);
 }

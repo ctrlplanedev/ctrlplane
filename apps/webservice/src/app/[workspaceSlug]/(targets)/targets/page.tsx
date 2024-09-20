@@ -51,23 +51,26 @@ import {
   ContentDialog,
 } from "../../_components/filter/FilterDropdownItems";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
-import { LabelFilterDialog } from "./LabelFilterDialog";
+import { MetadataFilterDialog } from "./MetadataFilterDialog";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
 const TargetGeneral: React.FC<
-  Target & { labels: Record<string, string>; provider: TargetProvider | null }
+  Target & { metadata: Record<string, string>; provider: TargetProvider | null }
 > = (target) => {
-  const labels = Object.entries(target.labels).sort(([keyA], [keyB]) =>
+  const metadata = Object.entries(target.metadata).sort(([keyA], [keyB]) =>
     keyA.localeCompare(keyB),
   );
-  const { search, setSearch, result } = useMatchSorterWithSearch(labels, {
+  const { search, setSearch, result } = useMatchSorterWithSearch(metadata, {
     keys: ["0", "1"],
   });
-  const link = target.labels["ctrlplane/url"];
+  const link = target.metadata["ctrlplane/url"];
   const links =
-    target.labels["ctrlplane/urls"] != null
-      ? (JSON.parse(target.labels["ctrlplane/urls"]) as Record<string, string>)
+    target.metadata["ctrlplane/urls"] != null
+      ? (JSON.parse(target.metadata["ctrlplane/urls"]) as Record<
+          string,
+          string
+        >)
       : null;
   return (
     <div className="space-y-4 text-sm">
@@ -167,7 +170,7 @@ const TargetGeneral: React.FC<
       </div>
 
       <div>
-        <div className="mb-2 text-sm">Labels</div>
+        <div className="mb-2 text-sm">Metadata</div>
         <div className="text-xs">
           <div>
             <Input
@@ -277,9 +280,9 @@ export default function TargetsPage({
 
   useEffect(() => {
     if (Object.keys(combination).length === 0) return;
-    const labelFilter = filters.find((f) => f.key === "labels");
-    if (!_.isEqual(labelFilter?.value, combination))
-      addFilters([{ key: "labels", value: combination }]);
+    const metadataFilter = filters.find((f) => f.key === "metadata");
+    if (!_.isEqual(metadataFilter?.value, combination))
+      addFilters([{ key: "metadata", value: combination }]);
     router.replace(`/${params.workspaceSlug}/targets`);
   }, [combination, filters, addFilters, router, params.workspaceSlug]);
 
@@ -327,7 +330,7 @@ export default function TargetsPage({
                   <span className="text-muted-foreground">
                     {f.key === "name" && "contains"}
                     {f.key === "kind" && "is"}
-                    {f.key === "labels" && "match"}
+                    {f.key === "metadata" && "matches"}
                   </span>
                   <span>
                     {typeof f.value === "string" ? (
@@ -335,7 +338,7 @@ export default function TargetsPage({
                     ) : (
                       <HoverCard>
                         <HoverCardTrigger>
-                          {Object.entries(f.value).length} label
+                          {Object.entries(f.value).length} key
                           {Object.entries(f.value).length > 1 ? "s" : ""}
                         </HoverCardTrigger>
                         <HoverCardContent className="p-2" align="start">
@@ -372,9 +375,9 @@ export default function TargetsPage({
                 <ComboboxFilter property="kind" options={kinds.data ?? []}>
                   <TbCategory /> Kind
                 </ComboboxFilter>
-                <LabelFilterDialog>
-                  <TbTag /> Label
-                </LabelFilterDialog>
+                <MetadataFilterDialog>
+                  <TbTag /> Metadata
+                </MetadataFilterDialog>
               </FilterDropdown>
             </div>
 

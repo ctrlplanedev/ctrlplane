@@ -23,7 +23,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-import { LabelFilterInput } from "../../../_components/LabelFilterInput";
+import { MetadataFilterInput } from "../../../_components/MetadataFilterInput";
 import { usePanel } from "./SidepanelContext";
 
 const environmentForm = z.object({
@@ -50,7 +50,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       description: node.data.description,
       targetFilter: (
         (node.data.targetFilter?.conditions ?? []) as EqualCondition[]
-      ).map((item) => ({ key: item.label, value: item.value })),
+      ).map((item) => ({ key: item.key, value: item.value })),
     },
     mode: "onChange",
   });
@@ -61,7 +61,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     form.setValue(
       "targetFilter",
       ((node.data.targetFilter?.conditions ?? []) as EqualCondition[]).map(
-        (item) => ({ key: item.label, value: item.value }),
+        (item) => ({ key: item.key, value: item.value }),
       ),
     );
   }, [node.data.label, node.data.description, node.data.targetFilter, form]);
@@ -73,7 +73,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       workspaceId: workspace.data?.id ?? "",
       filters: [
         {
-          key: "labels",
+          key: "metadata",
           value: Object.fromEntries(
             targetFilter.map(({ key, value }) => [key, value]),
           ),
@@ -98,7 +98,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           targetFilter: {
             operator: "and",
             conditions: values.targetFilter.map(({ key, value }) => ({
-              label: key,
+              key,
               value,
             })),
           },
@@ -173,7 +173,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                     Target Filter ({targets.data?.total ?? "-"})
                   </FormLabel>
                   <FormControl>
-                    <LabelFilterInput
+                    <MetadataFilterInput
                       value={value}
                       onChange={onChange}
                       onRemove={() => remove(index)}

@@ -128,9 +128,9 @@ export const getGkeTargets = async (
                     config: {
                       namespace: n.metadata!.name,
                     },
-                    labels: {
+                    metadata: {
                       ...n.metadata?.labels,
-                      "kubernetes/namespace": n.metadata!.name,
+                      "kubernetes/namespace": n.metadata!.name ?? "",
                     },
                   },
                 ),

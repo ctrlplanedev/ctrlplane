@@ -122,7 +122,7 @@ paths:
                         type: string
                       config:
                         type: object
-                      labels:
+                      metadata:
                         type: object
                         additionalProperties:
                           type: string
@@ -132,7 +132,7 @@ paths:
                       - version
                       - kind
                       - config
-                      - labels
+                      - metadata
       responses:
         "200":
           description: Successfully updated the deployment target

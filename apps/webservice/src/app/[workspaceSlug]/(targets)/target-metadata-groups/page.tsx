@@ -4,10 +4,10 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/server";
 import { TargetGroupsTable } from "./TargetGroupTable";
-import { TargetLabelGroupsGettingStarted } from "./TargetLabelGroupsGettingStarted";
-import { UpsertLabelGroupDialog } from "./UpsertLabelGroupDialog";
+import { TargetMetadataGroupsGettingStarted } from "./TargetMetadataGroupsGettingStarted";
+import { UpsertMetadataGroupDialog } from "./UpsertMetadataGroupDialog";
 
-export default async function TargetLabelGroupPages({
+export default async function TargetMetadataGroupPages({
   params,
 }: {
   params: { workspaceSlug: string };
@@ -16,9 +16,9 @@ export default async function TargetLabelGroupPages({
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
 
-  const labelGroups = await api.target.labelGroup.groups(workspace.id);
-  if (labelGroups.length === 0)
-    return <TargetLabelGroupsGettingStarted workspace={workspace} />;
+  const metadataGroups = await api.target.metadataGroup.groups(workspace.id);
+  if (metadataGroups.length === 0)
+    return <TargetMetadataGroupsGettingStarted workspace={workspace} />;
 
   return (
     <div>
@@ -26,13 +26,16 @@ export default async function TargetLabelGroupPages({
         <div className="flex flex-grow items-center gap-2">
           <span>Groups</span>
         </div>
-        <UpsertLabelGroupDialog workspaceId={workspace.id} create>
+        <UpsertMetadataGroupDialog workspaceId={workspace.id} create>
           <Button variant="outline">Create Group</Button>
-        </UpsertLabelGroupDialog>
+        </UpsertMetadataGroupDialog>
       </div>
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
-        <TargetGroupsTable workspace={workspace} labelGroups={labelGroups} />
+        <TargetGroupsTable
+          workspace={workspace}
+          metadataGroups={metadataGroups}
+        />
       </div>
     </div>
   );

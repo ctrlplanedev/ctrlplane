@@ -1,13 +1,13 @@
-# Target Labels
+# Target Metadata
 
-Target labels in Ctrlplane are key-value pairs that provide a flexible way to
+Target metadata in Ctrlplane are key-value pairs that provide a flexible way to
 categorize and organize your deployment targets. They play a crucial role in
 defining deployment strategies, filtering targets, and applying configurations
 selectively.
 
-## Understanding Target Labels
+## Understanding Target Metadata
 
-Labels are metadata attached to targets, allowing you to group and select
+Metadata is attached to targets, allowing you to group and select
 targets based on various criteria. They are particularly useful for:
 
 - Organizing targets by environment, region, or purpose
@@ -15,18 +15,18 @@ targets based on various criteria. They are particularly useful for:
 - Filtering targets for deployment or management tasks
 - Applying variable values to specific targets during deployment
 
-## How Labels Work in Ctrlplane
+## How Metadata Works in Ctrlplane
 
-1. **Definition**: Labels are defined as key-value pairs on individual targets.
-2. **Flexibility**: You can assign multiple labels to a single target.
+1. **Definition**: Metadata are defined as key-value pairs on individual targets.
+2. **Flexibility**: You can assign multiple key-value pairs to a single target.
 3. **Querying**: Ctrlplane allows you to query and filter targets based on their
-   labels.
-4. **Selective Application**: Use labels to apply configurations or run
+   metadata.
+4. **Selective Application**: Use metadata to apply configurations or run
    deployments on specific subsets of targets.
 
-## Examples of Target Labels
+## Examples of Target Metadata
 
-Here are some common examples of how you might use labels in Ctrlplane:
+Here are some common examples of how you might use metadata in Ctrlplane:
 
 ```yaml
 environment: production
@@ -40,19 +40,19 @@ role: database
 tier: backend
 ```
 
-## Best Practices for Using Labels
+## Best Practices for Using Metadata
 
-1. **Consistency**: Establish a consistent labeling scheme across your
+1. **Consistency**: Establish a consistent metadata scheme across your
    organization.
-2. **Granularity**: Use labels that provide the right level of detail for your
+2. **Granularity**: Use metadata that provide the right level of detail for your
    needs.
-3. **Documentation**: Maintain clear documentation of your label taxonomy.
+3. **Documentation**: Maintain clear documentation of your metadata taxonomy.
 4. **Avoid Overloading**: Don't try to encode too much information in a single
-   label.
-5. **Regular Review**: Periodically review and update your labeling strategy as
+   metadata key.
+5. **Regular Review**: Periodically review and update your metadata strategy as
    your infrastructure evolves.
 
-By effectively using target labels in Ctrlplane, you can create more flexible,
+By effectively using target metadata in Ctrlplane, you can create more flexible,
 manageable, and scalable deployment strategies that adapt to your organization's
 evolving needs.
 
