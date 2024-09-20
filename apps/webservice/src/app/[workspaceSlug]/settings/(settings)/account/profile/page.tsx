@@ -16,8 +16,9 @@ export default async function AccountSettingProfilePage() {
   const session = await auth();
   if (session == null) redirect("/login");
   const user = await api.user.viewer();
-  const { image, name, email } = user;
+  const { activeWorkspaceId, image, name, email } = user;
   const githubUser = await api.github.user.byUserId(session.user.id);
+  const workspace = await api.workspace.byId(activeWorkspaceId ?? "");
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
       <div className="container mx-auto max-w-2xl space-y-8 py-8">
@@ -82,6 +83,7 @@ export default async function AccountSettingProfilePage() {
                   variant="secondary"
                   className="w-32"
                   githubUserId={githubUser?.userId ?? ""}
+                  workspace={workspace ?? null}
                 />
               </div>
             </li>
