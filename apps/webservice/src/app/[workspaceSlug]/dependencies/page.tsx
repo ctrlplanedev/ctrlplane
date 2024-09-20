@@ -1,27 +1,27 @@
-"use client";
+import { notFound } from "next/navigation";
 
-import { api } from "~/trpc/react";
-import { ReactFlowProvider } from "../_components/reactflow/ReactFlowProvider";
-import { DependencyDiagram } from "./DependencyDiagram";
+import { api } from "~/trpc/server";
+import { DependenciesGettingStarted } from "./DependenciesGettingStarted";
+import { Diagram } from "./DependencyDiagram";
 
-export default function Dependencies({
+export default async function Dependencies({
   params,
 }: {
   params: { workspaceSlug: string };
 }) {
-  const workspace = api.workspace.bySlug.useQuery(params.workspaceSlug);
-  const deployments = api.deployment.byWorkspaceId.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess },
-  );
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) notFound();
+  const deployments = await api.deployment.byWorkspaceId(workspace.id);
+
+  if (
+    deployments.length === 0 ||
+    deployments.some((d) => d.latestRelease != null)
+  )
+    return <DependenciesGettingStarted />;
 
   return (
     <div className="h-full">
-      <ReactFlowProvider>
-        {deployments.data && (
-          <DependencyDiagram deployments={deployments.data} />
-        )}
-      </ReactFlowProvider>
+      <Diagram deployments={deployments} />
     </div>
   );
 }

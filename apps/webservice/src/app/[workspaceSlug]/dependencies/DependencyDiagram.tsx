@@ -11,6 +11,7 @@ import ReactFlow, {
   Handle,
   MarkerType,
   Position,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -219,7 +220,7 @@ const nodeTypes = { deployment: DeploymentNode };
 const edgeTypes = { default: DepEdge };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-export const DependencyDiagram: React.FC<{
+const DependencyDiagram: React.FC<{
   deployments: Array<
     Deployment & { latestRelease: { id: string; version: string } | null }
   >;
@@ -256,5 +257,17 @@ export const DependencyDiagram: React.FC<{
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
     ></ReactFlow>
+  );
+};
+
+export const Diagram: React.FC<{
+  deployments: Array<
+    Deployment & { latestRelease: { id: string; version: string } | null }
+  >;
+}> = ({ deployments }) => {
+  return (
+    <ReactFlowProvider>
+      <DependencyDiagram deployments={deployments} />
+    </ReactFlowProvider>
   );
 };
