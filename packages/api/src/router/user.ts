@@ -3,17 +3,17 @@ import { z } from "zod";
 
 import { can, generateApiKey, hash } from "@ctrlplane/auth/utils";
 import { and, eq, takeFirst } from "@ctrlplane/db";
-import { createUser, scopeType, user, userApiKey } from "@ctrlplane/db/schema";
+import { scopeType, updateUser, user, userApiKey } from "@ctrlplane/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const profileRouter = createTRPCRouter({
   update: protectedProcedure
-    .input(createUser)
+    .input(updateUser)
     .mutation(({ ctx, input }) =>
       ctx.db
         .update(user)
-        .set(createUser.parse(input))
+        .set(input)
         .where(eq(user.id, ctx.session.user.id))
         .returning()
         .then(takeFirst),

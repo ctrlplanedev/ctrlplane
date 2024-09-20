@@ -15,6 +15,12 @@ import { z } from "zod";
 
 import { workspace } from "./workspace.js";
 
+const userSchema = z.object({
+  name: z.string().min(1).max(255),
+  email: z.string().email(),
+  activeWorkspaceId: z.string().uuid().optional(),
+});
+
 export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
@@ -28,11 +34,10 @@ export const user = pgTable("user", {
 
 export type User = InferSelectModel<typeof user>;
 
-export const createUser = createInsertSchema(user, {
-  name: z.string().min(1).max(255),
-  email: z.string().email(),
-  activeWorkspaceId: z.string().uuid().optional(),
-}).omit({ id: true });
+export const createUser = createInsertSchema(user, userSchema.shape).omit({
+  id: true,
+});
+export const updateUser = createUser.partial();
 
 export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
