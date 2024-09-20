@@ -49,12 +49,17 @@ export async function scan() {
           workspaceId: workspace.id,
         },
         metadata: {
+          "ctrlplane/external-id": workspace.id,
           "terraform-cloud/organization": env.TFE_ORGANIZATION,
           "terraform-cloud/workspace-name": workspace.attributes.name,
+          "terraform-cloud/workspace-auto-apply": String(
+            workspace.attributes["auto-apply"] ?? false,
+          ),
+          "terraform/version": workspace.attributes["terraform-version"] ?? "",
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
-          "ctrlplane/urls": JSON.stringify(link),
+          "ctrlplane/links": JSON.stringify(link),
         },
       };
 

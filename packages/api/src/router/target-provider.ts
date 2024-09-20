@@ -113,7 +113,7 @@ export const targetProviderRouter = createTRPCRouter({
             await targetScanQueue.add(
               tg.id,
               { targetProviderId: tg.id },
-              { repeat: { every: ms("5m"), immediately: true } },
+              { repeat: { every: ms("10m"), immediately: true } },
             );
 
             return { ...tg, config: tgConfig };

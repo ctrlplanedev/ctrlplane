@@ -8,7 +8,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNowStrict } from "date-fns";
-import { SiKubernetes } from "react-icons/si";
+import { SiKubernetes, SiTerraform } from "react-icons/si";
 import { TbLock, TbServer, TbTarget, TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
@@ -82,6 +82,7 @@ const columns: ColumnDef<Target>[] = [
       const isKube = includes("kubernetes");
       const isVm = includes("vm") || includes("compute");
       const isLocked = info.row.original.lockedAt != null;
+      const isTerraform = includes("terraform");
 
       return (
         <div className="flex items-center gap-2 px-2 py-1">
@@ -91,6 +92,8 @@ const columns: ColumnDef<Target>[] = [
             <SiKubernetes className="shrink-0 text-blue-300" />
           ) : isVm ? (
             <TbServer className="shrink-0 text-cyan-300" />
+          ) : isTerraform ? (
+            <SiTerraform className="shrink-0 text-purple-300" />
           ) : (
             <TbTarget className="shrink-0 text-neutral-300" />
           )}

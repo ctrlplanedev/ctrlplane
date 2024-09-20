@@ -59,3 +59,11 @@ export type MetadataCondition =
   | LikeCondition
   | RegexCondition
   | EqualCondition;
+
+export enum ReservedMetadataKey {
+  ExternalId = "ctrlplane/external-id",
+  Links = "ctrlplane/links",
+  ParentTargetIdentifier = "ctrlplane/parent-target-identifier",
+  KubernetesVersion = "kubernetes/version",
+  KubernetesFlavor = "kubernetes/flavor",
+}

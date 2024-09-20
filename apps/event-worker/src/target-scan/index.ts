@@ -1,3 +1,4 @@
+import type { InsertTarget } from "@ctrlplane/db/schema";
 import type { TargetScanEvent } from "@ctrlplane/validators/events";
 import type { Job } from "bullmq";
 import { Queue, Worker } from "bullmq";
@@ -40,6 +41,7 @@ export const createTargetScanWorker = () =>
         .then(takeFirstOrNull);
 
       if (tp == null) {
+        logger.error(`Target provider with ID ${targetProviderId} not found.`);
         await removeTargetJob(job);
         return;
       }
@@ -48,14 +50,33 @@ export const createTargetScanWorker = () =>
         `Received scanning request for "${tp.target_provider.name}" (${targetProviderId}).`,
       );
 
+      const targets: InsertTarget[] = [];
+
       if (tp.target_provider_google != null) {
         logger.info("Found Google config, scanning for GKE targets");
-        const gkeTargets = await getGkeTargets(
-          tp.workspace,
-          tp.target_provider_google,
-        );
+        try {
+          const gkeTargets = await getGkeTargets(
+            tp.workspace,
+            tp.target_provider_google,
+          );
+          targets.push(...gkeTargets);
+        } catch (error: any) {
+          logger.error(`Error scanning GKE targets: ${error.message}`, {
+            error,
+          });
+        }
+      }
 
-        await upsertTargets(db, gkeTargets);
+      try {
+        logger.info(
+          `Upserting ${targets.length} targets for provider ${tp.target_provider.id}`,
+        );
+        await upsertTargets(db, tp.target_provider.id, targets);
+      } catch (error: any) {
+        logger.error(
+          `Error upserting targets for provider ${tp.target_provider.id}: ${error.message}`,
+          { error },
+        );
       }
     },
     {

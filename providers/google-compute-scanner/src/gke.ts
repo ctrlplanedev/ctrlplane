@@ -1,5 +1,6 @@
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/targets";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
+import type { V1Namespace } from "@kubernetes/client-node";
 import Container from "@google-cloud/container";
 import { CoreV1Api } from "@kubernetes/client-node";
 import handlebars from "handlebars";
@@ -7,7 +8,10 @@ import _ from "lodash";
 import { SemVer } from "semver";
 
 import { logger } from "@ctrlplane/logger";
-import { kubernetesNamespaceV1 } from "@ctrlplane/validators/targets";
+import {
+  kubernetesNamespaceV1,
+  ReservedMetadataKey,
+} from "@ctrlplane/validators/targets";
 
 import { env } from "./config.js";
 import { connectToCluster } from "./gke-connect.js";
@@ -24,9 +28,22 @@ const getClusters = async () => {
   return clusters;
 };
 
-const template = handlebars.compile(env.CTRLPLANE_GKE_TARGET_NAME);
-const targetName = (cluster: google.container.v1.ICluster) =>
-  template({ cluster, projectId: env.GOOGLE_PROJECT_ID });
+const clusterNameTemplate = handlebars.compile(env.CTRLPLANE_GKE_TARGET_NAME);
+const targetClusterName = (cluster: google.container.v1.ICluster) =>
+  clusterNameTemplate({ cluster, projectId: env.GOOGLE_PROJECT_ID });
+
+const namespaceNameTemplate = handlebars.compile(
+  env.CTRLPLANE_GKE_NAMESPACE_TARGET_NAME,
+);
+const targetNamespaceName = (
+  namespace: V1Namespace,
+  cluster: google.container.v1.ICluster,
+) =>
+  namespaceNameTemplate({
+    namespace,
+    cluster,
+    projectId: env.GOOGLE_PROJECT_ID,
+  });
 
 export const getKubernetesClusters = async (): Promise<
   Array<{
@@ -50,7 +67,7 @@ export const getKubernetesClusters = async (): Promise<
       target: {
         version: "kubernetes/v1",
         kind: "ClusterAPI",
-        name: targetName(cluster),
+        name: targetClusterName(cluster),
         identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}`,
         config: {
           name: cluster.name!,
@@ -61,9 +78,18 @@ export const getKubernetesClusters = async (): Promise<
           },
         },
         metadata: omitNullUndefined({
-          "ctrlplane/url": appUrl,
+          [ReservedMetadataKey.Links]: JSON.stringify({
+            "Google Console": appUrl,
+          }),
+          [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
+          [ReservedMetadataKey.KubernetesFlavor]: "gke",
+          [ReservedMetadataKey.KubernetesVersion]:
+            masterVersion.version.split("-")[0],
 
-          "kubernetes/distribution": "gke",
+          "google/self-link": cluster.selfLink,
+          "google/location": cluster.location,
+          "google/autopilot": cluster.autopilot?.enabled,
+
           "kubernetes/status": cluster.status,
           "kubernetes/node-count": String(cluster.currentNodeCount ?? 0),
 
@@ -78,6 +104,8 @@ export const getKubernetesClusters = async (): Promise<
           "kubernetes/node-version-patch": String(nodeVersion.patch),
 
           "kubernetes/autoscaling-enabled": autoscaling,
+
+          ...(cluster.resourceLabels ?? {}),
         }),
       },
     };
@@ -103,21 +131,28 @@ export const getKubernetesNamespace = async (
     const namespaces = await k8sApi
       .listNamespace()
       .then((r) => r.body.items.filter((n) => n.metadata != null));
-    return namespaces.map((n) =>
-      kubernetesNamespaceV1.parse(
-        _.merge(
-          { ...target },
-          {
+    return namespaces
+      .filter(
+        (n) =>
+          !env.CTRLPLANE_GKE_NAMESPACE_IGNORE.split(",").includes(
+            n.metadata!.name!,
+          ),
+      )
+      .map((n) =>
+        kubernetesNamespaceV1.parse(
+          _.merge(_.cloneDeep(target), {
             kind: "Namespace",
+            name: targetNamespaceName(n, cluster),
             identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,
             config: { namespace: n.metadata!.name },
             metadata: {
+              "ctrlplane/parent-target-identifier": target.identifier,
               "kubernetes/namespace": n.metadata!.name,
+              ...n.metadata?.labels,
             },
-          },
+          }),
         ),
-      ),
-    );
+      );
   });
 
   return Promise.all(namespaceTargets).then((v) => v.flat());

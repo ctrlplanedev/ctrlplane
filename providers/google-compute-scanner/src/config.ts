@@ -10,9 +10,28 @@ export const env = createEnv({
     CTRLPLANE_API_KEY: z.string(),
     CTRLPLANE_WORKSPACE: z.string(),
     CTRLPLANE_SCANNER_NAME: z.string().default("offical-google-scanner"),
+
     CTRLPLANE_GKE_TARGET_NAME: z
       .string()
       .default("gke-{{ projectId }}-{{ cluster.name }}"),
+    CTRLPLANE_GKE_NAMESPACE_TARGET_NAME: z
+      .string()
+      .default(
+        "gke-{{ projectId }}-{{ cluster.name }}/{{ namespace.metadata.name }}",
+      ),
+    CTRLPLANE_GKE_NAMESPACE_IGNORE: z
+      .string()
+      .default(
+        [
+          "kube-system",
+          "kube-public",
+          "kube-node-lease",
+          "gmp-system",
+          "gmp-public",
+          "gke-managed-system",
+          "gke-managed-cim",
+        ].join(","),
+      ),
     CTRLPLANE_COMPUTE_TARGET_NAME: z
       .string()
       .default("gc-{{ projectId }}-{{ vm.name }}"),
@@ -21,7 +40,6 @@ export const env = createEnv({
     CRON_TIME: z.string().default("* * * * *"),
 
     GOOGLE_PROJECT_ID: z.string().min(1),
-    GOOGLE_SCAN_GKE: z.boolean().default(true),
   },
   runtimeEnv: process.env,
 

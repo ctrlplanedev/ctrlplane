@@ -59,7 +59,7 @@ export const PATCH = async (
     workspaceId: provider.workspaceId,
   }));
 
-  const targets = await upsertTargets(db, targetsToInsert);
+  const targets = await upsertTargets(db, provider.id, targetsToInsert);
 
   return NextResponse.json({ targets });
 };

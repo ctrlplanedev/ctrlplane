@@ -228,21 +228,6 @@ export default function TargetPage({
                     format(target.data.updatedAt, "MM/dd/yyyy mm:hh:ss")}
                 </td>
               </tr>
-              <tr>
-                <td className="p-1 py-1 pr-2 text-muted-foreground">Link</td>
-                {/* <td>
-                {link == null ? (
-                  <span className="text-muted-foreground">Not set</span>
-                ) : (
-                  <a
-                    href={link}
-                    className="inline-block w-full overflow-hidden text-ellipsis text-nowrap hover:text-blue-400"
-                  >
-                    {link}
-                  </a>
-                )}
-              </td> */}
-              </tr>
             </tbody>
           </table>
         </div>
