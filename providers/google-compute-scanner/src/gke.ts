@@ -61,7 +61,7 @@ export const getKubernetesClusters = async (): Promise<
           },
         },
         metadata: omitNullUndefined({
-          "ctrlplane/url": appUrl,
+          "ctrlplane/links": JSON.stringify({ "Google Console": appUrl }),
 
           "kubernetes/distribution": "gke",
           "kubernetes/status": cluster.status,

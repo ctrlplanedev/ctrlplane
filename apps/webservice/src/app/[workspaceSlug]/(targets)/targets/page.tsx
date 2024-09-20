@@ -64,10 +64,10 @@ const TargetGeneral: React.FC<
   const { search, setSearch, result } = useMatchSorterWithSearch(metadata, {
     keys: ["0", "1"],
   });
-  const link = target.metadata["ctrlplane/url"];
+  const link = target.metadata["ctrlplane/link"];
   const links =
-    target.metadata["ctrlplane/urls"] != null
-      ? (JSON.parse(target.metadata["ctrlplane/urls"]) as Record<
+    target.metadata["ctrlplane/links"] != null
+      ? (JSON.parse(target.metadata["ctrlplane/links"]) as Record<
           string,
           string
         >)

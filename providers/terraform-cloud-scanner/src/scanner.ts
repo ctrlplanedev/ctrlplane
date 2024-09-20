@@ -54,7 +54,7 @@ export async function scan() {
           ...variableLabels,
           ...tagLabels,
           ...vcsRepoLabels,
-          "ctrlplane/urls": JSON.stringify(link),
+          "ctrlplane/links": JSON.stringify(link),
         },
       };
 
