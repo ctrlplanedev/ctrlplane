@@ -95,6 +95,8 @@ export const getKubernetesClusters = async (): Promise<
           "kubernetes/node-version-patch": String(nodeVersion.patch),
 
           "kubernetes/autoscaling-enabled": autoscaling,
+
+          ...(cluster.resourceLabels ?? {}),
         }),
       },
     };

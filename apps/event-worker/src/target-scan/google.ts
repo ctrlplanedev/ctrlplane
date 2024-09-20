@@ -101,7 +101,7 @@ export const clusterToTarget = (
     providerId,
     identifier: `${project}/${cluster.name}`,
     version: "kubernetes/v1",
-    kind: "KubernetesAPI",
+    kind: "ClusterAPI",
     config: {
       name: cluster.name,
       status: cluster.status,
@@ -111,16 +111,17 @@ export const clusterToTarget = (
       },
     },
     metadata: omitNullUndefined({
-      "ctrlplane/url": appUrl,
+      "ctrlplane/links": JSON.stringify({ "Google Console": appUrl }),
+      "ctrlplane/external-id": cluster.id ?? "",
 
       "google/self-link": cluster.selfLink,
       "google/project": project,
       "google/location": cluster.location,
       "google/autopilot": cluster.autopilot?.enabled,
 
-      "kubernetes/cluster-name": cluster.name,
-      "kubernetes/cluster-id": cluster.id,
-      "kubernetes/distribution": "gke",
+      "kubernetes/flavor": "gke",
+      "kubernetes/version": masterVersion.version.split("-")[0],
+
       "kubernetes/status": cluster.status,
       "kubernetes/node-count": String(cluster.currentNodeCount ?? "unknown"),
 
