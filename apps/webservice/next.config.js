@@ -19,6 +19,10 @@ const config = {
     "@ctrlplane/job-dispatch",
   ],
 
+  images: {
+    remotePatterns: [{ hostname: "lh3.googleusercontent.com" }],
+  },
+
   async rewrites() {
     return [
       {

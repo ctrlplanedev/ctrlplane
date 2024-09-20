@@ -16,6 +16,7 @@ import { workspace } from "./workspace.js";
 export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
+  username: varchar("username", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull(),
   emailVerified: timestamp("emailVerified", { withTimezone: true }),
   image: varchar("image", { length: 255 }),

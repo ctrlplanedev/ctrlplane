@@ -8,7 +8,7 @@ import { scopeType, user, userApiKey } from "@ctrlplane/db/schema";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const profileRouter = createTRPCRouter({
-  update: protectedProcedure
+  updateActiveWorkspace: protectedProcedure
     .input(
       z.object({ activeWorkspaceId: z.string().uuid().nullable().optional() }),
     )
@@ -16,6 +16,16 @@ export const profileRouter = createTRPCRouter({
       ctx.db
         .update(user)
         .set(input)
+        .where(eq(user.id, ctx.session.user.id))
+        .returning()
+        .then(takeFirst),
+    ),
+  updateUsername: protectedProcedure
+    .input(z.object({ username: z.string().min(3).max(30) }))
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .update(user)
+        .set({ username: input.username })
         .where(eq(user.id, ctx.session.user.id))
         .returning()
         .then(takeFirst),

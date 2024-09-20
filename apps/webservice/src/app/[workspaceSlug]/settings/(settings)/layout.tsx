@@ -3,5 +3,5 @@ export default function AccountSettingsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="m-10 mt-20">{children}</div>;
+  return <div className="mt-10">{children}</div>;
 }
