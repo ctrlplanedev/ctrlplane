@@ -75,7 +75,6 @@ export default async function AccountSettingProfilePage() {
             </li>
           </section>
         </ul>
-
         <ul>
           <section className="space-y-6 rounded-t-lg bg-neutral-800/70 p-6 shadow-lg">
             <Label className="text-sm font-semibold">
