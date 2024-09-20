@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { SiGithub, SiGooglecalendar, SiSlack } from "react-icons/si";
+import { SiGithub } from "react-icons/si";
 
 import { auth } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
@@ -9,13 +9,13 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/server";
-import UpsertUsername from "./UpsertUsername";
+import { UpsertUsername } from "./UpsertUsername";
 
 const defaultAvatar = "/apple-touch-icon.png";
 
 export default async function AccountSettingProfilePage() {
   const session = await auth();
-  if (!session) redirect("/login");
+  if (session == null) redirect("/login");
   const user = await api.user.viewer();
   const { image, name, email } = user;
 
@@ -51,21 +51,18 @@ export default async function AccountSettingProfilePage() {
             </li>
           </section>
           <section className="space-y-6 rounded-b-lg border border-neutral-800/70 bg-background px-6 shadow-lg">
-            {/* Email */}
             <li className="border-b py-6 lg:mt-0">
               <div className="flex flex-row items-center justify-between">
                 <Label>Email</Label>
                 <Input readOnly value={email} className="w-64" />
               </div>
             </li>
-            {/* Full Name */}
             <li className="border-b pb-6">
               <div className="flex flex-col justify-between lg:flex-row lg:items-center lg:space-x-8">
                 <Label>Full name</Label>
                 <Input readOnly value={name ?? ""} className="w-64" />
               </div>
             </li>
-            {/* Username */}
             <li className="pb-6">
               <div className="flex flex-col justify-between lg:flex-row lg:items-center lg:space-x-8">
                 <span>
@@ -81,7 +78,6 @@ export default async function AccountSettingProfilePage() {
           </section>
         </ul>
 
-        {/* Personal Integrations Section */}
         <ul>
           <section className="space-y-6 rounded-t-lg bg-neutral-800/70 p-6 shadow-lg">
             <Label className="text-sm font-semibold">
@@ -89,44 +85,13 @@ export default async function AccountSettingProfilePage() {
             </Label>
           </section>
           <section className="space-y-6 rounded-b-lg border border-neutral-800/70 bg-background px-6 shadow-lg">
-            {/* Slack */}
-            <li className="border-b py-6 lg:mt-0">
-              <div className="flex flex-col justify-between lg:flex-row lg:items-center">
-                <SiSlack className="mr-2 h-4 w-4" />
-                <span className="w-96">
-                  <Label>Slack Account</Label>
-                  <p className="w-full text-sm text-gray-400">
-                    Link your Slack account to receive personal notifications.
-                  </p>
-                </span>
-                <Button variant="outline" className="w-32">
-                  Connect
-                </Button>
-              </div>
-            </li>
-            {/* GitHub */}
-            <li className="border-b pb-6">
+            <li className="border-b py-6">
               <div className="flex flex-col justify-between lg:flex-row lg:items-center">
                 <SiGithub className="mr-2 h-4 w-4" />
                 <span className="w-96">
                   <Label>GitHub</Label>
                   <p className="w-full text-sm text-gray-400">
-                    Link Pull Requests with your account.
-                  </p>
-                </span>
-                <Button variant="outline" className="w-32">
-                  Connect
-                </Button>
-              </div>
-            </li>
-            {/* Google Calendar */}
-            <li className="pb-6">
-              <div className="flex flex-col justify-between lg:flex-row lg:items-center">
-                <SiGooglecalendar className="mr-2 h-4 w-4" />
-                <span className="w-96">
-                  <Label>Google Calendar</Label>
-                  <p className="text-sm text-gray-400">
-                    Display your out-of-office status in Ctrlplane.
+                    Connect your GitHub account.
                   </p>
                 </span>
                 <Button variant="outline" className="w-32">

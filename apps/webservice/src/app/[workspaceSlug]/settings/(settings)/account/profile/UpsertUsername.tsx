@@ -9,7 +9,7 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
-export default function UpsertUsername({
+export function UpsertUsername({
   user,
   className,
 }: {
@@ -18,29 +18,23 @@ export default function UpsertUsername({
 }) {
   const [username, setUsername] = useState(user.username);
   const [cachedUsername, setCachedUsername] = useState(user.username);
-  const updateProfile = api.profile.updateUsername.useMutation();
+  const updateProfile = api.profile.update.useMutation();
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
     setCachedUsername(e.target.value);
-  };
 
-  const handleBlur = async () => {
-    if (cachedUsername === username) return;
-    if (cachedUsername !== username) {
-      await updateProfile
-        .mutateAsync({
-          username: cachedUsername ?? "",
-        })
-        .then(() => {
-          toast.success("Username updated");
-          setUsername(cachedUsername);
-        })
-        .catch((error) => {
-          console.error(error);
-          toast.error("Failed to update username");
-        });
-    }
-  };
+  const handleBlur = () =>
+    cachedUsername !== username &&
+    updateProfile
+      .mutateAsync({ username: cachedUsername ?? "" })
+      .then(() => {
+        setUsername(cachedUsername);
+        toast.success("Username updated");
+      })
+      .catch((error) => {
+        console.error(error);
+        toast.error("Failed to update username");
+      });
 
   return (
     <Input

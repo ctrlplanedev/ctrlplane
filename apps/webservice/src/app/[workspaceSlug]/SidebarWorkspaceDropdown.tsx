@@ -27,7 +27,7 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
 }) => {
   const { data } = useSession();
   const workspaces = api.workspace.list.useQuery();
-  const update = api.profile.updateActiveWorkspace.useMutation();
+  const update = api.profile.update.useMutation();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
