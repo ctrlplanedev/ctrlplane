@@ -19,7 +19,7 @@ export const TargetGettingStarted: React.FC = () => {
           </p>
           <p>
             To keep the status of targets up-to-date, they should be created by
-            providers. You can then attach labels to these targets, allowing
+            providers. You can then attach metadata to these targets, allowing
             Environments to easily filter and include them in specific
             workflows.
           </p>

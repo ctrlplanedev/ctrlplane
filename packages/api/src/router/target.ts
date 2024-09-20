@@ -17,8 +17,8 @@ import {
 import {
   createTarget,
   target,
-  targetLabel,
-  targetMatchsLabel,
+  targetMatchesMetadata,
+  targetMetadata,
   targetProvider,
   updateTarget,
   workspace,
@@ -26,7 +26,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { targetLabelGroupRouter } from "./target-label-group";
+import { targetMetadataGroupRouter } from "./target-metadata-group";
 import { targetProviderRouter } from "./target-provider";
 
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
@@ -35,21 +35,21 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       target: target,
       targetProvider: targetProvider,
       workspace: workspace,
-      targetLabels: sql<
+      targetMetadata: sql<
         Record<string, string>
-      >`jsonb_object_agg(target_label.label,
-       target_label.value)`.as("target_labels"),
+      >`jsonb_object_agg(target_metadata.key,
+       target_metadata.value)`.as("target_metadata"),
     })
     .from(target)
     .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
     .innerJoin(workspace, eq(target.workspaceId, workspace.id))
-    .innerJoin(targetLabel, eq(targetLabel.targetId, target.id))
+    .leftJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
     .where(and(...checks))
     .groupBy(target.id, targetProvider.id, workspace.id)
     .orderBy(asc(target.kind), asc(target.name));
 
 export const targetRouter = createTRPCRouter({
-  labelGroup: targetLabelGroupRouter,
+  metadataGroup: targetMetadataGroupRouter,
   provider: targetProviderRouter,
 
   byId: protectedProcedure
@@ -59,13 +59,11 @@ export const targetRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const labels = await ctx.db
+      const metadata = await ctx.db
         .select()
-        .from(targetLabel)
-        .where(eq(targetLabel.targetId, input))
-        .then((lbs) =>
-          Object.fromEntries(lbs.map((lb) => [lb.label, lb.value])),
-        );
+        .from(targetMetadata)
+        .where(eq(targetMetadata.targetId, input))
+        .then((lbs) => Object.fromEntries(lbs.map((lb) => [lb.key, lb.value])));
       return ctx.db
         .select()
         .from(target)
@@ -75,7 +73,7 @@ export const targetRouter = createTRPCRouter({
         .then((a) =>
           a == null
             ? null
-            : { ...a.target, labels, provider: a.target_provider },
+            : { ...a.target, metadata, provider: a.target_provider },
         );
     }),
 
@@ -93,7 +91,7 @@ export const targetRouter = createTRPCRouter({
           filters: z
             .array(
               z.object({
-                key: z.enum(["name", "kind", "labels"]),
+                key: z.enum(["name", "kind", "metadata"]),
                 value: z.any(),
               }),
             )
@@ -111,19 +109,19 @@ export const targetRouter = createTRPCRouter({
         const kindFilters = (input.filters ?? [])
           .filter((f) => f.key === "kind")
           .map((f) => eq(target.kind, f.value));
-        const labelFilters: EqualCondition[][] = (input.filters ?? [])
-          .filter((f) => f.key === "labels")
+        const metadataFilters: EqualCondition[][] = (input.filters ?? [])
+          .filter((f) => f.key === "metadata")
           .map((t) => Object.entries(t.value))
           .map((t) =>
-            t.map(([label, value]) => ({ label, value: value as string })),
+            t.map(([key, value]) => ({ key, value: value as string })),
           );
 
-        const targetConditions = targetMatchsLabel(ctx.db, {
+        const targetConditions = targetMatchesMetadata(ctx.db, {
           operator: "or",
-          conditions: labelFilters.map((labelGroup) => ({
+          conditions: metadataFilters.map((metadataGroup) => ({
             operator: "and",
-            conditions: labelGroup.map(({ label, value }) => ({
-              label,
+            conditions: metadataGroup.map(({ key, value }) => ({
+              key,
               value,
               operator: "equals",
             })),
@@ -144,7 +142,7 @@ export const targetRouter = createTRPCRouter({
             t.map((a) => ({
               ...a.target,
               provider: a.targetProvider,
-              labels: a.targetLabels,
+              metadata: a.targetMetadata,
             })),
           );
         const total = targetQuery(ctx.db, checks).then((t) => t.length);
@@ -217,7 +215,7 @@ export const targetRouter = createTRPCRouter({
       ctx.db.delete(target).where(inArray(target.id, input)).returning(),
     ),
 
-  labelKeys: protectedProcedure
+  metadataKeys: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -227,9 +225,9 @@ export const targetRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
-        .selectDistinct({ key: targetLabel.label })
+        .selectDistinct({ key: targetMetadata.key })
         .from(target)
-        .innerJoin(targetLabel, eq(targetLabel.targetId, target.id))
+        .innerJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
         .where(eq(target.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),

@@ -11,12 +11,12 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import type { Filter } from "./Filter";
-import { LabelFilterDialog } from "../../(targets)/targets/LabelFilterDialog";
+import { MetadataFilterDialog } from "../../(targets)/targets/MetadataFilterDialog";
 import { ContentDialog } from "./FilterDropdownItems";
 
 const dialogs: Array<string | JSXElementConstructor<any>> = [
   ContentDialog,
-  LabelFilterDialog,
+  MetadataFilterDialog,
 ];
 
 const isDialog = (type: string | JSXElementConstructor<any>) =>

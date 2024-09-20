@@ -60,7 +60,7 @@ export const getKubernetesClusters = async (): Promise<
             endpoint: `https://${cluster.endpoint}`,
           },
         },
-        labels: omitNullUndefined({
+        metadata: omitNullUndefined({
           "ctrlplane/url": appUrl,
 
           "kubernetes/distribution": "gke",
@@ -111,7 +111,7 @@ export const getKubernetesNamespace = async (
             kind: "Namespace",
             identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,
             config: { namespace: n.metadata!.name },
-            labels: {
+            metadata: {
               "kubernetes/namespace": n.metadata!.name,
             },
           },

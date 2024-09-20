@@ -23,23 +23,23 @@ export const TargetAnnotationPieChart: React.FC<{
   );
 
   const chartData = _.chain(targets.data?.items ?? [])
-    .filter((t) => showUndefined || t.labels[annotation ?? ""] != null)
-    .groupBy((t) => t.labels[annotation ?? ""]?.toString() ?? "undefined")
-    .map((targets, label) => ({
-      label,
+    .filter((t) => showUndefined || t.metadata[annotation ?? ""] != null)
+    .groupBy((t) => t.metadata[annotation ?? ""]?.toString() ?? "undefined")
+    .map((targets, metadata) => ({
+      metadata,
       targets: targets.length,
-      fill: `var(--color-${label})`,
+      fill: `var(--color-${metadata})`,
     }))
     .value();
 
   const chartConfig = useMemo(
     () =>
       _.chain(targets.data?.items ?? [])
-        .uniqBy((t) => t.labels[annotation ?? ""]?.toString() ?? "undefined")
+        .uniqBy((t) => t.metadata[annotation ?? ""]?.toString() ?? "undefined")
         .map((t) => [
-          t.labels[annotation ?? ""],
+          t.metadata[annotation ?? ""],
           {
-            label: t.labels[annotation ?? ""]?.toString() ?? "undefined",
+            metadata: t.metadata[annotation ?? ""]?.toString() ?? "undefined",
             color: randomColor(),
           },
         ])
@@ -61,7 +61,7 @@ export const TargetAnnotationPieChart: React.FC<{
         <Pie
           data={chartData}
           dataKey="targets"
-          nameKey="label"
+          nameKey="metadata"
           innerRadius={55}
           strokeWidth={8}
         >
@@ -83,7 +83,7 @@ export const TargetAnnotationPieChart: React.FC<{
                       {
                         _.uniqBy(
                           targets.data?.items ?? [],
-                          (t) => t.labels[annotation ?? ""] ?? "",
+                          (t) => t.metadata[annotation ?? ""] ?? "",
                         ).length
                       }
                     </tspan>

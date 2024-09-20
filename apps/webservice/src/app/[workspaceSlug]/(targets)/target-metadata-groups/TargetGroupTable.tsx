@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetLabelGroup, Workspace } from "@ctrlplane/db/schema";
+import type { TargetMetadataGroup, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TbDots } from "react-icons/tb";
@@ -21,13 +21,16 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { DeleteLabelGroupDialog } from "./DeleteLabelGroupDialog";
-import { UpsertLabelGroupDialog } from "./UpsertLabelGroupDialog";
+import { DeleteMetadataGroupDialog } from "./DeleteMetadataGroupDialog";
+import { UpsertMetadataGroupDialog } from "./UpsertMetadataGroupDialog";
 
 export const TargetGroupsTable: React.FC<{
   workspace: Workspace;
-  labelGroups: { targets: number; targetLabelGroup: TargetLabelGroup }[];
-}> = ({ workspace, labelGroups }) => {
+  metadataGroups: {
+    targets: number;
+    targetMetadataGroup: TargetMetadataGroup;
+  }[];
+}> = ({ workspace, metadataGroups }) => {
   const [openDropdownId, setOpenDropdownId] = useState("");
   const router = useRouter();
   return (
@@ -40,33 +43,34 @@ export const TargetGroupsTable: React.FC<{
         </TableRow>
       </TableHeader>
       <TableBody>
-        {labelGroups.map((labelGroup) => (
+        {metadataGroups.map((metadataGroup) => (
           <TableRow
-            key={labelGroup.targetLabelGroup.id}
+            key={metadataGroup.targetMetadataGroup.id}
             className="cursor-pointer border-b-neutral-800/50"
             onClick={() =>
               router.push(
-                `/${workspace.slug}/target-label-groups/${labelGroup.targetLabelGroup.id}`,
+                `/${workspace.slug}/target-metadata-groups/${metadataGroup.targetMetadataGroup.id}`,
               )
             }
           >
-            <TableCell>{labelGroup.targetLabelGroup.name}</TableCell>
+            <TableCell>{metadataGroup.targetMetadataGroup.name}</TableCell>
             <TableCell>
               <div className="flex flex-col font-mono text-xs text-red-400">
-                {labelGroup.targetLabelGroup.keys.map((key) => (
+                {metadataGroup.targetMetadataGroup.keys.map((key) => (
                   <span key={key}>{key}</span>
                 ))}
               </div>
             </TableCell>
-            <TableCell>{labelGroup.targets}</TableCell>
+            <TableCell>{metadataGroup.targets}</TableCell>
             <TableCell
               className="flex justify-end"
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenu
-                open={openDropdownId === labelGroup.targetLabelGroup.id}
+                open={openDropdownId === metadataGroup.targetMetadataGroup.id}
                 onOpenChange={(open) => {
-                  if (open) setOpenDropdownId(labelGroup.targetLabelGroup.id);
+                  if (open)
+                    setOpenDropdownId(metadataGroup.targetMetadataGroup.id);
                   if (!open) setOpenDropdownId("");
                 }}
               >
@@ -76,28 +80,33 @@ export const TargetGroupsTable: React.FC<{
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <UpsertLabelGroupDialog
+                  <UpsertMetadataGroupDialog
                     workspaceId={workspace.id}
                     create={false}
                     parentClose={() => setOpenDropdownId("")}
                     values={{
-                      id: labelGroup.targetLabelGroup.id,
-                      name: labelGroup.targetLabelGroup.name,
-                      keys: labelGroup.targetLabelGroup.keys.map((key) => ({
-                        value: key,
-                      })),
-                      description: labelGroup.targetLabelGroup.description,
+                      id: metadataGroup.targetMetadataGroup.id,
+                      name: metadataGroup.targetMetadataGroup.name,
+                      keys: metadataGroup.targetMetadataGroup.keys.map(
+                        (key) => ({
+                          value: key,
+                        }),
+                      ),
+                      description:
+                        metadataGroup.targetMetadataGroup.description,
                     }}
                   >
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       Edit
                     </DropdownMenuItem>
-                  </UpsertLabelGroupDialog>
-                  <DeleteLabelGroupDialog id={labelGroup.targetLabelGroup.id}>
+                  </UpsertMetadataGroupDialog>
+                  <DeleteMetadataGroupDialog
+                    id={metadataGroup.targetMetadataGroup.id}
+                  >
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       Delete
                     </DropdownMenuItem>
-                  </DeleteLabelGroupDialog>
+                  </DeleteMetadataGroupDialog>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>

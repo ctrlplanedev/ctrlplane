@@ -48,7 +48,7 @@ export async function scan() {
         config: {
           workspaceId: workspace.id,
         },
-        labels: {
+        metadata: {
           "terraform-cloud/organization": env.TFE_ORGANIZATION,
           "terraform-cloud/workspace-name": workspace.attributes.name,
           ...variableLabels,

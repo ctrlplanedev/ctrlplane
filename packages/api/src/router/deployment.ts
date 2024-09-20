@@ -20,7 +20,7 @@ import {
   releaseJobTrigger,
   system,
   target,
-  targetMatchsLabel,
+  targetMatchesMetadata,
   updateDeployment,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -251,7 +251,7 @@ export const deploymentRouter = createTRPCRouter({
             .leftJoin(release, eq(release.deploymentId, deployment.id))
             .innerJoin(
               target,
-              targetMatchsLabel(ctx.db, env.environment.targetFilter),
+              targetMatchesMetadata(ctx.db, env.environment.targetFilter),
             )
             .leftJoin(
               releaseJobTrigger,

@@ -11,15 +11,15 @@ import {
 } from "@ctrlplane/db";
 import {
   target,
-  targetLabel,
-  targetLabelGroup,
+  targetMetadata,
+  targetMetadataGroup,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const targetLabelGroupRouter = createTRPCRouter({
+export const targetMetadataGroupRouter = createTRPCRouter({
   groups: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -32,20 +32,20 @@ export const targetLabelGroupRouter = createTRPCRouter({
       return ctx.db
         .select({
           targets: sql<number>`count(distinct ${target.id})`.mapWith(Number),
-          targetLabelGroup,
+          targetMetadataGroup,
         })
-        .from(targetLabelGroup)
-        .innerJoin(workspace, eq(targetLabelGroup.workspaceId, workspace.id))
+        .from(targetMetadataGroup)
+        .innerJoin(workspace, eq(targetMetadataGroup.workspaceId, workspace.id))
         .leftJoin(target, eq(target.workspaceId, workspace.id))
-        .leftJoin(targetLabel, eq(targetLabel.targetId, target.id))
+        .leftJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
         .where(
           and(
             eq(workspace.id, input),
-            sql`"target_label"."label" = ANY (${targetLabelGroup.keys})`,
+            sql`"target_metadata"."key" = ANY (${targetMetadataGroup.keys})`,
           ),
         )
-        .groupBy(targetLabelGroup.id)
-        .orderBy(asc(targetLabelGroup.name));
+        .groupBy(targetMetadataGroup.id)
+        .orderBy(asc(targetMetadataGroup.name));
     }),
 
   byId: protectedProcedure
@@ -53,14 +53,14 @@ export const targetLabelGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetGet)
-          .on({ type: "targetLabelGroup", id: input }),
+          .on({ type: "targetMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const group = await ctx.db
         .select()
-        .from(targetLabelGroup)
-        .where(eq(targetLabelGroup.id, input))
+        .from(targetMetadataGroup)
+        .where(eq(targetMetadataGroup.id, input))
         .then(takeFirstOrNull);
 
       if (group == null) throw new Error("Group not found");
@@ -69,18 +69,21 @@ export const targetLabelGroupRouter = createTRPCRouter({
         .select({
           targets: sql<number>`count(distinct ${target.id})`.mapWith(Number),
           ...Object.fromEntries(
-            group.keys.map((k) => [k, sql.raw(`"target_label"."value"`).as(k)]),
+            group.keys.map((k) => [
+              k,
+              sql.raw(`"target_metadata"."value"`).as(k),
+            ]),
           ),
         })
         .from(target)
-        .innerJoin(targetLabel, eq(targetLabel.targetId, target.id))
+        .innerJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
         .where(
           and(
-            inArray(targetLabel.label, group.keys),
+            inArray(targetMetadata.key, group.keys),
             eq(target.workspaceId, group.workspaceId),
           ),
         )
-        .groupBy(targetLabel.value);
+        .groupBy(targetMetadata.value);
 
       return {
         ...group,
@@ -108,13 +111,13 @@ export const targetLabelGroupRouter = createTRPCRouter({
     )
     .mutation(({ ctx, input }) => {
       ctx.db
-        .insert(targetLabelGroup)
+        .insert(targetMetadataGroup)
         .values({
           ...input.data,
           workspaceId: input.workspaceId,
         })
         .onConflictDoUpdate({
-          target: targetLabelGroup.id,
+          target: targetMetadataGroup.id,
           set: {
             ...input.data,
           },
@@ -128,10 +131,12 @@ export const targetLabelGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetDelete)
-          .on({ type: "targetLabelGroup", id: input }),
+          .on({ type: "targetMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
-      ctx.db.delete(targetLabelGroup).where(eq(targetLabelGroup.id, input)),
+      ctx.db
+        .delete(targetMetadataGroup)
+        .where(eq(targetMetadataGroup.id, input)),
     ),
 });

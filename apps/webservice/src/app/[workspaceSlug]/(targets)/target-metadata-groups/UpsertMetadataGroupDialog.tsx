@@ -32,14 +32,14 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
 
-const LabelFilterInput: React.FC<{
+const MetadataFilterInput: React.FC<{
   value: string;
   workspaceId: string;
   onChange: (value: string) => void;
 }> = ({ value, workspaceId, onChange }) => {
-  const { data: labelKeys } = api.target.labelKeys.useQuery(workspaceId);
+  const { data: metadataKeys } = api.target.metadataKeys.useQuery(workspaceId);
   const [open, setOpen] = useState(false);
-  const filteredLabels = useMatchSorter(labelKeys ?? [], value);
+  const filteredLabels = useMatchSorter(metadataKeys ?? [], value);
   return (
     <div className="flex items-center gap-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -80,27 +80,27 @@ const LabelFilterInput: React.FC<{
   );
 };
 
-const labelGroupFormSchema = z.object({
+const metadataGroupFormSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   keys: z.array(z.object({ value: z.string().min(1) })).min(1),
   description: z.string(),
 });
 
-export const UpsertLabelGroupDialog: React.FC<{
+export const UpsertMetadataGroupDialog: React.FC<{
   workspaceId: string;
   create: boolean;
   children: React.ReactNode;
-  values?: z.infer<typeof labelGroupFormSchema>;
+  values?: z.infer<typeof metadataGroupFormSchema>;
   parentClose?: () => void;
 }> = ({ workspaceId, create, values, children, parentClose }) => {
   const [open, setOpen] = useState(false);
-  const createLabelGroup = api.target.labelGroup.upsert.useMutation();
+  const createMetadataGroup = api.target.metadataGroup.upsert.useMutation();
   const utils = api.useUtils();
   const [input, setInput] = useState("");
   const router = useRouter();
   const form = useForm({
-    schema: labelGroupFormSchema,
+    schema: metadataGroupFormSchema,
     defaultValues: values ?? {
       name: "",
       keys: [],
@@ -115,7 +115,7 @@ export const UpsertLabelGroupDialog: React.FC<{
   });
 
   const onSubmit = form.handleSubmit((values) =>
-    createLabelGroup
+    createMetadataGroup
       .mutateAsync({
         data: {
           id: values.id,
@@ -125,7 +125,7 @@ export const UpsertLabelGroupDialog: React.FC<{
         },
         workspaceId,
       })
-      .then(() => utils.target.labelGroup.groups.invalidate())
+      .then(() => utils.target.metadataGroup.groups.invalidate())
       .then(() => parentClose?.())
       .then(() => setOpen(false))
       .then(() => router.refresh()),
@@ -202,7 +202,7 @@ export const UpsertLabelGroupDialog: React.FC<{
 
             <div className="flex items-center gap-3">
               <div className="flex-grow">
-                <LabelFilterInput
+                <MetadataFilterInput
                   value={input}
                   workspaceId={workspaceId}
                   onChange={setInput}

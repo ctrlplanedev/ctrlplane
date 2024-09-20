@@ -3,7 +3,7 @@ import { z } from "zod";
 export * from "./kubernetes-v1.js";
 
 export const equalsCondition = z.object({
-  label: z.string().min(1),
+  key: z.string().min(1),
   value: z.string().min(1),
   operator: z.literal("equals").optional(),
 });
@@ -11,7 +11,7 @@ export const equalsCondition = z.object({
 export type EqualCondition = z.infer<typeof equalsCondition>;
 
 export const regexCondition = z.object({
-  label: z.string().min(1),
+  key: z.string().min(1),
   pattern: z.string().min(1),
   operator: z.literal("regex"),
 });
@@ -19,7 +19,7 @@ export const regexCondition = z.object({
 export type RegexCondition = z.infer<typeof regexCondition>;
 
 export const likeCondition = z.object({
-  label: z.string().min(1),
+  key: z.string().min(1),
   pattern: z.string().min(1),
   operator: z.literal("like"),
 });
@@ -47,14 +47,14 @@ export type ComparisonCondition = {
   >;
 };
 
-export const labelConditions = z.union([
+export const metadataConditions = z.union([
   equalsCondition,
   regexCondition,
   likeCondition,
   comparisonCondition,
 ]);
 
-export type LabelCondition =
+export type MetadataCondition =
   | ComparisonCondition
   | LikeCondition
   | RegexCondition
