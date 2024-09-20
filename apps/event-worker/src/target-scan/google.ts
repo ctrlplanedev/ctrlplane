@@ -110,7 +110,7 @@ export const clusterToTarget = (
         endpoint: `https://${cluster.endpoint}`,
       },
     },
-    labels: omitNullUndefined({
+    metadata: omitNullUndefined({
       "ctrlplane/url": appUrl,
 
       "google/self-link": cluster.selfLink,

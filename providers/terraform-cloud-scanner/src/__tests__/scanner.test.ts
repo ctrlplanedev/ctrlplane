@@ -124,7 +124,7 @@ describe("Scanner Module", () => {
               config: {
                 workspaceId: "workspace-1",
               },
-              labels: {
+              metadata: {
                 "terraform/organization": "mock-org",
                 "terraform/workspace-name": "Workspace-One",
                 "var/TF_VAR_example": "example_value",

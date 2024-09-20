@@ -16,7 +16,7 @@ const bodySchema = z.object({
   targets: z.array(
     createTarget
       .omit({ lockedAt: true, providerId: true, workspaceId: true })
-      .extend({ labels: z.record(z.string()).optional() }),
+      .extend({ metadata: z.record(z.string()).optional() }),
   ),
 });
 

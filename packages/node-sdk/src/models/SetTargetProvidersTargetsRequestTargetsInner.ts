@@ -55,7 +55,7 @@ export interface SetTargetProvidersTargetsRequestTargetsInner {
    * @type {{ [key: string]: string; }}
    * @memberof SetTargetProvidersTargetsRequestTargetsInner
    */
-  labels: { [key: string]: string };
+  metadata: { [key: string]: string };
 }
 
 /**
@@ -70,7 +70,7 @@ export function instanceOfSetTargetProvidersTargetsRequestTargetsInner(
   if (!("version" in value) || value["version"] === undefined) return false;
   if (!("kind" in value) || value["kind"] === undefined) return false;
   if (!("config" in value) || value["config"] === undefined) return false;
-  if (!("labels" in value) || value["labels"] === undefined) return false;
+  if (!("metadata" in value) || value["metadata"] === undefined) return false;
   return true;
 }
 
@@ -93,7 +93,7 @@ export function SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped(
     version: json["version"],
     kind: json["kind"],
     config: json["config"],
-    labels: json["labels"],
+    metadata: json["metadata"],
   };
 }
 
@@ -109,6 +109,6 @@ export function SetTargetProvidersTargetsRequestTargetsInnerToJSON(
     version: value["version"],
     kind: value["kind"],
     config: value["config"],
-    labels: value["labels"],
+    metadata: value["metadata"],
   };
 }

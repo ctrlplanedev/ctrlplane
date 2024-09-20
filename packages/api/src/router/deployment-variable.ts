@@ -13,7 +13,7 @@ import {
   deploymentVariableValueTargetFilter,
   system,
   target,
-  targetMatchsLabel,
+  targetMatchesMetadata,
   updateDeploymentVariable,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -216,7 +216,7 @@ export const deploymentVariableRouter = createTRPCRouter({
             .where(
               and(
                 eq(target.id, input),
-                targetMatchsLabel(ctx.db, targetFilter),
+                targetMatchesMetadata(ctx.db, targetFilter),
               ),
             )
             .then(takeFirstOrNull);

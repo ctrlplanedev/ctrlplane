@@ -14,7 +14,7 @@ import {
   runbook,
   system,
   target,
-  targetLabelGroup,
+  targetMetadataGroup,
   targetProvider,
   variableSet,
   workspace,
@@ -141,16 +141,22 @@ const getVariableSetScopes = async (id: string) => {
   ];
 };
 
-const getTargetLabelGroupScopes = async (id: string) => {
+const getTargetMetadataGroupScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
-    .innerJoin(targetLabelGroup, eq(targetLabelGroup.workspaceId, workspace.id))
-    .where(eq(targetLabelGroup.id, id))
+    .innerJoin(
+      targetMetadataGroup,
+      eq(targetMetadataGroup.workspaceId, workspace.id),
+    )
+    .where(eq(targetMetadataGroup.id, id))
     .then(takeFirst);
 
   return [
-    { type: "targetLabelGroup" as const, id: result.target_label_group.id },
+    {
+      type: "targetMetadataGroup" as const,
+      id: result.target_metadata_group.id,
+    },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };
@@ -268,7 +274,7 @@ export const scopeHandlers: Record<
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
   release: getReleaseScopes,
-  targetLabelGroup: getTargetLabelGroupScopes,
+  targetMetadataGroup: getTargetMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
 };

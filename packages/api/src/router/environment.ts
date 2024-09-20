@@ -26,7 +26,7 @@ import {
   setPolicyReleaseWindow,
   system,
   target,
-  targetMatchsLabel,
+  targetMatchesMetadata,
   updateEnvironment,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
@@ -480,7 +480,9 @@ export const environmentRouter = createTRPCRouter({
               ? await ctx.db
                   .select()
                   .from(target)
-                  .where(targetMatchsLabel(ctx.db, e.environment.targetFilter))
+                  .where(
+                    targetMatchesMetadata(ctx.db, e.environment.targetFilter),
+                  )
               : [],
         })),
       );
@@ -530,7 +532,7 @@ export const environmentRouter = createTRPCRouter({
         );
 
         if (hasTargetFiltersChanged) {
-          const oldQuery = targetMatchsLabel(
+          const oldQuery = targetMatchesMetadata(
             ctx.db,
             oldEnv.environment.targetFilter,
           );
@@ -540,7 +542,7 @@ export const environmentRouter = createTRPCRouter({
             .where(
               and(
                 eq(target.workspaceId, oldEnv.system.workspaceId),
-                targetMatchsLabel(ctx.db, targetFilter),
+                targetMatchesMetadata(ctx.db, targetFilter),
                 oldQuery && not(oldQuery),
               ),
             );

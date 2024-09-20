@@ -71,7 +71,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- CREATE TYPE "public"."scope_type" AS ENUM('release', 'target', 'targetProvider', 'targetLabelGroup', 'workspace', 'environment', 'environmentPolicy', 'variableSet', 'system', 'deployment', 'jobAgent', 'runbook');
+ CREATE TYPE "public"."scope_type" AS ENUM('release', 'target', 'targetProvider', 'targetMetadataGroup', 'workspace', 'environment', 'environmentPolicy', 'variableSet', 'system', 'deployment', 'jobAgent', 'runbook');
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -272,10 +272,10 @@ CREATE TABLE IF NOT EXISTS "target" (
 	"updated_at" timestamp with time zone
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "target_label" (
+CREATE TABLE IF NOT EXISTS "target_metadata" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"target_id" uuid NOT NULL,
-	"label" text NOT NULL,
+	"key" text NOT NULL,
 	"value" text NOT NULL
 );
 --> statement-breakpoint
@@ -312,7 +312,7 @@ CREATE TABLE IF NOT EXISTS "release_dependency" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"release_id" uuid NOT NULL,
 	"deployment_id" uuid NOT NULL,
-	"target_label_group_id" uuid,
+	"target_metadata_group_id" uuid,
 	"rule_type" "release_dependency_rule_type" NOT NULL,
 	"rule" text NOT NULL
 );
@@ -417,7 +417,7 @@ CREATE TABLE IF NOT EXISTS "workspace_invite_token" (
 	CONSTRAINT "workspace_invite_token_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "target_label_group" (
+CREATE TABLE IF NOT EXISTS "target_metadata_group" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"workspace_id" uuid NOT NULL,
 	"name" text NOT NULL,
@@ -425,7 +425,7 @@ CREATE TABLE IF NOT EXISTS "target_label_group" (
 	"keys" text[] NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "target_label_group_keys" (
+CREATE TABLE IF NOT EXISTS "target_metadata_group_keys" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
 );
 --> statement-breakpoint
@@ -668,7 +668,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "target_label" ADD CONSTRAINT "target_label_target_id_target_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."target"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "target_metadata" ADD CONSTRAINT "target_metadata_target_id_target_id_fk" FOREIGN KEY ("target_id") REFERENCES "public"."target"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -710,7 +710,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "release_dependency" ADD CONSTRAINT "release_dependency_target_label_group_id_target_label_group_id_fk" FOREIGN KEY ("target_label_group_id") REFERENCES "public"."target_label_group"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "release_dependency" ADD CONSTRAINT "release_dependency_target_metadata_group_id_target_metadata_group_id_fk" FOREIGN KEY ("target_metadata_group_id") REFERENCES "public"."target_metadata_group"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -836,7 +836,7 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "target_label_group" ADD CONSTRAINT "target_label_group_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "target_metadata_group" ADD CONSTRAINT "target_metadata_group_workspace_id_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -883,11 +883,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS "environment_policy_deployment_policy_id_envir
 CREATE UNIQUE INDEX IF NOT EXISTS "unique_organization_repository_path" ON "github_config_file" USING btree ("organization_id","repository_name","path");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "unique_installation_workspace" ON "github_organization" USING btree ("installation_id","workspace_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "target_identifier_workspace_id_index" ON "target" USING btree ("identifier","workspace_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "target_label_label_target_id_index" ON "target_label" USING btree ("label","target_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "target_metadata_key_target_id_index" ON "target_metadata" USING btree ("key","target_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "target_schema_version_kind_workspace_id_index" ON "target_schema" USING btree ("version","kind","workspace_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "target_provider_workspace_id_name_index" ON "target_provider" USING btree ("workspace_id","name");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "release_deployment_id_version_index" ON "release" USING btree ("deployment_id","version");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "release_dependency_release_id_deployment_id_target_label_group_id_index" ON "release_dependency" USING btree ("release_id","deployment_id","target_label_group_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "release_dependency_release_id_deployment_id_target_metadata_group_id_index" ON "release_dependency" USING btree ("release_id","deployment_id","target_metadata_group_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "system_workspace_id_slug_index" ON "system" USING btree ("workspace_id","slug");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "team_member_team_id_user_id_index" ON "team_member" USING btree ("team_id","user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "job_variable_job_id_key_index" ON "job_variable" USING btree ("job_id","key");--> statement-breakpoint

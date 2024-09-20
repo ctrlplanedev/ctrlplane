@@ -18,9 +18,9 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 
-import { LabelFilterInput } from "../../_components/LabelFilterInput";
+import { MetadataFilterInput } from "../../_components/MetadataFilterInput";
 
-const labelFilterForm = z.object({
+const metadataFilterForm = z.object({
   targetFilter: z.array(
     z.object({
       key: z.string(),
@@ -29,12 +29,12 @@ const labelFilterForm = z.object({
   ),
 });
 
-export const LabelFilterDialog: React.FC<{
+export const MetadataFilterDialog: React.FC<{
   children: React.ReactNode;
   onChange?: (key: string, value: Record<string, string>) => void;
 }> = ({ children, onChange }) => {
   const form = useForm({
-    schema: labelFilterForm,
+    schema: metadataFilterForm,
     defaultValues: {
       targetFilter: [{ key: "", value: "" }],
     },
@@ -47,7 +47,7 @@ export const LabelFilterDialog: React.FC<{
 
   const onSubmit = form.handleSubmit((values) =>
     onChange?.(
-      "labels",
+      "metadata",
       _.chain(values.targetFilter).keyBy("key").mapValues("value").value(),
     ),
   );
@@ -58,7 +58,7 @@ export const LabelFilterDialog: React.FC<{
       <DialogContent>
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
-            <DialogTitle>Filter by label</DialogTitle>
+            <DialogTitle>Filter by metadata</DialogTitle>
 
             {fields.map((_, index) => (
               <FormField
@@ -67,7 +67,7 @@ export const LabelFilterDialog: React.FC<{
                 render={({ field: { onChange, value } }) => (
                   <FormItem className={index === 0 ? "mt-0" : "mt-2"}>
                     <FormControl>
-                      <LabelFilterInput
+                      <MetadataFilterInput
                         value={value}
                         onChange={onChange}
                         onRemove={() => remove(index)}
@@ -85,7 +85,7 @@ export const LabelFilterDialog: React.FC<{
               className="mt-4"
               onClick={() => append({ key: "", value: "" })}
             >
-              Add Label
+              Add Metadata Key
             </Button>
 
             <DialogFooter>

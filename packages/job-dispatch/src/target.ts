@@ -14,8 +14,8 @@ import {
   environment,
   system,
   target,
-  targetLabel,
-  targetMatchsLabel,
+  targetMatchesMetadata,
+  targetMetadata,
 } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
@@ -64,7 +64,7 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
       .where(
         and(
           inArray(target.id, targetIds),
-          targetMatchsLabel(db, env.targetFilter),
+          targetMatchesMetadata(db, env.targetFilter),
         ),
       )
       .then((tgs) => {
@@ -80,8 +80,9 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
 
 export const upsertTargets = async (
   tx: Tx,
-  targetsToInsert: Array<InsertTarget & { labels?: Record<string, string> }>,
+  targetsToInsert: Array<InsertTarget & { metadata?: Record<string, string> }>,
 ) => {
+  console.log(`>>> upserting ${targetsToInsert.length} targets`);
   const targetsBeforeInsert = await getExistingTargets(tx, targetsToInsert);
 
   const targets = await tx
@@ -98,51 +99,53 @@ export const upsertTargets = async (
     })
     .returning();
 
-  const targetLabelValues = targetsToInsert.flatMap((targetToInsert) => {
-    const { identifier, workspaceId, labels = [] } = targetToInsert;
+  const targetMetadataValues = targetsToInsert.flatMap((targetToInsert) => {
+    const { identifier, workspaceId, metadata = [] } = targetToInsert;
     const targetId = targets.find(
       (t) => t.identifier === identifier && t.workspaceId === workspaceId,
     )?.id;
     if (targetId == null) return [];
 
-    return Object.entries(labels).map(([label, value]) => ({
+    return Object.entries(metadata).map(([key, value]) => ({
       targetId,
-      label,
+      key,
       value,
     }));
   });
 
-  const existingTargetLabels = await tx
+  console.log(`>>> inserting ${targetMetadataValues.length} metadata values`);
+
+  const existingTargetMetadata = await tx
     .select()
-    .from(targetLabel)
+    .from(targetMetadata)
     .where(
       inArray(
-        targetLabel.targetId,
+        targetMetadata.targetId,
         targets.map((t) => t.id),
       ),
     );
 
-  const labelsToDelete = existingTargetLabels.filter(
-    (label) =>
-      !targetLabelValues.some(
-        (newLabel) =>
-          newLabel.targetId === label.targetId &&
-          newLabel.label === label.label,
+  const metadataToDelete = existingTargetMetadata.filter(
+    (metadata) =>
+      !targetMetadataValues.some(
+        (newMetadata) =>
+          newMetadata.targetId === metadata.targetId &&
+          newMetadata.key === metadata.key,
       ),
   );
 
   await tx
-    .insert(targetLabel)
-    .values(targetLabelValues)
+    .insert(targetMetadata)
+    .values(targetMetadataValues)
     .onConflictDoUpdate({
-      target: [targetLabel.targetId, targetLabel.label],
-      set: buildConflictUpdateColumns(targetLabel, ["value"]),
+      target: [targetMetadata.targetId, targetMetadata.key],
+      set: buildConflictUpdateColumns(targetMetadata, ["value"]),
     });
 
-  await tx.delete(targetLabel).where(
+  await tx.delete(targetMetadata).where(
     inArray(
-      targetLabel.id,
-      labelsToDelete.map((l) => l.id),
+      targetMetadata.id,
+      metadataToDelete.map((m) => m.id),
     ),
   );
 

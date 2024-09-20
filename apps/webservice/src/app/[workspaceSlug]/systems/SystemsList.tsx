@@ -54,8 +54,7 @@ export const SystemsList: React.FC<{
                 ) : (
                   <HoverCard>
                     <HoverCardTrigger>
-                      {Object.entries(f.value).length} label
-                      {Object.entries(f.value).length > 1 ? "s" : ""}
+                      {Object.entries(f.value).length} metadata
                     </HoverCardTrigger>
                     <HoverCardContent className="p-2" align="start">
                       {Object.entries(f.value).map(([key, value]) => (

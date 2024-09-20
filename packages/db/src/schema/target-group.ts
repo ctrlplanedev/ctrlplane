@@ -3,7 +3,7 @@ import { pgTable, text, uuid } from "drizzle-orm/pg-core";
 
 import { workspace } from "./workspace.js";
 
-export const targetLabelGroup = pgTable("target_label_group", {
+export const targetMetadataGroup = pgTable("target_metadata_group", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id")
     .notNull()
@@ -13,8 +13,8 @@ export const targetLabelGroup = pgTable("target_label_group", {
   keys: text("keys").array().notNull(),
 });
 
-export const targetLabelGroupKeys = pgTable("target_label_group_keys", {
+export const targetMetadataGroupKeys = pgTable("target_metadata_group_keys", {
   id: uuid("id").primaryKey().defaultRandom(),
 });
 
-export type TargetLabelGroup = InferSelectModel<typeof targetLabelGroup>;
+export type TargetMetadataGroup = InferSelectModel<typeof targetMetadataGroup>;

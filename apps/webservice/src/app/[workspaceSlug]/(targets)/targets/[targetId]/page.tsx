@@ -77,13 +77,13 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
   );
 };
 
-const TargetLabelsInfo: React.FC<{ labels: Record<string, string> }> = (
+const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
   props,
 ) => {
-  const labels = Object.entries(props.labels).sort(([keyA], [keyB]) =>
+  const metadata = Object.entries(props.metadata).sort(([keyA], [keyB]) =>
     keyA.localeCompare(keyB),
   );
-  const { search, setSearch, result } = useMatchSorterWithSearch(labels, {
+  const { search, setSearch, result } = useMatchSorterWithSearch(metadata, {
     keys: ["0", "1"],
   });
   return (
@@ -248,8 +248,8 @@ export default function TargetPage({
         </div>
         <div className="border-b" />
         <div className="p-6">
-          <div className="mb-4">Labels</div>
-          <TargetLabelsInfo labels={target.data?.labels ?? {}} />
+          <div className="mb-4">Metadata</div>
+          <TargetMetadataInfo metadata={target.data?.metadata ?? {}} />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

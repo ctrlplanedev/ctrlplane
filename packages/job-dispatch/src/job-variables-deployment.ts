@@ -118,7 +118,7 @@ const determineReleaseVariableValue = async (
       .select()
       .from(schema.target)
       .where(
-        schema.targetMatchsLabel(
+        schema.targetMatchesMetadata(
           tx,
           deploymentVariableValue.deployment_variable_value_target_filter
             .targetFilter,

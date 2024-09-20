@@ -30,7 +30,7 @@ export default function TargetLayout({
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
 
-  const labelGroups = api.target.labelGroup.groups.useQuery(
+  const metadataGroups = api.target.metadataGroup.groups.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
@@ -95,13 +95,13 @@ export default function TargetLayout({
 
               <NavigationMenuItem>
                 <Link
-                  href={`/${params.workspaceSlug}/target-label-groups`}
+                  href={`/${params.workspaceSlug}/target-metadata-groups`}
                   legacyBehavior
                   passHref
                 >
                   <NavigationMenuLink
                     active={pathname.includes(
-                      `/${params.workspaceSlug}/target-label-groups`,
+                      `/${params.workspaceSlug}/target-metadata-groups`,
                     )}
                     className="flex items-center gap-2 rounded-lg border border-neutral-900 px-2 py-1 text-sm text-muted-foreground data-[active]:border-neutral-800 data-[active]:bg-neutral-800/50 data-[active]:text-white"
                   >
@@ -110,7 +110,7 @@ export default function TargetLayout({
                       className="rounded-full border-neutral-900 text-inherit"
                       variant="outline"
                     >
-                      {labelGroups.data?.length ?? "-"}
+                      {metadataGroups.data?.length ?? "-"}
                     </Badge>
                   </NavigationMenuLink>
                 </Link>

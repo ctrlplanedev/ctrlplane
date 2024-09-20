@@ -36,7 +36,7 @@ export const scopeType = pgEnum("scope_type", [
   "release",
   "target",
   "targetProvider",
-  "targetLabelGroup",
+  "targetMetadataGroup",
   "workspace",
   "environment",
   "environmentPolicy",

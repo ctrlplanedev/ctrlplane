@@ -8,24 +8,24 @@ several features to help you manage large numbers of targets effectively.
 ## Target Groups
 
 Target Groups are a powerful feature that allow you to organize and manage your
-targets based on their labels. This grouping mechanism makes it easy to
+targets based on their metadata. This grouping mechanism makes it easy to
 categorize and find similar targets, providing a more efficient way to manage
 your infrastructure at scale.
 
 ### How Target Groups Work
 
-Target Groups use the labels assigned to your targets to automatically group
-them together. Each unique combination of labels can form a distinct group,
+Target Groups use the metadata assigned to your targets to automatically group
+them together. Each unique combination of metadata can form a distinct group,
 allowing for flexible and dynamic categorization.
 
 ### Creating Target Groups
 
-Target Groups are created automatically based on the labels you assign to your
+Target Groups are created automatically based on the metadata you assign to your
 targets. To effectively use Target Groups:
 
-1. Plan your labeling strategy to reflect meaningful categories for your
+1. Plan your metadata strategy to reflect meaningful categories for your
    infrastructure.
-2. Consistently apply labels to your targets as you add them to your system.
+2. Consistently apply metadata to your targets as you add them to your system.
 3. Use the Target Groups view in the dashboard to see how your targets are
    organized.
 
@@ -36,25 +36,25 @@ Target Groups can be incredibly versatile. Here are some common use cases:
 1. **Region-based Grouping**: Group targets by geographical region or data
    center location.
 
-   - Example labels: `region: us-west`, `region: eu-central`
+   - Example metadata: `region: us-west`, `region: eu-central`
 
 2. **Infrastructure Size**: Categorize targets by their resource allocation or
    capacity.
 
-   - Example labels: `size: small`, `size: medium`, `size: large`
+   - Example metadata: `size: small`, `size: medium`, `size: large`
 
 3. **Kubernetes Version**: Group targets running different versions of
    Kubernetes.
 
-   - Example labels: `kubernetes/version: 1.22`, `kubernetes/version: 1.23`
+   - Example metadata: `kubernetes/version: 1.22`, `kubernetes/version: 1.23`
 
 4. **Customer Segmentation**: For multi-tenant systems, group targets by
    customer or business size.
 
-   - Example labels: `customer: acme-corp`, `business-size: enterprise`
+   - Example metadata: `customer: acme-corp`, `business-size: enterprise`
 
 5. **Service Type**: Group targets by the primary service they run.
-   - Example labels: `service: web-server`, `service: database`, `service:
+   - Example metadata: `service: web-server`, `service: database`, `service:
 cache`
 
 ### Benefits of Using Target Groups
@@ -70,13 +70,13 @@ cache`
 
 ### Best Practices for Target Groups
 
-1. **Consistent Labeling**: Develop and adhere to a consistent labeling strategy
+1. **Consistent Metadata**: Develop and adhere to a consistent metadata strategy
    across your organization.
-2. **Meaningful Labels**: Choose labels that provide valuable information and
+2. **Meaningful Metadata**: Choose metadata keys that provide valuable information and
    aid in practical grouping.
-3. **Avoid Over-Complexity**: While labels are powerful, too many can lead to
+3. **Avoid Over-Complexity**: While metadata is powerful, too many keys can lead to
    overly complex groupings. Aim for a balance.
-4. **Regular Review**: Periodically review and update your labeling strategy as
+4. **Regular Review**: Periodically review and update your metadata strategy as
    your infrastructure evolves.
 
 By effectively using Target Groups, you can significantly improve your ability

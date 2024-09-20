@@ -1,5 +1,5 @@
 {
-  "id": "1f5710f3-56b5-43a8-bc97-92d00d99d25e",
+  "id": "1b361720-301c-46ef-bf99-468d4488476c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1639,8 +1639,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.target_label": {
-      "name": "target_label",
+    "public.target_metadata": {
+      "name": "target_metadata",
       "schema": "",
       "columns": {
         "id": {
@@ -1656,8 +1656,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "label": {
-          "name": "label",
+        "key": {
+          "name": "key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -1670,11 +1670,11 @@
         }
       },
       "indexes": {
-        "target_label_label_target_id_index": {
-          "name": "target_label_label_target_id_index",
+        "target_metadata_key_target_id_index": {
+          "name": "target_metadata_key_target_id_index",
           "columns": [
             {
-              "expression": "label",
+              "expression": "key",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1693,9 +1693,9 @@
         }
       },
       "foreignKeys": {
-        "target_label_target_id_target_id_fk": {
-          "name": "target_label_target_id_target_id_fk",
-          "tableFrom": "target_label",
+        "target_metadata_target_id_target_id_fk": {
+          "name": "target_metadata_target_id_target_id_fk",
+          "tableFrom": "target_metadata",
           "tableTo": "target",
           "columnsFrom": ["target_id"],
           "columnsTo": ["id"],
@@ -1990,8 +1990,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "target_label_group_id": {
-          "name": "target_label_group_id",
+        "target_metadata_group_id": {
+          "name": "target_metadata_group_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2011,8 +2011,8 @@
         }
       },
       "indexes": {
-        "release_dependency_release_id_deployment_id_target_label_group_id_index": {
-          "name": "release_dependency_release_id_deployment_id_target_label_group_id_index",
+        "release_dependency_release_id_deployment_id_target_metadata_group_id_index": {
+          "name": "release_dependency_release_id_deployment_id_target_metadata_group_id_index",
           "columns": [
             {
               "expression": "release_id",
@@ -2027,7 +2027,7 @@
               "nulls": "last"
             },
             {
-              "expression": "target_label_group_id",
+              "expression": "target_metadata_group_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -2058,11 +2058,11 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "release_dependency_target_label_group_id_target_label_group_id_fk": {
-          "name": "release_dependency_target_label_group_id_target_label_group_id_fk",
+        "release_dependency_target_metadata_group_id_target_metadata_group_id_fk": {
+          "name": "release_dependency_target_metadata_group_id_target_metadata_group_id_fk",
           "tableFrom": "release_dependency",
-          "tableTo": "target_label_group",
-          "columnsFrom": ["target_label_group_id"],
+          "tableTo": "target_metadata_group",
+          "columnsFrom": ["target_metadata_group_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -2879,8 +2879,8 @@
         }
       }
     },
-    "public.target_label_group": {
-      "name": "target_label_group",
+    "public.target_metadata_group": {
+      "name": "target_metadata_group",
       "schema": "",
       "columns": {
         "id": {
@@ -2917,9 +2917,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "target_label_group_workspace_id_workspace_id_fk": {
-          "name": "target_label_group_workspace_id_workspace_id_fk",
-          "tableFrom": "target_label_group",
+        "target_metadata_group_workspace_id_workspace_id_fk": {
+          "name": "target_metadata_group_workspace_id_workspace_id_fk",
+          "tableFrom": "target_metadata_group",
           "tableTo": "workspace",
           "columnsFrom": ["workspace_id"],
           "columnsTo": ["id"],
@@ -2930,8 +2930,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
-    "public.target_label_group_keys": {
-      "name": "target_label_group_keys",
+    "public.target_metadata_group_keys": {
+      "name": "target_metadata_group_keys",
       "schema": "",
       "columns": {
         "id": {
@@ -3405,7 +3405,7 @@
         "release",
         "target",
         "targetProvider",
-        "targetLabelGroup",
+        "targetMetadataGroup",
         "workspace",
         "environment",
         "environmentPolicy",

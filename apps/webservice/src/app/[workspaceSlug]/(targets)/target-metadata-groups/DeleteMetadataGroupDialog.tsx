@@ -17,12 +17,12 @@ import {
 
 import { api } from "~/trpc/react";
 
-export const DeleteLabelGroupDialog: React.FC<{
+export const DeleteMetadataGroupDialog: React.FC<{
   id: string;
   children: React.ReactNode;
 }> = ({ id, children }) => {
   const [open, setOpen] = useState(false);
-  const deleteLabelGroup = api.target.labelGroup.delete.useMutation();
+  const deleteMetadataGroup = api.target.metadataGroup.delete.useMutation();
   const router = useRouter();
 
   return (
@@ -30,16 +30,16 @@ export const DeleteLabelGroupDialog: React.FC<{
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete Label Group</AlertDialogTitle>
+          <AlertDialogTitle>Delete Metadata Group</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription>
-          Are you sure you want to delete this label group?
+          Are you sure you want to delete this metadata group?
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
             onClick={() =>
-              deleteLabelGroup
+              deleteMetadataGroup
                 .mutateAsync(id)
                 .then(() => setOpen(false))
                 .then(() => router.refresh())
