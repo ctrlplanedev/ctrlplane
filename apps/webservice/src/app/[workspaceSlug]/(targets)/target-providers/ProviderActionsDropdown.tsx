@@ -5,6 +5,7 @@ import type {
   TargetProviderGoogle,
 } from "@ctrlplane/db/schema";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { TbDots } from "react-icons/tb";
 
 import {
@@ -41,9 +42,15 @@ export const ProviderActionsDropdown: React.FC<{
   const deleteProvider = api.target.provider.delete.useMutation({
     onSuccess: () => utils.target.provider.byWorkspaceId.invalidate(),
   });
+  const router = useRouter();
 
-  const handleDelete = (deleteTargets: boolean) =>
-    deleteProvider.mutate({ providerId: provider.id, deleteTargets });
+  const handleDelete = async (deleteTargets: boolean) => {
+    await deleteProvider.mutateAsync({
+      providerId: provider.id,
+      deleteTargets,
+    });
+    router.refresh();
+  };
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
