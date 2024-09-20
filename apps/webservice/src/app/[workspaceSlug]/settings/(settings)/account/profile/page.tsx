@@ -28,8 +28,6 @@ export default async function AccountSettingProfilePage() {
             Manage your Ctrlplane profile
           </p>
         </div>
-
-        {/* Profile Section */}
         <ul>
           <section className="space-y-6 rounded-t-lg bg-neutral-800/70 p-6 shadow-lg">
             <li>
