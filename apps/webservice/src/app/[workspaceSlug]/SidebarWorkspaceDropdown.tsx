@@ -60,7 +60,7 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
                   key={ws.id}
                   href={`/${ws.slug}`}
                   passHref
-                  onClick={() => update.mutate(ws)}
+                  onClick={() => update.mutate({ activeWorkspaceId: ws.id })}
                 >
                   <DropdownMenuItem>
                     {ws.name}
