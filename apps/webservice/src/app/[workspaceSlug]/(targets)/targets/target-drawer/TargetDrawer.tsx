@@ -22,6 +22,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 import { api } from "~/trpc/react";
 import { DeploymentsContent } from "./DeploymentContent";
 import { OverviewContent } from "./OverviewContent";
+import { RelationshipsContent } from "./RelationshipContent";
 
 export const TargetDrawer: React.FC<{
   isOpen: boolean;
@@ -104,7 +105,7 @@ export const TargetDrawer: React.FC<{
                   onClick={() => setActiveTab("overview")}
                   variant="ghost"
                   className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0",
+                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
                     activeTab === "overview"
                       ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
                       : "text-muted-foreground",
@@ -117,7 +118,7 @@ export const TargetDrawer: React.FC<{
                   onClick={() => setActiveTab("deployments")}
                   variant="ghost"
                   className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0",
+                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
                     activeTab === "deployments"
                       ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
                       : "text-muted-foreground",
@@ -130,7 +131,7 @@ export const TargetDrawer: React.FC<{
                   onClick={() => setActiveTab("jobs")}
                   variant="ghost"
                   className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0",
+                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
                     activeTab === "jobs"
                       ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
                       : "text-muted-foreground",
@@ -143,7 +144,7 @@ export const TargetDrawer: React.FC<{
                   onClick={() => setActiveTab("variables")}
                   variant="ghost"
                   className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0",
+                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
                     activeTab === "variables"
                       ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
                       : "text-muted-foreground",
@@ -156,7 +157,7 @@ export const TargetDrawer: React.FC<{
                   onClick={() => setActiveTab("metadata")}
                   variant="ghost"
                   className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0",
+                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0  pr-4",
                     activeTab === "metadata"
                       ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
                       : "text-muted-foreground",
@@ -169,7 +170,7 @@ export const TargetDrawer: React.FC<{
                   onClick={() => setActiveTab("relationships")}
                   variant="ghost"
                   className={cn(
-                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0",
+                    "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-4",
                     activeTab === "relationships"
                       ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
                       : "text-muted-foreground",
@@ -185,6 +186,9 @@ export const TargetDrawer: React.FC<{
                 )}
                 {activeTab === "overview" && (
                   <OverviewContent target={target} />
+                )}
+                {activeTab === "relationships" && (
+                  <RelationshipsContent target={target} />
                 )}
               </div>
             </div>

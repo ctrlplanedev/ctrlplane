@@ -55,7 +55,7 @@ export const createTargetScanWorker = () =>
           tp.target_provider_google,
         );
 
-        await upsertTargets(db, gkeTargets);
+        await upsertTargets(db, tp.target_provider.id, gkeTargets);
       }
     },
     {

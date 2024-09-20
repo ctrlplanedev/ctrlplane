@@ -23,22 +23,8 @@ import { dispatchJobsForNewTargets } from "./new-target.js";
 
 const log = logger.child({ label: "upsert-targets" });
 
-const getExistingTargets = (db: Tx, tgs: InsertTarget[]) =>
-  db
-    .select()
-    .from(target)
-    .where(
-      and(
-        inArray(
-          target.identifier,
-          tgs.map((t) => t.identifier),
-        ),
-        inArray(
-          target.workspaceId,
-          tgs.map((t) => t.workspaceId),
-        ),
-      ),
-    );
+const getExistingTargets = (db: Tx, providerId: string) =>
+  db.select().from(target).where(eq(target.providerId, providerId));
 
 const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
   const [firstTarget] = newTargets;
@@ -80,10 +66,10 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
 
 export const upsertTargets = async (
   tx: Tx,
+  providerId: string,
   targetsToInsert: Array<InsertTarget & { metadata?: Record<string, string> }>,
 ) => {
-  console.log(`>>> upserting ${targetsToInsert.length} targets`);
-  const targetsBeforeInsert = await getExistingTargets(tx, targetsToInsert);
+  const targetsBeforeInsert = await getExistingTargets(tx, providerId);
 
   const targets = await tx
     .insert(target)
@@ -112,8 +98,6 @@ export const upsertTargets = async (
       value,
     }));
   });
-
-  console.log(`>>> inserting ${targetMetadataValues.length} metadata values`);
 
   const existingTargetMetadata = await tx
     .select()
@@ -155,12 +139,31 @@ export const upsertTargets = async (
 
   if (newTargets.length > 0) dispatchNewTargets(db, newTargets);
 
+  const targetsToDelete = targetsBeforeInsert.filter(
+    (t) => !targets.some((newTarget) => newTarget.identifier === t.identifier),
+  );
+
   const newTargetCount = newTargets.length;
   const targetsToInsertCount = targetsToInsert.length;
   log.info(
     `Found ${newTargetCount} new targets out of ${targetsToInsertCount} total targets`,
-    { newTargetCount, targetsToInsertCount },
+    {
+      newTargetCount,
+      targetsToInsertCount,
+      targetsToDeleteCount: targetsToDelete.length,
+      targetsBeforeInsertCount: targetsBeforeInsert.length,
+    },
   );
+
+  if (targetsToDelete.length > 0) {
+    await tx.delete(target).where(
+      inArray(
+        target.id,
+        targetsToDelete.map((t) => t.id),
+      ),
+    );
+    log.info(`Deleted ${targetsToDelete.length} targets`, { targetsToDelete });
+  }
 
   return targets;
 };
