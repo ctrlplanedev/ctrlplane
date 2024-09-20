@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS "deployment_variable_value_target" (
 CREATE TABLE IF NOT EXISTS "deployment_variable_value_target_filter" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"variable_value_id" uuid NOT NULL,
-	"labels" jsonb NOT NULL
+	"target_filter" jsonb NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "deployment" (
@@ -423,6 +423,10 @@ CREATE TABLE IF NOT EXISTS "target_label_group" (
 	"name" text NOT NULL,
 	"description" text NOT NULL,
 	"keys" text[] NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "target_label_group_keys" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "runbook_variable" (
