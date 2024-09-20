@@ -330,7 +330,7 @@ export default function TargetsPage({
                   <span className="text-muted-foreground">
                     {f.key === "name" && "contains"}
                     {f.key === "kind" && "is"}
-                    {f.key === "metadata" && "match"}
+                    {f.key === "metadata" && "matches"}
                   </span>
                   <span>
                     {typeof f.value === "string" ? (
@@ -338,7 +338,7 @@ export default function TargetsPage({
                     ) : (
                       <HoverCard>
                         <HoverCardTrigger>
-                          {Object.entries(f.value).length} metadata
+                          {Object.entries(f.value).length} key
                           {Object.entries(f.value).length > 1 ? "s" : ""}
                         </HoverCardTrigger>
                         <HoverCardContent className="p-2" align="start">
