@@ -10,6 +10,8 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import { workspace } from "./workspace.js";
 
@@ -26,6 +28,13 @@ export const user = pgTable("user", {
 });
 
 export type User = InferSelectModel<typeof user>;
+
+export const createUser = createInsertSchema(user, {
+  name: z.string().min(1).max(255),
+  username: z.string().min(1).max(255),
+  email: z.string().email(),
+  activeWorkspaceId: z.string().uuid().optional(),
+}).omit({ id: true });
 
 export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),

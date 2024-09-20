@@ -3,31 +3,24 @@ import { z } from "zod";
 
 import { can, generateApiKey, hash } from "@ctrlplane/auth/utils";
 import { and, eq, takeFirst } from "@ctrlplane/db";
-import { scopeType, user, userApiKey } from "@ctrlplane/db/schema";
+import { createUser, scopeType, user, userApiKey } from "@ctrlplane/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const profileRouter = createTRPCRouter({
-  update: protectedProcedure
-    .input(
-      z.object({
-        activeWorkspaceId: z.string().uuid().nullable().optional(),
-        username: z.string().min(3).max(30).optional(),
-      }),
-    )
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .update(user)
-        .set({
-          ...(input.activeWorkspaceId && {
-            activeWorkspaceId: input.activeWorkspaceId,
-          }),
-          ...(input.username && { username: input.username }),
-        })
-        .where(eq(user.id, ctx.session.user.id))
-        .returning()
-        .then(takeFirst),
-    ),
+  update: protectedProcedure.input(createUser).mutation(({ ctx, input }) =>
+    ctx.db
+      .update(user)
+      .set({
+        ...(input.activeWorkspaceId && {
+          activeWorkspaceId: input.activeWorkspaceId,
+        }),
+        ...(input.username && { username: input.username }),
+      })
+      .where(eq(user.id, ctx.session.user.id))
+      .returning()
+      .then(takeFirst),
+  ),
 });
 
 export const userRouter = createTRPCRouter({

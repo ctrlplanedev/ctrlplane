@@ -23,7 +23,7 @@ export const UpsertUsername: React.FC<{
   const handleBlur = () =>
     cachedUsername !== username &&
     update
-      .mutateAsync({ username: cachedUsername ?? "" })
+      .mutateAsync({ ...user, username: cachedUsername ?? "" })
       .then(() => {
         setUsername(cachedUsername);
         toast.success("Username updated");
