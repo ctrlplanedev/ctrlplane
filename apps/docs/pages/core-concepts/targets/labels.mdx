@@ -55,3 +55,17 @@ tier: backend
 By effectively using target labels in Ctrlplane, you can create more flexible,
 manageable, and scalable deployment strategies that adapt to your organization's
 evolving needs.
+
+## Special Labels
+
+In Ctrlplane, we have special labels that can be added to targets to enhance the
+user experience in the UI. These labels do not change the core functionality of
+Ctrlplane but provide additional features and visual cues for better usability.
+
+| Label                         | Description                                                                                                                                     |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ctrlplane/links`             | Provides a set of links related to the target. The value should be a JSON object where the keys are the link names and the values are the URLs. |
+| `ctrlplane/created-by-job-id` | UUID of the Ctrlplane Job that created the target.                                                                                              |
+| `ctrlplane/external-id`       | An external identifier for the target, which can be used to correlate the target with resources in other systems.                               |
+| `ctrlplane/cloud-platform`    | The cloud platform the target is running on (e.g., AWS, GCP, Azure).                                                                            |
+| `ctrlplane/parent-target-id`  | The UUID of the parent target, if the target is a child resource of another target.                                                             |
