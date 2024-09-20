@@ -1,3 +1,4 @@
+import type { InsertTarget } from "@ctrlplane/db/schema";
 import type { TargetScanEvent } from "@ctrlplane/validators/events";
 import type { Job } from "bullmq";
 import { Queue, Worker } from "bullmq";
@@ -49,6 +50,8 @@ export const createTargetScanWorker = () =>
         `Received scanning request for "${tp.target_provider.name}" (${targetProviderId}).`,
       );
 
+      const targets: InsertTarget[] = [];
+
       if (tp.target_provider_google != null) {
         logger.info("Found Google config, scanning for GKE targets");
         try {
@@ -56,12 +59,24 @@ export const createTargetScanWorker = () =>
             tp.workspace,
             tp.target_provider_google,
           );
-          await upsertTargets(db, tp.target_provider.id, gkeTargets);
+          targets.push(...gkeTargets);
         } catch (error: any) {
           logger.error(`Error scanning GKE targets: ${error.message}`, {
             error,
           });
         }
+      }
+
+      try {
+        logger.info(
+          `Upserting ${targets.length} targets for provider ${tp.target_provider.id}`,
+        );
+        await upsertTargets(db, tp.target_provider.id, targets);
+      } catch (error: any) {
+        logger.error(
+          `Error upserting targets for provider ${tp.target_provider.id}: ${error.message}`,
+          { error },
+        );
       }
     },
     {
