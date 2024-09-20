@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import { SiGithub } from "react-icons/si";
 
 import { auth } from "@ctrlplane/auth";
-import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/server";
+import { GithubRedirectButton } from "./GithubRedirectButton";
 import { UpsertUsername } from "./UpsertUsername";
 
 const defaultAvatar = "/apple-touch-icon.png";
@@ -18,7 +18,7 @@ export default async function AccountSettingProfilePage() {
   if (session == null) redirect("/login");
   const user = await api.user.viewer();
   const { image, name, email } = user;
-
+  const githubUser = await api.github.user.byUserId(session.user.id);
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
       <div className="container mx-auto max-w-2xl space-y-8 py-8">
@@ -82,7 +82,7 @@ export default async function AccountSettingProfilePage() {
             </Label>
           </section>
           <section className="space-y-6 rounded-b-lg border border-neutral-800/70 bg-background px-6 shadow-lg">
-            <li className="border-b py-6">
+            <li className="py-6">
               <div className="flex flex-col justify-between lg:flex-row lg:items-center">
                 <SiGithub className="mr-2 h-4 w-4" />
                 <span className="w-96">
@@ -91,9 +91,11 @@ export default async function AccountSettingProfilePage() {
                     Connect your GitHub account.
                   </p>
                 </span>
-                <Button variant="outline" className="w-32">
-                  Connect
-                </Button>
+                <GithubRedirectButton
+                  variant="outline"
+                  className="w-32"
+                  githubUserId={githubUser?.userId ?? ""}
+                />
               </div>
             </li>
           </section>
