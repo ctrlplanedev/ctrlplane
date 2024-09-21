@@ -144,7 +144,7 @@ export const UpsertMetadataGroupDialog: React.FC<{
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{create ? "Create" : "Edit"} Label Group</DialogTitle>
+          <DialogTitle>{create ? "Create" : "Edit"} Metadata Group</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -219,7 +219,7 @@ export const UpsertMetadataGroupDialog: React.FC<{
                     setInput("");
                   }}
                 >
-                  Add Label
+                  Add Key
                 </Button>
               </div>
             </div>

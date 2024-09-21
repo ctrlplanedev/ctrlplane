@@ -2,7 +2,7 @@
 
 import type { ComparisonCondition } from "@ctrlplane/validators/targets";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
@@ -38,7 +38,6 @@ export default function TargetsPage({
   const workspace = api.workspace.bySlug.useQuery(params.workspaceSlug);
   const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
     useFilters<TargetFilter>();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const combination: Record<string, string> = useMemo(() => {
     const combinations = searchParams.get("combinations");
@@ -47,11 +46,19 @@ export default function TargetsPage({
 
   useEffect(() => {
     if (Object.keys(combination).length === 0) return;
-    const metadataFilter = filters.find((f) => f.key === "metadata");
-    if (!_.isEqual(metadataFilter?.value, combination))
-      addFilters([{ key: "metadata", value: combination }]);
-    router.replace(`/${params.workspaceSlug}/targets`);
-  }, [combination, filters, addFilters, router, params.workspaceSlug]);
+
+    console.log("combination", { combination });
+    const cond = {
+      operator: "and" as const,
+      conditions: Object.entries(combination).map(([key, value]) => ({
+        key,
+        value,
+        operator: "equals" as const,
+      })),
+    };
+    if (!filters.some((f) => f.key === "metadata" && _.isEqual(f.value, cond)))
+      addFilters([{ key: "metadata", value: cond }]);
+  }, [combination, filters, addFilters, params.workspaceSlug]);
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },

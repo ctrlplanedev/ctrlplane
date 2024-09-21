@@ -13,7 +13,10 @@ import {
 
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
-  groups: Array<{ targets: number } & Record<string, string>>;
+  groups: Array<{
+    targets: number;
+    metadata: Record<string, string>;
+  }>;
 }> = ({ workspaceSlug, groups }) => {
   const router = useRouter();
   return (
@@ -26,7 +29,7 @@ export const CombinationsTable: React.FC<{
       </TableHeader>
       <TableBody>
         {groups.map((group, idx) => {
-          const { targets, ...combinations } = group;
+          const { targets, metadata } = group;
           return (
             <TableRow
               key={idx}
@@ -34,13 +37,13 @@ export const CombinationsTable: React.FC<{
               onClick={() =>
                 router.push(
                   `/${workspaceSlug}/targets?combinations=${encodeURIComponent(
-                    JSON.stringify(combinations),
+                    JSON.stringify(metadata),
                   )}`,
                 )
               }
             >
               <TableCell>
-                {Object.entries(combinations).map(([key, value]) => (
+                {Object.entries(metadata).map(([key, value]) => (
                   <div key={key} className="text-nowrap font-mono text-xs">
                     <span className="text-red-400">{key}:</span>{" "}
                     <span className="text-green-300">{value}</span>

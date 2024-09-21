@@ -65,29 +65,38 @@ export const targetMetadataGroupRouter = createTRPCRouter({
 
       if (group == null) throw new Error("Group not found");
 
-      const groups = await ctx.db
+      const targetMetadataAgg = ctx.db
         .select({
-          targets: sql<number>`count(distinct ${target.id})`.mapWith(Number),
-          ...Object.fromEntries(
-            group.keys.map((k) => [
-              k,
-              sql.raw(`"target_metadata"."value"`).as(k),
-            ]),
-          ),
+          id: target.id,
+          metadata: sql<Record<string, string>>`jsonb_object_agg(
+                      ${targetMetadata}.key,
+                      ${targetMetadata}.value
+                    )`.as("metadata"),
         })
         .from(target)
-        .innerJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
-        .where(
+        .leftJoin(
+          targetMetadata,
           and(
+            eq(target.id, targetMetadata.targetId),
             inArray(targetMetadata.key, group.keys),
-            eq(target.workspaceId, group.workspaceId),
           ),
         )
-        .groupBy(targetMetadata.value);
+        .where(eq(target.workspaceId, group.workspaceId))
+        .groupBy(target.id)
+        .as("target_metadata_agg");
+
+      const groups = await ctx.db
+        .with(targetMetadataAgg)
+        .select({
+          metadata: targetMetadataAgg.metadata,
+          targets: sql<number>`COUNT(*)`.as("targets"),
+        })
+        .from(targetMetadataAgg)
+        .groupBy(targetMetadataAgg.metadata);
 
       return {
         ...group,
-        groups: groups as Array<{ targets: number } & Record<string, string>>,
+        groups,
       };
     }),
 
