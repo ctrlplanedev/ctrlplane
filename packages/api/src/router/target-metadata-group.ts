@@ -76,7 +76,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
                     )`.as("metadata"),
           })
           .from(target)
-          .leftJoin(
+          .innerJoin(
             targetMetadata,
             and(
               eq(target.id, targetMetadata.targetId),
