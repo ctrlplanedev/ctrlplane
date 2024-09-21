@@ -73,7 +73,7 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
 
   const message = `${result.ok ? "OK" : "NOT OK"} - request from ${source} by ${email}`;
   if (durationMs > 100 || !result.ok) {
-    logger.warning(message, meta);
+    logger.warn(message, meta);
     return result;
   }
 
