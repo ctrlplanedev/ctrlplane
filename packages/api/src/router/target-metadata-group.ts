@@ -15,6 +15,7 @@ import {
   targetMetadataGroup,
   workspace,
 } from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -57,47 +58,52 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const group = await ctx.db
-        .select()
-        .from(targetMetadataGroup)
-        .where(eq(targetMetadataGroup.id, input))
-        .then(takeFirstOrNull);
+      try {
+        const group = await ctx.db
+          .select()
+          .from(targetMetadataGroup)
+          .where(eq(targetMetadataGroup.id, input))
+          .then(takeFirstOrNull);
 
-      if (group == null) throw new Error("Group not found");
+        if (group == null) throw new Error("Group not found");
 
-      const targetMetadataAgg = ctx.db
-        .select({
-          id: target.id,
-          metadata: sql<Record<string, string>>`jsonb_object_agg(
+        const targetMetadataAgg = ctx.db
+          .select({
+            id: target.id,
+            metadata: sql<Record<string, string>>`jsonb_object_agg(
                       ${targetMetadata.key},
                       ${targetMetadata.value}
                     )`.as("metadata"),
-        })
-        .from(target)
-        .leftJoin(
-          targetMetadata,
-          and(
-            eq(target.id, targetMetadata.targetId),
-            inArray(targetMetadata.key, group.keys),
-          ),
-        )
-        .where(eq(target.workspaceId, group.workspaceId))
-        .groupBy(target.id)
-        .as("target_metadata_agg");
+          })
+          .from(target)
+          .leftJoin(
+            targetMetadata,
+            and(
+              eq(target.id, targetMetadata.targetId),
+              inArray(targetMetadata.key, group.keys),
+            ),
+          )
+          .where(eq(target.workspaceId, group.workspaceId))
+          .groupBy(target.id)
+          .as("target_metadata_agg");
 
-      const groups = await ctx.db
-        .with(targetMetadataAgg)
-        .select({
-          metadata: targetMetadataAgg.metadata,
-          targets: sql<number>`COUNT(*)`.as("targets"),
-        })
-        .from(targetMetadataAgg)
-        .groupBy(targetMetadataAgg.metadata);
+        const groups = await ctx.db
+          .with(targetMetadataAgg)
+          .select({
+            metadata: targetMetadataAgg.metadata,
+            targets: sql<number>`COUNT(*)`.as("targets"),
+          })
+          .from(targetMetadataAgg)
+          .groupBy(targetMetadataAgg.metadata);
 
-      return {
-        ...group,
-        groups,
-      };
+        return {
+          ...group,
+          groups,
+        };
+      } catch (error) {
+        logger.error(`>>> Error fetching target metadata: ${String(error)}`);
+        throw error;
+      }
     }),
 
   upsert: protectedProcedure
