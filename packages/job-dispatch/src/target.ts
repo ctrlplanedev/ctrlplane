@@ -80,7 +80,7 @@ export const upsertTargets = async (
 
     duplicateTargets.forEach((target) =>
       log.error(
-        `>>> Duplicate target identifier ${target.identifier} in workspace ${target.workspaceId}`,
+        `>>> Duplicate target identifier ${target.identifier} found in workspace ${target.workspaceId}`,
       ),
     );
 
