@@ -19,14 +19,14 @@ export default async function TargetMetadataGroupPages({
       <div className="flex items-center gap-3 border-b p-4 px-8 text-xl">
         <span className="">{metadataGroup.name}</span>
         <Badge className="rounded-full text-muted-foreground" variant="outline">
-          {metadataGroup.groups.length}
+          {metadataGroup.combinations.length}
         </Badge>
       </div>
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-110px)] w-full overflow-auto">
         <CombinationsTable
           workspaceSlug={workspaceSlug}
-          groups={metadataGroup.groups}
+          combinations={metadataGroup.combinations}
         />
       </div>
     </div>

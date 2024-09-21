@@ -30,8 +30,16 @@ export const MetadataFilterInput: React.FC<{
     value: EqualCondition | LikeCondition | RegexCondition | NullCondition,
   ) => void;
   onRemove?: () => void;
+  selectedKeys?: string[];
   numInputs?: number;
-}> = ({ workspaceId, value, onChange, onRemove, numInputs }) => {
+}> = ({
+  workspaceId,
+  value,
+  onChange,
+  onRemove,
+  selectedKeys = [],
+  numInputs,
+}) => {
   const [open, setOpen] = useState(false);
   const metadataKeys = api.target.metadataKeys.useQuery(workspaceId ?? "", {
     enabled: workspaceId != null,
@@ -39,7 +47,7 @@ export const MetadataFilterInput: React.FC<{
   const filteredMetadataKeys = useMatchSorter(
     metadataKeys.data ?? [],
     value.key,
-  );
+  ).filter((k) => !selectedKeys.includes(k));
   return (
     <div className="flex items-center gap-2">
       <div className="grid grid-cols-8">

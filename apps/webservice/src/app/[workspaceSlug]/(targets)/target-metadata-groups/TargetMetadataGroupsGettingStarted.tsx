@@ -5,7 +5,7 @@ import { TbCategory } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { UpsertMetadataGroupDialog } from "./UpsertMetadataGroupDialog";
+import { CreateMetadataGroupDialog } from "./CreateMetadataGroupDialog";
 
 export const TargetMetadataGroupsGettingStarted: React.FC<{
   workspace: Workspace;
@@ -32,9 +32,9 @@ export const TargetMetadataGroupsGettingStarted: React.FC<{
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <UpsertMetadataGroupDialog workspaceId={workspace.id} create>
+          <CreateMetadataGroupDialog workspaceId={workspace.id}>
             <Button size="sm">Create Metadata Group</Button>
-          </UpsertMetadataGroupDialog>
+          </CreateMetadataGroupDialog>
           <Button size="sm" variant="secondary">
             View Documentation
           </Button>

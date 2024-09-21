@@ -2,7 +2,7 @@
 
 import type { ComparisonCondition } from "@ctrlplane/validators/targets";
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
@@ -39,26 +39,41 @@ export default function TargetsPage({
   const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
     useFilters<TargetFilter>();
   const searchParams = useSearchParams();
-  const combination: Record<string, string> = useMemo(() => {
+  const router = useRouter();
+  const combination: ComparisonCondition | null = useMemo(() => {
     const combinations = searchParams.get("combinations");
-    return combinations ? JSON.parse(combinations) : {};
+    const parsed: Record<string, string | null> | null = combinations
+      ? JSON.parse(combinations)
+      : null;
+    if (parsed == null) return null;
+    return {
+      operator: "and" as const,
+      conditions: Object.entries(parsed).map(([key, value]) => {
+        if (value == null) {
+          return {
+            key,
+            operator: "null" as const,
+          };
+        }
+        return {
+          key,
+          value,
+          operator: "equals" as const,
+        };
+      }),
+    };
   }, [searchParams]);
 
   useEffect(() => {
-    if (Object.keys(combination).length === 0) return;
-
-    console.log("combination", { combination });
-    const cond = {
-      operator: "and" as const,
-      conditions: Object.entries(combination).map(([key, value]) => ({
-        key,
-        value,
-        operator: "equals" as const,
-      })),
-    };
-    if (!filters.some((f) => f.key === "metadata" && _.isEqual(f.value, cond)))
-      addFilters([{ key: "metadata", value: cond }]);
-  }, [combination, filters, addFilters, params.workspaceSlug]);
+    if (combination == null) return;
+    if (
+      !filters.some(
+        (f) => f.key === "metadata" && _.isEqual(f.value, combination),
+      )
+    )
+      addFilters([{ key: "metadata", value: combination }]);
+    router.replace(`/${params.workspaceSlug}/targets`);
+  }, [combination, filters, addFilters, params.workspaceSlug, router]);
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },

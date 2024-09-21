@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbX } from "react-icons/tb";
+import { TbBulb, TbX } from "react-icons/tb";
 import { z } from "zod";
 
+import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -26,85 +27,36 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
+import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
-import { useMatchSorter } from "~/utils/useMatchSorter";
-
-const MetadataFilterInput: React.FC<{
-  value: string;
-  workspaceId: string;
-  onChange: (value: string) => void;
-}> = ({ value, workspaceId, onChange }) => {
-  const { data: metadataKeys } = api.target.metadataKeys.useQuery(workspaceId);
-  const [open, setOpen] = useState(false);
-  const filteredLabels = useMatchSorter(metadataKeys ?? [], value);
-  return (
-    <div className="flex items-center gap-2">
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger
-          onClick={(e) => e.stopPropagation()}
-          className="flex-grow"
-        >
-          <Input
-            placeholder="Key"
-            className="h-8"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          className="max-h-[300px] w-[23rem] overflow-auto p-0 text-sm"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          {filteredLabels.map((k) => (
-            <Button
-              variant="ghost"
-              size="sm"
-              key={k}
-              className="w-full rounded-none text-left"
-              onClick={(e) => {
-                e.preventDefault();
-                onChange(k);
-                setOpen(false);
-              }}
-            >
-              <div className="w-full">{k}</div>
-            </Button>
-          ))}
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-};
+import { MetadataFilterInput } from "./MetadataFilterInput";
+import { NullCombinationsExample } from "./NullCombinationsExample";
 
 const metadataGroupFormSchema = z.object({
-  id: z.string().optional(),
   name: z.string().min(1),
   keys: z.array(z.object({ value: z.string().min(1) })).min(1),
   description: z.string(),
+  includeNullCombinations: z.boolean().optional(),
 });
 
-export const UpsertMetadataGroupDialog: React.FC<{
+export const CreateMetadataGroupDialog: React.FC<{
   workspaceId: string;
-  create: boolean;
   children: React.ReactNode;
-  values?: z.infer<typeof metadataGroupFormSchema>;
-  parentClose?: () => void;
-}> = ({ workspaceId, create, values, children, parentClose }) => {
+}> = ({ workspaceId, children }) => {
   const [open, setOpen] = useState(false);
-  const createMetadataGroup = api.target.metadataGroup.upsert.useMutation();
+  const createMetadataGroup = api.target.metadataGroup.create.useMutation();
   const utils = api.useUtils();
   const [input, setInput] = useState("");
   const router = useRouter();
   const form = useForm({
     schema: metadataGroupFormSchema,
-    defaultValues: values ?? {
+    defaultValues: {
       name: "",
       keys: [],
       description: "",
+      includeNullCombinations: false,
     },
     mode: "onChange",
   });
@@ -114,22 +66,18 @@ export const UpsertMetadataGroupDialog: React.FC<{
     control: form.control,
   });
 
-  const onSubmit = form.handleSubmit((values) =>
+  const onSubmit = form.handleSubmit((values) => {
+    console.log(">>> values", { values });
     createMetadataGroup
       .mutateAsync({
-        data: {
-          id: values.id,
-          name: values.name,
-          keys: values.keys.map((key) => key.value),
-          description: values.description,
-        },
+        ...values,
+        keys: values.keys.map((key) => key.value),
         workspaceId,
       })
       .then(() => utils.target.metadataGroup.groups.invalidate())
-      .then(() => parentClose?.())
       .then(() => setOpen(false))
-      .then(() => router.refresh()),
-  );
+      .then(() => router.refresh());
+  });
 
   return (
     <Dialog
@@ -144,7 +92,7 @@ export const UpsertMetadataGroupDialog: React.FC<{
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{create ? "Create" : "Edit"} Metadata Group</DialogTitle>
+          <DialogTitle>Create Metadata Group</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -177,13 +125,18 @@ export const UpsertMetadataGroupDialog: React.FC<{
 
             <div>
               <Label>Keys</Label>
+              {fields.length === 0 && (
+                <p className="h-[30px] text-xs text-muted-foreground">
+                  No keys added
+                </p>
+              )}
               {fields.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {fields.map((field, index) => (
                     <Badge
                       key={field.id}
                       variant="outline"
-                      className="flex w-min items-center gap-1 text-nowrap px-2 py-1 text-xs"
+                      className="flex w-fit items-center gap-1 text-nowrap px-2 py-1 text-xs"
                     >
                       {field.value}
                       <Button
@@ -206,6 +159,7 @@ export const UpsertMetadataGroupDialog: React.FC<{
                   value={input}
                   workspaceId={workspaceId}
                   onChange={setInput}
+                  selectedKeys={fields.map((field) => field.value)}
                 />
               </div>
               <div className="ml-auto">
@@ -224,10 +178,31 @@ export const UpsertMetadataGroupDialog: React.FC<{
               </div>
             </div>
 
+            <FormField
+              control={form.control}
+              name="includeNullCombinations"
+              render={({ field: { value, onChange } }) => (
+                <FormItem className="flex flex-col gap-2">
+                  <FormLabel>Include Null Combinations?</FormLabel>
+                  <Alert variant="secondary">
+                    <TbBulb className="h-5 w-5" />
+                    <AlertTitle>Null Combinations</AlertTitle>
+                    <AlertDescription>
+                      If enabled, combinations with null values will be
+                      included. For example, if the keys "env" and "tier" are
+                      selected, the following combinations will be tracked in
+                      this metadata group: <NullCombinationsExample />
+                    </AlertDescription>
+                  </Alert>
+                  <FormControl>
+                    <Switch checked={value} onCheckedChange={onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
-              <Button type="submit" disabled={!form.formState.isDirty}>
-                {create ? "Create" : "Update"}
-              </Button>
+              <Button type="submit">Create</Button>
             </DialogFooter>
           </form>
         </Form>

@@ -32,6 +32,12 @@ export enum Permission {
   TargetProviderDelete = "targetProvider.delete",
   TargetProviderUpdate = "targetProvider.update",
 
+  TargetMetadataGroupList = "targetMetadataGroup.list",
+  TargetMetadataGroupGet = "targetMetadataGroup.get",
+  TargetMetadataGroupCreate = "targetMetadataGroup.create",
+  TargetMetadataGroupUpdate = "targetMetadataGroup.update",
+  TargetMetadataGroupDelete = "targetMetadataGroup.delete",
+
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
   DeploymentGet = "deployment.get",
