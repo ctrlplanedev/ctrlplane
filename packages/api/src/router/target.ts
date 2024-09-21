@@ -102,7 +102,7 @@ export const targetRouter = createTRPCRouter({
         }),
       )
       .query(({ ctx, input }) => {
-        const workspaceIdCheck = eq(workspace.id, input.workspaceId);
+        const workspaceIdCheck = eq(target.workspaceId, input.workspaceId);
 
         const nameFilters = (input.filters ?? [])
           .filter((f) => f.key === "name")
@@ -133,7 +133,15 @@ export const targetRouter = createTRPCRouter({
               metadata: a.targetMetadata,
             })),
           );
-        const total = targetQuery(ctx.db, checks).then((t) => t.length);
+
+        const total = ctx.db
+          .select({
+            count: sql`COUNT(*)`.mapWith(Number),
+          })
+          .from(target)
+          .where(and(...checks))
+          .then(takeFirst)
+          .then((t) => t.count);
 
         return Promise.all([items, total]).then(([items, total]) => ({
           items,

@@ -26,7 +26,7 @@ export default function TargetLayout({
   const { workspaceSlug } = params;
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const targets = api.target.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.data?.id ?? "" },
+    { workspaceId: workspace.data?.id ?? "", limit: 0 },
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
 
