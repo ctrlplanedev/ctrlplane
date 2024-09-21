@@ -13,8 +13,4 @@ export const targetMetadataGroup = pgTable("target_metadata_group", {
   keys: text("keys").array().notNull(),
 });
 
-export const targetMetadataGroupKeys = pgTable("target_metadata_group_keys", {
-  id: uuid("id").primaryKey().defaultRandom(),
-});
-
 export type TargetMetadataGroup = InferSelectModel<typeof targetMetadataGroup>;

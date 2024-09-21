@@ -282,7 +282,7 @@ export const CreateReleaseDialog: React.FC<{
                         <FormItem className="col-span-1">
                           <Select value={value} onValueChange={onChange}>
                             <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Label Group" />
+                              <SelectValue placeholder="Metadata Group" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>

@@ -86,7 +86,7 @@ export const SystemsList: React.FC<{
             addFilters={addFilters}
             className="min-w-[200px] bg-neutral-900 p-1"
           >
-            <ContentDialog property="name">
+            <ContentDialog<SystemFilter> property="name">
               <TbTarget /> Name
             </ContentDialog>
           </FilterDropdown>

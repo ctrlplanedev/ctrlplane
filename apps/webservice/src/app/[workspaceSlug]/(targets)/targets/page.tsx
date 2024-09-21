@@ -1,7 +1,8 @@
 "use client";
 
+import type { ComparisonCondition } from "@ctrlplane/validators/targets";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
@@ -35,9 +36,8 @@ export default function TargetsPage({
   params: { workspaceSlug: string };
 }) {
   const workspace = api.workspace.bySlug.useQuery(params.workspaceSlug);
-  const { filters, removeFilter, addFilters, clearFilters } =
+  const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
     useFilters<TargetFilter>();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const combination: Record<string, string> = useMemo(() => {
     const combinations = searchParams.get("combinations");
@@ -46,18 +46,33 @@ export default function TargetsPage({
 
   useEffect(() => {
     if (Object.keys(combination).length === 0) return;
-    const metadataFilter = filters.find((f) => f.key === "metadata");
-    if (!_.isEqual(metadataFilter?.value, combination))
-      addFilters([{ key: "metadata", value: combination }]);
-    router.replace(`/${params.workspaceSlug}/targets`);
-  }, [combination, filters, addFilters, router, params.workspaceSlug]);
+
+    console.log("combination", { combination });
+    const cond = {
+      operator: "and" as const,
+      conditions: Object.entries(combination).map(([key, value]) => ({
+        key,
+        value,
+        operator: "equals" as const,
+      })),
+    };
+    if (!filters.some((f) => f.key === "metadata" && _.isEqual(f.value, cond)))
+      addFilters([{ key: "metadata", value: cond }]);
+  }, [combination, filters, addFilters, params.workspaceSlug]);
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },
     { enabled: workspace.isSuccess },
   );
+
   const targets = api.target.byWorkspaceId.list.useQuery(
-    { workspaceId: workspace.data?.id ?? "", filters },
+    {
+      workspaceId: workspace.data?.id ?? "",
+      filters: filters.filter((f) => f.key !== "metadata"),
+      metadataFilters: filters
+        .filter((f) => f.key === "metadata")
+        .map((f) => f.value as ComparisonCondition),
+    },
     { enabled: workspace.isSuccess },
   );
   const kinds = api.target.byWorkspaceId.kinds.useQuery(
@@ -75,62 +90,88 @@ export default function TargetsPage({
     <div className="h-full text-sm">
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex flex-wrap items-center gap-1">
-          {filters.map((f, idx) => (
-            <Badge
-              key={idx}
-              variant="outline"
-              className="h-7 gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
-            >
-              <span>{capitalCase(f.key)}</span>
-              <span className="text-muted-foreground">
-                {f.key === "name" && "contains"}
-                {f.key === "kind" && "is"}
-                {f.key === "metadata" && "matches"}
-              </span>
-              <span>
-                {typeof f.value === "string" ? (
-                  f.value
-                ) : (
-                  <HoverCard>
-                    <HoverCardTrigger>
-                      {Object.entries(f.value).length} key
-                      {Object.entries(f.value).length > 1 ? "s" : ""}
-                    </HoverCardTrigger>
-                    <HoverCardContent className="p-2" align="start">
-                      {Object.entries(f.value).map(([key, value]) => (
-                        <div key={key}>
-                          <span className="text-red-400">{key}:</span>{" "}
-                          <span className="text-green-400">{value}</span>
-                        </div>
-                      ))}
-                    </HoverCardContent>
-                  </HoverCard>
-                )}
-              </span>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 text-xs text-muted-foreground"
-                onClick={() => removeFilter(idx)}
+          {filters.map((f, idx) =>
+            f.key === "metadata" ? (
+              <MetadataFilterDialog
+                workspaceId={workspace.data?.id ?? ""}
+                filter={f.value as ComparisonCondition}
+                onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
               >
-                <TbX />
-              </Button>
-            </Badge>
-          ))}
+                <Badge
+                  key={idx}
+                  variant="outline"
+                  className="h-7 cursor-pointer gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
+                >
+                  <span>{capitalCase(f.key)}</span>
+                  <span className="text-muted-foreground">matches</span>
+                  <span>
+                    <div className="p-2">
+                      {(f.value as ComparisonCondition).conditions.length}
+                      {(f.value as ComparisonCondition).conditions.length > 1
+                        ? " keys"
+                        : " key"}
+                    </div>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-xs text-muted-foreground"
+                    onClick={() => removeFilter(idx)}
+                  >
+                    <TbX />
+                  </Button>
+                </Badge>
+              </MetadataFilterDialog>
+            ) : (
+              <Badge
+                key={idx}
+                variant="outline"
+                className="h-7 gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
+              >
+                <span>{capitalCase(f.key)}</span>
+                <span className="text-muted-foreground">
+                  {f.key === "name" && "contains"}
+                  {f.key === "kind" && "is"}
+                </span>
+                <span>
+                  {typeof f.value === "string" ? (
+                    f.value
+                  ) : (
+                    <HoverCard>
+                      <HoverCardTrigger>
+                        {Object.entries(f.value).length} key
+                        {Object.entries(f.value).length > 1 ? "s" : ""}
+                      </HoverCardTrigger>
+                      <HoverCardContent className="p-2" align="start">
+                        {Object.entries(f.value).map(([key, value]) => (
+                          <div key={key}>
+                            <span className="text-red-400">{key}:</span>{" "}
+                            <span className="text-green-400">{value}</span>
+                          </div>
+                        ))}
+                      </HoverCardContent>
+                    </HoverCard>
+                  )}
+                </span>
+              </Badge>
+            ),
+          )}
 
           <FilterDropdown<TargetFilter>
             filters={filters}
             addFilters={addFilters}
             className="min-w-[200px] bg-neutral-900 p-1"
           >
-            <ContentDialog property="name">
+            <ContentDialog<TargetFilter> property="name">
               <TbTarget /> Name
             </ContentDialog>
-            <ComboboxFilter property="kind" options={kinds.data ?? []}>
+            <ComboboxFilter<TargetFilter>
+              property="kind"
+              options={kinds.data ?? []}
+            >
               <TbCategory /> Kind
             </ComboboxFilter>
-            <MetadataFilterDialog>
+            <MetadataFilterDialog workspaceId={workspace.data?.id ?? ""}>
               <TbTag /> Metadata
             </MetadataFilterDialog>
           </FilterDropdown>

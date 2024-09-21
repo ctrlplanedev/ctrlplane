@@ -22,11 +22,11 @@ const dialogs: Array<string | JSXElementConstructor<any>> = [
 const isDialog = (type: string | JSXElementConstructor<any>) =>
   dialogs.includes(type) || ((type as any).name as string).includes("Dialog");
 
-interface FilterProps {
+interface FilterProps<T extends Filter<string, any>> {
   property: string;
   options?: string[];
   children?: React.ReactNode;
-  onChange?: (key: string, value: any) => void;
+  onChange?: (filter: T) => void;
 }
 
 export const FilterDropdown = <T extends Filter<string, any>>({
@@ -72,14 +72,14 @@ export const FilterDropdown = <T extends Filter<string, any>>({
       </DropdownMenuTrigger>
       <DropdownMenuContent className={className} align="start">
         {React.Children.map(children, (child) => {
-          if (!React.isValidElement<FilterProps>(child)) return null;
+          if (!React.isValidElement<FilterProps<T>>(child)) return null;
           if (isDialog(child.type)) return null;
 
           const { property } = child.props;
           if (openContent === property)
             return React.cloneElement(child, {
-              onChange: (key: string, value: any) => {
-                addFilters([{ key, value } as T]);
+              onChange: (filter: T) => {
+                addFilters([filter]);
                 setOpenContent("");
                 setOpen(false);
               },
@@ -88,7 +88,7 @@ export const FilterDropdown = <T extends Filter<string, any>>({
 
         {openContent === "" &&
           React.Children.map(children, (child) => {
-            if (!React.isValidElement<FilterProps>(child)) return null;
+            if (!React.isValidElement<FilterProps<T>>(child)) return null;
 
             const { property, children } = child.props;
 
@@ -100,8 +100,8 @@ export const FilterDropdown = <T extends Filter<string, any>>({
 
             if (isDialog(child.type))
               return React.cloneElement(child, {
-                onChange: (key: string, value: any) => {
-                  addFilters([{ key, value } as T]);
+                onChange: (filter: T) => {
+                  addFilters([filter]);
                   setOpenContent("");
                   setOpen(false);
                 },
