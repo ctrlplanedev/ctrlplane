@@ -71,11 +71,9 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
     ok: result.ok,
   };
 
-  const log = durationMs > 100 || !result.ok ? logger.warning : logger.info;
-  log(
-    `${result.ok ? "OK" : "NOT OK"} - request from ${source} by ${email}`,
-    meta,
-  );
+  const logLevel = durationMs > 100 || !result.ok ? "warning" : "info";
+  const message = `${result.ok ? "OK" : "NOT OK"} - request from ${source} by ${email}`;
+  logger[logLevel](message, meta);
 
   return result;
 });
