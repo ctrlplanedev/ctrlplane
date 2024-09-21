@@ -18,6 +18,7 @@
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/ui": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@hookform/resolvers": "^3.3.4",

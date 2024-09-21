@@ -122,7 +122,7 @@ export const getGkeTargets = async (
             return namespaces
               .filter((n) => n.metadata?.name != null)
               .map((n) =>
-                _.merge(clusterTarget, {
+                _.merge(_.cloneDeep(clusterTarget), {
                   name: `${cluster.name ?? cluster.id ?? ""}/${n.metadata!.name}`,
                   kind: "Namespace",
                   identifier: `${project}/${cluster.name}/${n.metadata!.name}`,

@@ -72,17 +72,19 @@ export const upsertTargets = async (
   try {
     const targetsBeforeInsert = await getExistingTargets(tx, providerId);
 
-    const duplicateTargets = _.chain(targetsToInsert)
+    const duplicateTargetIdentifiers = _.chain(targetsToInsert)
       .groupBy((target) => [target.identifier, target.workspaceId])
       .filter((targets) => targets.length > 1)
-      .map((targets) => targets[0]!)
+      .map((targets) => targets[0]!.identifier)
       .value();
 
-    duplicateTargets.forEach((target) =>
-      log.error(
-        `>>> Duplicate target identifier ${target.identifier} found in workspace ${target.workspaceId}`,
-      ),
-    );
+    if (duplicateTargetIdentifiers.length > 0) {
+      const errorMessage = `Duplicate target identifiers found: ${duplicateTargetIdentifiers.join(
+        ", ",
+      )}`;
+      logger.error(errorMessage);
+      throw new Error(errorMessage);
+    }
 
     const targets = await tx
       .insert(target)

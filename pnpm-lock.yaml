@@ -296,6 +296,9 @@ importers:
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../../packages/job-dispatch
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@ctrlplane/ui':
         specifier: workspace:*
         version: link:../../packages/ui
