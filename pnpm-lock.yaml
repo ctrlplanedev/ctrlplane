@@ -613,6 +613,9 @@ importers:
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../job-dispatch
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../validators

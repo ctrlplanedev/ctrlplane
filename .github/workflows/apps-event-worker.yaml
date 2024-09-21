@@ -6,20 +6,20 @@ on:
     paths:
       - apps/event-worker/**
       - packages/db/**
+      - packages/job-dispatch/**
       - packages/validators/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
-      - packages/job-dispatch/**
   push:
     branches: ["main"]
     paths:
       - apps/event-worker/**
       - packages/db/**
+      - packages/job-dispatch/**
       - packages/validators/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
-      - packages/job-dispatch/**
-      
+
 jobs:
   build:
     runs-on: ubuntu-latest

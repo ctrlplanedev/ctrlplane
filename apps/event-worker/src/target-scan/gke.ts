@@ -120,15 +120,13 @@ export const getGkeTargets = async (
               cluster,
             );
             return namespaces
-              .filter((n) => n.metadata != null)
+              .filter((n) => n.metadata?.name != null)
               .map((n) =>
                 _.merge(clusterTarget, {
                   name: `${cluster.name ?? cluster.id ?? ""}/${n.metadata!.name}`,
                   kind: "Namespace",
                   identifier: `${project}/${cluster.name}/${n.metadata!.name}`,
-                  config: {
-                    namespace: n.metadata!.name,
-                  },
+                  config: { namespace: n.metadata!.name },
                   metadata: {
                     [ReservedMetadataKey.ParentTargetIdentifier]:
                       clusterTarget.identifier,

@@ -6,17 +6,15 @@ import { ZodError } from "zod";
 
 import { can } from "@ctrlplane/auth/utils";
 import { db } from "@ctrlplane/db/client";
+import { logger } from "@ctrlplane/logger";
 
 export const createTRPCContext = (opts: {
   headers: Headers;
   session: Session | null;
 }) => {
   const session = opts.session;
-  const source = opts.headers.get("x-trpc-source") ?? "unknown";
-
-  console.log(">>> tRPC Request from", source, "by", session?.user.email);
-
-  return { session, db };
+  const trpcSource = opts.headers.get("x-trpc-source") ?? "unknown";
+  return { trpcSource, session, db };
 };
 
 export type Context = ReturnType<typeof createTRPCContext>;
@@ -54,9 +52,37 @@ export const createCallerFactory = t.createCallerFactory;
  */
 export const createTRPCRouter = t.router;
 
-export const publicProcedure = t.procedure;
+export const loggedProcedure = t.procedure.use(async (opts) => {
+  const start = Date.now();
 
-const authnProcedure = t.procedure.use(({ ctx, next }) => {
+  const result = await opts.next();
+
+  const durationMs = Date.now() - start;
+
+  const session = opts.ctx.session;
+  const email = session?.user.email ?? "unknown";
+  const source = opts.ctx.trpcSource;
+
+  const meta = {
+    label: "trpc",
+    path: opts.path,
+    type: opts.type,
+    durationMs,
+    ok: result.ok,
+  };
+
+  const log = durationMs > 100 || !result.ok ? logger.warning : logger.info;
+  log(
+    `${result.ok ? "OK" : "NOT OK"} - request from ${source} by ${email}`,
+    meta,
+  );
+
+  return result;
+});
+
+export const publicProcedure = loggedProcedure;
+
+const authnProcedure = loggedProcedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
   return next({
     ctx: {
@@ -65,6 +91,7 @@ const authnProcedure = t.procedure.use(({ ctx, next }) => {
     },
   });
 });
+
 const authzProcedure = authnProcedure.use(
   async ({ ctx, meta, path, getRawInput, next }) => {
     const { authorizationCheck } = meta ?? {};
