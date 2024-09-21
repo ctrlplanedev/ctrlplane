@@ -5,7 +5,7 @@ import baseConfig, {
 
 /** @type {import('typescript-eslint').Config} */
 export default [
-  { ignores: ["coverage/**"] },
+  { ignores: ["coverage/**", "dist/**"] },
   ...vitestEslintConfig,
   ...requireJsSuffix,
   ...baseConfig,
