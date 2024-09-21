@@ -2,6 +2,7 @@ import type {
   ComparisonCondition,
   EqualCondition,
   LikeCondition,
+  NullCondition,
   RegexCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
@@ -34,6 +35,7 @@ import {
 import {
   equalsCondition,
   likeCondition,
+  nullCondition,
   regexCondition,
 } from "@ctrlplane/validators/targets";
 
@@ -43,7 +45,7 @@ import { MetadataFilterInput } from "../../_components/MetadataFilterInput";
 const metadataFilterForm = z.object({
   operator: z.enum(["and", "or"]),
   targetFilter: z.array(
-    z.union([likeCondition, regexCondition, equalsCondition]),
+    z.union([likeCondition, regexCondition, equalsCondition, nullCondition]),
   ),
 });
 
@@ -59,7 +61,7 @@ export const MetadataFilterDialog: React.FC<{
     defaultValues: {
       operator: "and" as const,
       targetFilter: (filter?.conditions as
-        | (LikeCondition | RegexCondition | EqualCondition)[]
+        | (LikeCondition | RegexCondition | EqualCondition | NullCondition)[]
         | undefined) ?? [{ key: "", value: "", operator: "equals" }],
     },
   });

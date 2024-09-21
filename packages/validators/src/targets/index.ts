@@ -2,6 +2,13 @@ import { z } from "zod";
 
 export * from "./kubernetes-v1.js";
 
+export const nullCondition = z.object({
+  key: z.string().min(1),
+  operator: z.literal("null"),
+});
+
+export type NullCondition = z.infer<typeof nullCondition>;
+
 export const equalsCondition = z.object({
   key: z.string().min(1),
   value: z.string().min(1),
@@ -35,6 +42,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         regexCondition,
         equalsCondition,
         comparisonCondition,
+        nullCondition,
       ]),
     ),
   }),
@@ -43,7 +51,11 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
 export type ComparisonCondition = {
   operator: "and" | "or";
   conditions: Array<
-    ComparisonCondition | LikeCondition | RegexCondition | EqualCondition
+    | ComparisonCondition
+    | LikeCondition
+    | RegexCondition
+    | EqualCondition
+    | NullCondition
   >;
 };
 
@@ -52,13 +64,15 @@ export const metadataConditions = z.union([
   regexCondition,
   likeCondition,
   comparisonCondition,
+  nullCondition,
 ]);
 
 export type MetadataCondition =
   | ComparisonCondition
   | LikeCondition
   | RegexCondition
-  | EqualCondition;
+  | EqualCondition
+  | NullCondition;
 
 export enum ReservedMetadataKey {
   ExternalId = "ctrlplane/external-id",

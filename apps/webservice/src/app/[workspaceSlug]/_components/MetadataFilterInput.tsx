@@ -3,6 +3,7 @@
 import type {
   EqualCondition,
   LikeCondition,
+  NullCondition,
   RegexCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
@@ -24,8 +25,10 @@ import { useMatchSorter } from "~/utils/useMatchSorter";
 
 export const MetadataFilterInput: React.FC<{
   workspaceId?: string;
-  value: EqualCondition | LikeCondition | RegexCondition;
-  onChange: (value: EqualCondition | LikeCondition | RegexCondition) => void;
+  value: EqualCondition | LikeCondition | RegexCondition | NullCondition;
+  onChange: (
+    value: EqualCondition | LikeCondition | RegexCondition | NullCondition,
+  ) => void;
   onRemove?: () => void;
   numInputs?: number;
 }> = ({ workspaceId, value, onChange, onRemove, numInputs }) => {
@@ -83,8 +86,16 @@ export const MetadataFilterInput: React.FC<{
         <div className="col-span-2">
           <Select
             value={value.operator}
-            onValueChange={(v: "equals" | "regex" | "like") =>
-              onChange({ ...value, operator: v })
+            onValueChange={(v: "equals" | "regex" | "like" | "null") =>
+              v === "null"
+                ? onChange({
+                    key: value.key,
+                    operator: "null",
+                  } as NullCondition)
+                : onChange({ ...value, operator: v } as
+                    | EqualCondition
+                    | RegexCondition
+                    | LikeCondition)
             }
           >
             <SelectTrigger className="rounded-none">
@@ -94,24 +105,29 @@ export const MetadataFilterInput: React.FC<{
               <SelectItem value="equals">Equals</SelectItem>
               <SelectItem value="regex">Regex</SelectItem>
               <SelectItem value="like">Like</SelectItem>
+              <SelectItem value="null">Is Null</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        <div className="col-span-3">
-          <Input
-            placeholder={
-              value.operator === "regex"
-                ? "^[a-zA-Z]+$"
-                : value.operator === "like"
-                  ? "%value%"
-                  : "Value"
-            }
-            value={value.value}
-            onChange={(e) => onChange({ ...value, value: e.target.value })}
-            className="rounded-l-none"
-          />
-        </div>
+        {value.operator !== "null" ? (
+          <div className="col-span-3">
+            <Input
+              placeholder={
+                value.operator === "regex"
+                  ? "^[a-zA-Z]+$"
+                  : value.operator === "like"
+                    ? "%value%"
+                    : "Value"
+              }
+              value={value.value}
+              onChange={(e) => onChange({ ...value, value: e.target.value })}
+              className="rounded-l-none"
+            />
+          </div>
+        ) : (
+          <div className="col-span-3 h-9  cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+        )}
       </div>
 
       {(numInputs == null || numInputs > 1) && (

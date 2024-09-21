@@ -1,6 +1,6 @@
 import type { MetadataCondition } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
-import { exists, like, or, sql } from "drizzle-orm";
+import { exists, like, notExists, or, sql } from "drizzle-orm";
 import {
   json,
   jsonb,
@@ -86,6 +86,19 @@ export const targetMetadata = pgTable(
 );
 
 const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
+  if (cond.operator === "null")
+    return notExists(
+      tx
+        .select()
+        .from(targetMetadata)
+        .where(
+          and(
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+          ),
+        ),
+    );
+
   if (cond.operator === "regex")
     return exists(
       tx

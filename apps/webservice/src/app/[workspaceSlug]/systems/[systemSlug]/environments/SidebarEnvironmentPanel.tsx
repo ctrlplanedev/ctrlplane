@@ -3,6 +3,7 @@
 import type {
   EqualCondition,
   LikeCondition,
+  NullCondition,
   RegexCondition,
 } from "@ctrlplane/validators/targets";
 import { useParams } from "next/navigation";
@@ -34,6 +35,7 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   equalsCondition,
   likeCondition,
+  nullCondition,
   regexCondition,
 } from "@ctrlplane/validators/targets";
 
@@ -46,7 +48,7 @@ const environmentForm = z.object({
   description: z.string().default(""),
   operator: z.enum(["and", "or"]),
   targetFilter: z.array(
-    z.union([likeCondition, regexCondition, equalsCondition]),
+    z.union([likeCondition, regexCondition, equalsCondition, nullCondition]),
   ),
 });
 
@@ -69,6 +71,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         | EqualCondition
         | RegexCondition
         | LikeCondition
+        | NullCondition
       )[],
     },
   });
@@ -81,9 +84,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       metadataFilters: [
         {
           operator,
-          conditions: targetFilter.filter(
-            (f) => f.key !== "" && f.value !== "",
-          ),
+          conditions: targetFilter.filter((f) => f.key !== ""),
         },
       ],
     },
