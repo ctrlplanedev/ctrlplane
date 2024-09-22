@@ -32,6 +32,14 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
+      /*
+      perform two separate queries:
+
+      1. grab all target groups where null combinations are not allowed and add the metadata key count subquery to get the number of targets in that label group
+      2. count all the targets in the workspace once, then grab only the metadata groups where null combinations were allowed and add the total target count to the metadata group
+      
+      then combine the two results and sort them by name
+      */
       const matchingTargetsQuery = ctx.db
         .select({ targetId: target.id })
         .from(target)

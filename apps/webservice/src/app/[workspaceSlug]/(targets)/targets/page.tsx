@@ -72,6 +72,8 @@ export default function TargetsPage({
       )
     )
       addFilters([{ key: "metadata", value: combination }]);
+    /* if we do not remove the params from the url, even if the user deletes
+     the filter, the useEffect will add it again */
     router.replace(`/${params.workspaceSlug}/targets`);
   }, [combination, filters, addFilters, params.workspaceSlug, router]);
 
