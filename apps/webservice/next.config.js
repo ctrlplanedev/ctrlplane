@@ -23,6 +23,8 @@ const config = {
     remotePatterns: [{ hostname: "lh3.googleusercontent.com" }],
   },
 
+  experimental: { instrumentationHook: true },
+
   async rewrites() {
     return [
       {
