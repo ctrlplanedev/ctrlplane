@@ -1,38 +1,20 @@
 import type { Target } from "@ctrlplane/db/schema";
 
 import { Card } from "@ctrlplane/ui/card";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
-import { api } from "~/trpc/react";
+import { TargetRelationshipsDiagram } from "./RelationshipsDiagram";
 
 export const RelationshipsContent: React.FC<{
   target: Target;
 }> = ({ target }) => {
-  const childrenTargets = api.target.byWorkspaceId.list.useQuery({
-    workspaceId: target.workspaceId,
-    metadataFilters: [
-      {
-        operator: "and",
-        conditions: [
-          {
-            operator: "equals",
-            key: ReservedMetadataKey.ParentTargetIdentifier,
-            value: target.identifier,
-          },
-        ],
-      },
-    ],
-  });
   return (
     <div className="space-y-4">
       <div className="space-y-2 text-sm">
         <div>Children</div>
         <Card className="px-3 py-2">
-          {childrenTargets.data?.items.map((t) => (
-            <div key={t.id}>
-              {t.name} {t.kind}
-            </div>
-          ))}
+          <div className="h-[650px] w-full">
+            <TargetRelationshipsDiagram targetId={target.id} />
+          </div>
         </Card>
       </div>
     </div>
