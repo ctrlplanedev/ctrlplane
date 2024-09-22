@@ -12,13 +12,13 @@ function createLogger(level: string) {
       const { timestamp, level, message, durationMs, ...other } = info;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       const ts = timestamp?.slice(0, 19).replace("T", " ");
-      const duration = durationMs != null ? `(Timer: ${durationMs}ms)` : "";
+      const duration = durationMs != null ? `(${durationMs}ms)` : "";
       const hasLabel = info.label != null;
       const appendLabel = info.label?.length < 5 ? "    " : "";
-      const label = hasLabel ? `\t[${info.label}]${appendLabel} ` : "\t\t";
+      const label = hasLabel ? `\t[${info.label}]${appendLabel} ` : "\t";
 
       return NODE_ENV === "production"
-        ? `${ts} ${duration} [${level}]: ${label} ${message} ${duration} [${JSON.stringify(other)}]`
+        ? `${ts} [${level}]: ${label} ${message} ${duration} [${JSON.stringify(other)}]`
         : `[${level}]: ${colors.gray(label)}${message} ${duration} [${JSON.stringify(other)}]`;
     }),
   ];

@@ -10,12 +10,16 @@ export const RelationshipsContent: React.FC<{
 }> = ({ target }) => {
   const childrenTargets = api.target.byWorkspaceId.list.useQuery({
     workspaceId: target.workspaceId,
-    filters: [
+    metadataFilters: [
       {
-        key: "metadata",
-        value: {
-          [ReservedMetadataKey.ParentTargetIdentifier]: target.identifier,
-        },
+        operator: "and",
+        conditions: [
+          {
+            operator: "equals",
+            key: ReservedMetadataKey.ParentTargetIdentifier,
+            value: target.identifier,
+          },
+        ],
       },
     ],
   });
