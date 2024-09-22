@@ -1,10 +1,19 @@
 "use client";
 
-import type { NodeProps, NodeTypes, ReactFlowInstance } from "reactflow";
+import type {
+  EdgeProps,
+  EdgeTypes,
+  NodeProps,
+  NodeTypes,
+  ReactFlowInstance,
+} from "reactflow";
 import { useCallback, useEffect, useState } from "react";
 import { SiKubernetes, SiTerraform } from "react-icons/si";
 import { TbTarget } from "react-icons/tb";
 import ReactFlow, {
+  BaseEdge,
+  EdgeLabelRenderer,
+  getBezierPath,
   Handle,
   MarkerType,
   Position,
@@ -74,9 +83,54 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
   );
 };
 
-const nodeTypes: NodeTypes = {
-  target: TargetNode,
+const DepEdge: React.FC<EdgeProps> = ({
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  label,
+  style = {},
+  markerEnd,
+}) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge
+        path={edgePath}
+        markerEnd={markerEnd}
+        style={{ strokeWidth: 2, ...style }}
+      />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            fontSize: 16,
+            // everything inside EdgeLabelRenderer has no pointer events by default
+            // if you have an interactive element, set pointer-events: all
+            pointerEvents: "all",
+          }}
+          className="nodrag nopan z-10"
+        >
+          {label}
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
 };
+
+const nodeTypes: NodeTypes = { target: TargetNode };
+const edgeTypes: EdgeTypes = { default: DepEdge };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const useOnLayout = () => {
@@ -133,10 +187,8 @@ const TargetDiagram: React.FC<{
             t.level > 0
               ? `${t.workpace_id}-${t.identifier}`
               : `${t.workpace_id}-${t.parent_identifier}`,
-          markerEnd: {
-            type: MarkerType.Arrow,
-            color: colors.neutral[700],
-          },
+          markerEnd: { type: MarkerType.Arrow, color: colors.neutral[500] },
+          style: { stroke: colors.neutral[500] },
         };
       }),
   );
@@ -160,14 +212,14 @@ const TargetDiagram: React.FC<{
       onInit={setReactFlowInstance}
       nodesDraggable
       nodeTypes={nodeTypes}
-      edgeTypes={{}}
+      edgeTypes={edgeTypes}
     />
   );
 };
 
-export const TargetRelationshipsDiagram: React.FC<{ targetId: string }> = ({
-  targetId,
-}) => {
+export const TargetHierarchyRelationshipsDiagram: React.FC<{
+  targetId: string;
+}> = ({ targetId }) => {
   const hierarchy = api.target.relations.hierarchy.useQuery(targetId);
 
   if (hierarchy.data == null) return null;

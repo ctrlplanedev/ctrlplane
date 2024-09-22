@@ -2,7 +2,7 @@ import type { Target } from "@ctrlplane/db/schema";
 
 import { Card } from "@ctrlplane/ui/card";
 
-import { TargetRelationshipsDiagram } from "./RelationshipsDiagram";
+import { TargetHierarchyRelationshipsDiagram } from "./RelationshipsDiagram";
 
 export const RelationshipsContent: React.FC<{
   target: Target;
@@ -10,10 +10,10 @@ export const RelationshipsContent: React.FC<{
   return (
     <div className="space-y-4">
       <div className="space-y-2 text-sm">
-        <div>Children</div>
+        <div>Hierarchy</div>
         <Card className="px-3 py-2">
-          <div className="h-[650px] w-full">
-            <TargetRelationshipsDiagram targetId={target.id} />
+          <div className="h-[450px] w-full">
+            <TargetHierarchyRelationshipsDiagram targetId={target.id} />
           </div>
         </Card>
       </div>

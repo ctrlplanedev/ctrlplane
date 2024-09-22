@@ -154,7 +154,6 @@ const targetRelations = createTRPCRouter({
       );
       return results.rows;
     }),
-  lineage: protectedProcedure.input(z.string().uuid()).query(() => null),
 });
 
 type _StringStringRecord = Record<string, string>;
