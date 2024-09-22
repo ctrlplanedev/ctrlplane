@@ -1,8 +1,10 @@
+import _ from "lodash";
 import { z } from "zod";
 
 import {
   and,
   asc,
+  count,
   eq,
   inArray,
   sql,
@@ -10,10 +12,11 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
+  createTargetMetadataGroup,
   target,
   targetMetadata,
   targetMetadataGroup,
-  workspace,
+  updateTargetMetadataGroup,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -24,35 +27,92 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetList)
+          .perform(Permission.TargetMetadataGroupList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) => {
-      return ctx.db
-        .select({
-          targets: sql<number>`count(distinct ${target.id})`.mapWith(Number),
-          targetMetadataGroup,
-        })
-        .from(targetMetadataGroup)
-        .innerJoin(workspace, eq(targetMetadataGroup.workspaceId, workspace.id))
-        .leftJoin(target, eq(target.workspaceId, workspace.id))
+    .query(async ({ ctx, input }) => {
+      /*
+      perform two separate queries:
+
+      1. grab all target groups where null combinations are not allowed and add the metadata key count subquery to get the number of targets in that label group
+      2. count all the targets in the workspace once, then grab only the metadata groups where null combinations were allowed and add the total target count to the metadata group
+      
+      then combine the two results and sort them by name
+      */
+      const matchingTargetsQuery = ctx.db
+        .select({ targetId: target.id })
+        .from(target)
         .leftJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
         .where(
           and(
-            eq(workspace.id, input),
-            sql`"target_metadata"."key" = ANY (${targetMetadataGroup.keys})`,
+            eq(target.workspaceId, targetMetadataGroup.workspaceId),
+            sql`${targetMetadata.key} = ANY(${targetMetadataGroup.keys})`,
           ),
         )
-        .groupBy(targetMetadataGroup.id)
+        .groupBy(target.id)
+        .having(
+          sql`COUNT(DISTINCT ${targetMetadata.key}) = ARRAY_LENGTH(${targetMetadataGroup.keys}, 1)`,
+        );
+
+      const nonNullGroups = await ctx.db
+        .select({
+          targets: sql<number>`
+            COALESCE((
+              SELECT ${count()}
+              FROM (${matchingTargetsQuery}) AS matching_targets
+            ), 0)`.mapWith(Number),
+          targetMetadataGroup,
+        })
+        .from(targetMetadataGroup)
+        .where(
+          and(
+            eq(targetMetadataGroup.workspaceId, input),
+            eq(targetMetadataGroup.includeNullCombinations, false),
+          ),
+        )
         .orderBy(asc(targetMetadataGroup.name));
+
+      const allTargetCount = await ctx.db
+        .select({
+          targets: count(),
+        })
+        .from(target)
+        .where(eq(target.workspaceId, input))
+        .then(takeFirst)
+        .then((row) => row.targets);
+
+      const nullCombinations = await ctx.db
+        .select()
+        .from(targetMetadataGroup)
+        .where(
+          and(
+            eq(targetMetadataGroup.workspaceId, input),
+            eq(targetMetadataGroup.includeNullCombinations, true),
+          ),
+        )
+        .orderBy(asc(targetMetadataGroup.name))
+        .then((rows) =>
+          rows.map((row) => ({
+            targets: allTargetCount,
+            targetMetadataGroup: row,
+          })),
+        );
+
+      const combinedGroups = [...nonNullGroups, ...nullCombinations];
+
+      const sortedGroups = combinedGroups.sort((a, b) =>
+        a.targetMetadataGroup.name.localeCompare(b.targetMetadataGroup.name),
+      );
+
+      return sortedGroups;
     }),
 
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetGet)
+          .perform(Permission.TargetMetadataGroupGet)
           .on({ type: "targetMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
@@ -65,7 +125,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
 
       if (group == null) throw new Error("Group not found");
 
-      const targetMetadataAgg = ctx.db
+      const targetMetadataAggBase = ctx.db
         .select({
           id: target.id,
           metadata: sql<Record<string, string>>`jsonb_object_agg(
@@ -82,10 +142,17 @@ export const targetMetadataGroupRouter = createTRPCRouter({
           ),
         )
         .where(eq(target.workspaceId, group.workspaceId))
-        .groupBy(target.id)
-        .as("target_metadata_agg");
+        .groupBy(target.id);
 
-      const groups = await ctx.db
+      const targetMetadataAgg = group.includeNullCombinations
+        ? targetMetadataAggBase.as("target_metadata_agg")
+        : targetMetadataAggBase
+            .having(
+              sql<number>`COUNT(DISTINCT ${targetMetadata.key}) = ${group.keys.length}`,
+            )
+            .as("target_metadata_agg");
+
+      const combinations = await ctx.db
         .with(targetMetadataAgg)
         .select({
           metadata: targetMetadataAgg.metadata,
@@ -94,52 +161,76 @@ export const targetMetadataGroupRouter = createTRPCRouter({
         .from(targetMetadataAgg)
         .groupBy(targetMetadataAgg.metadata);
 
+      if (group.includeNullCombinations)
+        return {
+          ...group,
+          combinations: combinations.map((combination) => {
+            const combinationKeys = Object.keys(combination.metadata);
+            const nullKeys = _.chain(group.keys)
+              .difference(combinationKeys)
+              .keyBy()
+              .mapValues(() => null)
+              .value();
+
+            return {
+              ...combination,
+              metadata: {
+                ...combination.metadata,
+                ...nullKeys,
+              },
+            };
+          }),
+        };
+
       return {
         ...group,
-        groups,
+        combinations,
       };
     }),
 
-  upsert: protectedProcedure
+  create: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.TargetMetadataGroupCreate)
           .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .input(createTargetMetadataGroup)
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .insert(targetMetadataGroup)
+        .values(input)
+        .returning()
+        .then(takeFirst),
+    ),
+
+  update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetMetadataGroupUpdate)
+          .on({ type: "targetMetadataGroup", id: input.id }),
     })
     .input(
       z.object({
-        workspaceId: z.string().uuid(),
-        data: z.object({
-          id: z.string().optional(),
-          name: z.string(),
-          keys: z.array(z.string()),
-          description: z.string(),
-        }),
+        id: z.string().uuid(),
+        data: updateTargetMetadataGroup,
       }),
     )
-    .mutation(({ ctx, input }) => {
+    .mutation(({ ctx, input }) =>
       ctx.db
-        .insert(targetMetadataGroup)
-        .values({
-          ...input.data,
-          workspaceId: input.workspaceId,
-        })
-        .onConflictDoUpdate({
-          target: targetMetadataGroup.id,
-          set: {
-            ...input.data,
-          },
-        })
+        .update(targetMetadataGroup)
+        .set(input.data)
+        .where(eq(targetMetadataGroup.id, input.id))
         .returning()
-        .then(takeFirst);
-    }),
+        .then(takeFirst),
+    ),
 
   delete: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetDelete)
+          .perform(Permission.TargetMetadataGroupDelete)
           .on({ type: "targetMetadataGroup", id: input }),
     })
     .input(z.string().uuid())

@@ -119,6 +119,11 @@ export const MetadataFilterDialog: React.FC<{
                   <FormItem className={index === 0 ? "mt-0" : "mt-2"}>
                     <FormControl>
                       <MetadataFilterInput
+                        selectedKeys={fields
+                          .map(
+                            (field) => field.operator !== "null" && field.value,
+                          )
+                          .filter((f) => f !== false)}
                         value={value}
                         workspaceId={workspaceId}
                         onChange={onChange}

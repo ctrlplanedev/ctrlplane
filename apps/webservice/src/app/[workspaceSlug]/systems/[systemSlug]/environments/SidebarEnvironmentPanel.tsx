@@ -209,6 +209,9 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                       onChange={onChange}
                       onRemove={() => remove(index)}
                       workspaceId={workspace.data?.id}
+                      selectedKeys={fields
+                        .map((f) => f.operator !== "null" && f.value)
+                        .filter((f) => f !== false)}
                     />
                   </FormControl>
                 </FormItem>

@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/server";
+import { CreateMetadataGroupDialog } from "./CreateMetadataGroupDialog";
 import { TargetGroupsTable } from "./TargetGroupTable";
 import { TargetMetadataGroupsGettingStarted } from "./TargetMetadataGroupsGettingStarted";
-import { UpsertMetadataGroupDialog } from "./UpsertMetadataGroupDialog";
 
 export default async function TargetMetadataGroupPages({
   params,
@@ -26,9 +26,9 @@ export default async function TargetMetadataGroupPages({
         <div className="flex flex-grow items-center gap-2">
           <span>Groups</span>
         </div>
-        <UpsertMetadataGroupDialog workspaceId={workspace.id} create>
+        <CreateMetadataGroupDialog workspaceId={workspace.id}>
           <Button variant="outline">Create Group</Button>
-        </UpsertMetadataGroupDialog>
+        </CreateMetadataGroupDialog>
       </div>
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">

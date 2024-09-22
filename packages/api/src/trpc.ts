@@ -1,7 +1,9 @@
 import type { Session } from "@ctrlplane/auth";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import { initTRPC, TRPCError } from "@trpc/server";
+import _ from "lodash";
 import superjson from "superjson";
+import { isPresent } from "ts-is-present";
 import { ZodError } from "zod";
 
 import { can } from "@ctrlplane/auth/utils";
@@ -62,6 +64,19 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
   const session = opts.ctx.session;
   const email = session?.user.email ?? "unknown";
   const source = opts.ctx.trpcSource;
+  const error =
+    result.ok === false
+      ? _.pickBy(
+          {
+            code: result.error.code,
+            name: result.error.name,
+            message: result.error.message,
+            cause: result.error.cause,
+            stack: result.error.stack,
+          },
+          isPresent,
+        )
+      : null;
 
   const meta = {
     label: "trpc",
@@ -69,6 +84,7 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
     type: opts.type,
     durationMs,
     ok: result.ok,
+    ...(error != null && { error }),
   };
 
   const message = `${result.ok ? "OK" : "NOT OK"} - request from ${source} by ${email}`;

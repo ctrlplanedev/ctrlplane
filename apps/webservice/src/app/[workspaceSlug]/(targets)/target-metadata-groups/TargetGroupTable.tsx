@@ -22,7 +22,7 @@ import {
 } from "@ctrlplane/ui/table";
 
 import { DeleteMetadataGroupDialog } from "./DeleteMetadataGroupDialog";
-import { UpsertMetadataGroupDialog } from "./UpsertMetadataGroupDialog";
+import { EditMetadataGroupDialog } from "./EditMetadataGroupDialog";
 
 export const TargetGroupsTable: React.FC<{
   workspace: Workspace;
@@ -80,26 +80,15 @@ export const TargetGroupsTable: React.FC<{
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <UpsertMetadataGroupDialog
+                  <EditMetadataGroupDialog
                     workspaceId={workspace.id}
-                    create={false}
                     parentClose={() => setOpenDropdownId("")}
-                    values={{
-                      id: metadataGroup.targetMetadataGroup.id,
-                      name: metadataGroup.targetMetadataGroup.name,
-                      keys: metadataGroup.targetMetadataGroup.keys.map(
-                        (key) => ({
-                          value: key,
-                        }),
-                      ),
-                      description:
-                        metadataGroup.targetMetadataGroup.description,
-                    }}
+                    metadataGroup={metadataGroup.targetMetadataGroup}
                   >
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       Edit
                     </DropdownMenuItem>
-                  </UpsertMetadataGroupDialog>
+                  </EditMetadataGroupDialog>
                   <DeleteMetadataGroupDialog
                     id={metadataGroup.targetMetadataGroup.id}
                   >
