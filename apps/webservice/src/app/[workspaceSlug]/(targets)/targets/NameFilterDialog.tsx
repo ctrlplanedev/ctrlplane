@@ -1,9 +1,10 @@
 import type {
   ComparisonCondition,
-  MetadataCondition,
+  NameCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import _ from "lodash";
+import { TbX } from "react-icons/tb";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -22,6 +23,7 @@ import {
   useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
+import { Input } from "@ctrlplane/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,39 +32,36 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import {
-  metadataCondition,
+  nameCondition,
   TargetFilterType,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
 
 import type { TargetFilter } from "./TargetFilter";
-import { MetadataFilterInput } from "../../_components/MetadataFilterInput";
 
-const metadataFilterForm = z.object({
+const nameFilterForm = z.object({
   operator: z.enum(["and", "or"]),
-  targetFilter: z.array(metadataCondition),
+  targetFilter: z.array(nameCondition),
 });
 
-export const MetadataFilterDialog: React.FC<{
+export const NameFilterDialog: React.FC<{
   children: React.ReactNode;
-  workspaceId: string;
   onChange?: (filter: TargetFilter) => void;
   filter?: ComparisonCondition;
-}> = ({ children, workspaceId, onChange, filter }) => {
+}> = ({ children, onChange, filter }) => {
   const [open, setOpen] = useState(false);
   const form = useForm({
-    schema: metadataFilterForm,
+    schema: nameFilterForm,
     defaultValues: {
       operator:
         filter?.operator === TargetOperator.Or
           ? TargetOperator.Or
           : TargetOperator.And,
-      targetFilter: (filter?.conditions as MetadataCondition[] | undefined) ?? [
+      targetFilter: (filter?.conditions as NameCondition[] | undefined) ?? [
         {
-          key: "",
           value: "",
           operator: TargetOperator.Equals,
-          type: TargetFilterType.Metadata,
+          type: TargetFilterType.Name,
         },
       ],
     },
@@ -79,7 +78,7 @@ export const MetadataFilterDialog: React.FC<{
       operator: values.operator,
       conditions: values.targetFilter,
     };
-    onChange?.({ key: "metadata", value: cond });
+    onChange?.({ key: TargetFilterType.Name, value: cond });
     setOpen(false);
   });
 
@@ -89,7 +88,7 @@ export const MetadataFilterDialog: React.FC<{
       <DialogContent>
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
-            <DialogTitle>Filter by metadata</DialogTitle>
+            <DialogTitle>Filter by name</DialogTitle>
 
             {fields.length > 1 && (
               <FormField
@@ -121,18 +120,51 @@ export const MetadataFilterDialog: React.FC<{
                 render={({ field: { onChange, value } }) => (
                   <FormItem className={index === 0 ? "mt-0" : "mt-2"}>
                     <FormControl>
-                      <MetadataFilterInput
-                        selectedKeys={fields
-                          .map(
-                            (field) => field.operator !== "null" && field.value,
-                          )
-                          .filter((f) => f !== false)}
-                        value={value}
-                        workspaceId={workspaceId}
-                        onChange={onChange}
-                        onRemove={() => remove(index)}
-                        numInputs={fields.length}
-                      />
+                      <div className="flex w-full items-center gap-2">
+                        <div className="flex w-full items-center">
+                          <Select
+                            value={value.operator}
+                            onValueChange={(v: "equals" | "regex" | "like") =>
+                              onChange({ ...value, operator: v })
+                            }
+                          >
+                            <SelectTrigger className="w-48 rounded-r-none">
+                              <SelectValue placeholder="Operator" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="equals">Equals</SelectItem>
+                              <SelectItem value="regex">Regex</SelectItem>
+                              <SelectItem value="like">Like</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Input
+                            placeholder={
+                              value.operator === "regex"
+                                ? "^[a-zA-Z]+$"
+                                : value.operator === "like"
+                                  ? "%value%"
+                                  : "Value"
+                            }
+                            value={value.value}
+                            onChange={(e) =>
+                              onChange({ ...value, value: e.target.value })
+                            }
+                            className="rounded-l-none"
+                          />
+                        </div>
+
+                        {fields.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => remove(index)}
+                          >
+                            <TbX />
+                          </Button>
+                        )}
+                      </div>
                     </FormControl>
                   </FormItem>
                 )}
@@ -145,10 +177,9 @@ export const MetadataFilterDialog: React.FC<{
               className="mt-4"
               onClick={() =>
                 append({
-                  key: "",
                   value: "",
                   operator: "equals",
-                  type: "metadata",
+                  type: "name",
                 })
               }
             >
@@ -160,7 +191,7 @@ export const MetadataFilterDialog: React.FC<{
                 type="submit"
                 disabled={
                   form.formState.isSubmitting ||
-                  form.watch().targetFilter.some((f) => f.key === "")
+                  form.watch().targetFilter.some((f) => f.value === "")
                 }
               >
                 Filter

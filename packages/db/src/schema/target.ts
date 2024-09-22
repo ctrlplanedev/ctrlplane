@@ -1,4 +1,8 @@
-import type { MetadataCondition } from "@ctrlplane/validators/targets";
+import type {
+  MetadataCondition,
+  NameCondition,
+  TargetCondition,
+} from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, notExists, or, sql } from "drizzle-orm";
 import {
@@ -85,7 +89,7 @@ export const targetMetadata = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.key, t.targetId) }),
 );
 
-const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
+const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === "null")
     return notExists(
       tx
@@ -127,11 +131,6 @@ const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "and" || cond.operator === "or") {
-    const subCon = cond.conditions.map((c) => buildCondition(tx, c));
-    return cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
-  }
-
   if ("value" in cond)
     return exists(
       tx
@@ -149,9 +148,26 @@ const buildCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   throw Error("invalid metadata conditions");
 };
 
+const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
+  if (cond.operator === "equals") return eq(target.name, cond.value);
+  if (cond.operator === "like") return like(target.name, cond.value);
+  return sql`${target.name} ~ ${cond.value}`;
+};
+
+const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
+  if (cond.type === "metadata") return buildMetadataCondition(tx, cond);
+
+  if (cond.type === "kind") return eq(target.kind, cond.value);
+
+  if (cond.type === "name") return buildNameCondition(tx, cond);
+
+  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
+  return cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
+};
+
 export function targetMatchesMetadata(
   tx: Tx,
-  metadata?: MetadataCondition | null,
+  metadata?: TargetCondition | null,
 ): SQL<unknown> | undefined {
   return metadata == null || Object.keys(metadata).length === 0
     ? undefined

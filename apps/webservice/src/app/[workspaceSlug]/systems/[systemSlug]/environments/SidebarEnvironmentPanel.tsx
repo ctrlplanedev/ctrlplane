@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-  EqualCondition,
-  LikeCondition,
-  NullCondition,
-  RegexCondition,
-} from "@ctrlplane/validators/targets";
+import type { MetadataCondition } from "@ctrlplane/validators/targets";
 import { useParams } from "next/navigation";
 import { TbInfoCircle, TbPlant } from "react-icons/tb";
 import { useReactFlow } from "reactflow";
@@ -32,12 +27,7 @@ import {
 } from "@ctrlplane/ui/select";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import {
-  equalsCondition,
-  likeCondition,
-  nullCondition,
-  regexCondition,
-} from "@ctrlplane/validators/targets";
+import { metadataCondition } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { MetadataFilterInput } from "../../../_components/MetadataFilterInput";
@@ -47,9 +37,7 @@ const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
   operator: z.enum(["and", "or"]),
-  targetFilter: z.array(
-    z.union([likeCondition, regexCondition, equalsCondition, nullCondition]),
-  ),
+  targetFilter: z.array(metadataCondition),
 });
 
 export const SidebarEnvironmentPanel: React.FC = () => {
@@ -67,12 +55,8 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       name: node.data.label,
       description: node.data.description,
       operator: node.data.targetFilter?.operator ?? "and",
-      targetFilter: (node.data.targetFilter?.conditions ?? []) as (
-        | EqualCondition
-        | RegexCondition
-        | LikeCondition
-        | NullCondition
-      )[],
+      targetFilter: (node.data.targetFilter?.conditions ??
+        []) as MetadataCondition[],
     },
   });
 
@@ -81,8 +65,9 @@ export const SidebarEnvironmentPanel: React.FC = () => {
   const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      metadataFilters: [
+      filters: [
         {
+          type: "comparison",
           operator,
           conditions: targetFilter.filter((f) => f.key !== ""),
         },
@@ -106,6 +91,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           data: {
             ...values,
             targetFilter: {
+              type: "comparison",
               operator,
               conditions: targetFilter,
             },
@@ -224,7 +210,12 @@ export const SidebarEnvironmentPanel: React.FC = () => {
             size="sm"
             className="mt-2 w-fit"
             onClick={() =>
-              append({ key: "", value: "", operator: "equals" as const })
+              append({
+                key: "",
+                value: "",
+                type: "metadata",
+                operator: "equals" as const,
+              })
             }
           >
             Add Metadata Filter

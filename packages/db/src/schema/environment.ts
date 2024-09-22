@@ -1,4 +1,4 @@
-import type { MetadataCondition } from "@ctrlplane/validators/targets";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
 import type { z } from "zod";
 import { sql } from "drizzle-orm";
@@ -15,7 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { metadataConditions } from "@ctrlplane/validators/targets";
+import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { release } from "./release.js";
 import { system } from "./system.js";
@@ -31,7 +31,7 @@ export const environment = pgTable("environment", {
     onDelete: "set null",
   }),
   targetFilter: jsonb("target_filter")
-    .$type<MetadataCondition | null>()
+    .$type<TargetCondition | null>()
     .default(sql`NULL`),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
@@ -39,7 +39,7 @@ export const environment = pgTable("environment", {
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  targetFilter: metadataConditions.nullable().optional(),
+  targetFilter: targetCondition,
 }).omit({ id: true });
 
 export const updateEnvironment = createEnvironment.partial();

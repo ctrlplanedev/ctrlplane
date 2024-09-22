@@ -112,8 +112,12 @@ export const isPassingReleaseDependencyPolicy = async (
                 eq(schema.job.status, "completed"),
                 eq(schema.deployment.id, releaseDep.deploymentId),
                 schema.targetMatchesMetadata(db, {
+                  type: "comparison",
                   operator: "and",
-                  conditions: relevantTargetMetadata,
+                  conditions: relevantTargetMetadata.map((tm) => ({
+                    ...tm,
+                    type: "metadata",
+                  })),
                 }),
               ),
             );

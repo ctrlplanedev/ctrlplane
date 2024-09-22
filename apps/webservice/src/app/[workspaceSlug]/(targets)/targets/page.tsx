@@ -1,31 +1,24 @@
 "use client";
 
 import type { ComparisonCondition } from "@ctrlplane/validators/targets";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import React, { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@ctrlplane/ui/hover-card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
 import { useFilters } from "../../_components/filter/Filter";
 import { FilterDropdown } from "../../_components/filter/FilterDropdown";
-import {
-  ComboboxFilter,
-  ContentDialog,
-} from "../../_components/filter/FilterDropdownItems";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
+import { KindFilterDialog } from "./KindFilterDialog";
 import { MetadataFilterDialog } from "./MetadataFilterDialog";
+import { NameFilterDialog } from "./NameFilterDialog";
 import { TargetDrawer } from "./target-drawer/TargetDrawer";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
@@ -39,43 +32,36 @@ export default function TargetsPage({
   const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
     useFilters<TargetFilter>();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const combination: ComparisonCondition | null = useMemo(() => {
+  const filtersWithCombination = useMemo(() => {
     const combinations = searchParams.get("combinations");
     const parsed: Record<string, string | null> | null = combinations
       ? JSON.parse(combinations)
       : null;
-    if (parsed == null) return null;
-    return {
+
+    if (parsed == null) return filters;
+
+    const combination: ComparisonCondition = {
+      type: "comparison" as const,
       operator: "and" as const,
       conditions: Object.entries(parsed).map(([key, value]) => {
-        if (value == null) {
+        if (value == null)
           return {
+            type: "metadata" as const,
             key,
             operator: "null" as const,
           };
-        }
+
         return {
+          type: "metadata" as const,
           key,
           value,
           operator: "equals" as const,
         };
       }),
     };
-  }, [searchParams]);
 
-  useEffect(() => {
-    if (combination == null) return;
-    if (
-      !filters.some(
-        (f) => f.key === "metadata" && _.isEqual(f.value, combination),
-      )
-    )
-      addFilters([{ key: "metadata", value: combination }]);
-    /* if we do not remove the params from the url, even if the user deletes
-     the filter, the useEffect will add it again */
-    router.replace(`/${params.workspaceSlug}/targets`);
-  }, [combination, filters, addFilters, params.workspaceSlug, router]);
+    return [{ key: "metadata", value: combination }, ...filters];
+  }, [searchParams, filters]);
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.data?.id ?? "" },
@@ -85,17 +71,11 @@ export default function TargetsPage({
   const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      filters: filters.filter((f) => f.key !== "metadata"),
-      metadataFilters: filters
-        .filter((f) => f.key === "metadata")
-        .map((f) => f.value as ComparisonCondition),
+      filters: filtersWithCombination.map((f) => f.value),
     },
     { enabled: workspace.isSuccess },
   );
-  const kinds = api.target.byWorkspaceId.kinds.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
-  );
+  const kinds = _.uniq((targets.data?.items ?? []).map((t) => t.kind));
 
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const targetId = selectedTargetId ?? targets.data?.items.at(0)?.id;
@@ -107,11 +87,11 @@ export default function TargetsPage({
     <div className="h-full text-sm">
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex flex-wrap items-center gap-1">
-          {filters.map((f, idx) =>
+          {filtersWithCombination.map((f, idx) =>
             f.key === "metadata" ? (
               <MetadataFilterDialog
                 workspaceId={workspace.data?.id ?? ""}
-                filter={f.value as ComparisonCondition}
+                filter={f.value}
                 onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
               >
                 <Badge
@@ -123,10 +103,39 @@ export default function TargetsPage({
                   <span className="text-muted-foreground">matches</span>
                   <span>
                     <div className="p-2">
-                      {(f.value as ComparisonCondition).conditions.length}
-                      {(f.value as ComparisonCondition).conditions.length > 1
-                        ? " keys"
-                        : " key"}
+                      {f.value.conditions.length}
+                      {f.value.conditions.length > 1 ? " keys" : " key"}
+                    </div>
+                  </span>
+                  {(idx !== 0 || !searchParams.get("combinations")) && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 text-xs text-muted-foreground"
+                      onClick={() => removeFilter(idx)}
+                    >
+                      <TbX />
+                    </Button>
+                  )}
+                </Badge>
+              </MetadataFilterDialog>
+            ) : f.key === "kind" ? (
+              <KindFilterDialog
+                kinds={kinds}
+                filter={f.value}
+                onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
+              >
+                <Badge
+                  key={idx}
+                  variant="outline"
+                  className="h-7 cursor-pointer gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
+                >
+                  <span>{capitalCase(f.key)}</span>
+                  <span className="text-muted-foreground">matches</span>
+                  <span>
+                    <div className="p-2">
+                      {f.value.conditions.length}
+                      {f.value.conditions.length > 1 ? " keys" : " key"}
                     </div>
                   </span>
                   <Button
@@ -138,39 +147,35 @@ export default function TargetsPage({
                     <TbX />
                   </Button>
                 </Badge>
-              </MetadataFilterDialog>
+              </KindFilterDialog>
             ) : (
-              <Badge
-                key={idx}
-                variant="outline"
-                className="h-7 gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
+              <NameFilterDialog
+                filter={f.value}
+                onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
               >
-                <span>{capitalCase(f.key)}</span>
-                <span className="text-muted-foreground">
-                  {f.key === "name" && "contains"}
-                  {f.key === "kind" && "is"}
-                </span>
-                <span>
-                  {typeof f.value === "string" ? (
-                    f.value
-                  ) : (
-                    <HoverCard>
-                      <HoverCardTrigger>
-                        {Object.entries(f.value).length} key
-                        {Object.entries(f.value).length > 1 ? "s" : ""}
-                      </HoverCardTrigger>
-                      <HoverCardContent className="p-2" align="start">
-                        {Object.entries(f.value).map(([key, value]) => (
-                          <div key={key}>
-                            <span className="text-red-400">{key}:</span>{" "}
-                            <span className="text-green-400">{value}</span>
-                          </div>
-                        ))}
-                      </HoverCardContent>
-                    </HoverCard>
-                  )}
-                </span>
-              </Badge>
+                <Badge
+                  key={idx}
+                  variant="outline"
+                  className="h-7 cursor-pointer gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
+                >
+                  <span>{capitalCase(f.key)}</span>
+                  <span className="text-muted-foreground">matches</span>
+                  <span>
+                    <div className="p-2">
+                      {f.value.conditions.length}
+                      {f.value.conditions.length > 1 ? " keys" : " key"}
+                    </div>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-xs text-muted-foreground"
+                    onClick={() => removeFilter(idx)}
+                  >
+                    <TbX />
+                  </Button>
+                </Badge>
+              </NameFilterDialog>
             ),
           )}
 
@@ -179,15 +184,12 @@ export default function TargetsPage({
             addFilters={addFilters}
             className="min-w-[200px] bg-neutral-900 p-1"
           >
-            <ContentDialog<TargetFilter> property="name">
+            <NameFilterDialog>
               <TbTarget /> Name
-            </ContentDialog>
-            <ComboboxFilter<TargetFilter>
-              property="kind"
-              options={kinds.data ?? []}
-            >
+            </NameFilterDialog>
+            <KindFilterDialog kinds={kinds}>
               <TbCategory /> Kind
-            </ComboboxFilter>
+            </KindFilterDialog>
             <MetadataFilterDialog workspaceId={workspace.data?.id ?? ""}>
               <TbTag /> Metadata
             </MetadataFilterDialog>
