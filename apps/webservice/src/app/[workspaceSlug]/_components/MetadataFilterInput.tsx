@@ -3,6 +3,7 @@
 import type {
   EqualCondition,
   LikeCondition,
+  MetadataCondition,
   NullCondition,
   RegexCondition,
 } from "@ctrlplane/validators/targets";
@@ -25,10 +26,8 @@ import { useMatchSorter } from "~/utils/useMatchSorter";
 
 export const MetadataFilterInput: React.FC<{
   workspaceId?: string;
-  value: EqualCondition | LikeCondition | RegexCondition | NullCondition;
-  onChange: (
-    value: EqualCondition | LikeCondition | RegexCondition | NullCondition,
-  ) => void;
+  value: MetadataCondition;
+  onChange: (value: MetadataCondition) => void;
   onRemove?: () => void;
   selectedKeys?: string[];
   numInputs?: number;

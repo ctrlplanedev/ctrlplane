@@ -7,8 +7,6 @@ import {
   asc,
   eq,
   inArray,
-  like,
-  or,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -216,15 +214,7 @@ export const targetRouter = createTRPCRouter({
       .input(
         z.object({
           workspaceId: z.string().uuid(),
-          filters: z
-            .array(
-              z.object({
-                key: z.enum(["name", "kind", "metadata"]),
-                value: z.any(),
-              }),
-            )
-            .optional(),
-          metadataFilters: z.array(comparisonCondition).optional(),
+          filters: z.array(comparisonCondition).optional(),
           limit: z.number().default(500),
           offset: z.number().default(0),
         }),
@@ -232,24 +222,13 @@ export const targetRouter = createTRPCRouter({
       .query(({ ctx, input }) => {
         const workspaceIdCheck = eq(target.workspaceId, input.workspaceId);
 
-        const nameFilters = (input.filters ?? [])
-          .filter((f) => f.key === "name")
-          .map((f) => like(target.name, `%${f.value}%`));
-        const kindFilters = (input.filters ?? [])
-          .filter((f) => f.key === "kind")
-          .map((f) => eq(target.kind, f.value));
-
         const targetConditions = targetMatchesMetadata(ctx.db, {
           operator: "and",
-          conditions: input.metadataFilters ?? [],
+          type: "comparison",
+          conditions: input.filters ?? [],
         });
 
-        const checks = [
-          workspaceIdCheck,
-          or(...nameFilters),
-          or(...kindFilters),
-          targetConditions,
-        ].filter(isPresent);
+        const checks = [workspaceIdCheck, targetConditions].filter(isPresent);
 
         const items = targetQuery(ctx.db, checks)
           .limit(input.limit)
@@ -276,23 +255,6 @@ export const targetRouter = createTRPCRouter({
           total,
         }));
       }),
-
-    kinds: protectedProcedure
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.TargetList)
-            .on({ type: "workspace", id: input }),
-      })
-      .input(z.string().uuid())
-      .query(({ ctx, input }) =>
-        ctx.db
-          .selectDistinct({ kind: target.kind })
-          .from(target)
-          .innerJoin(workspace, eq(target.workspaceId, workspace.id))
-          .where(eq(workspace.id, input))
-          .then((r) => r.map((row) => row.kind)),
-      ),
   }),
 
   create: protectedProcedure
