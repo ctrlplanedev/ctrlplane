@@ -3,10 +3,9 @@
 import type { TargetMetadataGroup } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbBulb, TbX } from "react-icons/tb";
+import { TbX } from "react-icons/tb";
 import { z } from "zod";
 
-import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -33,7 +32,6 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 import { MetadataFilterInput } from "./MetadataFilterInput";
-import { NullCombinationsExample } from "./NullCombinationsExample";
 
 const metadataGroupFormSchema = z.object({
   name: z.string().min(1),
@@ -130,13 +128,8 @@ export const EditMetadataGroupDialog: React.FC<{
 
             <div>
               <Label>Keys</Label>
-              {fields.length === 0 && (
-                <p className="h-[30px] text-xs text-muted-foreground">
-                  No keys added
-                </p>
-              )}
               {fields.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="mb-1 flex flex-wrap gap-1">
                   {fields.map((field, index) => (
                     <Badge
                       key={field.id}
@@ -156,30 +149,30 @@ export const EditMetadataGroupDialog: React.FC<{
                   ))}
                 </div>
               )}
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex-grow">
-                <MetadataFilterInput
-                  value={input}
-                  workspaceId={workspaceId}
-                  onChange={setInput}
-                  selectedKeys={fields.map((field) => field.value)}
-                />
-              </div>
-              <div className="ml-auto">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={input === ""}
-                  onClick={() => {
-                    append({ value: input });
-                    setInput("");
-                  }}
-                >
-                  Add Key
-                </Button>
+              <div className="mt-1 flex items-center gap-3">
+                <div className="flex-grow">
+                  <MetadataFilterInput
+                    value={input}
+                    workspaceId={workspaceId}
+                    onChange={setInput}
+                    selectedKeys={fields.map((field) => field.value)}
+                  />
+                </div>
+                <div className="ml-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={input === ""}
+                    onClick={() => {
+                      append({ value: input });
+                      setInput("");
+                    }}
+                  >
+                    Add Key
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -187,21 +180,11 @@ export const EditMetadataGroupDialog: React.FC<{
               control={form.control}
               name="includeNullCombinations"
               render={({ field: { value, onChange } }) => (
-                <FormItem className="flex flex-col gap-2">
-                  <FormLabel>Include Null Combinations?</FormLabel>
-                  <Alert variant="secondary">
-                    <TbBulb className="h-5 w-5" />
-                    <AlertTitle>Null Combinations</AlertTitle>
-                    <AlertDescription>
-                      If enabled, combinations with null values will be
-                      included. For example, if the keys "env" and "tier" are
-                      selected, the following combinations will be tracked in
-                      this metadata group: <NullCombinationsExample />
-                    </AlertDescription>
-                  </Alert>
-                  <FormControl>
+                <FormItem className="flex items-center gap-2">
+                  <FormControl className="mt-2">
                     <Switch checked={value} onCheckedChange={onChange} />
-                  </FormControl>
+                  </FormControl>{" "}
+                  <FormLabel>Include Null Combinations?</FormLabel>
                 </FormItem>
               )}
             />

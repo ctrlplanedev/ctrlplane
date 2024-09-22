@@ -30,6 +30,8 @@ export const env = createEnv({
           "gmp-public",
           "gke-managed-system",
           "gke-managed-cim",
+          "gke-gmp-system",
+          "gke-managed-filestorecsi",
         ].join(","),
       ),
     CTRLPLANE_COMPUTE_TARGET_NAME: z

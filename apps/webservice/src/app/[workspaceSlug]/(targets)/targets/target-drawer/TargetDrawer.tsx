@@ -22,7 +22,7 @@ import { api } from "~/trpc/react";
 import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
-import { RelationshipsContent } from "./RelationshipContent";
+import { RelationshipsContent } from "./relationships/RelationshipContent";
 import { VariableContent } from "./VariablesContent";
 
 const TabButton: React.FC<{
