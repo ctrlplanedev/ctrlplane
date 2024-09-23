@@ -2,12 +2,10 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import type {
-  ComparisonCondition,
   KindEqualsCondition,
   NameLikeCondition,
 } from "@ctrlplane/validators/targets";
-import React, { Fragment, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { Fragment, useState } from "react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
@@ -15,10 +13,6 @@ import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
 
 import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
@@ -37,36 +31,6 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
 }) => {
   const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
     useFilters<TargetFilter>();
-  const searchParams = useSearchParams();
-  const filtersWithCombination = useMemo(() => {
-    const combinations = searchParams.get("combinations");
-    const parsed: Record<string, string | null> | null = combinations
-      ? JSON.parse(combinations)
-      : null;
-
-    if (parsed == null) return filters;
-
-    const combination: ComparisonCondition = {
-      type: TargetFilterType.Comparison,
-      operator: TargetOperator.And,
-      conditions: Object.entries(parsed).map(([key, value]) => {
-        return value == null
-          ? {
-              type: TargetFilterType.Metadata,
-              operator: TargetOperator.Null,
-              key,
-            }
-          : {
-              type: TargetFilterType.Metadata,
-              operator: TargetOperator.Equals,
-              key,
-              value,
-            };
-      }),
-    };
-
-    return [{ key: "metadata", value: combination }, ...filters];
-  }, [searchParams, filters]);
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
@@ -74,7 +38,7 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
 
   const targets = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
-    filters: filtersWithCombination.map((f) => f.value),
+    filters: filters.map((f) => f.value),
   });
   const kinds = _.uniq((targets.data?.items ?? []).map((t) => t.kind));
 
@@ -87,7 +51,7 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
     <div className="h-full text-sm">
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex flex-wrap items-center gap-1">
-          {filtersWithCombination.map((f, idx) => (
+          {filters.map((f, idx) => (
             <Fragment key={idx}>
               {f.key === "metadata" ? (
                 <MetadataFilterDialog
@@ -106,16 +70,18 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
                       {f.value.conditions.length}
                       {f.value.conditions.length > 1 ? " keys" : " key"}
                     </span>
-                    {(idx !== 0 || !searchParams.get("combinations")) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 text-xs text-muted-foreground"
-                        onClick={() => removeFilter(idx)}
-                      >
-                        <TbX />
-                      </Button>
-                    )}
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 text-xs text-muted-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFilter(idx);
+                      }}
+                    >
+                      <TbX />
+                    </Button>
                   </Badge>
                 </MetadataFilterDialog>
               ) : f.key === "kind" ? (
@@ -152,7 +118,10 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
                       variant="ghost"
                       size="icon"
                       className="h-5 w-5 text-xs text-muted-foreground"
-                      onClick={() => removeFilter(idx)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFilter(idx);
+                      }}
                     >
                       <TbX />
                     </Button>
@@ -190,7 +159,10 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
                       variant="ghost"
                       size="icon"
                       className="h-5 w-5 text-xs text-muted-foreground"
-                      onClick={() => removeFilter(idx)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFilter(idx);
+                      }}
                     >
                       <TbX />
                     </Button>

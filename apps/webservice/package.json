@@ -50,6 +50,7 @@
     "http-status": "^1.7.4",
     "immer": "^10.1.1",
     "jsonschema": "^1.4.1",
+    "lz-string": "^1.5.0",
     "match-sorter": "^6.3.4",
     "murmurhash": "^2.0.1",
     "next": "^14.2.3",

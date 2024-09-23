@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import LZString from "lz-string";
 
 import {
   Table,
@@ -10,6 +11,10 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import {
+  TargetFilterType,
+  TargetOperator,
+} from "@ctrlplane/validators/targets";
 
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
@@ -34,13 +39,32 @@ export const CombinationsTable: React.FC<{
             <TableRow
               key={idx}
               className="cursor-pointer"
-              onClick={() =>
-                router.push(
-                  `/${workspaceSlug}/targets?combinations=${encodeURIComponent(
-                    JSON.stringify(metadata),
-                  )}`,
-                )
-              }
+              onClick={() => {
+                const query = new URLSearchParams(window.location.search);
+                const filterHash = LZString.compressToEncodedURIComponent(
+                  JSON.stringify([
+                    {
+                      key: "metadata",
+                      value: {
+                        operator: TargetOperator.And,
+                        type: TargetFilterType.Comparison,
+                        conditions: Object.entries(metadata).map(
+                          ([key, value]) => ({
+                            operator: TargetOperator.Equals,
+                            type: TargetFilterType.Metadata,
+                            key,
+                            value,
+                          }),
+                        ),
+                      },
+                    },
+                  ]),
+                );
+                query.set("filters", filterHash);
+                return router.push(
+                  `/${workspaceSlug}/targets?${query.toString()}`,
+                );
+              }}
             >
               <TableCell>
                 {Object.entries(metadata).map(([key, value]) => (
