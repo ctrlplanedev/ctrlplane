@@ -26,9 +26,10 @@ import { TargetDrawer } from "./target-drawer/TargetDrawer";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
-export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
-  workspace,
-}) => {
+export const TargetPageContent: React.FC<{
+  workspace: Workspace;
+  kinds: string[];
+}> = ({ workspace, kinds }) => {
   const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
     useFilters<TargetFilter>();
 
@@ -40,7 +41,6 @@ export const TargetPageContent: React.FC<{ workspace: Workspace }> = ({
     workspaceId: workspace.id,
     filters: filters.map((f) => f.value),
   });
-  const kinds = _.uniq((targets.data?.items ?? []).map((t) => t.kind));
 
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const targetId = selectedTargetId ?? targets.data?.items.at(0)?.id;

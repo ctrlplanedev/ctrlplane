@@ -10,5 +10,6 @@ export default async function TargetsPage({
 }) {
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
-  return <TargetPageContent workspace={workspace} />;
+  const kinds = await api.workspace.targetKinds(workspace.id);
+  return <TargetPageContent workspace={workspace} kinds={kinds} />;
 }
