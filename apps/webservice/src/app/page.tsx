@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@ctrlplane/auth";
 
 import { api } from "~/trpc/server";
+import { register } from "../instrumentation";
 
 export default async function SystemPage() {
   const session = await auth();
@@ -15,6 +16,6 @@ export default async function SystemPage() {
     const workspace = await api.workspace.byId(user.activeWorkspaceId);
     if (workspace != null) redirect(`/${workspace.slug}`);
   }
-
+  register();
   redirect(`/${workspaces[0]!.slug}`);
 }
