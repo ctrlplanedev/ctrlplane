@@ -91,7 +91,7 @@ export const JobAgentGitHubConfig: React.FC<{
           <Command>
             <CommandInput placeholder="Search repo..." />
             <CommandGroup>
-              <CommandList>
+              <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
                 {repos.data?.map((repo) => (
                   <CommandItem
                     key={repo.id}
