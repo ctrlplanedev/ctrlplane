@@ -121,30 +121,34 @@ export const KindFilterDialog: React.FC<{
               />
             )}
 
-            {fields.map((field, index) => (
-              <FormField
-                key={field.id}
-                control={form.control}
-                name={`targetFilter.${index}`}
-                render={({ field: { value } }) => (
-                  <Badge
-                    key={field.id}
-                    variant="secondary"
-                    className="flex w-fit items-center gap-2 p-1"
-                  >
-                    {value.value}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4"
-                      onClick={() => remove(index)}
-                    >
-                      <TbX />
-                    </Button>
-                  </Badge>
-                )}
-              />
-            ))}
+            <div>
+              {fields.map((field, index) => (
+                <FormField
+                  key={field.id}
+                  control={form.control}
+                  name={`targetFilter.${index}`}
+                  render={({ field: { value } }) => (
+                    <div className="mb-2 mr-2 inline-block">
+                      <Badge
+                        key={field.id}
+                        variant="secondary"
+                        className="flex w-fit gap-1 p-1 pl-2 text-sm"
+                      >
+                        {value.value}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4"
+                          onClick={() => remove(index)}
+                        >
+                          <TbX />
+                        </Button>
+                      </Badge>
+                    </div>
+                  )}
+                />
+              ))}
+            </div>
 
             <div className="flex gap-2">
               <Popover open={commandOpen} onOpenChange={setCommandOpen}>
@@ -167,27 +171,22 @@ export const KindFilterDialog: React.FC<{
                         {newKinds.length === 0 && (
                           <CommandItem disabled>No kinds to add</CommandItem>
                         )}
-                        {newKinds
-                          .filter(
-                            (kind) =>
-                              !fields.some((field) => field.value === kind),
-                          )
-                          .map((kind) => (
-                            <CommandItem
-                              key={kind}
-                              value={kind}
-                              onSelect={() => {
-                                append({
-                                  operator: "equals",
-                                  value: kind,
-                                  type: "kind",
-                                });
-                                setCommandOpen(false);
-                              }}
-                            >
-                              {kind}
-                            </CommandItem>
-                          ))}
+                        {newKinds.map((kind) => (
+                          <CommandItem
+                            key={kind}
+                            value={kind}
+                            onSelect={() => {
+                              append({
+                                operator: "equals",
+                                value: kind,
+                                type: "kind",
+                              });
+                              setCommandOpen(false);
+                            }}
+                          >
+                            {kind}
+                          </CommandItem>
+                        ))}
                       </CommandList>
                     </CommandGroup>
                   </Command>

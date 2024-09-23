@@ -18,6 +18,5 @@ export const useFilters = <T extends Filter<string, any>>(
   const clearFilters = () => setFilters([]);
   const updateFilter = (idx: number, filter: T) =>
     setFilters(filters.map((f, i) => (i === idx ? filter : f)));
-
   return { filters, addFilters, removeFilter, clearFilters, updateFilter };
 };

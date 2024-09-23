@@ -60,7 +60,7 @@ export const NameFilterDialog: React.FC<{
       targetFilter: (filter?.conditions as NameCondition[] | undefined) ?? [
         {
           value: "",
-          operator: TargetOperator.Equals,
+          operator: TargetOperator.Like,
           type: TargetFilterType.Name,
         },
       ],
@@ -73,6 +73,7 @@ export const NameFilterDialog: React.FC<{
   });
 
   const onSubmit = form.handleSubmit((values) => {
+    console.log(values);
     const cond = {
       type: TargetFilterType.Comparison as const,
       operator: values.operator,
@@ -122,35 +123,14 @@ export const NameFilterDialog: React.FC<{
                     <FormControl>
                       <div className="flex w-full items-center gap-2">
                         <div className="flex w-full items-center">
-                          <Select
-                            value={value.operator}
-                            onValueChange={(v: "equals" | "regex" | "like") =>
-                              onChange({ ...value, operator: v })
-                            }
-                          >
-                            <SelectTrigger className="w-48 rounded-r-none">
-                              <SelectValue placeholder="Operator" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="equals">Equals</SelectItem>
-                              <SelectItem value="regex">Regex</SelectItem>
-                              <SelectItem value="like">Like</SelectItem>
-                            </SelectContent>
-                          </Select>
-
                           <Input
-                            placeholder={
-                              value.operator === "regex"
-                                ? "^[a-zA-Z]+$"
-                                : value.operator === "like"
-                                  ? "%value%"
-                                  : "Value"
-                            }
-                            value={value.value}
+                            value={value.value.replace(/^%|%$/g, "")}
                             onChange={(e) =>
-                              onChange({ ...value, value: e.target.value })
+                              onChange({
+                                ...value,
+                                value: `%${e.target.value}%`,
+                              })
                             }
-                            className="rounded-l-none"
                           />
                         </div>
 
@@ -178,12 +158,12 @@ export const NameFilterDialog: React.FC<{
               onClick={() =>
                 append({
                   value: "",
-                  operator: "equals",
-                  type: "name",
+                  operator: TargetOperator.Like,
+                  type: TargetFilterType.Name,
                 })
               }
             >
-              Add Metadata Key
+              Add Name Filter
             </Button>
 
             <DialogFooter>
