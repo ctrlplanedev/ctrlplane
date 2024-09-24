@@ -1,17 +1,17 @@
-name: Providers / Terraform Cloud Scanner
+name: Integrations / Terraform Cloud Scanner
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - providers/terraform-cloud-scanner/**
-      - .github/workflows/providers-terraform-cloud-scanner.yaml
+      - integrations/terraform-cloud-scanner/**
+      - .github/workflows/integrations-terraform-cloud-scanner.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - providers/terraform-cloud-scanner/**
-      - .github/workflows/providers-terraform-cloud-scanner.yaml
+      - integrations/terraform-cloud-scanner/**
+      - .github/workflows/integrations-terraform-cloud-scanner.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: providers/terraform-cloud-scanner/Dockerfile
+          file: integrations/terraform-cloud-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -56,5 +56,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: providers/terraform-cloud-scanner/Dockerfile
+          file: integrations/terraform-cloud-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}

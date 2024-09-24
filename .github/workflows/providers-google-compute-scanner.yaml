@@ -1,17 +1,17 @@
-name: Providers / Google Compute Scanner
+name: Integrations / Google Compute Scanner
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - providers/google-compute-scanner/**
-      - .github/workflows/providers-google-compute-scanner.yaml
+      - integrations/google-compute-scanner/**
+      - .github/workflows/integrations-google-compute-scanner.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - providers/google-compute-scanner/**
-      - .github/workflows/providers-google-compute-scanner.yaml
+      - integrations/google-compute-scanner/**
+      - .github/workflows/integrations-google-compute-scanner.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -48,7 +48,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: providers/google-compute-scanner/Dockerfile
+          file: integrations/google-compute-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -56,5 +56,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: providers/google-compute-scanner/Dockerfile
+          file: integrations/google-compute-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}

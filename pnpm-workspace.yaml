@@ -2,7 +2,7 @@ packages:
   - apps/*
   - packages/*
   - tooling/*
-  - providers/*
+  - integrations/*
 
 catalog:
   eslint: ^9.10.0
