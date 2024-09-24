@@ -5,6 +5,7 @@ export * from "./kubernetes-v1.js";
 export const nullCondition = z.object({
   type: z.literal("metadata"),
   key: z.string().min(1),
+  value: z.string().optional(),
   operator: z.literal("null"),
 });
 
