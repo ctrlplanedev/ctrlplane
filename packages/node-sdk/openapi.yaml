@@ -259,22 +259,84 @@ paths:
               schema:
                 type: object
                 properties:
-                  job:
-                    type: object
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      [
+                        completed,
+                        cancelled,
+                        skipped,
+                        in_progress,
+                        action_required,
+                        pending,
+                        failure,
+                        invalid_job_agent,
+                        invalid_integration,
+                        external_run_not_found,
+                      ]
+
                   release:
                     type: object
+                    properties:
+                      id:
+                        type: string
+                      version:
+                        type: string
+                    required: [id, version]
+
                   deployment:
                     type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      slug:
+                        type: string
+                    required: [id, version, slug]
+
                   runbook:
                     type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required: [id, name]
+
                   target:
                     type: object
+                    properties:
+                      id:
+                        type: string
+                      identifier:
+                        type: string
+                      kind:
+                        type: string
+                      version:
+                        type: string
+                      config:
+                        type: object
+                    required: [id, identifier, kind, version, config]
+
                   environment:
                     type: object
-                  variable:
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required: [id, name]
+
+                  variables:
                     type: object
                 required:
-                  - job
+                  - id
+                  - status
+                  - createdAt
+                  - updatedAt
                   - variable
     patch:
       summary: Update a job
