@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   TbExternalLink,
   TbHistory,
@@ -46,13 +47,34 @@ const TabButton: React.FC<{
   </Button>
 );
 
-export const TargetDrawer: React.FC<{
-  isOpen: boolean;
-  setIsOpen: (v: boolean) => void;
-  targetId?: string;
-}> = ({ isOpen, setIsOpen, targetId }) => {
+const param = "target_id";
+export const useTargetDrawer = () => {
+  const router = useRouter();
+  const params = useSearchParams();
+  const targetId = params.get(param);
+
+  const setTargetId = (id: string | null) => {
+    const url = new URL(window.location.href);
+    if (id === null) {
+      url.searchParams.delete(param);
+    } else {
+      url.searchParams.set(param, id);
+    }
+    router.replace(url.toString());
+  };
+
+  const removeTargetId = () => setTargetId(null);
+
+  return { targetId, setTargetId, removeTargetId };
+};
+
+export const TargetDrawer: React.FC = () => {
+  const { targetId, removeTargetId } = useTargetDrawer();
+  const isOpen = targetId != null && targetId != "";
+  const setIsOpen = removeTargetId;
+
   const targetQ = api.target.byId.useQuery(targetId ?? "", {
-    enabled: targetId != null,
+    enabled: isOpen,
     refetchInterval: 10_000,
   });
 
@@ -62,7 +84,7 @@ export const TargetDrawer: React.FC<{
 
   const lockTarget = api.target.lock.useMutation();
   const unlockTarget = api.target.unlock.useMutation();
-  const utils = api.useUtils();
+  const router = useRouter();
 
   const links =
     target?.metadata[ReservedMetadataKey.Links] != null
@@ -112,7 +134,7 @@ export const TargetDrawer: React.FC<{
                 onClick={() =>
                   (target.lockedAt != null ? unlockTarget : lockTarget)
                     .mutateAsync(target.id)
-                    .then(() => utils.target.byId.invalidate(targetId))
+                    .then(() => router.refresh())
                 }
               >
                 {target.lockedAt != null ? (

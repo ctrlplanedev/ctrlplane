@@ -5,7 +5,7 @@ import type {
   KindEqualsCondition,
   NameLikeCondition,
 } from "@ctrlplane/validators/targets";
-import React, { Fragment, useState } from "react";
+import React, { Fragment } from "react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
@@ -19,10 +19,10 @@ import { api } from "~/trpc/react";
 import { useFilters } from "../../_components/filter/Filter";
 import { FilterDropdown } from "../../_components/filter/FilterDropdown";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
+import { useTargetDrawer } from "../../_components/target-drawer/TargetDrawer";
 import { KindFilterDialog } from "./KindFilterDialog";
 import { MetadataFilterDialog } from "./MetadataFilterDialog";
 import { NameFilterDialog } from "./NameFilterDialog";
-import { TargetDrawer } from "./target-drawer/TargetDrawer";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
@@ -42,8 +42,7 @@ export const TargetPageContent: React.FC<{
     filters: filters.map((f) => f.value),
   });
 
-  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
-  const targetId = selectedTargetId ?? targets.data?.items.at(0)?.id;
+  const { targetId, setTargetId } = useTargetDrawer();
 
   if (targetsAll.isSuccess && targetsAll.data.total === 0)
     return <TargetGettingStarted />;
@@ -225,15 +224,10 @@ export const TargetPageContent: React.FC<{
           <TargetsTable
             targets={targets.data.items}
             activeTargetIds={targetId ? [targetId] : []}
-            onTableRowClick={(r) => setSelectedTargetId(r.id)}
+            onTableRowClick={(r) => setTargetId(r.id)}
           />
         </div>
       )}
-      <TargetDrawer
-        isOpen={selectedTargetId != null}
-        setIsOpen={() => setSelectedTargetId(null)}
-        targetId={targetId}
-      />
     </div>
   );
 };
