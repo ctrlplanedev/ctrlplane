@@ -1,17 +1,17 @@
-name: Providers / Kubernetes Job Agent
+name: Integrations / Terraform Cloud Scanner
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - providers/kubernetes-job-agent/**
-      - .github/workflows/providers-kubernetes-job-agent.yaml
+      - integrations/terraform-cloud-scanner/**
+      - .github/workflows/integrations-terraform-cloud-scanner.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - providers/kubernetes-job-agent/**
-      - .github/workflows/providers-kubernetes-job-agent.yaml
+      - integrations/terraform-cloud-scanner/**
+      - .github/workflows/integrations-terraform-cloud-scanner.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/kubernetes-job-agent
+          images: ctrlplane/terraform-cloud-scanner
           tags: |
             type=sha,format=short,prefix=
 
@@ -48,7 +48,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: providers/kubernetes-job-agent/Dockerfile
+          file: integrations/terraform-cloud-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}
 
       - name: Build and Push
@@ -56,5 +56,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         with:
           push: true
-          file: providers/kubernetes-job-agent/Dockerfile
+          file: integrations/terraform-cloud-scanner/Dockerfile
           tags: ${{ steps.meta.outputs.tags }}

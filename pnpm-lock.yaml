@@ -611,6 +611,207 @@ importers:
         specifier: ^5.6.2
         version: 5.6.2
 
+  integrations/google-compute-scanner:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
+      '@google-cloud/container':
+        specifier: ^5.16.0
+        version: 5.17.0
+      '@kubernetes/client-node':
+        specifier: ^0.22.0
+        version: 0.22.0
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      google-auth-library:
+        specifier: ^9.13.0
+        version: 9.14.1
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      semver:
+        specifier: ^7.6.2
+        version: 7.6.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
+      '@types/semver':
+        specifier: ^7.5.8
+        version: 7.5.8
+      eslint:
+        specifier: 'catalog:'
+        version: 9.10.0(jiti@1.21.6)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.2
+        version: 5.6.2
+
+  integrations/kubernetes-job-agent:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
+      '@kubernetes/client-node':
+        specifier: ^0.22.0
+        version: 0.22.0
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
+      eslint:
+        specifier: 'catalog:'
+        version: 9.10.0(jiti@1.21.6)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.2
+        version: 5.6.2
+
+  integrations/terraform-cloud-scanner:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@t3-oss/env-core':
+        specifier: ^0.10.1
+        version: 0.10.1(typescript@5.6.2)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
+      '@types/node':
+        specifier: catalog:node22
+        version: 22.5.5
+      '@vitest/coverage-v8':
+        specifier: ^2.1.1
+        version: 2.1.1(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.10.0(jiti@1.21.6)
+      eslint-plugin-vitest:
+        specifier: 'catalog:'
+        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.2
+        version: 5.6.2
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
+
   packages/api:
     dependencies:
       '@ctrlplane/auth':
@@ -1140,207 +1341,6 @@ importers:
         specifier: ^5.6.2
         version: 5.6.2
 
-  providers/google-compute-scanner:
-    dependencies:
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
-      '@google-cloud/container':
-        specifier: ^5.16.0
-        version: 5.17.0
-      '@kubernetes/client-node':
-        specifier: ^0.22.0
-        version: 0.22.0
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      google-auth-library:
-        specifier: ^9.13.0
-        version: 9.14.1
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-      semver:
-        specifier: ^7.6.2
-        version: 7.6.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      '@types/semver':
-        specifier: ^7.5.8
-        version: 7.5.8
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: ^5.6.2
-        version: 5.6.2
-
-  providers/kubernetes-job-agent:
-    dependencies:
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
-      '@kubernetes/client-node':
-        specifier: ^0.22.0
-        version: 0.22.0
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.1.0
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: ^5.6.2
-        version: 5.6.2
-
-  providers/terraform-cloud-scanner:
-    dependencies:
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@t3-oss/env-core':
-        specifier: ^0.10.1
-        version: 0.10.1(typescript@5.6.2)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      '@types/node':
-        specifier: catalog:node22
-        version: 22.5.5
-      '@vitest/coverage-v8':
-        specifier: ^2.1.1
-        version: 2.1.1(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      eslint-plugin-vitest:
-        specifier: 'catalog:'
-        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
-      jsdom:
-        specifier: ^25.0.0
-        version: 25.0.0
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: ^5.6.2
-        version: 5.6.2
-      vitest:
-        specifier: ^2.1.1
-        version: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
-
   tooling/eslint:
     dependencies:
       '@next/eslint-plugin-next':
@@ -1351,7 +1351,7 @@ importers:
         version: 1.13.4(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.30.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6))
+        version: 2.30.0(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-jsx-a11y:
         specifier: ^6.9.0
         version: 6.10.0(eslint@9.10.0(jiti@1.21.6))
@@ -12378,7 +12378,7 @@ snapshots:
   '@types/body-parser@1.19.5':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
 
   '@types/caseless@0.12.5': {}
 
@@ -12527,7 +12527,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.5':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
       '@types/qs': 6.9.16
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.4
@@ -12643,7 +12643,7 @@ snapshots:
   '@types/request@2.48.12':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.1
 
@@ -12659,7 +12659,7 @@ snapshots:
   '@types/serve-static@1.15.7':
     dependencies:
       '@types/http-errors': 2.0.4
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
       '@types/send': 0.17.4
 
   '@types/shimmer@1.2.0': {}
@@ -14192,17 +14192,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.11.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6)):
+  eslint-module-utils@2.11.0(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
       eslint: 9.10.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6)):
+  eslint-plugin-import@2.30.0(eslint@9.10.0(jiti@1.21.6)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -14213,7 +14212,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.10.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.11.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6))
+      eslint-module-utils: 2.11.0(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6))
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -14223,8 +14222,6 @@ snapshots:
       object.values: 1.2.0
       semver: 6.3.1
       tsconfig-paths: 3.15.0
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
