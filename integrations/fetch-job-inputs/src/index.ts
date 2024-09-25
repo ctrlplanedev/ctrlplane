@@ -21,6 +21,8 @@ async function run() {
       core.setOutput("environment_name", environment?.name);
       core.setOutput("release_version", release?.version);
 
+      console.log("config", config);
+
       for (const [key, value] of Object.entries(config ?? {})) {
         console.log("config", key, value);
         core.setOutput(`config_${key}`, value);
