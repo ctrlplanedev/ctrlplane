@@ -1,6 +1,6 @@
 import type { SetTargetProvidersTargetsRequestTargetsInner } from "@ctrlplane/node-sdk";
 import { CronJob } from "cron";
-import _ from "lodash";
+import { uniqBy } from "lodash-es";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -57,7 +57,7 @@ const scan = async () => {
   await api.setTargetProvidersTargets({
     providerId: id,
     setTargetProvidersTargetsRequest: {
-      targets: _.uniqBy(targets, (t) => t.identifier),
+      targets: uniqBy(targets, (t) => t.identifier),
     },
   });
 };

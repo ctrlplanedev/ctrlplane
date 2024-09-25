@@ -4,7 +4,6 @@ import type { Deployment } from "@ctrlplane/db/schema";
 import type { ReleaseType } from "semver";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import _ from "lodash";
 import { parse, valid } from "semver";
 import { isPresent } from "ts-is-present";
 

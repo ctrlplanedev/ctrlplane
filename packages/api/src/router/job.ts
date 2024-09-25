@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
+import { chain, min } from "lodash-es";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -148,7 +148,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         )
         .where(and(eq(release.id, input), isNull(environment.deletedAt)))
         .then((data) =>
-          _.chain(data)
+          chain(data)
             .groupBy((row) => row.release_job_trigger.id)
             .map((v) => ({
               ...v[0]!.release_job_trigger,
@@ -211,7 +211,7 @@ const rolloutDateFromReleaseJobTrigger = (
 
     if (isInWindow) return rolloutDate;
 
-    adjustedRolloutDate = _.min([adjustedRolloutDate, nextIntervalStart])!;
+    adjustedRolloutDate = min([adjustedRolloutDate, nextIntervalStart])!;
   }
 
   return adjustedRolloutDate;

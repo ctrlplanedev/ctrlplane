@@ -3,7 +3,6 @@ import type {
   MetadataCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
-import _ from "lodash";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";

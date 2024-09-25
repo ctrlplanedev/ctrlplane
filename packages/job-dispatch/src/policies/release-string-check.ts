@@ -1,4 +1,3 @@
-import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 

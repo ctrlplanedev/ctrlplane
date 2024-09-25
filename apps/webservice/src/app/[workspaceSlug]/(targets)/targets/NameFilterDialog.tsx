@@ -3,7 +3,6 @@ import type {
   NameCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
-import _ from "lodash";
 import { TbX } from "react-icons/tb";
 import { z } from "zod";
 

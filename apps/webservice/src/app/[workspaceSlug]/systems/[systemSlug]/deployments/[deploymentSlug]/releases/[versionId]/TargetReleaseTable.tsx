@@ -3,7 +3,7 @@
 import React, { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
 import { capitalCase } from "change-case";
-import _ from "lodash";
+import { chain } from "lodash-es";
 import { TbAlertTriangle, TbDots, TbLoader2 } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
@@ -217,7 +217,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   return (
     <Table>
       <TableBody>
-        {_.chain(releaseJobTriggerQuery.data)
+        {chain(releaseJobTriggerQuery.data)
           .groupBy((r) => r.environmentId)
           .entries()
           .map(([envId, jobs]) => (

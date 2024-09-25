@@ -1,5 +1,3 @@
-import _ from "lodash";
-
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 

@@ -6,7 +6,6 @@ import type {
   StringVariableConfigType,
   VariableConfigType,
 } from "@ctrlplane/validators/variables";
-import _ from "lodash";
 import { TbX } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";

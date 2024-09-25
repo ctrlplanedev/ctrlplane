@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { capitalCase } from "change-case";
-import _ from "lodash";
 import { TbEdit, TbInfoCircle, TbLink } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";

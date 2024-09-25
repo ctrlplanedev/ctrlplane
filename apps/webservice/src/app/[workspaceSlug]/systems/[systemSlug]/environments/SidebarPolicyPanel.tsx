@@ -6,7 +6,7 @@ import type {
 } from "@ctrlplane/db/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZonedDateTime } from "@internationalized/date";
-import _ from "lodash";
+import { capitalize, isEqual } from "lodash-es";
 import ms from "ms";
 import prettyMilliseconds from "pretty-ms";
 import { useFieldArray, useForm } from "react-hook-form";
@@ -171,7 +171,7 @@ export const SidebarPhasePanel: React.FC<{
   const { evaluateWith, successMinimum, concurrencyLimit } = form.watch();
 
   const onSubmit = form.handleSubmit(async (values) => {
-    const isReleaseWindowsChanged = !_.isEqual(
+    const isReleaseWindowsChanged = !isEqual(
       values.releaseWindows,
       policy.releaseWindows,
     );
@@ -531,7 +531,7 @@ export const SidebarPhasePanel: React.FC<{
                           >
                             <SelectTrigger>
                               <SelectValue>
-                                {_.capitalize(value.recurrence)}
+                                {capitalize(value.recurrence)}
                               </SelectValue>
                             </SelectTrigger>
                             <SelectContent>

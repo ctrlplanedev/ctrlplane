@@ -2,7 +2,7 @@ import type { RestEndpointMethodTypes } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
-import _ from "lodash";
+import { chain, merge } from "lodash-es";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -251,7 +251,7 @@ export const githubRouter = createTRPCRouter({
                       "X-GitHub-Api-Version": "2022-11-28",
                     },
                   });
-                  return _.merge(orgData.data, { installationId: i.id });
+                  return merge(orgData.data, { installationId: i.id });
                 }),
             ).then((orgs) => orgs.filter(isPresent)),
           ),
@@ -284,7 +284,7 @@ export const githubRouter = createTRPCRouter({
           )
           .where(eq(githubOrganization.workspaceId, input))
           .then((rows) =>
-            _.chain(rows)
+            chain(rows)
               .groupBy("github_organization.id")
               .map((v) => ({
                 ...v[0]!.github_organization,

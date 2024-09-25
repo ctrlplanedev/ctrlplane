@@ -1,4 +1,4 @@
-import _ from "lodash";
+import { chain } from "lodash-es";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -194,7 +194,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           ),
         )
         .then((rows) =>
-          _.chain(rows)
+          chain(rows)
             .groupBy((r) => r.deployment_variable.id)
             .map((r) => ({
               ...r[0]!.deployment_variable,
@@ -253,7 +253,7 @@ export const deploymentVariableRouter = createTRPCRouter({
         )
         .where(eq(deploymentVariableValueTarget.targetId, input))
         .then((rows) =>
-          _.chain(rows)
+          chain(rows)
             .groupBy((row) => row.deployment_variable.id)
             .map((row) => ({
               ...row[0]!.deployment_variable,
@@ -291,11 +291,11 @@ export const deploymentVariableRouter = createTRPCRouter({
         )
         .where(eq(deploymentVariable.deploymentId, input))
         .then((rows) => {
-          return _.chain(rows)
+          return chain(rows)
             .groupBy((row) => row.deployment_variable.id)
             .map((row) => ({
               ...row[0]!.deployment_variable,
-              values: _.chain(row)
+              values: chain(row)
                 .groupBy((r) => r.deployment_variable_value?.id)
                 .map((r) => ({
                   ...r[0]!.deployment_variable_value!,

@@ -7,7 +7,7 @@ import type {
 } from "@ctrlplane/validators/targets";
 import React, { Fragment } from "react";
 import { capitalCase } from "change-case";
-import _ from "lodash";
+import { range } from "lodash-es";
 import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -203,7 +203,7 @@ export const TargetPageContent: React.FC<{
 
       {targets.isLoading && (
         <div className="space-y-2 p-4">
-          {_.range(10).map((i) => (
+          {range(10).map((i) => (
             <Skeleton
               key={i}
               className="h-9 w-full"

@@ -1,4 +1,4 @@
-import _ from "lodash";
+import { chain } from "lodash-es";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull } from "@ctrlplane/db";
@@ -48,7 +48,7 @@ export const isPassingReleaseWindowPolicy: ReleaseIdPolicyChecker = async (
           ),
         )
         .then((policies) =>
-          _.chain(policies)
+          chain(policies)
             .filter(
               ({ environment_policy_release_window }) =>
                 environment_policy_release_window == null ||

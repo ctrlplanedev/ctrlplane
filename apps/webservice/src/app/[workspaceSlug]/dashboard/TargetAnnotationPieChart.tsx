@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import _ from "lodash";
+import { uniqBy } from "lodash";
+import { chain } from "lodash-es";
 import randomColor from "randomcolor";
 import { Label, Pie, PieChart } from "recharts";
 
@@ -22,7 +23,7 @@ export const TargetAnnotationPieChart: React.FC<{
     "kubernetes/autoscaling-enabled",
   );
 
-  const chartData = _.chain(targets.data?.items ?? [])
+  const chartData = chain(targets.data?.items ?? [])
     .filter((t) => showUndefined || t.metadata[annotation ?? ""] != null)
     .groupBy((t) => t.metadata[annotation ?? ""]?.toString() ?? "undefined")
     .map((targets, metadata) => ({
@@ -34,7 +35,7 @@ export const TargetAnnotationPieChart: React.FC<{
 
   const chartConfig = useMemo(
     () =>
-      _.chain(targets.data?.items ?? [])
+      chain(targets.data?.items ?? [])
         .uniqBy((t) => t.metadata[annotation ?? ""]?.toString() ?? "undefined")
         .map((t) => [
           t.metadata[annotation ?? ""],
@@ -81,7 +82,7 @@ export const TargetAnnotationPieChart: React.FC<{
                       className="fill-foreground text-3xl font-bold"
                     >
                       {
-                        _.uniqBy(
+                        uniqBy(
                           targets.data?.items ?? [],
                           (t) => t.metadata[annotation ?? ""] ?? "",
                         ).length
