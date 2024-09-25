@@ -4,7 +4,7 @@ import pRetry from "p-retry";
 import { Configuration, DefaultApi } from "@ctrlplane/node-sdk";
 
 const config = new Configuration({
-  basePath: core.getInput("api_url", { required: true }),
+  basePath: core.getInput("api_url", { required: true }) + "/api",
   apiKey: core.getInput("api_key", { required: true }),
 });
 

@@ -27567,6 +27567,32 @@ function GetJob200ResponseRunbookToJSON(value) {
   };
 }
 
+// src/models/GetJob200ResponseTargetConfig.ts
+function instanceOfGetJob200ResponseTargetConfig(value) {
+  return true;
+}
+function GetJob200ResponseTargetConfigFromJSON(json) {
+  return GetJob200ResponseTargetConfigFromJSONTyped(json, false);
+}
+function GetJob200ResponseTargetConfigFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    location: json["location"] == null ? void 0 : json["location"],
+    project: json["project"] == null ? void 0 : json["project"]
+  };
+}
+function GetJob200ResponseTargetConfigToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    location: value["location"],
+    project: value["project"]
+  };
+}
+
 // src/models/GetJob200ResponseTarget.ts
 function instanceOfGetJob200ResponseTarget(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
@@ -27591,7 +27617,7 @@ function GetJob200ResponseTargetFromJSONTyped(json, ignoreDiscriminator) {
     name: json["name"],
     kind: json["kind"],
     version: json["version"],
-    config: json["config"]
+    config: GetJob200ResponseTargetConfigFromJSON(json["config"])
   };
 }
 function GetJob200ResponseTargetToJSON(value) {
@@ -27604,7 +27630,7 @@ function GetJob200ResponseTargetToJSON(value) {
     name: value["name"],
     kind: value["kind"],
     version: value["version"],
-    config: value["config"]
+    config: GetJob200ResponseTargetConfigToJSON(value["config"])
   };
 }
 
@@ -28284,7 +28310,7 @@ var DefaultApi = class extends BaseAPI {
 
 
 const config = new Configuration({
-    basePath: core.getInput("api_url", { required: true }),
+    basePath: core.getInput("api_url", { required: true }) + "/api",
     apiKey: core.getInput("api_key", { required: true }),
 });
 const api = new DefaultApi(config);
@@ -28306,12 +28332,17 @@ function run() {
         const targetName = response.target?.name;
         const environmentName = response.environment?.name;
         const releaseVersion = response.release?.version;
+        const location = response.target?.config.location;
+        const project = response.target?.config.project;
         const variables = response.variables;
         core.setOutput("target_name", targetName);
         core.setOutput("environment_name", environmentName);
         core.setOutput("release_version", releaseVersion);
-        for (const [key, value] of Object.entries(variables ?? {}))
-            core.setOutput(key, value);
+        core.setOutput("target.location", location);
+        core.setOutput("target.project", project);
+        for (const [key, value] of Object.entries(variables ?? {})) {
+            core.setOutput(`variable.${key}`, value);
+        }
     })
         .catch((error) => {
         core.setFailed(`Action failed: ${error.message}`);
