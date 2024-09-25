@@ -9,8 +9,19 @@ import type {
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { TbX } from "react-icons/tb";
+import { capitalCase } from "change-case";
+import {
+  TbArrowUpCircle,
+  TbChevronDown,
+  TbCopy,
+  TbDots,
+  TbPlus,
+  TbRefresh,
+  TbTrash,
+  TbX,
+} from "react-icons/tb";
 
+import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
@@ -42,6 +53,7 @@ type TargetConditionRenderProps = {
   onChange: (condition: TargetCondition) => void;
   onRemove?: () => void;
   depth?: number;
+  className?: string;
 };
 
 const conditionIsComparison = (condition: TargetCondition) =>
@@ -50,7 +62,6 @@ const conditionIsComparison = (condition: TargetCondition) =>
 const ComparisonConditionRender: React.FC<TargetConditionRenderProps> = ({
   condition,
   onChange,
-  onRemove,
   depth = 0,
 }) => {
   const [localCondition, setLocalCondition] = useState<ComparisonCondition>(
@@ -93,55 +104,105 @@ const ComparisonConditionRender: React.FC<TargetConditionRenderProps> = ({
     onChange(localCondition);
   };
 
+  const handleConvertToComparison = (index: number) => {
+    const condition = localCondition.conditions[index];
+    const newComparisonCondition = {
+      type: TargetFilterType.Comparison,
+      operator: TargetOperator.And,
+      conditions: [condition],
+    } as ComparisonCondition;
+    handleConditionChange(index, newComparisonCondition);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between">
-        <Select
-          value={localCondition.operator}
-          onValueChange={handleOperatorChange}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="w-32">
-            <SelectGroup>
-              <SelectItem value={TargetOperator.And}>And</SelectItem>
-              <SelectItem value={TargetOperator.Or}>Or</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-
-        {onRemove && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={onRemove}
-          >
-            <TbX />
-          </Button>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
+      <div className="space-y-2">
         {localCondition.conditions.map((condition, index) => (
-          <TargetConditionRender
-            key={index}
-            condition={condition}
-            onChange={(c) => handleConditionChange(index, c)}
-            onRemove={() => handleRemoveCondition(index)}
-            depth={depth + 1}
-          />
+          <div className="flex items-start gap-2">
+            <div className="grid flex-grow grid-cols-12 gap-2">
+              {index !== 1 && (
+                <div className="col-span-1 flex justify-end px-1 pt-1 text-muted-foreground">
+                  {index === 0 ? "When" : capitalCase(localCondition.operator)}
+                </div>
+              )}
+              {index === 1 && (
+                <Select
+                  value={localCondition.operator}
+                  onValueChange={handleOperatorChange}
+                >
+                  <SelectTrigger className="col-span-1 text-muted-foreground hover:bg-neutral-700/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={TargetOperator.And}>And</SelectItem>
+                      <SelectItem value={TargetOperator.Or}>Or</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              )}
+              <TargetConditionRender
+                key={index}
+                condition={condition}
+                onChange={(c) => handleConditionChange(index, c)}
+                onRemove={() => handleRemoveCondition(index)}
+                depth={depth + 1}
+                className="col-span-11"
+              />
+            </div>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="col-span-1 h-6 w-6 text-muted-foreground"
+                  // onClick={() => handleRemoveCondition(index)}
+                >
+                  <TbDots />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => handleRemoveCondition(index)}
+                  className="flex items-center gap-2"
+                >
+                  <TbTrash className="text-red-400" />
+                  Remove
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => handleAddCondition(condition)}
+                  className="flex items-center gap-2"
+                >
+                  <TbCopy />
+                  Duplicate
+                </DropdownMenuItem>
+                {depth < 2 && (
+                  <DropdownMenuItem
+                    onClick={() => handleConvertToComparison(index)}
+                    className="flex items-center gap-2"
+                  >
+                    <TbRefresh />
+                    Turn into group
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         ))}
       </div>
 
       <DropdownMenu>
-        <DropdownMenuTrigger>
-          <Button type="button" variant="outline">
-            Add Condition
+        <DropdownMenuTrigger className="w-max focus-visible:outline-none">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex items-center gap-1 px-2 text-muted-foreground"
+          >
+            <TbPlus /> Add Condition <TbChevronDown />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent align="start" className="text-muted-foreground">
           <DropdownMenuGroup>
             <DropdownMenuItem
               onClick={() =>
@@ -177,17 +238,6 @@ const ComparisonConditionRender: React.FC<TargetConditionRenderProps> = ({
             >
               Name
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                handleAddCondition({
-                  type: TargetFilterType.Comparison,
-                  operator: TargetOperator.And,
-                  conditions: [],
-                })
-              }
-            >
-              Comparison
-            </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -198,8 +248,6 @@ const ComparisonConditionRender: React.FC<TargetConditionRenderProps> = ({
 const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
   condition,
   onChange,
-  onRemove,
-  depth = 0,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
@@ -247,19 +295,19 @@ const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
   );
 
   return (
-    <div className="flex items-center gap-2">
-      <div className="grid grid-cols-8">
-        <div className="col-span-3">
+    <div className="flex w-full items-center gap-2">
+      <div className="grid w-full grid-cols-12">
+        <div className="col-span-5">
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
               onClick={(e) => e.stopPropagation()}
-              className="flex-grow rounded-r-none"
+              className="w-full rounded-r-none"
             >
               <Input
                 placeholder="Key"
                 value={localCondition.key}
                 onChange={(e) => handleKeyChange(e.target.value)}
-                className="rounded-r-none"
+                className="w-full rounded-l-sm rounded-r-none"
               />
             </PopoverTrigger>
             <PopoverContent
@@ -284,7 +332,7 @@ const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
             </PopoverContent>
           </Popover>
         </div>
-        <div className="col-span-2">
+        <div className="col-span-3">
           <Select
             value={localCondition.operator}
             onValueChange={(
@@ -308,7 +356,7 @@ const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
         </div>
 
         {localCondition.operator !== TargetOperator.Null ? (
-          <div className="col-span-3">
+          <div className="col-span-4">
             <Input
               placeholder={
                 localCondition.operator === TargetOperator.Regex
@@ -319,24 +367,13 @@ const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
               }
               value={localCondition.value}
               onChange={(e) => handleValueChange(e.target.value)}
-              className="rounded-l-none"
+              className="rounded-l-none rounded-r-sm"
             />
           </div>
         ) : (
-          <div className="col-span-3 h-9  cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+          <div className="col-span-4 h-9  cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
         )}
       </div>
-
-      {onRemove && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={onRemove}
-        >
-          <TbX />
-        </Button>
-      )}
     </div>
   );
 };
@@ -346,10 +383,16 @@ export const TargetConditionRender: React.FC<TargetConditionRenderProps> = ({
   onChange,
   onRemove,
   depth = 0,
+  className,
 }) => {
   if (conditionIsComparison(condition))
     return (
-      <div className="rounded-sm border-2 border-neutral-900 p-2">
+      <div
+        className={cn(
+          "rounded-sm border border-neutral-800 px-2 py-4",
+          className,
+        )}
+      >
         <ComparisonConditionRender
           condition={condition}
           onChange={onChange}
@@ -361,12 +404,14 @@ export const TargetConditionRender: React.FC<TargetConditionRenderProps> = ({
 
   if (condition.type === TargetFilterType.Metadata)
     return (
-      <MetadataConditionRender
-        condition={condition}
-        onChange={onChange}
-        onRemove={onRemove}
-        depth={depth}
-      />
+      <div className={className ?? ""}>
+        <MetadataConditionRender
+          condition={condition}
+          onChange={onChange}
+          onRemove={onRemove}
+          depth={depth}
+        />
+      </div>
     );
 
   return <></>;

@@ -31,6 +31,7 @@ export default function TargetsTestPage() {
       <TargetConditionRender
         condition={condition}
         onChange={handleConditionChange}
+        className="w-[1200px]"
       />
     </div>
   );
