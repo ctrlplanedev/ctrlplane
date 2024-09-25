@@ -6,9 +6,9 @@ import type {
 import type { NodeProps } from "reactflow";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
 import { addMilliseconds, isBefore } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
-import { TbCheck, TbLoader2, TbMinus, TbX } from "react-icons/tb";
 import { useTimeoutFn } from "react-use";
 import { Handle, Position } from "reactflow";
 import { satisfies } from "semver";
@@ -74,25 +74,25 @@ const ApprovalDialog: React.FC<{
 
 const Cancelled: React.FC = () => (
   <div className="rounded-full bg-neutral-400 p-0.5 dark:text-black">
-    <TbMinus strokeWidth={3} />
+    <IconMinus strokeWidth={3} />
   </div>
 );
 
 const Blocked: React.FC = () => (
   <div className="rounded-full bg-red-400 p-0.5 dark:text-black">
-    <TbX strokeWidth={3} />
+    <IconX strokeWidth={3} />
   </div>
 );
 
 const Passing: React.FC = () => (
   <div className="rounded-full bg-green-400 p-0.5 dark:text-black">
-    <TbCheck strokeWidth={3} />
+    <IconCheck strokeWidth={3} />
   </div>
 );
 
 const Waiting: React.FC = () => (
   <div className="animate-spin rounded-full bg-blue-400 p-0.5 dark:text-black">
-    <TbLoader2 strokeWidth={3} />
+    <IconLoader2 strokeWidth={3} />
   </div>
 );
 

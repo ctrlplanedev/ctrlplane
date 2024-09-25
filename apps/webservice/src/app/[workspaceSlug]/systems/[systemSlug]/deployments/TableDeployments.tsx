@@ -1,6 +1,10 @@
 import type { Deployment, Environment, Target } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { TbCircleFilled, TbRocket, TbTerminal2 } from "react-icons/tb";
+import {
+  IconCircleFilled,
+  IconRocket,
+  IconTerminal2,
+} from "@tabler/icons-react";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
@@ -11,7 +15,7 @@ import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/Dep
 import { api } from "~/trpc/server";
 import { Release } from "./TableCells";
 
-const Tb: React.FC<{ children?: React.ReactNode; className?: string }> = ({
+const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
   children,
   className,
 }) => (
@@ -25,7 +29,7 @@ const Tb: React.FC<{ children?: React.ReactNode; className?: string }> = ({
   </th>
 );
 
-const EnvTb: React.FC<{
+const EnvIcon: React.FC<{
   isFirst?: boolean;
   isLast?: boolean;
   environment: Environment & { targets: Target[] };
@@ -33,7 +37,7 @@ const EnvTb: React.FC<{
   systemSlug: string;
 }> = ({ environment: env, isFirst, isLast, workspaceSlug, systemSlug }) => {
   return (
-    <Tb
+    <Icon
       key={env.id}
       className={cn(
         "border-x border-t border-neutral-800/30 hover:bg-neutral-800/20",
@@ -55,7 +59,7 @@ const EnvTb: React.FC<{
           </Badge>
         </div>
       </Link>
-    </Tb>
+    </Icon>
   );
 };
 
@@ -133,9 +137,9 @@ const DeploymentTable: React.FC<{
       <table className="w-full min-w-max border-separate border-spacing-0">
         <thead>
           <tr>
-            <Tb className="sticky left-0 z-10 backdrop-blur-lg" />
+            <Icon className="sticky left-0 z-10 backdrop-blur-lg" />
             {environments.map((env, idx) => (
-              <EnvTb
+              <EnvIcon
                 key={env.id}
                 environment={env}
                 isFirst={idx === 0}
@@ -160,8 +164,8 @@ const DeploymentTable: React.FC<{
               >
                 <div className="flex w-full items-center gap-2">
                   <div className="relative h-[25px] w-[25px]">
-                    <TbCircleFilled className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
-                    <TbCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
+                    <IconCircleFilled className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
+                    <IconCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
                   </div>
                   <Link
                     href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${r.slug}`}
@@ -170,10 +174,10 @@ const DeploymentTable: React.FC<{
                     {r.name}
                   </Link>
                   <Button size="icon" variant="ghost">
-                    <TbTerminal2 />
+                    <IconTerminal2 className="h-4 w-4" />
                   </Button>
                   <Button size="icon" variant="ghost">
-                    <TbRocket />
+                    <IconRocket className="h-4 w-4" />
                   </Button>
                   <DeploymentOptionsDropdown {...r} />
                 </div>

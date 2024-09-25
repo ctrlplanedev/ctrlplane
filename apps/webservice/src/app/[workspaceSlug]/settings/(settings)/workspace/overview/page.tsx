@@ -1,12 +1,16 @@
 import Link from "next/link";
-import { SiGithub, SiGooglecloud, SiKubernetes } from "react-icons/si";
 import {
-  TbBook,
-  TbCategory,
-  TbChevronRight,
-  TbTarget,
-  TbTextCaption,
-} from "react-icons/tb";
+  SiGithub,
+  SiGooglecloud,
+  SiKubernetes,
+} from "@icons-pack/react-simple-icons";
+import {
+  IconBook,
+  IconCategory,
+  IconChevronRight,
+  IconTarget,
+  IconTextCaption,
+} from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -34,7 +38,7 @@ export default function OverviewPage({
         <div className="grid grid-cols-3 gap-6 text-sm">
           <div className="space-y-2 rounded-md border bg-neutral-900/50 p-4 shadow-lg">
             <div className="flex flex-grow gap-3">
-              <TbTarget className="h-5 w-5 text-purple-400" />
+              <IconTarget className="h-5 w-5 text-purple-400" />
               <div>
                 <div>Sync targets</div>
               </div>
@@ -54,7 +58,7 @@ export default function OverviewPage({
               <Link href="https://docs.ctrlplane.dev/targets">
                 <Button size="sm" variant="ghost" className="bg-transparent">
                   Learn more{" "}
-                  <TbChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
+                  <IconChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
                 </Button>
               </Link>
             </div>
@@ -62,7 +66,7 @@ export default function OverviewPage({
 
           <div className="space-y-2 rounded-md border bg-neutral-900/50 p-4 shadow-lg">
             <div className="flex flex-grow gap-3">
-              <TbCategory className="h-5 w-5 text-green-400" />
+              <IconCategory className="h-5 w-5 text-green-400" />
               <div>
                 <div>Create systems</div>
               </div>
@@ -82,7 +86,7 @@ export default function OverviewPage({
               <Link href="https://docs.ctrlplane.dev/systems">
                 <Button size="sm" variant="ghost" className="bg-transparent">
                   Learn more{" "}
-                  <TbChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
+                  <IconChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
                 </Button>
               </Link>
             </div>
@@ -90,7 +94,7 @@ export default function OverviewPage({
 
           <div className="space-y-2 rounded-md border bg-neutral-900/50 p-4 shadow-lg">
             <div className="flex flex-grow gap-3">
-              <TbCategory className="h-5 w-5 text-blue-400" />
+              <IconCategory className="h-5 w-5 text-blue-400" />
               <div>
                 <div>Configure environments</div>
               </div>
@@ -109,7 +113,7 @@ export default function OverviewPage({
               <Link href="https://docs.ctrlplane.dev/systems">
                 <Button size="sm" variant="ghost" className="bg-transparent">
                   Learn more{" "}
-                  <TbChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
+                  <IconChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
                 </Button>
               </Link>
             </div>
@@ -195,7 +199,7 @@ export default function OverviewPage({
             className="flex items-center gap-3 rounded-md border p-4 hover:border-neutral-600"
           >
             <div className="flex flex-grow gap-3">
-              <TbBook className="h-5 w-5 text-purple-400" />
+              <IconBook className="h-5 w-5 text-purple-400" />
               <div>
                 <div>Start guide</div>
                 <div className="text-xs text-muted-foreground">
@@ -203,14 +207,14 @@ export default function OverviewPage({
                 </div>
               </div>
             </div>
-            <TbChevronRight className="h-5 w-5 text-muted-foreground" />
+            <IconChevronRight className="h-5 w-5 text-muted-foreground" />
           </Link>
           <Link
             href="https://docs.ctrlplane.dev/glossary"
             className="flex items-center gap-3 rounded-md border p-4 hover:border-neutral-600"
           >
             <div className="flex flex-grow gap-3">
-              <TbTextCaption className="h-5 w-5 text-purple-400" />
+              <IconTextCaption className="h-5 w-5 text-purple-400" />
               <div>
                 <div>Glossary</div>
                 <div className="text-xs text-muted-foreground">
@@ -218,7 +222,7 @@ export default function OverviewPage({
                 </div>
               </div>
             </div>
-            <TbChevronRight className="h-5 w-5 text-muted-foreground" />
+            <IconChevronRight className="h-5 w-5 text-muted-foreground" />
           </Link>
         </div>
       </div>

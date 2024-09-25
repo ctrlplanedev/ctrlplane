@@ -17,7 +17,7 @@ import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
-const Tb: React.FC<{ children?: React.ReactNode; className?: string }> = ({
+const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
   children,
   className,
 }) => (
@@ -126,7 +126,7 @@ export const ReleaseTable: React.FC<{
       <table className="w-full min-w-max border-separate border-spacing-0">
         <thead>
           <tr>
-            <Tb className="sticky left-0 z-10 pl-0 pt-0 backdrop-blur-lg">
+            <Icon className="sticky left-0 z-10 pl-0 pt-0 backdrop-blur-lg">
               {firstRelease != null && valid(firstRelease.version) && (
                 <SemverHelperButtons
                   deploymentId={deployment.id}
@@ -134,9 +134,9 @@ export const ReleaseTable: React.FC<{
                   version={firstRelease.version}
                 />
               )}
-            </Tb>
+            </Icon>
             {environments.map((env, idx) => (
-              <Tb
+              <Icon
                 key={env.id}
                 className={cn(
                   "border-x border-t border-neutral-800/30 hover:bg-neutral-800/20",
@@ -158,7 +158,7 @@ export const ReleaseTable: React.FC<{
                     </Badge>
                   </div>
                 </Link>
-              </Tb>
+              </Icon>
             ))}
           </tr>
         </thead>

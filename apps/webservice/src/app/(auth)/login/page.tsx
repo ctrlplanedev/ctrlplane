@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { TbPlane } from "react-icons/tb";
+import { IconPlane } from "@tabler/icons-react";
 
 import { auth } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
@@ -15,7 +15,7 @@ export default async function LoginPage() {
   return (
     <div className="h-full">
       <div className="flex items-center gap-2 p-4">
-        <TbPlane className="text-2xl" />
+        <IconPlane className="h-10 w-10" />
         <div className="flex-grow" />
         <Button variant="ghost" className="text-muted-foreground">
           Contact

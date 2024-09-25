@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TbBuilding, TbChevronLeft, TbUser } from "react-icons/tb";
+import { IconBuilding, IconChevronLeft, IconUser } from "@tabler/icons-react";
 
 import { SidebarLink } from "./SidebarLink";
 
@@ -9,7 +9,7 @@ const WorkspaceSettings: React.FC<{ workspaceSlug: string }> = ({
   return (
     <div className="m-3 space-y-2">
       <div className="flex items-center gap-2 text-muted-foreground">
-        <TbBuilding className="w-3" /> Workspace
+        <IconBuilding className="w-3" /> Workspace
       </div>
 
       <div className="ml-3 space-y-0.5">
@@ -36,7 +36,7 @@ const AccountSettings: React.FC<{ workspaceSlug: string }> = ({
   return (
     <div className="m-3 space-y-2">
       <div className="flex items-center gap-2 text-muted-foreground">
-        <TbUser className="w-3" /> My account
+        <IconUser className="w-3" /> My account
       </div>
 
       <div className="ml-3 space-y-0.5">
@@ -62,7 +62,7 @@ export const SidebarSettings: React.FC<{ workspaceSlug: string }> = ({
           className="flex w-full items-center gap-2 text-left hover:bg-transparent"
         >
           <div className="text-muted-foreground">
-            <TbChevronLeft />
+            <IconChevronLeft className="h-3 w-3" />
           </div>
           <div className="flex-grow">Settings</div>
         </Link>

@@ -4,12 +4,12 @@ import type { System } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Fragment } from "react";
 import { useRouter } from "next/navigation";
+import { IconDotsVertical } from "@tabler/icons-react";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { TbDotsVertical } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -80,7 +80,7 @@ export const SystemsTable: React.FC<{
                 <TableCell>
                   <SystemActionsDropdown system={cell.row.original}>
                     <Button variant="ghost" size="icon">
-                      <TbDotsVertical />
+                      <IconDotsVertical className="h-4 w-4" />
                     </Button>
                   </SystemActionsDropdown>
                 </TableCell>

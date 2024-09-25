@@ -1,4 +1,4 @@
-import { TbTextPlus, TbX } from "react-icons/tb";
+import { IconTextPlus, IconX } from "@tabler/icons-react";
 
 import type { Widget } from "./spec";
 import { MoveButton } from "./HelperButton";
@@ -17,7 +17,7 @@ export const WidgetHeading: Widget<{
   ComponentPreview: () => {
     return (
       <>
-        <TbTextPlus className="m-auto mt-1 h-20 w-20" />
+        <IconTextPlus className="m-auto mt-1 h-20 w-20" />
         <div className="absolute bottom-0 left-0 right-0 text-center">
           <p className="pb-2 text-neutral-400">Heading</p>
         </div>
@@ -48,7 +48,7 @@ export const WidgetHeading: Widget<{
           </div>
           {isEditMode && (
             <button onClick={onDelete} className="mx-2 hover:text-red-400">
-              <TbX />
+              <IconX />
             </button>
           )}
         </div>

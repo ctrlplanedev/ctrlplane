@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { TbTarget } from "react-icons/tb";
+import { IconTarget } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
@@ -30,7 +30,7 @@ export default async function EnvironmentPage({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between gap-2 text-sm">
-                Kind <TbTarget />
+                Kind <IconTarget className="h-4 w-4" />
               </CardTitle>
             </CardHeader>
             <CardContent className="">
@@ -41,7 +41,7 @@ export default async function EnvironmentPage({
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between gap-2 text-sm">
-                Providers <TbTarget />
+                Providers <IconTarget className="h-4 w-4" />
               </CardTitle>
             </CardHeader>
             <CardContent className="">

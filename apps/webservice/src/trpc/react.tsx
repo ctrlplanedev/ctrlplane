@@ -3,7 +3,7 @@
 import type { AppRouter } from "@ctrlplane/api";
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { loggerLink, unstable_httpBatchStreamLink } from "@trpc/client";
+import { httpLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import SuperJSON from "superjson";
 
@@ -44,7 +44,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
             env.NODE_ENV === "development" ||
             (op.direction === "down" && op.result instanceof Error),
         }),
-        unstable_httpBatchStreamLink({
+        httpLink({
           transformer: SuperJSON,
           url: getBaseUrl() + "/api/trpc",
           headers() {
@@ -53,6 +53,15 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
             return headers;
           },
         }),
+        // unstable_httpBatchStreamLink({
+        //   transformer: SuperJSON,
+        //   url: getBaseUrl() + "/api/trpc",
+        //   headers() {
+        //     const headers = new Headers();
+        //     headers.set("x-trpc-source", "nextjs-react");
+        //     return headers;
+        //   },
+        // }),
       ],
     }),
   );
