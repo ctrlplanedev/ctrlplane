@@ -1,0 +1,150 @@
+import type {
+  MetadataCondition,
+  TargetCondition,
+} from "@ctrlplane/validators/targets";
+import { useState } from "react";
+import { useParams } from "next/navigation";
+
+import { cn } from "@ctrlplane/ui";
+import { Button } from "@ctrlplane/ui/button";
+import { Input } from "@ctrlplane/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
+import {
+  TargetFilterType,
+  TargetOperator,
+} from "@ctrlplane/validators/targets";
+
+import type { TargetConditionRenderProps } from "./target-condition-props";
+import { api } from "~/trpc/react";
+import { useMatchSorter } from "~/utils/useMatchSorter";
+
+export const conditionIsMetadata = (
+  condition: TargetCondition,
+): condition is MetadataCondition =>
+  condition.type === TargetFilterType.Metadata;
+
+export const MetadataConditionRender: React.FC<
+  TargetConditionRenderProps<MetadataCondition>
+> = ({ condition, onChange, className }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+
+  const handleKeyChange = (key: string) => onChange({ ...condition, key });
+
+  const handleValueChange = (value: string) =>
+    condition.operator !== TargetOperator.Null &&
+    onChange({ ...condition, value });
+
+  const handleOperatorChange = (
+    operator:
+      | TargetOperator.Equals
+      | TargetOperator.Like
+      | TargetOperator.Regex
+      | TargetOperator.Null,
+  ) =>
+    operator === TargetOperator.Null
+      ? onChange({ ...condition, operator, value: undefined })
+      : onChange({ ...condition, operator, value: condition.value ?? "" });
+
+  const [open, setOpen] = useState(false);
+  const metadataKeys = api.target.metadataKeys.useQuery(
+    workspace.data?.id ?? "",
+    {
+      enabled: workspace.isSuccess && workspace.data != null,
+    },
+  );
+  const filteredMetadataKeys = useMatchSorter(
+    metadataKeys.data ?? [],
+    condition.key,
+  );
+
+  return (
+    <div className={cn("flex w-full items-center gap-2", className)}>
+      <div className="grid w-full grid-cols-12">
+        <div className="col-span-5">
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger
+              onClick={(e) => e.stopPropagation()}
+              className="w-full rounded-r-none hover:rounded-l-sm hover:bg-neutral-800/50"
+            >
+              <Input
+                placeholder="Key"
+                value={condition.key}
+                onChange={(e) => handleKeyChange(e.target.value)}
+                className="w-full cursor-pointer rounded-l-sm rounded-r-none"
+              />
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="max-h-[300px] overflow-x-auto p-0 text-sm"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              {filteredMetadataKeys.map((k) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  key={k}
+                  className="w-full rounded-none text-left"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleKeyChange(k);
+                  }}
+                >
+                  <div className="w-full">{k}</div>
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="col-span-3">
+          <Select
+            value={condition.operator}
+            onValueChange={(
+              v:
+                | TargetOperator.Equals
+                | TargetOperator.Like
+                | TargetOperator.Regex
+                | TargetOperator.Null,
+            ) => handleOperatorChange(v)}
+          >
+            <SelectTrigger className="rounded-none hover:bg-neutral-800/50">
+              <SelectValue placeholder="Operator" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TargetOperator.Equals}>Equals</SelectItem>
+              <SelectItem value={TargetOperator.Regex}>Regex</SelectItem>
+              <SelectItem value={TargetOperator.Like}>Like</SelectItem>
+              <SelectItem value={TargetOperator.Null}>Is Null</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {condition.operator !== TargetOperator.Null ? (
+          <div className="col-span-4">
+            <Input
+              placeholder={
+                condition.operator === TargetOperator.Regex
+                  ? "^[a-zA-Z]+$"
+                  : condition.operator === TargetOperator.Like
+                    ? "%value%"
+                    : "Value"
+              }
+              value={condition.value}
+              onChange={(e) => handleValueChange(e.target.value)}
+              className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
+            />
+          </div>
+        ) : (
+          <div className="col-span-4 h-9  cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+        )}
+      </div>
+    </div>
+  );
+};
