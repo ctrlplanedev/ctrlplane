@@ -2,7 +2,7 @@
 
 import type { Target } from "@ctrlplane/db/schema";
 import { useMemo } from "react";
-import _ from "lodash";
+import { chain, uniqBy } from "lodash-es";
 import randomColor from "randomcolor";
 import { Label, Pie, PieChart } from "recharts";
 
@@ -15,7 +15,7 @@ import {
 export const PieTargetsByKind: React.FC<{ targets: Target[] }> = ({
   targets,
 }) => {
-  const chartData = _.chain(targets)
+  const chartData = chain(targets)
     .groupBy((t) => t.kind)
     .map((targets, kind) => ({
       kind,
@@ -26,7 +26,7 @@ export const PieTargetsByKind: React.FC<{ targets: Target[] }> = ({
 
   const chartConfig = useMemo(
     () =>
-      _.chain(targets)
+      chain(targets)
         .uniqBy((t) => t.kind)
         .map((t) => [t.kind, { label: t.kind, color: randomColor() }])
         .fromPairs()
@@ -66,7 +66,7 @@ export const PieTargetsByKind: React.FC<{ targets: Target[] }> = ({
                       y={viewBox.cy}
                       className="fill-foreground text-3xl font-bold"
                     >
-                      {_.uniqBy(targets, (t) => t.kind).length}
+                      {uniqBy(targets, (t) => t.kind).length}
                     </tspan>
                     <tspan
                       x={viewBox.cx}
@@ -89,7 +89,7 @@ export const PieTargetsByKind: React.FC<{ targets: Target[] }> = ({
 export const PieTargetsByProvider: React.FC<{ targets: Target[] }> = ({
   targets,
 }) => {
-  const chartData = _.chain(targets)
+  const chartData = chain(targets)
     .groupBy((t) => t.providerId)
     .map((targets, providerId) => ({
       providerId,
@@ -100,7 +100,7 @@ export const PieTargetsByProvider: React.FC<{ targets: Target[] }> = ({
 
   const chartConfig = useMemo(
     () =>
-      _.chain(targets)
+      chain(targets)
         .uniqBy((t) => t.providerId)
         .map((t) => [
           t.providerId,
@@ -143,7 +143,7 @@ export const PieTargetsByProvider: React.FC<{ targets: Target[] }> = ({
                       y={viewBox.cy}
                       className="fill-foreground text-3xl font-bold"
                     >
-                      {_.uniqBy(targets, (t) => t.providerId).length}
+                      {uniqBy(targets, (t) => t.providerId).length}
                     </tspan>
                     <tspan
                       x={viewBox.cx}

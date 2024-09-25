@@ -1,5 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
 
 import { eq, inArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";

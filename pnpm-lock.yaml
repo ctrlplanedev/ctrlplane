@@ -192,7 +192,7 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.4.1
-      lodash:
+      lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
       ms:
@@ -217,9 +217,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/lodash':
+      '@types/lodash-es':
         specifier: ^4.17.5
-        version: 4.17.7
+        version: 4.17.12
       '@types/ms':
         specifier: ^0.7.34
         version: 0.7.34
@@ -362,21 +362,6 @@ importers:
       '@vercel/otel':
         specifier: ^1.10.0
         version: 1.10.0(@opentelemetry/api-logs@0.53.0)(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.53.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@1.26.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-logs@0.53.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@1.26.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.26.0(@opentelemetry/api@1.9.0))
-      '@xterm/addon-clipboard':
-        specifier: ^0.1.0
-        version: 0.1.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-fit':
-        specifier: ^0.10.0
-        version: 0.10.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-search':
-        specifier: ^0.15.0
-        version: 0.15.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-web-links':
-        specifier: ^0.11.0
-        version: 0.11.0(@xterm/xterm@5.5.0)
-      '@xterm/xterm':
-        specifier: ^5.5.0
-        version: 5.5.0
       change-case:
         specifier: ^5.4.4
         version: 5.4.4
@@ -683,7 +668,7 @@ importers:
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
-      lodash:
+      lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
       p-retry:
@@ -705,9 +690,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/lodash':
+      '@types/lodash-es':
         specifier: ^4.17.5
-        version: 4.17.7
+        version: 4.17.12
       '@types/semver':
         specifier: ^7.5.8
         version: 7.5.8
@@ -750,7 +735,7 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
-      lodash:
+      lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
       p-retry:
@@ -772,9 +757,9 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
-      '@types/lodash':
+      '@types/lodash-es':
         specifier: ^4.17.5
-        version: 4.17.7
+        version: 4.17.12
       eslint:
         specifier: 'catalog:'
         version: 9.10.0(jiti@1.21.6)
@@ -805,7 +790,7 @@ importers:
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
-      lodash:
+      lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
       p-retry:
@@ -824,9 +809,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/lodash':
+      '@types/lodash-es':
         specifier: ^4.17.5
-        version: 4.17.7
+        version: 4.17.12
       '@types/node':
         specifier: catalog:node22
         version: 22.5.5
@@ -905,7 +890,7 @@ importers:
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
-      lodash:
+      lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
       ms:
@@ -939,9 +924,9 @@ importers:
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
-      '@types/lodash':
+      '@types/lodash-es':
         specifier: ^4.17.5
-        version: 4.17.7
+        version: 4.17.12
       '@types/ms':
         specifier: ^0.7.34
         version: 0.7.34
@@ -1091,7 +1076,7 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.4.1
-      lodash:
+      lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
       ms:
@@ -1122,9 +1107,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/lodash':
+      '@types/lodash-es':
         specifier: ^4.17.5
-        version: 4.17.7
+        version: 4.17.12
       '@types/semver':
         specifier: ^7.5.8
         version: 7.5.8
@@ -4387,6 +4372,9 @@ packages:
   '@types/katex@0.16.7':
     resolution: {integrity: sha512-HMwFiRujE5PjrgwHQ25+bsLJgowjGjm5Z8FVSf0N6PwgJrwxH0QxzHYDcKsTfV3wva0vzrpqMTJS2jXPr5BMEQ==}
 
+  '@types/lodash-es@4.17.12':
+    resolution: {integrity: sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==}
+
   '@types/lodash@4.17.7':
     resolution: {integrity: sha512-8wTvZawATi/lsmNu10/j2hk1KEP0IvjubqPE3cu1Xz7xfXXt5oCq3SNUz4fMIP4XGF9Ky+Ue2tBA3hcS7LSBlA==}
 
@@ -4639,29 +4627,6 @@ packages:
 
   '@xobotyi/scrollbar-width@1.9.5':
     resolution: {integrity: sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ==}
-
-  '@xterm/addon-clipboard@0.1.0':
-    resolution: {integrity: sha512-zdoM7p53T5sv/HbRTyp4hY0kKmEQ3MZvAvEtiXqNIHc/JdpqwByCtsTaQF5DX2n4hYdXRPO4P/eOS0QEhX1nPw==}
-    peerDependencies:
-      '@xterm/xterm': ^5.4.0
-
-  '@xterm/addon-fit@0.10.0':
-    resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/addon-search@0.15.0':
-    resolution: {integrity: sha512-ZBZKLQ+EuKE83CqCmSSz5y1tx+aNOCUaA7dm6emgOX+8J9H1FWXZyrKfzjwzV+V14TV3xToz1goIeRhXBS5qjg==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/addon-web-links@0.11.0':
-    resolution: {integrity: sha512-nIHQ38pQI+a5kXnRaTgwqSHnX7KE6+4SVoceompgHL26unAxdfP6IPqUTSYPQgSwM56hsElfoNrrW5V7BUED/Q==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/xterm@5.5.0':
-    resolution: {integrity: sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A==}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -6780,9 +6745,6 @@ packages:
   joycon@3.1.1:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
-
-  js-base64@3.7.7:
-    resolution: {integrity: sha512-7rCnleh0z2CkXhH67J8K1Ytz0b2Y+yxTPL+/KOJoa20hfnVQ/3/T6W/KflYI4bRHRagNeXeU2bkNGI3v1oS/lw==}
 
   js-cookie@2.2.1:
     resolution: {integrity: sha512-HvdH2LzI/EAZcUwA8+0nKNtWHqS+ZmijLA30RwZA0bo7ToCckjK5MkGhjED9KoRcXO6BaGI3I9UIzSA1FKFPOQ==}
@@ -12647,6 +12609,10 @@ snapshots:
 
   '@types/katex@0.16.7': {}
 
+  '@types/lodash-es@4.17.12':
+    dependencies:
+      '@types/lodash': 4.17.7
+
   '@types/lodash@4.17.7': {}
 
   '@types/long@4.0.2': {}
@@ -12954,25 +12920,6 @@ snapshots:
       tinyrainbow: 1.2.0
 
   '@xobotyi/scrollbar-width@1.9.5': {}
-
-  '@xterm/addon-clipboard@0.1.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-      js-base64: 3.7.7
-
-  '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/addon-search@0.15.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/addon-web-links@0.11.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/xterm@5.5.0': {}
 
   abort-controller@3.0.0:
     dependencies:
@@ -15483,8 +15430,6 @@ snapshots:
   jose@5.9.2: {}
 
   joycon@3.1.1: {}
-
-  js-base64@3.7.7: {}
 
   js-cookie@2.2.1: {}
 

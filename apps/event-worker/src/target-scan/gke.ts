@@ -5,7 +5,7 @@ import type {
 } from "@ctrlplane/db/schema";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import { CoreV1Api } from "@kubernetes/client-node";
-import _ from "lodash";
+import { cloneDeep, merge } from "lodash-es";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
@@ -122,7 +122,7 @@ export const getGkeTargets = async (
             return namespaces
               .filter((n) => n.metadata?.name != null)
               .map((n) =>
-                _.merge(_.cloneDeep(clusterTarget), {
+                merge(cloneDeep(clusterTarget), {
                   name: `${cluster.name ?? cluster.id ?? ""}/${n.metadata!.name}`,
                   kind: "Namespace",
                   identifier: `${project}/${cluster.name}/${n.metadata!.name}`,

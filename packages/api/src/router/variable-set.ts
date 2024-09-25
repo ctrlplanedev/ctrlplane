@@ -1,11 +1,8 @@
-import _ from "lodash";
+import { chain } from "lodash-es";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { eq, takeFirst } from "@ctrlplane/db";
-
-import "@ctrlplane/db/schema";
-
 import {
   createVariableSet,
   updateVariableSet,
@@ -33,7 +30,7 @@ export const variableSetRouter = createTRPCRouter({
         )
         .where(eq(variableSet.systemId, input))
         .then((rows) =>
-          _.chain(rows)
+          chain(rows)
             .groupBy((r) => r.variable_set.id)
             .entries()
             .map(([, rows]) => ({

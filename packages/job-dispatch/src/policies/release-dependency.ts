@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
-import _ from "lodash";
+import { chain } from "lodash-es";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
@@ -45,12 +45,12 @@ export const isPassingReleaseDependencyPolicy = async (
       ),
     )
     .then((rows) =>
-      _.chain(rows)
+      chain(rows)
         .groupBy((row) => row.release_job_trigger.id)
         .map((jc) => ({
           releaseJobTrigger: jc[0]!.release_job_trigger,
           target: jc[0]!.target,
-          releaseDependencies: _.chain(jc)
+          releaseDependencies: chain(jc)
             .filter(
               (v) =>
                 v.release_dependency != null && v.target_metadata_group != null,
@@ -61,7 +61,7 @@ export const isPassingReleaseDependencyPolicy = async (
               targetMetadataGroup: v[0]!.target_metadata_group!,
             }))
             .value(),
-          targetMetadata: _.chain(jc)
+          targetMetadata: chain(jc)
             .filter((v) => v.target_metadata != null)
             .groupBy((v) => v.target_metadata!.id)
             .map((v) => ({

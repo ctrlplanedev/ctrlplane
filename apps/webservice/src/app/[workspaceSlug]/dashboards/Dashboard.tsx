@@ -4,7 +4,7 @@
 import type { Layout } from "react-grid-layout";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { produce } from "immer";
-import { clamp } from "lodash";
+import { clamp } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 
 import type { WidgetLayout } from "./DashboardContext";

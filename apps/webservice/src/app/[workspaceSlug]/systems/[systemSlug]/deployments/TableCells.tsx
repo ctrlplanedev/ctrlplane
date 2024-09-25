@@ -7,7 +7,7 @@ import type {
 import Link from "next/link";
 import { capitalCase } from "change-case";
 import { format } from "date-fns";
-import _ from "lodash";
+import { chain } from "lodash-es";
 import {
   TbCalendarTime,
   TbCircle,
@@ -144,7 +144,7 @@ export const Release: React.FC<{
     systemSlug,
     deploymentSlug,
   } = props;
-  const data = _.chain(releaseJobTriggers)
+  const data = chain(releaseJobTriggers)
     .groupBy((r) => r.job.status)
     .entries()
     .map(([name, value]) => ({ name, count: value.length }))

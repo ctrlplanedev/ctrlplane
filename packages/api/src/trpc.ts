@@ -1,7 +1,7 @@
 import type { Session } from "@ctrlplane/auth";
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import { initTRPC, TRPCError } from "@trpc/server";
-import _ from "lodash";
+import { pickBy } from "lodash-es";
 import superjson from "superjson";
 import { isPresent } from "ts-is-present";
 import { ZodError } from "zod";
@@ -66,7 +66,7 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
   const source = opts.ctx.trpcSource;
   const error =
     result.ok === false
-      ? _.pickBy(
+      ? pickBy(
           {
             code: result.error.code,
             name: result.error.name,

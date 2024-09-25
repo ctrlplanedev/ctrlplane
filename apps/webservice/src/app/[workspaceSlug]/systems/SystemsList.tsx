@@ -2,7 +2,7 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import { capitalCase } from "change-case";
-import _ from "lodash";
+import { range } from "lodash-es";
 import { TbTarget, TbX } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -107,7 +107,7 @@ export const SystemsList: React.FC<{
 
       {systems.isLoading && (
         <div className="space-y-2 p-4">
-          {_.range(10).map((i) => (
+          {range(10).map((i) => (
             <Skeleton
               key={i}
               className="h-9 w-full"

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import _ from "lodash";
+import { chain, uniqBy } from "lodash-es";
 import randomColor from "randomcolor";
 import { TbChartPie } from "react-icons/tb";
 import { useMeasure } from "react-use";
@@ -106,7 +106,7 @@ export const WidgetTargetMetadataCount: Widget<{
       },
     );
 
-    const chartData = _.chain(targets.data?.items ?? [])
+    const chartData = chain(targets.data?.items ?? [])
       .filter((t) => countUndefined || t.metadata[key] != null)
       .groupBy((t) => t.metadata[key]?.toString() ?? "undefined")
       .map((targets, metadata) => ({
@@ -118,7 +118,7 @@ export const WidgetTargetMetadataCount: Widget<{
 
     const chartConfig = useMemo(
       () =>
-        _.chain(targets.data?.items ?? [])
+        chain(targets.data?.items ?? [])
           .uniqBy((t) => t.metadata[key]?.toString() ?? "undefined")
           .map((t) => [
             t.metadata[key],
@@ -189,7 +189,7 @@ export const WidgetTargetMetadataCount: Widget<{
                           className="fill-foreground text-3xl font-bold"
                         >
                           {
-                            _.uniqBy(
+                            uniqBy(
                               targets.data?.items ?? [],
                               (t) => t.metadata[key] ?? "",
                             ).length

@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { InsertTarget, Target } from "@ctrlplane/db/schema";
-import _ from "lodash";
+import { chain } from "lodash-es";
 
 import {
   and,
@@ -72,7 +72,7 @@ export const upsertTargets = async (
   try {
     const targetsBeforeInsert = await getExistingTargets(tx, providerId);
 
-    const duplicateTargetIdentifiers = _.chain(targetsToInsert)
+    const duplicateTargetIdentifiers = chain(targetsToInsert)
       .groupBy((target) => [target.identifier, target.workspaceId])
       .filter((targets) => targets.length > 1)
       .map((targets) => targets[0]!.identifier)
