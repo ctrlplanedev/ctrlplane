@@ -2,14 +2,6 @@
   "name": "fetch-job-inputs",
   "description": "GitHub Action to fetch variables from an Ctrlplane API",
   "version": "1.0.0",
-  "homepage": "https://github.com/sizzldev/ctrlplane-action#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sizzldev/ctrlplane-action.git"
-  },
-  "bugs": {
-    "url": "https://github.com/sizzldev/ctrlplane-action/issues"
-  },
   "keywords": [
     "GitHub",
     "Actions",
@@ -37,6 +29,7 @@
     "p-retry": "^6.2.0"
   },
   "devDependencies": {
+    "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/node": "catalog:node20",

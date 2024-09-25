@@ -1,6 +1,4 @@
-import baseConfig, {
-  requireJsSuffix,
-} from "@ctrlplane-action/eslint-config/base";
+import baseConfig, { requireJsSuffix } from "@ctrlplane/eslint-config/base";
 
 /** @type {import('typescript-eslint').Config} */
 export default [
