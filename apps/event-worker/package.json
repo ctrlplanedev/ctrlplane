@@ -42,8 +42,8 @@
     "@types/semver": "^7.5.8",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "tsx": "^4.11.0",
-    "typescript": "^5.6.2"
+    "tsx": "catalog:",
+    "typescript": "catalog:"
   },
   "prettier": "@ctrlplane/prettier-config"
 }

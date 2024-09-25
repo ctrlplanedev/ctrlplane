@@ -37,6 +37,12 @@ export interface GetJob200ResponseTarget {
    * @type {string}
    * @memberof GetJob200ResponseTarget
    */
+  name: string;
+  /**
+   *
+   * @type {string}
+   * @memberof GetJob200ResponseTarget
+   */
   kind: string;
   /**
    *
@@ -61,6 +67,7 @@ export function instanceOfGetJob200ResponseTarget(
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("identifier" in value) || value["identifier"] === undefined)
     return false;
+  if (!("name" in value) || value["name"] === undefined) return false;
   if (!("kind" in value) || value["kind"] === undefined) return false;
   if (!("version" in value) || value["version"] === undefined) return false;
   if (!("config" in value) || value["config"] === undefined) return false;
@@ -83,6 +90,7 @@ export function GetJob200ResponseTargetFromJSONTyped(
   return {
     id: json["id"],
     identifier: json["identifier"],
+    name: json["name"],
     kind: json["kind"],
     version: json["version"],
     config: json["config"],
@@ -98,6 +106,7 @@ export function GetJob200ResponseTargetToJSON(
   return {
     id: value["id"],
     identifier: value["identifier"],
+    name: value["name"],
     kind: value["kind"],
     version: value["version"],
     config: value["config"],

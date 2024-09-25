@@ -313,13 +313,15 @@ paths:
                         type: string
                       identifier:
                         type: string
+                      name:
+                        type: string
                       kind:
                         type: string
                       version:
                         type: string
                       config:
                         type: object
-                    required: [id, identifier, kind, version, config]
+                    required: [id, identifier, name, kind, version, config]
 
                   environment:
                     type: object
