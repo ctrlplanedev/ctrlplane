@@ -5,6 +5,7 @@ models/AcknowledgeJob200Response.ts
 models/GetAgentRunningJob200ResponseInner.ts
 models/GetJob200Response.ts
 models/GetJob200ResponseDeployment.ts
+models/GetJob200ResponseEnvironment.ts
 models/GetJob200ResponseRelease.ts
 models/GetJob200ResponseRunbook.ts
 models/GetJob200ResponseTarget.ts

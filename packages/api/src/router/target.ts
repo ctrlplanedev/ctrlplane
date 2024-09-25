@@ -264,9 +264,25 @@ export const targetRouter = createTRPCRouter({
           .perform(Permission.TargetCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(createTarget)
-    .mutation(({ ctx, input }) =>
-      ctx.db.insert(target).values(input).returning().then(takeFirst),
+    .input(createTarget.and(z.object({ metadata: z.record(z.string()) })))
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.transaction(async (tx) => {
+        const tg = await tx
+          .insert(target)
+          .values(input)
+          .returning()
+          .then(takeFirst);
+
+        await tx.insert(targetMetadata).values(
+          Object.entries(input.metadata).map(([key, value]) => ({
+            targetId: tg.id,
+            key,
+            value,
+          })),
+        );
+
+        return tg;
+      }),
     ),
 
   update: protectedProcedure

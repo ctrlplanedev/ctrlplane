@@ -1,15 +1,10 @@
 import type { Deployment, Environment, Target } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import {
-  IconCircleFilled,
-  IconRocket,
-  IconTerminal2,
-} from "@tabler/icons-react";
+import { IconCircleFilled } from "@tabler/icons-react";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
-import { Button } from "@ctrlplane/ui/button";
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/server";
@@ -173,12 +168,6 @@ const DeploymentTable: React.FC<{
                   >
                     {r.name}
                   </Link>
-                  <Button size="icon" variant="ghost">
-                    <IconTerminal2 className="h-4 w-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost">
-                    <IconRocket className="h-4 w-4" />
-                  </Button>
                   <DeploymentOptionsDropdown {...r} />
                 </div>
               </td>

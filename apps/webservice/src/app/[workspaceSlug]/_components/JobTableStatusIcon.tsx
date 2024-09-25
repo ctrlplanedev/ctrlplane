@@ -24,5 +24,5 @@ export const JobTableStatusIcon: React.FC<{ status?: schema.JobStatus }> = ({
       </div>
     );
 
-  return <IconClock className="text-neutral-400" />;
+  return <IconClock className="h-4 w-4 text-neutral-400" />;
 };

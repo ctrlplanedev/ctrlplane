@@ -295,7 +295,11 @@ paths:
                         type: string
                       slug:
                         type: string
-                    required: [id, version, slug]
+                      systemId:
+                        type: string
+                      jobAgentId:
+                        type: string
+                    required: [id, version, slug, systemId, jobAgentId]
 
                   runbook:
                     type: object
@@ -304,22 +308,31 @@ paths:
                         type: string
                       name:
                         type: string
-                    required: [id, name]
+                      systemId:
+                        type: string
+                      jobAgentId:
+                        type: string
+                    required: [id, name, systemId, jobAgentId]
 
                   target:
                     type: object
                     properties:
                       id:
                         type: string
-                      identifier:
-                        type: string
-                      kind:
+                      name:
                         type: string
                       version:
                         type: string
+                      kind:
+                        type: string
+                      identifier:
+                        type: string
+                      workspaceId:
+                        type: string
                       config:
                         type: object
-                    required: [id, identifier, kind, version, config]
+                    required:
+                      [id, name, version, kind, identifier, workspaceId, config]
 
                   environment:
                     type: object
@@ -328,7 +341,9 @@ paths:
                         type: string
                       name:
                         type: string
-                    required: [id, name]
+                      systemId:
+                        type: string
+                    required: [id, name, systemId]
 
                   variables:
                     type: object
@@ -338,6 +353,7 @@ paths:
                   - createdAt
                   - updatedAt
                   - variable
+                  - config
     patch:
       summary: Update a job
       operationId: updateJob

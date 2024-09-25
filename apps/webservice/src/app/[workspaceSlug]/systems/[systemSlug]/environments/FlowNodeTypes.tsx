@@ -39,13 +39,13 @@ const PolicyNode: React.FC<NodeProps> = ({ id, data }) => {
         onMouseDownCapture={() => setSelectedNodeId(id)}
       >
         <div className={cn("flex items-center justify-center gap-1")}>
-          <IconCircleCheck className="h-4  w-4 text-teal-400" />
-          {isRegex && <IconRegex className="h-4  w-4 text-pink-400" />}
-          {isSemver && <IconVersions className="h-4  w-4 text-pink-500" />}
+          <IconCircleCheck className="h-4 w-4 text-teal-400" />
+          {isRegex && <IconRegex className="h-4 w-4 text-pink-400" />}
+          {isSemver && <IconVersions className="h-4 w-4 text-pink-500" />}
           {isManual ? (
             <IconUser className="h-4 w-4 text-red-400" />
           ) : (
-            <IconBolt className="h-4  w-4 text-yellow-400" />
+            <IconBolt className="h-4 w-4 text-yellow-400" />
           )}
         </div>
         {isSelected && !hasChildren && (

@@ -17,59 +17,51 @@ import { mapValues } from "../runtime";
 /**
  *
  * @export
- * @interface GetJob200ResponseRunbook
+ * @interface GetJob200ResponseEnvironment
  */
-export interface GetJob200ResponseRunbook {
+export interface GetJob200ResponseEnvironment {
   /**
    *
    * @type {string}
-   * @memberof GetJob200ResponseRunbook
+   * @memberof GetJob200ResponseEnvironment
    */
   id: string;
   /**
    *
    * @type {string}
-   * @memberof GetJob200ResponseRunbook
+   * @memberof GetJob200ResponseEnvironment
    */
   name: string;
   /**
    *
    * @type {string}
-   * @memberof GetJob200ResponseRunbook
+   * @memberof GetJob200ResponseEnvironment
    */
   systemId: string;
-  /**
-   *
-   * @type {string}
-   * @memberof GetJob200ResponseRunbook
-   */
-  jobAgentId: string;
 }
 
 /**
- * Check if a given object implements the GetJob200ResponseRunbook interface.
+ * Check if a given object implements the GetJob200ResponseEnvironment interface.
  */
-export function instanceOfGetJob200ResponseRunbook(
+export function instanceOfGetJob200ResponseEnvironment(
   value: object,
-): value is GetJob200ResponseRunbook {
+): value is GetJob200ResponseEnvironment {
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("name" in value) || value["name"] === undefined) return false;
   if (!("systemId" in value) || value["systemId"] === undefined) return false;
-  if (!("jobAgentId" in value) || value["jobAgentId"] === undefined)
-    return false;
   return true;
 }
 
-export function GetJob200ResponseRunbookFromJSON(
+export function GetJob200ResponseEnvironmentFromJSON(
   json: any,
-): GetJob200ResponseRunbook {
-  return GetJob200ResponseRunbookFromJSONTyped(json, false);
+): GetJob200ResponseEnvironment {
+  return GetJob200ResponseEnvironmentFromJSONTyped(json, false);
 }
 
-export function GetJob200ResponseRunbookFromJSONTyped(
+export function GetJob200ResponseEnvironmentFromJSONTyped(
   json: any,
   ignoreDiscriminator: boolean,
-): GetJob200ResponseRunbook {
+): GetJob200ResponseEnvironment {
   if (json == null) {
     return json;
   }
@@ -77,12 +69,11 @@ export function GetJob200ResponseRunbookFromJSONTyped(
     id: json["id"],
     name: json["name"],
     systemId: json["systemId"],
-    jobAgentId: json["jobAgentId"],
   };
 }
 
-export function GetJob200ResponseRunbookToJSON(
-  value?: GetJob200ResponseRunbook | null,
+export function GetJob200ResponseEnvironmentToJSON(
+  value?: GetJob200ResponseEnvironment | null,
 ): any {
   if (value == null) {
     return value;
@@ -91,6 +82,5 @@ export function GetJob200ResponseRunbookToJSON(
     id: value["id"],
     name: value["name"],
     systemId: value["systemId"],
-    jobAgentId: value["jobAgentId"],
   };
 }

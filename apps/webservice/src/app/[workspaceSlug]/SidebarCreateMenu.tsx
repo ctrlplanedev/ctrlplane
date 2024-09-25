@@ -15,6 +15,7 @@ import {
 import { CreateDeploymentDialog } from "./_components/CreateDeployment";
 import { CreateReleaseDialog } from "./_components/CreateRelease";
 import { CreateSystemDialog } from "./_components/CreateSystem";
+import { CreateTargetDialog } from "./_components/CreateTarget";
 
 export const SidebarCreateMenu: React.FC<{
   workspace: Workspace;
@@ -63,6 +64,16 @@ export const SidebarCreateMenu: React.FC<{
 
         <DropdownMenuGroup>
           <DropdownMenuItem>Execute Runbook</DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <CreateTargetDialog {...props} onSuccess={() => setOpen(false)}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Bootstrap Target
+            </DropdownMenuItem>
+          </CreateTargetDialog>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

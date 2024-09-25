@@ -30,6 +30,9 @@ catalogs:
     tailwindcss:
       specifier: ^3.4.11
       version: 3.4.12
+    tsx:
+      specifier: ^4.19.1
+      version: 4.19.1
     typescript:
       specifier: ^5.6.2
       version: 5.6.2
@@ -233,10 +236,10 @@ importers:
         specifier: 'catalog:'
         version: 3.3.3
       tsx:
-        specifier: ^4.11.0
+        specifier: 'catalog:'
         version: 4.19.1
       typescript:
-        specifier: ^5.6.2
+        specifier: 'catalog:'
         version: 5.6.2
 
   apps/job-policy-checker:
@@ -276,10 +279,10 @@ importers:
         specifier: 'catalog:'
         version: 3.3.3
       tsx:
-        specifier: ^4.11.0
+        specifier: 'catalog:'
         version: 4.19.1
       typescript:
-        specifier: ^5.6.2
+        specifier: 'catalog:'
         version: 5.6.2
 
   apps/webservice:
@@ -389,6 +392,9 @@ importers:
       immer:
         specifier: ^10.1.1
         version: 10.1.1
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
@@ -471,6 +477,9 @@ importers:
       '@types/dagre':
         specifier: ^0.7.52
         version: 0.7.52
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/node':
         specifier: catalog:node20
         version: 20.16.5
@@ -587,10 +596,35 @@ importers:
         specifier: 'catalog:'
         version: 3.3.3
       tsx:
-        specifier: ^4.11.0
+        specifier: 'catalog:'
         version: 4.19.1
       typescript:
-        specifier: ^5.6.2
+        specifier: 'catalog:'
+        version: 5.6.2
+
+  integrations/get-job-inputs:
+    dependencies:
+      '@actions/core':
+        specifier: ^1.10.1
+        version: 1.10.1
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@vercel/ncc':
+        specifier: ^0.38.1
+        version: 0.38.2
+      typescript:
+        specifier: 'catalog:'
         version: 5.6.2
 
   integrations/google-compute-scanner:
@@ -1422,6 +1456,12 @@ importers:
 
 packages:
 
+  '@actions/core@1.10.1':
+    resolution: {integrity: sha512-3lBR9EDAY+iYIpTnTIXmWcNbX3T2kCkAEQGIQx4NVQ0575nk2k3GRZDTPQG+vVtS2izSLmINlxXf0uLtnrTP+g==}
+
+  '@actions/http-client@2.2.3':
+    resolution: {integrity: sha512-mx8hyJi/hjFvbPokCg4uRd4ZX78t+YyRPtnKWwIl+RzNaVuFpQHfmlGVfsKEJN8LwTCvL+DfVgAM04XaHkm6bA==}
+
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
@@ -2151,6 +2191,10 @@ packages:
   '@eslint/plugin-kit@0.1.0':
     resolution: {integrity: sha512-autAXT203ixhqei9xt+qkYOvY8l6LAFIdT2UXc/RPNeUVfqRF1BV94GTJyVPFKT8nFM6MyVJhjLj9E8JWvf5zQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@fastify/busboy@2.1.1':
+    resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
+    engines: {node: '>=14'}
 
   '@floating-ui/core@1.6.8':
     resolution: {integrity: sha512-7XJ9cPU+yI2QeLS+FCSlqNFZJq8arvswefkZrYI1yQBbftw6FyrZOxYSh+9S7z7TpeWlRt9zJ5IhM1WIL334jA==}
@@ -4637,6 +4681,10 @@ packages:
 
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
+
+  '@vercel/ncc@0.38.2':
+    resolution: {integrity: sha512-3yel3jaxUg9pHBv4+KeC9qlbdZPug+UMtUOlhvpDYCMSgcNSrS2Hv1LoqMsOV7hf2lYscx+BESfJOIla1WsmMQ==}
+    hasBin: true
 
   '@vercel/otel@1.10.0':
     resolution: {integrity: sha512-bv1FXbFZlFbB89vyA2P9/kr6eZ42bMtXgqBJpgi+8yOrZU8rkg9wMi0TL//AgAf/qKtaryDm1sbCnkLHgCI3PQ==}
@@ -8970,6 +9018,10 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
+  tunnel@0.0.6:
+    resolution: {integrity: sha512-1h/Lnq9yajKY2PEbBadPXj3VxsDDu844OnaAo52UVmIzIvwwtBPIuNvkjuzBlTWpfJyUbG3ez0KSBibQkj4ojg==}
+    engines: {node: '>=0.6.11 <=0.7.0 || >=0.7.3'}
+
   turbo-darwin-64@2.1.2:
     resolution: {integrity: sha512-3TEBxHWh99h2yIzkuIigMEOXt/ItYQp0aPiJjPd1xN4oDcsKK5AxiFKPH9pdtfIBzYsY59kQhZiFj0ELnSP7Bw==}
     cpu: [x64]
@@ -9067,6 +9119,10 @@ packages:
 
   undici-types@6.19.8:
     resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
+
+  undici@5.28.4:
+    resolution: {integrity: sha512-72RFADWFqKmUb2hmmvNODKL3p9hcB6Gt2DOQMis1SEBaV6a4MH8soBvzg+95CYhCKPFedut2JY9bMfrDl9D23g==}
+    engines: {node: '>=14.0'}
 
   unified@10.1.2:
     resolution: {integrity: sha512-pUSWAi/RAnVy1Pif2kAoeWNBa3JVrx0MId2LASj8G+7AiHWoKZNTomq6LG326T68U7/e263X6fTdcXIy7XnF7Q==}
@@ -9202,6 +9258,10 @@ packages:
   uuid@3.4.0:
     resolution: {integrity: sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A==}
     deprecated: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+    hasBin: true
+
+  uuid@8.3.2:
+    resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     hasBin: true
 
   uuid@9.0.1:
@@ -9569,6 +9629,16 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@actions/core@1.10.1':
+    dependencies:
+      '@actions/http-client': 2.2.3
+      uuid: 8.3.2
+
+  '@actions/http-client@2.2.3':
+    dependencies:
+      tunnel: 0.0.6
+      undici: 5.28.4
 
   '@alloc/quick-lru@5.2.0': {}
 
@@ -10068,6 +10138,8 @@ snapshots:
   '@eslint/plugin-kit@0.1.0':
     dependencies:
       levn: 0.4.1
+
+  '@fastify/busboy@2.1.1': {}
 
   '@floating-ui/core@1.6.8':
     dependencies:
@@ -12640,7 +12712,7 @@ snapshots:
 
   '@types/cors@2.8.17':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
 
   '@types/d3-array@3.2.1': {}
 
@@ -12934,7 +13006,7 @@ snapshots:
 
   '@types/ws@8.5.12':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
 
   '@typescript-eslint/eslint-plugin@8.6.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)':
     dependencies:
@@ -13056,6 +13128,8 @@ snapshots:
       eslint-visitor-keys: 3.4.3
 
   '@ungap/structured-clone@1.2.0': {}
+
+  '@vercel/ncc@0.38.2': {}
 
   '@vercel/otel@1.10.0(@opentelemetry/api-logs@0.53.0)(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.53.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@1.26.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-logs@0.53.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@1.26.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.26.0(@opentelemetry/api@1.9.0))':
     dependencies:
@@ -18379,6 +18453,8 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
+  tunnel@0.0.6: {}
+
   turbo-darwin-64@2.1.2:
     optional: true
 
@@ -18481,6 +18557,10 @@ snapshots:
       which-boxed-primitive: 1.0.2
 
   undici-types@6.19.8: {}
+
+  undici@5.28.4:
+    dependencies:
+      '@fastify/busboy': 2.1.1
 
   unified@10.1.2:
     dependencies:
@@ -18635,6 +18715,8 @@ snapshots:
   uuid@10.0.0: {}
 
   uuid@3.4.0: {}
+
+  uuid@8.3.2: {}
 
   uuid@9.0.1: {}
 
