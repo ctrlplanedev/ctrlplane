@@ -1,9 +1,9 @@
-name: "Fetch Job Inputs"
-description: "Fetches inputs from a job execution and sets outputs for future github jobs"
+name: "Get Job Inputs"
+description: "Gets inputs from a job execution and sets outputs for future github jobs"
 author: "Ctrlplane"
 inputs:
   api_url:
-    description: "The API URL to fetch inputs from"
+    description: "The API URL to get job inputs from"
     required: true
   api_key:
     description: "API key for authentication"
@@ -12,11 +12,11 @@ inputs:
     description: "Job execution ID to set outputs for future GitHub jobs"
     required: true
   required_outputs:
-    description: "A list of required outputs to be fetched"
+    description: "A list of required outputs to be set for future jobs"
     required: false
 outputs:
-  api_inputs:
-    description: "JSON string containing the fetched inputs and their values"
+  job_outputs:
+    description: "JSON string containing the job inputs and their values"
 runs:
   using: "node20"
   main: "./index.js"
