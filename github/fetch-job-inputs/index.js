@@ -27923,9 +27923,15 @@ const api = new DefaultApi(config);
 const requiredOutputs = core.getInput("required_outputs", { required: false })
     .split("\n")
     .map((output) => output.trim());
+const outputTracker = {};
+const trackOutput = (key, value) => {
+    if (value !== undefined && value !== null)
+        outputTracker[key] = true;
+};
 const setOutputAndLog = (key, value) => {
     core.setOutput(key, value);
     core.info(`${key}: ${value}`);
+    trackOutput(key, value);
 };
 const setOutputsRecursively = (prefix, obj) => {
     if (typeof obj === "object" && obj !== null) {
@@ -27942,34 +27948,27 @@ const setOutputsRecursively = (prefix, obj) => {
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
-    const outputTracker = {};
-    const trackOutput = (key, value) => {
-        if (value !== undefined && value !== null) {
-            outputTracker[key] = true;
-        }
-        setOutputAndLog(key, value);
-    };
     await api
         .getJob({ jobId })
         .then((response) => {
         const { variables, target, release, environment, runbook, deployment } = response;
-        trackOutput("target_id", target?.id);
-        trackOutput("target_name", target?.name);
-        trackOutput("target_kind", target?.kind);
-        trackOutput("target_version", target?.version);
-        trackOutput("target_identifier", target?.identifier);
-        trackOutput("workspace_id", target?.workspaceId);
-        trackOutput("environment_id", environment?.id);
-        trackOutput("environment_name", environment?.name);
-        trackOutput("release_id", release?.id);
-        trackOutput("release_version", release?.version);
-        trackOutput("deployment_id", deployment?.id);
-        trackOutput("deployment_name", deployment?.name);
-        trackOutput("deployment_slug", deployment?.slug);
-        trackOutput("runbook_id", runbook?.id);
-        trackOutput("runbook_name", runbook?.name);
-        trackOutput("system_id", deployment?.systemId ?? runbook?.systemId ?? environment?.systemId);
-        trackOutput("agent_id", deployment?.jobAgentId ?? runbook?.jobAgentId);
+        setOutputAndLog("target_id", target?.id);
+        setOutputAndLog("target_name", target?.name);
+        setOutputAndLog("target_kind", target?.kind);
+        setOutputAndLog("target_version", target?.version);
+        setOutputAndLog("target_identifier", target?.identifier);
+        setOutputAndLog("workspace_id", target?.workspaceId);
+        setOutputAndLog("environment_id", environment?.id);
+        setOutputAndLog("environment_name", environment?.name);
+        setOutputAndLog("release_id", release?.id);
+        setOutputAndLog("release_version", release?.version);
+        setOutputAndLog("deployment_id", deployment?.id);
+        setOutputAndLog("deployment_name", deployment?.name);
+        setOutputAndLog("deployment_slug", deployment?.slug);
+        setOutputAndLog("runbook_id", runbook?.id);
+        setOutputAndLog("runbook_name", runbook?.name);
+        setOutputAndLog("system_id", deployment?.systemId ?? runbook?.systemId ?? environment?.systemId);
+        setOutputAndLog("agent_id", deployment?.jobAgentId ?? runbook?.jobAgentId);
         setOutputsRecursively("target_config", target?.config);
         setOutputsRecursively("variables", variables ?? {});
     })
