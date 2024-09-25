@@ -3,6 +3,7 @@
 import type { Target, TargetProvider } from "@ctrlplane/db/schema";
 import { IconSparkles } from "@tabler/icons-react";
 import { format } from "date-fns";
+import yaml from "js-yaml";
 
 import { Input } from "@ctrlplane/ui/input";
 import {
@@ -15,6 +16,14 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
+import { TargetConfigEditor } from "../TargetConfigEditor";
+
+const TargetConfigInfo: React.FC<{ config: Record<string, any> }> = ({
+  config,
+}) => {
+  yaml.dump(config);
+  return <TargetConfigEditor value={yaml.dump(config)} readOnly />;
+};
 
 const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
   props,
@@ -189,6 +198,13 @@ export const OverviewContent: React.FC<{
               </tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-2 text-sm">Config</div>
+        <div className="text-xs">
+          <TargetConfigInfo config={target.config} />
         </div>
       </div>
 

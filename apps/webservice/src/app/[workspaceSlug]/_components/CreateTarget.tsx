@@ -2,9 +2,10 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconX } from "@tabler/icons-react";
+import yaml from "js-yaml";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -32,15 +33,33 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
+import { TargetConfigEditor } from "./TargetConfigEditor";
 
 const createTargetSchema = z.object({
   name: z.string(),
   kind: z.string(),
   identifier: z.string().min(4),
   version: z.string(),
-  config: z.string(),
+  config: z.string().refine((val) => {
+    try {
+      const output = yaml.load(val);
+      const isValidRecord = z.record(z.any()).safeParse(output).success;
+      return isValidRecord;
+    } catch {
+      return false;
+    }
+  }, "Config must be valid YAML Object"),
   metadata: z.array(z.object({ key: z.string(), value: z.string() })),
 });
+
+const defaultValues = {
+  name: "",
+  identifier: "",
+  kind: "",
+  version: "",
+  metadata: [{ key: "", value: "" }],
+  config: "",
+};
 
 export const CreateTargetDialog: React.FC<{
   children: React.ReactNode;
@@ -51,21 +70,18 @@ export const CreateTargetDialog: React.FC<{
 
   const form = useForm({
     schema: createTargetSchema,
-    defaultValues: {
-      name: "",
-      identifier: "",
-      kind: "",
-      version: "",
-      metadata: [{ key: "", value: "" }],
-      config: "{}",
-    },
+    defaultValues,
     mode: "onSubmit",
   });
+
+  useEffect(() => {
+    if (!open) form.reset();
+  }, [form, open]);
 
   const router = useRouter();
   const create = api.target.create.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
-    const config = JSON.parse(data.config);
+    const config = yaml.load(data.config) as Record<string, any>;
     const target = await create.mutateAsync({
       ...data,
       config,
@@ -130,42 +146,44 @@ export const CreateTargetDialog: React.FC<{
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="version"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Version</FormLabel>
-                  <FormControl>
-                    <Input placeholder="mycompany/v1" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="version"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Version</FormLabel>
+                    <FormControl>
+                      <Input placeholder="mycompany/v1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="kind"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Kind</FormLabel>
-                  <FormControl>
-                    <Input placeholder="MyCustomTarget" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Kind</FormLabel>
+                    <FormControl>
+                      <Input placeholder="MyCustomTarget" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
               name="config"
-              render={({ field }) => (
+              render={({ field: { onChange, value } }) => (
                 <FormItem>
                   <FormLabel>Config</FormLabel>
                   <FormControl>
-                    <Input placeholder="{}" {...field} />
+                    <TargetConfigEditor value={value} onChange={onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
