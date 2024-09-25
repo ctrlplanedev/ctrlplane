@@ -153,11 +153,11 @@ export default function TargetPage({
             >
               {target.data.lockedAt != null ? (
                 <>
-                  <IconLockOpen /> Unlocked
+                  <IconLockOpen className="h-4 w-4" /> Unlocked
                 </>
               ) : (
                 <>
-                  <IconLock /> Lock
+                  <IconLock className="h-4 w-4" /> Lock
                 </>
               )}
             </Button>

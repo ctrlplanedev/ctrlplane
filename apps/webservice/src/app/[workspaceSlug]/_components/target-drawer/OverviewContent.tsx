@@ -43,7 +43,7 @@ const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
                 {Object.values(ReservedMetadataKey).includes(
                   key as ReservedMetadataKey,
                 ) && (
-                  <IconSparkles className="inline-block text-yellow-300" />
+                  <IconSparkles className="inline-block h-3 w-3 text-yellow-300" />
                 )}{" "}
               </span>
               <span className="text-red-400">{key}:</span>

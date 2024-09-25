@@ -128,7 +128,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           size="icon"
           className="flex-shrink-0 text-neutral-500 hover:text-white"
         >
-          <IconInfoCircle />
+          <IconInfoCircle className="h-4 w-4" />
         </Button>
       </h2>
       <Separator />

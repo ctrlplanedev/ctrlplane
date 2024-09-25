@@ -230,7 +230,7 @@ export const EnvFlowPanel: React.FC<{
         className="bg-transparent"
         onClick={() => fitView({ padding: 0.12 })}
       >
-        <IconResize />
+        <IconResize className="h-4 w-4" />
       </Button>
       <Button
         variant="outline"
@@ -238,7 +238,7 @@ export const EnvFlowPanel: React.FC<{
         className="bg-transparent"
         onClick={onLayout}
       >
-        <IconLayout />
+        <IconLayout className="h-4 w-4" />
       </Button>
 
       <div className="px-2">

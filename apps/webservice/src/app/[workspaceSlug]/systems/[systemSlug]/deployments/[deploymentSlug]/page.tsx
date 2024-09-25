@@ -96,7 +96,7 @@ export default async function DeploymentPage({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <span className="flex-grow">Job Agent</span>{" "}
-              <IconInfoCircle className="text-muted-foreground" />
+              <IconInfoCircle className="h-4 w-4 text-muted-foreground" />
             </div>
 
             {deployment.agent == null ? (
