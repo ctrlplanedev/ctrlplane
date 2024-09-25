@@ -45,7 +45,7 @@ export const DeploymentOptionsDropdown: React.FC<{
               </DropdownMenuItem>
             </EditDeploymentDialog>
             <DropdownMenuItem onSelect={() => setDeleteDialogOpen(true)}>
-              <IconTrash className="mr-2" />
+              <IconTrash className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuGroup>
