@@ -27874,6 +27874,24 @@ const config = new Configuration({
     apiKey: core.getInput("api_key", { required: true }),
 });
 const api = new DefaultApi(config);
+const setOutputsRecursively = (prefix, obj) => {
+    if (typeof obj === "object" && obj !== null) {
+        for (const [key, value] of Object.entries(obj)) {
+            const newPrefix = prefix ? `${prefix}_${key}` : key;
+            if (typeof value === "object" && value !== null) {
+                setOutputsRecursively(newPrefix, value);
+            }
+            else {
+                core.info(`${newPrefix}: ${String(value)}`);
+                core.setOutput(newPrefix, value);
+            }
+        }
+    }
+    else {
+        core.info(`${prefix}: ${String(obj)}`);
+        core.setOutput(prefix, obj);
+    }
+};
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
     await api
@@ -27886,14 +27904,8 @@ async function run() {
         core.info(`Target name: ${target?.name}`);
         core.info(`Environment name: ${environment?.name}`);
         core.info(`Release version: ${release?.version}`);
-        core.info(`Config: ${JSON.stringify(config)}`);
-        core.info(`Variables: ${JSON.stringify(variables)}`);
-        for (const [key, value] of Object.entries(config)) {
-            core.setOutput(`config_${key}`, value);
-        }
-        for (const [key, value] of Object.entries(variables ?? {})) {
-            core.setOutput(`variable_${key}`, value);
-        }
+        setOutputsRecursively("config", config);
+        setOutputsRecursively("variable", variables ?? {});
     })
         .catch((error) => {
         core.setFailed(`Action failed: ${error.message}`);
