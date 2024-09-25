@@ -9,6 +9,11 @@ const config = new Configuration({
 
 const api = new DefaultApi(config);
 
+const requiredOutputs = core
+  .getInput("required_outputs")
+  .split("\n")
+  .map((output) => output.trim());
+
 const setOutputAndLog = (key: string, value: any) => {
   core.setOutput(key, value);
   core.info(`${key}: ${value}`);
@@ -30,44 +35,60 @@ const setOutputsRecursively = (prefix: string, obj: any) => {
 
 async function run() {
   const jobId = core.getInput("job_id", { required: true });
+  const outputTracker: Record<string, boolean> = {};
+
+  const trackOutput = (key: string, value: any) => {
+    if (value !== undefined && value !== null) {
+      outputTracker[key] = true;
+    }
+    setOutputAndLog(key, value);
+  };
+
   await api
     .getJob({ jobId })
     .then((response) => {
       const { variables, target, release, environment, runbook, deployment } =
         response;
 
-      setOutputAndLog("target_id", target?.id);
-      setOutputAndLog("target_name", target?.name);
-      setOutputAndLog("target_kind", target?.kind);
-      setOutputAndLog("target_version", target?.version);
-      setOutputAndLog("target_identifier", target?.identifier);
+      trackOutput("target_id", target?.id);
+      trackOutput("target_name", target?.name);
+      trackOutput("target_kind", target?.kind);
+      trackOutput("target_version", target?.version);
+      trackOutput("target_identifier", target?.identifier);
 
-      setOutputAndLog("workspace_id", target?.workspaceId);
+      trackOutput("workspace_id", target?.workspaceId);
 
-      setOutputAndLog("environment_id", environment?.id);
-      setOutputAndLog("environment_name", environment?.name);
+      trackOutput("environment_id", environment?.id);
+      trackOutput("environment_name", environment?.name);
 
-      setOutputAndLog("release_id", release?.id);
-      setOutputAndLog("release_version", release?.version);
+      trackOutput("release_id", release?.id);
+      trackOutput("release_version", release?.version);
 
-      setOutputAndLog("deployment_id", deployment?.id);
-      setOutputAndLog("deployment_name", deployment?.name);
-      setOutputAndLog("deployment_slug", deployment?.slug);
+      trackOutput("deployment_id", deployment?.id);
+      trackOutput("deployment_name", deployment?.name);
+      trackOutput("deployment_slug", deployment?.slug);
 
-      setOutputAndLog("runbook_id", runbook?.id);
-      setOutputAndLog("runbook_name", runbook?.name);
+      trackOutput("runbook_id", runbook?.id);
+      trackOutput("runbook_name", runbook?.name);
 
-      setOutputAndLog(
+      trackOutput(
         "system_id",
         deployment?.systemId ?? runbook?.systemId ?? environment?.systemId,
       );
-      setOutputAndLog(
-        "agent_id",
-        deployment?.jobAgentId ?? runbook?.jobAgentId,
-      );
+      trackOutput("agent_id", deployment?.jobAgentId ?? runbook?.jobAgentId);
 
       setOutputsRecursively("target_config", target?.config);
       setOutputsRecursively("variables", variables ?? {});
+    })
+    .then(() => {
+      const missingOutputs = requiredOutputs.filter(
+        (output) => !outputTracker[output],
+      );
+
+      if (missingOutputs.length > 0)
+        core.setFailed(
+          `Missing required outputs: ${missingOutputs.join(", ")}`,
+        );
     })
     .catch((error) => {
       core.setFailed(`Action failed: ${error.message}`);

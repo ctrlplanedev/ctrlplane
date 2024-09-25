@@ -9,8 +9,11 @@ inputs:
     description: "API key for authentication"
     required: true
   job_id:
-    description: "Job execution ID to set outputs for future github jobs"
+    description: "Job execution ID to set outputs for future GitHub jobs"
     required: true
+  required_outputs:
+    description: "A list of required outputs to be fetched"
+    required: false
 outputs:
   api_inputs:
     description: "JSON string containing the fetched inputs and their values"
