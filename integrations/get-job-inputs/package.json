@@ -1,6 +1,6 @@
 {
-  "name": "@ctrlplane/fetch-job-inputs",
-  "description": "GitHub Action to fetch variables from an Ctrlplane API",
+  "name": "@ctrlplane/get-job-inputs",
+  "description": "GitHub Action to get variables from an Ctrlplane job execution",
   "version": "1.0.0",
   "keywords": [
     "GitHub",
@@ -18,7 +18,7 @@
   "main": "index.ts",
   "scripts": {
     "dev": "pnpm exec tsx src/index.ts",
-    "build": "ncc build src/index.ts -o ../../github/fetch-job-inputs",
+    "build": "ncc build src/index.ts -o ../../github/get-job-inputs",
     "lint": "eslint",
     "typecheck": "tsc"
   },
