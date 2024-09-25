@@ -1,5 +1,6 @@
 import type {
   ComparisonCondition,
+  KindEqualsCondition,
   MetadataCondition,
   TargetCondition,
 } from "@ctrlplane/validators/targets";
@@ -11,12 +12,20 @@ import {
   IconDots,
   IconPlus,
   IconRefresh,
+  IconSelector,
   IconTrash,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@ctrlplane/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,7 +117,14 @@ const ComparisonConditionRender: React.FC<
   };
 
   return (
-    <div className="space-y-4">
+    <div
+      className={cn(
+        localCondition.conditions.length > 0 ? "space-y-4" : "space-y-1",
+      )}
+    >
+      {localCondition.conditions.length === 0 && (
+        <span className="text-muted-foreground">No conditions</span>
+      )}
       <div className="space-y-2">
         {localCondition.conditions.map((condition, index) => (
           <div className="flex items-start gap-2">
@@ -150,9 +166,8 @@ const ComparisonConditionRender: React.FC<
                   variant="ghost"
                   size="icon"
                   className="col-span-1 h-6 w-6 text-muted-foreground"
-                  // onClick={() => handleRemoveCondition(index)}
                 >
-                  <IconDots />
+                  <IconDots className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -160,14 +175,14 @@ const ComparisonConditionRender: React.FC<
                   onClick={() => handleRemoveCondition(index)}
                   className="flex items-center gap-2"
                 >
-                  <IconTrash className="text-red-400" />
+                  <IconTrash className="h-4 w-4 text-red-400" />
                   Remove
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleAddCondition(condition)}
                   className="flex items-center gap-2"
                 >
-                  <IconCopy />
+                  <IconCopy className="h-4 w-4" />
                   Duplicate
                 </DropdownMenuItem>
                 {depth < 2 && (
@@ -175,7 +190,7 @@ const ComparisonConditionRender: React.FC<
                     onClick={() => handleConvertToComparison(index)}
                     className="flex items-center gap-2"
                   >
-                    <IconRefresh />
+                    <IconRefresh className="h-4 w-4" />
                     Turn into group
                   </DropdownMenuItem>
                 )}
@@ -190,9 +205,10 @@ const ComparisonConditionRender: React.FC<
           <Button
             type="button"
             variant="outline"
-            className="flex items-center gap-1 px-2 text-muted-foreground"
+            className="flex items-center gap-1 px-2 text-muted-foreground hover:bg-neutral-800/50"
           >
-            <IconPlus /> Add Condition <IconChevronDown />
+            <IconPlus className="h-4 w-4" /> Add Condition{" "}
+            <IconChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="text-muted-foreground">
@@ -231,12 +247,30 @@ const ComparisonConditionRender: React.FC<
             >
               Name
             </DropdownMenuItem>
+            {depth < 2 && (
+              <DropdownMenuItem
+                onClick={() =>
+                  handleAddCondition({
+                    type: TargetFilterType.Comparison,
+                    operator: TargetOperator.And,
+                    conditions: [],
+                  })
+                }
+              >
+                Filter group
+              </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
   );
 };
+
+const conditionIsMetadata = (
+  condition: TargetCondition,
+): condition is MetadataCondition =>
+  condition.type === TargetFilterType.Metadata;
 
 const MetadataConditionRender: React.FC<
   TargetConditionRenderProps<MetadataCondition>
@@ -292,13 +326,13 @@ const MetadataConditionRender: React.FC<
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger
               onClick={(e) => e.stopPropagation()}
-              className="w-full rounded-r-none"
+              className="w-full rounded-r-none hover:rounded-l-sm hover:bg-neutral-800/50"
             >
               <Input
                 placeholder="Key"
                 value={localCondition.key}
                 onChange={(e) => handleKeyChange(e.target.value)}
-                className="w-full rounded-l-sm rounded-r-none"
+                className="w-full cursor-pointer rounded-l-sm rounded-r-none"
               />
             </PopoverTrigger>
             <PopoverContent
@@ -334,7 +368,7 @@ const MetadataConditionRender: React.FC<
                 | TargetOperator.Null,
             ) => handleOperatorChange(v)}
           >
-            <SelectTrigger className="rounded-none">
+            <SelectTrigger className="rounded-none hover:bg-neutral-800/50">
               <SelectValue placeholder="Operator" />
             </SelectTrigger>
             <SelectContent>
@@ -358,12 +392,92 @@ const MetadataConditionRender: React.FC<
               }
               value={localCondition.value}
               onChange={(e) => handleValueChange(e.target.value)}
-              className="rounded-l-none rounded-r-sm"
+              className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
             />
           </div>
         ) : (
           <div className="col-span-4 h-9  cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
         )}
+      </div>
+    </div>
+  );
+};
+
+const conditionIsKind = (
+  condition: TargetCondition,
+): condition is KindEqualsCondition => condition.type === TargetFilterType.Kind;
+
+const KindConditionRender: React.FC<
+  TargetConditionRenderProps<KindEqualsCondition>
+> = ({ condition, onChange }) => {
+  const [commandOpen, setCommandOpen] = useState(false);
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const kinds = api.workspace.targetKinds.useQuery(workspace.data?.id ?? "", {
+    enabled: workspace.isSuccess && workspace.data != null,
+  });
+
+  const [localCondition, setLocalCondition] =
+    useState<KindEqualsCondition>(condition);
+
+  const newKinds = (kinds.data ?? []).filter(
+    (kind) => !localCondition.value.includes(kind),
+  );
+
+  const handleKindChange = (kind: string) => {
+    setLocalCondition({ ...localCondition, value: kind });
+    onChange(localCondition);
+  };
+
+  return (
+    <div className="flex w-full items-center gap-2">
+      <div className="grid w-full grid-cols-12">
+        <div className="col-span-5 flex items-center rounded-l-sm border border-neutral-800 bg-neutral-800/30 px-3 text-sm text-muted-foreground">
+          Kind is
+        </div>
+        <div className="col-span-7">
+          <Popover open={commandOpen} onOpenChange={setCommandOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={commandOpen}
+                className="w-full items-center justify-start gap-2 rounded-l-none rounded-r-sm px-2 hover:bg-neutral-800/50"
+              >
+                <IconSelector className="h-4 w-4" />
+                <span>
+                  {localCondition.value.length > 0
+                    ? localCondition.value
+                    : "Select kind..."}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-[462px] p-0">
+              <Command>
+                <CommandInput placeholder="Search kind..." />
+                <CommandGroup>
+                  <CommandList>
+                    {newKinds.length === 0 && (
+                      <CommandItem disabled>No kinds to add</CommandItem>
+                    )}
+                    {newKinds.map((kind) => (
+                      <CommandItem
+                        key={kind}
+                        value={kind}
+                        onSelect={() => {
+                          handleKindChange(kind);
+                          setCommandOpen(false);
+                        }}
+                      >
+                        {kind}
+                      </CommandItem>
+                    ))}
+                  </CommandList>
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
     </div>
   );
@@ -375,10 +489,7 @@ export const TargetConditionRender: React.FC<
   if (conditionIsComparison(condition))
     return (
       <div
-        className={cn(
-          "rounded-sm border border-neutral-800 px-2 py-4",
-          className,
-        )}
+        className={cn("rounded-sm border border-neutral-800 p-2", className)}
       >
         <ComparisonConditionRender
           condition={condition}
@@ -389,10 +500,22 @@ export const TargetConditionRender: React.FC<
       </div>
     );
 
-  if (condition.type === TargetFilterType.Metadata)
+  if (conditionIsMetadata(condition))
     return (
       <div className={className ?? ""}>
         <MetadataConditionRender
+          condition={condition}
+          onChange={onChange}
+          onRemove={onRemove}
+          depth={depth}
+        />
+      </div>
+    );
+
+  if (conditionIsKind(condition))
+    return (
+      <div className={className ?? ""}>
+        <KindConditionRender
           condition={condition}
           onChange={onChange}
           onRemove={onRemove}
