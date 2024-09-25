@@ -43,11 +43,11 @@ export const GET = async (
       release: row.release,
     }));
 
-  const variabes = await db
+  const variables = await db
     .select()
     .from(jobVariable)
     .where(eq(jobVariable.jobId, params.jobId));
-  const variable = Object.fromEntries(variabes.map((v) => [v.key, v.value]));
+  const variable = Object.fromEntries(variables.map((v) => [v.key, v.value]));
 
   return NextResponse.json({ ...je.job, ...je, variable });
 };
