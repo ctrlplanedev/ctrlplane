@@ -80,7 +80,7 @@ export const SystemsTable: React.FC<{
                 <TableCell>
                   <SystemActionsDropdown system={cell.row.original}>
                     <Button variant="ghost" size="icon">
-                      <IconDotsVertical />
+                      <IconDotsVertical className="h-4 w-4" />
                     </Button>
                   </SystemActionsDropdown>
                 </TableCell>

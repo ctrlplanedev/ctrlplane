@@ -37,7 +37,7 @@ export const RunbookRow: React.FC<{
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
-            <IconDotsVertical />
+            <IconDotsVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

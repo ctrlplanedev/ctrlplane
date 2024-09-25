@@ -174,10 +174,10 @@ const DeploymentTable: React.FC<{
                     {r.name}
                   </Link>
                   <Button size="icon" variant="ghost">
-                    <IconTerminal2 />
+                    <IconTerminal2 className="h-4 w-4" />
                   </Button>
                   <Button size="icon" variant="ghost">
-                    <IconRocket />
+                    <IconRocket className="h-4 w-4" />
                   </Button>
                   <DeploymentOptionsDropdown {...r} />
                 </div>
