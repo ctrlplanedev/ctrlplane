@@ -27920,7 +27920,7 @@ const config = new Configuration({
     apiKey: core.getInput("api_key", { required: true }),
 });
 const api = new DefaultApi(config);
-const requiredOutputs = core.getInput("required_outputs")
+const requiredOutputs = core.getInput("required_outputs", { required: false })
     .split("\n")
     .map((output) => output.trim());
 const setOutputAndLog = (key, value) => {

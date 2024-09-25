@@ -10,7 +10,7 @@ const config = new Configuration({
 const api = new DefaultApi(config);
 
 const requiredOutputs = core
-  .getInput("required_outputs")
+  .getInput("required_outputs", { required: false })
   .split("\n")
   .map((output) => output.trim());
 
