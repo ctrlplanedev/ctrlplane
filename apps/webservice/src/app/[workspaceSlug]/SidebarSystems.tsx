@@ -3,6 +3,7 @@
 import type { System, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import _ from "lodash";
 import {
   TbChevronRight,
   TbPlant,

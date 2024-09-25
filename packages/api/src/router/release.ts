@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
-import { chain } from "lodash-es";
+import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -69,7 +69,7 @@ export const releaseRouter = createTRPCRouter({
         .limit(input.limit ?? 1000)
         .offset(input.offset ?? 0)
         .then((data) =>
-          chain(data)
+          _.chain(data)
             .groupBy("release.id")
             .map((r) => ({
               ...r[0]!.release,
@@ -100,7 +100,7 @@ export const releaseRouter = createTRPCRouter({
         )
         .where(eq(release.id, input))
         .then((rows) =>
-          chain(rows)
+          _.chain(rows)
             .groupBy((r) => r.release.id)
             .map((r) => ({
               ...r[0]!.release,

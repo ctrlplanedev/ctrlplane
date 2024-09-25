@@ -1,6 +1,6 @@
 import type { SetTargetProvidersTargetsRequestTargetsInner } from "@ctrlplane/node-sdk";
 import handlebars from "handlebars";
-import { uniqBy } from "lodash-es";
+import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -66,7 +66,7 @@ export async function scan() {
       targets.push(target);
     }
 
-    const uniqueTargets = uniqBy(targets, (t) => t.identifier);
+    const uniqueTargets = _.uniqBy(targets, (t) => t.identifier);
 
     logger.info(`Registering ${uniqueTargets.length} unique targets`);
     const providerId = await getOrCreateProviderId();

@@ -1,4 +1,4 @@
-import { chain } from "lodash-es";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -50,7 +50,7 @@ export const runbookRouter = createTRPCRouter({
         )
         .where(eq(SCHEMA.runbook.systemId, input))
         .then((rbs) =>
-          chain(rbs)
+          _.chain(rbs)
             .groupBy((rb) => rb.runbook.id)
             .map((rb) => ({
               ...rb[0]!.runbook,

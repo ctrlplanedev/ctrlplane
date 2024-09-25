@@ -1,4 +1,4 @@
-import { chain } from "lodash-es";
+import _ from "lodash";
 import { z } from "zod";
 
 import {
@@ -166,7 +166,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
           ...group,
           combinations: combinations.map((combination) => {
             const combinationKeys = Object.keys(combination.metadata);
-            const nullKeys = chain(group.keys)
+            const nullKeys = _.chain(group.keys)
               .difference(combinationKeys)
               .keyBy()
               .mapValues(() => null)

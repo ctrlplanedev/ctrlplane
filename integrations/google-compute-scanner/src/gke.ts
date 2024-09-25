@@ -4,7 +4,7 @@ import type { V1Namespace } from "@kubernetes/client-node";
 import Container from "@google-cloud/container";
 import { CoreV1Api } from "@kubernetes/client-node";
 import handlebars from "handlebars";
-import { cloneDeep, merge } from "lodash-es";
+import _ from "lodash";
 import { SemVer } from "semver";
 
 import { logger } from "@ctrlplane/logger";
@@ -140,7 +140,7 @@ export const getKubernetesNamespace = async (
       )
       .map((n) =>
         kubernetesNamespaceV1.parse(
-          merge(cloneDeep(target), {
+          _.merge(_.cloneDeep(target), {
             kind: "Namespace",
             name: targetNamespaceName(n, cluster),
             identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,

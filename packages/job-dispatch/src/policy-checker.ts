@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type * as schema from "@ctrlplane/db/schema";
+import _ from "lodash";
 
 import type { ReleaseIdPolicyChecker } from "./policies/utils.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";

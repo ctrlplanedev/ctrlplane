@@ -2,7 +2,7 @@
 
 import type { InsertRunbookVariable } from "@ctrlplane/db/schema";
 import React, { forwardRef, useState } from "react";
-import { merge } from "lodash-es";
+import _ from "lodash";
 import { TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
@@ -41,10 +41,10 @@ export const RunbookVariableEditor = forwardRef<
 >(({ value, onChange }, ref) => {
   const { config } = value;
   const update = (update: Partial<InsertRunbookVariable>) =>
-    onChange(merge(value, update));
+    onChange(_.merge(value, update));
 
   const updateConfig = (config: Partial<InsertRunbookVariable["config"]>) =>
-    update({ config: merge(value.config, config) });
+    update({ config: _.merge(value.config, config) });
 
   const setConfig = (config: InsertRunbookVariable["config"]) => {
     onChange({ ...value, config });

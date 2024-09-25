@@ -1,9 +1,24 @@
 import type { Tx } from "@ctrlplane/db";
-import { merge } from "lodash-es";
+import _ from "lodash";
 
 import { and, eq, inArray, isNotNull, or, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+// import {
+//   deployment,
+//   environment,
+//   environmentPolicy,
+//   environmentPolicyDeployment,
+//   job,
+//   jobAgent,
+//   release,
+//   releaseDependency,
+//   releaseJobTrigger,
+// } from "@ctrlplane/db/schema";
+/**
+ * Converts a job config into a job which means they can now be
+ * picked up by job agents
+ */
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -34,7 +49,7 @@ export const createTriggeredRunbookJob = async (
     .insert(schema.job)
     .values({
       jobAgentId: jobAgent.id,
-      jobAgentConfig: merge(jobAgent.config, runbook.jobAgentConfig),
+      jobAgentConfig: _.merge(jobAgent.config, runbook.jobAgentConfig),
       status: JobStatus.Pending,
     })
     .returning()
@@ -101,7 +116,7 @@ export const createTriggeredReleaseJobs = async (
     .values(
       insertJobs.map((d) => ({
         jobAgentId: d.job_agent.id,
-        jobAgentConfig: merge(
+        jobAgentConfig: _.merge(
           d.job_agent.config,
           d.deployment?.jobAgentConfig ?? {},
         ),

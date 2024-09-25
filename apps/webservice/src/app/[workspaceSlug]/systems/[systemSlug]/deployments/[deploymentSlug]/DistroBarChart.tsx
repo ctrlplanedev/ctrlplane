@@ -1,6 +1,6 @@
 "use client";
 
-import { chain, range } from "lodash-es";
+import _ from "lodash";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 import { api } from "~/trpc/react";
@@ -17,7 +17,7 @@ export const DistroBarChart: React.FC<{
     refetchInterval: 2_000,
   });
 
-  const distro = chain(releases.data ?? [])
+  const distro = _.chain(releases.data ?? [])
     .map((r) => ({
       version: r.version,
       count: (distribution.data ?? []).filter((d) => d.release.id === r.id)
@@ -25,7 +25,7 @@ export const DistroBarChart: React.FC<{
     }))
     .take(showPreviousReleaseDistro)
     .value();
-  const distroPadding = range(showPreviousReleaseDistro - distro.length).map(
+  const distroPadding = _.range(showPreviousReleaseDistro - distro.length).map(
     () => ({ version: "", count: 0 }),
   );
 

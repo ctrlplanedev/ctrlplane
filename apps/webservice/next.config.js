@@ -8,41 +8,22 @@ createJiti(fileURLToPath(import.meta.url))("./src/env");
 const config = {
   output: "standalone",
   reactStrictMode: false,
-  poweredByHeader: false,
 
   /** Enables hot reloading for local packages without a build step */
   transpilePackages: [
     "@ctrlplane/api",
     "@ctrlplane/auth",
     "@ctrlplane/db",
-    "@ctrlplane/job-dispatch",
     "@ctrlplane/ui",
-    "@ctrlplane/logger",
     "@ctrlplane/validators",
+    "@ctrlplane/job-dispatch",
   ],
 
-  images: { remotePatterns: [{ hostname: "lh3.googleusercontent.com" }] },
-
-  experimental: {
-    instrumentationHook: true,
-    optimizePackageImports: [
-      "@ctrlplane/ui",
-      "@ctrlplane/api",
-      "@ctrlplane/job-dispatch",
-      "bullmq",
-      "@monaco-editor/react",
-      "recharts",
-      "reactflow",
-      "dagre",
-      "react-icons",
-      "react-grid-layout",
-      "react-use",
-      "google-auth-library",
-      "googleapis",
-      "drizzle-orm",
-      "pg",
-    ],
+  images: {
+    remotePatterns: [{ hostname: "lh3.googleusercontent.com" }],
   },
+
+  experimental: { instrumentationHook: true },
 
   async rewrites() {
     return [
@@ -52,7 +33,6 @@ const config = {
       },
     ];
   },
-
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },

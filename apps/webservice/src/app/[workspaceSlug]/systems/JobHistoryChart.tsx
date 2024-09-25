@@ -2,6 +2,7 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import { startOfDay, sub } from "date-fns";
+import _ from "lodash";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import {
