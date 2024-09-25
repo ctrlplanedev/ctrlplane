@@ -27924,10 +27924,10 @@ const requiredOutputs = core.getInput("required_outputs", { required: false })
     .split("\n")
     .filter((output) => output.trim() !== "")
     .map((output) => output.trim());
-const outputTracker = {};
+const outputTracker = new Set();
 const trackOutput = (key, value) => {
     if (value !== undefined && value !== null)
-        outputTracker[key] = true;
+        outputTracker.add(key);
 };
 const setOutputAndLog = (key, value) => {
     core.setOutput(key, value);
@@ -27976,7 +27976,7 @@ async function run() {
         .then(() => {
         if (requiredOutputs.length > 0) {
             core.info(`The required_outputs for this job are: ${requiredOutputs.join(", ")}`);
-            const missingOutputs = requiredOutputs.filter((output) => !outputTracker[output]);
+            const missingOutputs = requiredOutputs.filter((output) => !outputTracker.has(output));
             if (missingOutputs.length > 0)
                 core.setFailed(`Missing required outputs: ${missingOutputs.join(", ")}`);
             return;

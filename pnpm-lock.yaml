@@ -6,9 +6,24 @@ settings:
 
 catalogs:
   default:
+    '@octokit/rest':
+      specifier: ^20.1.1
+      version: 20.1.1
+    '@t3-oss/env-core':
+      specifier: ^0.11.1
+      version: 0.11.1
+    '@t3-oss/env-nextjs':
+      specifier: ^0.11.1
+      version: 0.11.1
+    date-fns:
+      specifier: ^3.6.0
+      version: 3.6.0
     eslint:
       specifier: ^9.10.0
       version: 9.10.0
+    eslint-plugin-vitest:
+      specifier: ^0.5.4
+      version: 0.5.4
     prettier:
       specifier: ^3.3.3
       version: 3.3.3
@@ -21,14 +36,31 @@ catalogs:
     typescript:
       specifier: ^5.6.2
       version: 5.6.2
+    typescript-eslint:
+      specifier: ^8.3.0
+      version: 8.6.0
     zod:
       specifier: ^3.23.8
       version: 3.23.8
+  node20:
+    '@types/node':
+      specifier: ^20.12.0
+      version: 20.16.5
+  node22:
+    '@types/node':
+      specifier: ^22.5.5
+      version: 22.5.5
   react18:
     '@types/react':
       specifier: ^18.3.5
       version: 18.3.7
+    '@types/react-dom':
+      specifier: ^18.3.0
+      version: 18.3.0
     react:
+      specifier: 18.3.1
+      version: 18.3.1
+    react-dom:
       specifier: 18.3.1
       version: 18.3.1
 
@@ -569,9 +601,6 @@ importers:
       '@ctrlplane/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
     devDependencies:
       '@ctrlplane/eslint-config':
         specifier: workspace:*
@@ -582,24 +611,12 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@types/node':
-        specifier: catalog:node20
-        version: 20.16.5
       '@vercel/ncc':
         specifier: ^0.38.1
         version: 0.38.2
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      tsx:
-        specifier: ^4.19.1
-        version: 4.19.1
       typescript:
         specifier: 'catalog:'
         version: 5.6.2
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
 
   integrations/google-compute-scanner:
     dependencies:
@@ -1341,7 +1358,7 @@ importers:
         version: 1.13.4(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.30.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6))
+        version: 2.30.0(eslint@9.10.0(jiti@1.21.6))
       eslint-plugin-jsx-a11y:
         specifier: ^6.9.0
         version: 6.10.0(eslint@9.10.0(jiti@1.21.6))
@@ -12473,7 +12490,7 @@ snapshots:
 
   '@types/cors@2.8.17':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
 
   '@types/d3-array@3.2.1': {}
 
@@ -12757,7 +12774,7 @@ snapshots:
 
   '@types/ws@8.5.12':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
 
   '@typescript-eslint/eslint-plugin@8.6.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)':
     dependencies:
@@ -14254,17 +14271,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.11.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6)):
+  eslint-module-utils@2.11.0(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
       eslint: 9.10.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint@9.10.0(jiti@1.21.6)):
+  eslint-plugin-import@2.30.0(eslint@9.10.0(jiti@1.21.6)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -14275,7 +14291,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.10.0(jiti@1.21.6)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.11.0(@typescript-eslint/parser@8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6))
+      eslint-module-utils: 2.11.0(eslint-import-resolver-node@0.3.9)(eslint@9.10.0(jiti@1.21.6))
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -14285,8 +14301,6 @@ snapshots:
       object.values: 1.2.0
       semver: 6.3.1
       tsconfig-paths: 3.15.0
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.6.0(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack

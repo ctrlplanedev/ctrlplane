@@ -15,9 +15,9 @@ const requiredOutputs = core
   .filter((output) => output.trim() !== "")
   .map((output) => output.trim());
 
-const outputTracker: Record<string, boolean> = {};
+const outputTracker = new Set<string>();
 const trackOutput = (key: string, value: any) => {
-  if (value !== undefined && value !== null) outputTracker[key] = true;
+  if (value !== undefined && value !== null) outputTracker.add(key);
 };
 
 const setOutputAndLog = (key: string, value: any) => {
@@ -89,7 +89,7 @@ async function run() {
         );
 
         const missingOutputs = requiredOutputs.filter(
-          (output) => !outputTracker[output],
+          (output) => !outputTracker.has(output),
         );
 
         if (missingOutputs.length > 0)
