@@ -27883,10 +27883,14 @@ async function run() {
         core.setOutput("target_name", target?.name);
         core.setOutput("environment_name", environment?.name);
         core.setOutput("release_version", release?.version);
-        for (const [key, value] of Object.entries(config ?? {}))
+        for (const [key, value] of Object.entries(config ?? {})) {
+            console.log("config", key, value);
             core.setOutput(`config_${key}`, value);
-        for (const [key, value] of Object.entries(variables ?? {}))
+        }
+        for (const [key, value] of Object.entries(variables ?? {})) {
+            console.log("variable", key, value);
             core.setOutput(`variable_${key}`, value);
+        }
     })
         .catch((error) => {
         core.setFailed(`Action failed: ${error.message}`);
