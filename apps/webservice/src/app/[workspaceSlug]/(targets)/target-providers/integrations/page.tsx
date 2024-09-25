@@ -1,7 +1,11 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { SiGooglecloud, SiKubernetes, SiTerraform } from "react-icons/si";
-import { TbSettings } from "react-icons/tb";
+import {
+  SiGooglecloud,
+  SiKubernetes,
+  SiTerraform,
+} from "@icons-pack/react-simple-icons";
+import { IconSettings } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -141,7 +145,7 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
           <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
-                <TbSettings className="mx-auto text-4xl" />
+                <IconSettings className="mx-auto text-4xl" />
                 <div className="font-semibold">Custom</div>
               </TargetProviderHeading>
               <p className="text-xs text-muted-foreground">

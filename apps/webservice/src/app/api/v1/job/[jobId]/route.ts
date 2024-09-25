@@ -49,7 +49,7 @@ export const GET = async (
     .where(eq(jobVariable.jobId, params.jobId));
   const variable = Object.fromEntries(variabes.map((v) => [v.key, v.value]));
 
-  return NextResponse.json({ ...je, variable });
+  return NextResponse.json({ ...je.job, ...je, variable });
 };
 
 const bodySchema = updateJob;

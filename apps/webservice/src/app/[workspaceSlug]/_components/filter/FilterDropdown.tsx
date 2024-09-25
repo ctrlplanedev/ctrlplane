@@ -1,6 +1,6 @@
 import type { JSXElementConstructor } from "react";
 import React, { useState } from "react";
-import { TbFilter } from "react-icons/tb";
+import { IconFilter } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -62,7 +62,7 @@ export const FilterDropdown = <T extends Filter<string, any>>({
             size="sm"
             className="flex h-7 items-center gap-1"
           >
-            <TbFilter /> Filter
+            <IconFilter className="h-4 w-4" /> Filter
           </Button>
         ) : (
           <Button
@@ -70,7 +70,7 @@ export const FilterDropdown = <T extends Filter<string, any>>({
             size="icon"
             className="flex h-7 w-7 items-center gap-1 text-xs"
           >
-            <TbFilter />
+            <IconFilter className="h-4 w-4" />
           </Button>
         )}
       </DropdownMenuTrigger>

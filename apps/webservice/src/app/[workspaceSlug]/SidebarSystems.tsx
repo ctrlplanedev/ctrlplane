@@ -3,15 +3,15 @@
 import type { System, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import _ from "lodash";
 import {
-  TbChevronRight,
-  TbPlant,
-  TbPlus,
-  TbRun,
-  TbShip,
-  TbVariable,
-} from "react-icons/tb";
+  IconChevronRight,
+  IconPlant,
+  IconPlus,
+  IconRun,
+  IconShip,
+  IconVariable,
+} from "@tabler/icons-react";
+import _ from "lodash";
 import { useLocalStorage } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
@@ -39,9 +39,9 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
     >
       <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-800/50">
         {system.name}
-        <TbChevronRight
+        <IconChevronRight
           className={cn(
-            "text-sm text-muted-foreground transition-all",
+            "h-3 w-3 text-muted-foreground transition-all",
             open === "true" && "rotate-90",
           )}
         />
@@ -50,20 +50,21 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
         <SidebarLink
           href={`/${workspaceSlug}/systems/${system.slug}/deployments`}
         >
-          <TbShip className="text-muted-foreground" /> Deployments
+          <IconShip className="h-4 w-4 text-muted-foreground" /> Deployments
         </SidebarLink>
         <SidebarLink
           href={`/${workspaceSlug}/systems/${system.slug}/environments`}
         >
-          <TbPlant className="text-muted-foreground" /> Environments
+          <IconPlant className="h-4 w-4 text-muted-foreground" /> Environments
         </SidebarLink>
         <SidebarLink href={`/${workspaceSlug}/systems/${system.slug}/runbooks`}>
-          <TbRun className="text-muted-foreground" /> Runbooks
+          <IconRun className="h-4 w-4 text-muted-foreground" /> Runbooks
         </SidebarLink>
         <SidebarLink
           href={`/${workspaceSlug}/systems/${system.slug}/variable-sets`}
         >
-          <TbVariable className="text-muted-foreground" /> Variable Sets
+          <IconVariable className="h-4 w-4 text-muted-foreground" /> Variable
+          Sets
         </SidebarLink>
       </CollapsibleContent>
     </Collapsible>
@@ -79,7 +80,9 @@ export const SidebarSystems: React.FC<{
     <Collapsible open={open} onOpenChange={setOpen} className="m-3 space-y-2">
       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground">
         Your systems
-        <TbChevronRight className={cn(open && "rotate-90", "transition-all")} />
+        <IconChevronRight
+          className={cn("h-3 w-3", open && "rotate-90", "transition-all")}
+        />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-1">
         {systems.length === 0 && (
@@ -89,7 +92,7 @@ export const SidebarSystems: React.FC<{
               variant="ghost"
               size="sm"
             >
-              <TbPlus /> New system
+              <IconPlus className="h-4 w-4" /> New system
             </Button>
           </CreateSystemDialog>
         )}

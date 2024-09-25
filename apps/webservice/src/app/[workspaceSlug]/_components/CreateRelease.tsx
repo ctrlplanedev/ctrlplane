@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { TbTrash } from "react-icons/tb";
+import { IconTrash } from "@tabler/icons-react";
 import { valid } from "semver";
 import { z } from "zod";
 
@@ -340,7 +340,7 @@ export const CreateReleaseDialog: React.FC<{
                       className="ml-2 h-8 w-8"
                       onClick={() => remove(index)}
                     >
-                      <TbTrash />
+                      <IconTrash />
                     </Button>
                   </div>
                 </Card>

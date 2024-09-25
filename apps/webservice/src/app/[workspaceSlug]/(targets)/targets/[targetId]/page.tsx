@@ -1,8 +1,8 @@
 "use client";
 
 import { notFound } from "next/navigation";
+import { IconLoader2, IconLock, IconLockOpen } from "@tabler/icons-react";
 import { format } from "date-fns";
-import { TbLoader2, TbLock, TbLockOpen } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -130,7 +130,7 @@ export default function TargetPage({
   if (isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <TbLoader2 className="h-8 w-8 animate-spin" />
+        <IconLoader2 className="h-8 w-8 animate-spin" />
       </div>
     );
 
@@ -153,11 +153,11 @@ export default function TargetPage({
             >
               {target.data.lockedAt != null ? (
                 <>
-                  <TbLockOpen /> Unlocked
+                  <IconLockOpen className="h-4 w-4" /> Unlocked
                 </>
               ) : (
                 <>
-                  <TbLock /> Lock
+                  <IconLock className="h-4 w-4" /> Lock
                 </>
               )}
             </Button>

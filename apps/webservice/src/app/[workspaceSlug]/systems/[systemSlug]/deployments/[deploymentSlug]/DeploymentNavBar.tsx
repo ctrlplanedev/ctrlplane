@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { TbPlus } from "react-icons/tb";
+import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -58,7 +58,7 @@ export const DeploymentsNavBar: React.FC = () => {
             variant="secondary"
             className="flex shrink-0 items-center gap-2"
           >
-            <TbPlus />
+            <IconPlus className="h-4 w-4" />
             Add Varibale
           </Button>
         </CreateVaribaleDialog>

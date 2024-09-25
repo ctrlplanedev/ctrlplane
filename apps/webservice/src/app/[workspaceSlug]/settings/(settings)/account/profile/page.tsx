@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
-import { SiGithub } from "react-icons/si";
+import { SiGithub } from "@icons-pack/react-simple-icons";
 
 import { auth } from "@ctrlplane/auth";
 import { Input } from "@ctrlplane/ui/input";

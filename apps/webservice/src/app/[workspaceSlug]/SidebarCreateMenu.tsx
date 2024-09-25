@@ -1,6 +1,6 @@
 import type { Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
-import { TbPlus } from "react-icons/tb";
+import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -30,7 +30,7 @@ export const SidebarCreateMenu: React.FC<{
           size="icon"
           className="h-6 w-6 flex-shrink-0"
         >
-          <TbPlus />
+          <IconPlus className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

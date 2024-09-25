@@ -2,8 +2,8 @@
 
 import type { InsertRunbookVariable } from "@ctrlplane/db/schema";
 import React, { forwardRef, useState } from "react";
+import { IconX } from "@tabler/icons-react";
 import _ from "lodash";
-import { TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -193,7 +193,7 @@ export const RunbookVariablesEditor: React.FC<{
                             }}
                             className="mr-4 h-5 w-5 text-red-400 hover:text-red-700"
                           >
-                            <TbX className="h-4 w-4" />
+                            <IconX className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent className="not-italic text-white">

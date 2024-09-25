@@ -12,7 +12,31 @@
  * Do not edit the class manually.
  */
 
+import type { GetJob200ResponseDeployment } from "./GetJob200ResponseDeployment";
+import type { GetJob200ResponseRelease } from "./GetJob200ResponseRelease";
+import type { GetJob200ResponseRunbook } from "./GetJob200ResponseRunbook";
+import type { GetJob200ResponseTarget } from "./GetJob200ResponseTarget";
 import { mapValues } from "../runtime";
+import {
+  GetJob200ResponseDeploymentFromJSON,
+  GetJob200ResponseDeploymentFromJSONTyped,
+  GetJob200ResponseDeploymentToJSON,
+} from "./GetJob200ResponseDeployment";
+import {
+  GetJob200ResponseReleaseFromJSON,
+  GetJob200ResponseReleaseFromJSONTyped,
+  GetJob200ResponseReleaseToJSON,
+} from "./GetJob200ResponseRelease";
+import {
+  GetJob200ResponseRunbookFromJSON,
+  GetJob200ResponseRunbookFromJSONTyped,
+  GetJob200ResponseRunbookToJSON,
+} from "./GetJob200ResponseRunbook";
+import {
+  GetJob200ResponseTargetFromJSON,
+  GetJob200ResponseTargetFromJSONTyped,
+  GetJob200ResponseTargetToJSON,
+} from "./GetJob200ResponseTarget";
 
 /**
  *
@@ -22,47 +46,71 @@ import { mapValues } from "../runtime";
 export interface GetJob200Response {
   /**
    *
-   * @type {object}
+   * @type {string}
    * @memberof GetJob200Response
    */
-  job: object;
+  id: string;
+  /**
+   *
+   * @type {string}
+   * @memberof GetJob200Response
+   */
+  status: GetJob200ResponseStatusEnum;
+  /**
+   *
+   * @type {GetJob200ResponseRelease}
+   * @memberof GetJob200Response
+   */
+  release?: GetJob200ResponseRelease;
+  /**
+   *
+   * @type {GetJob200ResponseDeployment}
+   * @memberof GetJob200Response
+   */
+  deployment?: GetJob200ResponseDeployment;
+  /**
+   *
+   * @type {GetJob200ResponseRunbook}
+   * @memberof GetJob200Response
+   */
+  runbook?: GetJob200ResponseRunbook;
+  /**
+   *
+   * @type {GetJob200ResponseTarget}
+   * @memberof GetJob200Response
+   */
+  target?: GetJob200ResponseTarget;
+  /**
+   *
+   * @type {GetJob200ResponseRunbook}
+   * @memberof GetJob200Response
+   */
+  environment?: GetJob200ResponseRunbook;
   /**
    *
    * @type {object}
    * @memberof GetJob200Response
    */
-  release?: object;
-  /**
-   *
-   * @type {object}
-   * @memberof GetJob200Response
-   */
-  deployment?: object;
-  /**
-   *
-   * @type {object}
-   * @memberof GetJob200Response
-   */
-  runbook?: object;
-  /**
-   *
-   * @type {object}
-   * @memberof GetJob200Response
-   */
-  target?: object;
-  /**
-   *
-   * @type {object}
-   * @memberof GetJob200Response
-   */
-  environment?: object;
-  /**
-   *
-   * @type {object}
-   * @memberof GetJob200Response
-   */
-  variable: object;
+  variables?: object;
 }
+
+/**
+ * @export
+ */
+export const GetJob200ResponseStatusEnum = {
+  Completed: "completed",
+  Cancelled: "cancelled",
+  Skipped: "skipped",
+  InProgress: "in_progress",
+  ActionRequired: "action_required",
+  Pending: "pending",
+  Failure: "failure",
+  InvalidJobAgent: "invalid_job_agent",
+  InvalidIntegration: "invalid_integration",
+  ExternalRunNotFound: "external_run_not_found",
+} as const;
+export type GetJob200ResponseStatusEnum =
+  (typeof GetJob200ResponseStatusEnum)[keyof typeof GetJob200ResponseStatusEnum];
 
 /**
  * Check if a given object implements the GetJob200Response interface.
@@ -70,8 +118,8 @@ export interface GetJob200Response {
 export function instanceOfGetJob200Response(
   value: object,
 ): value is GetJob200Response {
-  if (!("job" in value) || value["job"] === undefined) return false;
-  if (!("variable" in value) || value["variable"] === undefined) return false;
+  if (!("id" in value) || value["id"] === undefined) return false;
+  if (!("status" in value) || value["status"] === undefined) return false;
   return true;
 }
 
@@ -87,13 +135,29 @@ export function GetJob200ResponseFromJSONTyped(
     return json;
   }
   return {
-    job: json["job"],
-    release: json["release"] == null ? undefined : json["release"],
-    deployment: json["deployment"] == null ? undefined : json["deployment"],
-    runbook: json["runbook"] == null ? undefined : json["runbook"],
-    target: json["target"] == null ? undefined : json["target"],
-    environment: json["environment"] == null ? undefined : json["environment"],
-    variable: json["variable"],
+    id: json["id"],
+    status: json["status"],
+    release:
+      json["release"] == null
+        ? undefined
+        : GetJob200ResponseReleaseFromJSON(json["release"]),
+    deployment:
+      json["deployment"] == null
+        ? undefined
+        : GetJob200ResponseDeploymentFromJSON(json["deployment"]),
+    runbook:
+      json["runbook"] == null
+        ? undefined
+        : GetJob200ResponseRunbookFromJSON(json["runbook"]),
+    target:
+      json["target"] == null
+        ? undefined
+        : GetJob200ResponseTargetFromJSON(json["target"]),
+    environment:
+      json["environment"] == null
+        ? undefined
+        : GetJob200ResponseRunbookFromJSON(json["environment"]),
+    variables: json["variables"] == null ? undefined : json["variables"],
   };
 }
 
@@ -102,12 +166,13 @@ export function GetJob200ResponseToJSON(value?: GetJob200Response | null): any {
     return value;
   }
   return {
-    job: value["job"],
-    release: value["release"],
-    deployment: value["deployment"],
-    runbook: value["runbook"],
-    target: value["target"],
-    environment: value["environment"],
-    variable: value["variable"],
+    id: value["id"],
+    status: value["status"],
+    release: GetJob200ResponseReleaseToJSON(value["release"]),
+    deployment: GetJob200ResponseDeploymentToJSON(value["deployment"]),
+    runbook: GetJob200ResponseRunbookToJSON(value["runbook"]),
+    target: GetJob200ResponseTargetToJSON(value["target"]),
+    environment: GetJob200ResponseRunbookToJSON(value["environment"]),
+    variables: value["variables"],
   };
 }

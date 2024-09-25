@@ -1,5 +1,10 @@
 import { Fragment } from "react";
-import { TbCategory, TbServer, TbShip, TbTag } from "react-icons/tb";
+import {
+  IconCategory,
+  IconServer,
+  IconShip,
+  IconTag,
+} from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -44,7 +49,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: true,
       name: (
         <>
-          <TbCategory /> Systems
+          <IconCategory className="h-4 w-4" /> Systems
         </>
       ),
       path: `/${workspaceSlug}/systems`,
@@ -53,7 +58,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: system?.name != null,
       name: (
         <>
-          <TbServer /> {system?.name}
+          <IconServer className="h-4 w-4" /> {system?.name}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}`,
@@ -62,7 +67,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: deployment?.name != null,
       name: (
         <>
-          <TbShip /> {deployment?.name}
+          <IconShip className="h-4 w-4" /> {deployment?.name}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`,
@@ -71,7 +76,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: release?.version != null,
       name: (
         <>
-          <TbTag /> {release?.version}
+          <IconTag className="h-4 w-4" /> {release?.version}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/releases/${versionId}`,

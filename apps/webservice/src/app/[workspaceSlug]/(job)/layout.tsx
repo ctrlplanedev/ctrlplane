@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams, usePathname } from "next/navigation";
-import { TbBolt, TbCube, TbPlus, TbRocket } from "react-icons/tb";
+import { IconBolt, IconCube, IconPlus, IconRocket } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -31,7 +31,7 @@ export default function JobsLayout({
     <>
       <div className="flex items-center gap-2 border-b px-2">
         <div className="flex items-center gap-2 p-3">
-          <TbRocket /> Jobs
+          <IconRocket className="h-4 w-4" /> Jobs
         </div>
         <div className="flex-grow">
           <NavigationMenu>
@@ -48,7 +48,7 @@ export default function JobsLayout({
                     )}
                     className="flex items-center gap-2 rounded-lg border border-neutral-900 px-2 py-1 text-sm text-muted-foreground data-[active]:border-neutral-800 data-[active]:bg-neutral-800/50 data-[active]:text-white"
                   >
-                    <TbCube /> Agents
+                    <IconCube className="h-4 w-4" /> Agents
                     <Badge
                       className="rounded-full border-neutral-900 text-inherit"
                       variant="outline"
@@ -68,7 +68,7 @@ export default function JobsLayout({
                     active={pathname.includes(`/${params.workspaceSlug}/jobs`)}
                     className="flex items-center gap-2 rounded-lg border border-neutral-900 px-2 py-1 text-sm text-muted-foreground data-[active]:border-neutral-800 data-[active]:bg-neutral-800/50 data-[active]:text-white"
                   >
-                    <TbBolt /> Runs
+                    <IconBolt className="h-4 w-4" /> Runs
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -78,7 +78,7 @@ export default function JobsLayout({
         <div>
           <Link href={`/${params.workspaceSlug}/job-agents/integrations`}>
             <Button variant="outline" size="sm" className="gap-1.5">
-              <TbPlus /> Add Agent
+              <IconPlus className="h-4 w-4" /> Add Agent
             </Button>
           </Link>
         </div>

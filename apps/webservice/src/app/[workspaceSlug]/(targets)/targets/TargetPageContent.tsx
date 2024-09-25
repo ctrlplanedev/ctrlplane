@@ -5,10 +5,10 @@ import type {
   KindEqualsCondition,
   NameLikeCondition,
 } from "@ctrlplane/validators/targets";
-import React, { Fragment, useState } from "react";
+import React, { Fragment } from "react";
+import { IconCategory, IconTag, IconTarget, IconX } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
-import _ from "lodash";
-import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
+import range from "lodash/range";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -19,10 +19,10 @@ import { api } from "~/trpc/react";
 import { useFilters } from "../../_components/filter/Filter";
 import { FilterDropdown } from "../../_components/filter/FilterDropdown";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
+import { useTargetDrawer } from "../../_components/target-drawer/TargetDrawer";
 import { KindFilterDialog } from "./KindFilterDialog";
 import { MetadataFilterDialog } from "./MetadataFilterDialog";
 import { NameFilterDialog } from "./NameFilterDialog";
-import { TargetDrawer } from "./target-drawer/TargetDrawer";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
@@ -42,8 +42,7 @@ export const TargetPageContent: React.FC<{
     filters: filters.map((f) => f.value),
   });
 
-  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
-  const targetId = selectedTargetId ?? targets.data?.items.at(0)?.id;
+  const { targetId, setTargetId } = useTargetDrawer();
 
   if (targetsAll.isSuccess && targetsAll.data.total === 0)
     return <TargetGettingStarted />;
@@ -80,7 +79,7 @@ export const TargetPageContent: React.FC<{
                         removeFilter(idx);
                       }}
                     >
-                      <TbX />
+                      <IconX />
                     </Button>
                   </Badge>
                 </MetadataFilterDialog>
@@ -123,7 +122,7 @@ export const TargetPageContent: React.FC<{
                         removeFilter(idx);
                       }}
                     >
-                      <TbX />
+                      <IconX />
                     </Button>
                   </Badge>
                 </KindFilterDialog>
@@ -164,7 +163,7 @@ export const TargetPageContent: React.FC<{
                         removeFilter(idx);
                       }}
                     >
-                      <TbX />
+                      <IconX />
                     </Button>
                   </Badge>
                 </NameFilterDialog>
@@ -178,13 +177,13 @@ export const TargetPageContent: React.FC<{
             className="min-w-[200px] bg-neutral-900 p-1"
           >
             <NameFilterDialog>
-              <TbTarget /> Name
+              <IconTarget className="h-4 w-4" /> Name
             </NameFilterDialog>
             <KindFilterDialog kinds={kinds}>
-              <TbCategory /> Kind
+              <IconCategory className="h-4 w-4" /> Kind
             </KindFilterDialog>
             <MetadataFilterDialog workspaceId={workspace.id}>
-              <TbTag /> Metadata
+              <IconTag className="h-4 w-4" /> Metadata
             </MetadataFilterDialog>
           </FilterDropdown>
         </div>
@@ -204,7 +203,7 @@ export const TargetPageContent: React.FC<{
 
       {targets.isLoading && (
         <div className="space-y-2 p-4">
-          {_.range(10).map((i) => (
+          {range(10).map((i) => (
             <Skeleton
               key={i}
               className="h-9 w-full"
@@ -225,15 +224,10 @@ export const TargetPageContent: React.FC<{
           <TargetsTable
             targets={targets.data.items}
             activeTargetIds={targetId ? [targetId] : []}
-            onTableRowClick={(r) => setSelectedTargetId(r.id)}
+            onTableRowClick={(r) => setTargetId(r.id)}
           />
         </div>
       )}
-      <TargetDrawer
-        isOpen={selectedTargetId != null}
-        setIsOpen={() => setSelectedTargetId(null)}
-        targetId={targetId}
-      />
     </div>
   );
 };

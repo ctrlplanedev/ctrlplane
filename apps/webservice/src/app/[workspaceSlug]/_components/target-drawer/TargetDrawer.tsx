@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
-  TbExternalLink,
-  TbHistory,
-  TbInfoCircle,
-  TbLock,
-  TbLockOpen,
-  TbPackage,
-  TbTopologyStar3,
-  TbVariable,
-} from "react-icons/tb";
+  IconExternalLink,
+  IconHistory,
+  IconInfoCircle,
+  IconLock,
+  IconLockOpen,
+  IconPackage,
+  IconTopologyStar3,
+  IconVariable,
+} from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
@@ -46,13 +47,34 @@ const TabButton: React.FC<{
   </Button>
 );
 
-export const TargetDrawer: React.FC<{
-  isOpen: boolean;
-  setIsOpen: (v: boolean) => void;
-  targetId?: string;
-}> = ({ isOpen, setIsOpen, targetId }) => {
+const param = "target_id";
+export const useTargetDrawer = () => {
+  const router = useRouter();
+  const params = useSearchParams();
+  const targetId = params.get(param);
+
+  const setTargetId = (id: string | null) => {
+    const url = new URL(window.location.href);
+    if (id === null) {
+      url.searchParams.delete(param);
+    } else {
+      url.searchParams.set(param, id);
+    }
+    router.replace(url.toString());
+  };
+
+  const removeTargetId = () => setTargetId(null);
+
+  return { targetId, setTargetId, removeTargetId };
+};
+
+export const TargetDrawer: React.FC = () => {
+  const { targetId, removeTargetId } = useTargetDrawer();
+  const isOpen = targetId != null && targetId != "";
+  const setIsOpen = removeTargetId;
+
   const targetQ = api.target.byId.useQuery(targetId ?? "", {
-    enabled: targetId != null,
+    enabled: isOpen,
     refetchInterval: 10_000,
   });
 
@@ -62,7 +84,7 @@ export const TargetDrawer: React.FC<{
 
   const lockTarget = api.target.lock.useMutation();
   const unlockTarget = api.target.unlock.useMutation();
-  const utils = api.useUtils();
+  const router = useRouter();
 
   const links =
     target?.metadata[ReservedMetadataKey.Links] != null
@@ -98,7 +120,7 @@ export const TargetDrawer: React.FC<{
                         className: "gap-1",
                       })}
                     >
-                      <TbExternalLink />
+                      <IconExternalLink className="h-4 w-4" />
                       {label}
                     </Link>
                   ))}
@@ -112,16 +134,16 @@ export const TargetDrawer: React.FC<{
                 onClick={() =>
                   (target.lockedAt != null ? unlockTarget : lockTarget)
                     .mutateAsync(target.id)
-                    .then(() => utils.target.byId.invalidate(targetId))
+                    .then(() => router.refresh())
                 }
               >
                 {target.lockedAt != null ? (
                   <>
-                    <TbLockOpen /> Unlocked
+                    <IconLockOpen className="h-4 w-4" /> Unlocked
                   </>
                 ) : (
                   <>
-                    <TbLock /> Lock
+                    <IconLock className="h-4 w-4" /> Lock
                   </>
                 )}
               </Button>
@@ -136,31 +158,31 @@ export const TargetDrawer: React.FC<{
                 <TabButton
                   active={activeTab === "overview"}
                   onClick={() => setActiveTab("overview")}
-                  icon={<TbInfoCircle className="h-4 w-4" />}
+                  icon={<IconInfoCircle className="h-4 w-4" />}
                   label="Overview"
                 />
                 <TabButton
                   active={activeTab === "deployments"}
                   onClick={() => setActiveTab("deployments")}
-                  icon={<TbPackage className="h-4 w-4" />}
+                  icon={<IconPackage className="h-4 w-4" />}
                   label="Deployments"
                 />
                 <TabButton
                   active={activeTab === "jobs"}
                   onClick={() => setActiveTab("jobs")}
-                  icon={<TbHistory className="h-4 w-4" />}
+                  icon={<IconHistory className="h-4 w-4" />}
                   label="Job History"
                 />
                 <TabButton
                   active={activeTab === "variables"}
                   onClick={() => setActiveTab("variables")}
-                  icon={<TbVariable className="h-4 w-4" />}
+                  icon={<IconVariable className="h-4 w-4" />}
                   label="Variables"
                 />
                 <TabButton
                   active={activeTab === "relationships"}
                   onClick={() => setActiveTab("relationships")}
-                  icon={<TbTopologyStar3 className="h-4 w-4" />}
+                  icon={<IconTopologyStar3 className="h-4 w-4" />}
                   label="Relationships"
                 />
               </div>
