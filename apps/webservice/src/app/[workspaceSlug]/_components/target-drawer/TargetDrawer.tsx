@@ -4,15 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  TbExternalLink,
-  TbHistory,
-  TbInfoCircle,
-  TbLock,
-  TbLockOpen,
-  TbPackage,
-  TbTopologyStar3,
-  TbVariable,
-} from "react-icons/tb";
+  IconExternalLink,
+  IconHistory,
+  IconInfoCircle,
+  IconLock,
+  IconLockOpen,
+  IconPackage,
+  IconTopologyStar3,
+  IconVariable,
+} from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
@@ -120,7 +120,7 @@ export const TargetDrawer: React.FC = () => {
                         className: "gap-1",
                       })}
                     >
-                      <TbExternalLink />
+                      <IconExternalLink className="h-4 w-4" />
                       {label}
                     </Link>
                   ))}
@@ -139,11 +139,11 @@ export const TargetDrawer: React.FC = () => {
               >
                 {target.lockedAt != null ? (
                   <>
-                    <TbLockOpen /> Unlocked
+                    <IconLockOpen className="h-4 w-4" /> Unlocked
                   </>
                 ) : (
                   <>
-                    <TbLock /> Lock
+                    <IconLock className="h-4 w-4" /> Lock
                   </>
                 )}
               </Button>
@@ -158,31 +158,31 @@ export const TargetDrawer: React.FC = () => {
                 <TabButton
                   active={activeTab === "overview"}
                   onClick={() => setActiveTab("overview")}
-                  icon={<TbInfoCircle className="h-4 w-4" />}
+                  icon={<IconInfoCircle className="h-4 w-4" />}
                   label="Overview"
                 />
                 <TabButton
                   active={activeTab === "deployments"}
                   onClick={() => setActiveTab("deployments")}
-                  icon={<TbPackage className="h-4 w-4" />}
+                  icon={<IconPackage className="h-4 w-4" />}
                   label="Deployments"
                 />
                 <TabButton
                   active={activeTab === "jobs"}
                   onClick={() => setActiveTab("jobs")}
-                  icon={<TbHistory className="h-4 w-4" />}
+                  icon={<IconHistory className="h-4 w-4" />}
                   label="Job History"
                 />
                 <TabButton
                   active={activeTab === "variables"}
                   onClick={() => setActiveTab("variables")}
-                  icon={<TbVariable className="h-4 w-4" />}
+                  icon={<IconVariable className="h-4 w-4" />}
                   label="Variables"
                 />
                 <TabButton
                   active={activeTab === "relationships"}
                   onClick={() => setActiveTab("relationships")}
-                  icon={<TbTopologyStar3 className="h-4 w-4" />}
+                  icon={<IconTopologyStar3 className="h-4 w-4" />}
                   label="Relationships"
                 />
               </div>

@@ -3,7 +3,7 @@
 import type { TargetMetadataGroup } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbX } from "react-icons/tb";
+import { IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -143,7 +143,7 @@ export const EditMetadataGroupDialog: React.FC<{
                         className="h-5 w-5"
                         onClick={() => remove(index)}
                       >
-                        <TbX className="h-3 w-3" />
+                        <IconX className="h-3 w-3" />
                       </Button>
                     </Badge>
                   ))}

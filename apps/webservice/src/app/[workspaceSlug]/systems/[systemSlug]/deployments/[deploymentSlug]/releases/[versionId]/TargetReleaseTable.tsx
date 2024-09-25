@@ -2,9 +2,9 @@
 
 import React, { Fragment, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconAlertTriangle, IconDots, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
-import { TbAlertTriangle, TbDots, TbLoader2 } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -124,7 +124,7 @@ const TargetDropdownMenu: React.FC<{
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm">
-          <TbDots size={16} />
+          <IconDots size={16} />
         </Button>
       </DropdownMenuTrigger>
       {target != null && (
@@ -143,7 +143,7 @@ const TargetDropdownMenu: React.FC<{
                   onSelect={(e) => e.preventDefault()}
                   className="space-x-2"
                 >
-                  <TbAlertTriangle size={16} />
+                  <IconAlertTriangle size={16} />
                   <p>Force Release</p>
                 </DropdownMenuItem>
               </ForceReleaseTargetDialog>
@@ -157,7 +157,7 @@ const TargetDropdownMenu: React.FC<{
                   <TooltipTrigger asChild>
                     <div>
                       <DropdownMenuItem disabled className="space-x-2">
-                        <TbAlertTriangle size={16} />
+                        <IconAlertTriangle size={16} />
                         <p>Force Release</p>
                       </DropdownMenuItem>
                     </div>
@@ -174,7 +174,7 @@ const TargetDropdownMenu: React.FC<{
                 <TooltipTrigger asChild>
                   <div>
                     <DropdownMenuItem disabled className="space-x-2">
-                      <TbAlertTriangle size={16} />
+                      <IconAlertTriangle size={16} />
                       <p>Force Release</p>
                     </DropdownMenuItem>
                   </div>
@@ -210,7 +210,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   if (releaseJobTriggerQuery.isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center py-12">
-        <TbLoader2 className="animate-spin" size={32} />
+        <IconLoader2 className="animate-spin" size={32} />
       </div>
     );
 

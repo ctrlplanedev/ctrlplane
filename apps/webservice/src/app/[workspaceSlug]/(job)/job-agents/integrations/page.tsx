@@ -1,6 +1,6 @@
 import React from "react";
-import { SiGithub, SiKubernetes } from "react-icons/si";
-import { TbSettings } from "react-icons/tb";
+import { SiGithub, SiKubernetes } from "@icons-pack/react-simple-icons";
+import { IconSettings } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
@@ -63,7 +63,7 @@ export default function AgentPage() {
           <AgentCard>
             <AgentContent>
               <AgentHeading>
-                <TbSettings className="mx-auto text-4xl" />
+                <IconSettings className="mx-auto text-4xl" />
                 <div className="font-semibold">Custom</div>
               </AgentHeading>
               <p className="text-xs text-muted-foreground">

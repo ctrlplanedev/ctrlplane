@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SiGithub, SiGooglecloud } from "react-icons/si";
+import { SiGithub, SiGooglecloud } from "@icons-pack/react-simple-icons";
 
 import { Card } from "@ctrlplane/ui/card";
 

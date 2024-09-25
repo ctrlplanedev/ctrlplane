@@ -1,6 +1,6 @@
 import type { GithubUser } from "@ctrlplane/db/schema";
-import { SiGithub } from "react-icons/si";
-import { TbPlus } from "react-icons/tb";
+import { SiGithub } from "@icons-pack/react-simple-icons";
+import { IconPlus } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button } from "@ctrlplane/ui/button";
@@ -73,7 +73,7 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
             validOrgsToAdd={validOrgsToAdd}
           >
             <Button size="icon" variant="secondary">
-              <TbPlus className="h-3 w-3" />
+              <IconPlus className="h-3 w-3" />
             </Button>
           </GithubAddOrgDialog>
         ) : (
@@ -85,7 +85,7 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
                   variant="secondary"
                   className="cursor-not-allowed hover:bg-secondary hover:text-secondary-foreground"
                 >
-                  <TbPlus className="h-3 w-3" />
+                  <IconPlus className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

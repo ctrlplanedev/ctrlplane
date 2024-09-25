@@ -2,7 +2,7 @@
 
 import type { MetadataCondition } from "@ctrlplane/validators/targets";
 import { useParams } from "next/navigation";
-import { TbInfoCircle, TbPlant } from "react-icons/tb";
+import { IconInfoCircle, IconPlant } from "@tabler/icons-react";
 import { useReactFlow } from "reactflow";
 import { z } from "zod";
 
@@ -120,7 +120,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     <Form {...form}>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
         <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
-          <TbPlant />
+          <IconPlant className="h-4 w-4" />
         </div>
         <span className="flex-grow">Environment</span>
         <Button
@@ -128,7 +128,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           size="icon"
           className="flex-shrink-0 text-neutral-500 hover:text-white"
         >
-          <TbInfoCircle />
+          <IconInfoCircle className="h-4 w-4" />
         </Button>
       </h2>
       <Separator />

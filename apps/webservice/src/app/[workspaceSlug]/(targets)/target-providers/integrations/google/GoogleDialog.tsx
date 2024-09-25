@@ -5,8 +5,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { IconBulb, IconCheck, IconCopy } from "@tabler/icons-react";
 import { useFieldArray, useForm } from "react-hook-form";
-import { TbBulb, TbCheck, TbCopy } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
 
@@ -93,7 +93,7 @@ export const GoogleDialog: React.FC<{
               </DialogDescription>
 
               <Alert variant="secondary">
-                <TbBulb className="h-5 w-5" />
+                <IconBulb className="h-5 w-5" />
                 <AlertTitle>Google Provider</AlertTitle>
                 <AlertDescription>
                   To utilize the Google provider, it's necessary to grant our
@@ -127,9 +127,9 @@ export const GoogleDialog: React.FC<{
                   className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
                 >
                   {isCopied ? (
-                    <TbCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
+                    <IconCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
                   ) : (
-                    <TbCopy className="h-4 w-4" />
+                    <IconCopy className="h-4 w-4" />
                   )}
                 </Button>
               </div>

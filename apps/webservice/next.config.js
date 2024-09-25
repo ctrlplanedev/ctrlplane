@@ -1,4 +1,5 @@
 import { fileURLToPath } from "url";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 import createJiti from "jiti";
 
 // Import env files to validate at build time. Use jiti so we can load .ts files in here.
@@ -23,7 +24,10 @@ const config = {
     remotePatterns: [{ hostname: "lh3.googleusercontent.com" }],
   },
 
-  experimental: { instrumentationHook: true },
+  experimental: {
+    instrumentationHook: true,
+    optimizePackageImports: ["bullmq", "googleapis"],
+  },
 
   async rewrites() {
     return [
@@ -38,4 +42,8 @@ const config = {
   typescript: { ignoreBuildErrors: true },
 };
 
-export default config;
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
+export default bundleAnalyzer(config);

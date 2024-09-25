@@ -1,4 +1,4 @@
-import { TbShip } from "react-icons/tb";
+import { IconShip } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -11,7 +11,7 @@ export const DeploymentGettingStarted: React.FC<{ systemId: string }> = ({
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
         <div className="relative -ml-1 text-neutral-500">
-          <TbShip className="h-10 w-10" strokeWidth={0.5} />
+          <IconShip className="h-10 w-10" strokeWidth={0.5} />
         </div>
         <div className="font-semibold">Deployments</div>
         <div className="prose prose-invert text-sm text-muted-foreground">

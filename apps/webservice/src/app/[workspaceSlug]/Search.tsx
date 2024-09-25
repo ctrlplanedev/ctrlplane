@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { TbBolt, TbTag } from "react-icons/tb";
+import { IconBolt, IconTag } from "@tabler/icons-react";
 
 import {
   Command,
@@ -66,10 +66,10 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
                 <>
                   <CommandGroup heading="Actions">
                     <CommandItem className="text-sm">
-                      <TbBolt className="mr-2 w-4" /> {search} Trigger Runbook
+                      <IconBolt className="mr-2 w-4" /> {search} Trigger Runbook
                     </CommandItem>
                     <CommandItem>
-                      <TbTag className="mr-2 w-4" />
+                      <IconTag className="mr-2 w-4" />
                       New Release
                     </CommandItem>
                   </CommandGroup>

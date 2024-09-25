@@ -1,5 +1,10 @@
 import type * as schema from "@ctrlplane/db/schema";
-import { TbCircleCheck, TbCircleX, TbClock, TbLoader2 } from "react-icons/tb";
+import {
+  IconCircleCheck,
+  IconCircleX,
+  IconClock,
+  IconLoader2,
+} from "@tabler/icons-react";
 
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -7,17 +12,17 @@ export const JobTableStatusIcon: React.FC<{ status?: schema.JobStatus }> = ({
   status,
 }) => {
   if (status === JobStatus.Completed)
-    return <TbCircleCheck className="text-green-400" />;
+    return <IconCircleCheck className="text-green-400" />;
   if (status === JobStatus.Failure || status === JobStatus.InvalidJobAgent)
-    return <TbCircleX className="text-red-400" />;
+    return <IconCircleX className="text-red-400" />;
   if (status === JobStatus.Pending)
-    return <TbClock className="text-neutral-400" />;
+    return <IconClock className="text-neutral-400" />;
   if (status === JobStatus.InProgress)
     return (
       <div className="animate-spin rounded-full text-blue-400">
-        <TbLoader2 />
+        <IconLoader2 />
       </div>
     );
 
-  return <TbClock className="text-neutral-400" />;
+  return <IconClock className="text-neutral-400" />;
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { TbBolt } from "react-icons/tb";
+import { IconBolt } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -76,7 +76,7 @@ export default function ConfigureJobAgentPage({
       <ResizablePanel>
         <div className="container my-8 max-w-3xl space-y-4">
           <h1 className="mb-10 flex flex-grow items-center gap-3 text-2xl font-semibold">
-            <TbBolt />
+            <IconBolt className="h-4 w-4" />
             Configure Agent
           </h1>
 

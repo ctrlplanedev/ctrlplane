@@ -3,7 +3,7 @@
 import type { GithubUser } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
-import { TbBulb } from "react-icons/tb";
+import { IconBulb } from "@tabler/icons-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
@@ -62,7 +62,7 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
 
             {validOrgsToAdd.length > 0 && (
               <Alert variant="secondary">
-                <TbBulb className="h-5 w-5" />
+                <IconBulb className="h-5 w-5" />
                 <AlertTitle>Connect an organization</AlertTitle>
                 <AlertDescription>
                   You have two options for connecting an organization:

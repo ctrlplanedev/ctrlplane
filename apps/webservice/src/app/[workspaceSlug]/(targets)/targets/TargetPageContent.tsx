@@ -6,9 +6,9 @@ import type {
   NameLikeCondition,
 } from "@ctrlplane/validators/targets";
 import React, { Fragment } from "react";
+import { IconCategory, IconTag, IconTarget, IconX } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
-import { TbCategory, TbTag, TbTarget, TbX } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -79,7 +79,7 @@ export const TargetPageContent: React.FC<{
                         removeFilter(idx);
                       }}
                     >
-                      <TbX />
+                      <IconX />
                     </Button>
                   </Badge>
                 </MetadataFilterDialog>
@@ -122,7 +122,7 @@ export const TargetPageContent: React.FC<{
                         removeFilter(idx);
                       }}
                     >
-                      <TbX />
+                      <IconX />
                     </Button>
                   </Badge>
                 </KindFilterDialog>
@@ -163,7 +163,7 @@ export const TargetPageContent: React.FC<{
                         removeFilter(idx);
                       }}
                     >
-                      <TbX />
+                      <IconX />
                     </Button>
                   </Badge>
                 </NameFilterDialog>
@@ -177,13 +177,13 @@ export const TargetPageContent: React.FC<{
             className="min-w-[200px] bg-neutral-900 p-1"
           >
             <NameFilterDialog>
-              <TbTarget /> Name
+              <IconTarget className="h-4 w-4" /> Name
             </NameFilterDialog>
             <KindFilterDialog kinds={kinds}>
-              <TbCategory /> Kind
+              <IconCategory /> Kind
             </KindFilterDialog>
             <MetadataFilterDialog workspaceId={workspace.id}>
-              <TbTag /> Metadata
+              <IconTag /> Metadata
             </MetadataFilterDialog>
           </FilterDropdown>
         </div>

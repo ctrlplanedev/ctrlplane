@@ -8,8 +8,8 @@ import type {
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { IconCircleCheck, IconClock, IconLoader2 } from "@tabler/icons-react";
 import { format } from "date-fns";
-import { TbCircleCheck, TbClock, TbLoader2 } from "react-icons/tb";
 
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -19,21 +19,21 @@ const ReleaseIcon: React.FC<{
   if (job?.status === JobStatus.Pending)
     return (
       <div className="rounded-full bg-blue-400 p-1 dark:text-black">
-        <TbClock strokeWidth={2} />
+        <IconClock strokeWidth={2} />
       </div>
     );
 
   if (job?.status === JobStatus.InProgress)
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
-        <TbLoader2 strokeWidth={2} />
+        <IconLoader2 strokeWidth={2} />
       </div>
     );
 
   if (job?.status === JobStatus.Completed)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
-        <TbCircleCheck strokeWidth={2} />
+        <IconCircleCheck strokeWidth={2} />
       </div>
     );
 

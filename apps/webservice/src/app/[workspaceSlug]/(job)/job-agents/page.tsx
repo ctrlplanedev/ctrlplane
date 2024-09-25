@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { TbFilter } from "react-icons/tb";
+import { IconFilter } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { ResizablePanel, ResizablePanelGroup } from "@ctrlplane/ui/resizable";
@@ -29,7 +29,7 @@ export default async function JobAgentsPage({ params }: PageProps) {
     <>
       <div className="border-b p-1 filter">
         <Button variant="ghost" size="sm" className="flex gap-1">
-          <TbFilter /> Filter
+          <IconFilter /> Filter
         </Button>
       </div>
 

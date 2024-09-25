@@ -8,7 +8,7 @@ import type {
   RegexCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
-import { TbX } from "react-icons/tb";
+import { IconX } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
@@ -144,7 +144,7 @@ export const MetadataFilterInput: React.FC<{
           className="h-6 w-6"
           onClick={onRemove}
         >
-          <TbX />
+          <IconX />
         </Button>
       )}
     </div>
