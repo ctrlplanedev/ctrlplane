@@ -27069,6 +27069,9 @@ function GetAgentRunningJob200ResponseInnerToJSON(value) {
 function instanceOfGetJob200ResponseDeployment(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("slug" in value) || value["slug"] === void 0) return false;
+  if (!("systemId" in value) || value["systemId"] === void 0) return false;
+  if (!("jobAgentId" in value) || value["jobAgentId"] === void 0)
+    return false;
   return true;
 }
 function GetJob200ResponseDeploymentFromJSON(json) {
@@ -27081,7 +27084,9 @@ function GetJob200ResponseDeploymentFromJSONTyped(json, ignoreDiscriminator) {
   return {
     id: json["id"],
     name: json["name"] == null ? void 0 : json["name"],
-    slug: json["slug"]
+    slug: json["slug"],
+    systemId: json["systemId"],
+    jobAgentId: json["jobAgentId"]
   };
 }
 function GetJob200ResponseDeploymentToJSON(value) {
@@ -27091,7 +27096,40 @@ function GetJob200ResponseDeploymentToJSON(value) {
   return {
     id: value["id"],
     name: value["name"],
-    slug: value["slug"]
+    slug: value["slug"],
+    systemId: value["systemId"],
+    jobAgentId: value["jobAgentId"]
+  };
+}
+
+// src/models/GetJob200ResponseEnvironment.ts
+function instanceOfGetJob200ResponseEnvironment(value) {
+  if (!("id" in value) || value["id"] === void 0) return false;
+  if (!("name" in value) || value["name"] === void 0) return false;
+  if (!("systemId" in value) || value["systemId"] === void 0) return false;
+  return true;
+}
+function GetJob200ResponseEnvironmentFromJSON(json) {
+  return GetJob200ResponseEnvironmentFromJSONTyped(json, false);
+}
+function GetJob200ResponseEnvironmentFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    id: json["id"],
+    name: json["name"],
+    systemId: json["systemId"]
+  };
+}
+function GetJob200ResponseEnvironmentToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    id: value["id"],
+    name: value["name"],
+    systemId: value["systemId"]
   };
 }
 
@@ -27127,6 +27165,9 @@ function GetJob200ResponseReleaseToJSON(value) {
 function instanceOfGetJob200ResponseRunbook(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("name" in value) || value["name"] === void 0) return false;
+  if (!("systemId" in value) || value["systemId"] === void 0) return false;
+  if (!("jobAgentId" in value) || value["jobAgentId"] === void 0)
+    return false;
   return true;
 }
 function GetJob200ResponseRunbookFromJSON(json) {
@@ -27138,7 +27179,9 @@ function GetJob200ResponseRunbookFromJSONTyped(json, ignoreDiscriminator) {
   }
   return {
     id: json["id"],
-    name: json["name"]
+    name: json["name"],
+    systemId: json["systemId"],
+    jobAgentId: json["jobAgentId"]
   };
 }
 function GetJob200ResponseRunbookToJSON(value) {
@@ -27147,18 +27190,22 @@ function GetJob200ResponseRunbookToJSON(value) {
   }
   return {
     id: value["id"],
-    name: value["name"]
+    name: value["name"],
+    systemId: value["systemId"],
+    jobAgentId: value["jobAgentId"]
   };
 }
 
 // src/models/GetJob200ResponseTarget.ts
 function instanceOfGetJob200ResponseTarget(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
+  if (!("name" in value) || value["name"] === void 0) return false;
+  if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("kind" in value) || value["kind"] === void 0) return false;
   if (!("identifier" in value) || value["identifier"] === void 0)
     return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("kind" in value) || value["kind"] === void 0) return false;
-  if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
+    return false;
   if (!("config" in value) || value["config"] === void 0) return false;
   return true;
 }
@@ -27171,10 +27218,11 @@ function GetJob200ResponseTargetFromJSONTyped(json, ignoreDiscriminator) {
   }
   return {
     id: json["id"],
-    identifier: json["identifier"],
     name: json["name"],
-    kind: json["kind"],
     version: json["version"],
+    kind: json["kind"],
+    identifier: json["identifier"],
+    workspaceId: json["workspaceId"],
     config: json["config"]
   };
 }
@@ -27184,10 +27232,11 @@ function GetJob200ResponseTargetToJSON(value) {
   }
   return {
     id: value["id"],
-    identifier: value["identifier"],
     name: value["name"],
-    kind: value["kind"],
     version: value["version"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    workspaceId: value["workspaceId"],
     config: value["config"]
   };
 }
@@ -27225,7 +27274,7 @@ function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     deployment: json["deployment"] == null ? void 0 : GetJob200ResponseDeploymentFromJSON(json["deployment"]),
     runbook: json["runbook"] == null ? void 0 : GetJob200ResponseRunbookFromJSON(json["runbook"]),
     target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
-    environment: json["environment"] == null ? void 0 : GetJob200ResponseRunbookFromJSON(json["environment"]),
+    environment: json["environment"] == null ? void 0 : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
     variables: json["variables"] == null ? void 0 : json["variables"],
     config: json["config"]
   };
@@ -27241,7 +27290,7 @@ function GetJob200ResponseToJSON(value) {
     deployment: GetJob200ResponseDeploymentToJSON(value["deployment"]),
     runbook: GetJob200ResponseRunbookToJSON(value["runbook"]),
     target: GetJob200ResponseTargetToJSON(value["target"]),
-    environment: GetJob200ResponseRunbookToJSON(value["environment"]),
+    environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
     variables: value["variables"],
     config: value["config"]
   };
@@ -27874,38 +27923,48 @@ const config = new Configuration({
     apiKey: core.getInput("api_key", { required: true }),
 });
 const api = new DefaultApi(config);
+const setOutputAndLog = (key, value) => {
+    core.setOutput(key, value);
+    core.info(`${key}: ${value}`);
+};
 const setOutputsRecursively = (prefix, obj) => {
     if (typeof obj === "object" && obj !== null) {
         for (const [key, value] of Object.entries(obj)) {
-            const newPrefix = prefix ? `${prefix}_${key}` : key;
-            if (typeof value === "object" && value !== null) {
+            const sanitizedKey = key.split(".").join("_");
+            const newPrefix = prefix ? `${prefix}_${sanitizedKey}` : sanitizedKey;
+            if (typeof value === "object" && value !== null)
                 setOutputsRecursively(newPrefix, value);
-            }
-            else {
-                core.info(`${newPrefix}: ${String(value)}`);
-                core.setOutput(newPrefix, value);
-            }
+            setOutputAndLog(newPrefix, value);
         }
+        return;
     }
-    else {
-        core.info(`${prefix}: ${String(obj)}`);
-        core.setOutput(prefix, obj);
-    }
+    setOutputAndLog(prefix, obj);
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
     await api
         .getJob({ jobId })
         .then((response) => {
-        const { variables, target, release, environment, config } = response;
-        core.setOutput("target_name", target?.name);
-        core.setOutput("environment_name", environment?.name);
-        core.setOutput("release_version", release?.version);
-        core.info(`Target name: ${target?.name}`);
-        core.info(`Environment name: ${environment?.name}`);
-        core.info(`Release version: ${release?.version}`);
-        setOutputsRecursively("config", config);
-        setOutputsRecursively("variable", variables ?? {});
+        const { variables, target, release, environment, runbook, deployment } = response;
+        setOutputAndLog("target_id", target?.id);
+        setOutputAndLog("target_name", target?.name);
+        setOutputAndLog("target_kind", target?.kind);
+        setOutputAndLog("target_version", target?.version);
+        setOutputAndLog("target_identifier", target?.identifier);
+        setOutputAndLog("workspace_id", target?.workspaceId);
+        setOutputAndLog("environment_id", environment?.id);
+        setOutputAndLog("environment_name", environment?.name);
+        setOutputAndLog("release_id", release?.id);
+        setOutputAndLog("release_version", release?.version);
+        setOutputAndLog("deployment_id", deployment?.id);
+        setOutputAndLog("deployment_name", deployment?.name);
+        setOutputAndLog("deployment_slug", deployment?.slug);
+        setOutputAndLog("runbook_id", runbook?.id);
+        setOutputAndLog("runbook_name", runbook?.name);
+        setOutputAndLog("system_id", deployment?.systemId ?? runbook?.systemId ?? environment?.systemId);
+        setOutputAndLog("agent_id", deployment?.jobAgentId ?? runbook?.jobAgentId);
+        setOutputsRecursively("target_config", target?.config);
+        setOutputsRecursively("variables", variables ?? {});
     })
         .catch((error) => {
         core.setFailed(`Action failed: ${error.message}`);

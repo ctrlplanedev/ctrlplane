@@ -38,6 +38,18 @@ export interface GetJob200ResponseDeployment {
    * @memberof GetJob200ResponseDeployment
    */
   slug: string;
+  /**
+   *
+   * @type {string}
+   * @memberof GetJob200ResponseDeployment
+   */
+  systemId: string;
+  /**
+   *
+   * @type {string}
+   * @memberof GetJob200ResponseDeployment
+   */
+  jobAgentId: string;
 }
 
 /**
@@ -48,6 +60,9 @@ export function instanceOfGetJob200ResponseDeployment(
 ): value is GetJob200ResponseDeployment {
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("slug" in value) || value["slug"] === undefined) return false;
+  if (!("systemId" in value) || value["systemId"] === undefined) return false;
+  if (!("jobAgentId" in value) || value["jobAgentId"] === undefined)
+    return false;
   return true;
 }
 
@@ -68,6 +83,8 @@ export function GetJob200ResponseDeploymentFromJSONTyped(
     id: json["id"],
     name: json["name"] == null ? undefined : json["name"],
     slug: json["slug"],
+    systemId: json["systemId"],
+    jobAgentId: json["jobAgentId"],
   };
 }
 
@@ -81,5 +98,7 @@ export function GetJob200ResponseDeploymentToJSON(
     id: value["id"],
     name: value["name"],
     slug: value["slug"],
+    systemId: value["systemId"],
+    jobAgentId: value["jobAgentId"],
   };
 }

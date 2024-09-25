@@ -31,13 +31,13 @@ export interface GetJob200ResponseTarget {
    * @type {string}
    * @memberof GetJob200ResponseTarget
    */
-  identifier: string;
+  name: string;
   /**
    *
    * @type {string}
    * @memberof GetJob200ResponseTarget
    */
-  name: string;
+  version: string;
   /**
    *
    * @type {string}
@@ -49,7 +49,13 @@ export interface GetJob200ResponseTarget {
    * @type {string}
    * @memberof GetJob200ResponseTarget
    */
-  version: string;
+  identifier: string;
+  /**
+   *
+   * @type {string}
+   * @memberof GetJob200ResponseTarget
+   */
+  workspaceId: string;
   /**
    *
    * @type {object}
@@ -65,11 +71,13 @@ export function instanceOfGetJob200ResponseTarget(
   value: object,
 ): value is GetJob200ResponseTarget {
   if (!("id" in value) || value["id"] === undefined) return false;
+  if (!("name" in value) || value["name"] === undefined) return false;
+  if (!("version" in value) || value["version"] === undefined) return false;
+  if (!("kind" in value) || value["kind"] === undefined) return false;
   if (!("identifier" in value) || value["identifier"] === undefined)
     return false;
-  if (!("name" in value) || value["name"] === undefined) return false;
-  if (!("kind" in value) || value["kind"] === undefined) return false;
-  if (!("version" in value) || value["version"] === undefined) return false;
+  if (!("workspaceId" in value) || value["workspaceId"] === undefined)
+    return false;
   if (!("config" in value) || value["config"] === undefined) return false;
   return true;
 }
@@ -89,10 +97,11 @@ export function GetJob200ResponseTargetFromJSONTyped(
   }
   return {
     id: json["id"],
-    identifier: json["identifier"],
     name: json["name"],
-    kind: json["kind"],
     version: json["version"],
+    kind: json["kind"],
+    identifier: json["identifier"],
+    workspaceId: json["workspaceId"],
     config: json["config"],
   };
 }
@@ -105,10 +114,11 @@ export function GetJob200ResponseTargetToJSON(
   }
   return {
     id: value["id"],
-    identifier: value["identifier"],
     name: value["name"],
-    kind: value["kind"],
     version: value["version"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    workspaceId: value["workspaceId"],
     config: value["config"],
   };
 }

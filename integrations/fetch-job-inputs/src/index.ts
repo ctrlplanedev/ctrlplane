@@ -5,59 +5,72 @@ import { Configuration, DefaultApi } from "@ctrlplane/node-sdk";
 const config = new Configuration({
   basePath: core.getInput("api_url", { required: true }) + "/api",
   apiKey: core.getInput("api_key", { required: true }),
-  // basePath: "http://localhost:3000/api",
-  // apiKey:
-  //   "f5116107b520fb09.fa1421041eaeee226a384cc840b39773d89154ed48b4903380fc100edbab273d",
 });
 
 const api = new DefaultApi(config);
+
+const setOutputAndLog = (key: string, value: any) => {
+  core.setOutput(key, value);
+  core.info(`${key}: ${value}`);
+};
 
 const setOutputsRecursively = (prefix: string, obj: any) => {
   if (typeof obj === "object" && obj !== null) {
     for (const [key, value] of Object.entries(obj)) {
       const sanitizedKey = key.split(".").join("_");
       const newPrefix = prefix ? `${prefix}_${sanitizedKey}` : sanitizedKey;
-      if (typeof value === "object" && value !== null) {
+      if (typeof value === "object" && value !== null)
         setOutputsRecursively(newPrefix, value);
-      } else {
-        core.info(`${newPrefix}: ${String(value)}`);
-        core.setOutput(newPrefix, value);
-        console.log(`${newPrefix}: ${String(value)}`);
-      }
+      setOutputAndLog(newPrefix, value);
     }
-  } else {
-    core.info(`${prefix}: ${String(obj)}`);
-    core.setOutput(prefix, obj);
-    console.log(`${prefix}: ${String(obj)}`);
+    return;
   }
+  setOutputAndLog(prefix, obj);
 };
 
 async function run() {
   const jobId = core.getInput("job_id", { required: true });
-  // const jobId = "3953a1ea-3a41-4515-9fa5-809bc03cb51d";
   await api
     .getJob({ jobId })
     .then((response) => {
-      const { variables, target, release, environment, config } = response;
+      const { variables, target, release, environment, runbook, deployment } =
+        response;
 
-      core.setOutput("target_name", target?.name);
-      core.setOutput("environment_name", environment?.name);
-      core.setOutput("release_version", release?.version);
+      setOutputAndLog("target_id", target?.id);
+      setOutputAndLog("target_name", target?.name);
+      setOutputAndLog("target_kind", target?.kind);
+      setOutputAndLog("target_version", target?.version);
+      setOutputAndLog("target_identifier", target?.identifier);
 
-      core.info(`Target name: ${target?.name}`);
-      core.info(`Environment name: ${environment?.name}`);
-      core.info(`Release version: ${release?.version}`);
+      setOutputAndLog("workspace_id", target?.workspaceId);
 
-      // console.log(`Target name: ${target?.name}`);
-      // console.log(`Environment name: ${environment?.name}`);
-      // console.log(`Release version: ${release?.version}`);
+      setOutputAndLog("environment_id", environment?.id);
+      setOutputAndLog("environment_name", environment?.name);
 
-      setOutputsRecursively("config", config);
-      setOutputsRecursively("variable", variables ?? {});
+      setOutputAndLog("release_id", release?.id);
+      setOutputAndLog("release_version", release?.version);
+
+      setOutputAndLog("deployment_id", deployment?.id);
+      setOutputAndLog("deployment_name", deployment?.name);
+      setOutputAndLog("deployment_slug", deployment?.slug);
+
+      setOutputAndLog("runbook_id", runbook?.id);
+      setOutputAndLog("runbook_name", runbook?.name);
+
+      setOutputAndLog(
+        "system_id",
+        deployment?.systemId ?? runbook?.systemId ?? environment?.systemId,
+      );
+      setOutputAndLog(
+        "agent_id",
+        deployment?.jobAgentId ?? runbook?.jobAgentId,
+      );
+
+      setOutputsRecursively("target_config", target?.config);
+      setOutputsRecursively("variables", variables ?? {});
     })
     .catch((error) => {
       core.setFailed(`Action failed: ${error.message}`);
-      // console.error(`Action failed: ${error.message}`);
     });
 }
 

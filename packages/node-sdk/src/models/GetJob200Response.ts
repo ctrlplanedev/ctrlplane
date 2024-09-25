@@ -13,6 +13,7 @@
  */
 
 import type { GetJob200ResponseDeployment } from "./GetJob200ResponseDeployment";
+import type { GetJob200ResponseEnvironment } from "./GetJob200ResponseEnvironment";
 import type { GetJob200ResponseRelease } from "./GetJob200ResponseRelease";
 import type { GetJob200ResponseRunbook } from "./GetJob200ResponseRunbook";
 import type { GetJob200ResponseTarget } from "./GetJob200ResponseTarget";
@@ -22,6 +23,11 @@ import {
   GetJob200ResponseDeploymentFromJSONTyped,
   GetJob200ResponseDeploymentToJSON,
 } from "./GetJob200ResponseDeployment";
+import {
+  GetJob200ResponseEnvironmentFromJSON,
+  GetJob200ResponseEnvironmentFromJSONTyped,
+  GetJob200ResponseEnvironmentToJSON,
+} from "./GetJob200ResponseEnvironment";
 import {
   GetJob200ResponseReleaseFromJSON,
   GetJob200ResponseReleaseFromJSONTyped,
@@ -82,10 +88,10 @@ export interface GetJob200Response {
   target?: GetJob200ResponseTarget;
   /**
    *
-   * @type {GetJob200ResponseRunbook}
+   * @type {GetJob200ResponseEnvironment}
    * @memberof GetJob200Response
    */
-  environment?: GetJob200ResponseRunbook;
+  environment?: GetJob200ResponseEnvironment;
   /**
    *
    * @type {object}
@@ -163,7 +169,7 @@ export function GetJob200ResponseFromJSONTyped(
     environment:
       json["environment"] == null
         ? undefined
-        : GetJob200ResponseRunbookFromJSON(json["environment"]),
+        : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
     variables: json["variables"] == null ? undefined : json["variables"],
     config: json["config"],
   };
@@ -180,7 +186,7 @@ export function GetJob200ResponseToJSON(value?: GetJob200Response | null): any {
     deployment: GetJob200ResponseDeploymentToJSON(value["deployment"]),
     runbook: GetJob200ResponseRunbookToJSON(value["runbook"]),
     target: GetJob200ResponseTargetToJSON(value["target"]),
-    environment: GetJob200ResponseRunbookToJSON(value["environment"]),
+    environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
     variables: value["variables"],
     config: value["config"],
   };
