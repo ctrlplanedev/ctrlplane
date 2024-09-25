@@ -17,9 +17,9 @@ async function run() {
     .then((response) => {
       const { variables, target, release, environment, config } = response;
 
-      core.setOutput("target_name", target?.name);
-      core.setOutput("environment_name", environment?.name);
-      core.setOutput("release_version", release?.version);
+      core.setOutput("target.name", target?.name);
+      core.setOutput("environment.name", environment?.name);
+      core.setOutput("release.version", release?.version);
 
       for (const [key, value] of Object.entries(config ?? {}))
         core.setOutput(`config.${key}`, value);
