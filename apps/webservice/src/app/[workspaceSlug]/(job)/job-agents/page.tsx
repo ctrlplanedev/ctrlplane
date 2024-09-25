@@ -29,7 +29,7 @@ export default async function JobAgentsPage({ params }: PageProps) {
     <>
       <div className="border-b p-1 filter">
         <Button variant="ghost" size="sm" className="flex gap-1">
-          <IconFilter /> Filter
+          <IconFilter className="h-4 w-4" /> Filter
         </Button>
       </div>
 
