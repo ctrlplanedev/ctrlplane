@@ -1,4 +1,4 @@
-import { omit } from "lodash-es";
+import { omit } from "lodash";
 import { z } from "zod";
 
 import { can, generateApiKey, hash } from "@ctrlplane/auth/utils";

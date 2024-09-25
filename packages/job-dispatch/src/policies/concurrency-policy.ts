@@ -1,4 +1,4 @@
-import { chain } from "lodash-es";
+import _ from "lodash";
 
 import { and, eq, inArray, ne, notInArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
@@ -71,7 +71,7 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
       ),
     )
     .then((data) =>
-      chain(data)
+      _.chain(data)
         .groupBy((j) => [
           j.release_job_trigger.releaseId,
           j.release_job_trigger.environmentId,

@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import { chain, isEqual } from "lodash-es";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -263,7 +263,7 @@ const policyRouter = createTRPCRouter({
         )
         .where(eq(environmentPolicy.systemId, input))
         .then((policies) =>
-          chain(policies)
+          _.chain(policies)
             .groupBy("environment_policy.id")
             .map((p) => ({
               ...p[0]!.environment_policy,
@@ -526,7 +526,7 @@ export const environmentRouter = createTRPCRouter({
       const { targetFilter } = input.data;
       const isUpdatingTargetFilter = targetFilter != null;
       if (isUpdatingTargetFilter) {
-        const hasTargetFiltersChanged = !isEqual(
+        const hasTargetFiltersChanged = !_.isEqual(
           oldEnv.environment.targetFilter,
           targetFilter,
         );

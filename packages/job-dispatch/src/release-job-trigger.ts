@@ -4,7 +4,7 @@ import type {
   ReleaseJobTriggerInsert,
   ReleaseJobTriggerType,
 } from "@ctrlplane/db/schema";
-import { merge } from "lodash-es";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNotNull, isNull, sql } from "@ctrlplane/db";
@@ -186,7 +186,7 @@ class ReleaseJobTriggerBuilder {
         if (!release) return null;
         return {
           jobAgentId: release.job_agent.id,
-          jobAgentConfig: merge(
+          jobAgentConfig: _.merge(
             release.job_agent.config,
             release.deployment.jobAgentConfig,
           ),
