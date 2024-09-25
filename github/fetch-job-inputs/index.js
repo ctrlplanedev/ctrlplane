@@ -24831,6 +24831,14 @@ module.exports = {
 
 /***/ }),
 
+/***/ 1984:
+/***/ ((module) => {
+
+module.exports = eval("require")("@ctrlplane/logger");
+
+
+/***/ }),
+
 /***/ 2613:
 /***/ ((module) => {
 
@@ -26682,6 +26690,8 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ../../node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(7184);
+// EXTERNAL MODULE: ../../node_modules/@vercel/ncc/dist/ncc/@@notfound.js?@ctrlplane/logger
+var logger = __nccwpck_require__(1984);
 ;// CONCATENATED MODULE: ../../packages/node-sdk/dist/index.js
 // src/runtime.ts
 var BASE_PATH = "http://localhost".replace(/\/+$/, "");
@@ -27869,6 +27879,7 @@ var DefaultApi = class extends BaseAPI {
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
+
 const config = new Configuration({
     basePath: core.getInput("api_url", { required: true }) + "/api",
     apiKey: core.getInput("api_key", { required: true }),
@@ -27883,12 +27894,13 @@ async function run() {
         core.setOutput("target_name", target?.name);
         core.setOutput("environment_name", environment?.name);
         core.setOutput("release_version", release?.version);
-        for (const [key, value] of Object.entries(config ?? {})) {
-            console.log("config", key, value);
+        logger.logger.info("config", config);
+        for (const [key, value] of Object.entries(config)) {
+            logger.logger.info("config", key, value);
             core.setOutput(`config_${key}`, value);
         }
         for (const [key, value] of Object.entries(variables ?? {})) {
-            console.log("variable", key, value);
+            logger.logger.info("variable", key, value);
             core.setOutput(`variable_${key}`, value);
         }
     })
