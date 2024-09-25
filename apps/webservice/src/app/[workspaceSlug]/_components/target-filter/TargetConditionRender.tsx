@@ -5,15 +5,15 @@ import type {
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
-import { capitalCase } from "change-case";
 import {
-  TbChevronDown,
-  TbCopy,
-  TbDots,
-  TbPlus,
-  TbRefresh,
-  TbTrash,
-} from "react-icons/tb";
+  IconChevronDown,
+  IconCopy,
+  IconDots,
+  IconPlus,
+  IconRefresh,
+  IconTrash,
+} from "@tabler/icons-react";
+import { capitalCase } from "change-case";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -152,7 +152,7 @@ const ComparisonConditionRender: React.FC<
                   className="col-span-1 h-6 w-6 text-muted-foreground"
                   // onClick={() => handleRemoveCondition(index)}
                 >
-                  <TbDots />
+                  <IconDots />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -160,14 +160,14 @@ const ComparisonConditionRender: React.FC<
                   onClick={() => handleRemoveCondition(index)}
                   className="flex items-center gap-2"
                 >
-                  <TbTrash className="text-red-400" />
+                  <IconTrash className="text-red-400" />
                   Remove
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => handleAddCondition(condition)}
                   className="flex items-center gap-2"
                 >
-                  <TbCopy />
+                  <IconCopy />
                   Duplicate
                 </DropdownMenuItem>
                 {depth < 2 && (
@@ -175,7 +175,7 @@ const ComparisonConditionRender: React.FC<
                     onClick={() => handleConvertToComparison(index)}
                     className="flex items-center gap-2"
                   >
-                    <TbRefresh />
+                    <IconRefresh />
                     Turn into group
                   </DropdownMenuItem>
                 )}
@@ -192,7 +192,7 @@ const ComparisonConditionRender: React.FC<
             variant="outline"
             className="flex items-center gap-1 px-2 text-muted-foreground"
           >
-            <TbPlus /> Add Condition <TbChevronDown />
+            <IconPlus /> Add Condition <IconChevronDown />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="text-muted-foreground">
