@@ -27883,6 +27883,11 @@ async function run() {
         core.setOutput("target.name", target?.name);
         core.setOutput("environment.name", environment?.name);
         core.setOutput("release.version", release?.version);
+        console.log("job:", jobId);
+        console.log("target name:", target?.name);
+        console.log("release:", release);
+        console.log("config:", config);
+        console.log("variables:", variables);
         for (const [key, value] of Object.entries(config ?? {}))
             core.setOutput(`config.${key}`, value);
         for (const [key, value] of Object.entries(variables ?? {}))
