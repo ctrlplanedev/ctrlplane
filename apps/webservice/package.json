@@ -33,6 +33,7 @@
     "@opentelemetry/instrumentation": "^0.53.0",
     "@opentelemetry/instrumentation-pg": "^0.44.0",
     "@opentelemetry/sdk-logs": "^0.53.0",
+    "@opentelemetry/sdk-trace-node": "^1.26.0",
     "@t3-oss/env-nextjs": "catalog:",
     "@tabler/icons-react": "^3.17.0",
     "@tailwindcss/typography": "^0.5.13",
