@@ -62,7 +62,7 @@ export const FilterDropdown = <T extends Filter<string, any>>({
             size="sm"
             className="flex h-7 items-center gap-1"
           >
-            <IconFilter /> Filter
+            <IconFilter className="h-4 w-4" /> Filter
           </Button>
         ) : (
           <Button
@@ -70,7 +70,7 @@ export const FilterDropdown = <T extends Filter<string, any>>({
             size="icon"
             className="flex h-7 w-7 items-center gap-1 text-xs"
           >
-            <IconFilter />
+            <IconFilter className="h-4 w-4" />
           </Button>
         )}
       </DropdownMenuTrigger>

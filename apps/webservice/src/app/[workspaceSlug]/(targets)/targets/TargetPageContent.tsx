@@ -8,7 +8,7 @@ import type {
 import React, { Fragment } from "react";
 import { IconCategory, IconTag, IconTarget, IconX } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
-import _ from "lodash";
+import range from "lodash/range";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -180,10 +180,10 @@ export const TargetPageContent: React.FC<{
               <IconTarget className="h-4 w-4" /> Name
             </NameFilterDialog>
             <KindFilterDialog kinds={kinds}>
-              <IconCategory /> Kind
+              <IconCategory className="h-4 w-4" /> Kind
             </KindFilterDialog>
             <MetadataFilterDialog workspaceId={workspace.id}>
-              <IconTag /> Metadata
+              <IconTag className="h-4 w-4" /> Metadata
             </MetadataFilterDialog>
           </FilterDropdown>
         </div>
@@ -203,7 +203,7 @@ export const TargetPageContent: React.FC<{
 
       {targets.isLoading && (
         <div className="space-y-2 p-4">
-          {_.range(10).map((i) => (
+          {range(10).map((i) => (
             <Skeleton
               key={i}
               className="h-9 w-full"
