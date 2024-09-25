@@ -39,13 +39,13 @@ const PolicyNode: React.FC<NodeProps> = ({ id, data }) => {
         onMouseDownCapture={() => setSelectedNodeId(id)}
       >
         <div className={cn("flex items-center justify-center gap-1")}>
-          <IconCircleCheck className="text-teal-400" />
-          {isRegex && <IconRegex className="text-pink-400" />}
-          {isSemver && <IconVersions className="text-pink-500" />}
+          <IconCircleCheck className="h-4  w-4 text-teal-400" />
+          {isRegex && <IconRegex className="h-4  w-4 text-pink-400" />}
+          {isSemver && <IconVersions className="h-4  w-4 text-pink-500" />}
           {isManual ? (
-            <IconUser className="text-red-400" />
+            <IconUser className="h-4 w-4 text-red-400" />
           ) : (
-            <IconBolt className="text-yellow-400" />
+            <IconBolt className="h-4  w-4 text-yellow-400" />
           )}
         </div>
         {isSelected && !hasChildren && (
@@ -101,7 +101,7 @@ const EnvironmentNode: React.FC<NodeProps> = (node) => {
       >
         <div className="flex items-center gap-2 border-b p-4">
           <div className="rounded-md bg-green-500/20 p-1">
-            <IconPlant className="text-green-500" />
+            <IconPlant className="h-4 w-4 text-green-500" />
           </div>
           {data.label}
         </div>
@@ -149,7 +149,7 @@ const TriggerNode: React.FC<NodeProps> = ({ id, data }) => {
         onMouseDownCapture={() => setSelectedNodeId(id)}
       >
         <div className="absolute bottom-[100%] -z-10 flex items-center gap-1 rounded-t bg-blue-500/20 p-1 text-xs">
-          <IconTarget className="text-blue-500" /> Trigger
+          <IconTarget className="h-3 w-3 text-blue-500" /> Trigger
         </div>
         <div
           className={cn(
@@ -159,7 +159,7 @@ const TriggerNode: React.FC<NodeProps> = ({ id, data }) => {
         >
           <div className="flex items-center gap-2 border-b p-4">
             <div className="rounded-md bg-blue-500/20 p-1">
-              <IconBolt className="text-blue-500" />
+              <IconBolt className="h-4 w-4 text-blue-500" />
             </div>
             {data.label}
           </div>

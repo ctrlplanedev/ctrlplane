@@ -20,7 +20,7 @@ export default function AddTargetProviderPage() {
   return (
     <div className="container my-8 max-w-3xl space-y-4">
       <h1 className="mb-10 flex flex-grow items-center gap-3 text-2xl font-semibold">
-        <IconScan />
+        <IconScan className="h-4 w-4" />
         Add TargetProvider
       </h1>
       <div className="grid grid-cols-2 gap-2 px-4">
@@ -38,7 +38,11 @@ export default function AddTargetProviderPage() {
               targetProviderType == null && "border-blue-500",
             )}
           >
-            {targetProviderType == null ? <IconNumber1 /> : <IconCheck />}
+            {targetProviderType == null ? (
+              <IconNumber1 className="h-4 w-4" />
+            ) : (
+              <IconCheck className="h-4 w-4" />
+            )}
           </div>
           <div>Select target provider target provider</div>
         </div>

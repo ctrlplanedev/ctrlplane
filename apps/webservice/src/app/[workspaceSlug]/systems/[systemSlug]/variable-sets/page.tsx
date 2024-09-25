@@ -49,7 +49,7 @@ export default async function SystemValueSetsPage({
 
             <div className="container mx-auto max-w-4xl space-y-4 p-8">
               <Alert variant="secondary">
-                <IconInfoCircle />
+                <IconInfoCircle className="h-4 w-4" />
                 <AlertTitle>Variable conflicts and precedence</AlertTitle>
                 <AlertDescription>
                   Conflicts occur when one or more variables applied to a

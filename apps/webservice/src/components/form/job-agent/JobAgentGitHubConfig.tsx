@@ -81,7 +81,7 @@ export const JobAgentGitHubConfig: React.FC<{
             aria-expanded={repoOpen}
             className={cn("items-center justify-start gap-2 px-2", className)}
           >
-            <IconSelector />
+            <IconSelector className="h-4 w-4" />
             <span className="overflow-hidden text-ellipsis">
               {repo ?? "Select repo..."}
             </span>
@@ -118,7 +118,7 @@ export const JobAgentGitHubConfig: React.FC<{
             aria-expanded={workflowOpen}
             className={cn("items-center justify-start gap-2 px-2", className)}
           >
-            <IconSelector />
+            <IconSelector className="h-4 w-4" />
             <span className="overflow-hidden text-ellipsis">
               {workflow ?? "Select workflow..."}
             </span>

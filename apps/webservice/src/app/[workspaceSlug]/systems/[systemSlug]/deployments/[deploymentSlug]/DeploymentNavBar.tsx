@@ -58,7 +58,7 @@ export const DeploymentsNavBar: React.FC = () => {
             variant="secondary"
             className="flex shrink-0 items-center gap-2"
           >
-            <IconPlus />
+            <IconPlus className="h-4 w-4" />
             Add Varibale
           </Button>
         </CreateVaribaleDialog>

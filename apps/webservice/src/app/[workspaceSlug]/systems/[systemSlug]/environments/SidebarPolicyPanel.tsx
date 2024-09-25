@@ -203,7 +203,7 @@ export const SidebarPhasePanel: React.FC<{
     <Form {...form}>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
         <div className="flex-shrink-0 rounded bg-neutral-800 p-1 text-neutral-400">
-          <IconFilter />
+          <IconFilter className="h-4 w-4" />
         </div>
         <span className="flex-grow">Policy</span>
         <Button
@@ -211,7 +211,7 @@ export const SidebarPhasePanel: React.FC<{
           size="icon"
           className="flex-shrink-0 text-neutral-500 hover:text-white"
         >
-          <IconInfoCircle />
+          <IconInfoCircle className="h-4 w-4" />
         </Button>
       </h2>
       <Separator />
@@ -253,7 +253,7 @@ export const SidebarPhasePanel: React.FC<{
                       <RadioGroupItem value="automatic" />
                     </FormControl>
                     <FormLabel className="flex items-center gap-2 font-normal">
-                      <IconBolt className="text-neutral-400" />
+                      <IconBolt className="h-4 w-4 text-neutral-400" />
                       Automatic approval
                     </FormLabel>
                   </FormItem>

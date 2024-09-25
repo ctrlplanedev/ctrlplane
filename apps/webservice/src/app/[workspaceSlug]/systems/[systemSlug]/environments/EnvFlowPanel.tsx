@@ -100,7 +100,7 @@ const AddEnvironmentButton: React.FC<{
           variant="outline"
           disabled={create.isPending}
         >
-          <IconPlant /> Add Environment
+          <IconPlant className="h-4 w-4" /> Add Environment
         </Button>
       </DialogTrigger>
 
@@ -185,7 +185,7 @@ const NewPolicyButton: React.FC<{ systemId: string }> = ({ systemId }) => {
         window.requestAnimationFrame(() => setSelectedNodeId(policy.id));
       }}
     >
-      <IconFilter /> New Policy
+      <IconFilter className="h-4 w-4" /> New Policy
     </Button>
   );
 };
@@ -259,7 +259,7 @@ export const EnvFlowPanel: React.FC<{
         disabled={disabled}
         onClick={onDelete}
       >
-        <IconTrash />
+        <IconTrash className="h-4 w-4" />
       </Button>
       <DeleteNodeDialog />
     </div>

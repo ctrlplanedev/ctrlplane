@@ -50,7 +50,7 @@ export const SidebarMain: React.FC<{
               size="icon"
               className="h-6 w-6 flex-shrink-0"
             >
-              <IconSearch />
+              <IconSearch className="h-4 w-4" />
             </Button>
           </SearchDialog>
 

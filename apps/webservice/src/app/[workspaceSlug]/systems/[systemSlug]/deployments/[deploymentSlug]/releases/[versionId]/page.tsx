@@ -81,7 +81,7 @@ export default async function ReleasePage({
 
         <div className="shrink-0 border-b p-1">
           <Button variant="ghost" size="sm" className="flex gap-1">
-            <IconFilter /> Filter
+            <IconFilter className="h-4 w-4" /> Filter
           </Button>
         </div>
 

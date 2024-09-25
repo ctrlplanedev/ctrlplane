@@ -26,7 +26,7 @@ const config = {
 
   experimental: {
     instrumentationHook: true,
-    optimizePackageImports: ["bullmq"],
+    optimizePackageImports: ["bullmq", "googleapis"],
   },
 
   async rewrites() {

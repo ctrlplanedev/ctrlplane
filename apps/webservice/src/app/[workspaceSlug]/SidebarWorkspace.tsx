@@ -26,7 +26,7 @@ export const SidebarWorkspace: React.FC = () => {
       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground">
         Workspace
         <IconChevronRight
-          className={cn(open && "rotate-90", "transition-all")}
+          className={cn("h-3 w-3", open && "rotate-90", "transition-all")}
         />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-0.5 text-sm">
@@ -34,9 +34,9 @@ export const SidebarWorkspace: React.FC = () => {
           <IconDashboard className="text-muted-foreground" /> Dashboard
         </SidebarLink> */}
         <SidebarLink href={`/${workspaceSlug}/systems`} exact>
-          <IconCategory className="text-mutesd-foreground" /> Systems
+          <IconCategory className="h-4 w-4 text-muted-foreground" /> Systems
         </SidebarLink>
-        <div className="ml-3.5 border-l">
+        <div className="ml-[15px] border-l">
           <div className="ml-2 space-y-0.5">
             <SidebarLink href={`/${workspaceSlug}/dependencies`}>
               Dependencies
@@ -45,9 +45,9 @@ export const SidebarWorkspace: React.FC = () => {
         </div>
 
         <SidebarLink href={`/${workspaceSlug}/targets`} hideActiveEffect>
-          <IconTarget className="text-muted-foreground" /> Targets
+          <IconTarget className="h-4 w-4 text-muted-foreground" /> Targets
         </SidebarLink>
-        <div className="ml-3.5 border-l">
+        <div className="ml-[15px] border-l">
           <div className="ml-2 space-y-0.5">
             <SidebarLink href={`/${workspaceSlug}/targets`}>List</SidebarLink>
             <SidebarLink href={`/${workspaceSlug}/target-providers`}>
@@ -60,9 +60,9 @@ export const SidebarWorkspace: React.FC = () => {
         </div>
 
         <SidebarLink href={`/${workspaceSlug}/job-agents`} hideActiveEffect>
-          <IconRocket className="text-muted-foreground" /> Jobs
+          <IconRocket className="h-4 w-4 text-muted-foreground" /> Jobs
         </SidebarLink>
-        <div className="ml-3.5 border-l">
+        <div className="ml-[15px] border-l">
           <div className="ml-2 space-y-0.5">
             <SidebarLink href={`/${workspaceSlug}/job-agents`}>
               Agents

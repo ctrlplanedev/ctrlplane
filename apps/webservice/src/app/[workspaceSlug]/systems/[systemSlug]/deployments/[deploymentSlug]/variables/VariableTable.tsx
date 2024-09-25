@@ -78,7 +78,7 @@ export const VariableTable: React.FC<{
                           size="icon"
                           className="h-6 w-6 rounded-full text-muted-foreground"
                         >
-                          <IconPlus />
+                          <IconPlus className="h-4 w-4" />
                         </Button>
                       </AddVariableValueDialog>
                     </div>

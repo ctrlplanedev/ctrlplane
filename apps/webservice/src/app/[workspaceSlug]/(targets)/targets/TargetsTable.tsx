@@ -87,15 +87,15 @@ const columns: ColumnDef<Target>[] = [
       return (
         <div className="flex items-center gap-2 px-2 py-1">
           {isLocked ? (
-            <IconLock className="shrink-0 text-red-300" />
+            <IconLock className="h-4 w-4 shrink-0 text-red-300" />
           ) : isKube ? (
-            <SiKubernetes className="shrink-0 text-blue-300" />
+            <SiKubernetes className="h-4 w-4 shrink-0 text-blue-300" />
           ) : isVm ? (
-            <IconServer className="shrink-0 text-cyan-300" />
+            <IconServer className="h-4 w-4 shrink-0 text-cyan-300" />
           ) : isTerraform ? (
-            <SiTerraform className="shrink-0 text-purple-300" />
+            <SiTerraform className="h-4 w-4 shrink-0 text-purple-300" />
           ) : (
-            <IconTarget className="shrink-0 text-neutral-300" />
+            <IconTarget className="h-4 w-4 shrink-0 text-neutral-300" />
           )}
           {info.getValue<string>()}
         </div>

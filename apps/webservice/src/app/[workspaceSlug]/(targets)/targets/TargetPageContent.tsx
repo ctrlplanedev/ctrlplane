@@ -177,7 +177,7 @@ export const TargetPageContent: React.FC<{
             className="min-w-[200px] bg-neutral-900 p-1"
           >
             <NameFilterDialog>
-              <IconTarget /> Name
+              <IconTarget className="h-4 w-4" /> Name
             </NameFilterDialog>
             <KindFilterDialog kinds={kinds}>
               <IconCategory /> Kind

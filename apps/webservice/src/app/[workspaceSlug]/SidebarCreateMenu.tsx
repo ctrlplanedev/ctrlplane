@@ -30,7 +30,7 @@ export const SidebarCreateMenu: React.FC<{
           size="icon"
           className="h-6 w-6 flex-shrink-0"
         >
-          <IconPlus />
+          <IconPlus className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent

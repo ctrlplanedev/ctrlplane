@@ -76,7 +76,7 @@ export default function ConfigureJobAgentPage({
       <ResizablePanel>
         <div className="container my-8 max-w-3xl space-y-4">
           <h1 className="mb-10 flex flex-grow items-center gap-3 text-2xl font-semibold">
-            <IconBolt />
+            <IconBolt className="h-4 w-4" />
             Configure Agent
           </h1>
 

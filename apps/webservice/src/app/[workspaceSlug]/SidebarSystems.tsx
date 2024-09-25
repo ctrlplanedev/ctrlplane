@@ -41,7 +41,7 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
         {system.name}
         <IconChevronRight
           className={cn(
-            "text-sm text-muted-foreground transition-all",
+            "h-3 w-3 text-muted-foreground transition-all",
             open === "true" && "rotate-90",
           )}
         />
@@ -50,20 +50,21 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
         <SidebarLink
           href={`/${workspaceSlug}/systems/${system.slug}/deployments`}
         >
-          <IconShip className="text-muted-foreground" /> Deployments
+          <IconShip className="h-4 w-4 text-muted-foreground" /> Deployments
         </SidebarLink>
         <SidebarLink
           href={`/${workspaceSlug}/systems/${system.slug}/environments`}
         >
-          <IconPlant className="text-muted-foreground" /> Environments
+          <IconPlant className="h-4 w-4 text-muted-foreground" /> Environments
         </SidebarLink>
         <SidebarLink href={`/${workspaceSlug}/systems/${system.slug}/runbooks`}>
-          <IconRun className="text-muted-foreground" /> Runbooks
+          <IconRun className="h-4 w-4 text-muted-foreground" /> Runbooks
         </SidebarLink>
         <SidebarLink
           href={`/${workspaceSlug}/systems/${system.slug}/variable-sets`}
         >
-          <IconVariable className="text-muted-foreground" /> Variable Sets
+          <IconVariable className="h-4 w-4 text-muted-foreground" /> Variable
+          Sets
         </SidebarLink>
       </CollapsibleContent>
     </Collapsible>
@@ -80,7 +81,7 @@ export const SidebarSystems: React.FC<{
       <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground">
         Your systems
         <IconChevronRight
-          className={cn(open && "rotate-90", "transition-all")}
+          className={cn("h-3 w-3", open && "rotate-90", "transition-all")}
         />
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-1">
@@ -91,7 +92,7 @@ export const SidebarSystems: React.FC<{
               variant="ghost"
               size="sm"
             >
-              <IconPlus /> New system
+              <IconPlus className="h-4 w-4" /> New system
             </Button>
           </CreateSystemDialog>
         )}

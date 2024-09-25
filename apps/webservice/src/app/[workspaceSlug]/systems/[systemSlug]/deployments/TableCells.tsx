@@ -43,7 +43,7 @@ const ReleaseIcon: React.FC<{
   if (inProgress)
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
-        <IconLoader2 strokeWidth={2} />
+        <IconLoader2 strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -51,14 +51,14 @@ const ReleaseIcon: React.FC<{
   if (hasAnyFailed)
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
-        <IconExclamationMark strokeWidth={2} />
+        <IconExclamationMark strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
   if (statues.some((s) => s === JobStatus.InvalidJobAgent))
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
-        <IconSettingsX strokeWidth={2} />
+        <IconSettingsX strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -66,7 +66,7 @@ const ReleaseIcon: React.FC<{
   if (allPending)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <IconHistoryToggle strokeWidth={2} />
+        <IconHistoryToggle strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -74,7 +74,7 @@ const ReleaseIcon: React.FC<{
   if (isComplete)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
-        <IconCircleCheck strokeWidth={2} />
+        <IconCircleCheck strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -82,7 +82,7 @@ const ReleaseIcon: React.FC<{
   if (isRollingOut)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
-        <IconCalendarTime strokeWidth={2} />
+        <IconCalendarTime strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -90,7 +90,7 @@ const ReleaseIcon: React.FC<{
   if (waiting)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <IconClock strokeWidth={2} />
+        <IconClock strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -98,13 +98,13 @@ const ReleaseIcon: React.FC<{
   if (isCancelled)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <IconCircleX strokeWidth={2} />
+        <IconCircleX strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
   return (
     <div className="rounded-full bg-green-400 p-1 dark:text-black">
-      <IconCircleCheck strokeWidth={2} />
+      <IconCircleCheck strokeWidth={2} className="h-4 w-4" />
     </div>
   );
 };

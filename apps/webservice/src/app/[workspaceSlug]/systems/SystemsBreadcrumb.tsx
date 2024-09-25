@@ -49,7 +49,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: true,
       name: (
         <>
-          <IconCategory /> Systems
+          <IconCategory className="h-4 w-4" /> Systems
         </>
       ),
       path: `/${workspaceSlug}/systems`,
@@ -58,7 +58,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: system?.name != null,
       name: (
         <>
-          <IconServer /> {system?.name}
+          <IconServer className="h-4 w-4" /> {system?.name}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}`,
@@ -67,7 +67,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: deployment?.name != null,
       name: (
         <>
-          <IconShip /> {deployment?.name}
+          <IconShip className="h-4 w-4" /> {deployment?.name}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`,
@@ -76,7 +76,7 @@ export const SystemBreadcrumbNavbar = async ({
       isSet: release?.version != null,
       name: (
         <>
-          <IconTag /> {release?.version}
+          <IconTag className="h-4 w-4" /> {release?.version}
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/releases/${versionId}`,

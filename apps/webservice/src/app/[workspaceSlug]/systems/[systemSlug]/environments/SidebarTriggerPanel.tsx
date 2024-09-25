@@ -7,7 +7,7 @@ export const SidebarTriggerPanel: React.FC = () => {
     <div>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
         <div className="flex-shrink-0 rounded bg-blue-500/20 p-1 text-blue-400">
-          <IconBolt />
+          <IconBolt className="h-4 w-4" />
         </div>
         <span className="flex-grow">Trigger</span>
       </h2>

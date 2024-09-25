@@ -62,7 +62,7 @@ export const SidebarSettings: React.FC<{ workspaceSlug: string }> = ({
           className="flex w-full items-center gap-2 text-left hover:bg-transparent"
         >
           <div className="text-muted-foreground">
-            <IconChevronLeft />
+            <IconChevronLeft className="h-3 w-3" />
           </div>
           <div className="flex-grow">Settings</div>
         </Link>

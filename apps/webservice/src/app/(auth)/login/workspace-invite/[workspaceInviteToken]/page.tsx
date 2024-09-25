@@ -12,7 +12,7 @@ export default async function LoginInvitePage() {
   return (
     <div className="h-full">
       <div className="flex items-center gap-2 p-4">
-        <IconPlane className="text-2xl" />
+        <IconPlane className="h-10 w-10" />
         <div className="flex-grow" />
         <Button variant="ghost" className="text-muted-foreground">
           Contact

@@ -139,7 +139,7 @@ export const CreateVariableSetDialog: React.FC<{
                             variant="ghost"
                             onClick={() => remove(index)}
                           >
-                            <IconX />
+                            <IconX className="h-4 w-4" />
                           </Button>
                         </div>
                       </FormControl>

@@ -40,7 +40,8 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-1">
-                <IconGitPullRequest /> Configure a github action
+                <IconGitPullRequest className="h-4 w-4" /> Configure a github
+                action
               </CardTitle>
               <CardDescription>
                 Select a github action to run for this deployment.

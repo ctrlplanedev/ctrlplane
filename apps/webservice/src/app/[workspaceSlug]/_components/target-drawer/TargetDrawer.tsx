@@ -120,7 +120,7 @@ export const TargetDrawer: React.FC = () => {
                         className: "gap-1",
                       })}
                     >
-                      <IconExternalLink />
+                      <IconExternalLink className="h-4 w-4" />
                       {label}
                     </Link>
                   ))}

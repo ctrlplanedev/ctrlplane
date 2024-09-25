@@ -39,7 +39,7 @@ export const LoginCard: React.FC = () => {
             size="lg"
             className="w-full gap-2 rounded-lg bg-red-700 p-6 text-lg tracking-normal text-white hover:bg-red-600"
           >
-            <IconBrandGoogle /> Continue with Google
+            <IconBrandGoogle className="h-4 w-4" /> Continue with Google
           </Button>
         </div>
         {/* <Separator />

@@ -29,11 +29,11 @@ const EditButton: React.FC = () => {
     >
       {editMode ? (
         <div className="flex items-center gap-1 pr-2">
-          <IconAlertSmall />
+          <IconAlertSmall className="h-4 w-4" />
           <span className="grow">Editing mode enabled</span>
         </div>
       ) : (
-        <IconEdit />
+        <IconEdit className="h-4 w-4" />
       )}
     </button>
   );

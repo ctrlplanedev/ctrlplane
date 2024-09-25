@@ -120,7 +120,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     <Form {...form}>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
         <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
-          <IconPlant />
+          <IconPlant className="h-4 w-4" />
         </div>
         <span className="flex-grow">Environment</span>
         <Button
