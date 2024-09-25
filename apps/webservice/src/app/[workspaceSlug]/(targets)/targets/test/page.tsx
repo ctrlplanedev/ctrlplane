@@ -20,11 +20,10 @@ export default function TargetsTestPage() {
   const [condition, setCondition] =
     useState<TargetCondition>(testTargetCondition);
 
-  const handleConditionChange = (condition: TargetCondition) => {
+  const handleConditionChange = (condition: TargetCondition) =>
     setCondition(condition);
-  };
 
-  console.log(condition);
+  console.log(">>> NEW RENDER >>>");
 
   return (
     <div className="flex h-screen w-screen flex-col items-center justify-center gap-4">

@@ -2,9 +2,10 @@ import type {
   ComparisonCondition,
   KindEqualsCondition,
   MetadataCondition,
+  NameLikeCondition,
   TargetCondition,
 } from "@ctrlplane/validators/targets";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import {
   IconChevronDown,
@@ -44,6 +45,12 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
+import {
   TargetFilterType,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
@@ -64,79 +71,94 @@ const conditionIsComparison = (
 ): condition is ComparisonCondition =>
   condition.type === TargetFilterType.Comparison;
 
+const MAX_DEPTH_ALLOWED = 2;
+
+const doesConvertingToComparisonRespectMaxDepth = (
+  depth: number,
+  condition: TargetCondition,
+): boolean => {
+  if (depth >= MAX_DEPTH_ALLOWED) return false;
+  if (conditionIsComparison(condition))
+    return condition.conditions.every((c) =>
+      doesConvertingToComparisonRespectMaxDepth(depth + 1, c),
+    );
+  return true;
+};
+
 const ComparisonConditionRender: React.FC<
   TargetConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0 }) => {
-  const [localCondition, setLocalCondition] =
-    useState<ComparisonCondition>(condition);
-
   const handleOperatorChange = (
     operator: TargetOperator.And | TargetOperator.Or,
-  ) => {
-    setLocalCondition({
-      ...localCondition,
+  ) =>
+    onChange({
+      ...condition,
       operator,
     });
-    onChange(localCondition);
-  };
 
-  const handleConditionChange = (index: number, condition: TargetCondition) => {
-    setLocalCondition({
-      ...localCondition,
-      conditions: localCondition.conditions.map((c, i) =>
-        i === index ? condition : c,
+  const handleConditionChange = (
+    index: number,
+    changedCondition: TargetCondition,
+  ) =>
+    onChange({
+      ...condition,
+      conditions: condition.conditions.map((c, i) =>
+        i === index ? changedCondition : c,
       ),
     });
-    onChange(localCondition);
-  };
 
-  const handleAddCondition = (condition: TargetCondition) => {
-    setLocalCondition({
-      ...localCondition,
-      conditions: [...localCondition.conditions, condition],
+  const handleAddCondition = (changedCondition: TargetCondition) =>
+    onChange({
+      ...condition,
+      conditions: [...condition.conditions, changedCondition],
     });
-    onChange(localCondition);
-  };
 
-  const handleRemoveCondition = (index: number) => {
-    setLocalCondition({
-      ...localCondition,
-      conditions: localCondition.conditions.filter((_, i) => i !== index),
+  const handleRemoveCondition = (index: number) =>
+    onChange({
+      ...condition,
+      conditions: condition.conditions.filter((_, i) => i !== index),
     });
-    onChange(localCondition);
-  };
 
   const handleConvertToComparison = (index: number) => {
-    const condition = localCondition.conditions[index];
-    const newComparisonCondition = {
+    const cond = condition.conditions[index];
+    if (!cond) return;
+
+    const newComparisonCondition: ComparisonCondition = {
       type: TargetFilterType.Comparison,
       operator: TargetOperator.And,
-      conditions: [condition],
-    } as ComparisonCondition;
-    handleConditionChange(index, newComparisonCondition);
+      conditions: [cond],
+    };
+
+    const newCondition = {
+      ...condition,
+      conditions: condition.conditions.map((c, i) =>
+        i === index ? newComparisonCondition : c,
+      ),
+    };
+    onChange(newCondition);
   };
 
   return (
     <div
       className={cn(
-        localCondition.conditions.length > 0 ? "space-y-4" : "space-y-1",
+        condition.conditions.length > 0 ? "space-y-4" : "space-y-1",
       )}
     >
-      {localCondition.conditions.length === 0 && (
+      {condition.conditions.length === 0 && (
         <span className="text-muted-foreground">No conditions</span>
       )}
       <div className="space-y-2">
-        {localCondition.conditions.map((condition, index) => (
-          <div className="flex items-start gap-2">
+        {condition.conditions.map((subCond, index) => (
+          <div key={index} className="flex items-start gap-2">
             <div className="grid flex-grow grid-cols-12 gap-2">
               {index !== 1 && (
                 <div className="col-span-1 flex justify-end px-1 pt-1 text-muted-foreground">
-                  {index === 0 ? "When" : capitalCase(localCondition.operator)}
+                  {index === 0 ? "When" : capitalCase(condition.operator)}
                 </div>
               )}
               {index === 1 && (
                 <Select
-                  value={localCondition.operator}
+                  value={condition.operator}
                   onValueChange={handleOperatorChange}
                 >
                   <SelectTrigger className="col-span-1 text-muted-foreground hover:bg-neutral-700/50">
@@ -152,7 +174,7 @@ const ComparisonConditionRender: React.FC<
               )}
               <TargetConditionRender
                 key={index}
-                condition={condition}
+                condition={subCond}
                 onChange={(c) => handleConditionChange(index, c)}
                 onRemove={() => handleRemoveCondition(index)}
                 depth={depth + 1}
@@ -179,13 +201,16 @@ const ComparisonConditionRender: React.FC<
                   Remove
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleAddCondition(condition)}
+                  onClick={() => handleAddCondition(subCond)}
                   className="flex items-center gap-2"
                 >
                   <IconCopy className="h-4 w-4" />
                   Duplicate
                 </DropdownMenuItem>
-                {depth < 2 && (
+                {doesConvertingToComparisonRespectMaxDepth(
+                  depth + 1,
+                  subCond,
+                ) ? (
                   <DropdownMenuItem
                     onClick={() => handleConvertToComparison(index)}
                     className="flex items-center gap-2"
@@ -193,6 +218,26 @@ const ComparisonConditionRender: React.FC<
                     <IconRefresh className="h-4 w-4" />
                     Turn into group
                   </DropdownMenuItem>
+                ) : (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <DropdownMenuItem
+                          className="flex cursor-not-allowed items-center gap-2 bg-neutral-950 text-muted-foreground focus:bg-neutral-950 focus:text-muted-foreground"
+                          onSelect={(e) => e.stopPropagation()}
+                        >
+                          <IconRefresh className="h-4 w-4" />
+                          Turn into group
+                        </DropdownMenuItem>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-muted-foreground">
+                          Converting to group will exceed the maximum depth of{" "}
+                          {MAX_DEPTH_ALLOWED + 1}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -240,7 +285,7 @@ const ComparisonConditionRender: React.FC<
               onClick={() =>
                 handleAddCondition({
                   type: TargetFilterType.Name,
-                  operator: TargetOperator.Equals,
+                  operator: TargetOperator.Like,
                   value: "",
                 })
               }
@@ -278,19 +323,11 @@ const MetadataConditionRender: React.FC<
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const [localCondition, setLocalCondition] =
-    useState<MetadataCondition>(condition);
+  const handleKeyChange = (key: string) => onChange({ ...condition, key });
 
-  const handleKeyChange = (key: string) => {
-    setLocalCondition({ ...localCondition, key });
-    onChange(localCondition);
-  };
-
-  const handleValueChange = (value: string) => {
-    if (localCondition.operator === TargetOperator.Null) return;
-    setLocalCondition({ ...localCondition, value });
-    onChange(localCondition);
-  };
+  const handleValueChange = (value: string) =>
+    condition.operator !== TargetOperator.Null &&
+    onChange({ ...condition, value });
 
   const handleOperatorChange = (
     operator:
@@ -298,14 +335,10 @@ const MetadataConditionRender: React.FC<
       | TargetOperator.Like
       | TargetOperator.Regex
       | TargetOperator.Null,
-  ) => {
-    const updatedCondition =
-      operator === TargetOperator.Null
-        ? { ...localCondition, operator, value: undefined }
-        : { ...localCondition, operator, value: localCondition.value ?? "" };
-    setLocalCondition(updatedCondition);
-    onChange(updatedCondition);
-  };
+  ) =>
+    operator === TargetOperator.Null
+      ? onChange({ ...condition, operator, value: undefined })
+      : onChange({ ...condition, operator, value: condition.value ?? "" });
 
   const [open, setOpen] = useState(false);
   const metadataKeys = api.target.metadataKeys.useQuery(
@@ -316,7 +349,7 @@ const MetadataConditionRender: React.FC<
   );
   const filteredMetadataKeys = useMatchSorter(
     metadataKeys.data ?? [],
-    localCondition.key,
+    condition.key,
   );
 
   return (
@@ -330,7 +363,7 @@ const MetadataConditionRender: React.FC<
             >
               <Input
                 placeholder="Key"
-                value={localCondition.key}
+                value={condition.key}
                 onChange={(e) => handleKeyChange(e.target.value)}
                 className="w-full cursor-pointer rounded-l-sm rounded-r-none"
               />
@@ -359,7 +392,7 @@ const MetadataConditionRender: React.FC<
         </div>
         <div className="col-span-3">
           <Select
-            value={localCondition.operator}
+            value={condition.operator}
             onValueChange={(
               v:
                 | TargetOperator.Equals
@@ -380,17 +413,17 @@ const MetadataConditionRender: React.FC<
           </Select>
         </div>
 
-        {localCondition.operator !== TargetOperator.Null ? (
+        {condition.operator !== TargetOperator.Null ? (
           <div className="col-span-4">
             <Input
               placeholder={
-                localCondition.operator === TargetOperator.Regex
+                condition.operator === TargetOperator.Regex
                   ? "^[a-zA-Z]+$"
-                  : localCondition.operator === TargetOperator.Like
+                  : condition.operator === TargetOperator.Like
                     ? "%value%"
                     : "Value"
               }
-              value={localCondition.value}
+              value={condition.value}
               onChange={(e) => handleValueChange(e.target.value)}
               className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
             />
@@ -417,25 +450,16 @@ const KindConditionRender: React.FC<
     enabled: workspace.isSuccess && workspace.data != null,
   });
 
-  const [localCondition, setLocalCondition] =
-    useState<KindEqualsCondition>(condition);
-
-  const newKinds = (kinds.data ?? []).filter(
-    (kind) => !localCondition.value.includes(kind),
-  );
-
-  const handleKindChange = (kind: string) => {
-    setLocalCondition({ ...localCondition, value: kind });
-    onChange(localCondition);
-  };
+  const handleKindChange = (kind: string) =>
+    onChange({ ...condition, value: kind });
 
   return (
     <div className="flex w-full items-center gap-2">
       <div className="grid w-full grid-cols-12">
-        <div className="col-span-5 flex items-center rounded-l-sm border border-neutral-800 bg-neutral-800/30 px-3 text-sm text-muted-foreground">
-          Kind is
+        <div className="col-span-2 flex items-center rounded-l-sm border border-neutral-800 bg-neutral-800/30 px-3 text-sm text-muted-foreground">
+          Kind
         </div>
-        <div className="col-span-7">
+        <div className="col-span-10">
           <Popover open={commandOpen} onOpenChange={setCommandOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -446,8 +470,8 @@ const KindConditionRender: React.FC<
               >
                 <IconSelector className="h-4 w-4" />
                 <span>
-                  {localCondition.value.length > 0
-                    ? localCondition.value
+                  {condition.value.length > 0
+                    ? condition.value
                     : "Select kind..."}
                 </span>
               </Button>
@@ -457,10 +481,10 @@ const KindConditionRender: React.FC<
                 <CommandInput placeholder="Search kind..." />
                 <CommandGroup>
                   <CommandList>
-                    {newKinds.length === 0 && (
+                    {kinds.data?.length === 0 && (
                       <CommandItem disabled>No kinds to add</CommandItem>
                     )}
-                    {newKinds.map((kind) => (
+                    {kinds.data?.map((kind) => (
                       <CommandItem
                         key={kind}
                         value={kind}
@@ -477,6 +501,37 @@ const KindConditionRender: React.FC<
               </Command>
             </PopoverContent>
           </Popover>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const conditionIsName = (
+  condition: TargetCondition,
+): condition is NameLikeCondition =>
+  condition.type === TargetFilterType.Name &&
+  condition.operator === TargetOperator.Like;
+
+const NameConditionRender: React.FC<
+  TargetConditionRenderProps<NameLikeCondition>
+> = ({ condition, onChange }) => {
+  const handleValueChange = (value: string) =>
+    onChange({ ...condition, value: `%${value}%` });
+
+  return (
+    <div className="flex w-full items-center gap-2">
+      <div className="grid w-full grid-cols-12">
+        <div className="col-span-2 flex items-center rounded-l-sm border border-neutral-800 bg-neutral-800/30 px-3 text-sm text-muted-foreground">
+          Name contains
+        </div>
+        <div className="col-span-10">
+          <Input
+            placeholder="Value"
+            value={condition.value.replace(/^%|%$/g, "")}
+            onChange={(e) => handleValueChange(e.target.value)}
+            className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
+          />
         </div>
       </div>
     </div>
@@ -524,5 +579,17 @@ export const TargetConditionRender: React.FC<
       </div>
     );
 
-  return <></>;
+  if (conditionIsName(condition))
+    return (
+      <div className={className ?? ""}>
+        <NameConditionRender
+          condition={condition}
+          onChange={onChange}
+          onRemove={onRemove}
+          depth={depth}
+        />
+      </div>
+    );
+
+  return null;
 };
