@@ -85,7 +85,7 @@ export default async function DeploymentPage({
                       href={`/${params.workspaceSlug}/systems/${system.slug}`}
                     >
                       {system.name}
-                      <IconLink className="text-xs text-muted-foreground" />
+                      <IconLink className="h-4 w-4 text-muted-foreground" />
                     </Link>
                   </td>
                 </tr>
