@@ -143,7 +143,7 @@ export const ReleaseDropdownMenu: React.FC<{
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"
         >
-          <IconReload />
+          <IconReload className="h-4 w-4" />
           <span>Redeploy</span>
         </DropdownMenuItem>
       </RedeployReleaseDialog>
@@ -152,7 +152,7 @@ export const ReleaseDropdownMenu: React.FC<{
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"
         >
-          <IconAlertTriangle />
+          <IconAlertTriangle className="h-4 w-4" />
           <span>Force deploy</span>
         </DropdownMenuItem>
       </ForceReleaseDialog>

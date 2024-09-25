@@ -40,7 +40,7 @@ export const DeploymentOptionsDropdown: React.FC<{
           <DropdownMenuGroup>
             <EditDeploymentDialog {...props}>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <IconEdit className="mr-2" />
+                <IconEdit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
             </EditDeploymentDialog>
