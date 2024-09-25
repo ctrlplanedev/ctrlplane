@@ -194,7 +194,7 @@ const VariableRow: React.FC<{
           className="rounded-full"
           onClick={() => setEdit(true)}
         >
-          <IconDots />
+          <IconDots className="h-4 w-4" />
         </Button>
       </TableCell>
     </TableRow>
