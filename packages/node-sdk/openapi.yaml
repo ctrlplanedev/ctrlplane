@@ -321,11 +321,6 @@ paths:
                         type: string
                       config:
                         type: object
-                        properties:
-                          location:
-                            type: string
-                          project:
-                            type: string
                     required: [id, identifier, name, kind, version, config]
 
                   environment:
@@ -339,12 +334,15 @@ paths:
 
                   variables:
                     type: object
+                  config:
+                    type: object
                 required:
                   - id
                   - status
                   - createdAt
                   - updatedAt
                   - variable
+                  - config
     patch:
       summary: Update a job
       operationId: updateJob

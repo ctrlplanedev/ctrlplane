@@ -18,7 +18,7 @@
   "main": "index.ts",
   "scripts": {
     "dev": "pnpm exec tsx src/index.ts",
-    "build": "tsc",
+    "build": "ncc build src/index.ts -o dist",
     "build:action": "ncc build src/index.ts -o ../../github/fetch-job-inputs",
     "lint": "eslint",
     "typecheck": "tsc"

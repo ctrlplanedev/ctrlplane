@@ -2464,289 +2464,6 @@ class DecodedURL extends URL {
 
 /***/ }),
 
-/***/ 9070:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-module.exports = __nccwpck_require__(7752);
-
-/***/ }),
-
-/***/ 7752:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
-
-var RetryOperation = __nccwpck_require__(8366);
-
-exports.operation = function(options) {
-  var timeouts = exports.timeouts(options);
-  return new RetryOperation(timeouts, {
-      forever: options && (options.forever || options.retries === Infinity),
-      unref: options && options.unref,
-      maxRetryTime: options && options.maxRetryTime
-  });
-};
-
-exports.timeouts = function(options) {
-  if (options instanceof Array) {
-    return [].concat(options);
-  }
-
-  var opts = {
-    retries: 10,
-    factor: 2,
-    minTimeout: 1 * 1000,
-    maxTimeout: Infinity,
-    randomize: false
-  };
-  for (var key in options) {
-    opts[key] = options[key];
-  }
-
-  if (opts.minTimeout > opts.maxTimeout) {
-    throw new Error('minTimeout is greater than maxTimeout');
-  }
-
-  var timeouts = [];
-  for (var i = 0; i < opts.retries; i++) {
-    timeouts.push(this.createTimeout(i, opts));
-  }
-
-  if (options && options.forever && !timeouts.length) {
-    timeouts.push(this.createTimeout(i, opts));
-  }
-
-  // sort the array numerically ascending
-  timeouts.sort(function(a,b) {
-    return a - b;
-  });
-
-  return timeouts;
-};
-
-exports.createTimeout = function(attempt, opts) {
-  var random = (opts.randomize)
-    ? (Math.random() + 1)
-    : 1;
-
-  var timeout = Math.round(random * Math.max(opts.minTimeout, 1) * Math.pow(opts.factor, attempt));
-  timeout = Math.min(timeout, opts.maxTimeout);
-
-  return timeout;
-};
-
-exports.wrap = function(obj, options, methods) {
-  if (options instanceof Array) {
-    methods = options;
-    options = null;
-  }
-
-  if (!methods) {
-    methods = [];
-    for (var key in obj) {
-      if (typeof obj[key] === 'function') {
-        methods.push(key);
-      }
-    }
-  }
-
-  for (var i = 0; i < methods.length; i++) {
-    var method   = methods[i];
-    var original = obj[method];
-
-    obj[method] = function retryWrapper(original) {
-      var op       = exports.operation(options);
-      var args     = Array.prototype.slice.call(arguments, 1);
-      var callback = args.pop();
-
-      args.push(function(err) {
-        if (op.retry(err)) {
-          return;
-        }
-        if (err) {
-          arguments[0] = op.mainError();
-        }
-        callback.apply(this, arguments);
-      });
-
-      op.attempt(function() {
-        original.apply(obj, args);
-      });
-    }.bind(obj, original);
-    obj[method].options = options;
-  }
-};
-
-
-/***/ }),
-
-/***/ 8366:
-/***/ ((module) => {
-
-function RetryOperation(timeouts, options) {
-  // Compatibility for the old (timeouts, retryForever) signature
-  if (typeof options === 'boolean') {
-    options = { forever: options };
-  }
-
-  this._originalTimeouts = JSON.parse(JSON.stringify(timeouts));
-  this._timeouts = timeouts;
-  this._options = options || {};
-  this._maxRetryTime = options && options.maxRetryTime || Infinity;
-  this._fn = null;
-  this._errors = [];
-  this._attempts = 1;
-  this._operationTimeout = null;
-  this._operationTimeoutCb = null;
-  this._timeout = null;
-  this._operationStart = null;
-  this._timer = null;
-
-  if (this._options.forever) {
-    this._cachedTimeouts = this._timeouts.slice(0);
-  }
-}
-module.exports = RetryOperation;
-
-RetryOperation.prototype.reset = function() {
-  this._attempts = 1;
-  this._timeouts = this._originalTimeouts.slice(0);
-}
-
-RetryOperation.prototype.stop = function() {
-  if (this._timeout) {
-    clearTimeout(this._timeout);
-  }
-  if (this._timer) {
-    clearTimeout(this._timer);
-  }
-
-  this._timeouts       = [];
-  this._cachedTimeouts = null;
-};
-
-RetryOperation.prototype.retry = function(err) {
-  if (this._timeout) {
-    clearTimeout(this._timeout);
-  }
-
-  if (!err) {
-    return false;
-  }
-  var currentTime = new Date().getTime();
-  if (err && currentTime - this._operationStart >= this._maxRetryTime) {
-    this._errors.push(err);
-    this._errors.unshift(new Error('RetryOperation timeout occurred'));
-    return false;
-  }
-
-  this._errors.push(err);
-
-  var timeout = this._timeouts.shift();
-  if (timeout === undefined) {
-    if (this._cachedTimeouts) {
-      // retry forever, only keep last error
-      this._errors.splice(0, this._errors.length - 1);
-      timeout = this._cachedTimeouts.slice(-1);
-    } else {
-      return false;
-    }
-  }
-
-  var self = this;
-  this._timer = setTimeout(function() {
-    self._attempts++;
-
-    if (self._operationTimeoutCb) {
-      self._timeout = setTimeout(function() {
-        self._operationTimeoutCb(self._attempts);
-      }, self._operationTimeout);
-
-      if (self._options.unref) {
-          self._timeout.unref();
-      }
-    }
-
-    self._fn(self._attempts);
-  }, timeout);
-
-  if (this._options.unref) {
-      this._timer.unref();
-  }
-
-  return true;
-};
-
-RetryOperation.prototype.attempt = function(fn, timeoutOps) {
-  this._fn = fn;
-
-  if (timeoutOps) {
-    if (timeoutOps.timeout) {
-      this._operationTimeout = timeoutOps.timeout;
-    }
-    if (timeoutOps.cb) {
-      this._operationTimeoutCb = timeoutOps.cb;
-    }
-  }
-
-  var self = this;
-  if (this._operationTimeoutCb) {
-    this._timeout = setTimeout(function() {
-      self._operationTimeoutCb();
-    }, self._operationTimeout);
-  }
-
-  this._operationStart = new Date().getTime();
-
-  this._fn(this._attempts);
-};
-
-RetryOperation.prototype.try = function(fn) {
-  console.log('Using RetryOperation.try() is deprecated');
-  this.attempt(fn);
-};
-
-RetryOperation.prototype.start = function(fn) {
-  console.log('Using RetryOperation.start() is deprecated');
-  this.attempt(fn);
-};
-
-RetryOperation.prototype.start = RetryOperation.prototype.try;
-
-RetryOperation.prototype.errors = function() {
-  return this._errors;
-};
-
-RetryOperation.prototype.attempts = function() {
-  return this._attempts;
-};
-
-RetryOperation.prototype.mainError = function() {
-  if (this._errors.length === 0) {
-    return null;
-  }
-
-  var counts = {};
-  var mainError = null;
-  var mainErrorCount = 0;
-
-  for (var i = 0; i < this._errors.length; i++) {
-    var error = this._errors[i];
-    var message = error.message;
-    var count = (counts[message] || 0) + 1;
-
-    counts[message] = count;
-
-    if (count >= mainErrorCount) {
-      mainError = error;
-      mainErrorCount = count;
-    }
-  }
-
-  return mainError;
-};
-
-
-/***/ }),
-
 /***/ 2689:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -26965,139 +26682,6 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ../../node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(7184);
-// EXTERNAL MODULE: ../../node_modules/retry/index.js
-var retry = __nccwpck_require__(9070);
-;// CONCATENATED MODULE: ../../node_modules/is-network-error/index.js
-const objectToString = Object.prototype.toString;
-
-const isError = value => objectToString.call(value) === '[object Error]';
-
-const errorMessages = new Set([
-	'network error', // Chrome
-	'Failed to fetch', // Chrome
-	'NetworkError when attempting to fetch resource.', // Firefox
-	'The Internet connection appears to be offline.', // Safari 16
-	'Load failed', // Safari 17+
-	'Network request failed', // `cross-fetch`
-	'fetch failed', // Undici (Node.js)
-	'terminated', // Undici (Node.js)
-]);
-
-function isNetworkError(error) {
-	const isValid = error
-		&& isError(error)
-		&& error.name === 'TypeError'
-		&& typeof error.message === 'string';
-
-	if (!isValid) {
-		return false;
-	}
-
-	// We do an extra check for Safari 17+ as it has a very generic error message.
-	// Network errors in Safari have no stack.
-	if (error.message === 'Load failed') {
-		return error.stack === undefined;
-	}
-
-	return errorMessages.has(error.message);
-}
-
-;// CONCATENATED MODULE: ../../node_modules/p-retry/index.js
-
-
-
-class AbortError extends Error {
-	constructor(message) {
-		super();
-
-		if (message instanceof Error) {
-			this.originalError = message;
-			({message} = message);
-		} else {
-			this.originalError = new Error(message);
-			this.originalError.stack = this.stack;
-		}
-
-		this.name = 'AbortError';
-		this.message = message;
-	}
-}
-
-const decorateErrorWithCounts = (error, attemptNumber, options) => {
-	// Minus 1 from attemptNumber because the first attempt does not count as a retry
-	const retriesLeft = options.retries - (attemptNumber - 1);
-
-	error.attemptNumber = attemptNumber;
-	error.retriesLeft = retriesLeft;
-	return error;
-};
-
-async function pRetry(input, options) {
-	return new Promise((resolve, reject) => {
-		options = {
-			onFailedAttempt() {},
-			retries: 10,
-			shouldRetry: () => true,
-			...options,
-		};
-
-		const operation = retry.operation(options);
-
-		const abortHandler = () => {
-			operation.stop();
-			reject(options.signal?.reason);
-		};
-
-		if (options.signal && !options.signal.aborted) {
-			options.signal.addEventListener('abort', abortHandler, {once: true});
-		}
-
-		const cleanUp = () => {
-			options.signal?.removeEventListener('abort', abortHandler);
-			operation.stop();
-		};
-
-		operation.attempt(async attemptNumber => {
-			try {
-				const result = await input(attemptNumber);
-				cleanUp();
-				resolve(result);
-			} catch (error) {
-				try {
-					if (!(error instanceof Error)) {
-						throw new TypeError(`Non-error was thrown: "${error}". You should only throw errors.`);
-					}
-
-					if (error instanceof AbortError) {
-						throw error.originalError;
-					}
-
-					if (error instanceof TypeError && !isNetworkError(error)) {
-						throw error;
-					}
-
-					decorateErrorWithCounts(error, attemptNumber, options);
-
-					if (!(await options.shouldRetry(error))) {
-						operation.stop();
-						reject(error);
-					}
-
-					await options.onFailedAttempt(error);
-
-					if (!operation.retry(error)) {
-						throw operation.mainError();
-					}
-				} catch (finalError) {
-					decorateErrorWithCounts(finalError, attemptNumber, options);
-					cleanUp();
-					reject(finalError);
-				}
-			}
-		});
-	});
-}
-
 ;// CONCATENATED MODULE: ../../packages/node-sdk/dist/index.js
 // src/runtime.ts
 var BASE_PATH = "http://localhost".replace(/\/+$/, "");
@@ -27567,32 +27151,6 @@ function GetJob200ResponseRunbookToJSON(value) {
   };
 }
 
-// src/models/GetJob200ResponseTargetConfig.ts
-function instanceOfGetJob200ResponseTargetConfig(value) {
-  return true;
-}
-function GetJob200ResponseTargetConfigFromJSON(json) {
-  return GetJob200ResponseTargetConfigFromJSONTyped(json, false);
-}
-function GetJob200ResponseTargetConfigFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    location: json["location"] == null ? void 0 : json["location"],
-    project: json["project"] == null ? void 0 : json["project"]
-  };
-}
-function GetJob200ResponseTargetConfigToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    location: value["location"],
-    project: value["project"]
-  };
-}
-
 // src/models/GetJob200ResponseTarget.ts
 function instanceOfGetJob200ResponseTarget(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
@@ -27617,7 +27175,7 @@ function GetJob200ResponseTargetFromJSONTyped(json, ignoreDiscriminator) {
     name: json["name"],
     kind: json["kind"],
     version: json["version"],
-    config: GetJob200ResponseTargetConfigFromJSON(json["config"])
+    config: json["config"]
   };
 }
 function GetJob200ResponseTargetToJSON(value) {
@@ -27630,7 +27188,7 @@ function GetJob200ResponseTargetToJSON(value) {
     name: value["name"],
     kind: value["kind"],
     version: value["version"],
-    config: GetJob200ResponseTargetConfigToJSON(value["config"])
+    config: value["config"]
   };
 }
 
@@ -27650,6 +27208,7 @@ var GetJob200ResponseStatusEnum = {
 function instanceOfGetJob200Response(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("status" in value) || value["status"] === void 0) return false;
+  if (!("config" in value) || value["config"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseFromJSON(json) {
@@ -27667,7 +27226,8 @@ function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     runbook: json["runbook"] == null ? void 0 : GetJob200ResponseRunbookFromJSON(json["runbook"]),
     target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
     environment: json["environment"] == null ? void 0 : GetJob200ResponseRunbookFromJSON(json["environment"]),
-    variables: json["variables"] == null ? void 0 : json["variables"]
+    variables: json["variables"] == null ? void 0 : json["variables"],
+    config: json["config"]
   };
 }
 function GetJob200ResponseToJSON(value) {
@@ -27682,7 +27242,8 @@ function GetJob200ResponseToJSON(value) {
     runbook: GetJob200ResponseRunbookToJSON(value["runbook"]),
     target: GetJob200ResponseTargetToJSON(value["target"]),
     environment: GetJob200ResponseRunbookToJSON(value["environment"]),
-    variables: value["variables"]
+    variables: value["variables"],
+    config: value["config"]
   };
 }
 
@@ -28308,41 +27869,24 @@ var DefaultApi = class extends BaseAPI {
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
-
 const config = new Configuration({
     basePath: core.getInput("api_url", { required: true }) + "/api",
     apiKey: core.getInput("api_key", { required: true }),
 });
 const api = new DefaultApi(config);
-async function fetchWithRetry(jobId) {
-    return pRetry(async () => {
-        await api.acknowledgeJob({ jobId });
-        return await api.getJob({ jobId });
-    }, {
-        retries: 3,
-        onFailedAttempt: (error) => {
-            core.warning(`Attempt ${error.attemptNumber} failed. There are ${error.retriesLeft} retries left.`);
-        },
-    });
-}
-function run() {
+async function run() {
     const jobId = core.getInput("job_id", { required: true });
-    return fetchWithRetry(jobId)
+    await api
+        .getJob({ jobId })
         .then((response) => {
-        const targetName = response.target?.name;
-        const environmentName = response.environment?.name;
-        const releaseVersion = response.release?.version;
-        const location = response.target?.config.location;
-        const project = response.target?.config.project;
-        const variables = response.variables;
-        core.setOutput("target_name", targetName);
-        core.setOutput("environment_name", environmentName);
-        core.setOutput("release_version", releaseVersion);
-        core.setOutput("target.location", location);
-        core.setOutput("target.project", project);
-        for (const [key, value] of Object.entries(variables ?? {})) {
+        const { variables, target, release, environment, config } = response;
+        core.setOutput("target.name", target?.name);
+        core.setOutput("environment.name", environment?.name);
+        core.setOutput("release.version", release?.version);
+        for (const [key, value] of Object.entries(config ?? {}))
+            core.setOutput(`config.${key}`, value);
+        for (const [key, value] of Object.entries(variables ?? {}))
             core.setOutput(`variable.${key}`, value);
-        }
     })
         .catch((error) => {
         core.setFailed(`Action failed: ${error.message}`);

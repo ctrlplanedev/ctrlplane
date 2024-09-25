@@ -92,6 +92,12 @@ export interface GetJob200Response {
    * @memberof GetJob200Response
    */
   variables?: object;
+  /**
+   *
+   * @type {object}
+   * @memberof GetJob200Response
+   */
+  config: object;
 }
 
 /**
@@ -120,6 +126,7 @@ export function instanceOfGetJob200Response(
 ): value is GetJob200Response {
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("status" in value) || value["status"] === undefined) return false;
+  if (!("config" in value) || value["config"] === undefined) return false;
   return true;
 }
 
@@ -158,6 +165,7 @@ export function GetJob200ResponseFromJSONTyped(
         ? undefined
         : GetJob200ResponseRunbookFromJSON(json["environment"]),
     variables: json["variables"] == null ? undefined : json["variables"],
+    config: json["config"],
   };
 }
 
@@ -174,5 +182,6 @@ export function GetJob200ResponseToJSON(value?: GetJob200Response | null): any {
     target: GetJob200ResponseTargetToJSON(value["target"]),
     environment: GetJob200ResponseRunbookToJSON(value["environment"]),
     variables: value["variables"],
+    config: value["config"],
   };
 }
