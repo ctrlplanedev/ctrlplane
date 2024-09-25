@@ -27257,7 +27257,6 @@ var GetJob200ResponseStatusEnum = {
 function instanceOfGetJob200Response(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("status" in value) || value["status"] === void 0) return false;
-  if (!("config" in value) || value["config"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseFromJSON(json) {
@@ -27275,8 +27274,7 @@ function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     runbook: json["runbook"] == null ? void 0 : GetJob200ResponseRunbookFromJSON(json["runbook"]),
     target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
     environment: json["environment"] == null ? void 0 : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
-    variables: json["variables"] == null ? void 0 : json["variables"],
-    config: json["config"]
+    variables: json["variables"] == null ? void 0 : json["variables"]
   };
 }
 function GetJob200ResponseToJSON(value) {
@@ -27291,8 +27289,7 @@ function GetJob200ResponseToJSON(value) {
     runbook: GetJob200ResponseRunbookToJSON(value["runbook"]),
     target: GetJob200ResponseTargetToJSON(value["target"]),
     environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
-    variables: value["variables"],
-    config: value["config"]
+    variables: value["variables"]
   };
 }
 

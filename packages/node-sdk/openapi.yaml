@@ -347,8 +347,6 @@ paths:
 
                   variables:
                     type: object
-                  config:
-                    type: object
                 required:
                   - id
                   - status
