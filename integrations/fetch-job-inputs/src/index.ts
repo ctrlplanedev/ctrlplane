@@ -35,14 +35,19 @@ function run() {
       const targetName = response.target?.name;
       const environmentName = response.environment?.name;
       const releaseVersion = response.release?.version;
+      const location = response.target?.config.location;
+      const project = response.target?.config.project;
       const variables = response.variables;
 
       core.setOutput("target_name", targetName);
       core.setOutput("environment_name", environmentName);
       core.setOutput("release_version", releaseVersion);
+      core.setOutput("target.location", location);
+      core.setOutput("target.project", project);
 
-      for (const [key, value] of Object.entries(variables ?? {}))
-        core.setOutput(key, value);
+      for (const [key, value] of Object.entries(variables ?? {})) {
+        core.setOutput(`variable.${key}`, value);
+      }
     })
     .catch((error) => {
       core.setFailed(`Action failed: ${error.message}`);

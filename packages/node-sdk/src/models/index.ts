@@ -7,6 +7,7 @@ export * from "./GetJob200ResponseDeployment";
 export * from "./GetJob200ResponseRelease";
 export * from "./GetJob200ResponseRunbook";
 export * from "./GetJob200ResponseTarget";
+export * from "./GetJob200ResponseTargetConfig";
 export * from "./GetNextJobs200Response";
 export * from "./GetNextJobs200ResponseJobsInner";
 export * from "./SetTargetProvidersTargetsRequest";

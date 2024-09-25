@@ -12,7 +12,13 @@
  * Do not edit the class manually.
  */
 
+import type { GetJob200ResponseTargetConfig } from "./GetJob200ResponseTargetConfig";
 import { mapValues } from "../runtime";
+import {
+  GetJob200ResponseTargetConfigFromJSON,
+  GetJob200ResponseTargetConfigFromJSONTyped,
+  GetJob200ResponseTargetConfigToJSON,
+} from "./GetJob200ResponseTargetConfig";
 
 /**
  *
@@ -52,10 +58,10 @@ export interface GetJob200ResponseTarget {
   version: string;
   /**
    *
-   * @type {object}
+   * @type {GetJob200ResponseTargetConfig}
    * @memberof GetJob200ResponseTarget
    */
-  config: object;
+  config: GetJob200ResponseTargetConfig;
 }
 
 /**
@@ -93,7 +99,7 @@ export function GetJob200ResponseTargetFromJSONTyped(
     name: json["name"],
     kind: json["kind"],
     version: json["version"],
-    config: json["config"],
+    config: GetJob200ResponseTargetConfigFromJSON(json["config"]),
   };
 }
 
@@ -109,6 +115,6 @@ export function GetJob200ResponseTargetToJSON(
     name: value["name"],
     kind: value["kind"],
     version: value["version"],
-    config: value["config"],
+    config: GetJob200ResponseTargetConfigToJSON(value["config"]),
   };
 }

@@ -321,6 +321,11 @@ paths:
                         type: string
                       config:
                         type: object
+                        properties:
+                          location:
+                            type: string
+                          project:
+                            type: string
                     required: [id, identifier, name, kind, version, config]
 
                   environment:

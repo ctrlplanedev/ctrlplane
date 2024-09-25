@@ -8,6 +8,7 @@ models/GetJob200ResponseDeployment.ts
 models/GetJob200ResponseRelease.ts
 models/GetJob200ResponseRunbook.ts
 models/GetJob200ResponseTarget.ts
+models/GetJob200ResponseTargetConfig.ts
 models/GetNextJobs200Response.ts
 models/GetNextJobs200ResponseJobsInner.ts
 models/SetTargetProvidersTargetsRequest.ts
