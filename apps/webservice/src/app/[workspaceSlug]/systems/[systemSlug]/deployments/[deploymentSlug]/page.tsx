@@ -1,8 +1,10 @@
+"use server";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IconEdit, IconInfoCircle, IconLink } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
-import { TbEdit, TbInfoCircle, TbLink } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
@@ -83,7 +85,7 @@ export default async function DeploymentPage({
                       href={`/${params.workspaceSlug}/systems/${system.slug}`}
                     >
                       {system.name}
-                      <TbLink className="text-xs text-muted-foreground" />
+                      <IconLink className="text-xs text-muted-foreground" />
                     </Link>
                   </td>
                 </tr>
@@ -94,7 +96,7 @@ export default async function DeploymentPage({
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <span className="flex-grow">Job Agent</span>{" "}
-              <TbInfoCircle className="text-muted-foreground" />
+              <IconInfoCircle className="text-muted-foreground" />
             </div>
 
             {deployment.agent == null ? (
@@ -145,7 +147,7 @@ export default async function DeploymentPage({
                         variant="outline"
                         className="flex items-center gap-2"
                       >
-                        <TbEdit size={16} /> Edit
+                        <IconEdit size={16} /> Edit
                       </Button>
                     </EditAgentConfigDialog>
                   </div>

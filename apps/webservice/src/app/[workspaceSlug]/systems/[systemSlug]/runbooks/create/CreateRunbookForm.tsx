@@ -3,7 +3,7 @@
 import type { JobAgent, System, Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { TbArrowLeft } from "react-icons/tb";
+import { IconArrowLeft } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { createRunbookVariable } from "@ctrlplane/db/schema";
@@ -73,7 +73,7 @@ export const CreateRunbook: React.FC<{
         <Link href={`/${workspace.slug}/systems/${system.slug}/runbooks`}>
           <Button variant="ghost" className="p-0 hover:bg-transparent">
             <div className="text-md flex items-center gap-2">
-              <TbArrowLeft size={16} /> Runbooks
+              <IconArrowLeft size={16} /> Runbooks
             </div>
           </Button>
         </Link>

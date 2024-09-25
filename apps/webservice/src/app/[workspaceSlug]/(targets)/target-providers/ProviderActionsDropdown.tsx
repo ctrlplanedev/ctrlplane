@@ -6,7 +6,7 @@ import type {
 } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbDots } from "react-icons/tb";
+import { IconDots } from "@tabler/icons-react";
 
 import {
   AlertDialog,
@@ -57,7 +57,7 @@ export const ProviderActionsDropdown: React.FC<{
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="h-8 w-8 p-0">
           <span className="sr-only">Open menu</span>
-          <TbDots className="h-4 w-4" />
+          <IconDots className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

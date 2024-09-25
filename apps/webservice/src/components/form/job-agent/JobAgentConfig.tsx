@@ -1,7 +1,7 @@
 "use client";
 
 import type { JobAgent } from "@ctrlplane/db/schema";
-import { TbGitPullRequest } from "react-icons/tb";
+import { IconGitPullRequest } from "@tabler/icons-react";
 
 import {
   Card,
@@ -40,7 +40,7 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-1">
-                <TbGitPullRequest /> Configure a github action
+                <IconGitPullRequest /> Configure a github action
               </CardTitle>
               <CardDescription>
                 Select a github action to run for this deployment.

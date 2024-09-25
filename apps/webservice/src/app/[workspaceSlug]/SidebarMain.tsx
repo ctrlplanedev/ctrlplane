@@ -2,7 +2,7 @@
 
 import type { System, Workspace } from "@ctrlplane/db/schema";
 import { useParams } from "next/navigation";
-import { TbSearch } from "react-icons/tb";
+import { IconSearch } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -50,7 +50,7 @@ export const SidebarMain: React.FC<{
               size="icon"
               className="h-6 w-6 flex-shrink-0"
             >
-              <TbSearch />
+              <IconSearch />
             </Button>
           </SearchDialog>
 

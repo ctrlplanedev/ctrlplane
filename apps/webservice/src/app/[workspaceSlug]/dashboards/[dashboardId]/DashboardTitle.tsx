@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { TbAlertSmall, TbDashboard, TbEdit } from "react-icons/tb";
+import { IconAlertSmall, IconDashboard, IconEdit } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -29,11 +29,11 @@ const EditButton: React.FC = () => {
     >
       {editMode ? (
         <div className="flex items-center gap-1 pr-2">
-          <TbAlertSmall />
+          <IconAlertSmall />
           <span className="grow">Editing mode enabled</span>
         </div>
       ) : (
-        <TbEdit />
+        <IconEdit />
       )}
     </button>
   );
@@ -54,7 +54,7 @@ export const DashboardTitle: React.FC = () => {
               href={`/${workspaceSlug}/systems`}
               className="flex items-center gap-2 text-white"
             >
-              <TbDashboard className="text-muted-foreground" />
+              <IconDashboard className="text-muted-foreground" />
               Dashboard
             </BreadcrumbLink>
           </BreadcrumbItem>

@@ -3,8 +3,8 @@ import type {
   NameCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
+import { IconX } from "@tabler/icons-react";
 import _ from "lodash";
-import { TbX } from "react-icons/tb";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -141,7 +141,7 @@ export const NameFilterDialog: React.FC<{
                             className="h-6 w-6"
                             onClick={() => remove(index)}
                           >
-                            <TbX />
+                            <IconX />
                           </Button>
                         )}
                       </div>

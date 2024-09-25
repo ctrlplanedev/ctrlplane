@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { IconChartPie } from "@tabler/icons-react";
 import _ from "lodash";
 import randomColor from "randomcolor";
-import { TbChartPie } from "react-icons/tb";
 import { useMeasure } from "react-use";
 import { Label, Pie, PieChart } from "recharts";
 
@@ -83,7 +83,7 @@ export const WidgetTargetMetadataCount: Widget<{
   ComponentPreview: () => {
     return (
       <>
-        <TbChartPie className="m-auto mt-1 h-20 w-20 text-neutral-400 hover:text-white" />
+        <IconChartPie className="m-auto mt-1 h-20 w-20 text-neutral-400 hover:text-white" />
         <div className="absolute bottom-0 left-0 right-0 text-center">
           <p className="pb-2 text-neutral-400">Target Metadata Count</p>
         </div>

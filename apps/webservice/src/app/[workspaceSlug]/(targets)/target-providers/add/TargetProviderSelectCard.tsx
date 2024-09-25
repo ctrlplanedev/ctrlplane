@@ -1,5 +1,9 @@
-import { SiAmazon, SiGooglecloud, SiMicrosoftazure } from "react-icons/si";
-import { TbApi, TbCaretDownFilled } from "react-icons/tb";
+import { SiAmazon, SiGooglecloud } from "@icons-pack/react-simple-icons";
+import {
+  IconApi,
+  IconBrandAzure,
+  IconCaretDownFilled,
+} from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -35,7 +39,7 @@ export const TargetProviderSelectCard: React.FC<{
         >
           <SiGooglecloud />
           Google
-          <TbCaretDownFilled className="text-xs text-neutral-500" />
+          <IconCaretDownFilled className="text-xs text-neutral-500" />
         </Button>
 
         <DropdownMenu>
@@ -43,7 +47,7 @@ export const TargetProviderSelectCard: React.FC<{
             <Button variant="outline" className="flex items-center gap-2">
               <SiAmazon />
               AWS
-              <TbCaretDownFilled className="text-xs text-neutral-500" />
+              <IconCaretDownFilled className="text-xs text-neutral-500" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="start">
@@ -60,9 +64,9 @@ export const TargetProviderSelectCard: React.FC<{
               className="flex items-center gap-2"
               disabled
             >
-              <SiMicrosoftazure />
+              <IconBrandAzure />
               Azure
-              <TbCaretDownFilled className="text-xs text-neutral-500" />
+              <IconCaretDownFilled className="text-xs text-neutral-500" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="start">
@@ -76,7 +80,7 @@ export const TargetProviderSelectCard: React.FC<{
           className="flex items-center gap-2"
           onClick={() => setValue("webhook")}
         >
-          <TbApi />
+          <IconApi />
           Custom
         </Button>
       </CardContent>

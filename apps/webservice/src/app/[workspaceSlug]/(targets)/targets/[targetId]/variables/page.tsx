@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { TbDots } from "react-icons/tb";
+import { IconDots } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -194,7 +194,7 @@ const VariableRow: React.FC<{
           className="rounded-full"
           onClick={() => setEdit(true)}
         >
-          <TbDots />
+          <IconDots />
         </Button>
       </TableCell>
     </TableRow>

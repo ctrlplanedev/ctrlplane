@@ -1,13 +1,13 @@
 import type { NodeProps, NodeTypes } from "reactflow";
 import {
-  TbBolt,
-  TbCircleCheck,
-  TbPlant,
-  TbRegex,
-  TbTarget,
-  TbUser,
-  TbVersions,
-} from "react-icons/tb";
+  IconBolt,
+  IconCircleCheck,
+  IconPlant,
+  IconRegex,
+  IconTarget,
+  IconUser,
+  IconVersions,
+} from "@tabler/icons-react";
 import { Handle, Position, useReactFlow } from "reactflow";
 import colors from "tailwindcss/colors";
 
@@ -39,13 +39,13 @@ const PolicyNode: React.FC<NodeProps> = ({ id, data }) => {
         onMouseDownCapture={() => setSelectedNodeId(id)}
       >
         <div className={cn("flex items-center justify-center gap-1")}>
-          <TbCircleCheck className="text-teal-400" />
-          {isRegex && <TbRegex className="text-pink-400" />}
-          {isSemver && <TbVersions className="text-pink-500" />}
+          <IconCircleCheck className="text-teal-400" />
+          {isRegex && <IconRegex className="text-pink-400" />}
+          {isSemver && <IconVersions className="text-pink-500" />}
           {isManual ? (
-            <TbUser className="text-red-400" />
+            <IconUser className="text-red-400" />
           ) : (
-            <TbBolt className="text-yellow-400" />
+            <IconBolt className="text-yellow-400" />
           )}
         </div>
         {isSelected && !hasChildren && (
@@ -101,7 +101,7 @@ const EnvironmentNode: React.FC<NodeProps> = (node) => {
       >
         <div className="flex items-center gap-2 border-b p-4">
           <div className="rounded-md bg-green-500/20 p-1">
-            <TbPlant className="text-green-500" />
+            <IconPlant className="text-green-500" />
           </div>
           {data.label}
         </div>
@@ -149,7 +149,7 @@ const TriggerNode: React.FC<NodeProps> = ({ id, data }) => {
         onMouseDownCapture={() => setSelectedNodeId(id)}
       >
         <div className="absolute bottom-[100%] -z-10 flex items-center gap-1 rounded-t bg-blue-500/20 p-1 text-xs">
-          <TbTarget className="text-blue-500" /> Trigger
+          <IconTarget className="text-blue-500" /> Trigger
         </div>
         <div
           className={cn(
@@ -159,7 +159,7 @@ const TriggerNode: React.FC<NodeProps> = ({ id, data }) => {
         >
           <div className="flex items-center gap-2 border-b p-4">
             <div className="rounded-md bg-blue-500/20 p-1">
-              <TbBolt className="text-blue-500" />
+              <IconBolt className="text-blue-500" />
             </div>
             {data.label}
           </div>

@@ -1,9 +1,9 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
+import { IconTarget, IconX } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
-import { TbTarget, TbX } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -76,7 +76,7 @@ export const SystemsList: React.FC<{
                 className="h-5 w-5 text-xs text-muted-foreground"
                 onClick={() => removeFilter(idx)}
               >
-                <TbX />
+                <IconX />
               </Button>
             </Badge>
           ))}
@@ -87,7 +87,7 @@ export const SystemsList: React.FC<{
             className="min-w-[200px] bg-neutral-900 p-1"
           >
             <ContentDialog<SystemFilter> property="name">
-              <TbTarget /> Name
+              <IconTarget /> Name
             </ContentDialog>
           </FilterDropdown>
         </div>

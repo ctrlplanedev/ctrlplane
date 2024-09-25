@@ -10,6 +10,7 @@ import {
   getLocalTimeZone,
   getWeeksInMonth,
 } from "@internationalized/date";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import {
   useButton,
   useCalendar,
@@ -17,7 +18,6 @@ import {
   useCalendarGrid,
   useLocale,
 } from "react-aria";
-import { TbChevronLeft, TbChevronRight } from "react-icons/tb";
 import { useCalendarState } from "react-stately";
 
 import { cn } from "@ctrlplane/ui";
@@ -60,7 +60,7 @@ function Calendar(props: CalendarProps<DateValue>) {
             "absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
           )}
         >
-          <TbChevronLeft className="h-4 w-4" />
+          <IconChevronLeft className="h-4 w-4" />
         </Button>
         <div className="text-sm font-medium">{title}</div>
         <Button
@@ -71,7 +71,7 @@ function Calendar(props: CalendarProps<DateValue>) {
             "absolute right-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
           )}
         >
-          <TbChevronRight className="h-4 w-4" />
+          <IconChevronRight className="h-4 w-4" />
         </Button>
       </div>
       <CalendarGrid state={state} />

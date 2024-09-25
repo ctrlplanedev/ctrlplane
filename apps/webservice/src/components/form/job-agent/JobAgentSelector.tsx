@@ -2,7 +2,7 @@
 
 import type { JobAgent } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { TbPlus } from "react-icons/tb";
+import { IconPlus } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -53,7 +53,7 @@ export const JobAgentSelector: React.FC<{
       />
       <Link href={`/${workspace.slug}/job-agents/integrations`} passHref>
         <Button className="flex items-center" variant="outline" size="icon">
-          <TbPlus />
+          <IconPlus />
         </Button>
       </Link>
     </div>

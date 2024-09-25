@@ -2,8 +2,14 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  IconFilter,
+  IconLayout,
+  IconPlant,
+  IconResize,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useForm } from "react-hook-form";
-import { TbFilter, TbLayout, TbPlant, TbResize, TbTrash } from "react-icons/tb";
 import { MarkerType, useReactFlow, useViewport } from "reactflow";
 import colors from "tailwindcss/colors";
 import { z } from "zod";
@@ -94,7 +100,7 @@ const AddEnvironmentButton: React.FC<{
           variant="outline"
           disabled={create.isPending}
         >
-          <TbPlant /> Add Environment
+          <IconPlant /> Add Environment
         </Button>
       </DialogTrigger>
 
@@ -179,7 +185,7 @@ const NewPolicyButton: React.FC<{ systemId: string }> = ({ systemId }) => {
         window.requestAnimationFrame(() => setSelectedNodeId(policy.id));
       }}
     >
-      <TbFilter /> New Policy
+      <IconFilter /> New Policy
     </Button>
   );
 };
@@ -224,7 +230,7 @@ export const EnvFlowPanel: React.FC<{
         className="bg-transparent"
         onClick={() => fitView({ padding: 0.12 })}
       >
-        <TbResize />
+        <IconResize />
       </Button>
       <Button
         variant="outline"
@@ -232,7 +238,7 @@ export const EnvFlowPanel: React.FC<{
         className="bg-transparent"
         onClick={onLayout}
       >
-        <TbLayout />
+        <IconLayout />
       </Button>
 
       <div className="px-2">
@@ -253,7 +259,7 @@ export const EnvFlowPanel: React.FC<{
         disabled={disabled}
         onClick={onDelete}
       >
-        <TbTrash />
+        <IconTrash />
       </Button>
       <DeleteNodeDialog />
     </div>

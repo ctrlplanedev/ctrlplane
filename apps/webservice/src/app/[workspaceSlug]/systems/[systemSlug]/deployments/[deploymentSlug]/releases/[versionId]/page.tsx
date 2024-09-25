@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { TbFilter } from "react-icons/tb";
+import { IconFilter } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { ScrollArea } from "@ctrlplane/ui/scroll-area";
@@ -81,7 +81,7 @@ export default async function ReleasePage({
 
         <div className="shrink-0 border-b p-1">
           <Button variant="ghost" size="sm" className="flex gap-1">
-            <TbFilter /> Filter
+            <IconFilter /> Filter
           </Button>
         </div>
 

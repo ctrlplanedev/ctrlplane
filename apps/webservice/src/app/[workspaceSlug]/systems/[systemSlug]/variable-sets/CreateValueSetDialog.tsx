@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbX } from "react-icons/tb";
+import { IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { cn } from "@ctrlplane/ui";
@@ -139,7 +139,7 @@ export const CreateVariableSetDialog: React.FC<{
                             variant="ghost"
                             onClick={() => remove(index)}
                           >
-                            <TbX />
+                            <IconX />
                           </Button>
                         </div>
                       </FormControl>

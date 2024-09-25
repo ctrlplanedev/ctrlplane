@@ -3,8 +3,8 @@
 import type { Workspace } from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SiGooglecloud } from "react-icons/si";
-import { TbCheck, TbCopy } from "react-icons/tb";
+import { SiGooglecloud } from "@icons-pack/react-simple-icons";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -91,9 +91,9 @@ export const GoogleIntegration: React.FC<{
                 </span>
                 <Button variant="ghost" size="sm" onClick={handleCopy}>
                   {isCopied ? (
-                    <TbCheck className="h-3 w-3 text-green-500" />
+                    <IconCheck className="h-3 w-3 text-green-500" />
                   ) : (
-                    <TbCopy className="h-3 w-3" />
+                    <IconCopy className="h-3 w-3" />
                   )}
                 </Button>
               </div>

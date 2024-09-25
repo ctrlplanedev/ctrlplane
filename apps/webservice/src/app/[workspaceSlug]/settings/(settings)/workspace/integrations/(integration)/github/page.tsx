@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { SiGithub } from "react-icons/si";
+import { SiGithub } from "@icons-pack/react-simple-icons";
 
 import { auth } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { TbPlug } from "react-icons/tb";
+import { IconPlug } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -12,7 +12,7 @@ export const TargetProvidersGettingStarted: React.FC = () => {
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
         <div className="relative -ml-1 text-neutral-500">
-          <TbPlug className="h-10 w-10" strokeWidth={0.5} />
+          <IconPlug className="h-10 w-10" strokeWidth={0.5} />
         </div>
         <div className="font-semibold">Target Provider</div>
         <div className="prose prose-invert text-sm text-muted-foreground">
