@@ -21,7 +21,7 @@ export const conditionIsName = (
 export const NameConditionRender: React.FC<
   TargetConditionRenderProps<NameLikeCondition>
 > = ({ condition, onChange, className }) => {
-  const handleValueChange = (value: string) =>
+  const setValue = (value: string) =>
     onChange({ ...condition, value: `%${value}%` });
 
   return (
@@ -34,7 +34,7 @@ export const NameConditionRender: React.FC<
           <Input
             placeholder="Value"
             value={condition.value.replace(/^%|%$/g, "")}
-            onChange={(e) => handleValueChange(e.target.value)}
+            onChange={(e) => setValue(e.target.value)}
             className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
           />
         </div>

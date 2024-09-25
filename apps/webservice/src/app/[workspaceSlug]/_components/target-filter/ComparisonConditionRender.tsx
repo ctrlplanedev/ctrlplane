@@ -67,18 +67,13 @@ export const conditionIsComparison = (
 export const ComparisonConditionRender: React.FC<
   TargetConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
-  const handleOperatorChange = (
-    operator: TargetOperator.And | TargetOperator.Or,
-  ) =>
+  const setOperator = (operator: TargetOperator.And | TargetOperator.Or) =>
     onChange({
       ...condition,
       operator,
     });
 
-  const handleConditionChange = (
-    index: number,
-    changedCondition: TargetCondition,
-  ) =>
+  const updateCondition = (index: number, changedCondition: TargetCondition) =>
     onChange({
       ...condition,
       conditions: condition.conditions.map((c, i) =>
@@ -86,19 +81,19 @@ export const ComparisonConditionRender: React.FC<
       ),
     });
 
-  const handleAddCondition = (changedCondition: TargetCondition) =>
+  const addCondition = (changedCondition: TargetCondition) =>
     onChange({
       ...condition,
       conditions: [...condition.conditions, changedCondition],
     });
 
-  const handleRemoveCondition = (index: number) =>
+  const removeCondition = (index: number) =>
     onChange({
       ...condition,
       conditions: condition.conditions.filter((_, i) => i !== index),
     });
 
-  const handleConvertToComparison = (index: number) => {
+  const convertToComparison = (index: number) => {
     const cond = condition.conditions[index];
     if (!cond) return;
 
@@ -138,10 +133,7 @@ export const ComparisonConditionRender: React.FC<
                 </div>
               )}
               {index === 1 && (
-                <Select
-                  value={condition.operator}
-                  onValueChange={handleOperatorChange}
-                >
+                <Select value={condition.operator} onValueChange={setOperator}>
                   <SelectTrigger className="col-span-1 text-muted-foreground hover:bg-neutral-700/50">
                     <SelectValue />
                   </SelectTrigger>
@@ -156,8 +148,8 @@ export const ComparisonConditionRender: React.FC<
               <TargetConditionRender
                 key={index}
                 condition={subCond}
-                onChange={(c) => handleConditionChange(index, c)}
-                onRemove={() => handleRemoveCondition(index)}
+                onChange={(c) => updateCondition(index, c)}
+                onRemove={() => removeCondition(index)}
                 depth={depth + 1}
                 className="col-span-11"
               />
@@ -175,14 +167,14 @@ export const ComparisonConditionRender: React.FC<
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => handleRemoveCondition(index)}
+                  onClick={() => removeCondition(index)}
                   className="flex items-center gap-2"
                 >
                   <IconTrash className="h-4 w-4 text-red-400" />
                   Remove
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => handleAddCondition(subCond)}
+                  onClick={() => addCondition(subCond)}
                   className="flex items-center gap-2"
                 >
                   <IconCopy className="h-4 w-4" />
@@ -193,7 +185,7 @@ export const ComparisonConditionRender: React.FC<
                   subCond,
                 ) ? (
                   <DropdownMenuItem
-                    onClick={() => handleConvertToComparison(index)}
+                    onClick={() => convertToComparison(index)}
                     className="flex items-center gap-2"
                   >
                     <IconRefresh className="h-4 w-4" />
@@ -241,7 +233,7 @@ export const ComparisonConditionRender: React.FC<
           <DropdownMenuGroup>
             <DropdownMenuItem
               onClick={() =>
-                handleAddCondition({
+                addCondition({
                   type: TargetFilterType.Metadata,
                   operator: TargetOperator.Equals,
                   key: "",
@@ -253,7 +245,7 @@ export const ComparisonConditionRender: React.FC<
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                handleAddCondition({
+                addCondition({
                   type: TargetFilterType.Kind,
                   operator: TargetOperator.Equals,
                   value: "",
@@ -264,7 +256,7 @@ export const ComparisonConditionRender: React.FC<
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
-                handleAddCondition({
+                addCondition({
                   type: TargetFilterType.Name,
                   operator: TargetOperator.Like,
                   value: "",
@@ -276,7 +268,7 @@ export const ComparisonConditionRender: React.FC<
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
-                  handleAddCondition({
+                  addCondition({
                     type: TargetFilterType.Comparison,
                     operator: TargetOperator.And,
                     conditions: [],

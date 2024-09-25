@@ -36,13 +36,13 @@ export const MetadataConditionRender: React.FC<
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const handleKeyChange = (key: string) => onChange({ ...condition, key });
+  const setKey = (key: string) => onChange({ ...condition, key });
 
-  const handleValueChange = (value: string) =>
+  const setValue = (value: string) =>
     condition.operator !== TargetOperator.Null &&
     onChange({ ...condition, value });
 
-  const handleOperatorChange = (
+  const setOperator = (
     operator:
       | TargetOperator.Equals
       | TargetOperator.Like
@@ -77,7 +77,7 @@ export const MetadataConditionRender: React.FC<
               <Input
                 placeholder="Key"
                 value={condition.key}
-                onChange={(e) => handleKeyChange(e.target.value)}
+                onChange={(e) => setKey(e.target.value)}
                 className="w-full cursor-pointer rounded-l-sm rounded-r-none"
               />
             </PopoverTrigger>
@@ -94,7 +94,7 @@ export const MetadataConditionRender: React.FC<
                   className="w-full rounded-none text-left"
                   onClick={(e) => {
                     e.preventDefault();
-                    handleKeyChange(k);
+                    setKey(k);
                   }}
                 >
                   <div className="w-full">{k}</div>
@@ -112,7 +112,7 @@ export const MetadataConditionRender: React.FC<
                 | TargetOperator.Like
                 | TargetOperator.Regex
                 | TargetOperator.Null,
-            ) => handleOperatorChange(v)}
+            ) => setOperator(v)}
           >
             <SelectTrigger className="rounded-none hover:bg-neutral-800/50">
               <SelectValue placeholder="Operator" />
@@ -137,7 +137,7 @@ export const MetadataConditionRender: React.FC<
                     : "Value"
               }
               value={condition.value}
-              onChange={(e) => handleValueChange(e.target.value)}
+              onChange={(e) => setValue(e.target.value)}
               className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
             />
           </div>

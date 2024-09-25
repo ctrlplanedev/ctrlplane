@@ -35,8 +35,7 @@ export const KindConditionRender: React.FC<
     enabled: workspace.isSuccess && workspace.data != null,
   });
 
-  const handleKindChange = (kind: string) =>
-    onChange({ ...condition, value: kind });
+  const setKind = (kind: string) => onChange({ ...condition, value: kind });
 
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
@@ -78,7 +77,7 @@ export const KindConditionRender: React.FC<
                         key={kind}
                         value={kind}
                         onSelect={() => {
-                          handleKindChange(kind);
+                          setKind(kind);
                           setCommandOpen(false);
                         }}
                       >
