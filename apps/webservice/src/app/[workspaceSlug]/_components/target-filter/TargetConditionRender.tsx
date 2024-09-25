@@ -1,24 +1,18 @@
 import type {
   ComparisonCondition,
-  EqualCondition,
-  LikeCondition,
   MetadataCondition,
-  NullCondition,
-  RegexCondition,
   TargetCondition,
 } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { capitalCase } from "change-case";
 import {
-  TbArrowUpCircle,
   TbChevronDown,
   TbCopy,
   TbDots,
   TbPlus,
   TbRefresh,
   TbTrash,
-  TbX,
 } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
@@ -48,25 +42,24 @@ import {
 import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
 
-type TargetConditionRenderProps = {
-  condition: TargetCondition;
-  onChange: (condition: TargetCondition) => void;
+type TargetConditionRenderProps<T extends TargetCondition> = {
+  condition: T;
+  onChange: (condition: T) => void;
   onRemove?: () => void;
   depth?: number;
   className?: string;
 };
 
-const conditionIsComparison = (condition: TargetCondition) =>
+const conditionIsComparison = (
+  condition: TargetCondition,
+): condition is ComparisonCondition =>
   condition.type === TargetFilterType.Comparison;
 
-const ComparisonConditionRender: React.FC<TargetConditionRenderProps> = ({
-  condition,
-  onChange,
-  depth = 0,
-}) => {
-  const [localCondition, setLocalCondition] = useState<ComparisonCondition>(
-    condition as ComparisonCondition,
-  );
+const ComparisonConditionRender: React.FC<
+  TargetConditionRenderProps<ComparisonCondition>
+> = ({ condition, onChange, depth = 0 }) => {
+  const [localCondition, setLocalCondition] =
+    useState<ComparisonCondition>(condition);
 
   const handleOperatorChange = (
     operator: TargetOperator.And | TargetOperator.Or,
@@ -245,16 +238,14 @@ const ComparisonConditionRender: React.FC<TargetConditionRenderProps> = ({
   );
 };
 
-const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
-  condition,
-  onChange,
-}) => {
+const MetadataConditionRender: React.FC<
+  TargetConditionRenderProps<MetadataCondition>
+> = ({ condition, onChange }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const [localCondition, setLocalCondition] = useState<MetadataCondition>(
-    condition as MetadataCondition,
-  );
+  const [localCondition, setLocalCondition] =
+    useState<MetadataCondition>(condition);
 
   const handleKeyChange = (key: string) => {
     setLocalCondition({ ...localCondition, key });
@@ -378,13 +369,9 @@ const MetadataConditionRender: React.FC<TargetConditionRenderProps> = ({
   );
 };
 
-export const TargetConditionRender: React.FC<TargetConditionRenderProps> = ({
-  condition,
-  onChange,
-  onRemove,
-  depth = 0,
-  className,
-}) => {
+export const TargetConditionRender: React.FC<
+  TargetConditionRenderProps<TargetCondition>
+> = ({ condition, onChange, onRemove, depth = 0, className }) => {
   if (conditionIsComparison(condition))
     return (
       <div
