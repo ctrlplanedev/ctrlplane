@@ -1,5 +1,5 @@
 import type { Workspace } from "@ctrlplane/db/schema";
-import { TbTopologyComplex } from "react-icons/tb";
+import { IconTopologyComplex } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -12,7 +12,7 @@ export const SystemGettingStarted: React.FC<{
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
         <div className="relative -ml-1 text-neutral-500">
-          <TbTopologyComplex className="h-10 w-10" strokeWidth={0.5} />
+          <IconTopologyComplex className="h-10 w-10" strokeWidth={0.5} />
         </div>
         <div className="font-semibold">Systems</div>
         <div className="prose prose-invert text-sm text-muted-foreground">

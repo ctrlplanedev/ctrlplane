@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { TbBulb, TbCheck, TbCopy, TbX } from "react-icons/tb";
+import { IconBulb, IconCheck, IconCopy, IconX } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
@@ -103,7 +103,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
               </DialogDescription>
 
               <Alert variant="secondary">
-                <TbBulb className="h-5 w-5" />
+                <IconBulb className="h-5 w-5" />
                 <AlertTitle>Google Provider</AlertTitle>
                 <AlertDescription>
                   To utilize the Google provider, it's necessary to grant our
@@ -137,9 +137,9 @@ export const UpdateGoogleProviderDialog: React.FC<{
                   className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
                 >
                   {isCopied ? (
-                    <TbCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
+                    <IconCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
                   ) : (
-                    <TbCopy className="h-4 w-4" />
+                    <IconCopy className="h-4 w-4" />
                   )}
                 </Button>
               </div>
@@ -182,7 +182,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
                               className="absolute right-2 h-4 w-4 bg-neutral-950 hover:bg-neutral-950"
                               onClick={() => remove(index)}
                             >
-                              <TbX className="h-4 w-4" />
+                              <IconX className="h-4 w-4" />
                             </Button>
                           )}
                         </div>

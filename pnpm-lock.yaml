@@ -6,24 +6,9 @@ settings:
 
 catalogs:
   default:
-    '@octokit/rest':
-      specifier: ^20.1.1
-      version: 20.1.1
-    '@t3-oss/env-core':
-      specifier: ^0.11.1
-      version: 0.11.1
-    '@t3-oss/env-nextjs':
-      specifier: ^0.11.1
-      version: 0.11.1
-    date-fns:
-      specifier: ^3.6.0
-      version: 3.6.0
     eslint:
       specifier: ^9.10.0
       version: 9.10.0
-    eslint-plugin-vitest:
-      specifier: ^0.5.4
-      version: 0.5.4
     prettier:
       specifier: ^3.3.3
       version: 3.3.3
@@ -33,31 +18,14 @@ catalogs:
     typescript:
       specifier: ^5.6.2
       version: 5.6.2
-    typescript-eslint:
-      specifier: ^8.3.0
-      version: 8.6.0
     zod:
       specifier: ^3.23.8
       version: 3.23.8
-  node20:
-    '@types/node':
-      specifier: ^20.12.0
-      version: 20.16.5
-  node22:
-    '@types/node':
-      specifier: ^22.5.5
-      version: 22.5.5
   react18:
     '@types/react':
       specifier: ^18.3.5
       version: 18.3.7
-    '@types/react-dom':
-      specifier: ^18.3.0
-      version: 18.3.0
     react:
-      specifier: 18.3.1
-      version: 18.3.1
-    react-dom:
       specifier: 18.3.1
       version: 18.3.1
 
@@ -308,12 +276,18 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.9.0(react-hook-form@7.53.0(react@18.3.1))
+      '@icons-pack/react-simple-icons':
+        specifier: ^10.0.0
+        version: 10.0.0(react@18.3.1)
       '@internationalized/date':
         specifier: ^3.5.4
         version: 3.5.5
       '@monaco-editor/react':
         specifier: ^4.6.0
         version: 4.6.0(monaco-editor@0.51.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@next/bundle-analyzer':
+        specifier: ^14.2.13
+        version: 14.2.13
       '@octokit/auth-app':
         specifier: ^7.1.0
         version: 7.1.1
@@ -338,6 +312,9 @@ importers:
       '@t3-oss/env-nextjs':
         specifier: 'catalog:'
         version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
+      '@tabler/icons-react':
+        specifier: ^3.17.0
+        version: 3.17.0(react@18.3.1)
       '@tailwindcss/typography':
         specifier: ^0.5.13
         version: 0.5.15(tailwindcss@3.4.12(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.6.2)))
@@ -359,21 +336,6 @@ importers:
       '@vercel/otel':
         specifier: ^1.10.0
         version: 1.10.0(@opentelemetry/api-logs@0.53.0)(@opentelemetry/api@1.9.0)(@opentelemetry/instrumentation@0.53.0(@opentelemetry/api@1.9.0))(@opentelemetry/resources@1.26.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-logs@0.53.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-metrics@1.26.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@1.26.0(@opentelemetry/api@1.9.0))
-      '@xterm/addon-clipboard':
-        specifier: ^0.1.0
-        version: 0.1.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-fit':
-        specifier: ^0.10.0
-        version: 0.10.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-search':
-        specifier: ^0.15.0
-        version: 0.15.0(@xterm/xterm@5.5.0)
-      '@xterm/addon-web-links':
-        specifier: ^0.11.0
-        version: 0.11.0(@xterm/xterm@5.5.0)
-      '@xterm/xterm':
-        specifier: ^5.5.0
-        version: 5.5.0
       change-case:
         specifier: ^5.4.4
         version: 5.4.4
@@ -392,9 +354,6 @@ importers:
       immer:
         specifier: ^10.1.1
         version: 10.1.1
-      jsonschema:
-        specifier: ^1.4.1
-        version: 1.4.1
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
@@ -431,18 +390,9 @@ importers:
       react-hook-form:
         specifier: ^7.51.4
         version: 7.53.0(react@18.3.1)
-      react-icons:
-        specifier: ^5.2.1
-        version: 5.3.0(react@18.3.1)
-      react-responsive-masonry:
-        specifier: ^2.2.0
-        version: 2.3.0
       react-use:
         specifier: ^17.5.0
         version: 17.5.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      react-use-websocket:
-        specifier: ^4.8.1
-        version: 4.8.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       reactflow:
         specifier: ^11.11.3
         version: 11.11.4(@types/react@18.3.7)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -501,9 +451,6 @@ importers:
       '@types/react-grid-layout':
         specifier: ^1.3.5
         version: 1.3.5
-      '@types/react-responsive-masonry':
-        specifier: ^2.1.3
-        version: 2.1.3
       '@types/uuid':
         specifier: ^10.0.0
         version: 10.0.0
@@ -610,6 +557,207 @@ importers:
       typescript:
         specifier: ^5.6.2
         version: 5.6.2
+
+  integrations/google-compute-scanner:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
+      '@google-cloud/container':
+        specifier: ^5.16.0
+        version: 5.17.0
+      '@kubernetes/client-node':
+        specifier: ^0.22.0
+        version: 0.22.0
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      google-auth-library:
+        specifier: ^9.13.0
+        version: 9.14.1
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      semver:
+        specifier: ^7.6.2
+        version: 7.6.3
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
+      '@types/semver':
+        specifier: ^7.5.8
+        version: 7.5.8
+      eslint:
+        specifier: 'catalog:'
+        version: 9.10.0(jiti@1.21.6)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.2
+        version: 5.6.2
+
+  integrations/kubernetes-job-agent:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../../packages/validators
+      '@kubernetes/client-node':
+        specifier: ^0.22.0
+        version: 0.22.0
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
+      eslint:
+        specifier: 'catalog:'
+        version: 9.10.0(jiti@1.21.6)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.2
+        version: 5.6.2
+
+  integrations/terraform-cloud-scanner:
+    dependencies:
+      '@ctrlplane/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      '@ctrlplane/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      '@t3-oss/env-core':
+        specifier: ^0.10.1
+        version: 0.10.1(typescript@5.6.2)(zod@3.23.8)
+      cron:
+        specifier: ^3.1.7
+        version: 3.1.7
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      p-retry:
+        specifier: ^6.2.0
+        version: 6.2.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/lodash':
+        specifier: ^4.17.5
+        version: 4.17.7
+      '@types/node':
+        specifier: catalog:node22
+        version: 22.5.5
+      '@vitest/coverage-v8':
+        specifier: ^2.1.1
+        version: 2.1.1(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
+      eslint:
+        specifier: 'catalog:'
+        version: 9.10.0(jiti@1.21.6)
+      eslint-plugin-vitest:
+        specifier: 'catalog:'
+        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: ^5.6.2
+        version: 5.6.2
+      vitest:
+        specifier: ^2.1.1
+        version: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
 
   packages/api:
     dependencies:
@@ -1038,6 +1186,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.1.1
         version: 1.1.2(@types/react-dom@18.3.0)(@types/react@18.3.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@tabler/icons-react':
+        specifier: ^3.17.0
+        version: 3.17.0(react@18.3.1)
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.0
@@ -1056,9 +1207,6 @@ importers:
       react-hook-form:
         specifier: ^7.51.4
         version: 7.53.0(react@18.3.1)
-      react-icons:
-        specifier: ^5.2.1
-        version: 5.3.0(react@18.3.1)
       react-resizable-panels:
         specifier: ^2.0.20
         version: 2.1.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1139,207 +1287,6 @@ importers:
       typescript:
         specifier: ^5.6.2
         version: 5.6.2
-
-  providers/google-compute-scanner:
-    dependencies:
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
-      '@google-cloud/container':
-        specifier: ^5.16.0
-        version: 5.17.0
-      '@kubernetes/client-node':
-        specifier: ^0.22.0
-        version: 0.22.0
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      google-auth-library:
-        specifier: ^9.13.0
-        version: 9.14.1
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-      semver:
-        specifier: ^7.6.2
-        version: 7.6.3
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      '@types/semver':
-        specifier: ^7.5.8
-        version: 7.5.8
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: ^5.6.2
-        version: 5.6.2
-
-  providers/kubernetes-job-agent:
-    dependencies:
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@ctrlplane/validators':
-        specifier: workspace:*
-        version: link:../../packages/validators
-      '@kubernetes/client-node':
-        specifier: ^0.22.0
-        version: 0.22.0
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.11.1(typescript@5.6.2)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.1.0
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: ^5.6.2
-        version: 5.6.2
-
-  providers/terraform-cloud-scanner:
-    dependencies:
-      '@ctrlplane/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      '@ctrlplane/node-sdk':
-        specifier: workspace:*
-        version: link:../../packages/node-sdk
-      '@t3-oss/env-core':
-        specifier: ^0.10.1
-        version: 0.10.1(typescript@5.6.2)(zod@3.23.8)
-      cron:
-        specifier: ^3.1.7
-        version: 3.1.7
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      handlebars:
-        specifier: ^4.7.8
-        version: 4.7.8
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/lodash':
-        specifier: ^4.17.5
-        version: 4.17.7
-      '@types/node':
-        specifier: catalog:node22
-        version: 22.5.5
-      '@vitest/coverage-v8':
-        specifier: ^2.1.1
-        version: 2.1.1(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
-      eslint:
-        specifier: 'catalog:'
-        version: 9.10.0(jiti@1.21.6)
-      eslint-plugin-vitest:
-        specifier: 'catalog:'
-        version: 0.5.4(eslint@9.10.0(jiti@1.21.6))(typescript@5.6.2)(vitest@2.1.1(@types/node@22.5.5)(jsdom@25.0.0))
-      jsdom:
-        specifier: ^25.0.0
-        version: 25.0.0
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      typescript:
-        specifier: ^5.6.2
-        version: 5.6.2
-      vitest:
-        specifier: ^2.1.1
-        version: 2.1.1(@types/node@22.5.5)(jsdom@25.0.0)
 
   tooling/eslint:
     dependencies:
@@ -1574,6 +1521,10 @@ packages:
 
   '@dabh/diagnostics@2.0.3':
     resolution: {integrity: sha512-hrlQOIi7hAfzsMqlGSFyVucrx38O+j6wiGOf//H2ecvIEqYN4ADBSS2iLMh5UFyDunCNniUIPk/q3riFv45xRA==}
+
+  '@discoveryjs/json-ext@0.5.7':
+    resolution: {integrity: sha512-dBVuXR082gk3jsFp7Rd/JI4kytwGHecnCoTtXFb7DB6CNHp4rg5k1bhg0nWdLGLnOV71lmDzGQaLMy8iPLY0pw==}
+    engines: {node: '>=10.0.0'}
 
   '@drizzle-team/brocli@0.10.1':
     resolution: {integrity: sha512-AHy0vjc+n/4w/8Mif+w86qpppHuF3AyXbcWW+R/W7GNA3F5/p2nuhlkCJaTXSLZheB4l1rtHzOfr9A7NwoR/Zg==}
@@ -2238,6 +2189,11 @@ packages:
       '@vue/compiler-sfc':
         optional: true
 
+  '@icons-pack/react-simple-icons@10.0.0':
+    resolution: {integrity: sha512-oU0PVDx9sbNQjRxJN555dsHbRApYN+aBq/O9+wo3JgNkEfvBMgAEtsSGtXWWXQsLAxJcYiFOCzBWege/Xj/JFQ==}
+    peerDependencies:
+      react: ^16.13 || ^17 || ^18
+
   '@internationalized/date@3.5.5':
     resolution: {integrity: sha512-H+CfYvOZ0LTJeeLOqm19E3uj/4YjrmOFtBufDHPfvtI80hFAMqtrp7oCACpe4Cil5l8S0Qu/9dYfZc/5lY8WQQ==}
 
@@ -2483,6 +2439,9 @@ packages:
       '@nestjs/websockets':
         optional: true
 
+  '@next/bundle-analyzer@14.2.13':
+    resolution: {integrity: sha512-CQOVKmfenD9HsG4AmyXG2ElMvtGKAT9TlS2JLgpL/EORi4WX+QMiQ8Ri6b+A7HRT+AiUGjsYnocIOET59i6Jfw==}
+
   '@next/env@14.2.12':
     resolution: {integrity: sha512-3fP29GIetdwVIfIRyLKM7KrvJaqepv+6pVodEbx0P5CaMLYBtx+7eEg8JYO5L9sveJO87z9eCReceZLi0hxO1Q==}
 
@@ -2722,6 +2681,9 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@polka/url@1.0.0-next.28':
+    resolution: {integrity: sha512-8LduaNlMZGwdZ6qWrKlfa+2M4gahzFkprZiAt2TF8uS0qQgBizKXpXURqvTJ4WtmupWxaLqjRb2UCTe72mu+Aw==}
 
   '@popperjs/core@2.11.8':
     resolution: {integrity: sha512-P1st0aksCrn9sGZhp8GMYwBnQsbvAWsZAX44oXNNvLHGqAOcoVxmjZiohstwQ7SqKnbR47akdNi+uleWD8+g6A==}
@@ -4087,6 +4049,14 @@ packages:
       typescript:
         optional: true
 
+  '@tabler/icons-react@3.17.0':
+    resolution: {integrity: sha512-Ndm9Htv7KpIU1PYYrzs5EMhyA3aZGcgaxUp9Q1XOxcRZ+I0X+Ub2WS5f4bkRyDdL1s0++k2T9XRgmg2pG113sw==}
+    peerDependencies:
+      react: '>= 16'
+
+  '@tabler/icons@3.17.0':
+    resolution: {integrity: sha512-sCSfAQ0w93KSnSL7tS08n73CdIKpuHP8foeLMWgDKiZaCs8ZE//N3ytazCk651ZtruTtByI3b+ZDj7nRf+hHvA==}
+
   '@tailwindcss/typography@0.5.15':
     resolution: {integrity: sha512-AqhlCXl+8grUz8uqExv5OTtgpjuVIwFTSXTrh8y9/pw6q2ek7fJ+Y8ZEVw7EB2DCcuCOtEjf9w3+J3rzts01uA==}
     peerDependencies:
@@ -4397,9 +4367,6 @@ packages:
   '@types/react-grid-layout@1.3.5':
     resolution: {integrity: sha512-WH/po1gcEcoR6y857yAnPGug+ZhkF4PaTUxgAbwfeSH/QOgVSakKHBXoPGad/sEznmkiaK3pqHk+etdWisoeBQ==}
 
-  '@types/react-responsive-masonry@2.1.3':
-    resolution: {integrity: sha512-aOFUtv3QwNMmy0BgpQpvivQ/+vivMTB6ARrzf9eTSXsLzXpVnfEtjpHpSknYDnr8KaQmlgeauAj8E7wo/qMOTg==}
-
   '@types/react@18.3.7':
     resolution: {integrity: sha512-KUnDCJF5+AiZd8owLIeVHqmW9yM4sqmDVf2JRJiBMFkGvkoZ4/WyV2lL4zVsoinmRS/W3FeEdZLEWFRofnT2FQ==}
 
@@ -4585,29 +4552,6 @@ packages:
 
   '@xobotyi/scrollbar-width@1.9.5':
     resolution: {integrity: sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ==}
-
-  '@xterm/addon-clipboard@0.1.0':
-    resolution: {integrity: sha512-zdoM7p53T5sv/HbRTyp4hY0kKmEQ3MZvAvEtiXqNIHc/JdpqwByCtsTaQF5DX2n4hYdXRPO4P/eOS0QEhX1nPw==}
-    peerDependencies:
-      '@xterm/xterm': ^5.4.0
-
-  '@xterm/addon-fit@0.10.0':
-    resolution: {integrity: sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/addon-search@0.15.0':
-    resolution: {integrity: sha512-ZBZKLQ+EuKE83CqCmSSz5y1tx+aNOCUaA7dm6emgOX+8J9H1FWXZyrKfzjwzV+V14TV3xToz1goIeRhXBS5qjg==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/addon-web-links@0.11.0':
-    resolution: {integrity: sha512-nIHQ38pQI+a5kXnRaTgwqSHnX7KE6+4SVoceompgHL26unAxdfP6IPqUTSYPQgSwM56hsElfoNrrW5V7BUED/Q==}
-    peerDependencies:
-      '@xterm/xterm': ^5.0.0
-
-  '@xterm/xterm@5.5.0':
-    resolution: {integrity: sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A==}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -5371,6 +5315,9 @@ packages:
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
+  debounce@1.2.1:
+    resolution: {integrity: sha512-XRRe6Glud4rd/ZGQfiV1ruXSfbvfJedlV9Y6zOlP+2K04vBYiJEte6stfFkCP03aMnY5tsipamumUjL14fofug==}
+
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
     peerDependencies:
@@ -5620,6 +5567,9 @@ packages:
     peerDependencies:
       drizzle-orm: '>=0.23.13'
       zod: '*'
+
+  duplexer@0.1.2:
+    resolution: {integrity: sha512-jtD6YG370ZCIi/9GTaJKQxWTZD045+4R4hTk/x1UyoqadyJ9x9CgSi1RlVDQF8U2sxLLSnFkCaMihqljHIWgMg==}
 
   duplexify@4.1.3:
     resolution: {integrity: sha512-M3BmBhwJRZsSx38lZyhE53Csddgzl5R7xGJNk7CVddZD6CcmwMCH8J+7AprIrQKH7TonKxaCjcv27Qmf+sQ+oA==}
@@ -6238,6 +6188,10 @@ packages:
     resolution: {integrity: sha512-pCcEwRi+TKpMlxAQObHDQ56KawURgyAf6jtIY046fJ5tIv3zDe/LEIubckAO8fj6JnAxLdmWkUfNyulQ2iKdEw==}
     engines: {node: '>=14.0.0'}
 
+  gzip-size@6.0.0:
+    resolution: {integrity: sha512-ax7ZYomf6jqPTQ4+XCpUGyXKHk5WweS+e05MBO4/y3WJ5RkmPXNKvX+bx1behVILVwr6JSQvZAku021CHPXG3Q==}
+    engines: {node: '>=10'}
+
   handlebars@4.7.8:
     resolution: {integrity: sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==}
     engines: {node: '>=0.4.7'}
@@ -6599,6 +6553,10 @@ packages:
     resolution: {integrity: sha512-+Pgi+vMuUNkJyExiMBt5IlFoMyKnr5zhJ4Uspz58WOhBF5QoIZkFyNHIbBAtHwzVAgk5RtndVNsDRN61/mmDqg==}
     engines: {node: '>=12'}
 
+  is-plain-object@5.0.0:
+    resolution: {integrity: sha512-VRSzKkbMm5jMDoKLbltAkFQ5Qr7VDiTFGXxYFXXowVj387GeGNOCsOH6Msy00SGZ3Fp84b1Naa1psqgcCIEP5Q==}
+    engines: {node: '>=0.10.0'}
+
   is-potential-custom-element-name@1.0.1:
     resolution: {integrity: sha512-bCYeRA2rVibKZd+s2625gGnGF/t7DSqDs4dP7CrLA1m7jKWz6pps0LpYLJN8Q64HtmPKJ1hrN3nzPNKFEKOUiQ==}
 
@@ -6727,9 +6685,6 @@ packages:
     resolution: {integrity: sha512-34wB/Y7MW7bzjKRjUKTa46I2Z7eV62Rkhva+KkopW7Qvv/OSWBqvkSY7vusOPrNuZcUG3tApvdVgNB8POj3SPw==}
     engines: {node: '>=10'}
 
-  js-base64@3.7.7:
-    resolution: {integrity: sha512-7rCnleh0z2CkXhH67J8K1Ytz0b2Y+yxTPL+/KOJoa20hfnVQ/3/T6W/KflYI4bRHRagNeXeU2bkNGI3v1oS/lw==}
-
   js-cookie@2.2.1:
     resolution: {integrity: sha512-HvdH2LzI/EAZcUwA8+0nKNtWHqS+ZmijLA30RwZA0bo7ToCckjK5MkGhjED9KoRcXO6BaGI3I9UIzSA1FKFPOQ==}
 
@@ -6805,9 +6760,6 @@ packages:
     resolution: {integrity: sha512-bqE77VIDStrOTV/czspZhTn+o27Xx9ZJRGVkdVShEtPoqsIx5yALv3lWVU6y+PqYvWPJNWE7ORCQheQkEe0DDA==}
     engines: {node: '>=14.0.0'}
     hasBin: true
-
-  jsonschema@1.4.1:
-    resolution: {integrity: sha512-S6cATIPVv1z0IlxdN+zUk5EPjkGCdnhN4wVSBlvoUO1tOLJootbo9CquNJmbIh4yikWHiUedhRYrNPn1arpEmQ==}
 
   jsprim@1.4.2:
     resolution: {integrity: sha512-P2bSOMAc/ciLz6DzgjVlGJP9+BrJWu5UDGK70C2iweC5QBIeFf0ZXRvGjEj2uYgrY2MkAAhsSWHDWlFtEroZWw==}
@@ -7257,6 +7209,10 @@ packages:
     resolution: {integrity: sha512-tzzskb3bG8LvYGFF/mDTpq3jpI6Q9wc3LEmBaghu+DdCssd1FakN7Bc0hVNmEyGq1bq3RgfkCb3cmQLpNPOroA==}
     engines: {node: '>=4'}
 
+  mrmime@2.0.0:
+    resolution: {integrity: sha512-eu38+hdgojoyq63s+yTpN4XMBdt5l8HhMhc4VKLO9KM5caLIBvUm4thi7fFaxyTmCKeNnXZ5pAlBwCUnhA09uw==}
+    engines: {node: '>=10'}
+
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
 
@@ -7499,6 +7455,10 @@ packages:
   onetime@5.1.2:
     resolution: {integrity: sha512-kbpaSSGJTWdAY5KPVeMOKXSrPtr8C8C7wodJbcsd51jRnmD+GZu8Y0VoU6Dm5Z4vWr0Ig/1NKuWRKf7j5aaYSg==}
     engines: {node: '>=6'}
+
+  opener@1.5.2:
+    resolution: {integrity: sha512-ur5UIdyw5Y7yEj9wLzhqXiy6GZ3Mwx0yGI+5sMn2r0N0v3cKJvUmFH5yPP+WXh9e0xfyzyJX95D8l088DNFj7A==}
+    hasBin: true
 
   openid-client@5.7.0:
     resolution: {integrity: sha512-4GCCGZt1i2kTHpwvaC/sCpTpQqDnBzDzuJcJMbH+y1Q5qI8U8RBvoSh28svarXszZHR5BAMXbJPX1PGPRE3VOA==}
@@ -8023,9 +7983,6 @@ packages:
     peerDependencies:
       react: '>= 16.3'
 
-  react-responsive-masonry@2.3.0:
-    resolution: {integrity: sha512-ttb71B75qAfZ5q2CRLKRnCRO9V6p1Vkgw1C9wIeNaD2JpAxwCb1hUBI4Drqea9hNlvxxLpUkO0TRE5CLxqLY0A==}
-
   react-smooth@4.0.1:
     resolution: {integrity: sha512-OE4hm7XqR0jNOq3Qmk9mFLyd6p2+j6bvbPJ7qlB7+oo0eNcL2l7WQzG6MBnT3EXY6xzkLMUBec3AfewJdA0J8w==}
     peerDependencies:
@@ -8058,12 +8015,6 @@ packages:
     peerDependencies:
       react: '*'
       tslib: '*'
-
-  react-use-websocket@4.8.1:
-    resolution: {integrity: sha512-FTXuG5O+LFozmu1BRfrzl7UIQngECvGJmL7BHsK4TYXuVt+mCizVA8lT0hGSIF0Z0TedF7bOo1nRzOUdginhDw==}
-    peerDependencies:
-      react: '>= 18.0.0'
-      react-dom: '>= 18.0.0'
 
   react-use@17.5.1:
     resolution: {integrity: sha512-LG/uPEVRflLWMwi3j/sZqR00nF6JGqTTDblkXK2nzXsIvij06hXl1V/MZIlwj1OKIQUtlh1l9jK8gLsRyCQxMg==}
@@ -8380,6 +8331,10 @@ packages:
 
   simple-swizzle@0.2.2:
     resolution: {integrity: sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg==}
+
+  sirv@2.0.4:
+    resolution: {integrity: sha512-94Bdh3cC2PKrbgSOUqTiGPWVZeSiXfKOVZNJniWoqrWrRkB1CJzBU3NEbiTsPcYy1lDsANA/THzS+9WBiy5nfQ==}
+    engines: {node: '>= 10'}
 
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
@@ -8742,6 +8697,10 @@ packages:
   toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
+
+  totalist@3.0.1:
+    resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
+    engines: {node: '>=6'}
 
   tough-cookie@2.5.0:
     resolution: {integrity: sha512-nlLsUzgm1kfLXSXfRZMc1KLAugd4hqJHDTvc2hDIwS3mZAfMEuMbc03SujMF+GEcpaX/qboeycw6iO8JwVv2+g==}
@@ -9247,6 +9206,11 @@ packages:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
     engines: {node: '>=12'}
 
+  webpack-bundle-analyzer@4.10.1:
+    resolution: {integrity: sha512-s3P7pgexgT/HTUSYgxJyn28A+99mmLq4HsJepMPzu0R8ImJc52QNqaFYW1Z2z2uIb1/J3eYgaAWVpaC+v/1aAQ==}
+    engines: {node: '>= 10.13.0'}
+    hasBin: true
+
   whatwg-encoding@3.1.1:
     resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
     engines: {node: '>=18'}
@@ -9323,6 +9287,18 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
+
+  ws@7.5.10:
+    resolution: {integrity: sha512-+dbF1tHwZpXcbOJdVOkzLDxZP1ailvSxM6ZweXTegylPny803bFhA+vqBYw4s31NSAk4S2Qz+AKXK9a4wkdjcQ==}
+    engines: {node: '>=8.3.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: ^5.0.2
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
 
   ws@8.18.0:
     resolution: {integrity: sha512-8VbfWfHLbbwu3+N6OKsOMpBdT4kXPDDB9cJk2bJ6mh9ucxdlnNvH1e+roYkKmN9Nxw2yjz7VzeO9oOz2zJ04Pw==}
@@ -9587,6 +9563,8 @@ snapshots:
       colorspace: 1.1.4
       enabled: 2.0.0
       kuler: 2.0.0
+
+  '@discoveryjs/json-ext@0.5.7': {}
 
   '@drizzle-team/brocli@0.10.1': {}
 
@@ -10000,6 +9978,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@icons-pack/react-simple-icons@10.0.0(react@18.3.1)':
+    dependencies:
+      react: 18.3.1
+
   '@internationalized/date@3.5.5':
     dependencies:
       '@swc/helpers': 0.5.13
@@ -10234,6 +10216,13 @@ snapshots:
       uid: 2.0.2
     transitivePeerDependencies:
       - encoding
+
+  '@next/bundle-analyzer@14.2.13':
+    dependencies:
+      webpack-bundle-analyzer: 4.10.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@next/env@14.2.12': {}
 
@@ -10513,6 +10502,8 @@ snapshots:
 
   '@pkgjs/parseargs@0.11.0':
     optional: true
+
+  '@polka/url@1.0.0-next.28': {}
 
   '@popperjs/core@2.11.8': {}
 
@@ -12264,6 +12255,13 @@ snapshots:
     optionalDependencies:
       typescript: 5.6.2
 
+  '@tabler/icons-react@3.17.0(react@18.3.1)':
+    dependencies:
+      '@tabler/icons': 3.17.0
+      react: 18.3.1
+
+  '@tabler/icons@3.17.0': {}
+
   '@tailwindcss/typography@0.5.15(tailwindcss@3.4.12(ts-node@10.9.2(@types/node@20.16.5)(typescript@5.6.2)))':
     dependencies:
       lodash.castarray: 4.4.0
@@ -12378,7 +12376,7 @@ snapshots:
   '@types/body-parser@1.19.5':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
 
   '@types/caseless@0.12.5': {}
 
@@ -12527,7 +12525,7 @@ snapshots:
 
   '@types/express-serve-static-core@4.19.5':
     dependencies:
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
       '@types/qs': 6.9.16
       '@types/range-parser': 1.2.7
       '@types/send': 0.17.4
@@ -12631,10 +12629,6 @@ snapshots:
     dependencies:
       '@types/react': 18.3.7
 
-  '@types/react-responsive-masonry@2.1.3':
-    dependencies:
-      '@types/react': 18.3.7
-
   '@types/react@18.3.7':
     dependencies:
       '@types/prop-types': 15.7.13
@@ -12643,7 +12637,7 @@ snapshots:
   '@types/request@2.48.12':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.1
 
@@ -12659,7 +12653,7 @@ snapshots:
   '@types/serve-static@1.15.7':
     dependencies:
       '@types/http-errors': 2.0.4
-      '@types/node': 20.16.5
+      '@types/node': 22.5.5
       '@types/send': 0.17.4
 
   '@types/shimmer@1.2.0': {}
@@ -12874,25 +12868,6 @@ snapshots:
       tinyrainbow: 1.2.0
 
   '@xobotyi/scrollbar-width@1.9.5': {}
-
-  '@xterm/addon-clipboard@0.1.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-      js-base64: 3.7.7
-
-  '@xterm/addon-fit@0.10.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/addon-search@0.15.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/addon-web-links@0.11.0(@xterm/xterm@5.5.0)':
-    dependencies:
-      '@xterm/xterm': 5.5.0
-
-  '@xterm/xterm@5.5.0': {}
 
   abort-controller@3.0.0:
     dependencies:
@@ -13731,6 +13706,8 @@ snapshots:
 
   dayjs@1.11.13: {}
 
+  debounce@1.2.1: {}
+
   debug@2.6.9:
     dependencies:
       ms: 2.0.0
@@ -13897,6 +13874,8 @@ snapshots:
     dependencies:
       drizzle-orm: 0.33.0(@opentelemetry/api@1.9.0)(@types/pg@8.11.10)(@types/react@18.3.7)(pg@8.13.0)(react@18.3.1)
       zod: 3.23.8
+
+  duplexer@0.1.2: {}
 
   duplexify@4.1.3:
     dependencies:
@@ -14839,6 +14818,10 @@ snapshots:
       - encoding
       - supports-color
 
+  gzip-size@6.0.0:
+    dependencies:
+      duplexer: 0.1.2
+
   handlebars@4.7.8:
     dependencies:
       minimist: 1.2.8
@@ -15285,6 +15268,8 @@ snapshots:
 
   is-plain-obj@4.1.0: {}
 
+  is-plain-object@5.0.0: {}
+
   is-potential-custom-element-name@1.0.1: {}
 
   is-reference@3.0.2:
@@ -15407,8 +15392,6 @@ snapshots:
 
   joycon@3.1.1: {}
 
-  js-base64@3.7.7: {}
-
   js-cookie@2.2.1: {}
 
   js-tokens@4.0.0: {}
@@ -15491,8 +15474,6 @@ snapshots:
       '@jsep-plugin/assignment': 1.2.1(jsep@1.3.9)
       '@jsep-plugin/regex': 1.0.3(jsep@1.3.9)
       jsep: 1.3.9
-
-  jsonschema@1.4.1: {}
 
   jsprim@1.4.2:
     dependencies:
@@ -16211,6 +16192,8 @@ snapshots:
 
   mri@1.2.0: {}
 
+  mrmime@2.0.0: {}
+
   ms@2.0.0: {}
 
   ms@2.1.3: {}
@@ -16497,6 +16480,8 @@ snapshots:
   onetime@5.1.2:
     dependencies:
       mimic-fn: 2.1.0
+
+  opener@1.5.2: {}
 
   openid-client@5.7.0:
     dependencies:
@@ -17033,8 +17018,6 @@ snapshots:
     transitivePeerDependencies:
       - react-dom
 
-  react-responsive-masonry@2.3.0: {}
-
   react-smooth@4.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       fast-equals: 5.0.1
@@ -17092,11 +17075,6 @@ snapshots:
     dependencies:
       react: 18.3.1
       tslib: 2.7.0
-
-  react-use-websocket@4.8.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
-    dependencies:
-      react: 18.3.1
-      react-dom: 18.3.1(react@18.3.1)
 
   react-use@17.5.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
@@ -17548,6 +17526,12 @@ snapshots:
     dependencies:
       is-arrayish: 0.3.2
 
+  sirv@2.0.4:
+    dependencies:
+      '@polka/url': 1.0.0-next.28
+      mrmime: 2.0.0
+      totalist: 3.0.1
+
   slash@3.0.0: {}
 
   slugify@1.6.6: {}
@@ -17956,6 +17940,8 @@ snapshots:
   toggle-selection@1.0.6: {}
 
   toidentifier@1.0.1: {}
+
+  totalist@3.0.1: {}
 
   tough-cookie@2.5.0:
     dependencies:
@@ -18529,6 +18515,25 @@ snapshots:
 
   webidl-conversions@7.0.0: {}
 
+  webpack-bundle-analyzer@4.10.1:
+    dependencies:
+      '@discoveryjs/json-ext': 0.5.7
+      acorn: 8.12.1
+      acorn-walk: 8.3.4
+      commander: 7.2.0
+      debounce: 1.2.1
+      escape-string-regexp: 4.0.0
+      gzip-size: 6.0.0
+      html-escaper: 2.0.2
+      is-plain-object: 5.0.0
+      opener: 1.5.2
+      picocolors: 1.1.0
+      sirv: 2.0.4
+      ws: 7.5.10
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   whatwg-encoding@3.1.1:
     dependencies:
       iconv-lite: 0.6.3
@@ -18645,6 +18650,8 @@ snapshots:
       strip-ansi: 7.1.0
 
   wrappy@1.0.2: {}
+
+  ws@7.5.10: {}
 
   ws@8.18.0: {}
 

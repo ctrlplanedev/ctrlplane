@@ -2,8 +2,8 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
+import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { signOut, useSession } from "next-auth/react";
-import { TbCheck, TbChevronDown } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -37,7 +37,7 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
           className="flex w-full items-center justify-between gap-2 px-2 py-0 text-base"
         >
           <span className="truncate">{workspace.name}</span>
-          <TbChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+          <IconChevronDown className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-neutral-900">
@@ -66,7 +66,7 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
                     {ws.name}
                     {ws.id === workspace.id && (
                       <DropdownMenuShortcut>
-                        <TbCheck />
+                        <IconCheck />
                       </DropdownMenuShortcut>
                     )}
                   </DropdownMenuItem>

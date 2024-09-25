@@ -1,7 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { TbAlertTriangle, TbDotsVertical, TbReload } from "react-icons/tb";
+import {
+  IconAlertTriangle,
+  IconDotsVertical,
+  IconReload,
+} from "@tabler/icons-react";
 
 import {
   AlertDialog,
@@ -129,7 +133,7 @@ export const ReleaseDropdownMenu: React.FC<{
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" size="icon">
-        <TbDotsVertical />
+        <IconDotsVertical />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
@@ -139,7 +143,7 @@ export const ReleaseDropdownMenu: React.FC<{
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"
         >
-          <TbReload />
+          <IconReload />
           <span>Redeploy</span>
         </DropdownMenuItem>
       </RedeployReleaseDialog>
@@ -148,7 +152,7 @@ export const ReleaseDropdownMenu: React.FC<{
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"
         >
-          <TbAlertTriangle />
+          <IconAlertTriangle />
           <span>Force deploy</span>
         </DropdownMenuItem>
       </ForceReleaseDialog>

@@ -3,7 +3,7 @@
 import type { TargetMetadataGroup, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbDots } from "react-icons/tb";
+import { IconDots } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -76,7 +76,7 @@ export const TargetGroupsTable: React.FC<{
               >
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
-                    <TbDots className="h-4 w-4" />
+                    <IconDots className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>

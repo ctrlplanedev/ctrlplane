@@ -4,8 +4,8 @@
 import type { DateValue } from "react-aria";
 import type { DatePickerStateOptions } from "react-stately";
 import React, { useRef, useState } from "react";
+import { IconCalendar } from "@tabler/icons-react";
 import { useButton, useDatePicker, useInteractOutside } from "react-aria";
-import { TbCalendar } from "react-icons/tb";
 import { useDatePickerState } from "react-stately";
 
 import { cn } from "@ctrlplane/ui";
@@ -59,7 +59,7 @@ const DateTimePicker = React.forwardRef<
             disabled={props.isDisabled}
             onClick={() => setOpen(true)}
           >
-            <TbCalendar className="h-5 w-5" />
+            <IconCalendar className="h-5 w-5" />
           </Button>
         </PopoverTrigger>
         <PopoverContent ref={contentRef} className="w-full">

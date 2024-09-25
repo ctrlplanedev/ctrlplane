@@ -6,19 +6,19 @@ import type {
 } from "@ctrlplane/db/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZonedDateTime } from "@internationalized/date";
+import {
+  IconBolt,
+  IconFilter,
+  IconInfoCircle,
+  IconRegex,
+  IconUser,
+  IconVersions,
+  IconX,
+} from "@tabler/icons-react";
 import _ from "lodash";
 import ms from "ms";
 import prettyMilliseconds from "pretty-ms";
 import { useFieldArray, useForm } from "react-hook-form";
-import {
-  TbBolt,
-  TbFilter,
-  TbInfoCircle,
-  TbRegex,
-  TbUser,
-  TbVersions,
-  TbX,
-} from "react-icons/tb";
 import { validRange } from "semver";
 import { z } from "zod";
 
@@ -203,7 +203,7 @@ export const SidebarPhasePanel: React.FC<{
     <Form {...form}>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
         <div className="flex-shrink-0 rounded bg-neutral-800 p-1 text-neutral-400">
-          <TbFilter />
+          <IconFilter className="h-4 w-4" />
         </div>
         <span className="flex-grow">Policy</span>
         <Button
@@ -211,7 +211,7 @@ export const SidebarPhasePanel: React.FC<{
           size="icon"
           className="flex-shrink-0 text-neutral-500 hover:text-white"
         >
-          <TbInfoCircle />
+          <IconInfoCircle className="h-4 w-4" />
         </Button>
       </h2>
       <Separator />
@@ -253,7 +253,7 @@ export const SidebarPhasePanel: React.FC<{
                       <RadioGroupItem value="automatic" />
                     </FormControl>
                     <FormLabel className="flex items-center gap-2 font-normal">
-                      <TbBolt className="text-neutral-400" />
+                      <IconBolt className="h-4 w-4 text-neutral-400" />
                       Automatic approval
                     </FormLabel>
                   </FormItem>
@@ -263,7 +263,7 @@ export const SidebarPhasePanel: React.FC<{
                       <RadioGroupItem value="manual" />
                     </FormControl>
                     <FormLabel className="flex items-center gap-2 font-normal">
-                      <TbUser className="text-neutral-400" /> Manual approval
+                      <IconUser className="text-neutral-400" /> Manual approval
                     </FormLabel>
                   </FormItem>
                 </RadioGroup>
@@ -431,11 +431,11 @@ export const SidebarPhasePanel: React.FC<{
                       <SelectGroup>
                         <SelectItem value="none">None</SelectItem>
                         <SelectItem value="regex">
-                          <TbRegex className="mb-1 mr-2 inline text-neutral-500" />
+                          <IconRegex className="mb-1 mr-2 inline text-neutral-500" />
                           Regex
                         </SelectItem>
                         <SelectItem value="semver">
-                          <TbVersions className="mb-1 mr-2 inline text-neutral-500" />
+                          <IconVersions className="mb-1 mr-2 inline text-neutral-500" />
                           Semver
                         </SelectItem>
                       </SelectGroup>
@@ -551,7 +551,7 @@ export const SidebarPhasePanel: React.FC<{
                         onClick={() => remove(index)}
                         className="h-8 w-8 p-0 text-neutral-500 hover:text-white"
                       >
-                        <TbX />
+                        <IconX />
                       </Button>
                     </div>
                   );

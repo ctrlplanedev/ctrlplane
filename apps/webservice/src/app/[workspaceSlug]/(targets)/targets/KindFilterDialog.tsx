@@ -4,7 +4,7 @@ import type {
 } from "@ctrlplane/validators/targets";
 import type React from "react";
 import { useState } from "react";
-import { TbSelector, TbX } from "react-icons/tb";
+import { IconSelector, IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -141,7 +141,7 @@ export const KindFilterDialog: React.FC<{
                           className="h-4 w-4"
                           onClick={() => remove(index)}
                         >
-                          <TbX />
+                          <IconX />
                         </Button>
                       </Badge>
                     </div>
@@ -159,7 +159,7 @@ export const KindFilterDialog: React.FC<{
                     aria-expanded={commandOpen}
                     className="w-full items-center justify-start gap-2 px-2"
                   >
-                    <TbSelector />
+                    <IconSelector />
                     <span>Select kind...</span>
                   </Button>
                 </PopoverTrigger>

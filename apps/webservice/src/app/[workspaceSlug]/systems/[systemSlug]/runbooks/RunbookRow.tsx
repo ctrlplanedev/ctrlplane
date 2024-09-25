@@ -2,7 +2,7 @@
 
 import type * as schema from "@ctrlplane/db/schema";
 import { useState } from "react";
-import { TbDotsVertical } from "react-icons/tb";
+import { IconDotsVertical } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -37,7 +37,7 @@ export const RunbookRow: React.FC<{
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon">
-            <TbDotsVertical />
+            <IconDotsVertical />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

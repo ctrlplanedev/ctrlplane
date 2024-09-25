@@ -1,7 +1,7 @@
 "use client";
 
+import { IconBrandGoogle } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
-import { TbBrandGoogle } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -18,28 +18,28 @@ export const LoginCard: React.FC = () => {
             size="lg"
             className="w-full gap-2 rounded-lg bg-neutral-700 p-6 text-lg tracking-normal text-white hover:bg-neutral-600"
           >
-            <TbBrandGithub /> Continue with Github
+            <IconBrandGithub /> Continue with Github
           </Button>
           <Button
             onClick={() => signIn("gitlab")}
             size="lg"
             className="w-full gap-2 rounded-lg bg-purple-700 p-6 text-lg tracking-normal text-white hover:bg-purple-600"
           >
-            <TbBrandGitlab /> Continue with Gitlab
+            <IconBrandGitlab /> Continue with Gitlab
           </Button>
           <Button
             onClick={() => signIn("bitbucket")}
             size="lg"
             className="w-full gap-2 rounded-lg bg-blue-700 p-6 text-lg tracking-normal text-white hover:bg-blue-600"
           >
-            <TbBrandBitbucket /> Continue with Bitbucket
+            <IconBrandBitbucket /> Continue with Bitbucket
           </Button> */}
           <Button
             onClick={() => signIn("google")}
             size="lg"
             className="w-full gap-2 rounded-lg bg-red-700 p-6 text-lg tracking-normal text-white hover:bg-red-600"
           >
-            <TbBrandGoogle /> Continue with Google
+            <IconBrandGoogle className="h-4 w-4" /> Continue with Google
           </Button>
         </div>
         {/* <Separator />
@@ -49,14 +49,14 @@ export const LoginCard: React.FC = () => {
             variant="outline"
             className="w-full gap-2 rounded-lg p-6 text-lg tracking-normal"
           >
-            <TbLock /> Continue with SSO
+            <IconLock /> Continue with SSO
           </Button>
           <Button
             size="lg"
             variant="outline"
             className="w-full gap-2 rounded-lg p-6 text-lg font-semibold tracking-normal"
           >
-            <TbKey /> Login with Passkey
+            <IconKey /> Login with Passkey
           </Button>
         </div> */}
       </div>

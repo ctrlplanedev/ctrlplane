@@ -8,8 +8,8 @@ import type {
   ReactFlowInstance,
 } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
-import { SiKubernetes, SiTerraform } from "react-icons/si";
-import { TbTarget } from "react-icons/tb";
+import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
+import { IconTarget } from "@tabler/icons-react";
 import ReactFlow, {
   BaseEdge,
   EdgeLabelRenderer,
@@ -58,7 +58,7 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
           ) : isTerraform ? (
             <SiTerraform className="h-8 w-8 text-purple-300" />
           ) : (
-            <TbTarget className="h-8 w-8 text-neutral-500" />
+            <IconTarget className="h-8 w-8 text-neutral-500" />
           )}
         </div>
         <div className="text-sm font-medium text-muted-foreground">
