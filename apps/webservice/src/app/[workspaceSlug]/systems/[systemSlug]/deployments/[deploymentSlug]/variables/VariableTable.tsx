@@ -122,7 +122,7 @@ export const VariableTable: React.FC<{
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
-                              <IconDotsVertical />
+                              <IconDotsVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent>

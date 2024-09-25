@@ -129,9 +129,9 @@ export const targetMetadataGroupRouter = createTRPCRouter({
         .select({
           id: target.id,
           metadata: sql<Record<string, string>>`jsonb_object_agg(
-                      ${targetMetadata.key},
-                      ${targetMetadata.value}
-                    )`.as("metadata"),
+            ${targetMetadata.key},
+            ${targetMetadata.value}
+          )`.as("metadata"),
         })
         .from(target)
         .innerJoin(
