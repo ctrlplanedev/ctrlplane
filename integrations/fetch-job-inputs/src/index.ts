@@ -12,6 +12,7 @@ const api = new DefaultApi(config);
 const requiredOutputs = core
   .getInput("required_outputs", { required: false })
   .split("\n")
+  .filter((output) => output.trim() !== "")
   .map((output) => output.trim());
 
 const outputTracker: Record<string, boolean> = {};
