@@ -27973,9 +27973,14 @@ async function run() {
         setOutputsRecursively("variables", variables ?? {});
     })
         .then(() => {
-        const missingOutputs = requiredOutputs.filter((output) => !outputTracker[output]);
-        if (missingOutputs.length > 0)
-            core.setFailed(`Missing required outputs: ${missingOutputs.join(", ")}`);
+        if (requiredOutputs.length > 0) {
+            core.info(`The required_outputs for this job are: ${requiredOutputs.join(", ")}`);
+            const missingOutputs = requiredOutputs.filter((output) => !outputTracker[output]);
+            if (missingOutputs.length > 0)
+                core.setFailed(`Missing required outputs: ${missingOutputs.join(", ")}`);
+            return;
+        }
+        core.info("No required_outputs set for this job");
     })
         .catch((error) => {
         core.setFailed(`Action failed: ${error.message}`);
