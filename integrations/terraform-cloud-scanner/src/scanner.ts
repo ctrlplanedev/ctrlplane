@@ -171,11 +171,6 @@ async function getOrCreateProviderId(): Promise<string | null> {
       return id;
     })
     .catch((error) => {
-      logger.info("upsertTargetProvider", {
-        workspaceId: env.CTRLPLANE_WORKSPACE_ID,
-        name: env.CTRLPLANE_SCANNER_NAME,
-      });
-      logger.info("error code", error.code);
       logger.error("Failed to get or create provider ID:", error);
       return null;
     });
