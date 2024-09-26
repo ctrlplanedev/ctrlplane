@@ -2,7 +2,7 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import React from "react";
-import { IconFilter, IconFilterFilled } from "@tabler/icons-react";
+import { IconFilter } from "@tabler/icons-react";
 import range from "lodash/range";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -14,6 +14,7 @@ import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
 import { TargetConditionDialog } from "../../_components/target-condition/TargetConditionDialog";
 import { useTargetFilter } from "../../_components/target-condition/useTargetFilter";
 import { useTargetDrawer } from "../../_components/target-drawer/TargetDrawer";
+import { TargetConditionBadge } from "./TargetFilterBadge";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
@@ -42,17 +43,16 @@ export const TargetPageContent: React.FC<{
           condition={filter}
           onChange={(filter) => setFilter(filter)}
         >
-          <Button
-            variant={filter != null ? "secondary" : "ghost"}
-            size="icon"
-            className="flex h-7 w-7 items-center gap-1 text-xs"
-          >
-            {filter != null ? (
-              <IconFilterFilled className="h-4 w-4" />
-            ) : (
+          <div className="flex items-center gap-2">
+            {filter != null && <TargetConditionBadge condition={filter} />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex flex-shrink-0 items-center gap-1 text-xs"
+            >
               <IconFilter className="h-4 w-4" />
-            )}
-          </Button>
+            </Button>
+          </div>
         </TargetConditionDialog>
         {targets.data?.total != null && (
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">

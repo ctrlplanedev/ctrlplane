@@ -55,15 +55,6 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
           <Button
             variant="outline"
             onClick={() => {
-              setLocalCondition(condition ?? defaultCondition);
-              setError(null);
-            }}
-          >
-            Reset to original state
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
               setLocalCondition(defaultCondition);
               setError(null);
             }}
