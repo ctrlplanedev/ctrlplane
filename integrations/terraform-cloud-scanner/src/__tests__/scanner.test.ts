@@ -97,7 +97,7 @@ describe("Scanner Module", () => {
     expect(() => listVariables("workspace-1")).not.toThrow();
     expect(() =>
       api.upsertTargetProvider({
-        workspace: "ctrlplane-workspace",
+        workspaceId: "ctrlplane-workspace",
         name: "mock-scanner",
       }),
     ).not.toThrow();
@@ -106,7 +106,7 @@ describe("Scanner Module", () => {
     expect(() => listVariables("workspace-1")).not.toThrow();
     expect(() =>
       api.upsertTargetProvider({
-        workspace: "ctrlplane-workspace",
+        workspaceId: "ctrlplane-workspace",
         name: "mock-scanner",
       }),
     ).not.toThrow();

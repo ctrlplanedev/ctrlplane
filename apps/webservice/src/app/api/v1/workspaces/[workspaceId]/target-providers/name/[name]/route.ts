@@ -5,6 +5,7 @@ import { checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { targetProvider, workspace } from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
@@ -16,11 +17,11 @@ export const GET = async (
   const ws = await db
     .select()
     .from(workspace)
-    .where(eq(workspace.slug, params.workspaceId))
+    .where(eq(workspace.id, params.workspaceId))
     .then(takeFirstOrNull);
 
   if (!ws)
-    return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    return NextResponse.json({ error: "Workspace not found" }, { status: 404 });=
 
   const user = await getUser(req);
   if (user == null)
@@ -33,6 +34,7 @@ export const GET = async (
   );
   if (!canAccess)
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+
 
   const tp = await db
     .insert(targetProvider)
