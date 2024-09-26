@@ -31,14 +31,12 @@ export const PATCH = async (
   { params }: { params: { providerId: string } },
 ) => {
   const user = await getUser(req);
-  if (!user) {
+  if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const canAccess = await canAccessTargetProvider(user.id, params.providerId);
-  if (!canAccess) {
+  if (!canAccess)
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
-  }
 
   const query = await db
     .select()
@@ -48,9 +46,8 @@ export const PATCH = async (
     .then(takeFirstOrNull);
 
   const provider = query?.target_provider;
-  if (!provider) {
+  if (!provider)
     return NextResponse.json({ error: "Provider not found" }, { status: 404 });
-  }
 
   const body = await bodySchema.parseAsync(await req.json());
   const targetsToInsert = body.targets.map((t) => ({

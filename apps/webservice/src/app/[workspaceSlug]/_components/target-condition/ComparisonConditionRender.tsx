@@ -102,7 +102,7 @@ export const ComparisonConditionRender: React.FC<
       )}
     >
       {condition.conditions.length === 0 && (
-        <span className="text-muted-foreground">No conditions</span>
+        <span className="text-sm text-muted-foreground">No conditions</span>
       )}
       <div className="space-y-2">
         {condition.conditions.map((subCond, index) => (

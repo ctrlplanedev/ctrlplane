@@ -77,7 +77,7 @@ export interface UpdateJobAgentOperationRequest {
 }
 
 export interface UpsertTargetProviderRequest {
-  workspace: string;
+  workspaceId: string;
   name: string;
 }
 
@@ -499,10 +499,10 @@ export class DefaultApi extends runtime.BaseAPI {
     requestParameters: UpsertTargetProviderRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<runtime.ApiResponse<UpdateJobAgent200Response>> {
-    if (requestParameters["workspace"] == null) {
+    if (requestParameters["workspaceId"] == null) {
       throw new runtime.RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling upsertTargetProvider().',
+        "workspaceId",
+        'Required parameter "workspaceId" was null or undefined when calling upsertTargetProvider().',
       );
     }
 
@@ -524,10 +524,10 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/workspaces/{workspace}/target-providers/name/{name}`
+        path: `/v1/workspaces/{workspaceId}/target-providers/name/{name}`
           .replace(
-            `{${"workspace"}}`,
-            encodeURIComponent(String(requestParameters["workspace"])),
+            `{${"workspaceId"}}`,
+            encodeURIComponent(String(requestParameters["workspaceId"])),
           )
           .replace(
             `{${"name"}}`,

@@ -15,7 +15,7 @@ import { api } from "./sdk.js";
 const getScannerId = async () => {
   try {
     const { id } = await api.upsertTargetProvider({
-      workspace: env.CTRLPLANE_WORKSPACE_ID,
+      workspaceId: env.CTRLPLANE_WORKSPACE_ID,
       name: env.CTRLPLANE_SCANNER_NAME,
     });
     return id;

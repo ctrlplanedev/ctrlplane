@@ -16,7 +16,7 @@ export const GET = async (
   const ws = await db
     .select()
     .from(workspace)
-    .where(eq(workspace.slug, params.workspaceId))
+    .where(eq(workspace.id, params.workspaceId))
     .then(takeFirstOrNull);
 
   if (!ws)

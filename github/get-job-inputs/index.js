@@ -27862,10 +27862,10 @@ var DefaultApi = class extends BaseAPI {
    * Upserts a target provider.
    */
   async upsertTargetProviderRaw(requestParameters, initOverrides) {
-    if (requestParameters["workspace"] == null) {
+    if (requestParameters["workspaceId"] == null) {
       throw new RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling upsertTargetProvider().'
+        "workspaceId",
+        'Required parameter "workspaceId" was null or undefined when calling upsertTargetProvider().'
       );
     }
     if (requestParameters["name"] == null) {
@@ -27881,9 +27881,9 @@ var DefaultApi = class extends BaseAPI {
     }
     const response = await this.request(
       {
-        path: `/v1/workspaces/{workspace}/target-providers/name/{name}`.replace(
-          `{${"workspace"}}`,
-          encodeURIComponent(String(requestParameters["workspace"]))
+        path: `/v1/workspaces/{workspaceId}/target-providers/name/{name}`.replace(
+          `{${"workspaceId"}}`,
+          encodeURIComponent(String(requestParameters["workspaceId"]))
         ).replace(
           `{${"name"}}`,
           encodeURIComponent(String(requestParameters["name"]))
