@@ -21,7 +21,7 @@ import {
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { comparisonCondition } from "@ctrlplane/validators/targets";
+import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { targetMetadataGroupRouter } from "./target-metadata-group";
@@ -214,20 +214,14 @@ export const targetRouter = createTRPCRouter({
       .input(
         z.object({
           workspaceId: z.string().uuid(),
-          filters: z.array(comparisonCondition).optional(),
+          filter: targetCondition.optional(),
           limit: z.number().default(500),
           offset: z.number().default(0),
         }),
       )
       .query(({ ctx, input }) => {
         const workspaceIdCheck = eq(target.workspaceId, input.workspaceId);
-
-        const targetConditions = targetMatchesMetadata(ctx.db, {
-          operator: "and",
-          type: "comparison",
-          conditions: input.filters ?? [],
-        });
-
+        const targetConditions = targetMatchesMetadata(ctx.db, input.filter);
         const checks = [workspaceIdCheck, targetConditions].filter(isPresent);
 
         const items = targetQuery(ctx.db, checks)

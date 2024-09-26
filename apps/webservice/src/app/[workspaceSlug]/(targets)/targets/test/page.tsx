@@ -8,7 +8,7 @@ import {
   TargetOperator,
 } from "@ctrlplane/validators/targets";
 
-import { TargetConditionRender } from "../../../_components/target-filter/TargetConditionRender";
+import { TargetConditionRender } from "../../../_components/target-condition/TargetConditionRender";
 
 const testTargetCondition: TargetCondition = {
   type: TargetFilterType.Comparison,

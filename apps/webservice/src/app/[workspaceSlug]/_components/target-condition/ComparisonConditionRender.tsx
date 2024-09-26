@@ -51,11 +51,13 @@ const doesConvertingToComparisonRespectMaxDepth = (
   depth: number,
   condition: TargetCondition,
 ): boolean => {
-  if (depth >= MAX_DEPTH_ALLOWED) return false;
-  if (conditionIsComparison(condition))
+  if (depth > MAX_DEPTH_ALLOWED) return false;
+  if (conditionIsComparison(condition)) {
+    if (depth === MAX_DEPTH_ALLOWED) return false;
     return condition.conditions.every((c) =>
       doesConvertingToComparisonRespectMaxDepth(depth + 1, c),
     );
+  }
   return true;
 };
 
@@ -115,9 +117,10 @@ export const ComparisonConditionRender: React.FC<
   return (
     <div
       className={cn(
-        "rounded-sm border border-neutral-800 p-2",
+        "rounded-md border  p-2",
         condition.conditions.length > 0 ? "space-y-4" : "space-y-1",
         className,
+        depth === 0 ? "bg-neutral-950" : "bg-neutral-800/10",
       )}
     >
       {condition.conditions.length === 0 && (
@@ -128,13 +131,23 @@ export const ComparisonConditionRender: React.FC<
           <div key={index} className="flex items-start gap-2">
             <div className="grid flex-grow grid-cols-12 gap-2">
               {index !== 1 && (
-                <div className="col-span-1 flex justify-end px-1 pt-1 text-muted-foreground">
+                <div
+                  className={cn(
+                    "col-span-2 flex justify-end px-1 pt-1 text-muted-foreground",
+                    depth === 0 ? "col-span-1" : "col-span-2",
+                  )}
+                >
                   {index === 0 ? "When" : capitalCase(condition.operator)}
                 </div>
               )}
               {index === 1 && (
                 <Select value={condition.operator} onValueChange={setOperator}>
-                  <SelectTrigger className="col-span-1 text-muted-foreground hover:bg-neutral-700/50">
+                  <SelectTrigger
+                    className={cn(
+                      "col-span-2 text-muted-foreground hover:bg-neutral-700/50",
+                      depth === 0 ? "col-span-1" : "col-span-2",
+                    )}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -151,7 +164,7 @@ export const ComparisonConditionRender: React.FC<
                 onChange={(c) => updateCondition(index, c)}
                 onRemove={() => removeCondition(index)}
                 depth={depth + 1}
-                className="col-span-11"
+                className={cn(depth === 0 ? "col-span-11" : "col-span-10")}
               />
             </div>
 
@@ -165,7 +178,10 @@ export const ComparisonConditionRender: React.FC<
                   <IconDots className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent
+                align="end"
+                className="text-muted-foreground"
+              >
                 <DropdownMenuItem
                   onClick={() => removeCondition(index)}
                   className="flex items-center gap-2"
@@ -196,7 +212,7 @@ export const ComparisonConditionRender: React.FC<
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <DropdownMenuItem
-                          className="flex cursor-not-allowed items-center gap-2 bg-neutral-950 text-muted-foreground focus:bg-neutral-950 focus:text-muted-foreground"
+                          className="flex cursor-not-allowed items-center gap-2 bg-neutral-950 text-muted focus:bg-neutral-950 focus:text-muted"
                           onSelect={(e) => e.stopPropagation()}
                         >
                           <IconRefresh className="h-4 w-4" />
@@ -223,7 +239,10 @@ export const ComparisonConditionRender: React.FC<
           <Button
             type="button"
             variant="outline"
-            className="flex items-center gap-1 px-2 text-muted-foreground hover:bg-neutral-800/50"
+            className={cn(
+              "flex items-center gap-1 bg-inherit px-2 text-muted-foreground hover:bg-neutral-800/50",
+              depth === 0 && "border-neutral-800/70",
+            )}
           >
             <IconPlus className="h-4 w-4" /> Add Condition{" "}
             <IconChevronDown className="h-4 w-4" />

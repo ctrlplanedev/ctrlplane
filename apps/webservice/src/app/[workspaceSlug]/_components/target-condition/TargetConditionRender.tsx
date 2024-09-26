@@ -20,9 +20,15 @@ type TargetConditionRenderProps<T extends TargetCondition> = {
   className?: string;
 };
 
+/**
+ * The parent container should have min width of 1000px
+ * to render this component properly.
+ */
 export const TargetConditionRender: React.FC<
   TargetConditionRenderProps<TargetCondition>
 > = ({ condition, onChange, onRemove, depth = 0, className }) => {
+  console.log({ depth });
+
   if (conditionIsComparison(condition))
     return (
       <ComparisonConditionRender

@@ -40,7 +40,7 @@ export const KindConditionRender: React.FC<
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
       <div className="grid w-full grid-cols-12">
-        <div className="col-span-2 flex items-center rounded-l-sm border border-neutral-800 bg-neutral-800/30 px-3 text-sm text-muted-foreground">
+        <div className="col-span-2 flex items-center rounded-l-md border bg-transparent px-3 text-sm text-muted-foreground">
           Kind
         </div>
         <div className="col-span-10">
@@ -50,7 +50,7 @@ export const KindConditionRender: React.FC<
                 variant="outline"
                 role="combobox"
                 aria-expanded={commandOpen}
-                className="w-full items-center justify-start gap-2 rounded-l-none rounded-r-sm px-2 hover:bg-neutral-800/50"
+                className="w-full items-center justify-start gap-2 rounded-l-none rounded-r-md bg-transparent px-2 hover:bg-neutral-800/50"
               >
                 <IconSelector className="h-4 w-4 text-muted-foreground" />
                 <span

@@ -83,7 +83,7 @@ export const MetadataConditionRender: React.FC<
             </PopoverTrigger>
             <PopoverContent
               align="start"
-              className="max-h-[300px] overflow-x-auto p-0 text-sm"
+              className="scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 max-h-[300px] overflow-x-auto p-0 text-sm"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               {filteredMetadataKeys.map((k) => (
@@ -114,10 +114,13 @@ export const MetadataConditionRender: React.FC<
                 | TargetOperator.Null,
             ) => setOperator(v)}
           >
-            <SelectTrigger className="rounded-none hover:bg-neutral-800/50">
-              <SelectValue placeholder="Operator" />
+            <SelectTrigger className="rounded-none text-muted-foreground hover:bg-neutral-800/50">
+              <SelectValue
+                placeholder="Operator"
+                className="text-muted-foreground"
+              />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="text-muted-foreground">
               <SelectItem value={TargetOperator.Equals}>Equals</SelectItem>
               <SelectItem value={TargetOperator.Regex}>Regex</SelectItem>
               <SelectItem value={TargetOperator.Like}>Like</SelectItem>
