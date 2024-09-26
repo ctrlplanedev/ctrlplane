@@ -24,6 +24,7 @@ import {
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
+import { TargetConditionBadge } from "../../../_components/target-condition/TargetConditionBadge";
 import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
 import { usePanel } from "./SidepanelContext";
 
@@ -164,9 +165,14 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                       : "-"}
                     )
                   </FormLabel>
-                  <span className="text-sm text-muted-foreground">
-                    Add a filter to select targets for this environment.
-                  </span>
+                  {value == null && (
+                    <span className="text-sm text-muted-foreground">
+                      Add a filter to select targets for this environment.
+                    </span>
+                  )}
+                  {value != null && (
+                    <TargetConditionBadge condition={value} tabbed />
+                  )}
                   <TargetConditionDialog condition={value} onChange={onChange}>
                     <Button variant="outline" className="w-fit">
                       Set targets

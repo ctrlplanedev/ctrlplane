@@ -11,10 +11,10 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
+import { TargetConditionBadge } from "../../_components/target-condition/TargetConditionBadge";
 import { TargetConditionDialog } from "../../_components/target-condition/TargetConditionDialog";
 import { useTargetFilter } from "../../_components/target-condition/useTargetFilter";
 import { useTargetDrawer } from "../../_components/target-drawer/TargetDrawer";
-import { TargetConditionBadge } from "./TargetFilterBadge";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
@@ -44,7 +44,6 @@ export const TargetPageContent: React.FC<{
           onChange={(filter) => setFilter(filter)}
         >
           <div className="flex items-center gap-2">
-            {filter != null && <TargetConditionBadge condition={filter} />}
             <Button
               variant="ghost"
               size="icon"
@@ -52,6 +51,7 @@ export const TargetPageContent: React.FC<{
             >
               <IconFilter className="h-4 w-4" />
             </Button>
+            {filter != null && <TargetConditionBadge condition={filter} />}
           </div>
         </TargetConditionDialog>
         {targets.data?.total != null && (
