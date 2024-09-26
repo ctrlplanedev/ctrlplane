@@ -11,12 +11,12 @@ import { getUser } from "~/app/api/v1/auth";
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { workspace: string; name: string } },
+  { params }: { params: { workspaceId: string; name: string } },
 ) => {
   const ws = await db
     .select()
     .from(workspace)
-    .where(eq(workspace.slug, params.workspace))
+    .where(eq(workspace.slug, params.workspaceId))
     .then(takeFirstOrNull);
 
   if (!ws)
