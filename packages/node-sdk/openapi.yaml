@@ -48,12 +48,12 @@ paths:
                   - workspaceId
         "500":
           description: Internal server error
-  /v1/workspaces/{workspace}/target-providers/name/{name}:
+  /v1/workspaces/{workspaceId}/target-providers/name/{name}:
     get:
       summary: Upserts a target provider.
       operationId: upsertTargetProvider
       parameters:
-        - name: workspace
+        - name: workspaceId
           in: path
           required: true
           schema:
@@ -83,8 +83,12 @@ paths:
                   - id
                   - name
                   - workspaceId
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
         "404":
-          description: Provider not found
+          description: Workspace not found
         "500":
           description: Internal server error
   /v1/target-providers/{providerId}/set:
