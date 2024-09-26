@@ -32,7 +32,7 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
 
   const onDelete = async () => {
     await deleteDeployment.mutateAsync(id).catch(console.error);
-    router.refresh();
+    router.push(`/${workspaceSlug}/systems/${systemSlug}`);
     setIsOpen(false);
   };
 

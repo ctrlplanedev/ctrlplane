@@ -13,6 +13,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@ctrlplane/ui/navigation-menu";
 
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/react";
 import { CreateVaribaleDialog } from "./CreateVariableDialog";
 
@@ -48,6 +49,10 @@ export const DeploymentsNavBar: React.FC = () => {
                   Variables
                 </NavigationMenuLink>
               </Link>
+
+              {deployment.data && (
+                <DeploymentOptionsDropdown {...deployment.data} />
+              )}
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
