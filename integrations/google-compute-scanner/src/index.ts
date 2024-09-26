@@ -15,7 +15,7 @@ import { api } from "./sdk.js";
 const getScannerId = async () => {
   try {
     const { id } = await api.upsertTargetProvider({
-      workspace: env.CTRLPLANE_WORKSPACE,
+      workspace: env.CTRLPLANE_WORKSPACE_ID,
       name: env.CTRLPLANE_SCANNER_NAME,
     });
     return id;
@@ -23,7 +23,7 @@ const getScannerId = async () => {
     console.error(error);
     logger.error(error);
     logger.error(
-      `Failed to get scanner ID. This could be caused by incorrect workspace (${env.CTRLPLANE_WORKSPACE}), or API Key`,
+      `Failed to get scanner ID. This could be caused by incorrect workspace (${env.CTRLPLANE_WORKSPACE_ID}), or API Key`,
       { error },
     );
   }
@@ -63,7 +63,7 @@ const scan = async () => {
 };
 
 logger.info(
-  `Starting google compute scanner from project '${env.GOOGLE_PROJECT_ID}' into workspace '${env.CTRLPLANE_WORKSPACE}'`,
+  `Starting google compute scanner from project '${env.GOOGLE_PROJECT_ID}' into workspace '${env.CTRLPLANE_WORKSPACE_ID}'`,
   env,
 );
 

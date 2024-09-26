@@ -14,12 +14,12 @@ const bodySchema = z.object({ type: z.string(), name: z.string() });
 
 export const PATCH = async (
   req: NextRequest,
-  { params }: { params: { workspace: string } },
+  { params }: { params: { workspaceId: string } },
 ) => {
   const ws = await db
     .select()
     .from(workspace)
-    .where(eq(workspace.slug, params.workspace))
+    .where(eq(workspace.id, params.workspaceId))
     .then(takeFirstOrNull);
 
   if (ws == null)

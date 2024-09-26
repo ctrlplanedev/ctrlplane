@@ -154,7 +154,7 @@ const updateExecutionStatus = async (agentId: string) => {
 const scan = async () => {
   try {
     const { id } = await api.updateJobAgent({
-      workspace: env.CTRLPLANE_WORKSPACE,
+      workspace: env.CTRLPLANE_WORKSPACE_ID,
       updateJobAgentRequest: {
         name: env.CTRLPLANE_AGENT_NAME,
         type: "kubernetes-job",
