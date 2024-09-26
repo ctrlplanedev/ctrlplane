@@ -6,7 +6,7 @@ import { env } from "./config.js";
 import { scan } from "./scanner.js";
 
 logger.info(
-  `Starting Terraform Cloud scanner for organization '${env.TFE_ORGANIZATION}' in workspace '${env.CTRLPLANE_WORKSPACE}'`,
+  `Starting Terraform Cloud scanner for organization '${env.TFE_ORGANIZATION}' in workspace '${env.CTRLPLANE_WORKSPACE_ID}'`,
 );
 
 scan().catch((error) => {

@@ -3,7 +3,7 @@ info:
   title: Ctrlplane API
   version: 1.0.0
 paths:
-  /v1/{workspace}/job/agent/name:
+  /v1/workspaces/{workspace}/job-agents/name:
     patch:
       summary: Upserts the agent
       operationId: updateJobAgent
@@ -48,12 +48,12 @@ paths:
                   - workspaceId
         "500":
           description: Internal server error
-  /v1/{workspace}/target-provider/name/{name}:
+  /v1/workspaces/{workspaceId}/target-providers/name/{name}:
     get:
       summary: Upserts a target provider.
       operationId: upsertTargetProvider
       parameters:
-        - name: workspace
+        - name: workspaceId
           in: path
           required: true
           schema:
@@ -83,11 +83,15 @@ paths:
                   - id
                   - name
                   - workspaceId
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
         "404":
-          description: Provider not found
+          description: Workspace not found
         "500":
           description: Internal server error
-  /v1/target-provider/{providerId}/set:
+  /v1/target-providers/{providerId}/set:
     patch:
       summary: Sets the target for a provider.
       operationId: setTargetProvidersTargets
@@ -240,7 +244,7 @@ paths:
                         - releaseJobTriggerId
                         - jobAgentId
                         - jobAgentConfig
-  /v1/job/{jobId}:
+  /v1/jobs/{jobId}:
     get:
       summary: Get a job
       operationId: getJob
@@ -391,7 +395,7 @@ paths:
                     type: string
                 required:
                   - id
-  /v1/job/{jobId}/acknowledge:
+  /v1/jobs/{jobId}/acknowledge:
     post:
       summary: Acknowledge a job
       operationId: acknowledgeJob

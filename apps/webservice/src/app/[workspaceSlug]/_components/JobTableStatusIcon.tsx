@@ -12,15 +12,15 @@ export const JobTableStatusIcon: React.FC<{ status?: schema.JobStatus }> = ({
   status,
 }) => {
   if (status === JobStatus.Completed)
-    return <IconCircleCheck className="text-green-400" />;
+    return <IconCircleCheck className="h-4 w-4 text-green-400" />;
   if (status === JobStatus.Failure || status === JobStatus.InvalidJobAgent)
-    return <IconCircleX className="text-red-400" />;
+    return <IconCircleX className="h-4 w-4 text-red-400" />;
   if (status === JobStatus.Pending)
-    return <IconClock className="text-neutral-400" />;
+    return <IconClock className="h-4 w-4 text-neutral-400" />;
   if (status === JobStatus.InProgress)
     return (
       <div className="animate-spin rounded-full text-blue-400">
-        <IconLoader2 />
+        <IconLoader2 className="h-4 w-4" />
       </div>
     );
 

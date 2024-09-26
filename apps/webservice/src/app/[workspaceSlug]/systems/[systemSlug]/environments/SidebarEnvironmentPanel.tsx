@@ -1,6 +1,5 @@
 "use client";
 
-import type { MetadataCondition } from "@ctrlplane/validators/targets";
 import { useParams } from "next/navigation";
 import { IconInfoCircle, IconPlant } from "@tabler/icons-react";
 import { useReactFlow } from "reactflow";
@@ -13,31 +12,25 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import { Label } from "@ctrlplane/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import { metadataCondition } from "@ctrlplane/validators/targets";
+import {
+  isDefaultCondition,
+  isValidTargetCondition,
+  targetCondition,
+} from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
-import { MetadataFilterInput } from "../../../_components/MetadataFilterInput";
+import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
 import { usePanel } from "./SidepanelContext";
 
 const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
-  operator: z.enum(["and", "or"]),
-  targetFilter: z.array(metadataCondition),
+  targetFilter: targetCondition.optional(),
 });
 
 export const SidebarEnvironmentPanel: React.FC = () => {
@@ -54,47 +47,46 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     defaultValues: {
       name: node.data.label,
       description: node.data.description,
-      operator: node.data.targetFilter?.operator ?? "and",
-      targetFilter: (node.data.targetFilter?.conditions ??
-        []) as MetadataCondition[],
+      targetFilter: node.data.targetFilter,
     },
   });
 
-  const { operator, targetFilter } = form.watch();
+  const { targetFilter } = form.watch();
 
   const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      filters: [
-        {
-          type: "comparison",
-          operator,
-          conditions: targetFilter.filter((f) => f.key !== ""),
-        },
-      ],
+      filter: targetFilter,
     },
-    { enabled: workspace.data != null },
+    { enabled: workspace.data != null && targetFilter != null },
   );
-  const { fields, append, remove } = useFieldArray({
-    name: "targetFilter",
-    control: form.control,
-  });
+
   const utils = api.useUtils();
 
   const onSubmit = form.handleSubmit((values) => {
     setNodes((nodes) => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
+
+      const { targetFilter } = values;
+
+      if (targetFilter != null && !isValidTargetCondition(targetFilter)) {
+        form.setError("targetFilter", {
+          message:
+            "Invalid target filter, ensure all fields are filled out correctly.",
+        });
+        return nodes;
+      }
+
       update
         .mutateAsync({
           id: node.id,
           data: {
             ...values,
-            targetFilter: {
-              type: "comparison",
-              operator,
-              conditions: targetFilter,
-            },
+            targetFilter:
+              targetFilter != null && isDefaultCondition(targetFilter)
+                ? undefined
+                : targetFilter,
           },
         })
         .then(() =>
@@ -157,70 +149,39 @@ export const SidebarEnvironmentPanel: React.FC = () => {
             </FormItem>
           )}
         />
-        <div className="flex flex-col gap-2">
-          <Label>Target Filter ({targets.data?.total ?? "-"})</Label>
 
-          {fields.length > 1 && (
-            <FormField
-              control={form.control}
-              name="operator"
-              render={({ field: { onChange, value } }) => (
-                <FormItem className="w-24">
-                  <FormControl>
-                    <Select onValueChange={onChange} value={value}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="and">And</SelectItem>
-                        <SelectItem value="or">Or</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+        <FormField
+          control={form.control}
+          name="targetFilter"
+          render={({ field: { onChange, value } }) => (
+            <FormItem>
+              <FormControl>
+                <div className="flex flex-col gap-2">
+                  <FormLabel>
+                    Target Filter (
+                    {targetFilter != null && targets.data != null
+                      ? targets.data.total
+                      : "-"}
+                    )
+                  </FormLabel>
+                  <span className="text-sm text-muted-foreground">
+                    Add a filter to select targets for this environment.
+                  </span>
+                  <TargetConditionDialog condition={value} onChange={onChange}>
+                    <Button variant="outline" className="w-fit">
+                      Set targets
+                    </Button>
+                  </TargetConditionDialog>
+                  {form.formState.errors.targetFilter && (
+                    <span className="text-sm text-red-600">
+                      {form.formState.errors.targetFilter.message}
+                    </span>
+                  )}
+                </div>
+              </FormControl>
+            </FormItem>
           )}
-
-          {fields.map((field, index) => (
-            <FormField
-              control={form.control}
-              key={field.id}
-              name={`targetFilter.${index}`}
-              render={({ field: { onChange, value } }) => (
-                <FormItem>
-                  <FormControl className="w-fit">
-                    <MetadataFilterInput
-                      value={value}
-                      onChange={onChange}
-                      onRemove={() => remove(index)}
-                      workspaceId={workspace.data?.id}
-                      selectedKeys={fields
-                        .map((f) => f.operator !== "null" && f.value)
-                        .filter((f) => f !== false)}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2 w-fit"
-            onClick={() =>
-              append({
-                key: "",
-                value: "",
-                type: "metadata",
-                operator: "equals" as const,
-              })
-            }
-          >
-            Add Metadata Filter
-          </Button>
-        </div>
+        />
 
         <div className="flex gap-2">
           <Button type="submit" disabled={update.isPending}>

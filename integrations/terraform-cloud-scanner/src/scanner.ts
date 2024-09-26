@@ -20,6 +20,14 @@ export async function scan() {
   logger.info("Starting Terraform Cloud scan");
 
   try {
+    const providerId = await getOrCreateProviderId();
+    if (!providerId) {
+      logger.error(
+        "Provider ID is not available. Aborting target registration.",
+      );
+      process.exit(1);
+    }
+
     const workspaces: Workspace[] = await listWorkspaces();
     logger.info(`Found ${workspaces.length} workspaces`);
 
@@ -69,14 +77,6 @@ export async function scan() {
     const uniqueTargets = _.uniqBy(targets, (t) => t.identifier);
 
     logger.info(`Registering ${uniqueTargets.length} unique targets`);
-    const providerId = await getOrCreateProviderId();
-
-    if (!providerId) {
-      logger.error(
-        "Provider ID is not available. Aborting target registration.",
-      );
-      return;
-    }
 
     await api.setTargetProvidersTargets({
       providerId,
@@ -88,6 +88,7 @@ export async function scan() {
     logger.info("Successfully registered targets");
   } catch (error) {
     logger.error("An error occurred during the scan process:", error);
+    process.exit(1);
   }
 }
 
@@ -162,7 +163,7 @@ function buildWorkspaceLink(workspace: Workspace): Record<string, string> {
 async function getOrCreateProviderId(): Promise<string | null> {
   return api
     .upsertTargetProvider({
-      workspace: env.CTRLPLANE_WORKSPACE,
+      workspaceId: env.CTRLPLANE_WORKSPACE_ID,
       name: env.CTRLPLANE_SCANNER_NAME,
     })
     .then(({ id }) => {

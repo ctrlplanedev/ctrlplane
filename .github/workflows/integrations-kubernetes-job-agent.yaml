@@ -5,12 +5,14 @@ on:
     branches: ["*"]
     paths:
       - integrations/kubernetes-job-agent/**
+      - packages/node-sdk/**
       - .github/workflows/integrations-kubernetes-job-agent.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
       - integrations/kubernetes-job-agent/**
+      - packages/node-sdk/**
       - .github/workflows/integrations-kubernetes-job-agent.yaml
       - pnpm-lock.yaml
 

@@ -5,12 +5,14 @@ on:
     branches: ["*"]
     paths:
       - integrations/google-compute-scanner/**
+      - packages/node-sdk/**
       - .github/workflows/integrations-google-compute-scanner.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
       - integrations/google-compute-scanner/**
+      - packages/node-sdk/**
       - .github/workflows/integrations-google-compute-scanner.yaml
       - pnpm-lock.yaml
 

@@ -8,7 +8,7 @@ export const env = createEnv({
   server: {
     CTRLPLANE_API_URL: z.string().default("http://localhost:3000"),
     CTRLPLANE_API_KEY: z.string(),
-    CTRLPLANE_WORKSPACE: z.string(),
+    CTRLPLANE_WORKSPACE_ID: z.string().uuid(),
     CTRLPLANE_SCANNER_NAME: z.string().default("offical-google-scanner"),
 
     CTRLPLANE_GKE_TARGET_NAME: z

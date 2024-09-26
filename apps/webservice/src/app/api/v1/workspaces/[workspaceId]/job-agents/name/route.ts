@@ -1,45 +1,51 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
-import { checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
+import { can } from "@ctrlplane/auth/utils";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { targetProvider, workspace } from "@ctrlplane/db/schema";
+import { jobAgent, workspace } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
 
-export const GET = async (
+const bodySchema = z.object({ type: z.string(), name: z.string() });
+
+export const PATCH = async (
   req: NextRequest,
-  { params }: { params: { workspace: string; name: string } },
+  { params }: { params: { workspaceId: string } },
 ) => {
   const ws = await db
     .select()
     .from(workspace)
-    .where(eq(workspace.slug, params.workspace))
+    .where(eq(workspace.id, params.workspaceId))
     .then(takeFirstOrNull);
 
-  if (!ws)
+  if (ws == null)
     return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
   const user = await getUser(req);
   if (user == null)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const canAccess = await checkEntityPermissionForResource(
-    { type: "user", id: user.id },
-    { type: "workspace", id: ws.id },
-    [Permission.TargetGet],
-  );
+  const canAccess = await can()
+    .user(user.id)
+    .perform(Permission.SystemUpdate)
+    .on({ type: "workspace", id: ws.id });
+
   if (!canAccess)
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 
+  const response = await req.json();
+  const body = bodySchema.parse(response);
+
   const tp = await db
-    .insert(targetProvider)
-    .values({ name: params.name, workspaceId: ws.id })
+    .insert(jobAgent)
+    .values({ ...body, workspaceId: ws.id })
     .onConflictDoUpdate({
-      target: [targetProvider.workspaceId, targetProvider.name],
-      set: { name: params.name },
+      target: [jobAgent.workspaceId, jobAgent.name],
+      set: body,
     })
     .returning()
     .then(takeFirst);

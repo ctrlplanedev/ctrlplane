@@ -24,7 +24,7 @@ vi.mock("../config.js", () => ({
     TFE_ORGANIZATION: "mock-organization",
     CTRLPLANE_API_URL: "https://mock.ctrlplane.url",
     CTRLPLANE_API_KEY: "mock-api-key",
-    CTRLPLANE_WORKSPACE: "mock-workspace",
+    CTRLPLANE_WORKSPACE_ID: "36427c59-e2bd-4b3f-bf54-54404ef6aa0e",
     CTRLPLANE_WORKSPACE_TARGET_NAME: "mock-workspace-target-name",
     CTRLPLANE_SCANNER_NAME: "mock-scanner-name",
     CRON_ENABLED: false,
@@ -40,8 +40,8 @@ beforeEach(() => {
 describe("Scanner Module", () => {
   it("should successfully scan and register targets", async () => {
     vi.spyOn(env, "TFE_ORGANIZATION", "get").mockReturnValue("mock-org");
-    vi.spyOn(env, "CTRLPLANE_WORKSPACE", "get").mockReturnValue(
-      "ctrlplane-workspace",
+    vi.spyOn(env, "CTRLPLANE_WORKSPACE_ID", "get").mockReturnValue(
+      "36427c59-e2bd-4b3f-bf54-54404ef6aa0e",
     );
     vi.spyOn(env, "CTRLPLANE_SCANNER_NAME", "get").mockReturnValue(
       "mock-scanner",
@@ -97,7 +97,7 @@ describe("Scanner Module", () => {
     expect(() => listVariables("workspace-1")).not.toThrow();
     expect(() =>
       api.upsertTargetProvider({
-        workspace: "ctrlplane-workspace",
+        workspaceId: "ctrlplane-workspace",
         name: "mock-scanner",
       }),
     ).not.toThrow();
@@ -106,7 +106,7 @@ describe("Scanner Module", () => {
     expect(() => listVariables("workspace-1")).not.toThrow();
     expect(() =>
       api.upsertTargetProvider({
-        workspace: "ctrlplane-workspace",
+        workspaceId: "ctrlplane-workspace",
         name: "mock-scanner",
       }),
     ).not.toThrow();
