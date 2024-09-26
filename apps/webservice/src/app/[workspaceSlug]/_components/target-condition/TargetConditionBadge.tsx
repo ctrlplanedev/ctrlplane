@@ -1,8 +1,8 @@
 import type {
   ComparisonCondition,
-  KindEqualsCondition,
+  KindCondition,
   MetadataCondition,
-  NameLikeCondition,
+  NameCondition,
   TargetCondition,
 } from "@ctrlplane/validators/targets";
 import React from "react";
@@ -19,7 +19,7 @@ import {
   isComparisonCondition,
   isKindCondition,
   isMetadataCondition,
-  isNameLikeCondition,
+  isNameCondition,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
 
@@ -141,8 +141,8 @@ const StringifiedMetadataCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedKindEqualsCondition: React.FC<{
-  condition: KindEqualsCondition;
+const StringifiedKindCondition: React.FC<{
+  condition: KindCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
     <span className="text-green-400">kind&nbsp;&nbsp;</span>
@@ -153,8 +153,8 @@ const StringifiedKindEqualsCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedNameLikeCondition: React.FC<{
-  condition: NameLikeCondition;
+const StringifiedNameCondition: React.FC<{
+  condition: NameCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
     <span className="text-green-400">name&nbsp;&nbsp;</span>
@@ -189,10 +189,10 @@ const StringifiedTargetCondition: React.FC<{
     return <StringifiedMetadataCondition condition={condition} />;
 
   if (isKindCondition(condition))
-    return <StringifiedKindEqualsCondition condition={condition} />;
+    return <StringifiedKindCondition condition={condition} />;
 
-  if (isNameLikeCondition(condition))
-    return <StringifiedNameLikeCondition condition={condition} />;
+  if (isNameCondition(condition))
+    return <StringifiedNameCondition condition={condition} />;
 };
 
 export const TargetConditionBadge: React.FC<{
