@@ -11,6 +11,7 @@ logger.info(
 
 if (env.CRON_ENABLED) {
   logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
+  scan();
   new CronJob(env.CRON_TIME, () => {
     scan().catch((error) => {
       logger.error("Scheduled scan failed:", error);
@@ -18,4 +19,11 @@ if (env.CRON_ENABLED) {
   }).start();
 }
 
-scan().then(() => logger.info("Done init scanning."));
+if (!env.CRON_ENABLED)
+  scan()
+    .then(() => logger.info("Done init scanning."))
+    .catch((error) => {
+      logger.error("Initial scan failed:", error);
+      process.exit(1);
+    })
+    .finally(() => process.exit(0));
