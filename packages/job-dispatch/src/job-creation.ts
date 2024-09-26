@@ -245,8 +245,6 @@ export const onJobCompletion = async (je: schema.Job) => {
       ),
     );
 
-  console.log({ affectedReleaseJobTriggers });
-
   await dispatchReleaseJobTriggers(db)
     .releaseTriggers(
       affectedReleaseJobTriggers.map((t) => t.release_job_trigger),
