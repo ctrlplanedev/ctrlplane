@@ -20,7 +20,7 @@ export const GET = async (
     .then(takeFirstOrNull);
 
   if (!ws)
-    return NextResponse.json({ error: "Workspace not found" }, { status: 404 });=
+    return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
   const user = await getUser(req);
   if (user == null)
@@ -33,7 +33,6 @@ export const GET = async (
   );
   if (!canAccess)
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
-
 
   const tp = await db
     .insert(targetProvider)
