@@ -27915,8 +27915,9 @@ var DefaultApi = class extends BaseAPI {
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
+const base_url = core.getInput("base_url", { required: true });
 const config = new Configuration({
-    basePath: core.getInput("api_url", { required: true }) + "/api",
+    basePath: base_url + "/api",
     apiKey: core.getInput("api_key", { required: true }),
 });
 const api = new DefaultApi(config);
@@ -27953,6 +27954,7 @@ async function run() {
         .getJob({ jobId })
         .then((response) => {
         const { variables, target, release, environment, runbook, deployment } = response;
+        setOutputAndLog("base_url", base_url);
         setOutputAndLog("target_id", target?.id);
         setOutputAndLog("target_name", target?.name);
         setOutputAndLog("target_kind", target?.kind);
