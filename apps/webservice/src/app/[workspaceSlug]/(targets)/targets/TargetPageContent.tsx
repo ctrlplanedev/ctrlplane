@@ -1,37 +1,26 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
-import type {
-  KindEqualsCondition,
-  NameLikeCondition,
-} from "@ctrlplane/validators/targets";
-import React, { Fragment } from "react";
-import { IconCategory, IconTag, IconTarget, IconX } from "@tabler/icons-react";
-import { capitalCase } from "change-case";
+import React from "react";
+import { IconFilter } from "@tabler/icons-react";
 import range from "lodash/range";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import type { TargetFilter } from "./TargetFilter";
 import { api } from "~/trpc/react";
-import { useFilters } from "../../_components/filter/Filter";
-import { FilterDropdown } from "../../_components/filter/FilterDropdown";
 import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
+import { TargetConditionDialog } from "../../_components/target-condition/TargetConditionDialog";
+import { useTargetFilter } from "../../_components/target-condition/useTargetFilter";
 import { useTargetDrawer } from "../../_components/target-drawer/TargetDrawer";
-import { KindFilterDialog } from "./KindFilterDialog";
-import { MetadataFilterDialog } from "./MetadataFilterDialog";
-import { NameFilterDialog } from "./NameFilterDialog";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
 export const TargetPageContent: React.FC<{
   workspace: Workspace;
-  kinds: string[];
-}> = ({ workspace, kinds }) => {
-  const { filters, removeFilter, addFilters, clearFilters, updateFilter } =
-    useFilters<TargetFilter>();
+}> = ({ workspace }) => {
+  const { filter, setFilter } = useTargetFilter();
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
@@ -39,7 +28,7 @@ export const TargetPageContent: React.FC<{
 
   const targets = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
-    filters: filters.map((f) => f.value),
+    filter,
   });
 
   const { targetId, setTargetId } = useTargetDrawer();
@@ -49,145 +38,18 @@ export const TargetPageContent: React.FC<{
   return (
     <div className="h-full text-sm">
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-        <div className="flex flex-wrap items-center gap-1">
-          {filters.map((f, idx) => (
-            <Fragment key={idx}>
-              {f.key === "metadata" ? (
-                <MetadataFilterDialog
-                  workspaceId={workspace.id}
-                  filter={f.value}
-                  onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
-                >
-                  <Badge
-                    key={idx}
-                    variant="outline"
-                    className="h-7 cursor-pointer gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
-                  >
-                    <span>{capitalCase(f.key)}</span>
-                    <span className="text-muted-foreground">matches</span>
-                    <span>
-                      {f.value.conditions.length}
-                      {f.value.conditions.length > 1 ? " keys" : " key"}
-                    </span>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 text-xs text-muted-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFilter(idx);
-                      }}
-                    >
-                      <IconX />
-                    </Button>
-                  </Badge>
-                </MetadataFilterDialog>
-              ) : f.key === "kind" ? (
-                <KindFilterDialog
-                  kinds={kinds}
-                  filter={f.value}
-                  onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
-                >
-                  <Badge
-                    key={idx}
-                    variant="outline"
-                    className="h-7 cursor-pointer gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
-                  >
-                    {f.value.conditions.length === 1 ? (
-                      <>
-                        <span>{capitalCase(f.key)}</span>
-                        <span className="text-muted-foreground">is</span>
-                        <span>
-                          {
-                            (f.value.conditions as KindEqualsCondition[]).at(0)
-                              ?.value
-                          }
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{capitalCase(f.key)}</span>
-                        <span className="text-muted-foreground">is of</span>
-                        <span>{f.value.conditions.length} options</span>
-                      </>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 text-xs text-muted-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFilter(idx);
-                      }}
-                    >
-                      <IconX />
-                    </Button>
-                  </Badge>
-                </KindFilterDialog>
-              ) : (
-                <NameFilterDialog
-                  filter={f.value}
-                  onChange={(filter: TargetFilter) => updateFilter(idx, filter)}
-                >
-                  <Badge
-                    key={idx}
-                    variant="outline"
-                    className="h-7 cursor-pointer gap-1.5 bg-neutral-900 pl-2 pr-1 text-xs font-normal"
-                  >
-                    {f.value.conditions.length === 1 ? (
-                      <>
-                        <span>{capitalCase(f.key)}</span>
-                        <span className="text-muted-foreground">conatins</span>
-                        <span>
-                          {(f.value.conditions as NameLikeCondition[])
-                            .at(0)
-                            ?.value.replace(/^%|%$/g, "")}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span>{capitalCase(f.key)}</span>
-                        <span className="text-muted-foreground">conatins</span>
-                        <span>{f.value.conditions.length} strings</span>
-                      </>
-                    )}
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 text-xs text-muted-foreground"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeFilter(idx);
-                      }}
-                    >
-                      <IconX />
-                    </Button>
-                  </Badge>
-                </NameFilterDialog>
-              )}
-            </Fragment>
-          ))}
-
-          <FilterDropdown<TargetFilter>
-            filters={filters}
-            addFilters={addFilters}
-            className="min-w-[200px] bg-neutral-900 p-1"
+        <TargetConditionDialog
+          condition={filter}
+          onChange={(filter) => setFilter(filter)}
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex h-7 w-7 items-center gap-1 text-xs"
           >
-            <NameFilterDialog>
-              <IconTarget className="h-4 w-4" /> Name
-            </NameFilterDialog>
-            <KindFilterDialog kinds={kinds}>
-              <IconCategory className="h-4 w-4" /> Kind
-            </KindFilterDialog>
-            <MetadataFilterDialog workspaceId={workspace.id}>
-              <IconTag className="h-4 w-4" /> Metadata
-            </MetadataFilterDialog>
-          </FilterDropdown>
-        </div>
-
+            <IconFilter className="h-4 w-4" />
+          </Button>
+        </TargetConditionDialog>
         {targets.data?.total != null && (
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
             Total:
@@ -216,7 +78,7 @@ export const TargetPageContent: React.FC<{
         <NoFilterMatch
           numItems={targetsAll.data?.total ?? 0}
           itemType="target"
-          onClear={clearFilters}
+          onClear={() => setFilter(undefined)}
         />
       )}
       {targets.data != null && targets.data.total > 0 && (

@@ -49,7 +49,6 @@ export const SidebarEnvironmentPanel: React.FC = () => {
   });
 
   const { targetFilter } = form.watch();
-  console.log({ tfForm: targetFilter });
 
   const targets = api.target.byWorkspaceId.list.useQuery(
     {
@@ -59,14 +58,13 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     { enabled: workspace.data != null && targetFilter != null },
   );
 
-  console.log({ targets: targets.data });
-
   const utils = api.useUtils();
 
   const onSubmit = form.handleSubmit((values) => {
     setNodes((nodes) => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
+
       update
         .mutateAsync({
           id: node.id,

@@ -32,22 +32,20 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
   const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      filters:
+      filter:
         search != ""
-          ? [
-              {
-                type: "comparison",
-                operator: "or",
-                conditions: [
-                  {
-                    type: "name",
-                    operator: "like",
-                    value: `%${search}%`,
-                  },
-                ],
-              },
-            ]
-          : [],
+          ? {
+              type: "comparison",
+              operator: "or",
+              conditions: [
+                {
+                  type: "name",
+                  operator: "like",
+                  value: `%${search}%`,
+                },
+              ],
+            }
+          : undefined,
     },
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );

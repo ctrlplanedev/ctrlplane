@@ -36,35 +36,14 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 import {
+  doesConvertingToComparisonRespectMaxDepth,
+  MAX_DEPTH_ALLOWED,
   TargetFilterType,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { TargetConditionRender } from "./TargetConditionRender";
-
-const MAX_DEPTH_ALLOWED = 2; // 0 indexed
-
-// Check if converting to a comparison condition will exceed the max depth
-// including any nested conditions
-const doesConvertingToComparisonRespectMaxDepth = (
-  depth: number,
-  condition: TargetCondition,
-): boolean => {
-  if (depth > MAX_DEPTH_ALLOWED) return false;
-  if (conditionIsComparison(condition)) {
-    if (depth === MAX_DEPTH_ALLOWED) return false;
-    return condition.conditions.every((c) =>
-      doesConvertingToComparisonRespectMaxDepth(depth + 1, c),
-    );
-  }
-  return true;
-};
-
-export const conditionIsComparison = (
-  condition: TargetCondition,
-): condition is ComparisonCondition =>
-  condition.type === TargetFilterType.Comparison;
 
 export const ComparisonConditionRender: React.FC<
   TargetConditionRenderProps<ComparisonCondition>

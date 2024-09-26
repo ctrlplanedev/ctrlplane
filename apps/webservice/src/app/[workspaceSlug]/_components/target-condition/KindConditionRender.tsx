@@ -1,7 +1,4 @@
-import type {
-  KindEqualsCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+import type { KindEqualsCondition } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { IconSelector } from "@tabler/icons-react";
@@ -16,14 +13,9 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { api } from "~/trpc/react";
-
-export const conditionIsKind = (
-  condition: TargetCondition,
-): condition is KindEqualsCondition => condition.type === TargetFilterType.Kind;
 
 export const KindConditionRender: React.FC<
   TargetConditionRenderProps<KindEqualsCondition>

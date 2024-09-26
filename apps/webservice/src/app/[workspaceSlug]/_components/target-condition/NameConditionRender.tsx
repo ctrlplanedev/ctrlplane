@@ -1,22 +1,9 @@
-import type {
-  NameLikeCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+import type { NameLikeCondition } from "@ctrlplane/validators/targets";
 
 import { cn } from "@ctrlplane/ui";
 import { Input } from "@ctrlplane/ui/input";
-import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
-
-export const conditionIsName = (
-  condition: TargetCondition,
-): condition is NameLikeCondition =>
-  condition.type === TargetFilterType.Name &&
-  condition.operator === TargetOperator.Like;
 
 export const NameConditionRender: React.FC<
   TargetConditionRenderProps<NameLikeCondition>

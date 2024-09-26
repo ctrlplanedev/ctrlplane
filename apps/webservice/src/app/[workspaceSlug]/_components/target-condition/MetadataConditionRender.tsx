@@ -1,7 +1,4 @@
-import type {
-  MetadataCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+import type { MetadataCondition } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -16,19 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
+import { TargetOperator } from "@ctrlplane/validators/targets";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
-
-export const conditionIsMetadata = (
-  condition: TargetCondition,
-): condition is MetadataCondition =>
-  condition.type === TargetFilterType.Metadata;
 
 export const MetadataConditionRender: React.FC<
   TargetConditionRenderProps<MetadataCondition>

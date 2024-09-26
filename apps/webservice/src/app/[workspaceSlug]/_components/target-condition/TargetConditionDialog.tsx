@@ -12,22 +12,17 @@ import {
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
 import {
-  TargetFilterType,
-  TargetOperator,
+  defaultCondition,
+  isDefaultCondition,
+  isValidTargetCondition,
 } from "@ctrlplane/validators/targets";
 
 import { TargetConditionRender } from "./TargetConditionRender";
 
 type TargetConditionDialogProps = {
   condition?: TargetCondition;
-  onChange: (condition: TargetCondition) => void;
+  onChange: (condition: TargetCondition | undefined) => void;
   children: React.ReactNode;
-};
-
-const defaultCondition: TargetCondition = {
-  type: TargetFilterType.Comparison,
-  operator: TargetOperator.And,
-  conditions: [],
 };
 
 export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
@@ -36,6 +31,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
   children,
 }) => {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [localCondition, setLocalCondition] = useState(
     condition ?? defaultCondition,
   );
@@ -54,11 +50,47 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
           condition={localCondition}
           onChange={setLocalCondition}
         />
+        {error && <span className="text-sm text-red-600">{error}</span>}
         <DialogFooter>
           <Button
+            variant="outline"
             onClick={() => {
+              setLocalCondition(condition ?? defaultCondition);
+              setError(null);
+            }}
+          >
+            Reset to original state
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setLocalCondition(defaultCondition);
+              setError(null);
+            }}
+          >
+            Clear
+          </Button>
+          <div className="flex-grow" />
+          <Button
+            onClick={() => {
+              // we make an exception for the default condition - when a user clicks clear, we set the condition to undefined
+              // since an undefined filter will match all targets
+              if (isDefaultCondition(localCondition)) {
+                onChange(undefined);
+                setOpen(false);
+                setError(null);
+                return;
+              }
+
+              if (!isValidTargetCondition(localCondition)) {
+                setError(
+                  "Invalid target condition, ensure all fields are filled out correctly.",
+                );
+                return;
+              }
               onChange(localCondition);
               setOpen(false);
+              setError(null);
             }}
           >
             Save

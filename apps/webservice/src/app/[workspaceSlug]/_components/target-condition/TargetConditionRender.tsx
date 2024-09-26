@@ -2,15 +2,16 @@ import type { TargetCondition } from "@ctrlplane/validators/targets";
 import React from "react";
 
 import {
-  ComparisonConditionRender,
-  conditionIsComparison,
-} from "./ComparisonConditionRender";
-import { conditionIsKind, KindConditionRender } from "./KindConditionRender";
-import {
-  conditionIsMetadata,
-  MetadataConditionRender,
-} from "./MetadataConditionRender";
-import { conditionIsName, NameConditionRender } from "./NameConditionRender";
+  isComparisonCondition,
+  isKindCondition,
+  isMetadataCondition,
+  isNameLikeCondition,
+} from "@ctrlplane/validators/targets";
+
+import { ComparisonConditionRender } from "./ComparisonConditionRender";
+import { KindConditionRender } from "./KindConditionRender";
+import { MetadataConditionRender } from "./MetadataConditionRender";
+import { NameConditionRender } from "./NameConditionRender";
 
 type TargetConditionRenderProps<T extends TargetCondition> = {
   condition: T;
@@ -27,9 +28,7 @@ type TargetConditionRenderProps<T extends TargetCondition> = {
 export const TargetConditionRender: React.FC<
   TargetConditionRenderProps<TargetCondition>
 > = ({ condition, onChange, onRemove, depth = 0, className }) => {
-  console.log({ depth });
-
-  if (conditionIsComparison(condition))
+  if (isComparisonCondition(condition))
     return (
       <ComparisonConditionRender
         condition={condition}
@@ -40,7 +39,7 @@ export const TargetConditionRender: React.FC<
       />
     );
 
-  if (conditionIsMetadata(condition))
+  if (isMetadataCondition(condition))
     return (
       <MetadataConditionRender
         condition={condition}
@@ -51,7 +50,7 @@ export const TargetConditionRender: React.FC<
       />
     );
 
-  if (conditionIsKind(condition))
+  if (isKindCondition(condition))
     return (
       <KindConditionRender
         condition={condition}
@@ -62,7 +61,7 @@ export const TargetConditionRender: React.FC<
       />
     );
 
-  if (conditionIsName(condition))
+  if (isNameLikeCondition(condition))
     return (
       <NameConditionRender
         condition={condition}

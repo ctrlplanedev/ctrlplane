@@ -11,10 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
 
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
@@ -42,25 +38,20 @@ export const CombinationsTable: React.FC<{
               onClick={() => {
                 const query = new URLSearchParams(window.location.search);
                 const filterHash = LZString.compressToEncodedURIComponent(
-                  JSON.stringify([
-                    {
-                      key: "metadata",
-                      value: {
-                        operator: TargetOperator.And,
-                        type: TargetFilterType.Comparison,
-                        conditions: Object.entries(metadata).map(
-                          ([key, value]) => ({
-                            operator: TargetOperator.Equals,
-                            type: TargetFilterType.Metadata,
-                            key,
-                            value,
-                          }),
-                        ),
-                      },
-                    },
-                  ]),
+                  JSON.stringify({
+                    type: "comparison",
+                    operator: "and",
+                    conditions: Object.entries(metadata).map(
+                      ([key, value]) => ({
+                        type: "metadata",
+                        key,
+                        value,
+                        operator: "equals",
+                      }),
+                    ),
+                  }),
                 );
-                query.set("filters", filterHash);
+                query.set("filter", filterHash);
                 return router.push(
                   `/${workspaceSlug}/targets?${query.toString()}`,
                 );
