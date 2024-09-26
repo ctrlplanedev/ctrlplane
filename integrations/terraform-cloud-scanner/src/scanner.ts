@@ -20,6 +20,14 @@ export async function scan() {
   logger.info("Starting Terraform Cloud scan");
 
   try {
+    const providerId = await getOrCreateProviderId();
+    if (!providerId) {
+      logger.error(
+        "Provider ID is not available. Aborting target registration.",
+      );
+      return;
+    }
+
     const workspaces: Workspace[] = await listWorkspaces();
     logger.info(`Found ${workspaces.length} workspaces`);
 
@@ -69,14 +77,6 @@ export async function scan() {
     const uniqueTargets = _.uniqBy(targets, (t) => t.identifier);
 
     logger.info(`Registering ${uniqueTargets.length} unique targets`);
-    const providerId = await getOrCreateProviderId();
-
-    if (!providerId) {
-      logger.error(
-        "Provider ID is not available. Aborting target registration.",
-      );
-      return;
-    }
 
     await api.setTargetProvidersTargets({
       providerId,

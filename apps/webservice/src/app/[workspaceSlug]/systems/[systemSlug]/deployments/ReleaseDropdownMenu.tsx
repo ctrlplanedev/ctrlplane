@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   IconAlertTriangle,
@@ -46,8 +47,9 @@ const RedeployReleaseDialog: React.FC<{
   const router = useRouter();
   const redeploy = api.release.deploy.toEnvironment.useMutation();
 
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -71,7 +73,10 @@ const RedeployReleaseDialog: React.FC<{
                   environmentId: environment.id,
                   releaseId: release.id,
                 })
-                .then(() => router.refresh())
+                .then(() => {
+                  setIsOpen(false);
+                  router.refresh();
+                })
             }
           >
             Redeploy
