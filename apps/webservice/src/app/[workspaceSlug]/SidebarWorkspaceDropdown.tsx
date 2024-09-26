@@ -66,7 +66,7 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
                     {ws.name}
                     {ws.id === workspace.id && (
                       <DropdownMenuShortcut>
-                        <IconCheck />
+                        <IconCheck className="h-4 w-4" />
                       </DropdownMenuShortcut>
                     )}
                   </DropdownMenuItem>

@@ -107,9 +107,9 @@ const InviteLinkSection: React.FC<{
         <Input readOnly value={link} className="w-96 overflow-ellipsis" />
         <Button variant="outline" size="icon" onClick={handleCopyClick}>
           {clickedCopy ? (
-            <IconCheck className="text-green-600" />
+            <IconCheck className="h-3 w-3 text-green-600" />
           ) : (
-            <IconCopy />
+            <IconCopy className="h-3 w-3" />
           )}
         </Button>
       </div>

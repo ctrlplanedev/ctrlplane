@@ -74,25 +74,25 @@ const ApprovalDialog: React.FC<{
 
 const Cancelled: React.FC = () => (
   <div className="rounded-full bg-neutral-400 p-0.5 dark:text-black">
-    <IconMinus strokeWidth={3} />
+    <IconMinus strokeWidth={3} className="h-4 w-4" />
   </div>
 );
 
 const Blocked: React.FC = () => (
   <div className="rounded-full bg-red-400 p-0.5 dark:text-black">
-    <IconX strokeWidth={3} />
+    <IconX strokeWidth={3} className="h-4 w-4" />
   </div>
 );
 
 const Passing: React.FC = () => (
   <div className="rounded-full bg-green-400 p-0.5 dark:text-black">
-    <IconCheck strokeWidth={3} />
+    <IconCheck strokeWidth={3} className="h-4 w-4" />
   </div>
 );
 
 const Waiting: React.FC = () => (
   <div className="animate-spin rounded-full bg-blue-400 p-0.5 dark:text-black">
-    <IconLoader2 strokeWidth={3} />
+    <IconLoader2 strokeWidth={3} className="h-4 w-4" />
   </div>
 );
 
