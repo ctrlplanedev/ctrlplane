@@ -9,7 +9,7 @@ logger.info(
   `Starting Terraform Cloud scanner for organization '${env.TFE_ORGANIZATION}' in workspace '${env.CTRLPLANE_WORKSPACE_ID}'`,
 );
 
-if (env.CRON_ENABLED.toLowerCase() === "true") {
+if (env.CRON_ENABLED) {
   logger.info(`Cron job enabled. Scheduling scans at '${env.CRON_TIME}'`);
   new CronJob(env.CRON_TIME, () => {
     scan().catch((error) => {
@@ -18,10 +18,4 @@ if (env.CRON_ENABLED.toLowerCase() === "true") {
   }).start();
 }
 
-scan()
-  .catch((error) => {
-    logger.error("Initial scan failed:", error);
-  })
-  .finally(() => {
-    process.exit(0);
-  });
+scan().then(() => logger.info("Done init scanning."));
