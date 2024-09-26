@@ -1,4 +1,4 @@
-import type { NameLikeCondition } from "@ctrlplane/validators/targets";
+import type { NameCondition } from "@ctrlplane/validators/targets";
 
 import { cn } from "@ctrlplane/ui";
 import { Input } from "@ctrlplane/ui/input";
@@ -6,7 +6,7 @@ import { Input } from "@ctrlplane/ui/input";
 import type { TargetConditionRenderProps } from "./target-condition-props";
 
 export const NameConditionRender: React.FC<
-  TargetConditionRenderProps<NameLikeCondition>
+  TargetConditionRenderProps<NameCondition>
 > = ({ condition, onChange, className }) => {
   const setValue = (value: string) =>
     onChange({ ...condition, value: `%${value}%` });

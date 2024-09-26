@@ -1,4 +1,4 @@
-import type { KindEqualsCondition } from "@ctrlplane/validators/targets";
+import type { KindCondition } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { IconSelector } from "@tabler/icons-react";
@@ -18,7 +18,7 @@ import type { TargetConditionRenderProps } from "./target-condition-props";
 import { api } from "~/trpc/react";
 
 export const KindConditionRender: React.FC<
-  TargetConditionRenderProps<KindEqualsCondition>
+  TargetConditionRenderProps<KindCondition>
 > = ({ condition, onChange, className }) => {
   const [commandOpen, setCommandOpen] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();

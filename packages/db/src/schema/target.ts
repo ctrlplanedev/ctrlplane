@@ -1,6 +1,5 @@
 import type {
   MetadataCondition,
-  NameCondition,
   TargetCondition,
 } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
@@ -148,18 +147,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   throw Error("invalid metadata conditions");
 };
 
-const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
-  if (cond.operator === "equals") return eq(target.name, cond.value);
-  if (cond.operator === "like") return like(target.name, cond.value);
-  return sql`${target.name} ~ ${cond.value}`;
-};
-
 const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
   if (cond.type === "metadata") return buildMetadataCondition(tx, cond);
 
   if (cond.type === "kind") return eq(target.kind, cond.value);
 
-  if (cond.type === "name") return buildNameCondition(tx, cond);
+  if (cond.type === "name") return like(target.name, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   return cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
