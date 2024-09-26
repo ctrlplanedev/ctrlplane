@@ -5,12 +5,14 @@ on:
     branches: ["*"]
     paths:
       - integrations/terraform-cloud-scanner/**
+      - packages/node-sdk/**
       - .github/workflows/integrations-terraform-cloud-scanner.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
       - integrations/terraform-cloud-scanner/**
+      - packages/node-sdk/**
       - .github/workflows/integrations-terraform-cloud-scanner.yaml
       - pnpm-lock.yaml
 
