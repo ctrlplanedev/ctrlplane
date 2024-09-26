@@ -2,8 +2,8 @@ name: "Get Job Inputs"
 description: "Gets inputs from a job execution and sets outputs for future github jobs"
 author: "Ctrlplane"
 inputs:
-  api_url:
-    description: "The API URL to get job inputs from"
+  base_url:
+    description: "The ctrlplane base url to get job inputs from"
     required: true
   api_key:
     description: "API key for authentication"

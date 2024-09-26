@@ -2,8 +2,10 @@ import * as core from "@actions/core";
 
 import { Configuration, DefaultApi } from "@ctrlplane/node-sdk";
 
+const baseUrl = core.getInput("base_url", { required: true });
+
 const config = new Configuration({
-  basePath: core.getInput("api_url", { required: true }) + "/api",
+  basePath: baseUrl + "/api",
   apiKey: core.getInput("api_key", { required: true }),
 });
 
@@ -48,6 +50,8 @@ async function run() {
     .then((response) => {
       const { variables, target, release, environment, runbook, deployment } =
         response;
+
+      setOutputAndLog("base_url", baseUrl);
 
       setOutputAndLog("target_id", target?.id);
       setOutputAndLog("target_name", target?.name);
