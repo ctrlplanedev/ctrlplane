@@ -215,14 +215,14 @@ export const isNameLikeCondition = (
   condition.operator === TargetOperator.Like;
 
 export const isValidTargetCondition = (condition: TargetCondition): boolean => {
+  // a default condition is valid - it means the user wants to clear the filter
+  // so it gets set to undefined, which matches all targets
+  if (isDefaultCondition(condition)) return true;
   if (isComparisonCondition(condition)) {
     if (condition.conditions.length === 0) return false;
     return condition.conditions.every((c) => isValidTargetCondition(c));
   }
-  if (isKindCondition(condition)) {
-    console.log({ condition });
-    return condition.value.length > 0;
-  }
+  if (isKindCondition(condition)) return condition.value.length > 0;
   if (isNameLikeCondition(condition)) return condition.value.length > 0;
   if (isMetadataCondition(condition)) {
     if (condition.operator === TargetOperator.Null)

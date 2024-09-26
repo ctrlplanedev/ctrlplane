@@ -73,22 +73,15 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
           <div className="flex-grow" />
           <Button
             onClick={() => {
-              // we make an exception for the default condition - when a user clicks clear, we set the condition to undefined
-              // since an undefined filter will match all targets
-              if (isDefaultCondition(localCondition)) {
-                onChange(undefined);
-                setOpen(false);
-                setError(null);
-                return;
-              }
-
               if (!isValidTargetCondition(localCondition)) {
                 setError(
                   "Invalid target condition, ensure all fields are filled out correctly.",
                 );
                 return;
               }
-              onChange(localCondition);
+              onChange(
+                isDefaultCondition(localCondition) ? undefined : localCondition,
+              );
               setOpen(false);
               setError(null);
             }}

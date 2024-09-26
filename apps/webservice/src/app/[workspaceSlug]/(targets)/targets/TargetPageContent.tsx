@@ -2,7 +2,7 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import React from "react";
-import { IconFilter } from "@tabler/icons-react";
+import { IconFilter, IconFilterFilled } from "@tabler/icons-react";
 import range from "lodash/range";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -43,11 +43,15 @@ export const TargetPageContent: React.FC<{
           onChange={(filter) => setFilter(filter)}
         >
           <Button
-            variant="ghost"
+            variant={filter != null ? "secondary" : "ghost"}
             size="icon"
             className="flex h-7 w-7 items-center gap-1 text-xs"
           >
-            <IconFilter className="h-4 w-4" />
+            {filter != null ? (
+              <IconFilterFilled className="h-4 w-4" />
+            ) : (
+              <IconFilter className="h-4 w-4" />
+            )}
           </Button>
         </TargetConditionDialog>
         {targets.data?.total != null && (

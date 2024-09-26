@@ -96,8 +96,7 @@ export const ComparisonConditionRender: React.FC<
   return (
     <div
       className={cn(
-        "rounded-md border  p-2",
-        condition.conditions.length > 0 ? "space-y-4" : "space-y-1",
+        "space-y-4 rounded-md border p-2",
         className,
         depth === 0 ? "bg-neutral-950" : "bg-neutral-800/10",
       )}
@@ -214,7 +213,10 @@ export const ComparisonConditionRender: React.FC<
       </div>
 
       <DropdownMenu>
-        <DropdownMenuTrigger className="w-max focus-visible:outline-none">
+        <DropdownMenuTrigger
+          className="w-max focus-visible:outline-none"
+          asChild
+        >
           <Button
             type="button"
             variant="outline"

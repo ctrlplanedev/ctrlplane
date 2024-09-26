@@ -15,10 +15,13 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import { Label } from "@ctrlplane/ui/label";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import { targetCondition } from "@ctrlplane/validators/targets";
+import {
+  isDefaultCondition,
+  isValidTargetCondition,
+  targetCondition,
+} from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
@@ -65,12 +68,25 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
 
+      const { targetFilter } = values;
+
+      if (targetFilter != null && !isValidTargetCondition(targetFilter)) {
+        form.setError("targetFilter", {
+          message:
+            "Invalid target filter, ensure all fields are filled out correctly.",
+        });
+        return nodes;
+      }
+
       update
         .mutateAsync({
           id: node.id,
           data: {
             ...values,
-            targetFilter,
+            targetFilter:
+              targetFilter != null && isDefaultCondition(targetFilter)
+                ? undefined
+                : targetFilter,
           },
         })
         .then(() =>
@@ -134,8 +150,6 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           )}
         />
 
-        <Label></Label>
-
         <FormField
           control={form.control}
           name="targetFilter"
@@ -158,76 +172,16 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                       Set targets
                     </Button>
                   </TargetConditionDialog>
+                  {form.formState.errors.targetFilter && (
+                    <span className="text-sm text-red-600">
+                      {form.formState.errors.targetFilter.message}
+                    </span>
+                  )}
                 </div>
               </FormControl>
             </FormItem>
           )}
         />
-
-        {/* <div className="flex flex-col gap-2">
-          <Label>Target Filter ({targets.data?.total ?? "-"})</Label>
-
-          {fields.length > 1 && (
-            <FormField
-              control={form.control}
-              name="operator"
-              render={({ field: { onChange, value } }) => (
-                <FormItem className="w-24">
-                  <FormControl>
-                    <Select onValueChange={onChange} value={value}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="and">And</SelectItem>
-                        <SelectItem value="or">Or</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          )}
-
-          {fields.map((field, index) => (
-            <FormField
-              control={form.control}
-              key={field.id}
-              name={`targetFilter.${index}`}
-              render={({ field: { onChange, value } }) => (
-                <FormItem>
-                  <FormControl className="w-fit">
-                    <MetadataFilterInput
-                      value={value}
-                      onChange={onChange}
-                      onRemove={() => remove(index)}
-                      workspaceId={workspace.data?.id}
-                      selectedKeys={fields
-                        .map((f) => f.operator !== "null" && f.value)
-                        .filter((f) => f !== false)}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-2 w-fit"
-            onClick={() =>
-              append({
-                key: "",
-                value: "",
-                type: "metadata",
-                operator: "equals" as const,
-              })
-            }
-          >
-            Add Metadata Filter
-          </Button>
-        </div> */}
 
         <div className="flex gap-2">
           <Button type="submit" disabled={update.isPending}>
