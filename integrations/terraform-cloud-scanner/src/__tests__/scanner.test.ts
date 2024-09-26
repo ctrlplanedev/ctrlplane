@@ -24,7 +24,7 @@ vi.mock("../config.js", () => ({
     TFE_ORGANIZATION: "mock-organization",
     CTRLPLANE_API_URL: "https://mock.ctrlplane.url",
     CTRLPLANE_API_KEY: "mock-api-key",
-    CTRLPLANE_WORKSPACE: "mock-workspace",
+    CTRLPLANE_WORKSPACE_ID: "mock-workspace",
     CTRLPLANE_WORKSPACE_TARGET_NAME: "mock-workspace-target-name",
     CTRLPLANE_SCANNER_NAME: "mock-scanner-name",
     CRON_ENABLED: false,
@@ -40,7 +40,7 @@ beforeEach(() => {
 describe("Scanner Module", () => {
   it("should successfully scan and register targets", async () => {
     vi.spyOn(env, "TFE_ORGANIZATION", "get").mockReturnValue("mock-org");
-    vi.spyOn(env, "CTRLPLANE_WORKSPACE", "get").mockReturnValue(
+    vi.spyOn(env, "CTRLPLANE_WORKSPACE_ID", "get").mockReturnValue(
       "ctrlplane-workspace",
     );
     vi.spyOn(env, "CTRLPLANE_SCANNER_NAME", "get").mockReturnValue(
