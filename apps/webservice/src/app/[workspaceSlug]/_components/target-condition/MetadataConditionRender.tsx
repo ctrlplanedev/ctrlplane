@@ -45,9 +45,7 @@ export const MetadataConditionRender: React.FC<
   const [open, setOpen] = useState(false);
   const metadataKeys = api.target.metadataKeys.useQuery(
     workspace.data?.id ?? "",
-    {
-      enabled: workspace.isSuccess && workspace.data != null,
-    },
+    { enabled: workspace.isSuccess && workspace.data != null },
   );
   const filteredMetadataKeys = useMatchSorter(
     metadataKeys.data ?? [],
@@ -59,10 +57,7 @@ export const MetadataConditionRender: React.FC<
       <div className="grid w-full grid-cols-12">
         <div className="col-span-5">
           <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger
-              onClick={(e) => e.stopPropagation()}
-              className="w-full rounded-r-none hover:rounded-l-sm hover:bg-neutral-800/50"
-            >
+            <PopoverTrigger className="w-full rounded-r-none hover:rounded-l-sm hover:bg-neutral-800/50">
               <Input
                 placeholder="Key"
                 value={condition.key}
@@ -73,7 +68,6 @@ export const MetadataConditionRender: React.FC<
             <PopoverContent
               align="start"
               className="scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 max-h-[300px] overflow-x-auto p-0 text-sm"
-              onOpenAutoFocus={(e) => e.preventDefault()}
             >
               {filteredMetadataKeys.map((k) => (
                 <Button
@@ -81,9 +75,9 @@ export const MetadataConditionRender: React.FC<
                   size="sm"
                   key={k}
                   className="w-full rounded-none text-left"
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() => {
                     setKey(k);
+                    setOpen(false);
                   }}
                 >
                   <div className="w-full">{k}</div>

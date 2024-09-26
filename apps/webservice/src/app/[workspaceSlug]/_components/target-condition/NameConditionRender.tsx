@@ -7,7 +7,7 @@ import type { TargetConditionRenderProps } from "./target-condition-props";
 
 export const NameConditionRender: React.FC<
   TargetConditionRenderProps<NameLikeCondition>
-> = ({ condition, onChange, className, depth }) => {
+> = ({ condition, onChange, className }) => {
   const setValue = (value: string) =>
     onChange({ ...condition, value: `%${value}%` });
 
@@ -16,13 +16,12 @@ export const NameConditionRender: React.FC<
       <div className="grid w-full grid-cols-12">
         <div
           className={cn(
-            "flex items-center rounded-l-md border bg-transparent  px-3 text-sm text-muted-foreground",
-            depth === 0 ? "col-span-2" : "col-span-3",
+            "col-span-3 flex items-center rounded-l-md border  bg-transparent px-3 text-sm text-muted-foreground",
           )}
         >
           Name contains
         </div>
-        <div className={cn(depth === 0 ? "col-span-10" : "col-span-9")}>
+        <div className="col-span-9">
           <Input
             placeholder="Value"
             value={condition.value.replace(/^%|%$/g, "")}

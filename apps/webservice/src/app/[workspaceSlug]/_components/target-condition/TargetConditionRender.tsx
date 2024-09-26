@@ -8,18 +8,11 @@ import {
   isNameLikeCondition,
 } from "@ctrlplane/validators/targets";
 
+import type { TargetConditionRenderProps } from "./target-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { KindConditionRender } from "./KindConditionRender";
 import { MetadataConditionRender } from "./MetadataConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
-
-type TargetConditionRenderProps<T extends TargetCondition> = {
-  condition: T;
-  onChange: (condition: T) => void;
-  onRemove?: () => void;
-  depth?: number;
-  className?: string;
-};
 
 /**
  * The parent container should have min width of 1000px
