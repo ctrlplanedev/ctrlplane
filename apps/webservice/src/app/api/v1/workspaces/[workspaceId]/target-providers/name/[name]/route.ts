@@ -5,7 +5,6 @@ import { checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { targetProvider, workspace } from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
