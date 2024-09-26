@@ -23,5 +23,7 @@ scan()
     logger.error("Initial scan failed:", error);
   })
   .finally(() => {
-    process.exit(0);
+    if (env.CRON_ENABLED.toLowerCase() === "false") {
+      process.exit(0);
+    }
   });
