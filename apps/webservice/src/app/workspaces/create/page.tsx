@@ -74,7 +74,7 @@ export default function WorkspaceJoin() {
           <DropdownMenuContent className="w-[250px]">
             <DropdownMenuItem className="flex items-center gap-2 p-2">
               <div className="flex-grow">{session?.user.email}</div>
-              <IconCheck className="text-green-400" />
+              <IconCheck className="h-4 w-4 text-green-400" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

@@ -59,7 +59,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
               setError(null);
             }}
           >
-            Reset to original state
+            Reset to original filter
           </Button>
           <Button
             variant="outline"
