@@ -163,8 +163,8 @@ function buildWorkspaceLink(workspace: Workspace): Record<string, string> {
 async function getOrCreateProviderId(): Promise<string | null> {
   return api
     .upsertTargetProvider({
-      workspaceId: env.CTRLPLANE_WORKSPACE_ID.toString(),
-      name: env.CTRLPLANE_SCANNER_NAME.toString(),
+      workspaceId: env.CTRLPLANE_WORKSPACE_ID,
+      name: env.CTRLPLANE_SCANNER_NAME,
     })
     .then(({ id }) => {
       logger.info(`Using provider ID: ${id}`);
