@@ -25,7 +25,7 @@ export async function scan() {
       logger.error(
         "Provider ID is not available. Aborting target registration.",
       );
-      return;
+      process.exit(1);
     }
 
     const workspaces: Workspace[] = await listWorkspaces();
@@ -88,6 +88,7 @@ export async function scan() {
     logger.info("Successfully registered targets");
   } catch (error) {
     logger.error("An error occurred during the scan process:", error);
+    process.exit(1);
   }
 }
 
