@@ -64,7 +64,7 @@ export const SystemsTable: React.FC<{
       <TableBody>
         {table.getRowModel().rows.map((row) => (
           <TableRow
-            className="flex cursor-pointer justify-between border-b-neutral-800/50 hover:bg-inherit"
+            className="flex cursor-pointer items-center justify-between border-b-neutral-800/50 hover:bg-inherit"
             key={row.id}
             onClick={() =>
               router.push(
@@ -79,8 +79,8 @@ export const SystemsTable: React.FC<{
                 </TableCell>
                 <TableCell>
                   <SystemActionsDropdown system={cell.row.original}>
-                    <Button variant="ghost" size="icon">
-                      <IconDotsVertical className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <IconDotsVertical className="h-3 w-3" />
                     </Button>
                   </SystemActionsDropdown>
                 </TableCell>
