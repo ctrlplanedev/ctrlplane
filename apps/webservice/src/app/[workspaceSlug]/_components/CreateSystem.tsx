@@ -54,7 +54,7 @@ export const CreateSystemDialog: React.FC<{
   watch((data, { name: fieldName }) => {
     if (fieldName === "name")
       setValue("slug", slugify(data.name ?? "", { lower: true }), {
-        shouldValidate: true,
+        shouldTouch: true,
       });
   });
 
