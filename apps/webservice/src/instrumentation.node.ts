@@ -1,7 +1,6 @@
-import type { HttpInstrumentationConfig } from "@opentelemetry/instrumentation-http";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-proto";
-import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
-import { PgInstrumentation } from "@opentelemetry/instrumentation-pg";
+import { BullMQInstrumentation } from "@appsignal/opentelemetry-instrumentation-bullmq";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { Resource } from "@opentelemetry/resources";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
@@ -19,13 +18,33 @@ const sdk = new NodeSDK({
   }),
   spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
   instrumentations: [
-    new HttpInstrumentation({
+    getNodeAutoInstrumentations({
+      "@opentelemetry/instrumentation-fs": {
+        enabled: false,
+      },
+      "@opentelemetry/instrumentation-net": {
+        enabled: false,
+      },
+      "@opentelemetry/instrumentation-dns": {
+        enabled: false,
+      },
+      "@opentelemetry/instrumentation-http": {
+        enabled: true,
+      },
+      "@opentelemetry/instrumentation-pg": {
+        enabled: true,
+        enhancedDatabaseReporting: true,
+        addSqlCommenterCommentToQueries: true,
+      },
+      "@opentelemetry/instrumentation-ioredis": {
+        enabled: true,
+      },
+      "@opentelemetry/instrumentation-winston": {
+        enabled: true,
+      },
+    }),
+    new BullMQInstrumentation({
       enabled: true,
-    } as HttpInstrumentationConfig),
-    new PgInstrumentation({
-      enabled: true,
-      enhancedDatabaseReporting: true,
-      addSqlCommenterCommentToQueries: true,
     }),
   ],
   sampler:

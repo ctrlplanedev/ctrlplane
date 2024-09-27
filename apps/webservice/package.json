@@ -14,6 +14,7 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@appsignal/opentelemetry-instrumentation-bullmq": "^0.7.1",
     "@ctrlplane/api": "workspace:*",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
@@ -29,9 +30,8 @@
     "@octokit/auth-app": "^7.1.0",
     "@octokit/rest": "catalog:",
     "@octokit/webhooks-types": "^7.5.1",
-    "@opentelemetry/exporter-trace-otlp-proto": "^0.53.0",
-    "@opentelemetry/instrumentation-http": "^0.53.0",
-    "@opentelemetry/instrumentation-pg": "^0.44.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.50.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.53.0",
     "@opentelemetry/sdk-node": "^0.53.0",
     "@t3-oss/env-nextjs": "catalog:",
     "@tabler/icons-react": "^3.17.0",
