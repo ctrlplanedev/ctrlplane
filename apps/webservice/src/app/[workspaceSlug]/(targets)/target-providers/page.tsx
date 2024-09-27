@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
+import { IconSettings } from "@tabler/icons-react";
 import { formatDistanceToNow } from "date-fns";
-import { TbSettings } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import {
@@ -62,7 +62,7 @@ export default async function TargetProvidersPage({
                             variant="outline"
                             className="h-6 gap-1.5 rounded-full border-none bg-blue-500/10 pl-2 pr-3 text-xs text-blue-300"
                           >
-                            <TbSettings className="" /> Custom
+                            <IconSettings className="h-4 w-4" /> Custom
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[200px]">

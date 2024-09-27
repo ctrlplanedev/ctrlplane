@@ -1,5 +1,5 @@
 {
-  "id": "1b277419-e0fb-4693-8d0c-ef96864252a0",
+  "id": "1b361720-301c-46ef-bf99-468d4488476c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -696,8 +696,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "labels": {
-          "name": "labels",
+        "target_filter": {
+          "name": "target_filter",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true
@@ -937,8 +937,8 @@
           "name": "target_filter",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
+          "notNull": false,
+          "default": "NULL"
         },
         "deleted_at": {
           "name": "deleted_at",
@@ -1580,13 +1580,6 @@
           "notNull": true,
           "default": "'{}'"
         },
-        "labels": {
-          "name": "labels",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'"
-        },
         "locked_at": {
           "name": "locked_at",
           "type": "timestamp with time zone",
@@ -1639,7 +1632,74 @@
           "tableTo": "workspace",
           "columnsFrom": ["workspace_id"],
           "columnsTo": ["id"],
-          "onDelete": "no action",
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.target_metadata": {
+      "name": "target_metadata",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "target_id": {
+          "name": "target_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "target_metadata_key_target_id_index": {
+          "name": "target_metadata_key_target_id_index",
+          "columns": [
+            {
+              "expression": "key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "target_metadata_target_id_target_id_fk": {
+          "name": "target_metadata_target_id_target_id_fk",
+          "tableFrom": "target_metadata",
+          "tableTo": "target",
+          "columnsFrom": ["target_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -1930,8 +1990,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "target_label_group_id": {
-          "name": "target_label_group_id",
+        "target_metadata_group_id": {
+          "name": "target_metadata_group_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1951,8 +2011,8 @@
         }
       },
       "indexes": {
-        "release_dependency_release_id_deployment_id_target_label_group_id_index": {
-          "name": "release_dependency_release_id_deployment_id_target_label_group_id_index",
+        "release_dependency_release_id_deployment_id_target_metadata_group_id_index": {
+          "name": "release_dependency_release_id_deployment_id_target_metadata_group_id_index",
           "columns": [
             {
               "expression": "release_id",
@@ -1967,7 +2027,7 @@
               "nulls": "last"
             },
             {
-              "expression": "target_label_group_id",
+              "expression": "target_metadata_group_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1998,11 +2058,11 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "release_dependency_target_label_group_id_target_label_group_id_fk": {
-          "name": "release_dependency_target_label_group_id_target_label_group_id_fk",
+        "release_dependency_target_metadata_group_id_target_metadata_group_id_fk": {
+          "name": "release_dependency_target_metadata_group_id_target_metadata_group_id_fk",
           "tableFrom": "release_dependency",
-          "tableTo": "target_label_group",
-          "columnsFrom": ["target_label_group_id"],
+          "tableTo": "target_metadata_group",
+          "columnsFrom": ["target_metadata_group_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -2819,8 +2879,8 @@
         }
       }
     },
-    "public.target_label_group": {
-      "name": "target_label_group",
+    "public.target_metadata_group": {
+      "name": "target_metadata_group",
       "schema": "",
       "columns": {
         "id": {
@@ -2857,9 +2917,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "target_label_group_workspace_id_workspace_id_fk": {
-          "name": "target_label_group_workspace_id_workspace_id_fk",
-          "tableFrom": "target_label_group",
+        "target_metadata_group_workspace_id_workspace_id_fk": {
+          "name": "target_metadata_group_workspace_id_workspace_id_fk",
+          "tableFrom": "target_metadata_group",
           "tableTo": "workspace",
           "columnsFrom": ["workspace_id"],
           "columnsTo": ["id"],
@@ -2867,6 +2927,23 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.target_metadata_group_keys": {
+      "name": "target_metadata_group_keys",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -3122,7 +3199,7 @@
           "name": "permission",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         }
       },
       "indexes": {
@@ -3328,14 +3405,15 @@
         "release",
         "target",
         "targetProvider",
-        "targetLabelGroup",
+        "targetMetadataGroup",
         "workspace",
         "environment",
         "environmentPolicy",
         "variableSet",
         "system",
         "deployment",
-        "jobAgent"
+        "jobAgent",
+        "runbook"
       ]
     }
   },

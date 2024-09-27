@@ -2,7 +2,7 @@ packages:
   - apps/*
   - packages/*
   - tooling/*
-  - providers/*
+  - integrations/*
 
 catalog:
   eslint: ^9.10.0
@@ -16,6 +16,8 @@ catalog:
   "@t3-oss/env-nextjs": ^0.11.1
   "date-fns": ^3.6.0
   "@octokit/rest": ^20.1.1
+  "tsx": ^4.19.1
+  "lodash-es": ^4.17.21
 
 catalogs:
   react18:

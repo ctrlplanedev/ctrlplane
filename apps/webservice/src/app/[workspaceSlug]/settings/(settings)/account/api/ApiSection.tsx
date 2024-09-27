@@ -3,7 +3,7 @@
 import type { UserApiKey } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbCheck, TbCopy } from "react-icons/tb";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
 
 import { cn } from "@ctrlplane/ui";
@@ -69,9 +69,9 @@ export const CreateApiKey: React.FC = () => {
               className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
             >
               {isCopied ? (
-                <TbCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
+                <IconCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
               ) : (
-                <TbCopy className="h-4 w-4" />
+                <IconCopy className="h-4 w-4" />
               )}
             </Button>
           </div>

@@ -23,6 +23,7 @@ export const env = createEnv({
     GITHUB_BOT_APP_ID: z.string().optional(),
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     BASE_URL: z.string(),
+    OTEL_SAMPLER_RATIO: z.number().optional().default(1),
   },
 
   /**

@@ -1,7 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { TbAlertTriangle, TbDotsVertical, TbReload } from "react-icons/tb";
+import {
+  IconAlertTriangle,
+  IconDotsVertical,
+  IconReload,
+} from "@tabler/icons-react";
 
 import {
   AlertDialog,
@@ -42,8 +47,9 @@ const RedeployReleaseDialog: React.FC<{
   const router = useRouter();
   const redeploy = api.release.deploy.toEnvironment.useMutation();
 
+  const [isOpen, setIsOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -67,7 +73,10 @@ const RedeployReleaseDialog: React.FC<{
                   environmentId: environment.id,
                   releaseId: release.id,
                 })
-                .then(() => router.refresh())
+                .then(() => {
+                  setIsOpen(false);
+                  router.refresh();
+                })
             }
           >
             Redeploy
@@ -128,8 +137,12 @@ export const ReleaseDropdownMenu: React.FC<{
 }> = ({ release, environment, isReleaseCompleted }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="icon">
-        <TbDotsVertical />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-muted-foreground"
+      >
+        <IconDotsVertical className="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
@@ -139,7 +152,7 @@ export const ReleaseDropdownMenu: React.FC<{
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"
         >
-          <TbReload />
+          <IconReload className="h-4 w-4" />
           <span>Redeploy</span>
         </DropdownMenuItem>
       </RedeployReleaseDialog>
@@ -148,7 +161,7 @@ export const ReleaseDropdownMenu: React.FC<{
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"
         >
-          <TbAlertTriangle />
+          <IconAlertTriangle className="h-4 w-4" />
           <span>Force deploy</span>
         </DropdownMenuItem>
       </ForceReleaseDialog>

@@ -1,9 +1,9 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
+import { IconTarget, IconX } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
-import { TbTarget, TbX } from "react-icons/tb";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -54,8 +54,7 @@ export const SystemsList: React.FC<{
                 ) : (
                   <HoverCard>
                     <HoverCardTrigger>
-                      {Object.entries(f.value).length} label
-                      {Object.entries(f.value).length > 1 ? "s" : ""}
+                      {Object.entries(f.value).length} metadata
                     </HoverCardTrigger>
                     <HoverCardContent className="p-2" align="start">
                       {Object.entries(f.value).map(([key, value]) => (
@@ -77,7 +76,7 @@ export const SystemsList: React.FC<{
                 className="h-5 w-5 text-xs text-muted-foreground"
                 onClick={() => removeFilter(idx)}
               >
-                <TbX />
+                <IconX className="h-4 w-4" />
               </Button>
             </Badge>
           ))}
@@ -87,8 +86,8 @@ export const SystemsList: React.FC<{
             addFilters={addFilters}
             className="min-w-[200px] bg-neutral-900 p-1"
           >
-            <ContentDialog property="name">
-              <TbTarget /> Name
+            <ContentDialog<SystemFilter> property="name">
+              <IconTarget className="h-4 w-4" /> Name
             </ContentDialog>
           </FilterDropdown>
         </div>

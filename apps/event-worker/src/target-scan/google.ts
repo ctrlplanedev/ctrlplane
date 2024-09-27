@@ -5,6 +5,8 @@ import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
+import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+
 import { omitNullUndefined } from "../utils.js";
 
 const sourceCredentials = new GoogleAuth({
@@ -101,7 +103,7 @@ export const clusterToTarget = (
     providerId,
     identifier: `${project}/${cluster.name}`,
     version: "kubernetes/v1",
-    kind: "KubernetesAPI",
+    kind: "ClusterAPI",
     config: {
       name: cluster.name,
       status: cluster.status,
@@ -110,17 +112,19 @@ export const clusterToTarget = (
         endpoint: `https://${cluster.endpoint}`,
       },
     },
-    labels: omitNullUndefined({
-      "ctrlplane/url": appUrl,
+    metadata: omitNullUndefined({
+      [ReservedMetadataKey.Links]: JSON.stringify({ "Google Console": appUrl }),
+      [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
 
       "google/self-link": cluster.selfLink,
       "google/project": project,
       "google/location": cluster.location,
-      "google/autopilot": cluster.autopilot?.enabled,
+      "google/autopilot": String(cluster.autopilot?.enabled ?? false),
 
-      "kubernetes/cluster-name": cluster.name,
-      "kubernetes/cluster-id": cluster.id,
-      "kubernetes/distribution": "gke",
+      [ReservedMetadataKey.KubernetesFlavor]: "gke",
+      [ReservedMetadataKey.KubernetesVersion]:
+        masterVersion.version.split("-")[0] ?? "",
+
       "kubernetes/status": cluster.status,
       "kubernetes/node-count": String(cluster.currentNodeCount ?? "unknown"),
 

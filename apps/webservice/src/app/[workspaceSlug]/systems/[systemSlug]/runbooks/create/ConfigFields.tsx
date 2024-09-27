@@ -6,8 +6,8 @@ import type {
   StringVariableConfigType,
   VariableConfigType,
 } from "@ctrlplane/validators/variables";
+import { IconX } from "@tabler/icons-react";
 import _ from "lodash";
-import { TbX } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Checkbox } from "@ctrlplane/ui/checkbox";
@@ -34,6 +34,7 @@ export const ConfigTypeSelector: React.FC<{
       <SelectContent>
         <SelectItem value="string">String</SelectItem>
         <SelectItem value="number">Number</SelectItem>
+        <SelectItem value="boolean">Boolean</SelectItem>
         <SelectItem value="choice">Choice</SelectItem>
       </SelectContent>
     </Select>
@@ -153,7 +154,7 @@ export const ChoiceConfigFields: ConfigFieldsFC<ChoiceVariableConfigType> = ({
                   size="icon"
                   onClick={() => removeOption(index)}
                 >
-                  <TbX className="h-4 w-4" />
+                  <IconX className="h-4 w-4" />
                 </Button>
               </div>
             ))}
@@ -192,7 +193,7 @@ export const ChoiceConfigFields: ConfigFieldsFC<ChoiceVariableConfigType> = ({
               size="icon"
               onClick={() => updateConfig({ default: "" })}
             >
-              <TbX className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </Button>
           </div>
         </FormControl>

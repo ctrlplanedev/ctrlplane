@@ -5,20 +5,20 @@ import type {
   Target,
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
+import {
+  IconCalendarTime,
+  IconCircle,
+  IconCircleCheck,
+  IconCircleX,
+  IconClock,
+  IconExclamationMark,
+  IconHistoryToggle,
+  IconLoader2,
+  IconSettingsX,
+} from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { format } from "date-fns";
 import _ from "lodash";
-import {
-  TbCalendarTime,
-  TbCircle,
-  TbCircleCheck,
-  TbCircleX,
-  TbClock,
-  TbExclamationMark,
-  TbHistoryToggle,
-  TbLoader2,
-  TbSettingsX,
-} from "react-icons/tb";
 import { isPresent } from "ts-is-present";
 
 import { Badge } from "@ctrlplane/ui/badge";
@@ -28,7 +28,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
@@ -43,7 +43,7 @@ const ReleaseIcon: React.FC<{
   if (inProgress)
     return (
       <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
-        <TbLoader2 strokeWidth={2} />
+        <IconLoader2 strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -51,14 +51,14 @@ const ReleaseIcon: React.FC<{
   if (hasAnyFailed)
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
-        <TbExclamationMark strokeWidth={2} />
+        <IconExclamationMark strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
   if (statues.some((s) => s === JobStatus.InvalidJobAgent))
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
-        <TbSettingsX strokeWidth={2} />
+        <IconSettingsX strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -66,7 +66,7 @@ const ReleaseIcon: React.FC<{
   if (allPending)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <TbHistoryToggle strokeWidth={2} />
+        <IconHistoryToggle strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -74,7 +74,7 @@ const ReleaseIcon: React.FC<{
   if (isComplete)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
-        <TbCircleCheck strokeWidth={2} />
+        <IconCircleCheck strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -82,7 +82,7 @@ const ReleaseIcon: React.FC<{
   if (isRollingOut)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
-        <TbCalendarTime strokeWidth={2} />
+        <IconCalendarTime strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -90,7 +90,7 @@ const ReleaseIcon: React.FC<{
   if (waiting)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <TbClock strokeWidth={2} />
+        <IconClock strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
@@ -98,23 +98,16 @@ const ReleaseIcon: React.FC<{
   if (isCancelled)
     return (
       <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
-        <TbCircleX strokeWidth={2} />
+        <IconCircleX strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
   return (
     <div className="rounded-full bg-green-400 p-1 dark:text-black">
-      <TbCircleCheck strokeWidth={2} />
+      <IconCircleCheck strokeWidth={2} className="h-4 w-4" />
     </div>
   );
 };
-
-const completedStatus: JobStatus[] = [
-  JobStatus.Completed,
-  JobStatus.Cancelled,
-  JobStatus.Skipped,
-  JobStatus.Failure,
-];
 
 export const Release: React.FC<{
   name: string;
@@ -160,16 +153,16 @@ export const Release: React.FC<{
   const firstReleaseJobTrigger = releaseJobTriggers.at(0);
 
   const isReleaseCompleted = releaseJobTriggers.every((d) =>
-    completedStatus.includes(d.job.status as JobStatus),
+    exitedStatus.includes(d.job.status as JobStatus),
   );
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-2">
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
             href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
-            className="flex items-center gap-2"
+            className="flex w-full items-center gap-2"
           >
             <ReleaseIcon releaseJobTriggers={releaseJobTriggers} />
             <div className="w-full text-sm">
@@ -198,7 +191,7 @@ export const Release: React.FC<{
                 {configuredWithMessages.map((d) => (
                   <div key={d.id}>
                     <div className="flex items-center gap-1">
-                      <TbCircle
+                      <IconCircle
                         fill={getStatusColor(d.job.status)}
                         strokeWidth={0}
                       />

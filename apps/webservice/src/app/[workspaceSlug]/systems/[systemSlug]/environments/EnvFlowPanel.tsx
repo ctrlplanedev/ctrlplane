@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
-import { TbFilter, TbLayout, TbPlant, TbResize, TbTrash } from "react-icons/tb";
+import {
+  IconFilter,
+  IconLayout,
+  IconPlant,
+  IconResize,
+  IconTrash,
+} from "@tabler/icons-react";
+import { useForm } from "react-hook-form";
 import { MarkerType, useReactFlow, useViewport } from "reactflow";
 import colors from "tailwindcss/colors";
 import { z } from "zod";
 
-import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -39,15 +44,13 @@ import { usePanel } from "./SidepanelContext";
 const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
-  targetFilter: z.array(z.object({ key: z.string(), value: z.string() })),
 });
 
 type EnvironmentFormValues = z.infer<typeof environmentForm>;
 
 const AddEnvironmentButton: React.FC<{
-  workspaceId: string;
   systemId: string;
-}> = ({ workspaceId, systemId }) => {
+}> = ({ systemId }) => {
   const create = api.environment.create.useMutation();
 
   const { setSelectedNodeId } = usePanel();
@@ -57,31 +60,18 @@ const AddEnvironmentButton: React.FC<{
     defaultValues: {
       name: "",
       description: "",
-      targetFilter: [],
     },
-  });
-
-  const { targetFilter } = form.watch();
-  const targets = api.environment.target.byFilter.useQuery({
-    workspaceId, // Assuming systemId is the workspaceId
-    labels: Object.fromEntries(
-      targetFilter.map(({ key, value }) => [key, value]),
-    ),
-  });
-
-  const { fields } = useFieldArray({
-    name: "targetFilter",
-    control: form.control,
   });
 
   const { addNodes, addEdges } = useReactFlow();
   const { x, y } = useViewport();
   const onSubmit = form.handleSubmit(async (values) => {
-    const targetFilter = Object.fromEntries(
-      values.targetFilter.map(({ key, value }) => [key, value]),
-    );
     setOpen(false);
-    const env = await create.mutateAsync({ ...values, systemId, targetFilter });
+
+    const env = await create.mutateAsync({
+      ...values,
+      systemId,
+    });
     addNodes({
       id: env.id,
       type: NodeType.Environment,
@@ -110,7 +100,7 @@ const AddEnvironmentButton: React.FC<{
           variant="outline"
           disabled={create.isPending}
         >
-          <TbPlant /> Add Environment
+          <IconPlant className="h-4 w-4" /> Add Environment
         </Button>
       </DialogTrigger>
 
@@ -154,40 +144,6 @@ const AddEnvironmentButton: React.FC<{
               )}
             />
 
-            <div>
-              {fields.map((field, index) => (
-                <FormField
-                  control={form.control}
-                  key={field.id}
-                  name={`targetFilter.${index}`}
-                  render={({ field: { onChange, value } }) => (
-                    <FormItem>
-                      <FormLabel className={cn(index !== 0 && "sr-only")}>
-                        Target Filter ({targets.data?.length ?? "-"})
-                      </FormLabel>
-                      <FormControl>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            placeholder="Key"
-                            value={value.key}
-                            onChange={(e) =>
-                              onChange({ ...value, key: e.target.value })
-                            }
-                          />
-                          <Input
-                            placeholder="Value"
-                            value={value.value}
-                            onChange={(e) =>
-                              onChange({ ...value, value: e.target.value })
-                            }
-                          />
-                        </div>
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              ))}
-            </div>
             <DialogFooter>
               <Button type="submit">Create</Button>
             </DialogFooter>
@@ -229,7 +185,7 @@ const NewPolicyButton: React.FC<{ systemId: string }> = ({ systemId }) => {
         window.requestAnimationFrame(() => setSelectedNodeId(policy.id));
       }}
     >
-      <TbFilter /> New Policy
+      <IconFilter className="h-4 w-4" /> New Policy
     </Button>
   );
 };
@@ -261,10 +217,9 @@ const useDeleteNodeOrEdge = () => {
 };
 
 export const EnvFlowPanel: React.FC<{
-  workspaceId: string;
   systemId: string;
   onLayout: () => void;
-}> = ({ onLayout, workspaceId, systemId }) => {
+}> = ({ onLayout, systemId }) => {
   const { fitView } = useReactFlow();
   const { disabled, onDelete } = useDeleteNodeOrEdge();
   return (
@@ -275,7 +230,7 @@ export const EnvFlowPanel: React.FC<{
         className="bg-transparent"
         onClick={() => fitView({ padding: 0.12 })}
       >
-        <TbResize />
+        <IconResize className="h-4 w-4" />
       </Button>
       <Button
         variant="outline"
@@ -283,14 +238,14 @@ export const EnvFlowPanel: React.FC<{
         className="bg-transparent"
         onClick={onLayout}
       >
-        <TbLayout />
+        <IconLayout className="h-4 w-4" />
       </Button>
 
       <div className="px-2">
         <Separator orientation="vertical" className="h-10" />
       </div>
 
-      <AddEnvironmentButton workspaceId={workspaceId} systemId={systemId} />
+      <AddEnvironmentButton systemId={systemId} />
       <NewPolicyButton systemId={systemId} />
 
       <div className="px-2">
@@ -304,7 +259,7 @@ export const EnvFlowPanel: React.FC<{
         disabled={disabled}
         onClick={onDelete}
       >
-        <TbTrash />
+        <IconTrash className="h-4 w-4" />
       </Button>
       <DeleteNodeDialog />
     </div>

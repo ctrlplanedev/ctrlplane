@@ -1,8 +1,8 @@
 "use client";
 
 import { notFound } from "next/navigation";
+import { IconLoader2, IconLock, IconLockOpen } from "@tabler/icons-react";
 import { format } from "date-fns";
-import { TbLoader2, TbLock, TbLockOpen } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -77,13 +77,13 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
   );
 };
 
-const TargetLabelsInfo: React.FC<{ labels: Record<string, string> }> = (
+const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
   props,
 ) => {
-  const labels = Object.entries(props.labels).sort(([keyA], [keyB]) =>
+  const metadata = Object.entries(props.metadata).sort(([keyA], [keyB]) =>
     keyA.localeCompare(keyB),
   );
-  const { search, setSearch, result } = useMatchSorterWithSearch(labels, {
+  const { search, setSearch, result } = useMatchSorterWithSearch(metadata, {
     keys: ["0", "1"],
   });
   return (
@@ -130,7 +130,7 @@ export default function TargetPage({
   if (isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <TbLoader2 className="h-8 w-8 animate-spin" />
+        <IconLoader2 className="h-8 w-8 animate-spin" />
       </div>
     );
 
@@ -153,11 +153,11 @@ export default function TargetPage({
             >
               {target.data.lockedAt != null ? (
                 <>
-                  <TbLockOpen /> Unlocked
+                  <IconLockOpen className="h-4 w-4" /> Unlocked
                 </>
               ) : (
                 <>
-                  <TbLock /> Lock
+                  <IconLock className="h-4 w-4" /> Lock
                 </>
               )}
             </Button>
@@ -228,28 +228,13 @@ export default function TargetPage({
                     format(target.data.updatedAt, "MM/dd/yyyy mm:hh:ss")}
                 </td>
               </tr>
-              <tr>
-                <td className="p-1 py-1 pr-2 text-muted-foreground">Link</td>
-                {/* <td>
-                {link == null ? (
-                  <span className="text-muted-foreground">Not set</span>
-                ) : (
-                  <a
-                    href={link}
-                    className="inline-block w-full overflow-hidden text-ellipsis text-nowrap hover:text-blue-400"
-                  >
-                    {link}
-                  </a>
-                )}
-              </td> */}
-              </tr>
             </tbody>
           </table>
         </div>
         <div className="border-b" />
         <div className="p-6">
-          <div className="mb-4">Labels</div>
-          <TargetLabelsInfo labels={target.data?.labels ?? {}} />
+          <div className="mb-4">Metadata</div>
+          <TargetMetadataInfo metadata={target.data?.metadata ?? {}} />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

@@ -12,4 +12,5 @@ export default defineConfig({
   verbose: true,
   dbCredentials: { url: nonPoolingUrl },
   tablesFilter: ["t3turbo_*"],
+  out: "./drizzle",
 });

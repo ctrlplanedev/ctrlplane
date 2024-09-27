@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TbChevronDown, TbExternalLink } from "react-icons/tb";
+import { IconChevronDown, IconExternalLink } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -32,7 +32,7 @@ export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
         <Button variant="ghost" className="flex items-center gap-2">
           <div className="h-2 w-2 rounded-full bg-green-500" />
           Connected
-          <TbChevronDown className="h-4 w-4" />
+          <IconChevronDown className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
@@ -42,7 +42,7 @@ export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
           rel="noopener noreferrer"
         >
           <DropdownMenuItem>
-            Configure <TbExternalLink className="ml-2 h-4 w-4" />
+            Configure <IconExternalLink className="ml-2 h-4 w-4" />
           </DropdownMenuItem>
         </Link>
 

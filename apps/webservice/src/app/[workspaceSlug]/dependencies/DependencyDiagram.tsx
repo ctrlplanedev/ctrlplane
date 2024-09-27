@@ -3,7 +3,7 @@
 import type { Deployment, Release } from "@ctrlplane/db/schema";
 import type { EdgeProps, NodeProps, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
-import { TbSelector } from "react-icons/tb";
+import { IconSelector } from "@tabler/icons-react";
 import ReactFlow, {
   BaseEdge,
   EdgeLabelRenderer,
@@ -11,6 +11,7 @@ import ReactFlow, {
   Handle,
   MarkerType,
   Position,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -114,7 +115,7 @@ const ReleaseSelector: React.FC<{
           aria-expanded={isOpen}
           className="w-[250px] items-center justify-start gap-2 px-2 text-sm"
         >
-          <TbSelector className="text-neutral-500" />
+          <IconSelector className="text-neutral-500" />
           <span className="overflow-hidden text-ellipsis">
             {releases.find((r) => r.id === value)?.version ?? ""}
           </span>
@@ -219,7 +220,7 @@ const nodeTypes = { deployment: DeploymentNode };
 const edgeTypes = { default: DepEdge };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-export const DependencyDiagram: React.FC<{
+const DependencyDiagram: React.FC<{
   deployments: Array<
     Deployment & { latestRelease: { id: string; version: string } | null }
   >;
@@ -256,5 +257,17 @@ export const DependencyDiagram: React.FC<{
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
     ></ReactFlow>
+  );
+};
+
+export const Diagram: React.FC<{
+  deployments: Array<
+    Deployment & { latestRelease: { id: string; version: string } | null }
+  >;
+}> = ({ deployments }) => {
+  return (
+    <ReactFlowProvider>
+      <DependencyDiagram deployments={deployments} />
+    </ReactFlowProvider>
   );
 };

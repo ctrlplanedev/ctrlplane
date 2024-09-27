@@ -14,7 +14,7 @@ export const kubernetesClusterApiV1 = z.object({
   identifier: z.string(),
   name: z.string(),
   config: clusterConfig,
-  labels: z.record(z.string()).and(
+  metadata: z.record(z.string()).and(
     z
       .object({
         "kubernetes/version": z.string(),
@@ -37,7 +37,7 @@ export const kubernetesNamespaceV1 = z.object({
   identifier: z.string(),
   name: z.string(),
   config: clusterConfig.and(z.object({ namespace: z.string() })),
-  labels: z.record(z.string()).and(z.object({}).partial()),
+  metadata: z.record(z.string()).and(z.object({}).partial()),
 });
 
 export type KubernetesNamespaceV1 = z.infer<typeof kubernetesNamespaceV1>;

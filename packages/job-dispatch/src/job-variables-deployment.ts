@@ -1,16 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
-import type { DeploymentVariableValue, Target } from "@ctrlplane/db/schema";
 
-import {
-  and,
-  arrayContains,
-  eq,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
-import * as SCHEMA from "@ctrlplane/db/schema";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 export const createReleaseVariables = async (
   tx: Tx,
@@ -40,50 +31,43 @@ export const createReleaseVariables = async (
 
 const determineVariablesForReleaseJob = async (
   tx: Tx,
-  job: SCHEMA.Job & { releaseJobTrigger: SCHEMA.ReleaseJobTrigger },
-): Promise<SCHEMA.JobVariable[]> => {
+  job: schema.Job & { releaseJobTrigger: schema.ReleaseJobTrigger },
+): Promise<schema.JobVariable[]> => {
   const variables = await tx
     .select()
-    .from(SCHEMA.deploymentVariable)
+    .from(schema.deploymentVariable)
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.release.deploymentId, SCHEMA.deploymentVariable.deploymentId),
+      schema.release,
+      eq(schema.release.deploymentId, schema.deploymentVariable.deploymentId),
     )
-    .where(eq(SCHEMA.release.id, job.releaseJobTrigger.releaseId));
+    .where(eq(schema.release.id, job.releaseJobTrigger.releaseId));
 
   if (variables.length === 0) return [];
 
   const jobTarget = await tx
     .select()
-    .from(SCHEMA.target)
-    .where(eq(SCHEMA.target.id, job.releaseJobTrigger.targetId))
+    .from(schema.target)
+    .where(eq(schema.target.id, job.releaseJobTrigger.targetId))
     .then(takeFirstOrNull);
 
   if (!jobTarget) throw new Error(`Target not found for job ${job.id}`);
 
-  const jobVariables: SCHEMA.JobVariable[] = [];
+  const jobVariables: schema.JobVariable[] = [];
 
   await Promise.all(
-    variables.map(async (variable) => {
-      const value = await determineReleaseVariableValue(
+    variables.map((variable) =>
+      determineReleaseVariableValue(
         tx,
         variable.deployment_variable.id,
         jobTarget,
-      );
-
-      if (value != null) {
+      ).then((value) =>
         jobVariables.push({
           jobId: job.id,
           key: variable.deployment_variable.key,
           value: value.value,
-        });
-        return;
-      }
-
-      logger.warn(
-        `No value found for variable ${variable.deployment_variable.key} in job ${job.id}`,
-      );
-    }),
+        }),
+      ),
+    ),
   );
 
   return jobVariables;
@@ -92,23 +76,23 @@ const determineVariablesForReleaseJob = async (
 const determineReleaseVariableValue = async (
   tx: Tx,
   variableId: string,
-  jobTarget: Target,
-): Promise<DeploymentVariableValue | null> => {
+  jobTarget: schema.Target,
+): Promise<schema.DeploymentVariableValue> => {
   // Check for a direct target match
   const directMatch = await tx
     .select()
-    .from(SCHEMA.deploymentVariableValue)
+    .from(schema.deploymentVariableValue)
     .innerJoin(
-      SCHEMA.deploymentVariableValueTarget,
+      schema.deploymentVariableValueTarget,
       eq(
-        SCHEMA.deploymentVariableValueTarget.variableValueId,
-        SCHEMA.deploymentVariableValue.id,
+        schema.deploymentVariableValueTarget.variableValueId,
+        schema.deploymentVariableValue.id,
       ),
     )
     .where(
       and(
-        eq(SCHEMA.deploymentVariableValue.variableId, variableId),
-        eq(SCHEMA.deploymentVariableValueTarget.targetId, jobTarget.id),
+        eq(schema.deploymentVariableValue.variableId, variableId),
+        eq(schema.deploymentVariableValueTarget.targetId, jobTarget.id),
       ),
     )
     .then(takeFirstOrNull);
@@ -116,38 +100,42 @@ const determineReleaseVariableValue = async (
   if (directMatch != null) return directMatch.deployment_variable_value;
 
   // Check for a match based on target filters
-  const filterMatch = await tx
+  const deploymentVariableValue = await tx
     .select()
-    .from(SCHEMA.deploymentVariableValue)
+    .from(schema.deploymentVariableValue)
     .innerJoin(
-      SCHEMA.deploymentVariableValueTargetFilter,
+      schema.deploymentVariableValueTargetFilter,
       eq(
-        SCHEMA.deploymentVariableValueTargetFilter.variableValueId,
-        SCHEMA.deploymentVariableValue.id,
+        schema.deploymentVariableValueTargetFilter.variableValueId,
+        schema.deploymentVariableValue.id,
       ),
     )
-    .innerJoin(
-      SCHEMA.target,
-      arrayContains(
-        SCHEMA.target.labels,
-        SCHEMA.deploymentVariableValueTargetFilter.labels,
-      ),
-    )
-    .where(
-      and(
-        eq(SCHEMA.deploymentVariableValue.variableId, variableId),
-        eq(SCHEMA.target.id, jobTarget.id),
-      ),
-    )
+    .where(eq(schema.deploymentVariableValue.variableId, variableId))
     .then(takeFirstOrNull);
 
-  if (filterMatch) return filterMatch.deployment_variable_value;
+  if (deploymentVariableValue != null) {
+    const filterMatch = await tx
+      .select()
+      .from(schema.target)
+      .where(
+        schema.targetMatchesMetadata(
+          tx,
+          deploymentVariableValue.deployment_variable_value_target_filter
+            .targetFilter,
+        ),
+      )
+      .limit(1)
+      .then(takeFirstOrNull);
+
+    if (filterMatch != null)
+      return deploymentVariableValue.deployment_variable_value;
+  }
 
   // If no specific match is found, return the default value (if any)
   const defaultValue = await tx
     .select()
-    .from(SCHEMA.deploymentVariableValue)
-    .where(eq(SCHEMA.deploymentVariableValue.variableId, variableId))
+    .from(schema.deploymentVariableValue)
+    .where(eq(schema.deploymentVariableValue.variableId, variableId))
     .then(takeFirst);
 
   return defaultValue;

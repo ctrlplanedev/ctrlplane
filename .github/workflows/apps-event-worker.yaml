@@ -6,6 +6,7 @@ on:
     paths:
       - apps/event-worker/**
       - packages/db/**
+      - packages/job-dispatch/**
       - packages/validators/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml
@@ -14,6 +15,7 @@ on:
     paths:
       - apps/event-worker/**
       - packages/db/**
+      - packages/job-dispatch/**
       - packages/validators/**
       - .github/workflows/apps-event-worker.yaml
       - pnpm-lock.yaml

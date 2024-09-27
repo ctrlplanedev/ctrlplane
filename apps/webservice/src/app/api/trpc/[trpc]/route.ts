@@ -2,10 +2,10 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@ctrlplane/api";
 import { auth } from "@ctrlplane/auth";
+import { logger } from "@ctrlplane/logger";
 
 /**
  * Configure basic CORS headers
- * You should extend this to match your needs
  */
 const setCorsHeaders = (res: Response) => {
   res.headers.set("Access-Control-Allow-Origin", "*");
@@ -33,7 +33,8 @@ const handler = auth(async (req) => {
         headers: req.headers,
       }),
     onError({ error, path }) {
-      console.error(`>>> tRPC Error on '${path}'`, error);
+      logger.error(`tRPC Error on ${path}`, { label: "trpc", path, error });
+      console.error(error);
     },
   });
 

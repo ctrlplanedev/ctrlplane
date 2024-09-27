@@ -23,7 +23,7 @@ export const rolePermission = pgTable(
     roleId: uuid("role_id")
       .references(() => role.id, { onDelete: "cascade" })
       .notNull(),
-    permission: text("permission"),
+    permission: text("permission").notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.roleId, t.permission) }),
 );
@@ -36,7 +36,7 @@ export const scopeType = pgEnum("scope_type", [
   "release",
   "target",
   "targetProvider",
-  "targetLabelGroup",
+  "targetMetadataGroup",
   "workspace",
   "environment",
   "environmentPolicy",

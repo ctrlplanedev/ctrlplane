@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { TbTrash } from "react-icons/tb";
+import { IconTrash } from "@tabler/icons-react";
 import { valid } from "semver";
 import { z } from "zod";
 
@@ -42,7 +42,7 @@ import { toast } from "@ctrlplane/ui/toast";
 import { api } from "~/trpc/react";
 
 const releaseDependency = z.object({
-  targetLabelGroupId: z.string().uuid().optional(),
+  targetMetadataGroupId: z.string().uuid().optional(),
   deploymentId: z.string().uuid(),
   rule: z.string().min(1).max(255),
   ruleType: z.enum(["semver", "regex"]),
@@ -87,7 +87,7 @@ export const CreateReleaseDialog: React.FC<{
     workspace.data?.id ?? "",
     { enabled: workspace.data != null && workspace.data.id !== "" },
   );
-  const targetLabelGroups = api.target.labelGroup.groups.useQuery(
+  const targetMetadataGroups = api.target.metadataGroup.groups.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.data != null && workspace.data.id !== "" },
   );
@@ -147,7 +147,7 @@ export const CreateReleaseDialog: React.FC<{
       latestRelease.data.at(0)?.releaseDependencies.forEach((rd) => {
         append({
           ...rd,
-          targetLabelGroupId: rd.targetLabelGroupId ?? undefined,
+          targetMetadataGroupId: rd.targetMetadataGroupId ?? undefined,
         });
       });
   }, [latestRelease.data, append, deploymentId]);
@@ -277,21 +277,21 @@ export const CreateReleaseDialog: React.FC<{
 
                     <FormField
                       control={form.control}
-                      name={`releaseDependencies.${index}.targetLabelGroupId`}
+                      name={`releaseDependencies.${index}.targetMetadataGroupId`}
                       render={({ field: { value, onChange } }) => (
                         <FormItem className="col-span-1">
                           <Select value={value} onValueChange={onChange}>
                             <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Label Group" />
+                              <SelectValue placeholder="Metadata Group" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectGroup>
-                                {targetLabelGroups.data?.map((group) => (
+                                {targetMetadataGroups.data?.map((group) => (
                                   <SelectItem
-                                    key={group.targetLabelGroup.id}
-                                    value={group.targetLabelGroup.id}
+                                    key={group.targetMetadataGroup.id}
+                                    value={group.targetMetadataGroup.id}
                                   >
-                                    {group.targetLabelGroup.name}
+                                    {group.targetMetadataGroup.name}
                                   </SelectItem>
                                 ))}
                               </SelectGroup>
@@ -340,7 +340,7 @@ export const CreateReleaseDialog: React.FC<{
                       className="ml-2 h-8 w-8"
                       onClick={() => remove(index)}
                     >
-                      <TbTrash />
+                      <IconTrash />
                     </Button>
                   </div>
                 </Card>

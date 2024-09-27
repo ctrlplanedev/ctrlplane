@@ -17,12 +17,18 @@ import {
 } from "@ctrlplane/ui/dialog";
 import { Input } from "@ctrlplane/ui/input";
 
-export const ComboboxFilter: React.FC<{
+import type { Filter } from "./Filter";
+
+export const ComboboxFilter = <T extends Filter<string, any>>({
+  property,
+  options,
+  onChange,
+}: {
   property: string;
   options: string[];
-  onChange?: (key: string, value: string | Record<string, string>) => void;
+  onChange?: (filter: T) => void;
   children?: React.ReactNode;
-}> = ({ property, options, onChange }) => {
+}) => {
   return (
     <Command className="rounded-lg bg-neutral-900 p-0 shadow-md">
       <CommandInput placeholder={`Filter ${property}`} />
@@ -31,7 +37,7 @@ export const ComboboxFilter: React.FC<{
         {options.map((option) => (
           <CommandItem
             key={option}
-            onSelect={() => onChange?.(property, option)}
+            onSelect={() => onChange?.({ key: property, value: option } as T)}
           >
             {option}
           </CommandItem>
@@ -41,15 +47,19 @@ export const ComboboxFilter: React.FC<{
   );
 };
 
-export const ContentDialog: React.FC<{
+export const ContentDialog = <T extends Filter<string, any>>({
+  property,
+  onChange,
+  children,
+}: {
   property: string;
-  onChange?: (key: string, value: string | Record<string, string>) => void;
+  onChange?: (filter: T) => void;
   children?: React.ReactNode;
-}> = ({ property, onChange, children }) => {
+}) => {
   const [value, setValue] = useState("");
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onChange?.(property, value);
+    onChange?.({ key: property, value } as T);
   };
   return (
     <Dialog>

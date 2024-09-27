@@ -1,6 +1,6 @@
 import type { Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
-import { TbPlus } from "react-icons/tb";
+import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 import { CreateDeploymentDialog } from "./_components/CreateDeployment";
 import { CreateReleaseDialog } from "./_components/CreateRelease";
 import { CreateSystemDialog } from "./_components/CreateSystem";
+import { CreateTargetDialog } from "./_components/CreateTarget";
 
 export const SidebarCreateMenu: React.FC<{
   workspace: Workspace;
@@ -30,7 +31,7 @@ export const SidebarCreateMenu: React.FC<{
           size="icon"
           className="h-6 w-6 flex-shrink-0"
         >
-          <TbPlus />
+          <IconPlus className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -63,6 +64,16 @@ export const SidebarCreateMenu: React.FC<{
 
         <DropdownMenuGroup>
           <DropdownMenuItem>Execute Runbook</DropdownMenuItem>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuGroup>
+          <CreateTargetDialog {...props} onSuccess={() => setOpen(false)}>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Bootstrap Target
+            </DropdownMenuItem>
+          </CreateTargetDialog>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

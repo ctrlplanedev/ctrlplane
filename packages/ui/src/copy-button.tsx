@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { TbCopy } from "react-icons/tb";
+import { IconCopy } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
 
 import { Button } from "./button";
@@ -19,7 +19,7 @@ export const CopyButton: React.FC<{ textToCopy: string }> = ({
   return (
     <Button variant="outline" onClick={handleCopy} type="button">
       {copied ? "Copied" : "Copy"}
-      <TbCopy className="ml-2" />
+      <IconCopy className="ml-2 h-4 w-4" />
     </Button>
   );
 };

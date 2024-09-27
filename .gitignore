@@ -52,3 +52,6 @@ dist/
 
 # turbo
 .turbo
+
+#otel
+/otel

@@ -2,14 +2,14 @@
 
 import type { Target } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
+import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
+import { IconLock, IconServer, IconTarget, IconX } from "@tabler/icons-react";
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import { formatDistanceToNowStrict } from "date-fns";
-import { SiKubernetes } from "react-icons/si";
-import { TbLock, TbServer, TbTarget, TbX } from "react-icons/tb";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -82,17 +82,20 @@ const columns: ColumnDef<Target>[] = [
       const isKube = includes("kubernetes");
       const isVm = includes("vm") || includes("compute");
       const isLocked = info.row.original.lockedAt != null;
+      const isTerraform = includes("terraform");
 
       return (
         <div className="flex items-center gap-2 px-2 py-1">
           {isLocked ? (
-            <TbLock className="shrink-0 text-red-300" />
+            <IconLock className="h-4 w-4 shrink-0 text-red-300" />
           ) : isKube ? (
-            <SiKubernetes className="shrink-0 text-blue-300" />
+            <SiKubernetes className="h-4 w-4 shrink-0 text-blue-300" />
           ) : isVm ? (
-            <TbServer className="shrink-0 text-cyan-300" />
+            <IconServer className="h-4 w-4 shrink-0 text-cyan-300" />
+          ) : isTerraform ? (
+            <SiTerraform className="h-4 w-4 shrink-0 text-purple-300" />
           ) : (
-            <TbTarget className="shrink-0 text-neutral-300" />
+            <IconTarget className="h-4 w-4 shrink-0 text-neutral-300" />
           )}
           {info.getValue<string>()}
         </div>
@@ -192,7 +195,7 @@ export const TargetsTable: React.FC<{
               <span className="text-sm text-muted-foreground">
                 {table.getSelectedRowModel().rows.length} selected
               </span>
-              <TbX className="h-4 w-4" />
+              <IconX className="h-4 w-4" />
             </Button>
             <Separator orientation="vertical" className="h-6" />
             <AlertDialog>

@@ -1,4 +1,9 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type {
+  MetadataCondition,
+  TargetCondition,
+} from "@ctrlplane/validators/targets";
+import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
+import { exists, like, notExists, or, sql } from "drizzle-orm";
 import {
   json,
   jsonb,
@@ -8,9 +13,11 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { and, eq } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import type { Tx } from "../common.js";
 import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -27,15 +34,11 @@ export const target = pgTable(
     }),
     workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => workspace.id),
+      .references(() => workspace.id, { onDelete: "cascade" }),
     config: jsonb("config")
       .notNull()
       .default("{}")
       .$type<Record<string, any>>(),
-    labels: jsonb("labels")
-      .notNull()
-      .default("{}")
-      .$type<Record<string, string>>(),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
       () => new Date(),
@@ -52,7 +55,6 @@ export const createTarget = createInsertSchema(target, {
   kind: z.string().min(1),
   providerId: z.string().uuid(),
   config: z.record(z.any()),
-  labels: z.record(z.string()),
 }).omit({ id: true });
 
 export type InsertTarget = InferInsertModel<typeof target>;
@@ -72,3 +74,95 @@ export const targetSchema = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
+
+export const targetMetadata = pgTable(
+  "target_metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    targetId: uuid("target_id")
+      .references(() => target.id, { onDelete: "cascade" })
+      .notNull(),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.targetId) }),
+);
+
+const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
+  if (cond.operator === "null")
+    return notExists(
+      tx
+        .select()
+        .from(targetMetadata)
+        .where(
+          and(
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+          ),
+        ),
+    );
+
+  if (cond.operator === "regex")
+    return exists(
+      tx
+        .select()
+        .from(targetMetadata)
+        .where(
+          and(
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+            sql`${targetMetadata.value} ~ ${cond.value}`,
+          ),
+        ),
+    );
+
+  if (cond.operator === "like")
+    return exists(
+      tx
+        .select()
+        .from(targetMetadata)
+        .where(
+          and(
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+            like(targetMetadata.value, cond.value),
+          ),
+        ),
+    );
+
+  if ("value" in cond)
+    return exists(
+      tx
+        .select()
+        .from(targetMetadata)
+        .where(
+          and(
+            eq(targetMetadata.targetId, target.id),
+            eq(targetMetadata.key, cond.key),
+            eq(targetMetadata.value, cond.value),
+          ),
+        ),
+    );
+
+  throw Error("invalid metadata conditions");
+};
+
+const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
+  if (cond.type === "metadata") return buildMetadataCondition(tx, cond);
+
+  if (cond.type === "kind") return eq(target.kind, cond.value);
+
+  if (cond.type === "name") return like(target.name, cond.value);
+
+  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
+  return cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
+};
+
+export function targetMatchesMetadata(
+  tx: Tx,
+  metadata?: TargetCondition | null,
+): SQL<unknown> | undefined {
+  return metadata == null || Object.keys(metadata).length === 0
+    ? undefined
+    : buildCondition(tx, metadata);
+}

@@ -2,13 +2,10 @@
 
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
-import { TbInfoCircle, TbPlant } from "react-icons/tb";
+import { IconInfoCircle, IconPlant } from "@tabler/icons-react";
 import { useReactFlow } from "reactflow";
 import { z } from "zod";
 
-import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
@@ -16,22 +13,27 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import {
+  isDefaultCondition,
+  isValidTargetCondition,
+  targetCondition,
+} from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
-import { LabelFilterInput } from "../../../_components/LabelFilterInput";
+import { TargetConditionBadge } from "../../../_components/target-condition/TargetConditionBadge";
+import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
 import { usePanel } from "./SidepanelContext";
 
 const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
-  targetFilter: z.array(z.object({ key: z.string(), value: z.string() })),
+  targetFilter: targetCondition.optional(),
 });
-
-type EnvironmentFormValues = z.infer<typeof environmentForm>;
 
 export const SidebarEnvironmentPanel: React.FC = () => {
   const { getNode, setNodes } = useReactFlow();
@@ -42,59 +44,69 @@ export const SidebarEnvironmentPanel: React.FC = () => {
   const update = api.environment.update.useMutation();
   const envOverride = api.job.trigger.create.byEnvId.useMutation();
 
-  const form = useForm<EnvironmentFormValues>({
-    resolver: zodResolver(environmentForm),
+  const form = useForm({
+    schema: environmentForm,
     defaultValues: {
       name: node.data.label,
       description: node.data.description,
-      targetFilter: Object.entries(
-        node.data.targetFilter as Record<string, string>,
-      ).map(([key, value]) => ({
-        key,
-        value,
-      })),
+      targetFilter: node.data.targetFilter,
     },
-    mode: "onChange",
   });
 
+  /*
+   * The form only sets default values on the initial mount, not on subsequent re-renders.
+   * Selecting a different environment in the panel doesn't unmount the form.
+   * Therefore, useEffect is used to reset the form with the new node data.
+   */
   useEffect(() => {
-    form.setValue("name", node.data.label);
-    form.setValue("description", node.data.description);
-    form.setValue(
-      "targetFilter",
-      Object.entries(node.data.targetFilter as Record<string, string>).map(
-        ([key, value]) => ({
-          key,
-          value,
-        }),
-      ),
-    );
-  }, [node.data.label, node.data.description, node.data.targetFilter, form]);
+    form.reset({
+      name: node.data.label,
+      description: node.data.description,
+      targetFilter: node.data.targetFilter,
+    });
+  }, [node, form]);
 
   const { targetFilter } = form.watch();
-  const targets = api.environment.target.byFilter.useQuery(
+
+  const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      labels: Object.fromEntries(
-        targetFilter.map(({ key, value }) => [key, value]),
-      ),
+      filter: targetFilter,
     },
-    { enabled: workspace.data != null },
+    { enabled: workspace.data != null && targetFilter != null },
   );
 
-  const { fields, append, remove } = useFieldArray({
-    name: "targetFilter",
-    control: form.control,
-  });
+  const utils = api.useUtils();
 
   const onSubmit = form.handleSubmit((values) => {
     setNodes((nodes) => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
-      const targetFilter = Object.fromEntries(
-        values.targetFilter.map(({ key, value }) => [key, value]),
-      );
-      update.mutate({ id: node.id, data: { ...values, targetFilter } });
+
+      const { targetFilter } = values;
+
+      if (targetFilter != null && !isValidTargetCondition(targetFilter)) {
+        form.setError("targetFilter", {
+          message:
+            "Invalid target filter, ensure all fields are filled out correctly.",
+        });
+        return nodes;
+      }
+
+      update
+        .mutateAsync({
+          id: node.id,
+          data: {
+            ...values,
+            targetFilter:
+              targetFilter != null && isDefaultCondition(targetFilter)
+                ? undefined
+                : targetFilter,
+          },
+        })
+        .then(() =>
+          utils.environment.bySystemId.invalidate(node.data.systemId),
+        );
       return nodes.map((n) =>
         n.id === selectedNodeId
           ? {
@@ -115,7 +127,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     <Form {...form}>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
         <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
-          <TbPlant />
+          <IconPlant className="h-4 w-4" />
         </div>
         <span className="flex-grow">Environment</span>
         <Button
@@ -123,7 +135,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           size="icon"
           className="flex-shrink-0 text-neutral-500 hover:text-white"
         >
-          <TbInfoCircle />
+          <IconInfoCircle className="h-4 w-4" />
         </Button>
       </h2>
       <Separator />
@@ -152,41 +164,44 @@ export const SidebarEnvironmentPanel: React.FC = () => {
             </FormItem>
           )}
         />
-        <div>
-          {fields.map((field, index) => (
-            <FormField
-              control={form.control}
-              key={field.id}
-              name={`targetFilter.${index}`}
-              render={({ field: { onChange, value } }) => (
-                <FormItem>
-                  <FormLabel className={cn(index !== 0 && "sr-only")}>
-                    Target Filter ({targets.data?.length ?? "-"})
+
+        <FormField
+          control={form.control}
+          name="targetFilter"
+          render={({ field: { onChange, value } }) => (
+            <FormItem>
+              <FormControl>
+                <div className="flex flex-col gap-2">
+                  <FormLabel>
+                    Target Filter (
+                    {targetFilter != null && targets.data != null
+                      ? targets.data.total
+                      : "-"}
+                    )
                   </FormLabel>
-                  <FormControl>
-                    <LabelFilterInput
-                      value={value}
-                      onChange={onChange}
-                      onRemove={() => remove(index)}
-                      workspaceId={workspace.data?.id}
-                      numInputs={fields.length}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-          ))}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="mt-4"
-            //   disabled={isLastEmpty}
-            onClick={() => append({ key: "", value: "" })}
-          >
-            Add Label
-          </Button>
-        </div>
+                  {value == null && (
+                    <span className="text-sm text-muted-foreground">
+                      Add a filter to select targets for this environment.
+                    </span>
+                  )}
+                  {value != null && (
+                    <TargetConditionBadge condition={value} tabbed />
+                  )}
+                  <TargetConditionDialog condition={value} onChange={onChange}>
+                    <Button variant="outline" className="w-fit">
+                      Set targets
+                    </Button>
+                  </TargetConditionDialog>
+                  {form.formState.errors.targetFilter && (
+                    <span className="text-sm text-red-600">
+                      {form.formState.errors.targetFilter.message}
+                    </span>
+                  )}
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
 
         <div className="flex gap-2">
           <Button type="submit" disabled={update.isPending}>

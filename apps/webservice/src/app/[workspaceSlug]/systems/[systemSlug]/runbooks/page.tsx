@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+
+import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../SystemsBreadcrumb";
@@ -24,6 +27,12 @@ export default async function Runbooks({
     <>
       <TopNav>
         <SystemBreadcrumbNavbar params={params} />
+        <div className="flex-grow" />
+        <Link
+          href={`/${workspace.slug}/systems/${system.slug}/runbooks/create`}
+        >
+          <Button variant="outline">New Runbook</Button>
+        </Link>
       </TopNav>
 
       {runbooks.length === 0 ? (

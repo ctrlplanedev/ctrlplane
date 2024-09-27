@@ -14,7 +14,7 @@ import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { job } from "./job.js";
-import { targetLabelGroup } from "./target-group.js";
+import { targetMetadataGroup } from "./target-group.js";
 import { target } from "./target.js";
 
 export const releaseDependencyRuleType = pgEnum(
@@ -32,15 +32,15 @@ export const releaseDependency = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    targetLabelGroupId: uuid("target_label_group_id").references(
-      () => targetLabelGroup.id,
+    targetMetadataGroupId: uuid("target_metadata_group_id").references(
+      () => targetMetadataGroup.id,
       { onDelete: "cascade" },
     ),
     ruleType: releaseDependencyRuleType("rule_type").notNull(),
     rule: text("rule").notNull(),
   },
   (t) => ({
-    unq: uniqueIndex().on(t.releaseId, t.deploymentId, t.targetLabelGroupId),
+    unq: uniqueIndex().on(t.releaseId, t.deploymentId, t.targetMetadataGroupId),
   }),
 );
 

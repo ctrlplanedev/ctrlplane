@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
+import { api } from "~/trpc/server";
 import { WorkspaceDeleteSection } from "./WorkspaceDeleteSection";
 import { WorkspaceUpdateSection } from "./WorkspaceUpdateSection";
 
 export const metadata: Metadata = { title: "General - Workspace Settings" };
 
-export default function WorkspaceGeneralSettingsPage() {
+export default async function WorkspaceGeneralSettingsPage({
+  params,
+}: {
+  params: { workspaceSlug: string };
+}) {
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) notFound();
+
   return (
     <div className="container mx-auto max-w-2xl space-y-8">
       <div className="space-y-1">

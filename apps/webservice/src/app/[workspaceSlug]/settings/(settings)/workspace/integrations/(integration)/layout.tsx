@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TbArrowLeft } from "react-icons/tb";
+import { IconArrowLeft } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -16,7 +16,7 @@ export default function IntegrationLayout({
       <div className="flex max-w-3xl flex-col gap-4">
         <Link href={`/${workspaceSlug}/settings/workspace/integrations`}>
           <Button variant="ghost" className="flex w-fit items-center gap-2">
-            <TbArrowLeft className="h-4 w-4" /> Integrations
+            <IconArrowLeft className="h-4 w-4" /> Integrations
           </Button>
         </Link>
 

@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { IconCheck } from "@tabler/icons-react";
 import { signOut, useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { TbCheck } from "react-icons/tb";
 import slugify from "slugify";
 import { z } from "zod";
 
@@ -74,7 +74,7 @@ export default function WorkspaceJoin() {
           <DropdownMenuContent className="w-[250px]">
             <DropdownMenuItem className="flex items-center gap-2 p-2">
               <div className="flex-grow">{session?.user.email}</div>
-              <TbCheck className="text-green-400" />
+              <IconCheck className="h-4 w-4 text-green-400" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem

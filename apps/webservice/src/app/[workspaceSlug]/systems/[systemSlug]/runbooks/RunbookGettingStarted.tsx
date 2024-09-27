@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TbBook } from "react-icons/tb";
+import { IconBook } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -11,7 +11,7 @@ export const RunbookGettingStarted: React.FC<{
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
         <div className="relative -ml-1 text-neutral-500">
-          <TbBook className="h-10 w-10" strokeWidth={0.5} />
+          <IconBook className="h-10 w-10" strokeWidth={0.5} />
         </div>
         <div className="font-semibold">Runbooks</div>
         <div className="prose prose-invert text-sm text-muted-foreground">

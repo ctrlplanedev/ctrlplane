@@ -5,13 +5,13 @@ import type { EntityRole, Role, User, Workspace } from "@ctrlplane/db/schema";
 import type { ColumnDef, ColumnFiltersState } from "@tanstack/react-table";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconCheck, IconCopy, IconDots } from "@tabler/icons-react";
 import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { TbCheck, TbCopy, TbDots } from "react-icons/tb";
 import { useCopyToClipboard } from "react-use";
 import { v4 } from "uuid";
 
@@ -106,7 +106,11 @@ const InviteLinkSection: React.FC<{
       <div className="flex items-center space-x-2">
         <Input readOnly value={link} className="w-96 overflow-ellipsis" />
         <Button variant="outline" size="icon" onClick={handleCopyClick}>
-          {clickedCopy ? <TbCheck className="text-green-600" /> : <TbCopy />}
+          {clickedCopy ? (
+            <IconCheck className="h-3 w-3 text-green-600" />
+          ) : (
+            <IconCopy className="h-3 w-3" />
+          )}
         </Button>
       </div>
     </div>
@@ -247,7 +251,7 @@ const columns: ColumnDef<Member>[] = [
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
-                <TbDots />
+                <IconDots />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>

@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@ctrlplane/auth";
 
 import { api } from "~/trpc/server";
+import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
 import { SidebarPanels } from "./SidebarPanels";
 
 export default async function WorkspaceLayout({
@@ -23,10 +24,13 @@ export default async function WorkspaceLayout({
 
   const systems = await api.system.list({ workspaceId: workspace.id });
   return (
-    <div className="h-screen">
-      <SidebarPanels workspace={workspace} systems={systems.items}>
-        {children}
-      </SidebarPanels>
-    </div>
+    <>
+      <div className="h-screen">
+        <SidebarPanels workspace={workspace} systems={systems.items}>
+          {children}
+        </SidebarPanels>
+      </div>
+      <TargetDrawer />
+    </>
   );
 }

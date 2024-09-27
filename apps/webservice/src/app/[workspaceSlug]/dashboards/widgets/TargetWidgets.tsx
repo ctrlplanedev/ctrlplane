@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { IconChartPie } from "@tabler/icons-react";
 import _ from "lodash";
 import randomColor from "randomcolor";
-import { TbChartPie } from "react-icons/tb";
 import { useMeasure } from "react-use";
 import { Label, Pie, PieChart } from "recharts";
 
@@ -21,13 +21,13 @@ import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
 import { MoveButton } from "./HelperButton";
 
-const LabelFilterInput: React.FC<{
-  labelKeys?: string[];
+const MetadataFilterInput: React.FC<{
+  metadataKeys?: string[];
   value: string;
   onChange: (value: string) => void;
-}> = ({ labelKeys, value, onChange }) => {
+}> = ({ metadataKeys, value, onChange }) => {
   const [open, setOpen] = useState(false);
-  const filteredLabels = useMatchSorter(labelKeys ?? [], value);
+  const filteredKeys = useMatchSorter(metadataKeys ?? [], value);
   return (
     <div className="flex items-center gap-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -47,7 +47,7 @@ const LabelFilterInput: React.FC<{
           className="max-h-[300px] overflow-x-auto p-0 text-sm"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {filteredLabels.map((k) => (
+          {filteredKeys.map((k) => (
             <Button
               variant="ghost"
               size="sm"
@@ -68,11 +68,11 @@ const LabelFilterInput: React.FC<{
   );
 };
 
-export const WidgetTargetLabelCount: Widget<{
-  label?: string;
+export const WidgetTargetMetadataCount: Widget<{
+  key?: string;
   countUndefined?: boolean;
 }> = {
-  displayName: "Target Label Count",
+  displayName: "Target Metadata Count",
   description: "",
   dimensions: {
     suggestedW: 2,
@@ -83,50 +83,53 @@ export const WidgetTargetLabelCount: Widget<{
   ComponentPreview: () => {
     return (
       <>
-        <TbChartPie className="m-auto mt-1 h-20 w-20 text-neutral-400 hover:text-white" />
+        <IconChartPie className="m-auto mt-1 h-20 w-20 text-neutral-400 hover:text-white" />
         <div className="absolute bottom-0 left-0 right-0 text-center">
-          <p className="pb-2 text-neutral-400">Target Label Count</p>
+          <p className="pb-2 text-neutral-400">Target Metadata Count</p>
         </div>
       </>
     );
   },
   Component: ({ config, updateConfig, isEditMode }) => {
     const countUndefined = config.countUndefined ?? false;
-    const label = config.label ?? "kubernetes/autoscaling-enabled";
+    const key = config.key ?? "kubernetes/autoscaling-enabled";
     const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
     const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
     const targets = api.target.byWorkspaceId.list.useQuery(
       { workspaceId: workspace.data?.id ?? "" },
       { enabled: workspace.isSuccess },
     );
-    const labelsKey = api.target.labelKeys.useQuery(workspace.data?.id ?? "", {
-      enabled: workspace.isSuccess,
-    });
+    const metadataKeys = api.target.metadataKeys.useQuery(
+      workspace.data?.id ?? "",
+      {
+        enabled: workspace.isSuccess,
+      },
+    );
 
     const chartData = _.chain(targets.data?.items ?? [])
-      .filter((t) => countUndefined || t.labels[label] != null)
-      .groupBy((t) => t.labels[label]?.toString() ?? "undefined")
-      .map((targets, label) => ({
-        label,
+      .filter((t) => countUndefined || t.metadata[key] != null)
+      .groupBy((t) => t.metadata[key]?.toString() ?? "undefined")
+      .map((targets, metadata) => ({
+        metadata,
         targets: targets.length,
-        fill: `var(--color-${label})`,
+        fill: `var(--color-${metadata})`,
       }))
       .value();
 
     const chartConfig = useMemo(
       () =>
         _.chain(targets.data?.items ?? [])
-          .uniqBy((t) => t.labels[label]?.toString() ?? "undefined")
+          .uniqBy((t) => t.metadata[key]?.toString() ?? "undefined")
           .map((t) => [
-            t.labels[label],
+            t.metadata[key],
             {
-              label: t.labels[label]?.toString() ?? "undefined",
+              metadata: t.metadata[key]?.toString() ?? "undefined",
               color: randomColor(),
             },
           ])
           .fromPairs()
           .value(),
-      [targets.data, label],
+      [targets.data, key],
     );
     const [ref] = useMeasure<HTMLDivElement>();
 
@@ -141,14 +144,14 @@ export const WidgetTargetLabelCount: Widget<{
           <CardTitle className="text-center text-xs">
             {isEditMode ? (
               <div>
-                <LabelFilterInput
-                  value={label}
-                  labelKeys={labelsKey.data}
-                  onChange={(label) => updateConfig({ label })}
+                <MetadataFilterInput
+                  value={key}
+                  metadataKeys={metadataKeys.data}
+                  onChange={(key) => updateConfig({ key })}
                 />
               </div>
             ) : (
-              <pre>{label}</pre>
+              <pre>{key}</pre>
             )}
           </CardTitle>
         </CardHeader>
@@ -166,7 +169,7 @@ export const WidgetTargetLabelCount: Widget<{
             <Pie
               data={chartData}
               dataKey="targets"
-              nameKey="label"
+              nameKey="metadata"
               innerRadius={45}
               strokeWidth={8}
             >
@@ -188,7 +191,7 @@ export const WidgetTargetLabelCount: Widget<{
                           {
                             _.uniqBy(
                               targets.data?.items ?? [],
-                              (t) => t.labels[label] ?? "",
+                              (t) => t.metadata[key] ?? "",
                             ).length
                           }
                         </tspan>

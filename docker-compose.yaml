@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   database:
     container_name: ctrlplane-database
@@ -12,19 +14,6 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  rabbitmq:
-    container_name: ctrlplane-rabbitmq
-    image: rabbitmq:3-management
-    restart: always
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: ctrlplane
-      RABBITMQ_DEFAULT_PASS: ctrlplane
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-
   redis:
     image: redis:latest
     container_name: ctrlplane-redis
@@ -36,5 +25,4 @@ services:
 
 volumes:
   db-data:
-  rabbitmq-data:
   redis-data:

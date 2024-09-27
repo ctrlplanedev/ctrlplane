@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TbInfoCircle } from "react-icons/tb";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
@@ -49,7 +49,7 @@ export default async function SystemValueSetsPage({
 
             <div className="container mx-auto max-w-4xl space-y-4 p-8">
               <Alert variant="secondary">
-                <TbInfoCircle />
+                <IconInfoCircle className="h-4 w-4" />
                 <AlertTitle>Variable conflicts and precedence</AlertTitle>
                 <AlertDescription>
                   Conflicts occur when one or more variables applied to a

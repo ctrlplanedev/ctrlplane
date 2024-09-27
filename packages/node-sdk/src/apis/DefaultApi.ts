@@ -77,7 +77,7 @@ export interface UpdateJobAgentOperationRequest {
 }
 
 export interface UpsertTargetProviderRequest {
-  workspace: string;
+  workspaceId: string;
   name: string;
 }
 
@@ -110,7 +110,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/job/{jobId}/acknowledge`.replace(
+        path: `/v1/jobs/{jobId}/acknowledge`.replace(
           `{${"jobId"}}`,
           encodeURIComponent(String(requestParameters["jobId"])),
         ),
@@ -220,7 +220,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/job/{jobId}`.replace(
+        path: `/v1/jobs/{jobId}`.replace(
           `{${"jobId"}}`,
           encodeURIComponent(String(requestParameters["jobId"])),
         ),
@@ -336,7 +336,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/target-provider/{providerId}/set`.replace(
+        path: `/v1/target-providers/{providerId}/set`.replace(
           `{${"providerId"}}`,
           encodeURIComponent(String(requestParameters["providerId"])),
         ),
@@ -397,7 +397,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/job/{jobId}`.replace(
+        path: `/v1/jobs/{jobId}`.replace(
           `{${"jobId"}}`,
           encodeURIComponent(String(requestParameters["jobId"])),
         ),
@@ -459,7 +459,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/{workspace}/job/agent/name`.replace(
+        path: `/v1/workspaces/{workspace}/job-agents/name`.replace(
           `{${"workspace"}}`,
           encodeURIComponent(String(requestParameters["workspace"])),
         ),
@@ -499,10 +499,10 @@ export class DefaultApi extends runtime.BaseAPI {
     requestParameters: UpsertTargetProviderRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<runtime.ApiResponse<UpdateJobAgent200Response>> {
-    if (requestParameters["workspace"] == null) {
+    if (requestParameters["workspaceId"] == null) {
       throw new runtime.RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling upsertTargetProvider().',
+        "workspaceId",
+        'Required parameter "workspaceId" was null or undefined when calling upsertTargetProvider().',
       );
     }
 
@@ -524,10 +524,10 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/{workspace}/target-provider/name/{name}`
+        path: `/v1/workspaces/{workspaceId}/target-providers/name/{name}`
           .replace(
-            `{${"workspace"}}`,
-            encodeURIComponent(String(requestParameters["workspace"])),
+            `{${"workspaceId"}}`,
+            encodeURIComponent(String(requestParameters["workspaceId"])),
           )
           .replace(
             `{${"name"}}`,

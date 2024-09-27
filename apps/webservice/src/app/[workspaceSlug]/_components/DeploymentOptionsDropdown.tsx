@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { TbDotsVertical, TbEdit, TbTrash } from "react-icons/tb";
+import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -29,7 +29,7 @@ export const DeploymentOptionsDropdown: React.FC<{
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="icon" variant="ghost" className="rounded-full">
-            <TbDotsVertical />
+            <IconDotsVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -40,12 +40,12 @@ export const DeploymentOptionsDropdown: React.FC<{
           <DropdownMenuGroup>
             <EditDeploymentDialog {...props}>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <TbEdit className="mr-2" />
+                <IconEdit className="mr-2 h-4 w-4" />
                 Edit
               </DropdownMenuItem>
             </EditDeploymentDialog>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <TbTrash className="mr-2" />
+            <DropdownMenuItem onSelect={() => setDeleteDialogOpen(true)}>
+              <IconTrash className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
           </DropdownMenuGroup>
