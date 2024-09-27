@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { IconInfoCircle, IconPlant } from "@tabler/icons-react";
 import { useReactFlow } from "reactflow";
@@ -24,6 +25,7 @@ import {
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
+import { TargetConditionBadge } from "../../../_components/target-condition/TargetConditionBadge";
 import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
 import { usePanel } from "./SidepanelContext";
 
@@ -50,6 +52,19 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       targetFilter: node.data.targetFilter,
     },
   });
+
+  /*
+   * The form only sets default values on the initial mount, not on subsequent re-renders.
+   * Selecting a different environment in the panel doesn't unmount the form.
+   * Therefore, useEffect is used to reset the form with the new node data.
+   */
+  useEffect(() => {
+    form.reset({
+      name: node.data.label,
+      description: node.data.description,
+      targetFilter: node.data.targetFilter,
+    });
+  }, [node, form]);
 
   const { targetFilter } = form.watch();
 
@@ -164,9 +179,14 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                       : "-"}
                     )
                   </FormLabel>
-                  <span className="text-sm text-muted-foreground">
-                    Add a filter to select targets for this environment.
-                  </span>
+                  {value == null && (
+                    <span className="text-sm text-muted-foreground">
+                      Add a filter to select targets for this environment.
+                    </span>
+                  )}
+                  {value != null && (
+                    <TargetConditionBadge condition={value} tabbed />
+                  )}
                   <TargetConditionDialog condition={value} onChange={onChange}>
                     <Button variant="outline" className="w-fit">
                       Set targets

@@ -135,7 +135,7 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <EditSystemDialog system={system} onSubmit={() => setOpen(false)}>
           <DropdownMenuItem

@@ -5,7 +5,7 @@ import {
   isComparisonCondition,
   isKindCondition,
   isMetadataCondition,
-  isNameLikeCondition,
+  isNameCondition,
 } from "@ctrlplane/validators/targets";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
@@ -54,7 +54,7 @@ export const TargetConditionRender: React.FC<
       />
     );
 
-  if (isNameLikeCondition(condition))
+  if (isNameCondition(condition))
     return (
       <NameConditionRender
         condition={condition}
