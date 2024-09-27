@@ -28,7 +28,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
@@ -109,13 +109,6 @@ const ReleaseIcon: React.FC<{
   );
 };
 
-const completedStatus: JobStatus[] = [
-  JobStatus.Completed,
-  JobStatus.Cancelled,
-  JobStatus.Skipped,
-  JobStatus.Failure,
-];
-
 export const Release: React.FC<{
   name: string;
   releaseId: string;
@@ -160,16 +153,16 @@ export const Release: React.FC<{
   const firstReleaseJobTrigger = releaseJobTriggers.at(0);
 
   const isReleaseCompleted = releaseJobTriggers.every((d) =>
-    completedStatus.includes(d.job.status as JobStatus),
+    exitedStatus.includes(d.job.status as JobStatus),
   );
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-2">
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
             href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
-            className="flex items-center gap-2"
+            className="flex w-full items-center gap-2"
           >
             <ReleaseIcon releaseJobTriggers={releaseJobTriggers} />
             <div className="w-full text-sm">
