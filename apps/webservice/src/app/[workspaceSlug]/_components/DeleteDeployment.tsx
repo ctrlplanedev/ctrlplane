@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@ctrlplane/ui/alert-dialog";
 import { Button } from "@ctrlplane/ui/button";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
@@ -35,16 +36,18 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
     systemSlug: string;
   }>();
 
-  const onDelete = () => {
+  const onDelete = () =>
     deleteDeployment
       .mutateAsync(id)
       .then(() => {
         router.push(`/${params.workspaceSlug}/systems/${params.systemSlug}`);
         router.refresh();
+        toast.success("Deployment deleted successfully");
         setIsOpen(false);
       })
-      .catch(console.error);
-  };
+      .catch(() => {
+        toast.error("Failed to delete deployment");
+      });
 
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>

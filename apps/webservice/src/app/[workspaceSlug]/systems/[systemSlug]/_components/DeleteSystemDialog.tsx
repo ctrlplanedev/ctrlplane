@@ -16,6 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
 import { buttonVariants } from "@ctrlplane/ui/button";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
@@ -33,6 +34,7 @@ export const DeleteSystemDialog: React.FC<DeleteSystemProps> = ({
   const router = useRouter();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const deleteSystem = api.system.delete.useMutation();
+
   const utils = api.useUtils();
 
   const onDelete = () =>
@@ -44,9 +46,12 @@ export const DeleteSystemDialog: React.FC<DeleteSystemProps> = ({
         });
         router.push(`/${workspaceSlug}/systems`);
         router.refresh();
+        toast.success("System deleted successfully");
         onSuccess?.();
       })
-      .catch(console.error);
+      .catch(() => {
+        toast.error("Failed to delete system");
+      });
 
   return (
     <AlertDialog>
