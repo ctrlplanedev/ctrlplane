@@ -50,10 +50,8 @@ export const DeleteSystemDialog: React.FC<DeleteSystemProps> = ({
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
-        {children}
-      </AlertDialogTrigger>
-      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete System</AlertDialogTitle>
         </AlertDialogHeader>

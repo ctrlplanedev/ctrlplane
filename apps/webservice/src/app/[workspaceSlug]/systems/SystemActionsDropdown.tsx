@@ -30,19 +30,13 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
       <DropdownMenuContent>
         <DropdownMenuGroup>
           <EditSystemDialog system={system}>
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <IconEdit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
           </EditSystemDialog>
           <DeleteSystemDialog system={system}>
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               <IconTrash className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
