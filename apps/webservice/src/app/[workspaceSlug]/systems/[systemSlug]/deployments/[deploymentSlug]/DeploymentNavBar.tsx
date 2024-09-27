@@ -28,7 +28,7 @@ export const DeploymentsNavBar: React.FC = () => {
   const baseUrl = `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}`;
   return (
     <div className="flex w-full items-center gap-4 border-b p-2">
-      <div className="flex-grow">
+      <div className="flex flex-grow gap-2">
         <NavigationMenu>
           <NavigationMenuList>
             <NavigationMenuItem>
@@ -49,13 +49,14 @@ export const DeploymentsNavBar: React.FC = () => {
                   Variables
                 </NavigationMenuLink>
               </Link>
-
-              {deployment.data && (
-                <DeploymentOptionsDropdown {...deployment.data} />
-              )}
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
+        <div className="flex-grow items-center">
+          {deployment.data && (
+            <DeploymentOptionsDropdown {...deployment.data} />
+          )}
+        </div>
       </div>
       {pathname.startsWith(`${baseUrl}/variables`) && (
         <CreateVaribaleDialog deploymentId={deployment.data?.id ?? ""}>

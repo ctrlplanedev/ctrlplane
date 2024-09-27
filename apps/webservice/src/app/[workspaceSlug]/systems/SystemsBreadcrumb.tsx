@@ -88,7 +88,7 @@ export const SystemBreadcrumbNavbar = async ({
 
   return (
     <div className="flex items-center gap-2 p-3">
-      <Breadcrumb className="flex-grow">
+      <Breadcrumb>
         <BreadcrumbList>
           {crumbs.map((crumb, idx) => {
             const isLast = idx === crumbs.length - 1;
@@ -117,7 +117,7 @@ export const SystemBreadcrumbNavbar = async ({
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="flex-grow">
+      <div>
         {system && (
           <SystemActionsDropdown system={system}>
             <Button variant="ghost" size="icon">
