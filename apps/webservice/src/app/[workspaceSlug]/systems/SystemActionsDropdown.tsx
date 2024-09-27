@@ -25,32 +25,30 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
   children,
 }) => {
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuGroup>
-            <EditSystemDialog system={system}>
-              <DropdownMenuItem
-                onSelect={(e) => e.preventDefault()}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <IconEdit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-            </EditSystemDialog>
-            <DeleteSystemDialog system={system}>
-              <DropdownMenuItem
-                onSelect={(e) => e.preventDefault()}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <IconTrash className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DeleteSystemDialog>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+    <DropdownMenu>
+      <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuGroup>
+          <EditSystemDialog system={system}>
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconEdit className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          </EditSystemDialog>
+          <DeleteSystemDialog system={system}>
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconTrash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DeleteSystemDialog>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
