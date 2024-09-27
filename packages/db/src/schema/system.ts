@@ -32,7 +32,7 @@ export const system = pgTable(
     description: text("description").notNull().default(""),
     workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => workspace.id),
+      .references(() => workspace.id, { onDelete: "cascade" }),
   },
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.slug) }),
 );

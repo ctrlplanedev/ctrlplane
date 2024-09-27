@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   AlertDialog,
@@ -30,10 +30,21 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
   const router = useRouter();
   const deleteDeployment = api.deployment.delete.useMutation();
 
+  const params = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+
+  console.log("I am here DeleteDeployment");
+
   const onDelete = async () => {
-    await deleteDeployment.mutateAsync(id).catch(console.error);
-    router.push(`/${workspaceSlug}/systems/${systemSlug}`);
-    setIsOpen(false);
+    await deleteDeployment
+      .mutateAsync(id)
+      .then(() => {
+        router.push(`/${params.workspaceSlug}/systems/${params.systemSlug}`);
+        setIsOpen(false);
+      })
+      .catch(console.error);
   };
 
   return (

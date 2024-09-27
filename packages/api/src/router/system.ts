@@ -143,4 +143,20 @@ export const systemRouter = createTRPCRouter({
         .returning()
         .then(takeFirst),
     ),
+
+  delete: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemDelete)
+          .on({ type: "system", id: input }),
+    })
+    .input(z.string().uuid())
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .delete(system)
+        .where(eq(system.id, input))
+        .returning()
+        .then(takeFirst),
+    ),
 });
