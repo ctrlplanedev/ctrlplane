@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -29,17 +30,17 @@ import { api } from "~/trpc/react";
 
 const schema = z.object({ key: z.string(), description: z.string() });
 
-export const CreateVaribaleDialog: React.FC<{
+export const CreateVariableDialog: React.FC<{
   deploymentId: string;
   children?: React.ReactNode;
 }> = ({ children, deploymentId }) => {
   const [open, setOpen] = useState(false);
   const create = api.deployment.variable.create.useMutation();
-  const utils = api.useUtils();
+  const router = useRouter();
   const form = useForm({ schema, defaultValues: { description: "" } });
   const onSubmit = form.handleSubmit(async (values) => {
     await create.mutateAsync({ ...values, deploymentId });
-    await utils.deployment.variable.byDeploymentId.invalidate();
+    router.refresh();
     setOpen(false);
   });
   return (

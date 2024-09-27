@@ -1,7 +1,14 @@
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
 import { sql } from "drizzle-orm";
-import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  text,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -41,6 +48,7 @@ export const deploymentVariableValue = pgTable(
     targetFilter: jsonb("target_filter")
       .$type<TargetCondition | null>()
       .default(sql`NULL`),
+    default: boolean("default").notNull().default(false),
   },
   (t) => ({ uniq: uniqueIndex().on(t.variableId, t.value) }),
 );

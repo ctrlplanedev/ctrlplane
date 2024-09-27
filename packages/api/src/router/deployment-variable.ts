@@ -1,16 +1,28 @@
 import type { DeploymentVariableValue, Target } from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type {
+  ComparisonCondition,
+  TargetCondition,
+} from "@ctrlplane/validators/targets";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  eq,
+  isNotNull,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
   deployment,
   deploymentVariable,
   deploymentVariableValue,
+  environment,
   system,
   target,
   targetMatchesMetadata,
@@ -18,6 +30,10 @@ import {
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  TargetFilterType,
+  TargetOperator,
+} from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -79,7 +95,7 @@ const valueRouter = createTRPCRouter({
           )
           .where(eq(deploymentVariableValue.id, input))
           .then(takeFirst);
-        return canUser.perform(Permission.DeploymentUpdate).on({
+        return canUser.perform(Permission.DeploymentVariableUpdate).on({
           type: "deployment",
           id: value.deployment_variable.deploymentId,
         });
@@ -195,18 +211,14 @@ export const deploymentVariableRouter = createTRPCRouter({
           targetFilter: deploymentVariableValue.targetFilter,
         })
         .from(deploymentVariableValue)
+        .orderBy(asc(deploymentVariableValue.value))
         .groupBy(deploymentVariableValue.id)
         .as("deployment_variable_value_subquery");
 
-      const deploymentVariables = await ctx.db
+      return ctx.db
         .select({
           deploymentVariable: deploymentVariable,
-          values: sql<
-            (DeploymentVariableValue & {
-              targetFilter: TargetCondition | null;
-              targets: Target[];
-            })[]
-          >`
+          values: sql<DeploymentVariableValue[]>`
             coalesce(
               array_agg(
                 case when ${deploymentVariableValueSubquery.id} is not null then
@@ -231,23 +243,32 @@ export const deploymentVariableRouter = createTRPCRouter({
         .orderBy(asc(deploymentVariable.key))
         .where(eq(deploymentVariable.deploymentId, input));
 
-      return Promise.all(
-        deploymentVariables.map(async (deploymentVariable) => ({
-          ...deploymentVariable.deploymentVariable,
-          values: await Promise.all(
-            deploymentVariable.values.map(async (value) => ({
-              ...value,
-              targets:
-                value.targetFilter != null
-                  ? await ctx.db
-                      .select()
-                      .from(target)
-                      .where(targetMatchesMetadata(ctx.db, value.targetFilter))
-                  : [],
-            })),
-          ),
-        })),
-      );
+      // return Promise.all(
+      //   deploymentVariables.map(async (deploymentVariable) => ({
+      //     ...deploymentVariable.deploymentVariable,
+      //     values: await Promise.all(
+      //       deploymentVariable.values.map(async (value) => ({
+      //         ...value,
+      //         targets:
+      //           value.targetFilter != null
+      //             ? await ctx.db
+      //                 .select()
+      //                 .from(target)
+      //                 .where(
+      //                   targetMatchesMetadata(ctx.db, {
+      //                     type: TargetFilterType.Comparison,
+      //                     operator: TargetOperator.And,
+      //                     conditions: [
+      //                       isInDeploymentSystem,
+      //                       value.targetFilter,
+      //                     ],
+      //                   }),
+      //                 )
+      //             : [],
+      //       })),
+      //     ),
+      //   })),
+      // );
     }),
 
   create: protectedProcedure
@@ -264,16 +285,10 @@ export const deploymentVariableRouter = createTRPCRouter({
 
   update: protectedProcedure
     .meta({
-      authorizationCheck: async ({ canUser, ctx, input }) => {
-        const variable = await ctx.db
-          .select()
-          .from(deploymentVariable)
-          .where(eq(deploymentVariable.id, input.id))
-          .then(takeFirst);
-        return canUser
-          .perform(Permission.DeploymentUpdate)
-          .on({ type: "deployment", id: variable.deploymentId });
-      },
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentVariableUpdate)
+          .on({ type: "deploymentVariable", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateDeploymentVariable }))
     .mutation(async ({ ctx, input }) =>
@@ -282,4 +297,21 @@ export const deploymentVariableRouter = createTRPCRouter({
         .set(input.data)
         .where(eq(deploymentVariable.id, input.id)),
     ),
+
+  delete: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.DeploymentVariableDelete).on({
+          type: "deploymentVariable",
+          id: input,
+        }),
+    })
+    .input(z.string().uuid())
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db
+        .delete(deploymentVariable)
+        .where(eq(deploymentVariable.id, input))
+        .returning()
+        .then(takeFirstOrNull);
+    }),
 });

@@ -61,104 +61,145 @@ export const VariableTable: React.FC<{
         </TableHeader>
 
         <TableBody>
-          {result.map((variable, idx) => {
-            const numUniqueTargets = _.chain(variable.values)
-              .flatMap((v) => v.targets)
-              .uniqBy((t) => t.id)
-              .value().length;
-
-            const { values } = variable;
-
-            console.log({ values });
-            return (
-              <Collapsible key={variable.id} asChild>
-                <>
-                  <TableRow className="border-none">
-                    <TableCell className="flex items-center gap-2  ">
-                      {/* <CollapsibleTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="mr-2 h-6 w-6 py-0 pl-[1px] hover:bg-inherit"
-                          disabled={values.length === 0}
-                        >
-                          <TbSelector />
-                        </Button>
-                      </CollapsibleTrigger> */}
-                      {variable.key}
-                    </TableCell>
-                    <TableCell>
-                      <CollapsibleTrigger asChild>
-                        <Badge
-                          variant="secondary"
-                          className="cursor-pointer hover:bg-neutral-600"
-                        >
-                          {numUniqueTargets} target
-                          {numUniqueTargets === 1 ? "" : "s"}
-                        </Badge>
-                      </CollapsibleTrigger>
-                    </TableCell>
-                    <TableCell className="flex justify-end ">
-                      <VariableDropdown variable={variable}>
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <TbDotsVertical />
-                        </Button>
-                      </VariableDropdown>
-                    </TableCell>
-                  </TableRow>
-                  <CollapsibleContent asChild>
-                    <>
-                      {variable.values.map((v, idx) => (
-                        <Collapsible key={v.id} asChild>
-                          <>
-                            <TableRow key={v.id} className="border-none">
-                              <TableCell className="pl-12">{v.value}</TableCell>
-                              <TableCell>
-                                <CollapsibleTrigger asChild>
-                                  <Badge
-                                    variant="secondary"
-                                    className="cursor-pointer hover:bg-neutral-600"
-                                  >
-                                    {v.targets.length} target
-                                    {v.targets.length === 1 ? "" : "s"}
-                                  </Badge>
-                                </CollapsibleTrigger>
-                              </TableCell>
-                              <TableCell className="flex justify-end">
-                                <VariableValueDropdown value={v}>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={(e) => e.preventDefault()}
-                                  >
-                                    <TbDotsVertical />
-                                  </Button>
-                                </VariableValueDropdown>
-                              </TableCell>
-                            </TableRow>
-                            <CollapsibleContent asChild>
-                              <>
-                                {v.targets.map((t) => (
-                                  <TableRow key={t.id} className="border-none">
-                                    <TableCell className="pl-20">
-                                      {t.name}
+          {result.map((variable) => (
+            <Collapsible key={variable.id} asChild>
+              <>
+                <TableRow className="border-none">
+                  <TableCell className="flex items-center gap-2  ">
+                    {variable.key}
+                  </TableCell>
+                  <TableCell>
+                    <CollapsibleTrigger asChild>
+                      <Badge
+                        variant="secondary"
+                        className="flex w-24 cursor-pointer justify-center hover:bg-neutral-600"
+                      >
+                        {variable.values.length} value
+                        {variable.values.length === 1 ? "" : "s"}
+                      </Badge>
+                    </CollapsibleTrigger>
+                  </TableCell>
+                  <TableCell className="flex justify-end ">
+                    <VariableDropdown variable={variable}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        <TbDotsVertical />
+                      </Button>
+                    </VariableDropdown>
+                  </TableCell>
+                </TableRow>
+                <CollapsibleContent asChild>
+                  <>
+                    {variable.values.map((v, idx) => (
+                      <Collapsible key={v.id} asChild>
+                        <>
+                          <TableRow key={v.id} className="border-none py-0">
+                            <TableCell className="py-0 pl-10">
+                              {idx !== variable.values.length - 1 && (
+                                <div className="flex h-full items-center border-l border-neutral-800 py-2">
+                                  <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
+                                  {v.value}
+                                </div>
+                              )}
+                              {idx === variable.values.length - 1 && (
+                                <div className="flex h-full">
+                                  <div className="flex h-full flex-col justify-start">
+                                    <div className="h-[18px] border-l border-neutral-800" />
+                                  </div>
+                                  <div className="flex h-full items-center py-2">
+                                    <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
+                                    {v.value}
+                                  </div>
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-[6px]">
+                              <CollapsibleTrigger asChild>
+                                <Badge
+                                  variant="secondary"
+                                  className="flex w-24 cursor-pointer justify-center py-[2px] hover:bg-neutral-600"
+                                >
+                                  {v.targets.length} target
+                                  {v.targets.length === 1 ? "" : "s"}
+                                </Badge>
+                              </CollapsibleTrigger>
+                            </TableCell>
+                            <TableCell className="flex h-max items-center justify-end py-[5px]">
+                              <VariableValueDropdown value={v}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 "
+                                  onClick={(e) => e.preventDefault()}
+                                >
+                                  <TbDotsVertical />
+                                </Button>
+                              </VariableValueDropdown>
+                            </TableCell>
+                          </TableRow>
+                          <CollapsibleContent asChild className="py-0">
+                            <>
+                              {v.targets.map((t, tIdx) => (
+                                <TableRow key={t.id} className="border-none">
+                                  {idx !== variable.values.length - 1 && (
+                                    <TableCell className="py-0 pl-10">
+                                      <div className="flex h-full items-center border-l border-neutral-800 pl-10">
+                                        {tIdx !== v.targets.length - 1 && (
+                                          <div className="flex h-full items-center border-l border-neutral-800 py-2">
+                                            <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
+                                            {t.name}
+                                          </div>
+                                        )}
+                                        {tIdx === v.targets.length - 1 && (
+                                          <div className="flex h-full">
+                                            <div className="flex h-full flex-col justify-start">
+                                              <div className="h-[18px] border-l border-neutral-800" />
+                                            </div>
+                                            <div className="flex h-full items-center py-2">
+                                              <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
+                                              {t.name}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                  </TableRow>
-                                ))}
-                              </>
-                            </CollapsibleContent>
-                          </>
-                        </Collapsible>
-                      ))}
-                    </>
-                  </CollapsibleContent>
-                </>
-              </Collapsible>
-            );
-          })}
+                                  )}
+
+                                  {idx === variable.values.length - 1 && (
+                                    <TableCell className="py-0 pl-20">
+                                      {tIdx !== v.targets.length - 1 && (
+                                        <div className="flex h-full items-center border-l border-neutral-800 py-2">
+                                          <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
+                                          {t.name}
+                                        </div>
+                                      )}
+
+                                      {tIdx === v.targets.length - 1 && (
+                                        <div className="flex h-full">
+                                          <div className="flex h-full flex-col justify-start">
+                                            <div className="h-[18px] border-l border-neutral-800" />
+                                          </div>
+                                          <div className="flex h-full items-center py-2">
+                                            <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
+                                            {t.name}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </TableCell>
+                                  )}
+                                  <TableCell className="py-0" />
+                                  <TableCell className="py-0" />
+                                </TableRow>
+                              ))}
+                            </>
+                          </CollapsibleContent>
+                        </>
+                      </Collapsible>
+                    ))}
+                  </>
+                </CollapsibleContent>
+              </>
+            </Collapsible>
+          ))}
         </TableBody>
       </Table>
     </>
