@@ -3,7 +3,7 @@ version: "3.8"
 services:
   postgres:
     image: postgres:16
-    container_name: postgres
+    container_name: ctrlplane-postgres
     environment:
       POSTGRES_USER: ctrlplane
       POSTGRES_PASSWORD: ctrlplane
@@ -13,9 +13,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:latest
+    container_name: ctrlplane-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
   webservice:
     image: ctrlplane/webservice
-    container_name: webservice
+    container_name: ctrlplane-webservice
     environment:
       BASE_URL: "http://127.0.0.1" # <set your instance url>
       AUTH_SECRET: "<auth-secret>"
@@ -27,13 +36,22 @@ services:
       - "8080:8080"
 
   job-policy-checker:
-    image: ctrlplane/my-job-policy-checker-image
-    container_name: job-policy-checker
+    image: ctrlplane/job-policy-checker
+    container_name: ctrlplane-job-policy-checker
     environment:
       POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
     depends_on:
       - postgres
-      - rabbitmq
+
+  event-worker:
+    image: ctrlplane/event-worker
+    container_name: ctrlplane-event-worker
+    environment:
+      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
   postgres_data:
+  redis_data:

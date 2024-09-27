@@ -70,7 +70,7 @@ const StringifiedComparisonCondition: React.FC<{
       condition.conditions.map((subCondition, index) => (
         <React.Fragment key={index}>
           {index > 0 && (
-            <span className="mx-1 text-neutral-400">
+            <span className="mx-1 text-xs text-neutral-400">
               {operatorVerbs[condition.operator]}
             </span>
           )}
@@ -206,7 +206,7 @@ export const TargetConditionBadge: React.FC<{
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
-      <div className="cursor-pointer rounded-lg bg-neutral-950 p-2 text-muted-foreground">
+      <div className="cursor-pointer rounded-lg bg-neutral-950 text-muted-foreground">
         <StringifiedTargetCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>
