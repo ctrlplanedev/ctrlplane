@@ -71,9 +71,7 @@ export const CreateDeploymentDialog: React.FC<{
 
   watch((data, { name: fieldName }) => {
     if (fieldName === "name")
-      setValue("slug", slugify(data.name ?? "", { lower: true }), {
-        shouldTouch: true,
-      });
+      setValue("slug", slugify(data.name ?? "", { lower: true }));
   });
 
   const onSubmit = handleSubmit(async (deployment) => {
