@@ -43,14 +43,15 @@ export const TargetPageContent: React.FC<{
           condition={filter}
           onChange={(filter) => setFilter(filter)}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
-              className="flex flex-shrink-0 items-center gap-1 text-xs"
+              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
             >
               <IconFilter className="h-4 w-4" />
             </Button>
+
             {filter != null && <TargetConditionBadge condition={filter} />}
           </div>
         </TargetConditionDialog>
