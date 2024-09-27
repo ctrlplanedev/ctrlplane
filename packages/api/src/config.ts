@@ -17,6 +17,11 @@ export const env = createEnv({
       .enum(["true", "false"])
       .default("false")
       .transform((value) => value === "true"),
+
+    REQUIRE_DOMAIN_MATCHING_VERIFICATION: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((value) => value === "true"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

@@ -2,10 +2,11 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
+import { env as apiEnv } from "@ctrlplane/api";
 import { env as authEnv } from "@ctrlplane/auth/env";
 
 export const env = createEnv({
-  extends: [authEnv],
+  extends: [authEnv, apiEnv],
   shared: {
     NODE_ENV: z
       .enum(["development", "production", "test"])
@@ -16,18 +17,16 @@ export const env = createEnv({
    * This way you can ensure the app isn't built with invalid env vars.
    */
   server: {
+    BASE_URL: z.string(),
+
     GITHUB_URL: z.string().optional(),
     GITHUB_BOT_NAME: z.string().optional(),
     GITHUB_BOT_CLIENT_ID: z.string().optional(),
     GITHUB_BOT_CLIENT_SECRET: z.string().optional(),
     GITHUB_BOT_APP_ID: z.string().optional(),
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
-    BASE_URL: z.string(),
+
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
-    REQUIRE_DOMAIN_MATCHING_VERIFICATION: z
-      .enum(["true", "false"])
-      .default("true")
-      .transform((value) => value === "true"),
   },
 
   /**

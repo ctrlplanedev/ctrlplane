@@ -26,7 +26,8 @@ import {
 } from "@ctrlplane/db/schema";
 import { Permission, predefinedRoles } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { env } from "../config";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 import { integrationsRouter } from "./workspace-integrations";
 
 const membersRouter = createTRPCRouter({
@@ -221,6 +222,20 @@ const workspaceEmailDomainMatchingRouter = createTRPCRouter({
         .where(eq(workspaceEmailDomainMatching.workspaceId, input)),
     ),
 
+  verify: publicProcedure
+    .input(z.object({ code: z.string().min(10), email: z.string().email() }))
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .update(workspaceEmailDomainMatching)
+        .set({ verified: true })
+        .where(
+          and(
+            eq(workspaceEmailDomainMatching.verificationCode, input.code),
+            eq(workspaceEmailDomainMatching.verificationEmail, input.email),
+          ),
+        ),
+    ),
+
   create: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -229,9 +244,17 @@ const workspaceEmailDomainMatchingRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(createWorkspaceEmailDomainMatching)
-    .mutation(({ ctx, input }) =>
-      ctx.db.insert(workspaceEmailDomainMatching).values(input),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const randomString = [...Array(10)]
+        .map(() => Math.random().toString(36)[2])
+        .join("");
+
+      return ctx.db.insert(workspaceEmailDomainMatching).values({
+        ...input,
+        verified: env.REQUIRE_DOMAIN_MATCHING_VERIFICATION,
+        verificationCode: randomString,
+      });
+    }),
 
   delete: protectedProcedure
     .meta({

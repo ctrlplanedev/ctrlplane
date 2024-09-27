@@ -58,7 +58,7 @@ export const workspaceEmailDomainMatching = pgTable(
       .notNull(),
 
     verified: boolean("verified").default(false),
-    verificationCode: text("verification_code_hashed"),
+    verificationCode: text("verification_code"),
     verificationEmail: text("verification_email"),
 
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -74,5 +74,5 @@ export type WorkspaceEmailDomainMatching = InferSelectModel<
 
 export const createWorkspaceEmailDomainMatching = createInsertSchema(
   workspaceEmailDomainMatching,
-  { domain: z.string().trim() },
+  { domain: z.string().trim(), verificationEmail: z.string().email() },
 ).omit({ id: true, verificationCode: true, verified: true });
