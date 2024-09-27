@@ -6,15 +6,16 @@ import { useParams, useRouter } from "next/navigation";
 
 import {
   AlertDialog,
+  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
-  AlertDialogDestructiveAction,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
+import { buttonVariants } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
 
@@ -32,19 +33,20 @@ export const DeleteSystemDialog: React.FC<DeleteSystemProps> = ({
   const router = useRouter();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const deleteSystem = api.system.delete.useMutation();
+  const utils = api.useUtils();
 
-  const onDelete = () => {
+  const onDelete = () =>
     deleteSystem
       .mutateAsync(system.id)
       .then(() => {
+        utils.system.list.invalidate({
+          workspaceId: system.workspaceId,
+        });
         router.push(`/${workspaceSlug}/systems`);
         router.refresh();
         onSuccess?.();
       })
-      .catch((error) => {
-        console.error(error);
-      });
-  };
+      .catch(console.error);
 
   return (
     <AlertDialog>
@@ -64,9 +66,12 @@ export const DeleteSystemDialog: React.FC<DeleteSystemProps> = ({
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogDestructiveAction onClick={onDelete}>
+          <AlertDialogAction
+            className={buttonVariants({ variant: "destructive" })}
+            onClick={onDelete}
+          >
             Delete
-          </AlertDialogDestructiveAction>
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

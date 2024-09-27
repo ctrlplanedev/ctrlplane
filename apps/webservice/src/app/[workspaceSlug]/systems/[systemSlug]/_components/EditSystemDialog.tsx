@@ -18,6 +18,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
   FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
@@ -32,34 +33,32 @@ export const EditSystemDialog: React.FC<{
   onSubmit?: () => void;
 }> = ({ system, children, onSubmit }) => {
   const [open, setOpen] = useState(false);
-
   const form = useForm({
     schema: schema.updateSystem,
-    defaultValues: {
-      name: system.name,
-      slug: system.slug,
-      description: system.description,
-    },
+    defaultValues: system,
   });
-
   const updateSystem = api.system.update.useMutation();
+  const utils = api.useUtils();
 
-  const onFormSubmit = form.handleSubmit((data) => {
-    updateSystem.mutate(
-      { id: system.id, data },
-      {
-        onSuccess: () => {
-          onSubmit?.();
-          setOpen(false);
-        },
-        onError: () => {
-          form.setError("root", {
-            message: "System with this slug already exists",
-          });
-        },
-      },
-    );
-  });
+  const onFormSubmit = form.handleSubmit((data) =>
+    updateSystem
+      .mutateAsync({
+        id: system.id,
+        data,
+      })
+      .then(() => {
+        utils.system.list.invalidate({
+          workspaceId: system.workspaceId,
+        });
+        onSubmit?.();
+        setOpen(false);
+      })
+      .catch(() => {
+        form.setError("root", {
+          message: "System with this slug already exists",
+        });
+      }),
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -80,6 +79,7 @@ export const EditSystemDialog: React.FC<{
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -92,6 +92,7 @@ export const EditSystemDialog: React.FC<{
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -104,6 +105,7 @@ export const EditSystemDialog: React.FC<{
                   <FormControl>
                     <Textarea {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
