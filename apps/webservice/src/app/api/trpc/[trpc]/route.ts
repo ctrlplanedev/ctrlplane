@@ -1,4 +1,5 @@
-import { Span, trace } from "@opentelemetry/api";
+import type { Span } from "@opentelemetry/api";
+import { trace } from "@opentelemetry/api";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@ctrlplane/api";
