@@ -1,3 +1,4 @@
+import { Span, trace } from "@opentelemetry/api";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
 import { appRouter, createTRPCContext } from "@ctrlplane/api";
@@ -22,24 +23,31 @@ export const OPTIONS = () => {
   return response;
 };
 
-const handler = auth(async (req) => {
-  const response = await fetchRequestHandler({
-    endpoint: "/api/trpc",
-    router: appRouter,
-    req,
-    createContext: () =>
-      createTRPCContext({
-        session: req.auth,
-        headers: req.headers,
-      }),
-    onError({ error, path }) {
-      logger.error(`tRPC Error on ${path}`, { label: "trpc", path, error });
-      console.error(error);
-    },
-  });
+const tracer = trace.getTracer("trpc");
 
-  setCorsHeaders(response);
-  return response;
+const handler = auth(async (req) => {
+  return tracer.startActiveSpan("trpc", async (span: Span) => {
+    try {
+      const response = await fetchRequestHandler({
+        endpoint: "/api/trpc",
+        router: appRouter,
+        req,
+        createContext: () =>
+          createTRPCContext({
+            session: req.auth,
+            headers: req.headers,
+          }),
+        onError({ error, path }) {
+          logger.error(`tRPC Error on ${path}`, { label: "trpc", path, error });
+          console.error(error);
+        },
+      });
+      setCorsHeaders(response);
+      return response;
+    } finally {
+      span.end();
+    }
+  });
 });
 
 export { handler as GET, handler as POST };
