@@ -31,13 +31,13 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
         <DropdownMenuGroup>
           <EditSystemDialog system={system}>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <IconEdit className="mr-2 h-4 w-4" />
+              <IconEdit className="h-4 w-4" />
               Edit
             </DropdownMenuItem>
           </EditSystemDialog>
           <DeleteSystemDialog system={system}>
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <IconTrash className="mr-2 h-4 w-4" />
+              <IconTrash className="h-4 w-4" />
               Delete
             </DropdownMenuItem>
           </DeleteSystemDialog>
