@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNotNull, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 export const createReleaseVariables = async (
@@ -78,57 +78,34 @@ const determineReleaseVariableValue = async (
   variableId: string,
   jobTarget: schema.Target,
 ): Promise<schema.DeploymentVariableValue> => {
-  // Check for a direct target match
-  const directMatch = await tx
-    .select()
-    .from(schema.deploymentVariableValue)
-    .innerJoin(
-      schema.deploymentVariableValueTarget,
-      eq(
-        schema.deploymentVariableValueTarget.variableValueId,
-        schema.deploymentVariableValue.id,
-      ),
-    )
-    .where(
-      and(
-        eq(schema.deploymentVariableValue.variableId, variableId),
-        eq(schema.deploymentVariableValueTarget.targetId, jobTarget.id),
-      ),
-    )
-    .then(takeFirstOrNull);
-
-  if (directMatch != null) return directMatch.deployment_variable_value;
-
-  // Check for a match based on target filters
   const deploymentVariableValue = await tx
     .select()
     .from(schema.deploymentVariableValue)
-    .innerJoin(
-      schema.deploymentVariableValueTargetFilter,
-      eq(
-        schema.deploymentVariableValueTargetFilter.variableValueId,
-        schema.deploymentVariableValue.id,
+    .where(
+      and(
+        eq(schema.deploymentVariableValue.variableId, variableId),
+        isNotNull(schema.deploymentVariableValue.targetFilter),
       ),
     )
-    .where(eq(schema.deploymentVariableValue.variableId, variableId))
     .then(takeFirstOrNull);
+  // TODO: right now just grabbing the first one, we need to implement priority here
 
   if (deploymentVariableValue != null) {
     const filterMatch = await tx
       .select()
       .from(schema.target)
       .where(
-        schema.targetMatchesMetadata(
-          tx,
-          deploymentVariableValue.deployment_variable_value_target_filter
-            .targetFilter,
+        and(
+          schema.targetMatchesMetadata(
+            tx,
+            deploymentVariableValue.targetFilter,
+          ),
+          eq(schema.target.id, jobTarget.id),
         ),
       )
-      .limit(1)
       .then(takeFirstOrNull);
 
-    if (filterMatch != null)
-      return deploymentVariableValue.deployment_variable_value;
+    if (filterMatch != null) return deploymentVariableValue;
   }
 
   // If no specific match is found, return the default value (if any)

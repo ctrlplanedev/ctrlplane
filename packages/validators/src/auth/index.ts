@@ -44,6 +44,10 @@ export enum Permission {
   DeploymentDelete = "deployment.delete",
   DeploymentList = "deployment.list",
 
+  DeploymentVariableCreate = "deploymentVariable.create",
+  DeploymentVariableUpdate = "deploymentVariable.update",
+  DeploymentVariableDelete = "deploymentVariable.delete",
+
   ReleaseCreate = "release.create",
   ReleaseGet = "release.get",
   ReleaseList = "release.list",

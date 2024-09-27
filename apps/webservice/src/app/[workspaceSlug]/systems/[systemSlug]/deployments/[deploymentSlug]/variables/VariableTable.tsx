@@ -1,20 +1,17 @@
 "use client";
 
-import type {
-  DeploymentVariable,
-  DeploymentVariableValue,
-} from "@ctrlplane/db/schema";
-import { Fragment } from "react";
 import { useRouter } from "next/navigation";
-import { IconDotsVertical, IconPlus } from "@tabler/icons-react";
+import _ from "lodash";
+import { TbDotsVertical, TbSelector } from "react-icons/tb";
 
+import { cn } from "@ctrlplane/ui";
+import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@ctrlplane/ui/collapsible";
 import { Input } from "@ctrlplane/ui/input";
 import {
   Table,
@@ -25,16 +22,15 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import type { VariableData } from "./variable-data";
 import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
-import { AddVariableValueDialog } from "../AddVariableValueDialog";
-
-type VariableData = DeploymentVariable & { values: DeploymentVariableValue[] };
+import { VariableDropdown } from "./VariableDropdown";
+import { VariableValueDropdown } from "./VariableValueDropdown";
 
 export const VariableTable: React.FC<{
   variables: VariableData[];
 }> = ({ variables }) => {
-  const del = api.deployment.variable.value.delete.useMutation();
   const router = useRouter();
   const { result, search, setSearch } = useMatchSorterWithSearch(variables, {
     keys: [
@@ -43,6 +39,7 @@ export const VariableTable: React.FC<{
       (i) => i.values.map((v) => JSON.stringify(v.value)),
     ],
   });
+
   return (
     <>
       <div className="sticky left-0 right-0 top-0 z-20 border-b bg-neutral-950">
@@ -54,94 +51,112 @@ export const VariableTable: React.FC<{
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead>Key</TableHead>
-            <TableHead>Value</TableHead>
             <TableHead>Scope</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
 
         <TableBody>
-          {result.map((variable) => {
+          {result.map((variable, idx) => {
+            const numUniqueTargets = _.chain(variable.values)
+              .flatMap((v) => v.targets)
+              .uniqBy((t) => t.id)
+              .value().length;
+
+            const { values } = variable;
+
+            console.log({ values });
             return (
-              <Fragment key={variable.id}>
-                <TableRow>
-                  <TableCell rowSpan={variable.values.length + 1}>
-                    <div className="flex items-center gap-1">
-                      {variable.key}
-                      <AddVariableValueDialog variable={variable}>
+              <Collapsible key={variable.id} asChild>
+                <>
+                  <TableRow className="border-none">
+                    <TableCell className="flex items-center gap-2  ">
+                      {/* <CollapsibleTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 rounded-full text-muted-foreground"
+                          className="mr-2 h-6 w-6 py-0 pl-[1px] hover:bg-inherit"
+                          disabled={values.length === 0}
                         >
-                          <IconPlus className="h-4 w-4" />
+                          <TbSelector />
                         </Button>
-                      </AddVariableValueDialog>
-                    </div>
-                    <div className="text-muted-foreground">
-                      {variable.description}
-                    </div>
-                  </TableCell>
-                </TableRow>
-                {variable.values.map((v, idx) => (
-                  <TableRow
-                    key={v.id ?? idx}
-                    className={
-                      idx !== variable.values.length - 1
-                        ? "border-b-neutral-900"
-                        : ""
-                    }
-                  >
+                      </CollapsibleTrigger> */}
+                      {variable.key}
+                    </TableCell>
                     <TableCell>
-                      <pre>{JSON.stringify(v.value)}</pre>
-                    </TableCell>
-                    <TableCell className="space-x-2">
-                      {/* {v.deployments.map((d) => (
-                        <div
-                          key={d.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2.5 py-0.5 text-blue-400 hover:bg-blue-500/15"
+                      <CollapsibleTrigger asChild>
+                        <Badge
+                          variant="secondary"
+                          className="cursor-pointer hover:bg-neutral-600"
                         >
-                          <IconShip /> {d.name}
-                        </div>
-                      ))}
-                      {v.systems.map((d) => (
-                        <div
-                          key={d.id}
-                          className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-green-400 hover:bg-green-500/15"
-                        >
-                          <IconCategory /> {d.name}
-                        </div>
-                      ))} */}
+                          {numUniqueTargets} target
+                          {numUniqueTargets === 1 ? "" : "s"}
+                        </Badge>
+                      </CollapsibleTrigger>
                     </TableCell>
-                    <TableCell className="w-10">
-                      {v.id != null && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <IconDotsVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem
-                              onClick={async () => {
-                                if (v.id == null) return;
-                                await del.mutateAsync(v.id);
-                                router.refresh();
-                              }}
-                            >
-                              <span>Delete</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                    <TableCell className="flex justify-end ">
+                      <VariableDropdown variable={variable}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <TbDotsVertical />
+                        </Button>
+                      </VariableDropdown>
                     </TableCell>
                   </TableRow>
-                ))}
-              </Fragment>
+                  <CollapsibleContent asChild>
+                    <>
+                      {variable.values.map((v, idx) => (
+                        <Collapsible key={v.id} asChild>
+                          <>
+                            <TableRow key={v.id} className="border-none">
+                              <TableCell className="pl-12">{v.value}</TableCell>
+                              <TableCell>
+                                <CollapsibleTrigger asChild>
+                                  <Badge
+                                    variant="secondary"
+                                    className="cursor-pointer hover:bg-neutral-600"
+                                  >
+                                    {v.targets.length} target
+                                    {v.targets.length === 1 ? "" : "s"}
+                                  </Badge>
+                                </CollapsibleTrigger>
+                              </TableCell>
+                              <TableCell className="flex justify-end">
+                                <VariableValueDropdown value={v}>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={(e) => e.preventDefault()}
+                                  >
+                                    <TbDotsVertical />
+                                  </Button>
+                                </VariableValueDropdown>
+                              </TableCell>
+                            </TableRow>
+                            <CollapsibleContent asChild>
+                              <>
+                                {v.targets.map((t) => (
+                                  <TableRow key={t.id} className="border-none">
+                                    <TableCell className="pl-20">
+                                      {t.name}
+                                    </TableCell>
+                                    <TableCell></TableCell>
+                                    <TableCell></TableCell>
+                                  </TableRow>
+                                ))}
+                              </>
+                            </CollapsibleContent>
+                          </>
+                        </Collapsible>
+                      ))}
+                    </>
+                  </CollapsibleContent>
+                </>
+              </Collapsible>
             );
           })}
         </TableBody>

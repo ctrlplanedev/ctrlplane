@@ -1,5 +1,6 @@
 import type { DeploymentVariable } from "@ctrlplane/db/schema";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -34,11 +35,11 @@ export const AddVariableValueDialog: React.FC<{
   const [open, setOpen] = useState(false);
 
   const create = api.deployment.variable.value.create.useMutation();
-  const utils = api.useUtils();
+  const router = useRouter();
   const form = useForm({ schema, defaultValues: { value: "" } });
   const onSubmit = form.handleSubmit(async (values) => {
     await create.mutateAsync({ ...values, variableId: variable.id });
-    await utils.deployment.variable.byDeploymentId.invalidate();
+    router.refresh();
     setOpen(false);
   });
 

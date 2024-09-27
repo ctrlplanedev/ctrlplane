@@ -1,11 +1,13 @@
-import type { MetadataCondition } from "@ctrlplane/validators/targets";
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { InferSelectModel } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { targetCondition } from "@ctrlplane/validators/targets";
+
 import { deployment } from "./deployment.js";
-import { target } from "./target.js";
 import { variableSet } from "./variable-sets.js";
 
 export const deploymentVariable = pgTable(
@@ -36,60 +38,23 @@ export const deploymentVariableValue = pgTable(
       .notNull()
       .references(() => deploymentVariable.id, { onDelete: "cascade" }),
     value: jsonb("value").$type<any>().notNull(),
+    targetFilter: jsonb("target_filter")
+      .$type<TargetCondition | null>()
+      .default(sql`NULL`),
   },
   (t) => ({ uniq: uniqueIndex().on(t.variableId, t.value) }),
 );
-export type DeploymentVariableValue = InferInsertModel<
+export type DeploymentVariableValue = InferSelectModel<
   typeof deploymentVariableValue
 >;
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
+  { targetFilter: targetCondition },
 ).omit({
   id: true,
 });
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
-
-export const deploymentVariableValueTargetFilter = pgTable(
-  "deployment_variable_value_target_filter",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    variableValueId: uuid("variable_value_id")
-      .notNull()
-      .references(() => deploymentVariableValue.id, { onDelete: "cascade" }),
-    targetFilter: jsonb("target_filter").$type<MetadataCondition>().notNull(),
-  },
-);
-export type DeploymentVariableValueTargetFilter = InferInsertModel<
-  typeof deploymentVariableValueTargetFilter
->;
-export const createDeploymentVariableValueTargetFilter = createInsertSchema(
-  deploymentVariableValueTargetFilter,
-).omit({ id: true });
-export const updateDeploymentVariableValueTargetFilter =
-  createDeploymentVariableValueTargetFilter.partial();
-
-export const deploymentVariableValueTarget = pgTable(
-  "deployment_variable_value_target",
-  {
-    id: uuid("id").notNull().primaryKey().defaultRandom(),
-    variableValueId: uuid("variable_value_id")
-      .notNull()
-      .references(() => deploymentVariableValue.id, { onDelete: "cascade" }),
-    targetId: uuid("target_id")
-      .notNull()
-      .references(() => target.id, { onDelete: "cascade" }),
-  },
-  (t) => ({ uniq: uniqueIndex().on(t.variableValueId, t.targetId) }),
-);
-export type DeploymentVariableValueTarget = InferInsertModel<
-  typeof deploymentVariableValueTarget
->;
-export const createDeploymentVariableValueTarget = createInsertSchema(
-  deploymentVariableValueTarget,
-).omit({ id: true });
-export const updateDeploymentVariableValueTarget =
-  createDeploymentVariableValueTarget.partial();
 
 export const deploymentVariableSet = pgTable(
   "deployment_variable_set",

@@ -1,20 +1,21 @@
+import type { DeploymentVariableValue, Target } from "@ctrlplane/db/schema";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, asc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
   deployment,
   deploymentVariable,
   deploymentVariableValue,
-  deploymentVariableValueTarget,
-  deploymentVariableValueTargetFilter,
   system,
   target,
   targetMatchesMetadata,
   updateDeploymentVariable,
+  updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -30,13 +31,40 @@ const valueRouter = createTRPCRouter({
           .where(eq(deploymentVariable.id, input.variableId))
           .then(takeFirst);
         return canUser
-          .perform(Permission.DeploymentUpdate)
+          .perform(Permission.DeploymentVariableCreate)
           .on({ type: "deployment", id: variable.deploymentId });
       },
     })
     .input(createDeploymentVariableValue)
     .mutation(async ({ ctx, input }) =>
       ctx.db.insert(deploymentVariableValue).values(input).returning(),
+    ),
+
+  update: protectedProcedure
+    .meta({
+      authorizationCheck: async ({ canUser, ctx, input }) => {
+        const value = await ctx.db
+          .select()
+          .from(deploymentVariableValue)
+          .where(eq(deploymentVariableValue.id, input.id))
+          .then(takeFirstOrNull);
+
+        if (value == null) return false;
+
+        return canUser.perform(Permission.DeploymentVariableUpdate).on({
+          type: "deploymentVariable",
+          id: value.variableId,
+        });
+      },
+    })
+    .input(
+      z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
+    )
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .update(deploymentVariableValue)
+        .set(input.data)
+        .where(eq(deploymentVariableValue.id, input.id)),
     ),
 
   delete: protectedProcedure
@@ -68,80 +96,6 @@ const valueRouter = createTRPCRouter({
         .where(eq(deploymentVariableValue.id, input))
         .returning()
         .then(takeFirstOrNull);
-    }),
-
-  setTarget: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentUpdate)
-          .on({ type: "target", id: input.targetId }),
-    })
-    .input(
-      z.object({
-        targetId: z.string().uuid(),
-        variableId: z.string().uuid(),
-        value: z.any(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      if (input.value == null) {
-        const vv = await ctx.db
-          .select()
-          .from(deploymentVariableValue)
-          .innerJoin(
-            deploymentVariableValueTarget,
-            eq(
-              deploymentVariableValue.id,
-              deploymentVariableValueTarget.variableValueId,
-            ),
-          )
-          .where(
-            and(
-              eq(deploymentVariableValue.variableId, input.variableId),
-              eq(deploymentVariableValueTarget.targetId, input.targetId),
-            ),
-          )
-          .then(takeFirstOrNull);
-
-        if (vv == null)
-          // value is already not set.
-          return;
-
-        return ctx.db
-          .delete(deploymentVariableValueTarget)
-          .where(
-            and(
-              eq(
-                deploymentVariableValueTarget.variableValueId,
-                vv.deployment_variable_value.id,
-              ),
-              eq(deploymentVariableValueTarget.targetId, input.targetId),
-            ),
-          )
-          .returning();
-      }
-
-      const value = await ctx.db
-        .insert(deploymentVariableValue)
-        .values({ variableId: input.variableId, value: input.value })
-        .onConflictDoUpdate({
-          target: [
-            deploymentVariableValue.variableId,
-            deploymentVariableValue.value,
-          ],
-          set: { value: input.value },
-        })
-        .returning()
-        .then(takeFirst);
-
-      return ctx.db
-        .insert(deploymentVariableValueTarget)
-        .values({
-          variableValueId: value.id,
-          targetId: input.targetId,
-        })
-        .returning();
     }),
 });
 
@@ -186,27 +140,19 @@ export const deploymentVariableRouter = createTRPCRouter({
           deploymentVariableValue,
           eq(deploymentVariableValue.variableId, deploymentVariable.id),
         )
-        .innerJoin(
-          deploymentVariableValueTargetFilter,
-          eq(
-            deploymentVariableValueTargetFilter.variableValueId,
-            deploymentVariableValue.id,
-          ),
-        )
         .then((rows) =>
           _.chain(rows)
             .groupBy((r) => r.deployment_variable.id)
             .map((r) => ({
               ...r[0]!.deployment_variable,
-              targetFilter:
-                r[0]!.deployment_variable_value_target_filter.targetFilter,
+              targetFilter: r[0]!.deployment_variable_value.targetFilter,
               value: r[0]!.deployment_variable_value,
               possibleValues: r.map((r) => r.possible_values_subquery),
             }))
             .value(),
         );
 
-      const filterMatches = await Promise.all(
+      return Promise.all(
         deploymentVariables.map(async (deploymentVariable) => {
           const { targetFilter } = deploymentVariable;
 
@@ -230,40 +176,6 @@ export const deploymentVariableRouter = createTRPCRouter({
           };
         }),
       ).then((rows) => rows.filter(isPresent));
-
-      // get all the deployment variable value targets that are direct matches
-      // then get all the deployment variable values + the deployment variable itself
-      const directMatches = await ctx.db
-        .select()
-        .from(deploymentVariable)
-        .innerJoin(
-          possibleValuesSubquery,
-          eq(possibleValuesSubquery.variableId, deploymentVariable.id),
-        )
-        .innerJoin(
-          deploymentVariableValue,
-          eq(deploymentVariableValue.variableId, deploymentVariable.id),
-        )
-        .innerJoin(
-          deploymentVariableValueTarget,
-          eq(
-            deploymentVariableValueTarget.variableValueId,
-            deploymentVariableValue.id,
-          ),
-        )
-        .where(eq(deploymentVariableValueTarget.targetId, input))
-        .then((rows) =>
-          _.chain(rows)
-            .groupBy((row) => row.deployment_variable.id)
-            .map((row) => ({
-              ...row[0]!.deployment_variable,
-              value: row[0]!.deployment_variable_value,
-              possibleValues: row.map((r) => r.possible_values_subquery),
-            }))
-            .value(),
-        );
-
-      return [...filterMatches, ...directMatches];
     }),
 
   byDeploymentId: protectedProcedure
@@ -274,38 +186,69 @@ export const deploymentVariableRouter = createTRPCRouter({
           .on({ type: "deployment", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
+    .query(async ({ ctx, input }) => {
+      const deploymentVariableValueSubquery = ctx.db
+        .select({
+          id: deploymentVariableValue.id,
+          value: deploymentVariableValue.value,
+          variableId: deploymentVariableValue.variableId,
+          targetFilter: deploymentVariableValue.targetFilter,
+        })
+        .from(deploymentVariableValue)
+        .groupBy(deploymentVariableValue.id)
+        .as("deployment_variable_value_subquery");
+
+      const deploymentVariables = await ctx.db
+        .select({
+          deploymentVariable: deploymentVariable,
+          values: sql<
+            (DeploymentVariableValue & {
+              targetFilter: TargetCondition | null;
+              targets: Target[];
+            })[]
+          >`
+            coalesce(
+              array_agg(
+                case when ${deploymentVariableValueSubquery.id} is not null then
+                  json_build_object(
+                    'id', ${deploymentVariableValueSubquery.id},
+                    'value', ${deploymentVariableValueSubquery.value},
+                    'variableId', ${deploymentVariableValueSubquery.variableId},
+                    'targetFilter', ${deploymentVariableValueSubquery.targetFilter}
+                  )
+                else null end
+              ) filter (where ${deploymentVariableValueSubquery.id} is not null),
+              array[]::json[]
+            )
+          `.as("values"),
+        })
         .from(deploymentVariable)
         .leftJoin(
-          deploymentVariableValue,
-          eq(deploymentVariable.id, deploymentVariableValue.variableId),
+          deploymentVariableValueSubquery,
+          eq(deploymentVariable.id, deploymentVariableValueSubquery.variableId),
         )
-        .leftJoin(
-          deploymentVariableValueTarget,
-          eq(
-            deploymentVariableValueTarget.variableValueId,
-            deploymentVariableValue.id,
+        .groupBy(deploymentVariable.id)
+        .orderBy(asc(deploymentVariable.key))
+        .where(eq(deploymentVariable.deploymentId, input));
+
+      return Promise.all(
+        deploymentVariables.map(async (deploymentVariable) => ({
+          ...deploymentVariable.deploymentVariable,
+          values: await Promise.all(
+            deploymentVariable.values.map(async (value) => ({
+              ...value,
+              targets:
+                value.targetFilter != null
+                  ? await ctx.db
+                      .select()
+                      .from(target)
+                      .where(targetMatchesMetadata(ctx.db, value.targetFilter))
+                  : [],
+            })),
           ),
-        )
-        .where(eq(deploymentVariable.deploymentId, input))
-        .then((rows) => {
-          return _.chain(rows)
-            .groupBy((row) => row.deployment_variable.id)
-            .map((row) => ({
-              ...row[0]!.deployment_variable,
-              values: _.chain(row)
-                .groupBy((r) => r.deployment_variable_value?.id)
-                .map((r) => ({
-                  ...r[0]!.deployment_variable_value!,
-                  targets: r.map((r) => r.deployment_variable_value_target!),
-                }))
-                .value(),
-            }))
-            .value();
-        }),
-    ),
+        })),
+      );
+    }),
 
   create: protectedProcedure
     .meta({
