@@ -137,7 +137,11 @@ export const ReleaseDropdownMenu: React.FC<{
 }> = ({ release, environment, isReleaseCompleted }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" size="icon">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 text-muted-foreground"
+      >
         <IconDotsVertical className="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>

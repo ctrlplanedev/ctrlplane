@@ -76,7 +76,7 @@ export const SystemsList: React.FC<{
                 className="h-5 w-5 text-xs text-muted-foreground"
                 onClick={() => removeFilter(idx)}
               >
-                <IconX />
+                <IconX className="h-4 w-4" />
               </Button>
             </Badge>
           ))}
