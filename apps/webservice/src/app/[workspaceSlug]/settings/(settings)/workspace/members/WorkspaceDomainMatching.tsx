@@ -111,9 +111,9 @@ const CreateDomainMatchingDialog: React.FC<{
 
 export const WorkspaceDomainMatching: React.FC<{
   workspace: Workspace;
+  roles: Role[];
   domainMatching: WorkspaceEmailDomainMatching[];
-}> = ({ domainMatching, workspace }) => {
-  const roles = api.workspace.roles.useQuery(workspace.id);
+}> = ({ roles, domainMatching, workspace }) => {
   const del = api.workspace.emailDomainMatching.delete.useMutation();
   const router = useRouter();
   return (
@@ -125,10 +125,7 @@ export const WorkspaceDomainMatching: React.FC<{
             Automatically invite members based on their email domain.
           </p>
         </div>
-        <CreateDomainMatchingDialog
-          workspaceId={workspace.id}
-          roles={roles.data ?? []}
-        >
+        <CreateDomainMatchingDialog workspaceId={workspace.id} roles={roles}>
           <Button variant="secondary">Add Domain</Button>
         </CreateDomainMatchingDialog>
       </div>
@@ -140,7 +137,7 @@ export const WorkspaceDomainMatching: React.FC<{
               <span className="flex items-center gap-2">
                 <TbAt /> {dm.domain}
               </span>
-              <span>{roles.data?.find((r) => r.id === dm.roleId)?.name}</span>
+              <span>{roles.find((r) => r.id === dm.roleId)?.name}</span>
               <Button
                 variant="ghost"
                 size="icon"

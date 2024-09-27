@@ -24,6 +24,10 @@ export const env = createEnv({
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     BASE_URL: z.string(),
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
+    REQUIRE_DOMAIN_MATCHING_VERIFICATION: z
+      .enum(["true", "false"])
+      .default("true")
+      .transform((value) => value === "true"),
   },
 
   /**

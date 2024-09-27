@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { auth } from "@ctrlplane/auth";
 
+import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { MembersExport } from "./MembersExport";
 import { MembersTable } from "./MembersTable";
@@ -26,6 +27,7 @@ export default async function WorkspaceSettingMembersPage({
     workspace.id,
   );
   const members = await api.workspace.members.list(workspace.id);
+  const roles = await api.workspace.roles(workspace.id);
 
   return (
     <div className="container mx-auto max-w-2xl space-y-8">
@@ -40,11 +42,16 @@ export default async function WorkspaceSettingMembersPage({
         <p className="font-semibold">Manage members ({members.length})</p>
       </div>
       <MembersTable data={members} workspace={workspace} />
-      <div className="border-b" />
-      <WorkspaceDomainMatching
-        workspace={workspace}
-        domainMatching={domainMatching}
-      />
+      {env.REQUIRE_DOMAIN_MATCHING_VERIFICATION && (
+        <>
+          <div className="border-b" />
+          <WorkspaceDomainMatching
+            roles={roles}
+            workspace={workspace}
+            domainMatching={domainMatching}
+          />
+        </>
+      )}
       <div className="border-b" />
       <MembersExport data={members} />
     </div>

@@ -1,5 +1,12 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -49,6 +56,14 @@ export const workspaceEmailDomainMatching = pgTable(
     roleId: uuid("role_id")
       .references(() => role.id, { onDelete: "cascade" })
       .notNull(),
+
+    verified: boolean("verified").default(false),
+    verificationCode: text("verification_code_hashed"),
+    verificationEmail: text("verification_email"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.domain) }),
 );
@@ -60,4 +75,4 @@ export type WorkspaceEmailDomainMatching = InferSelectModel<
 export const createWorkspaceEmailDomainMatching = createInsertSchema(
   workspaceEmailDomainMatching,
   { domain: z.string().trim() },
-).omit({ id: true });
+).omit({ id: true, verificationCode: true, verified: true });
