@@ -216,17 +216,13 @@ export const targetRouter = createTRPCRouter({
         z.object({
           workspaceId: z.string().uuid(),
           filter: targetCondition.optional(),
-          not: z.boolean().optional().default(false),
           limit: z.number().default(500),
           offset: z.number().default(0),
         }),
       )
       .query(({ ctx, input }) => {
         const workspaceIdCheck = eq(target.workspaceId, input.workspaceId);
-        const filterCondition = targetMatchesMetadata(ctx.db, input.filter);
-        const targetConditions = input.not
-          ? not(filterCondition ?? sql`TRUE`)
-          : filterCondition;
+        const targetConditions = targetMatchesMetadata(ctx.db, input.filter);
         const checks = [workspaceIdCheck, targetConditions].filter(isPresent);
 
         const items = targetQuery(ctx.db, checks)
