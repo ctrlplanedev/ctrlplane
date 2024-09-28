@@ -1,9 +1,6 @@
 // @ts-ignore
-import path from "path";
-import { fileURLToPath } from "url";
 import nextra from "nextra";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
