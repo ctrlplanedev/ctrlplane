@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
     "tailwindcss": "catalog:",
     "tailwindcss-animate": "^1.0.7"
   },

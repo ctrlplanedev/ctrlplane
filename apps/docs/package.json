@@ -12,6 +12,7 @@
     "format": "prettier --check . --ignore-path ../../.gitignore"
   },
   "dependencies": {
+    "@ctrlplane/tailwind-config": "workspace:*",
     "@ctrlplane/ui": "workspace:*",
     "next": "catalog:",
     "nextra": "^3.0.0",
@@ -29,11 +30,11 @@
     "@types/react": "catalog:react18",
     "@types/react-dom": "catalog:react18",
     "eslint": "catalog:",
-    "postcss-load-config": "^6.0.1",
     "prettier": "catalog:",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "webpack": "^5.95.0"
   },
   "prettier": "@ctrlplane/prettier-config"
 }

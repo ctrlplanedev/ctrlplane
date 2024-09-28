@@ -9,5 +9,8 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "prettier.printWidth": 80
+  },
+  "files.associations": {
+    "*.css": "tailwindcss"
   }
 }

@@ -24,6 +24,8 @@
     --input: 240 5.9% 90%;
     --ring: 240 5% 64.9%;
     --radius: 0.5rem;
+    --font-sans: "Geist Sans", sans-serif;
+    --font-mono: "Geist Mono", monospace;
   }
 
   .dark {
@@ -47,6 +49,15 @@
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
   }
+}
+
+/* Add this new rule for basic font settings */
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 @layer utilities {
