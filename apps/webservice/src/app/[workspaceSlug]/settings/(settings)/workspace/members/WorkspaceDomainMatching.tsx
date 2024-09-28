@@ -7,8 +7,8 @@ import type {
 } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconAt, IconX } from "@tabler/icons-react";
 import { useSession } from "next-auth/react";
-import { TbAt, TbX } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -67,7 +67,7 @@ const CreateDomainMatchingDialog: React.FC<{
                 Domain
               </Label>
               <div className="relative col-span-3">
-                <TbAt className="absolute left-3 top-1/2 -translate-y-1/2" />
+                <IconAt className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
                 <Input
                   id="domain"
                   placeholder="example.com"
@@ -142,7 +142,7 @@ export const WorkspaceDomainMatching: React.FC<{
           {domainMatching.map((dm) => (
             <div key={dm.id} className="flex items-center justify-between">
               <span className="flex items-center gap-2">
-                <TbAt /> {dm.domain}
+                <IconAt className="h-4 w-4" /> {dm.domain}
               </span>
               <span>{roles.find((r) => r.id === dm.roleId)?.name}</span>
               <Button
@@ -153,7 +153,7 @@ export const WorkspaceDomainMatching: React.FC<{
                   router.refresh();
                 }}
               >
-                <TbX />
+                <IconX className="h-4 w-4" />
               </Button>
             </div>
           ))}
