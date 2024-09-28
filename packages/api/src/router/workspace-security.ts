@@ -58,7 +58,7 @@ export const workspaceEmailDomainMatchingRouter = createTRPCRouter({
 
       return ctx.db.insert(workspaceEmailDomainMatching).values({
         ...input,
-        verified: env.REQUIRE_DOMAIN_MATCHING_VERIFICATION,
+        verified: !env.REQUIRE_DOMAIN_MATCHING_VERIFICATION,
         verificationCode: randomString,
       });
     }),
