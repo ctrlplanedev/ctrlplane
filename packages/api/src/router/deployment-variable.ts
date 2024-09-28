@@ -1,28 +1,15 @@
-import type { DeploymentVariableValue, Target } from "@ctrlplane/db/schema";
-import type {
-  ComparisonCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import {
-  and,
-  asc,
-  eq,
-  isNotNull,
-  sql,
-  takeFirst,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
+import { and, asc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
   deployment,
   deploymentVariable,
   deploymentVariableValue,
-  environment,
   system,
   target,
   targetMatchesMetadata,
@@ -30,10 +17,6 @@ import {
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -53,7 +36,22 @@ const valueRouter = createTRPCRouter({
     })
     .input(createDeploymentVariableValue)
     .mutation(async ({ ctx, input }) =>
-      ctx.db.insert(deploymentVariableValue).values(input).returning(),
+      ctx.db.transaction((tx) =>
+        tx
+          .insert(deploymentVariableValue)
+          .values(input)
+          .returning()
+          .then(takeFirst)
+          .then(async (value) => {
+            if (input.default)
+              await tx
+                .update(deploymentVariable)
+                .set({ defaultValueId: value.id })
+                .where(eq(deploymentVariable.id, input.variableId));
+
+            return value;
+          }),
+      ),
     ),
 
   update: protectedProcedure
@@ -80,7 +78,18 @@ const valueRouter = createTRPCRouter({
       ctx.db
         .update(deploymentVariableValue)
         .set(input.data)
-        .where(eq(deploymentVariableValue.id, input.id)),
+        .where(eq(deploymentVariableValue.id, input.id))
+        .returning()
+        .then(takeFirst)
+        .then(async (value) => {
+          if (input.data.default)
+            await ctx.db
+              .update(deploymentVariable)
+              .set({ defaultValueId: value.id })
+              .where(eq(deploymentVariable.id, value.variableId));
+
+          return value;
+        }),
     ),
 
   delete: protectedProcedure

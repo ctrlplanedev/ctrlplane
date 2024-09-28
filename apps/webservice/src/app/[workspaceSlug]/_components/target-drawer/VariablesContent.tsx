@@ -205,6 +205,7 @@ export const VariableContent: React.FC<{ targetId: string }> = ({
   targetId,
 }) => {
   const deployments = api.deployment.byTargetId.useQuery(targetId);
+  console.log({ deployments: deployments.data });
   const variables = api.deployment.variable.byTargetId.useQuery(targetId);
   return (
     <div>

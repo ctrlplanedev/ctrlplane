@@ -1,8 +1,9 @@
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
+import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import {
-  boolean,
+  foreignKey,
   jsonb,
   pgTable,
   text,
@@ -26,9 +27,15 @@ export const deploymentVariable = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id),
+    defaultValueId: uuid("default_value_id"),
     schema: jsonb("schema").$type<Record<string, any>>(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.key) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.deploymentId, t.key),
+    defaultValueIdFK: foreignKey(defaultValueIdFKConstraint).onDelete(
+      "set null",
+    ),
+  }),
 );
 
 export type DeploymentVariable = InferSelectModel<typeof deploymentVariable>;
@@ -41,16 +48,21 @@ export const deploymentVariableValue = pgTable(
   "deployment_variable_value",
   {
     id: uuid("id").notNull().primaryKey().defaultRandom(),
-    variableId: uuid("variable_id")
-      .notNull()
-      .references(() => deploymentVariable.id, { onDelete: "cascade" }),
+    variableId: uuid("variable_id").notNull(),
     value: jsonb("value").$type<any>().notNull(),
     targetFilter: jsonb("target_filter")
       .$type<TargetCondition | null>()
       .default(sql`NULL`),
-    default: boolean("default").notNull().default(false),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.variableId, t.value) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.variableId, t.value),
+    variableIdFk: foreignKey({
+      columns: [t.variableId],
+      foreignColumns: [deploymentVariable.id],
+    })
+      .onUpdate("restrict")
+      .onDelete("cascade"),
+  }),
 );
 export type DeploymentVariableValue = InferSelectModel<
   typeof deploymentVariableValue
@@ -58,11 +70,28 @@ export type DeploymentVariableValue = InferSelectModel<
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
   { targetFilter: targetCondition },
-).omit({
-  id: true,
-});
+)
+  .omit({
+    id: true,
+  })
+  .extend({
+    default: z.boolean().optional(),
+  });
 export const updateDeploymentVariableValue =
   createDeploymentVariableValue.partial();
+
+// workaround for cirular reference - https://www.answeroverflow.com/m/1194395880523042936
+const defaultValueIdFKConstraint: {
+  columns: [AnyPgColumn<{ tableName: "deployment_variable" }>];
+  foreignColumns: ColumnsWithTable<
+    "deployment_variable",
+    "deployment_variable_value",
+    [AnyPgColumn<{ tableName: "deployment_variable" }>]
+  >;
+} = {
+  columns: [deploymentVariable.defaultValueId],
+  foreignColumns: [deploymentVariableValue.id],
+};
 
 export const deploymentVariableSet = pgTable(
   "deployment_variable_set",

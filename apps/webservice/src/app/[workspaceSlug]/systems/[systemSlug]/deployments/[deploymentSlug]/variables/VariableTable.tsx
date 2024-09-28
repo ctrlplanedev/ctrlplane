@@ -1,10 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import _ from "lodash";
-import { TbDotsVertical, TbSelector } from "react-icons/tb";
+import { TbDotsVertical } from "react-icons/tb";
 
-import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -23,7 +20,6 @@ import {
 } from "@ctrlplane/ui/table";
 
 import type { VariableData } from "./variable-data";
-import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
@@ -31,13 +27,17 @@ import { VariableValueDropdown } from "./VariableValueDropdown";
 export const VariableTable: React.FC<{
   variables: VariableData[];
 }> = ({ variables }) => {
-  const router = useRouter();
   const { result, search, setSearch } = useMatchSorterWithSearch(variables, {
     keys: [
       "key",
       "description",
       (i) => i.values.map((v) => JSON.stringify(v.value)),
     ],
+  });
+
+  variables.forEach((v) => {
+    const defaultVal = v.values.find((val) => v.defaultValueId === val.id);
+    console.log("defaultVal", { defaultVal });
   });
 
   return (
@@ -98,6 +98,9 @@ export const VariableTable: React.FC<{
                                 <div className="flex h-full items-center border-l border-neutral-800 py-2">
                                   <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
                                   {v.value}
+                                  {variable.defaultValueId === v.id && (
+                                    <span className="ml-2">(default)</span>
+                                  )}
                                 </div>
                               )}
                               {idx === variable.values.length - 1 && (
@@ -107,7 +110,12 @@ export const VariableTable: React.FC<{
                                   </div>
                                   <div className="flex h-full items-center py-2">
                                     <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                    {v.value}
+                                    {v.value}{" "}
+                                    {variable.defaultValueId === v.id && (
+                                      <Badge className="ml-2 py-[1px] text-xs">
+                                        default
+                                      </Badge>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -118,8 +126,8 @@ export const VariableTable: React.FC<{
                                   variant="secondary"
                                   className="flex w-24 cursor-pointer justify-center py-[2px] hover:bg-neutral-600"
                                 >
-                                  {v.targets.length} target
-                                  {v.targets.length === 1 ? "" : "s"}
+                                  {v.targetCount} target
+                                  {v.targetCount === 1 ? "" : "s"}
                                 </Badge>
                               </CollapsibleTrigger>
                             </TableCell>

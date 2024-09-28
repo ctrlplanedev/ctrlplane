@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconTarget, IconTrash } from "@tabler/icons-react";
 
@@ -27,13 +28,21 @@ import { TargetConditionDialog } from "../../../../../_components/target-conditi
 const DeleteVariableValueDialog: React.FC<{
   valueId: string;
   children: React.ReactNode;
-}> = ({ valueId, children }) => {
+  onClose: () => void;
+}> = ({ valueId, children, onClose }) => {
+  const [open, setOpen] = useState(false);
   const deleteVariableValue =
     api.deployment.variable.value.delete.useMutation();
   const router = useRouter();
 
   return (
-    <AlertDialog>
+    <AlertDialog
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        if (!open) onClose();
+      }}
+    >
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -64,11 +73,12 @@ export const VariableValueDropdown: React.FC<{
   value: VariableValue;
   children: React.ReactNode;
 }> = ({ value, children }) => {
+  const [open, setOpen] = useState(false);
   const update = api.deployment.variable.value.update.useMutation();
   const router = useRouter();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuGroup>
@@ -93,7 +103,10 @@ export const VariableValueDropdown: React.FC<{
               Assign targets
             </DropdownMenuItem>
           </TargetConditionDialog>
-          <DeleteVariableValueDialog valueId={value.id}>
+          <DeleteVariableValueDialog
+            valueId={value.id}
+            onClose={() => setOpen(false)}
+          >
             <DropdownMenuItem
               onSelect={(e) => e.preventDefault()}
               className="flex items-center gap-2"
