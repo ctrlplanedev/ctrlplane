@@ -15,6 +15,7 @@ import {
   defaultCondition,
   isDefaultCondition,
   isValidTargetCondition,
+  MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/targets";
 
 import { TargetConditionRender } from "./TargetConditionRender";
@@ -43,7 +44,8 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
         <DialogHeader>
           <DialogTitle>Edit Target Filter</DialogTitle>
           <DialogDescription>
-            Edit the target filter for this environment.
+            Edit the target filter for this environment, up to a depth of{" "}
+            {MAX_DEPTH_ALLOWED + 1}.
           </DialogDescription>
         </DialogHeader>
         <TargetConditionRender
