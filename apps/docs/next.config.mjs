@@ -1,4 +1,3 @@
-// @ts-ignore
 import nextra from "nextra";
 
 /** @type {import('next').NextConfig} */

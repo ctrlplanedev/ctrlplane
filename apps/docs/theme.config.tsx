@@ -9,13 +9,10 @@ const config: DocsThemeConfig = {
       Ctrlplane
     </div>
   ),
-  useNextSeoProps() {
-    return { titleTemplate: "%s – Ctrlplane" };
-  },
   project: { link: "https://github.com/sizzldev/ctrlplane" },
   toc: { float: true },
   docsRepositoryBase:
-    "https://github.com/sizzldev/ctrlplane/blob/main/apps/docs/pages",
+    "https://github.com/sizzldev/ctrlplane/blob/main/apps/docs",
   chat: { link: "https://ctrlplane.dev/discord" },
   feedback: { content: "Question? Give us feedback →" },
   sidebar: { defaultMenuCollapseLevel: 1 },

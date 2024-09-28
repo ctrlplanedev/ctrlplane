@@ -1,4 +1,4 @@
-import { Card, Cards } from "nextra/components";
+import { Cards } from "nextra/components";
 import { TbBook, TbPlug, TbServer } from "react-icons/tb";
 
 # Ctrlplane Documentation
@@ -8,22 +8,22 @@ deployment orchestration platform that automates multi-cloud, multi-region, and
 multi-service software deployments, leveraging your existing CI/CD systems.
 
 <Cards>
-  <Card
+  <Cards.Card
     icon={<TbBook className="h-8 w-8 stroke-blue-400" />}
     title="Quick Start"
     href="/quickstart"
   />
-  <Card
+  <Cards.Card
     icon={<TbServer className="h-8 w-8 stroke-yellow-400" />}
     title="Core Concepts"
     href="/core-concepts"
   />
-  <Card
+  <Cards.Card
     icon={<TbPlug className="h-8 w-8 stroke-purple-400" />}
     title="Integrations"
     href="/integrations"
   />
-  <Card
+  <Cards.Card
     icon={<TbServer className="h-8 w-8 stroke-green-400" />}
     title="Self-hosted"
     href="/self-hosted"
@@ -80,7 +80,7 @@ your deployment orchestration needs:
 
 ## Need Help?
 
-If you’re unsure whether Ctrlplane is the ideal solution for your needs, feel
+If you're unsure whether Ctrlplane is the ideal solution for your needs, feel
 free to reach out to the Ctrlplane team via
 [Discord](https://ctrlplane.dev/discord). You can connect with the community and
 receive helpful guidance.

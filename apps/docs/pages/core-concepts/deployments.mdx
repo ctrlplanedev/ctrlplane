@@ -2,9 +2,9 @@
 
 Deployments in Ctrlplane are the central organizing principle for managing and
 orchestrating the release of your software or infrastructure across various
-environments within a system. A deployment represents a complete, end-to-end process
-for delivering changes to your system, encompassing everything from the initial
-code commit to the final production release.
+environments within a system. A deployment represents a complete, end-to-end
+process for delivering changes to your system, encompassing everything from the
+initial code commit to the final production release.
 
 ## What is a Deployment?
 
@@ -13,9 +13,10 @@ A deployment in Ctrlplane is:
 1. **A Logical Unit**: It typically represents a single service, application, or
    piece of infrastructure.
 
-2. **System-Bound**: Each deployment is assigned to a specific system, which contains
-   multiple environments (e.g., QA, Staging, Production). When you create a deployment,
-   it automatically becomes part of all environments within that system.
+2. **System-Bound**: Each deployment is assigned to a specific system, which
+   contains multiple environments (e.g., QA, Staging, Production). When you
+   create a deployment, it automatically becomes part of all environments within
+   that system.
 
 3. **Version Control**: It manages multiple releases (versions) of your software
    or infrastructure configuration.
@@ -42,8 +43,8 @@ A deployment in Ctrlplane typically includes:
 4. **Job Configurations**: Specifications for the jobs that will be created and
    run for each release and target.
 
-5. **Variables**: Target-specific variables that allow the same pipeline to
-   be used across different environments.
+5. **Variables**: Target-specific variables that allow the same pipeline to be
+   used across different environments.
 
 ## Systems, Environments, and Target Filtering
 
@@ -95,6 +96,7 @@ Deployments can be created and managed in two primary ways:
 
 2. **Automated Creation**: By including a `.ctrlplane.yaml` file in your Git
    repository. This method allows for automatic deployment creation when new
-   repositories are added, with system assignment specified in the configuration.
+   repositories are added, with system assignment specified in the
+   configuration.
 
 Example `.ctrlplane.yaml`:

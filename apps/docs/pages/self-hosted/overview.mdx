@@ -9,16 +9,16 @@ infrastructure.
 
 ## Methods
 
-import { Card, Cards } from "nextra/components";
+import { Cards } from "nextra/components";
 import { SiDocker, SiKubernetes } from "react-icons/si";
 
 <Cards>
-  <Card
+  <Cards.Card
     icon={<SiDocker className="h-8 w-8" />}
     title="Docker"
     href="/self-hosted-methods/docker-compose"
   />
-  <Card
+  <Cards.Card
     icon={<SiKubernetes className="h-8 w-8" />}
     title="Kubernetes"
     href="/self-hosted-methods/kubernetes"
@@ -30,7 +30,7 @@ import { SiDocker, SiKubernetes } from "react-icons/si";
 import { SiGooglecloud } from "react-icons/si";
 
 <Cards>
-  <Card
+  <Cards.Card
     icon={<SiGooglecloud className="h-8 w-8" />}
     title="Google Cloud"
     href="/self-hosted-cloud-providers/google-cloud"

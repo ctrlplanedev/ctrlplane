@@ -1,6 +1,7 @@
 # Github Integration
 
-Connect your Github organization to your workspace to enable several powerful features, including
+Connect your Github organization to your workspace to enable several powerful
+features, including
 
 - Github Job Agent
 - Release Scanner
@@ -8,18 +9,21 @@ Connect your Github organization to your workspace to enable several powerful fe
 
 ## Instance Level Integration
 
-Configuring the Github integration at the instance level will enable it for all workspaces on that instance. However,
-you can optionally configure the integration at the workspace level to override the instance level configuration.
+Configuring the Github integration at the instance level will enable it for all
+workspaces on that instance. However, you can optionally configure the
+integration at the workspace level to override the instance level configuration.
 
 import { Steps } from "nextra/components";
 
 <Steps>
 ### On Github, create a new Github App
 
-To set this up, navigate to [github.com](https://github.com/) and register a new GitHub App.
+To set this up, navigate to [github.com](https://github.com/) and register a new
+GitHub App.
 
 - Your GitHub account: https://github.com/settings/apps/new
-- Your GitHub organization: `https://github.com/organizations/<your-org>/settings/apps/new`
+- Your GitHub organization:
+  `https://github.com/organizations/<your-org>/settings/apps/new`
 
 ### Configure the Github App
 
@@ -131,8 +135,10 @@ GITHUB_BOT_PRIVATE_KEY = "-----BEGIN RSA PRIVATE KEY-----..."
 
 Once you have connected a github organization, you will unlock several features:
 
-- Any `ctrlplane.yaml` files in the organization (that were allowed access during installation) will be automatically synced to your workspace
+- Any `ctrlplane.yaml` files in the organization (that were allowed access
+  during installation) will be automatically synced to your workspace
 - You can use the Github Job Agent associate a Github Action with a deployment
-- You can use the Release Scanner to scan for releases in your organization and create corresponding releases in Ctlrplane
+- You can use the Release Scanner to scan for releases in your organization and
+  create corresponding releases in Ctlrplane
 
 </Steps>
