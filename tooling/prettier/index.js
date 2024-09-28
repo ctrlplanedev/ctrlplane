@@ -31,6 +31,15 @@ const config = {
   ],
   importOrderParserPlugins: ["typescript", "jsx", "decorators-legacy"],
   importOrderTypeScriptVersion: "4.4.0",
+  overrides: [
+    {
+      files: "*.mdx",
+      options: {
+        printWidth: 80,
+        proseWrap: "always",
+      },
+    },
+  ],
 };
 
 export default config;

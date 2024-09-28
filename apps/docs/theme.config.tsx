@@ -9,9 +9,6 @@ const config: DocsThemeConfig = {
       Ctrlplane
     </div>
   ),
-  useNextSeoProps() {
-    return { titleTemplate: "%s – Ctrlplane" };
-  },
   project: { link: "https://github.com/sizzldev/ctrlplane" },
   toc: { float: true },
   docsRepositoryBase:

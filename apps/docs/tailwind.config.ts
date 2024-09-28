@@ -7,7 +7,7 @@ export default {
   // those classes are included correctly.
   content: [
     ...baseConfig.content,
-    "../../packages/ui/**/*.{ts,tsx}",
+    "../../packages/ui/src/**/*.{ts,tsx}",
     "./pages/**/*.{js,jsx,ts,tsx,md,mdx}",
     "./components/**/*.{js,jsx,ts,tsx,md,mdx}",
     "./theme.config.tsx",
