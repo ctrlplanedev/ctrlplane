@@ -6,6 +6,7 @@ import { auth } from "@ctrlplane/auth";
 import { api } from "~/trpc/server";
 import { MembersExport } from "./MembersExport";
 import { MembersTable } from "./MembersTable";
+import { WorkspaceDomainMatching } from "./WorkspaceDomainMatching";
 
 export const metadata: Metadata = { title: "Workspace Members" };
 
@@ -21,7 +22,11 @@ export default async function WorkspaceSettingMembersPage({
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
 
+  const domainMatching = await api.workspace.emailDomainMatching.byWorkspaceId(
+    workspace.id,
+  );
   const members = await api.workspace.members.list(workspace.id);
+  const roles = await api.workspace.roles(workspace.id);
 
   return (
     <div className="container mx-auto max-w-2xl space-y-8">
@@ -36,6 +41,12 @@ export default async function WorkspaceSettingMembersPage({
         <p className="font-semibold">Manage members ({members.length})</p>
       </div>
       <MembersTable data={members} workspace={workspace} />
+      <div className="border-b" />
+      <WorkspaceDomainMatching
+        roles={roles}
+        workspace={workspace}
+        domainMatching={domainMatching}
+      />
       <div className="border-b" />
       <MembersExport data={members} />
     </div>
