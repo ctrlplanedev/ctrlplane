@@ -1,7 +1,16 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { pgTable, text, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+import { role } from "./rbac.js";
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -35,3 +44,35 @@ export const createWorkspace = createInsertSchema(
 export const updateWorkspace = createWorkspace.partial();
 
 export type Workspace = InferSelectModel<typeof workspace>;
+
+export const workspaceEmailDomainMatching = pgTable(
+  "workspace_email_domain_matching",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspace.id, { onDelete: "cascade" })
+      .notNull(),
+    domain: text("domain").notNull(),
+    roleId: uuid("role_id")
+      .references(() => role.id, { onDelete: "cascade" })
+      .notNull(),
+
+    verified: boolean("verified").default(false).notNull(),
+    verificationCode: text("verification_code"),
+    verificationEmail: text("verification_email"),
+
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.domain) }),
+);
+
+export type WorkspaceEmailDomainMatching = InferSelectModel<
+  typeof workspaceEmailDomainMatching
+>;
+
+export const createWorkspaceEmailDomainMatching = createInsertSchema(
+  workspaceEmailDomainMatching,
+  { domain: z.string().trim(), verificationEmail: z.string().email() },
+).omit({ id: true, verificationCode: true, verified: true });
