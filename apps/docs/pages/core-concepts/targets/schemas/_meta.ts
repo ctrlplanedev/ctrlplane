@@ -1,3 +1,3 @@
 export default {
-  kubernetes: "kubernetes/v1"
-}
+  kubernetes: "kubernetes/v1",
+};

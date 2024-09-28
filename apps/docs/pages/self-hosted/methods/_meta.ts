@@ -1,4 +1,4 @@
 export default {
   kubernetes: "Kubernetes",
-  "docker-compose": "Docker Compose"
-}
+  "docker-compose": "Docker Compose",
+};

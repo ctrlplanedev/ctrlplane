@@ -5,4 +5,4 @@ export default {
   deployments: "Deployments",
   runbooks: "Runbooks",
   jobs: "Jobs",
-}
+};
