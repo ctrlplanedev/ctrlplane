@@ -7,6 +7,7 @@ import type {
 } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { TbAt, TbX } from "react-icons/tb";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -32,22 +33,19 @@ import {
 import { api } from "~/trpc/react";
 
 const CreateDomainMatchingDialog: React.FC<{
+  currentEmail: string;
   workspaceId: string;
   roles: Role[];
   children: React.ReactNode;
-}> = ({ workspaceId, roles, children }) => {
+}> = ({ workspaceId, roles, children, currentEmail }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [domain, setDomain] = useState("");
   const [roleId, setRoleId] = useState("");
 
   const create = api.workspace.emailDomainMatching.create.useMutation();
   const router = useRouter();
   const handleSubmit = async () => {
-    // Handle form submission logic here
-    console.log(`Adding domain: ${domain}`);
     setIsOpen(false);
-    await create.mutateAsync({ workspaceId, roleId, domain });
-    setDomain("");
+    await create.mutateAsync({ workspaceId, roleId });
     setRoleId("");
     router.refresh();
   };
@@ -73,9 +71,8 @@ const CreateDomainMatchingDialog: React.FC<{
                 <Input
                   id="domain"
                   placeholder="example.com"
-                  className="col-span-3 pl-10"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
+                  className="col-span-3 cursor-not-allowed pl-10"
+                  value={currentEmail.split("@")[1]}
                 />
               </div>
             </div>
@@ -101,7 +98,9 @@ const CreateDomainMatchingDialog: React.FC<{
             <Button variant="secondary" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit}>Add Domain</Button>
+            <Button onClick={handleSubmit} disabled={roleId === ""}>
+              Add Domain
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -114,8 +113,10 @@ export const WorkspaceDomainMatching: React.FC<{
   roles: Role[];
   domainMatching: WorkspaceEmailDomainMatching[];
 }> = ({ roles, domainMatching, workspace }) => {
+  const viewer = useSession();
   const remove = api.workspace.emailDomainMatching.remove.useMutation();
   const router = useRouter();
+  const currentEmail = viewer.data?.user.email;
   return (
     <div>
       <div className="flex items-center">
@@ -125,9 +126,15 @@ export const WorkspaceDomainMatching: React.FC<{
             Automatically invite members based on their email domain.
           </p>
         </div>
-        <CreateDomainMatchingDialog workspaceId={workspace.id} roles={roles}>
-          <Button variant="secondary">Add Domain</Button>
-        </CreateDomainMatchingDialog>
+        {currentEmail && (
+          <CreateDomainMatchingDialog
+            currentEmail={currentEmail}
+            workspaceId={workspace.id}
+            roles={roles}
+          >
+            <Button variant="secondary">Add Domain</Button>
+          </CreateDomainMatchingDialog>
+        )}
       </div>
 
       {domainMatching.length > 0 && (

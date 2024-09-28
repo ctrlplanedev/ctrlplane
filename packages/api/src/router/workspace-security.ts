@@ -55,12 +55,23 @@ export const workspaceEmailDomainMatchingRouter = createTRPCRouter({
       const randomString = [...Array(10)]
         .map(() => Math.random().toString(36)[2])
         .join("");
+      const email = ctx.session.user.email;
+      if (email == null) return;
 
-      return ctx.db.insert(workspaceEmailDomainMatching).values({
-        ...input,
-        verified: !env.REQUIRE_DOMAIN_MATCHING_VERIFICATION,
-        verificationCode: randomString,
-      });
+      const domain = email.split("@")[1];
+      if (domain == null) return;
+
+      return ctx.db
+        .insert(workspaceEmailDomainMatching)
+        .values({
+          ...input,
+          domain,
+          verified: !env.REQUIRE_DOMAIN_MATCHING_VERIFICATION,
+          verificationCode: randomString,
+          verificationEmail: email,
+        })
+        .returning()
+        .then(takeFirst);
     }),
 
   remove: protectedProcedure
@@ -69,7 +80,7 @@ export const workspaceEmailDomainMatchingRouter = createTRPCRouter({
         const workspaceRecord = await ctx.db
           .select()
           .from(workspaceEmailDomainMatching)
-          .where(eq(workspaceEmailDomainMatching.workspaceId, input))
+          .where(eq(workspaceEmailDomainMatching.id, input))
           .then(takeFirstOrNull);
         if (!workspaceRecord) throw new Error("Workspace not found");
         return canUser
