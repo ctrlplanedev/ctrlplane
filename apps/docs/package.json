@@ -12,7 +12,6 @@
     "format": "prettier --check . --ignore-path ../../.gitignore"
   },
   "dependencies": {
-    "@ctrlplane/tailwind-config": "workspace:*",
     "@ctrlplane/ui": "workspace:*",
     "next": "catalog:",
     "nextra": "^3.0.0",

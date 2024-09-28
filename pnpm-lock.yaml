@@ -92,9 +92,6 @@ importers:
 
   apps/docs:
     dependencies:
-      '@ctrlplane/tailwind-config':
-        specifier: workspace:*
-        version: link:../../tooling/tailwind
       '@ctrlplane/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -123,6 +120,9 @@ importers:
       '@ctrlplane/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@ctrlplane/tailwind-config':
+        specifier: workspace:*
+        version: link:../../tooling/tailwind
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
