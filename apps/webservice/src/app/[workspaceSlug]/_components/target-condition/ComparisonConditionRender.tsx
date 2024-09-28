@@ -6,6 +6,7 @@ import {
   IconChevronDown,
   IconCopy,
   IconDots,
+  IconEqualNot,
   IconPlus,
   IconRefresh,
   IconTrash,
@@ -30,14 +31,8 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@ctrlplane/ui/tooltip";
-import {
   doesConvertingToComparisonRespectMaxDepth,
-  MAX_DEPTH_ALLOWED,
+  isComparisonCondition,
   TargetFilterType,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
@@ -93,6 +88,44 @@ export const ComparisonConditionRender: React.FC<
     onChange(newCondition);
   };
 
+  const convertToNotComparison = (index: number) => {
+    const cond = condition.conditions[index];
+    if (!cond) return;
+
+    if (isComparisonCondition(cond)) {
+      const currentNot = cond.not ?? false;
+      const newNotSubcondition = {
+        ...cond,
+        not: !currentNot,
+      };
+      const newCondition = {
+        ...condition,
+        conditions: condition.conditions.map((c, i) =>
+          i === index ? newNotSubcondition : c,
+        ),
+      };
+      onChange(newCondition);
+      return;
+    }
+
+    const newNotComparisonCondition: ComparisonCondition = {
+      type: TargetFilterType.Comparison,
+      operator: TargetOperator.And,
+      not: true,
+      conditions: [cond],
+    };
+
+    const newCondition = {
+      ...condition,
+      conditions: condition.conditions.map((c, i) =>
+        i === index ? newNotComparisonCondition : c,
+      ),
+    };
+    onChange(newCondition);
+  };
+
+  const not = condition.not ?? false;
+
   return (
     <div
       className={cn(
@@ -102,7 +135,9 @@ export const ComparisonConditionRender: React.FC<
       )}
     >
       {condition.conditions.length === 0 && (
-        <span className="text-sm text-muted-foreground">No conditions</span>
+        <span className="text-sm text-muted-foreground">
+          {not ? "Empty not group" : "No conditions"}
+        </span>
       )}
       <div className="space-y-2">
         {condition.conditions.map((subCond, index) => (
@@ -115,7 +150,9 @@ export const ComparisonConditionRender: React.FC<
                     depth === 0 ? "col-span-1" : "col-span-2",
                   )}
                 >
-                  {index === 0 ? "When" : capitalCase(condition.operator)}
+                  {index !== 0 && capitalCase(condition.operator)}
+                  {index === 0 && !condition.not && "When"}
+                  {index === 0 && condition.not && "Not"}
                 </div>
               )}
               {index === 1 && (
@@ -177,7 +214,7 @@ export const ComparisonConditionRender: React.FC<
                 {doesConvertingToComparisonRespectMaxDepth(
                   depth + 1,
                   subCond,
-                ) ? (
+                ) && (
                   <DropdownMenuItem
                     onClick={() => convertToComparison(index)}
                     className="flex items-center gap-2"
@@ -185,26 +222,19 @@ export const ComparisonConditionRender: React.FC<
                     <IconRefresh className="h-4 w-4" />
                     Turn into group
                   </DropdownMenuItem>
-                ) : (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <DropdownMenuItem
-                          className="flex cursor-not-allowed items-center gap-2 bg-neutral-950 text-muted focus:bg-neutral-950 focus:text-muted"
-                          onSelect={(e) => e.stopPropagation()}
-                        >
-                          <IconRefresh className="h-4 w-4" />
-                          Turn into group
-                        </DropdownMenuItem>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="text-muted-foreground">
-                          Converting to group will exceed the maximum depth of{" "}
-                          {MAX_DEPTH_ALLOWED + 1}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                )}
+                {(isComparisonCondition(subCond) ||
+                  doesConvertingToComparisonRespectMaxDepth(
+                    depth + 1,
+                    subCond,
+                  )) && (
+                  <DropdownMenuItem
+                    onClick={() => convertToNotComparison(index)}
+                    className="flex items-center gap-2"
+                  >
+                    <IconEqualNot className="h-4 w-4" />
+                    Negate condition
+                  </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -276,6 +306,20 @@ export const ComparisonConditionRender: React.FC<
                 }
               >
                 Filter group
+              </DropdownMenuItem>
+            )}
+            {depth < 2 && (
+              <DropdownMenuItem
+                onClick={() =>
+                  addCondition({
+                    type: TargetFilterType.Comparison,
+                    operator: TargetOperator.And,
+                    not: true,
+                    conditions: [],
+                  })
+                }
+              >
+                Not group
               </DropdownMenuItem>
             )}
           </DropdownMenuGroup>

@@ -28,7 +28,11 @@ const config = {
     instrumentationHook: true,
     optimizePackageImports: ["bullmq", "googleapis"],
     /** @see https://github.com/open-telemetry/opentelemetry-js/issues/4297 */
-    serverComponentsExternalPackages: ["@opentelemetry/sdk-node"],
+    serverComponentsExternalPackages: [
+      "@opentelemetry/sdk-node",
+      "@opentelemetry/auto-instrumentations-node",
+      "@appsignal/opentelemetry-instrumentation-bullmq",
+    ],
   },
 
   async rewrites() {

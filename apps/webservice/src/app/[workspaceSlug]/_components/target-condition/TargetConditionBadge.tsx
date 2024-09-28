@@ -29,7 +29,7 @@ const operatorVerbs = {
   [TargetOperator.Equals]: "is",
   [TargetOperator.Null]: (
     <span>
-      is&nbsp;&nbsp;<span className="text-orange-500">null</span>
+      is <span className="text-orange-500">null</span>
     </span>
   ),
   [TargetOperator.Regex]: "matches",
@@ -40,8 +40,9 @@ const ConditionBadge: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => (
   <Badge
-    variant="secondary"
-    className="mx-1 w-fit bg-neutral-800/60 px-1 hover:bg-neutral-800/60"
+    variant="outline"
+    // className="mx-1 w-fit bg-neutral-800/60 px-1 hover:bg-neutral-800/60"
+    className="text-sx h-7 gap-1.5 bg-neutral-900 px-2 font-normal"
   >
     {children}
   </Badge>
@@ -53,21 +54,23 @@ const StringifiedComparisonCondition: React.FC<{
   truncate?: boolean;
 }> = ({ condition, depth = 0, truncate = false }) => (
   <>
-    <span
-      className={cn(
-        "mx-1 font-bold",
-        depth === 0 && "text-blue-500",
-        depth === 1 && "text-purple-500",
-        depth === 2 && "text-amber-500",
-      )}
-    >
-      (
-    </span>
+    {depth !== 0 && (
+      <span
+        className={cn(
+          "mx-1 font-bold",
+          depth === 1 && "text-blue-500",
+          depth === 2 && "text-purple-500",
+          depth === 3 && "text-amber-500",
+        )}
+      >
+        (
+      </span>
+    )}
     {depth === 0 || !truncate ? (
       condition.conditions.map((subCondition, index) => (
         <React.Fragment key={index}>
           {index > 0 && (
-            <span className="mx-1 text-neutral-400">
+            <span className="mx-1 text-xs text-neutral-400">
               {operatorVerbs[condition.operator]}
             </span>
           )}
@@ -82,16 +85,18 @@ const StringifiedComparisonCondition: React.FC<{
       <span className="text-muted-foreground">...</span>
     )}
 
-    <span
-      className={cn(
-        "mx-1 font-bold",
-        depth === 0 && "text-blue-500",
-        depth === 1 && "text-purple-500",
-        depth === 2 && "text-amber-500",
-      )}
-    >
-      )
-    </span>
+    {depth !== 0 && (
+      <span
+        className={cn(
+          "mx-1 font-bold",
+          depth === 1 && "text-blue-500",
+          depth === 2 && "text-purple-500",
+          depth === 3 && "text-amber-500",
+        )}
+      >
+        )
+      </span>
+    )}
   </>
 );
 
@@ -131,12 +136,12 @@ const StringifiedMetadataCondition: React.FC<{
   condition: MetadataCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
-    <span className="text-green-400">"{condition.key}"&nbsp;&nbsp;</span>
+    <span className="text-white">{condition.key}</span>
     <span className="text-muted-foreground">
-      {operatorVerbs[condition.operator ?? "equals"]}&nbsp;&nbsp;
+      {operatorVerbs[condition.operator ?? "equals"]}
     </span>
     {condition.value != null && (
-      <span className="text-red-400">"{condition.value}"</span>
+      <span className="text-white">{condition.value}</span>
     )}
   </ConditionBadge>
 );
@@ -145,11 +150,11 @@ const StringifiedKindCondition: React.FC<{
   condition: KindCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
-    <span className="text-green-400">kind&nbsp;&nbsp;</span>
+    <span className="text-white">Kind</span>
     <span className="text-muted-foreground">
-      {operatorVerbs[condition.operator]}&nbsp;&nbsp;
+      {operatorVerbs[condition.operator]}
     </span>
-    <span className="text-red-400">"{condition.value}"</span>
+    <span className="text-white">{condition.value}</span>
   </ConditionBadge>
 );
 
@@ -157,11 +162,11 @@ const StringifiedNameCondition: React.FC<{
   condition: NameCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
-    <span className="text-green-400">name&nbsp;&nbsp;</span>
+    <span className="text-white">Name</span>
     <span className="text-muted-foreground">
-      {operatorVerbs[condition.operator]}&nbsp;&nbsp;
+      {operatorVerbs[condition.operator]}
     </span>
-    <span className="text-red-400">"{condition.value.replace(/%/g, "")}"</span>
+    <span className="text-white">{condition.value.replace(/%/g, "")}</span>
   </ConditionBadge>
 );
 
@@ -201,7 +206,7 @@ export const TargetConditionBadge: React.FC<{
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
-      <div className="cursor-pointer rounded-lg bg-neutral-950 p-2 text-muted-foreground">
+      <div className="cursor-pointer rounded-lg bg-neutral-950 text-muted-foreground">
         <StringifiedTargetCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>

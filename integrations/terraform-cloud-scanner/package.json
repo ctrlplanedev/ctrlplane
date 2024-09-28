@@ -13,6 +13,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch --clear-screen=false src/index.ts",
+    "start": "tsx src/index.ts",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",

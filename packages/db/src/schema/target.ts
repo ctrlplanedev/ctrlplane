@@ -3,7 +3,7 @@ import type {
   TargetCondition,
 } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
-import { exists, like, notExists, or, sql } from "drizzle-orm";
+import { exists, like, not, notExists, or, sql } from "drizzle-orm";
 import {
   json,
   jsonb,
@@ -155,7 +155,8 @@ const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
   if (cond.type === "name") return like(target.name, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
-  return cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
+  const con = cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
+  return cond.not ? not(con) : con;
 };
 
 export function targetMatchesMetadata(
