@@ -51,7 +51,6 @@
   }
 }
 
-/* Add this new rule for basic font settings */
 body {
   font-family: var(--font-sans);
   font-size: 16px;
