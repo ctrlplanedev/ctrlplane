@@ -1,5 +1,5 @@
 {
-  "id": "1fcf995a-c4c9-461a-8976-c9403650fe73",
+  "id": "98867d75-40e8-446b-afe6-231465ea036d",
   "prevId": "809992b3-178a-45c8-9054-89e08086ff83",
   "version": "7",
   "dialect": "postgresql",
@@ -2251,7 +2251,7 @@
           "tableTo": "workspace",
           "columnsFrom": ["workspace_id"],
           "columnsTo": ["id"],
-          "onDelete": "cascade",
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -2684,6 +2684,108 @@
           "columns": ["slug"]
         }
       }
+    },
+    "public.workspace_email_domain_matching": {
+      "name": "workspace_email_domain_matching",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain": {
+          "name": "domain",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "verification_code": {
+          "name": "verification_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verification_email": {
+          "name": "verification_email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workspace_email_domain_matching_workspace_id_domain_index": {
+          "name": "workspace_email_domain_matching_workspace_id_domain_index",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "domain",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "workspace_email_domain_matching_workspace_id_workspace_id_fk": {
+          "name": "workspace_email_domain_matching_workspace_id_workspace_id_fk",
+          "tableFrom": "workspace_email_domain_matching",
+          "tableTo": "workspace",
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workspace_email_domain_matching_role_id_role_id_fk": {
+          "name": "workspace_email_domain_matching_role_id_role_id_fk",
+          "tableFrom": "workspace_email_domain_matching",
+          "tableTo": "role",
+          "columnsFrom": ["role_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
     },
     "public.variable_set": {
       "name": "variable_set",

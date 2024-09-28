@@ -32,3 +32,9 @@ module "ctrlplane" {
   namespace = "ctrlplane"
 }
 ```
+
+After deploying the Terraform module, an IP address will be outputted. This IP
+address can be used to configure DNS settings.
+
+To output the IP address of the Ctrlplane installation, you can add the
+following to your Terraform configuration:
