@@ -6,7 +6,7 @@ import baseConfig, {
 /** @type {import('typescript-eslint').Config} */
 export default [
   {
-    ignores: ["dist/**"],
+    ignores: ["dist/**", "dbml.ts"],
   },
   ...baseConfig,
   ...requireJsSuffix,
