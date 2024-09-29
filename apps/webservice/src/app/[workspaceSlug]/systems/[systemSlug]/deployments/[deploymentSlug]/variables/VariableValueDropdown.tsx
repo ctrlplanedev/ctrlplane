@@ -90,9 +90,7 @@ export const VariableValueDropdown: React.FC<{
                   id: value.id,
                   data: { targetFilter: condition },
                 })
-                .then(() => {
-                  router.refresh();
-                })
+                .then(() => router.refresh())
             }
           >
             <DropdownMenuItem

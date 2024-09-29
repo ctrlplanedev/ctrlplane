@@ -169,7 +169,7 @@ export const VariableTable: React.FC<{
                                 )}
                               >
                                 {idx !== 0 && (
-                                  <div className="flex h-full items-center border-l border-neutral-800 pl-7">
+                                  <div className="flex h-full items-center gap-1 border-l border-neutral-800 pl-7">
                                     <CollapsibleTrigger asChild>
                                       <Button
                                         variant="ghost"
@@ -189,7 +189,7 @@ export const VariableTable: React.FC<{
                                     </CollapsibleTrigger>
                                     {v.value}
                                     {variable.defaultValueId === v.id && (
-                                      <Badge className="ml-2 hover:bg-primary">
+                                      <Badge className="hover:bg-primary">
                                         default
                                       </Badge>
                                     )}
