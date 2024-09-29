@@ -136,17 +136,6 @@ export const deploymentVariableRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const possibleValuesSubquery = ctx.db
-        .select({
-          id: deploymentVariableValue.id,
-          value: deploymentVariableValue.value,
-          variableId: deploymentVariableValue.variableId,
-        })
-        .from(deploymentVariableValue)
-        .as("possible_values_subquery");
-
-      // get all deployment variable value target filters matching the target
-      // then get all the deployment variable values + the deployment variable itself
       const deploymentVariables = await ctx.db
         .select()
         .from(target)
@@ -156,10 +145,6 @@ export const deploymentVariableRouter = createTRPCRouter({
         .innerJoin(
           deploymentVariable,
           eq(deploymentVariable.deploymentId, deployment.id),
-        )
-        .innerJoin(
-          possibleValuesSubquery,
-          eq(possibleValuesSubquery.variableId, deploymentVariable.id),
         )
         .innerJoin(
           deploymentVariableValue,
@@ -172,7 +157,6 @@ export const deploymentVariableRouter = createTRPCRouter({
               ...r[0]!.deployment_variable,
               targetFilter: r[0]!.deployment_variable_value.targetFilter,
               value: r[0]!.deployment_variable_value,
-              possibleValues: r.map((r) => r.possible_values_subquery),
             }))
             .value(),
         );
@@ -197,7 +181,6 @@ export const deploymentVariableRouter = createTRPCRouter({
           return {
             ...deploymentVariable,
             value: deploymentVariable.value,
-            possibleValues: deploymentVariable.possibleValues,
           };
         }),
       ).then((rows) => rows.filter(isPresent));

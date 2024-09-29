@@ -1,5 +1,9 @@
-import type { ComparisonCondition } from "@ctrlplane/validators/targets";
+import type {
+  ComparisonCondition,
+  TargetCondition,
+} from "@ctrlplane/validators/targets";
 import { notFound } from "next/navigation";
+import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
 import {
@@ -42,7 +46,12 @@ export default async function VariablesPage({
           ...v,
           targetCount: 0,
           targets: [],
+          filterHash: "",
         };
+
+      const filterHash = LZString.compressToEncodedURIComponent(
+        JSON.stringify(v.targetFilter),
+      );
 
       const filter: ComparisonCondition = {
         type: TargetFilterType.Comparison,
@@ -60,6 +69,7 @@ export default async function VariablesPage({
         ...v,
         targetCount: targets.total,
         targets: targets.items,
+        filterHash,
       };
     });
 
@@ -68,31 +78,38 @@ export default async function VariablesPage({
     if (defaultValue != null) {
       const restFilters = rest.map((v) => v.targetFilter).filter(isPresent);
 
+      const filter: TargetCondition =
+        restFilters.length === 0
+          ? systemTargetsFilter
+          : {
+              type: TargetFilterType.Comparison,
+              operator: TargetOperator.And,
+              conditions: [
+                systemTargetsFilter,
+                {
+                  type: TargetFilterType.Comparison,
+                  operator: TargetOperator.Or,
+                  not: true,
+                  conditions: restFilters,
+                },
+              ],
+            };
+
       const defaultTargets = await api.target.byWorkspaceId.list({
         workspaceId,
-        filter:
-          restFilters.length === 0
-            ? systemTargetsFilter
-            : {
-                type: TargetFilterType.Comparison,
-                operator: TargetOperator.And,
-                conditions: [
-                  systemTargetsFilter,
-                  {
-                    type: TargetFilterType.Comparison,
-                    operator: TargetOperator.Or,
-                    not: true,
-                    conditions: restFilters,
-                  },
-                ],
-              },
+        filter,
         limit: 5,
       });
+
+      const filterHash = LZString.compressToEncodedURIComponent(
+        JSON.stringify(filter),
+      );
 
       values.unshift({
         ...defaultValue,
         targetCount: defaultTargets.total,
         targets: defaultTargets.items,
+        filterHash,
       });
     }
 

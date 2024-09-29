@@ -1,7 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
+import { IconChevronRight, IconServer, IconTarget } from "@tabler/icons-react";
 import { TbDotsVertical } from "react-icons/tb";
 
+import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -24,6 +30,16 @@ import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
 
+const TargetIcon: React.FC<{ version: string }> = ({ version }) => {
+  if (version.includes("kubernetes"))
+    return <SiKubernetes className="h-7 w-7 shrink-0 text-blue-300" />;
+  if (version.includes("vm") || version.includes("compute"))
+    return <IconServer className="h-7 w-7 shrink-0 text-cyan-300" />;
+  if (version.includes("terraform"))
+    return <SiTerraform className="h-7 w-7 shrink-0 text-purple-300" />;
+  return <IconTarget className="h-7 w-7 shrink-0 text-neutral-300" />;
+};
+
 export const VariableTable: React.FC<{
   variables: VariableData[];
 }> = ({ variables }) => {
@@ -35,10 +51,31 @@ export const VariableTable: React.FC<{
     ],
   });
 
-  variables.forEach((v) => {
-    const defaultVal = v.values.find((val) => v.defaultValueId === val.id);
-    console.log("defaultVal", { defaultVal });
-  });
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+
+  const [expandedVariables, setExpandedVariables] = useState<
+    Record<string, boolean>
+  >({});
+
+  const [expandedValues, setExpandedValues] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  const switchVariableExpandedState = (variableId: string) =>
+    setExpandedVariables((prev) => {
+      const newState = { ...prev };
+      const currentVariableState = newState[variableId] ?? false;
+      newState[variableId] = !currentVariableState;
+      return newState;
+    });
+
+  const switchValueExpandedState = (valueId: string) =>
+    setExpandedValues((prev) => {
+      const newState = { ...prev };
+      const currentValueState = newState[valueId] ?? false;
+      newState[valueId] = !currentValueState;
+      return newState;
+    });
 
   return (
     <>
@@ -51,165 +88,242 @@ export const VariableTable: React.FC<{
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <Table className="table-fixed">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Key</TableHead>
-            <TableHead>Scope</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
+      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-138px)] overflow-auto">
+        <Table className="table-fixed">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Key</TableHead>
+              <TableHead>Scope</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
 
-        <TableBody>
-          {result.map((variable) => (
-            <Collapsible key={variable.id} asChild>
-              <>
-                <TableRow className="border-none">
-                  <TableCell className="flex items-center gap-2  ">
-                    {variable.key}
-                  </TableCell>
-                  <TableCell>
-                    <CollapsibleTrigger asChild>
+          <TableBody>
+            {result.map((variable) => (
+              <Collapsible key={variable.id} asChild>
+                <>
+                  <TableRow className="h-14 border-none">
+                    <TableCell>
+                      <div className="flex items-center gap-1 pl-5">
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() =>
+                              switchVariableExpandedState(variable.id)
+                            }
+                          >
+                            <IconChevronRight
+                              className={cn(
+                                "h4 w-4 transition-all",
+                                expandedVariables[variable.id] && "rotate-90",
+                              )}
+                            />
+                          </Button>
+                        </CollapsibleTrigger>{" "}
+                        {variable.key}
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <Badge
                         variant="secondary"
-                        className="flex w-24 cursor-pointer justify-center hover:bg-neutral-600"
+                        className="flex w-24 justify-center hover:bg-secondary"
                       >
                         {variable.values.length} value
                         {variable.values.length === 1 ? "" : "s"}
                       </Badge>
-                    </CollapsibleTrigger>
-                  </TableCell>
-                  <TableCell className="flex justify-end ">
-                    <VariableDropdown variable={variable}>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
-                        <TbDotsVertical />
-                      </Button>
-                    </VariableDropdown>
-                  </TableCell>
-                </TableRow>
-                <CollapsibleContent asChild>
-                  <>
-                    {variable.values.map((v, idx) => (
-                      <Collapsible key={v.id} asChild>
-                        <>
-                          <TableRow key={v.id} className="border-none py-0">
-                            <TableCell className="py-0 pl-10">
-                              {idx !== variable.values.length - 1 && (
-                                <div className="flex h-full items-center border-l border-neutral-800 py-2">
-                                  <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                  {v.value}
-                                  {variable.defaultValueId === v.id && (
-                                    <span className="ml-2">(default)</span>
-                                  )}
-                                </div>
-                              )}
-                              {idx === variable.values.length - 1 && (
-                                <div className="flex h-full">
-                                  <div className="flex h-full flex-col justify-start">
-                                    <div className="h-[18px] border-l border-neutral-800" />
-                                  </div>
-                                  <div className="flex h-full items-center py-2">
-                                    <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                    {v.value}{" "}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex w-full justify-end">
+                        <VariableDropdown variable={variable}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                          >
+                            <TbDotsVertical />
+                          </Button>
+                        </VariableDropdown>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  <CollapsibleContent asChild>
+                    <>
+                      {variable.values.map((v, idx) => (
+                        <Collapsible key={v.id} asChild>
+                          <>
+                            <TableRow
+                              key={v.id}
+                              className="h-10 border-none py-0"
+                            >
+                              <TableCell
+                                className={cn(
+                                  "h-14 py-0",
+                                  idx === 0 && "pl-10",
+                                  idx !== 0 && "pl-[72px]",
+                                )}
+                              >
+                                {idx !== 0 && (
+                                  <div className="flex h-full items-center border-l border-neutral-800 pl-7">
+                                    <CollapsibleTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() =>
+                                          switchValueExpandedState(v.id)
+                                        }
+                                      >
+                                        <IconChevronRight
+                                          className={cn(
+                                            "h4 w-4 transition-all",
+                                            expandedValues[v.id] && "rotate-90",
+                                          )}
+                                        />
+                                      </Button>
+                                    </CollapsibleTrigger>
+                                    {v.value}
                                     {variable.defaultValueId === v.id && (
-                                      <Badge className="ml-2 py-[1px] text-xs">
+                                      <Badge className="ml-2 hover:bg-primary">
                                         default
                                       </Badge>
                                     )}
                                   </div>
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="py-[6px]">
-                              <CollapsibleTrigger asChild>
+                                )}
+                                {idx === 0 && (
+                                  <div className="flex h-full items-center">
+                                    <div className="flex h-full flex-col justify-start">
+                                      <div className="h-7 border-l border-neutral-800" />
+                                    </div>
+                                    <div className="h-[1px] w-[31px] bg-neutral-800" />
+                                    <div className="flex h-full items-center gap-1 border-l border-neutral-800 py-2 pl-7">
+                                      <CollapsibleTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6"
+                                          onClick={() =>
+                                            switchValueExpandedState(v.id)
+                                          }
+                                        >
+                                          <IconChevronRight
+                                            className={cn(
+                                              "h4 w-4 transition-all",
+                                              expandedValues[v.id] &&
+                                                "rotate-90",
+                                            )}
+                                          />
+                                        </Button>
+                                      </CollapsibleTrigger>
+                                      {v.value}
+                                      {variable.defaultValueId === v.id && (
+                                        <Badge className="ml-2 hover:bg-primary">
+                                          default
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="py-[6px]">
                                 <Badge
                                   variant="secondary"
-                                  className="flex w-24 cursor-pointer justify-center py-[2px] hover:bg-neutral-600"
+                                  className="flex w-24 justify-center hover:bg-secondary"
                                 >
                                   {v.targetCount} target
                                   {v.targetCount === 1 ? "" : "s"}
                                 </Badge>
-                              </CollapsibleTrigger>
-                            </TableCell>
-                            <TableCell className="flex h-max items-center justify-end py-[5px]">
-                              <VariableValueDropdown value={v}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 "
-                                  onClick={(e) => e.preventDefault()}
-                                >
-                                  <TbDotsVertical />
-                                </Button>
-                              </VariableValueDropdown>
-                            </TableCell>
-                          </TableRow>
-                          <CollapsibleContent asChild className="py-0">
-                            <>
-                              {v.targets.map((t, tIdx) => (
-                                <TableRow key={t.id} className="border-none">
-                                  {idx !== variable.values.length - 1 && (
-                                    <TableCell className="py-0 pl-10">
-                                      <div className="flex h-full items-center border-l border-neutral-800 pl-10">
-                                        {tIdx !== v.targets.length - 1 && (
-                                          <div className="flex h-full items-center border-l border-neutral-800 py-2">
-                                            <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                            {t.name}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-end">
+                                  <VariableValueDropdown value={v}>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={(e) => e.preventDefault()}
+                                    >
+                                      <TbDotsVertical />
+                                    </Button>
+                                  </VariableValueDropdown>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                            <CollapsibleContent asChild className="py-0">
+                              <>
+                                {v.targets.map((t, tIdx) => (
+                                  <TableRow key={t.id} className="border-none">
+                                    {tIdx !== 0 && (
+                                      <TableCell className="h-14 py-0 pl-[72px]">
+                                        <div className="flex h-full items-center border-l border-neutral-800 pl-[72px]">
+                                          <div className="flex h-full items-center gap-2 border-l border-neutral-800 py-2 pl-7">
+                                            <TargetIcon version={t.version} />
+                                            <div className="flex flex-col">
+                                              <span>{t.name}</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                {t.version}
+                                              </span>
+                                            </div>
                                           </div>
-                                        )}
-                                        {tIdx === v.targets.length - 1 && (
-                                          <div className="flex h-full">
+                                        </div>
+                                      </TableCell>
+                                    )}
+
+                                    {tIdx === 0 && (
+                                      <TableCell className="h-14 py-0 pl-[72px]">
+                                        <div className="flex h-full items-center border-l border-neutral-800 pl-10">
+                                          <div className="flex h-full items-center">
                                             <div className="flex h-full flex-col justify-start">
-                                              <div className="h-[18px] border-l border-neutral-800" />
+                                              <div className="h-7 border-l border-neutral-800" />
                                             </div>
-                                            <div className="flex h-full items-center py-2">
-                                              <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                              {t.name}
+                                            <div className="h-[1px] w-[31px] bg-neutral-800" />
+                                            <div className="flex h-full items-center gap-2 border-l border-neutral-800 py-2 pl-7">
+                                              <TargetIcon version={t.version} />
+                                              <div className="flex flex-col">
+                                                <span>{t.name}</span>
+                                                <span className="text-xs text-muted-foreground">
+                                                  {t.version}
+                                                </span>
+                                              </div>
                                             </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </TableCell>
-                                  )}
-
-                                  {idx === variable.values.length - 1 && (
-                                    <TableCell className="py-0 pl-20">
-                                      {tIdx !== v.targets.length - 1 && (
-                                        <div className="flex h-full items-center border-l border-neutral-800 py-2">
-                                          <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                          {t.name}
-                                        </div>
-                                      )}
-
-                                      {tIdx === v.targets.length - 1 && (
-                                        <div className="flex h-full">
-                                          <div className="flex h-full flex-col justify-start">
-                                            <div className="h-[18px] border-l border-neutral-800" />
-                                          </div>
-                                          <div className="flex h-full items-center py-2">
-                                            <div className="mr-3 h-[1px] w-3 bg-neutral-800" />
-                                            {t.name}
                                           </div>
                                         </div>
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  <TableCell className="py-0" />
-                                  <TableCell className="py-0" />
+                                      </TableCell>
+                                    )}
+                                    <TableCell />
+                                    <TableCell />
+                                  </TableRow>
+                                ))}
+                                <TableRow className="border-none">
+                                  <TableCell className="h-14 cursor-pointer py-0 pl-[72px]">
+                                    <div className="flex h-full items-center border-l border-neutral-800 pl-[72px]">
+                                      <Link
+                                        className="flex h-full items-center gap-2 border-l border-neutral-800 pl-7"
+                                        href={`/${workspaceSlug}/targets?filter=${v.filterHash}`}
+                                        target="_blank"
+                                      >
+                                        <TbDotsVertical className="h-4 w-4" />{" "}
+                                        View {v.targetCount} targets...
+                                      </Link>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell />
+                                  <TableCell />
                                 </TableRow>
-                              ))}
-                            </>
-                          </CollapsibleContent>
-                        </>
-                      </Collapsible>
-                    ))}
-                  </>
-                </CollapsibleContent>
-              </>
-            </Collapsible>
-          ))}
-        </TableBody>
-      </Table>
+                              </>
+                            </CollapsibleContent>
+                          </>
+                        </Collapsible>
+                      ))}
+                    </>
+                  </CollapsibleContent>
+                </>
+              </Collapsible>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </>
   );
 };
