@@ -25,21 +25,19 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;
   onChange: (type: string) => void;
-}> = ({ value, onChange }) => {
-  return (
-    <Select value={value} onValueChange={onChange}>
-      <SelectTrigger>
-        <SelectValue placeholder="Select type" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="string">String</SelectItem>
-        <SelectItem value="number">Number</SelectItem>
-        <SelectItem value="boolean">Boolean</SelectItem>
-        <SelectItem value="choice">Choice</SelectItem>
-      </SelectContent>
-    </Select>
-  );
-};
+}> = ({ value, onChange }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger>
+      <SelectValue placeholder="Select type" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="string">String</SelectItem>
+      <SelectItem value="number">Number</SelectItem>
+      <SelectItem value="boolean">Boolean</SelectItem>
+      <SelectItem value="choice">Choice</SelectItem>
+    </SelectContent>
+  </Select>
+);
 
 type ConfigFieldsFC<T extends VariableConfigType> = React.FC<{
   config: T;

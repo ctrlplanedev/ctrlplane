@@ -23,6 +23,7 @@ import {
   FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
+import { Input } from "@ctrlplane/ui/input";
 import { Switch } from "@ctrlplane/ui/switch";
 import {
   Tooltip,
@@ -34,7 +35,6 @@ import {
 import {
   VariableBooleanInput,
   VariableChoiceSelect,
-  VariableNumberInput,
   VariableStringInput,
 } from "~/app/[workspaceSlug]/systems/[systemSlug]/_components/variables/VariableInputs";
 import { api } from "~/trpc/react";
@@ -103,9 +103,10 @@ export const AddVariableValueDialog: React.FC<{
                           />
                         )}
                         {variable.config?.type === "number" && (
-                          <VariableNumberInput
+                          <Input
+                            type="number"
                             value={Number(value)}
-                            onChange={onChange}
+                            onChange={(e) => onChange(e.target.valueAsNumber)}
                           />
                         )}
                       </>
