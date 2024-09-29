@@ -1,0 +1,107 @@
+# Releases
+
+A release in Ctrlplane represents a specific version or iteration of your
+software or infrastructure configuration that is ready to be deployed. It is a
+crucial component of the deployment process, serving as a snapshot of your
+application or system at a particular point in time.
+
+Remember, the actual building and packaging of your software should be handled
+by your existing CI pipelines or build systems. Ctrlplane takes over from the
+point where your software is built and ready for distribution, solving the
+complex problem of managing deployments across a large and potentially diverse
+set of targets.
+
+## Key Characteristics of Releases
+
+1. **Version Representation**: Each release typically corresponds to a specific
+   version of your codebase or infrastructure definition.
+
+2. **Deployment Association**: Releases are created as part of a deployment in
+   Ctrlplane. They represent the content that will be deployed across various
+   environments and targets.
+
+3. **External Build Process**: Ctrlplane does not manage the build process for
+   releases. The actual compilation, packaging, or preparation of your software
+   should be handled by your existing CI/CD pipelines or build systems.
+
+4. **Creation Methods**: Releases can be created in two primary ways:
+
+   - Through the Ctrlplane UI
+   - Via the Ctrlplane API
+   - Using a Ctrlplane integration
+
+5. **Metadata**: A release often includes metadata such as version numbers,
+   commit hashes, build timestamps, or other relevant information to identify
+   and track the release.
+
+6. **Immutability**: Once created, a release is typically considered immutable.
+   This ensures consistency across different environments and enables reliable
+   rollbacks if needed.
+
+## Release Dependencies
+
+Since Ctrlplane is meant for solving the way releases are deployed across
+targets, it's very common to have version dependencies on other deployments. In
+the world of software, this could mean a microservice depends on a specific
+version of another microservice to ensure it has the required APIs.
+
+In the case of software and infrastructure interactions, this could require a
+minimum version of a database that is necessary to deploy the software, or a set
+list of Kubernetes versions that the software supports.
+
+To address these needs, Ctrlplane supports release dependencies. When defining a
+release, you can also specify which versions it depends on from other
+deployments. This feature allows you to:
+
+1. **Ensure Compatibility**: Guarantee that your release is only deployed to
+   environments where its dependencies are met.
+
+2. **Manage Complex Systems**: Easily handle intricate relationships between
+   different components of your system.
+
+3. **Prevent Deployment Issues**: Avoid potential problems caused by
+   incompatible versions of interdependent services or infrastructure.
+
+4. **Facilitate Upgrades**: Clearly define the upgrade path for your entire
+   system by specifying version requirements.
+
+When creating a release, you can define expresions to determine what version of
+other deployments is required.
+
+### Managing Dependencies with Target Metadata Grouping
+
+In most cases, a target has multiple deployments associated with it, making it
+easy to verify if a specific version is deployed on that target as required by
+another deployment. However, complexities arise when dependencies involve other
+targets, where the deployment version might be present on any of these dependent
+targets.
+
+To address this, Ctrlplane uses target metadata grouping. This mechanism allows
+you to logically group targets based on their metadata attributes. By doing so,
+Ctrlplane can accurately determine which targets to inspect to verify if the
+software has been deployed.
+
+The idea is to create logical associations between targets that share common
+characteristics, such as being part of the same kubernetes cluster. This is
+particularly useful in complex infrastructures or distributed systems where
+deployments span multiple infrastructure components.
+
+For example:
+
+1. **Single Cluster Deployment**: If you have a single Kubernetes namespace
+   represented by a target, you can easily check if a version is deployed on
+   that cluster without additional grouping if that target is used by all the
+   deployments.
+
+2. **Multiple Clusters Deployment**: If you have multiple Kubernetes namespaces,
+   you might need to group targets by cluster name. This way, Ctrlplane can
+   check all namespaces within the specified cluster to determine if the
+   required version is deployed.
+
+By defining metadata groups and associating deployments with these groups, you
+ensure that version checks are performed within the relevant scope, maintaining
+consistency and compatibility across your system.
+
+When defining release dependencies, carefully consider how your targets are
+grouped and which metadata attributes are most relevant for determining version
+compatibility across your system.
