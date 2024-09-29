@@ -28,7 +28,7 @@ export const DeploymentOptionsDropdown: React.FC<{
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" variant="ghost" className="rounded-full">
+          <Button size="icon" variant="ghost">
             <IconDotsVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>

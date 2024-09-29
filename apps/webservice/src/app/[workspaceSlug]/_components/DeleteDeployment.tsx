@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import {
   AlertDialog,
@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@ctrlplane/ui/alert-dialog";
 import { Button } from "@ctrlplane/ui/button";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
@@ -30,11 +31,23 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
   const router = useRouter();
   const deleteDeployment = api.deployment.delete.useMutation();
 
-  const onDelete = async () => {
-    await deleteDeployment.mutateAsync(id).catch(console.error);
-    router.refresh();
-    setIsOpen(false);
-  };
+  const params = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+
+  const onDelete = () =>
+    deleteDeployment
+      .mutateAsync(id)
+      .then(() => {
+        router.push(`/${params.workspaceSlug}/systems/${params.systemSlug}`);
+        router.refresh();
+        toast.success("Deployment deleted successfully");
+        setIsOpen(false);
+      })
+      .catch(() => {
+        toast.error("Failed to delete deployment");
+      });
 
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
