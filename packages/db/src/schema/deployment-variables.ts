@@ -1,5 +1,6 @@
 import type { TargetCondition } from "@ctrlplane/validators/targets";
-import type { InferSelectModel } from "drizzle-orm";
+import type { VariableConfigType } from "@ctrlplane/validators/variables";
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import {
@@ -14,6 +15,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { targetCondition } from "@ctrlplane/validators/targets";
+import { VariableConfig } from "@ctrlplane/validators/variables";
 
 import { deployment } from "./deployment.js";
 import { variableSet } from "./variable-sets.js";
@@ -28,7 +30,7 @@ export const deploymentVariable = pgTable(
       .notNull()
       .references(() => deployment.id),
     defaultValueId: uuid("default_value_id").default(sql`NULL`),
-    schema: jsonb("schema").$type<Record<string, any>>(),
+    config: jsonb("schema").$type<VariableConfigType>(),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.deploymentId, t.key),
@@ -39,8 +41,12 @@ export const deploymentVariable = pgTable(
 );
 
 export type DeploymentVariable = InferSelectModel<typeof deploymentVariable>;
+export type InsertDeploymentVariable = InferInsertModel<
+  typeof deploymentVariable
+>;
 export const createDeploymentVariable = createInsertSchema(deploymentVariable, {
-  schema: z.record(z.any()).optional(),
+  key: z.string().min(1),
+  config: VariableConfig,
 }).omit({ id: true });
 export const updateDeploymentVariable = createDeploymentVariable.partial();
 

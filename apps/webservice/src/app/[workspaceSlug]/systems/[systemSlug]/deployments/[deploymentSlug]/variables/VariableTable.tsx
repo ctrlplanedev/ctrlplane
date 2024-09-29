@@ -36,12 +36,12 @@ import { VariableValueDropdown } from "./VariableValueDropdown";
 
 const TargetIcon: React.FC<{ version: string }> = ({ version }) => {
   if (version.includes("kubernetes"))
-    return <SiKubernetes className="h-7 w-7 shrink-0 text-blue-300" />;
+    return <SiKubernetes className="h-6 w-6 shrink-0 text-blue-300" />;
   if (version.includes("vm") || version.includes("compute"))
-    return <IconServer className="h-7 w-7 shrink-0 text-cyan-300" />;
+    return <IconServer className="h-6 w-6 shrink-0 text-cyan-300" />;
   if (version.includes("terraform"))
-    return <SiTerraform className="h-7 w-7 shrink-0 text-purple-300" />;
-  return <IconTarget className="h-7 w-7 shrink-0 text-neutral-300" />;
+    return <SiTerraform className="h-6 w-6 shrink-0 text-purple-300" />;
+  return <IconTarget className="h-6 w-6 shrink-0 text-neutral-300" />;
 };
 
 export const VariableTable: React.FC<{
@@ -106,7 +106,7 @@ export const VariableTable: React.FC<{
             {result.map((variable) => (
               <Collapsible key={variable.id} asChild>
                 <>
-                  <TableRow className="h-14 border-none">
+                  <TableRow className="h-10 border-none">
                     <TableCell>
                       <div className="flex items-center gap-1 pl-5">
                         <CollapsibleTrigger asChild>
@@ -163,7 +163,7 @@ export const VariableTable: React.FC<{
                             >
                               <TableCell
                                 className={cn(
-                                  "h-14 py-0",
+                                  "h-10 py-0",
                                   idx === 0 && "pl-10",
                                   idx !== 0 && "pl-[72px]",
                                 )}
@@ -187,7 +187,7 @@ export const VariableTable: React.FC<{
                                         />
                                       </Button>
                                     </CollapsibleTrigger>
-                                    {v.value}
+                                    {String(v.value)}
                                     {variable.defaultValueId === v.id && (
                                       <Badge className="hover:bg-primary">
                                         default
@@ -198,9 +198,9 @@ export const VariableTable: React.FC<{
                                 {idx === 0 && (
                                   <div className="flex h-full items-center">
                                     <div className="flex h-full flex-col justify-start">
-                                      <div className="h-7 border-l border-neutral-800" />
+                                      <div className="h-5 border-l border-neutral-800" />
                                     </div>
-                                    <div className="h-[1px] w-[31px] bg-neutral-800" />
+                                    <div className="h-[1px] w-[31px] flex-shrink-0 bg-neutral-800" />
                                     <div className="flex h-full items-center gap-1 border-l border-neutral-800 py-2 pl-7">
                                       <CollapsibleTrigger asChild>
                                         <Button
@@ -220,7 +220,7 @@ export const VariableTable: React.FC<{
                                           />
                                         </Button>
                                       </CollapsibleTrigger>
-                                      {v.value}
+                                      {String(v.value)}
                                       {variable.defaultValueId === v.id && (
                                         <Badge className="ml-2 hover:bg-primary">
                                           default
@@ -259,12 +259,14 @@ export const VariableTable: React.FC<{
                                 {v.targets.map((t, tIdx) => (
                                   <TableRow key={t.id} className="border-none">
                                     {tIdx !== 0 && (
-                                      <TableCell className="h-14 py-0 pl-[72px]">
+                                      <TableCell className="h-10 py-0 pl-[72px]">
                                         <div className="flex h-full items-center border-l border-neutral-800 pl-[72px]">
-                                          <div className="flex h-full items-center gap-2 border-l border-neutral-800 py-2 pl-7">
+                                          <div className="flex h-full items-center gap-2 border-l border-neutral-800 pl-7">
                                             <TargetIcon version={t.version} />
                                             <div className="flex flex-col">
-                                              <span>{t.name}</span>
+                                              <span className="overflow-hidden text-nowrap text-sm">
+                                                {t.name}
+                                              </span>
                                               <span className="text-xs text-muted-foreground">
                                                 {t.version}
                                               </span>
@@ -275,17 +277,19 @@ export const VariableTable: React.FC<{
                                     )}
 
                                     {tIdx === 0 && (
-                                      <TableCell className="h-14 py-0 pl-[72px]">
+                                      <TableCell className="h-10 py-0 pl-[72px]">
                                         <div className="flex h-full items-center border-l border-neutral-800 pl-10">
                                           <div className="flex h-full items-center">
                                             <div className="flex h-full flex-col justify-start">
-                                              <div className="h-7 border-l border-neutral-800" />
+                                              <div className="h-5 border-l border-neutral-800" />
                                             </div>
-                                            <div className="h-[1px] w-[31px] bg-neutral-800" />
-                                            <div className="flex h-full items-center gap-2 border-l border-neutral-800 py-2 pl-7">
+                                            <div className="h-[1px] w-[31px] flex-shrink-0 bg-neutral-800" />
+                                            <div className="flex h-full items-center gap-2 border-l border-neutral-800 pl-7">
                                               <TargetIcon version={t.version} />
                                               <div className="flex flex-col">
-                                                <span>{t.name}</span>
+                                                <span className="overflow-hidden text-nowrap text-sm">
+                                                  {t.name}
+                                                </span>
                                                 <span className="text-xs text-muted-foreground">
                                                   {t.version}
                                                 </span>
@@ -300,7 +304,7 @@ export const VariableTable: React.FC<{
                                   </TableRow>
                                 ))}
                                 <TableRow className="border-none">
-                                  <TableCell className="h-14 cursor-pointer py-0 pl-[72px]">
+                                  <TableCell className="h-10 cursor-pointer py-0 pl-[72px]">
                                     <div className="flex h-full items-center border-l border-neutral-800 pl-[72px]">
                                       <Link
                                         className="flex h-full items-center gap-2 border-l border-neutral-800 pl-7"

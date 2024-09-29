@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq, inArray, isNotNull, or, takeFirst } from "@ctrlplane/db";
+import { and, eq, isNotNull, or, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 // import {
@@ -70,81 +70,6 @@ export const createTriggeredRunbookJob = async (
   );
 
   return job;
-};
-
-export const createTriggeredReleaseJobs = async (
-  db: Tx,
-  releaseJobTriggers: schema.ReleaseJobTrigger[],
-  status: schema.JobStatus = JobStatus.Pending,
-): Promise<schema.Job[]> => {
-  logger.info(`Creating triggered release jobs`, {
-    releaseJobTriggersCount: releaseJobTriggers.length,
-    status,
-  });
-
-  const insertJobs = await db
-    .select()
-    .from(schema.releaseJobTrigger)
-    .leftJoin(
-      schema.release,
-      eq(schema.release.id, schema.releaseJobTrigger.releaseId),
-    )
-    .leftJoin(
-      schema.deployment,
-      eq(schema.deployment.id, schema.release.deploymentId),
-    )
-    .innerJoin(
-      schema.jobAgent,
-      eq(schema.jobAgent.id, schema.deployment.jobAgentId),
-    )
-    .where(
-      inArray(
-        schema.releaseJobTrigger.id,
-        releaseJobTriggers.map((t) => t.id),
-      ),
-    );
-
-  logger.debug(`Found jobs to insert`, { count: insertJobs.length });
-
-  if (insertJobs.length === 0) {
-    logger.info(`No jobs to insert, returning empty array`);
-    return [];
-  }
-
-  const jobs = await db
-    .insert(schema.job)
-    .values(
-      insertJobs.map((d) => ({
-        jobAgentId: d.job_agent.id,
-        jobAgentConfig: _.merge(
-          d.job_agent.config,
-          d.deployment?.jobAgentConfig ?? {},
-        ),
-        status,
-      })),
-    )
-    .returning();
-
-  logger.info(`Inserted jobs`, { count: jobs.length });
-
-  // Update releaseJobTrigger with the new job ids
-  await Promise.all(
-    jobs.map((job, index) =>
-      db
-        .update(schema.releaseJobTrigger)
-        .set({ jobId: job.id })
-        .where(
-          eq(
-            schema.releaseJobTrigger.id,
-            insertJobs[index]!.release_job_trigger.id,
-          ),
-        ),
-    ),
-  );
-
-  logger.info(`Updated releaseJobTrigger with new job ids`);
-
-  return jobs;
 };
 
 /**

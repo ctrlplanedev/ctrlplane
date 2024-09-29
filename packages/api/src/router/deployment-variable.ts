@@ -234,33 +234,6 @@ export const deploymentVariableRouter = createTRPCRouter({
         .groupBy(deploymentVariable.id)
         .orderBy(asc(deploymentVariable.key))
         .where(eq(deploymentVariable.deploymentId, input));
-
-      // return Promise.all(
-      //   deploymentVariables.map(async (deploymentVariable) => ({
-      //     ...deploymentVariable.deploymentVariable,
-      //     values: await Promise.all(
-      //       deploymentVariable.values.map(async (value) => ({
-      //         ...value,
-      //         targets:
-      //           value.targetFilter != null
-      //             ? await ctx.db
-      //                 .select()
-      //                 .from(target)
-      //                 .where(
-      //                   targetMatchesMetadata(ctx.db, {
-      //                     type: TargetFilterType.Comparison,
-      //                     operator: TargetOperator.And,
-      //                     conditions: [
-      //                       isInDeploymentSystem,
-      //                       value.targetFilter,
-      //                     ],
-      //                   }),
-      //                 )
-      //             : [],
-      //       })),
-      //     ),
-      //   })),
-      // );
     }),
 
   create: protectedProcedure
@@ -271,9 +244,31 @@ export const deploymentVariableRouter = createTRPCRouter({
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(createDeploymentVariable)
-    .mutation(async ({ ctx, input }) =>
-      ctx.db.insert(deploymentVariable).values(input).returning(),
-    ),
+    .mutation(async ({ ctx, input }) => {
+      const variable = await ctx.db
+        .insert(deploymentVariable)
+        .values(input)
+        .returning()
+        .then(takeFirst);
+
+      if (input.config?.default) {
+        const value = await ctx.db
+          .insert(deploymentVariableValue)
+          .values({
+            variableId: variable.id,
+            value: input.config.default,
+          })
+          .returning()
+          .then(takeFirst);
+
+        await ctx.db
+          .update(deploymentVariable)
+          .set({ defaultValueId: value.id })
+          .where(eq(deploymentVariable.id, variable.id));
+      }
+
+      return variable;
+    }),
 
   update: protectedProcedure
     .meta({

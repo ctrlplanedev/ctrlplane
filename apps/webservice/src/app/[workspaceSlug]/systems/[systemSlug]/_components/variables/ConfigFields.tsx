@@ -3,6 +3,7 @@
 import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
+  NumberVariableConfigType,
   StringVariableConfigType,
   VariableConfigType,
 } from "@ctrlplane/validators/variables";
@@ -10,7 +11,6 @@ import { IconX } from "@tabler/icons-react";
 import _ from "lodash";
 
 import { Button } from "@ctrlplane/ui/button";
-import { Checkbox } from "@ctrlplane/ui/checkbox";
 import { FormControl, FormItem, FormLabel } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import {
@@ -44,7 +44,6 @@ export const ConfigTypeSelector: React.FC<{
 type ConfigFieldsFC<T extends VariableConfigType> = React.FC<{
   config: T;
   updateConfig: (updates: Partial<T>) => void;
-  setConfig: (value: T) => void;
 }>;
 
 export const StringConfigFields: ConfigFieldsFC<StringVariableConfigType> = ({
@@ -71,7 +70,7 @@ export const StringConfigFields: ConfigFieldsFC<StringVariableConfigType> = ({
     </FormItem>
 
     <FormItem>
-      <FormLabel>Value</FormLabel>
+      <FormLabel>Default Value</FormLabel>
       <FormControl>
         <>
           {config.inputType === "text" && (
@@ -79,14 +78,22 @@ export const StringConfigFields: ConfigFieldsFC<StringVariableConfigType> = ({
               type="text"
               placeholder="Enter text"
               value={config.default ?? ""}
-              onChange={(e) => updateConfig({ default: e.target.value })}
+              onChange={(e) =>
+                updateConfig({
+                  default: e.target.value !== "" ? e.target.value : undefined,
+                })
+              }
             />
           )}
           {config.inputType === "text-area" && (
             <Textarea
               placeholder="Enter text"
               value={config.default ?? ""}
-              onChange={(e) => updateConfig({ default: e.target.value })}
+              onChange={(e) =>
+                updateConfig({
+                  default: e.target.value !== "" ? e.target.value : undefined,
+                })
+              }
             />
           )}
         </>
@@ -103,14 +110,35 @@ export const BooleanConfigFields: ConfigFieldsFC<BooleanVariableConfigType> = ({
     <FormLabel>Default Value</FormLabel>
     <FormControl>
       <div className="flex items-center gap-2">
-        <Checkbox
-          checked={config.default}
-          className="inline"
-          onCheckedChange={(e) => updateConfig({ default: Boolean(e) })}
-        />
-
-        {String(config.default ?? "false")}
+        <Select
+          value={String(config.default ?? "")}
+          onValueChange={(value) => updateConfig({ default: value === "true" })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select default value" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true">True</SelectItem>
+            <SelectItem value="false">False</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+    </FormControl>
+  </FormItem>
+);
+
+export const NumberConfigFields: ConfigFieldsFC<NumberVariableConfigType> = ({
+  config,
+  updateConfig,
+}) => (
+  <FormItem>
+    <FormLabel>Default Value</FormLabel>
+    <FormControl>
+      <Input
+        type="number"
+        value={config.default ?? 0}
+        onChange={(e) => updateConfig({ default: e.target.valueAsNumber })}
+      />
     </FormControl>
   </FormItem>
 );

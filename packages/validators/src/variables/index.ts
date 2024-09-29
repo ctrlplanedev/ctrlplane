@@ -22,7 +22,7 @@ export const NumberVariableConfig = z.object({
   maximum: z.number().optional(),
   default: z.number().optional(),
 });
-export type NumberSchemaConfigType = z.infer<typeof NumberVariableConfig>;
+export type NumberVariableConfigType = z.infer<typeof NumberVariableConfig>;
 
 export const BooleanVariableConfig = z.object({
   type: z.literal("boolean"),

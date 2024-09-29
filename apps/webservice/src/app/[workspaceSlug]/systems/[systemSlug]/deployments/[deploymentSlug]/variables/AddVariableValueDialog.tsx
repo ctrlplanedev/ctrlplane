@@ -23,7 +23,6 @@ import {
   FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
-import { Input } from "@ctrlplane/ui/input";
 import { Switch } from "@ctrlplane/ui/switch";
 import {
   Tooltip,
@@ -32,9 +31,18 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
+import {
+  VariableBooleanInput,
+  VariableChoiceSelect,
+  VariableNumberInput,
+  VariableStringInput,
+} from "~/app/[workspaceSlug]/systems/[systemSlug]/_components/variables/VariableInputs";
 import { api } from "~/trpc/react";
 
-const schema = z.object({ value: z.string(), default: z.boolean() });
+const schema = z.object({
+  value: z.union([z.string(), z.number(), z.boolean()]),
+  default: z.boolean(),
+});
 
 export const AddVariableValueDialog: React.FC<{
   variable: DeploymentVariable;
@@ -69,11 +77,38 @@ export const AddVariableValueDialog: React.FC<{
               <FormField
                 control={form.control}
                 name="value"
-                render={({ field }) => (
+                render={({ field: { value, onChange } }) => (
                   <FormItem>
                     <FormLabel>Value</FormLabel>
                     <FormControl>
-                      <Input placeholder="" {...field} />
+                      <>
+                        {variable.config?.type === "string" && (
+                          <VariableStringInput
+                            {...variable.config}
+                            value={String(value)}
+                            onChange={onChange}
+                          />
+                        )}
+                        {variable.config?.type === "choice" && (
+                          <VariableChoiceSelect
+                            {...variable.config}
+                            value={String(value)}
+                            onSelect={onChange}
+                          />
+                        )}
+                        {variable.config?.type === "boolean" && (
+                          <VariableBooleanInput
+                            value={value === "" ? null : Boolean(value)}
+                            onChange={onChange}
+                          />
+                        )}
+                        {variable.config?.type === "number" && (
+                          <VariableNumberInput
+                            value={Number(value)}
+                            onChange={onChange}
+                          />
+                        )}
+                      </>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

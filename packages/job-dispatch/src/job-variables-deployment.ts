@@ -1,6 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
+import { isPresent } from "ts-is-present";
 
-import { and, eq, isNotNull, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 export const createReleaseVariables = async (
@@ -59,13 +60,16 @@ const determineVariablesForReleaseJob = async (
       determineReleaseVariableValue(
         tx,
         variable.deployment_variable.id,
+        variable.deployment_variable.defaultValueId,
         jobTarget,
-      ).then((value) =>
-        jobVariables.push({
-          jobId: job.id,
-          key: variable.deployment_variable.key,
-          value: value.value,
-        }),
+      ).then(
+        (value) =>
+          value != null &&
+          jobVariables.push({
+            jobId: job.id,
+            key: variable.deployment_variable.key,
+            value: value.value,
+          }),
       ),
     ),
   );
@@ -76,44 +80,44 @@ const determineVariablesForReleaseJob = async (
 const determineReleaseVariableValue = async (
   tx: Tx,
   variableId: string,
+  defaultValueId: string | null,
   jobTarget: schema.Target,
-): Promise<schema.DeploymentVariableValue> => {
-  const deploymentVariableValue = await tx
+): Promise<schema.DeploymentVariableValue | null> => {
+  const deploymentVariableValues = await tx
     .select()
     .from(schema.deploymentVariableValue)
-    .where(
-      and(
-        eq(schema.deploymentVariableValue.variableId, variableId),
-        isNotNull(schema.deploymentVariableValue.targetFilter),
-      ),
-    )
-    .then(takeFirstOrNull);
-  // TODO: right now just grabbing the first one, we need to implement priority here
+    .orderBy(schema.deploymentVariableValue.value)
+    .where(eq(schema.deploymentVariableValue.variableId, variableId));
 
-  if (deploymentVariableValue != null) {
-    const filterMatch = await tx
-      .select()
-      .from(schema.target)
-      .where(
-        and(
-          schema.targetMatchesMetadata(
-            tx,
-            deploymentVariableValue.targetFilter,
+  if (deploymentVariableValues.length === 0) return null;
+
+  const defaultValue = deploymentVariableValues.find(
+    (v) => v.id === defaultValueId,
+  );
+  const valuesWithFilters = deploymentVariableValues.filter(
+    (v) => v.targetFilter != null,
+  );
+
+  const valuesMatchedByFilter = await Promise.all(
+    valuesWithFilters.map(async (value) => {
+      const matchedTarget = await tx
+        .select()
+        .from(schema.target)
+        .where(
+          and(
+            eq(schema.target.id, jobTarget.id),
+            schema.targetMatchesMetadata(tx, value.targetFilter),
           ),
-          eq(schema.target.id, jobTarget.id),
-        ),
-      )
-      .then(takeFirstOrNull);
+        )
+        .then(takeFirstOrNull);
 
-    if (filterMatch != null) return deploymentVariableValue;
-  }
+      if (matchedTarget != null) return value;
+    }),
+  ).then((values) => values.filter(isPresent));
 
-  // If no specific match is found, return the default value (if any)
-  const defaultValue = await tx
-    .select()
-    .from(schema.deploymentVariableValue)
-    .where(eq(schema.deploymentVariableValue.variableId, variableId))
-    .then(takeFirst);
+  if (valuesMatchedByFilter.length > 0) return valuesMatchedByFilter[0]!;
 
-  return defaultValue;
+  if (defaultValue != null) return defaultValue;
+
+  return deploymentVariableValues[0]!;
 };

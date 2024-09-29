@@ -1,10 +1,6 @@
 "use client";
 
 import type { Runbook, RunbookVariable } from "@ctrlplane/db/schema";
-import type {
-  ChoiceVariableConfigType,
-  StringVariableConfigType,
-} from "@ctrlplane/validators/variables";
 import type { ReactNode } from "react";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -22,76 +18,13 @@ import {
 } from "@ctrlplane/ui/dialog";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
 import { Switch } from "@ctrlplane/ui/switch";
-import { Textarea } from "@ctrlplane/ui/textarea";
 
+import {
+  VariableChoiceSelect,
+  VariableStringInput,
+} from "~/app/[workspaceSlug]/systems/[systemSlug]/_components/variables/VariableInputs";
 import { api } from "~/trpc/react";
-
-const VariableStringInput: React.FC<
-  StringVariableConfigType & {
-    value: string;
-    onChange: (v: string) => void;
-  }
-> = ({
-  value,
-  onChange,
-  inputType,
-  minLength,
-  maxLength,
-  default: defaultValue,
-}) => {
-  return (
-    <div>
-      {inputType === "text" && (
-        <Input
-          type="text"
-          value={value}
-          placeholder={defaultValue}
-          onChange={(e) => onChange(e.target.value)}
-          minLength={minLength}
-          maxLength={maxLength}
-        />
-      )}
-      {inputType === "text-area" && (
-        <Textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          minLength={minLength}
-          maxLength={maxLength}
-        />
-      )}
-    </div>
-  );
-};
-
-const VariableChoiceSelect: React.FC<
-  ChoiceVariableConfigType & {
-    value: string;
-    onSelect: (v: string) => void;
-  }
-> = ({ value, onSelect, options }) => {
-  return (
-    <Select value={value} onValueChange={onSelect}>
-      <SelectTrigger>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {options.map((o) => (
-          <SelectItem key={o} value={o}>
-            {o}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-};
 
 export type TriggerRunbookDialogProps = {
   runbook: Runbook & { variables: RunbookVariable[] };

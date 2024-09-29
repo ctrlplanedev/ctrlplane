@@ -27,8 +27,9 @@ import {
   BooleanConfigFields,
   ChoiceConfigFields,
   ConfigTypeSelector,
+  NumberConfigFields,
   StringConfigFields,
-} from "./ConfigFields";
+} from "~/app/[workspaceSlug]/systems/[systemSlug]/_components/variables/ConfigFields";
 
 type RunbookVariableEditorProps = {
   value: InsertRunbookVariable;
@@ -46,9 +47,6 @@ export const RunbookVariableEditor = forwardRef<
   const updateConfig = (config: Partial<InsertRunbookVariable["config"]>) =>
     update({ config: _.merge(value.config, config) });
 
-  const setConfig = (config: InsertRunbookVariable["config"]) => {
-    onChange({ ...value, config });
-  };
   return (
     <div className="space-y-4" ref={ref}>
       <div className="space-y-1">
@@ -82,25 +80,16 @@ export const RunbookVariableEditor = forwardRef<
       </div>
 
       {config?.type === "string" && (
-        <StringConfigFields
-          config={config}
-          updateConfig={updateConfig}
-          setConfig={setConfig}
-        />
+        <StringConfigFields config={config} updateConfig={updateConfig} />
       )}
       {config?.type === "boolean" && (
-        <BooleanConfigFields
-          config={config}
-          updateConfig={updateConfig}
-          setConfig={setConfig}
-        />
+        <BooleanConfigFields config={config} updateConfig={updateConfig} />
       )}
       {config?.type === "choice" && (
-        <ChoiceConfigFields
-          config={config}
-          updateConfig={updateConfig}
-          setConfig={setConfig}
-        />
+        <ChoiceConfigFields config={config} updateConfig={updateConfig} />
+      )}
+      {config?.type === "number" && (
+        <NumberConfigFields config={config} updateConfig={updateConfig} />
       )}
 
       <pre>{JSON.stringify(config, null, 2)}</pre>
