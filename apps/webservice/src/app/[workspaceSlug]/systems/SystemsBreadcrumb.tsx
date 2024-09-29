@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import {
   IconCategory,
+  IconDotsVertical,
   IconServer,
   IconShip,
   IconTag,
@@ -14,7 +15,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
+import { Button } from "@ctrlplane/ui/button";
 
+import { SystemActionsDropdown } from "~/app/[workspaceSlug]/systems/SystemActionsDropdown";
 import { api } from "~/trpc/server";
 
 export const SystemBreadcrumbNavbar = async ({
@@ -84,34 +87,45 @@ export const SystemBreadcrumbNavbar = async ({
   ].filter((t) => t.isSet);
 
   return (
-    <Breadcrumb className="p-3">
-      <BreadcrumbList>
-        {crumbs.map((crumb, idx) => {
-          const isLast = idx === crumbs.length - 1;
+    <div className="flex items-center gap-2 p-3">
+      <Breadcrumb>
+        <BreadcrumbList>
+          {crumbs.map((crumb, idx) => {
+            const isLast = idx === crumbs.length - 1;
 
-          return (
-            <Fragment key={idx}>
-              {isLast ? (
-                <BreadcrumbPage className="flex items-center gap-2 text-base">
-                  {crumb.name}
-                </BreadcrumbPage>
-              ) : (
-                <>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink
-                      href={crumb.path}
-                      className="flex items-center gap-2 text-base"
-                    >
-                      {crumb.name}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                </>
-              )}
-            </Fragment>
-          );
-        })}
-      </BreadcrumbList>
-    </Breadcrumb>
+            return (
+              <Fragment key={idx}>
+                {isLast ? (
+                  <BreadcrumbPage className="flex items-center gap-2 text-base">
+                    {crumb.name}
+                  </BreadcrumbPage>
+                ) : (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink
+                        href={crumb.path}
+                        className="flex items-center gap-2 text-base "
+                      >
+                        {crumb.name}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                  </>
+                )}
+              </Fragment>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+      <div>
+        {system && (
+          <SystemActionsDropdown system={system}>
+            <Button variant="ghost" size="icon">
+              <IconDotsVertical className="h-4 w-4" />
+            </Button>
+          </SystemActionsDropdown>
+        )}
+      </div>
+    </div>
   );
 };

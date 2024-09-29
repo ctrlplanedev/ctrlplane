@@ -66,15 +66,16 @@ export const SystemsTable: React.FC<{
           <TableRow
             className="flex cursor-pointer items-center justify-between border-b-neutral-800/50 hover:bg-inherit"
             key={row.id}
-            onClick={() =>
-              router.push(
-                `/${workspaceSlug}/systems/${row.original.slug}/deployments`,
-              )
-            }
           >
             {row.getVisibleCells().map((cell) => (
               <Fragment key={cell.id}>
-                <TableCell>
+                <TableCell
+                  onClick={() =>
+                    router.push(
+                      `/${workspaceSlug}/systems/${row.original.slug}/deployments`,
+                    )
+                  }
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
                 <TableCell>

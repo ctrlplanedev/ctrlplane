@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import isEqual from "lodash/isEqual";
 import { z } from "zod";
 
 import { deploymentSchema } from "@ctrlplane/db/schema";
@@ -45,7 +44,6 @@ export const EditDeploymentDialog: React.FC<{
   const [open, setOpen] = useState(false);
   const updateDeployment = api.deployment.update.useMutation();
   const router = useRouter();
-  const { systemId, id, name, slug, description } = props;
 
   const form = useForm({
     schema: deploymentForm,
@@ -55,24 +53,8 @@ export const EditDeploymentDialog: React.FC<{
 
   const { handleSubmit, setError } = form;
 
-  const onSubmit = handleSubmit(async (data) => {
-    const isDataChanged = !isEqual(data, {
-      id,
-      name,
-      slug,
-      description,
-      systemId,
-    });
-    console.log("isDataChanged", isDataChanged);
-    console.log("data", data);
-    console.log("props", props);
-
-    if (!isDataChanged) {
-      setError("root", { message: "No changes made to the deployment." });
-      return;
-    }
-
-    await updateDeployment
+  const onSubmit = handleSubmit((data) => {
+    updateDeployment
       .mutateAsync({ id: props.id, data })
       .then(() => {
         setOpen(false);
@@ -157,7 +139,14 @@ export const EditDeploymentDialog: React.FC<{
             <DialogFooter>
               <CopyButton textToCopy={props.id} />
               <div className="flex-grow" />
-              <Button type="submit">Save</Button>
+              <Button
+                type="submit"
+                disabled={
+                  form.formState.isSubmitting || !form.formState.isDirty
+                }
+              >
+                Save
+              </Button>
             </DialogFooter>
           </form>
         </Form>
