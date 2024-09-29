@@ -35,6 +35,7 @@
     "with-env": "dotenv -e ../../.env --",
     "migrate": "pnpm with-env tsx ./migrate.ts",
     "generate": "pnpm with-env drizzle-kit generate",
+    "generate:erd": "pnpm tsx dbml.ts && pnpm dbml-renderer -i schema.dbml -o erd.svg",
     "rest": "pnpm with-env psql $POSTGRES_URL -c \"DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;\""
   },
   "dependencies": {
@@ -49,9 +50,11 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@softwaretechnik/dbml-renderer": "^1.0.30",
     "@types/node": "catalog:node22",
     "@types/pg": "^8.11.6",
     "dotenv-cli": "^7.4.2",
+    "drizzle-dbml-generator": "^0.9.0",
     "drizzle-kit": "^0.24.2",
     "eslint": "catalog:",
     "prettier": "catalog:",

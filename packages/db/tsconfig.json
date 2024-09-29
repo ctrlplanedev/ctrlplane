@@ -5,5 +5,5 @@
     "baseUrl": "."
   },
   "include": ["src", "../api/src/utils", "migrate.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dbml.ts"]
 }
