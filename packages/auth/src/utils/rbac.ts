@@ -207,7 +207,6 @@ const getDeploymentScopes = async (id: string) => {
 };
 
 const getDeploymentVariableScopes = async (id: string) => {
-  console.log("getDeploymentVariableScopes", id);
   const result = await db
     .select()
     .from(workspace)
