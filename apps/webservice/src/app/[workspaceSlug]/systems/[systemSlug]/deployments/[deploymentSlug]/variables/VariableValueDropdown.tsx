@@ -22,8 +22,8 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import type { VariableValue } from "./variable-data";
+import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
-import { TargetConditionDialog } from "../../../../../_components/target-condition/TargetConditionDialog";
 
 const DeleteVariableValueDialog: React.FC<{
   valueId: string;
