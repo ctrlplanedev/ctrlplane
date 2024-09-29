@@ -4,8 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
-import { IconChevronRight, IconServer, IconTarget } from "@tabler/icons-react";
-import { TbDotsVertical } from "react-icons/tb";
+import {
+  IconChevronRight,
+  IconDotsVertical,
+  IconServer,
+  IconTarget,
+} from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -142,7 +146,7 @@ export const VariableTable: React.FC<{
                             size="icon"
                             className="h-6 w-6"
                           >
-                            <TbDotsVertical />
+                            <IconDotsVertical className="h-4 w-4" />
                           </Button>
                         </VariableDropdown>
                       </div>
@@ -244,7 +248,7 @@ export const VariableTable: React.FC<{
                                       className="h-6 w-6"
                                       onClick={(e) => e.preventDefault()}
                                     >
-                                      <TbDotsVertical />
+                                      <IconDotsVertical className="h-4 w-4" />
                                     </Button>
                                   </VariableValueDropdown>
                                 </div>
@@ -303,7 +307,7 @@ export const VariableTable: React.FC<{
                                         href={`/${workspaceSlug}/targets?filter=${v.filterHash}`}
                                         target="_blank"
                                       >
-                                        <TbDotsVertical className="h-4 w-4" />{" "}
+                                        <IconDotsVertical className="h-4 w-4" />{" "}
                                         View {v.targetCount} targets...
                                       </Link>
                                     </div>
