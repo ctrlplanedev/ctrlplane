@@ -1,5 +1,5 @@
 {
-  "id": "cd303108-a289-462c-9d54-f280a99527c2",
+  "id": "b9a6539a-00f3-4d71-9809-0895dee19d99",
   "prevId": "f4144a38-d3f7-4f98-b87f-04cf178943d7",
   "version": "7",
   "dialect": "postgresql",
@@ -438,7 +438,8 @@
           "name": "default_value_id",
           "type": "uuid",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "NULL"
         },
         "schema": {
           "name": "schema",
