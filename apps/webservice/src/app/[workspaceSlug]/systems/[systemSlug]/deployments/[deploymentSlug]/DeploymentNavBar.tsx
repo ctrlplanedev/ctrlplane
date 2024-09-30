@@ -15,7 +15,7 @@ import {
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/react";
-import { CreateVaribaleDialog } from "./CreateVariableDialog";
+import { CreateVariableDialog } from "./CreateVariableDialog";
 
 export const DeploymentsNavBar: React.FC = () => {
   const pathname = usePathname();
@@ -59,15 +59,15 @@ export const DeploymentsNavBar: React.FC = () => {
         </div>
       </div>
       {pathname.startsWith(`${baseUrl}/variables`) && (
-        <CreateVaribaleDialog deploymentId={deployment.data?.id ?? ""}>
+        <CreateVariableDialog deploymentId={deployment.data?.id ?? ""}>
           <Button
             variant="secondary"
             className="flex shrink-0 items-center gap-2"
           >
             <IconPlus className="h-4 w-4" />
-            Add Varibale
+            Add Variable
           </Button>
-        </CreateVaribaleDialog>
+        </CreateVariableDialog>
       )}
     </div>
   );

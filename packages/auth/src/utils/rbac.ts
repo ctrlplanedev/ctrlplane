@@ -4,6 +4,7 @@ import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
+  deploymentVariable,
   entityRole,
   environment,
   environmentPolicy,
@@ -205,6 +206,27 @@ const getDeploymentScopes = async (id: string) => {
   ];
 };
 
+const getDeploymentVariableScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(deployment, eq(deployment.systemId, system.id))
+    .innerJoin(
+      deploymentVariable,
+      eq(deploymentVariable.deploymentId, deployment.id),
+    )
+    .where(eq(deploymentVariable.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "deploymentVariable" as const, id: result.deployment_variable.id },
+    { type: "deployment" as const, id: result.deployment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 const getRunbookScopes = async (id: string) => {
   const result = await db
     .select()
@@ -268,6 +290,7 @@ export const scopeHandlers: Record<
   target: getTargetScopes,
   targetProvider: getTargetProviderScopes,
   deployment: getDeploymentScopes,
+  deploymentVariable: getDeploymentVariableScopes,
   runbook: getRunbookScopes,
   system: getSystemScopes,
   workspace: getWorkspaceScopes,

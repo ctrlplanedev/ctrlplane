@@ -1,8 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { IconBulb } from "@tabler/icons-react";
+import _ from "lodash";
 import { z } from "zod";
 
+import { Alert, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -24,22 +28,46 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { VariableConfig } from "@ctrlplane/validators/variables";
 
+import {
+  BooleanConfigFields,
+  ChoiceConfigFields,
+  ConfigTypeSelector,
+  NumberConfigFields,
+  StringConfigFields,
+} from "~/app/[workspaceSlug]/systems/[systemSlug]/_components/variables/ConfigFields";
 import { api } from "~/trpc/react";
 
-const schema = z.object({ key: z.string(), description: z.string() });
+const schema = z.object({
+  key: z.string(),
+  description: z.string(),
+  config: VariableConfig,
+});
 
-export const CreateVaribaleDialog: React.FC<{
+export const CreateVariableDialog: React.FC<{
   deploymentId: string;
   children?: React.ReactNode;
 }> = ({ children, deploymentId }) => {
   const [open, setOpen] = useState(false);
   const create = api.deployment.variable.create.useMutation();
-  const utils = api.useUtils();
-  const form = useForm({ schema, defaultValues: { description: "" } });
+  const router = useRouter();
+  const form = useForm({
+    schema,
+    defaultValues: {
+      description: "",
+      config: { type: "string", inputType: "text" },
+    },
+  });
+
+  const { config } = form.watch();
+
   const onSubmit = form.handleSubmit(async (values) => {
-    await create.mutateAsync({ ...values, deploymentId });
-    await utils.deployment.variable.byDeploymentId.invalidate();
+    await create.mutateAsync({
+      ...values,
+      deploymentId,
+    });
+    router.refresh();
     setOpen(false);
   });
   return (
@@ -50,7 +78,17 @@ export const CreateVaribaleDialog: React.FC<{
           <form onSubmit={onSubmit} className="space-y-3">
             <DialogHeader>
               <DialogTitle>Add Variable</DialogTitle>
-              <DialogDescription>Variables are things</DialogDescription>
+              <DialogDescription>
+                <Alert variant="secondary">
+                  <IconBulb className="h-5 w-5" />
+                  <AlertTitle>Deployment variables</AlertTitle>
+                  Variables in deployments make automation flexible and
+                  reusable. They let you customize deployments with user inputs
+                  and use environment-specific values without hardcoding. This
+                  allows deployments to adapt to different scenarios without
+                  changing their core logic.
+                </Alert>
+              </DialogDescription>
             </DialogHeader>
 
             <FormField
@@ -69,6 +107,68 @@ export const CreateVaribaleDialog: React.FC<{
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="config"
+              render={({ field: { value, onChange } }) => (
+                <>
+                  <FormItem>
+                    <FormLabel>Input Display</FormLabel>
+                    <FormControl>
+                      <ConfigTypeSelector
+                        value={value.type}
+                        onChange={(type: string) => {
+                          if (type === "choice") {
+                            onChange({ type, options: [] });
+                            return;
+                          }
+                          onChange({ type });
+                        }}
+                      />
+                    </FormControl>
+                  </FormItem>
+
+                  {value.type === "string" && (
+                    <StringConfigFields
+                      config={value}
+                      updateConfig={(updates) =>
+                        onChange({ ...value, ...updates })
+                      }
+                    />
+                  )}
+
+                  {value.type === "boolean" && (
+                    <BooleanConfigFields
+                      config={value}
+                      updateConfig={(updates) =>
+                        onChange({ ...value, ...updates })
+                      }
+                    />
+                  )}
+
+                  {value.type === "number" && (
+                    <NumberConfigFields
+                      config={value}
+                      updateConfig={(updates) =>
+                        onChange({ ...value, ...updates })
+                      }
+                    />
+                  )}
+
+                  {value.type === "choice" && (
+                    <ChoiceConfigFields
+                      config={value}
+                      updateConfig={(updates) =>
+                        onChange({ ...value, ...updates })
+                      }
+                    />
+                  )}
+                </>
+              )}
+            />
+
+            <pre className="text-xs">{JSON.stringify(config, null, 2)}</pre>
 
             <FormField
               control={form.control}

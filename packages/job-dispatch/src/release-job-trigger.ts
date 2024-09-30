@@ -20,6 +20,8 @@ import {
   targetMatchesMetadata,
 } from "@ctrlplane/db/schema";
 
+import { createReleaseVariables } from "./job-variables-deployment.js";
+
 type FilterFunc = (
   tx: Tx,
   insertReleaseJobTriggers: ReleaseJobTriggerInsert[],
@@ -206,6 +208,10 @@ class ReleaseJobTriggerBuilder {
       .insert(releaseJobTrigger)
       .values(wtWithJobId)
       .returning();
+
+    await Promise.all(
+      jobs.map((job) => createReleaseVariables(this.tx, job.id)),
+    );
 
     for (const func of this._then) await func(this.tx, releaseJobTriggers);
 
