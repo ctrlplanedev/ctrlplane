@@ -1,5 +1,6 @@
 "use client";
 
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import { useEffect } from "react";
 import { useParams } from "next/navigation";
 import { IconInfoCircle, IconPlant } from "@tabler/icons-react";
@@ -16,13 +17,9 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import { Label } from "@ctrlplane/ui/label";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
-import {
-  isDefaultCondition,
-  isValidTargetCondition,
-  targetCondition,
-} from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { TargetConditionBadge } from "../../../_components/target-condition/TargetConditionBadge";
@@ -32,7 +29,6 @@ import { usePanel } from "./SidepanelContext";
 const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
-  targetFilter: targetCondition.optional(),
 });
 
 export const SidebarEnvironmentPanel: React.FC = () => {
@@ -49,7 +45,6 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     defaultValues: {
       name: node.data.label,
       description: node.data.description,
-      targetFilter: node.data.targetFilter,
     },
   });
 
@@ -62,18 +57,15 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     form.reset({
       name: node.data.label,
       description: node.data.description,
-      targetFilter: node.data.targetFilter,
     });
   }, [node, form]);
-
-  const { targetFilter } = form.watch();
 
   const targets = api.target.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
-      filter: targetFilter,
+      filter: node.data.targetFilter,
     },
-    { enabled: workspace.data != null && targetFilter != null },
+    { enabled: workspace.data != null && node.data.targetFilter != null },
   );
 
   const utils = api.useUtils();
@@ -83,26 +75,10 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
 
-      const { targetFilter } = values;
-
-      if (targetFilter != null && !isValidTargetCondition(targetFilter)) {
-        form.setError("targetFilter", {
-          message:
-            "Invalid target filter, ensure all fields are filled out correctly.",
-        });
-        return nodes;
-      }
-
       update
         .mutateAsync({
           id: node.id,
-          data: {
-            ...values,
-            targetFilter:
-              targetFilter != null && isDefaultCondition(targetFilter)
-                ? undefined
-                : targetFilter,
-          },
+          data: { ...values },
         })
         .then(() =>
           utils.environment.bySystemId.invalidate(node.data.systemId),
@@ -114,7 +90,6 @@ export const SidebarEnvironmentPanel: React.FC = () => {
               data: {
                 ...n.data,
                 ...values,
-                targetFilter,
                 label: values.name,
               },
             }
@@ -122,6 +97,34 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       );
     });
   });
+
+  const onFilterDialogSubmit = (condition: TargetCondition | undefined) =>
+    setNodes((nodes) => {
+      const node = nodes.find((n) => n.id === selectedNodeId);
+      if (!node) return nodes;
+
+      update
+        .mutateAsync({
+          id: node.id,
+          data: {
+            targetFilter: condition ?? null,
+          },
+        })
+        .then(() =>
+          utils.environment.bySystemId.invalidate(node.data.systemId),
+        );
+      return nodes.map((n) =>
+        n.id === selectedNodeId
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                targetFilter: condition,
+              },
+            }
+          : n,
+      );
+    });
 
   return (
     <Form {...form}>
@@ -165,43 +168,31 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="targetFilter"
-          render={({ field: { onChange, value } }) => (
-            <FormItem>
-              <FormControl>
-                <div className="flex flex-col gap-2">
-                  <FormLabel>
-                    Target Filter (
-                    {targetFilter != null && targets.data != null
-                      ? targets.data.total
-                      : "-"}
-                    )
-                  </FormLabel>
-                  {value == null && (
-                    <span className="text-sm text-muted-foreground">
-                      Add a filter to select targets for this environment.
-                    </span>
-                  )}
-                  {value != null && (
-                    <TargetConditionBadge condition={value} tabbed />
-                  )}
-                  <TargetConditionDialog condition={value} onChange={onChange}>
-                    <Button variant="outline" className="w-fit">
-                      Set targets
-                    </Button>
-                  </TargetConditionDialog>
-                  {form.formState.errors.targetFilter && (
-                    <span className="text-sm text-red-600">
-                      {form.formState.errors.targetFilter.message}
-                    </span>
-                  )}
-                </div>
-              </FormControl>
-            </FormItem>
+        <div className="flex flex-col gap-2">
+          <Label>
+            Target Filter (
+            {node.data.targetFilter != null && targets.data != null
+              ? targets.data.total
+              : "-"}
+            )
+          </Label>
+          {node.data.targetFilter == null && (
+            <span className="text-sm text-muted-foreground">
+              Add a filter to select targets for this environment.
+            </span>
           )}
-        />
+          {node.data.targetFilter != null && (
+            <TargetConditionBadge condition={node.data.targetFilter} tabbed />
+          )}
+          <TargetConditionDialog
+            condition={node.data.targetFilter}
+            onChange={onFilterDialogSubmit}
+          >
+            <Button variant="outline" className="w-fit">
+              Set targets
+            </Button>
+          </TargetConditionDialog>
+        </div>
 
         <div className="flex gap-2">
           <Button type="submit" disabled={update.isPending}>
