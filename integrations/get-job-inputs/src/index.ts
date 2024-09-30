@@ -51,6 +51,8 @@ async function run() {
       const { variables, target, release, environment, runbook, deployment } =
         response;
 
+      console.log("Job response", JSON.stringify(response));
+
       setOutputAndLog("base_url", baseUrl);
 
       setOutputAndLog("target_id", target?.id);
