@@ -58,6 +58,7 @@ async function run() {
       setOutputAndLog("target_kind", target?.kind);
       setOutputAndLog("target_version", target?.version);
       setOutputAndLog("target_identifier", target?.identifier);
+      setOutputsRecursively("target_config", target?.config);
 
       setOutputAndLog("workspace_id", target?.workspaceId);
 
@@ -66,47 +67,43 @@ async function run() {
 
       setOutputAndLog("release_id", release?.id);
       setOutputAndLog("release_version", release?.version);
+      setOutputsRecursively("release_metadata", release?.metadata);
 
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);
       setOutputAndLog("deployment_slug", deployment?.slug);
+      setOutputsRecursively("deployment_variables", variables ?? {});
 
       setOutputAndLog("runbook_id", runbook?.id);
       setOutputAndLog("runbook_name", runbook?.name);
 
-      setOutputAndLog(
-        "system_id",
-        deployment?.systemId ?? runbook?.systemId ?? environment?.systemId,
-      );
-      setOutputAndLog(
-        "agent_id",
-        deployment?.jobAgentId ?? runbook?.jobAgentId,
-      );
+      const systemId =
+        deployment?.systemId ?? runbook?.systemId ?? environment?.systemId;
+      setOutputAndLog("system_id", systemId);
 
-      setOutputsRecursively("target_config", target?.config);
-      setOutputsRecursively("variables", variables ?? {});
+      const agentId = deployment?.jobAgentId ?? runbook?.jobAgentId;
+      setOutputAndLog("agent_id", agentId);
     })
     .then(() => {
-      if (requiredOutputs.length > 0) {
-        core.info(
-          `The required_outputs for this job are: ${requiredOutputs.join(", ")}`,
-        );
-
-        const missingOutputs = requiredOutputs.filter(
-          (output) => !outputTracker.has(output),
-        );
-
-        if (missingOutputs.length > 0)
-          core.setFailed(
-            `Missing required outputs: ${missingOutputs.join(", ")}`,
-          );
+      if (requiredOutputs.length === 0) {
+        core.info("No required_outputs set for this job");
         return;
       }
-      core.info("No required_outputs set for this job");
+
+      core.info(
+        `The required_outputs for this job are: ${requiredOutputs.join(", ")}`,
+      );
+
+      const missingOutputs = requiredOutputs.filter(
+        (output) => !outputTracker.has(output),
+      );
+
+      if (missingOutputs.length > 0)
+        core.setFailed(
+          `Missing required outputs: ${missingOutputs.join(", ")}`,
+        );
     })
-    .catch((error) => {
-      core.setFailed(`Action failed: ${error.message}`);
-    });
+    .catch((error) => core.setFailed(`Action failed: ${error.message}`));
 }
 
 run();

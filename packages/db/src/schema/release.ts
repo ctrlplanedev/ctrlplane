@@ -1,5 +1,6 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -58,6 +59,7 @@ export const release = pgTable(
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    metadata: jsonb("metadata").notNull().default("{}"),
   },
   (t) => ({ unq: uniqueIndex().on(t.deploymentId, t.version) }),
 );

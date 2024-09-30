@@ -1,6 +1,8 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from "./AcknowledgeJob200Response";
+export * from "./CreateRelease200Response";
+export * from "./CreateReleaseRequest";
 export * from "./GetAgentRunningJob200ResponseInner";
 export * from "./GetJob200Response";
 export * from "./GetJob200ResponseDeployment";

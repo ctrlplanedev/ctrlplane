@@ -12,10 +12,16 @@ import {
   target,
 } from "@ctrlplane/db/schema";
 
+import { getUser } from "~/app/api/v1/auth";
+
 export const GET = async (
-  _: NextRequest,
+  req: NextRequest,
   { params }: { params: { agentId: string } },
 ) => {
+  const user = await getUser(req);
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const je = await db
     .select()
     .from(job)

@@ -27009,6 +27009,65 @@ function AcknowledgeJob200ResponseToJSON(value) {
   };
 }
 
+// src/models/CreateRelease200Response.ts
+function instanceOfCreateRelease200Response(value) {
+  return true;
+}
+function CreateRelease200ResponseFromJSON(json) {
+  return CreateRelease200ResponseFromJSONTyped(json, false);
+}
+function CreateRelease200ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    id: json["id"] == null ? void 0 : json["id"],
+    version: json["version"] == null ? void 0 : json["version"],
+    metadata: json["metadata"] == null ? void 0 : json["metadata"]
+  };
+}
+function CreateRelease200ResponseToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    id: value["id"],
+    version: value["version"],
+    metadata: value["metadata"]
+  };
+}
+
+// src/models/CreateReleaseRequest.ts
+function instanceOfCreateReleaseRequest(value) {
+  if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("deploymentId" in value) || value["deploymentId"] === void 0)
+    return false;
+  return true;
+}
+function CreateReleaseRequestFromJSON(json) {
+  return CreateReleaseRequestFromJSONTyped(json, false);
+}
+function CreateReleaseRequestFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    version: json["version"],
+    deploymentId: json["deploymentId"],
+    metadata: json["metadata"] == null ? void 0 : json["metadata"]
+  };
+}
+function CreateReleaseRequestToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    version: value["version"],
+    deploymentId: value["deploymentId"],
+    metadata: value["metadata"]
+  };
+}
+
 // src/models/GetAgentRunningJob200ResponseInner.ts
 function instanceOfGetAgentRunningJob200ResponseInner(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
@@ -27137,6 +27196,7 @@ function GetJob200ResponseEnvironmentToJSON(value) {
 function instanceOfGetJob200ResponseRelease(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("metadata" in value) || value["metadata"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseReleaseFromJSON(json) {
@@ -27148,7 +27208,8 @@ function GetJob200ResponseReleaseFromJSONTyped(json, ignoreDiscriminator) {
   }
   return {
     id: json["id"],
-    version: json["version"]
+    version: json["version"],
+    metadata: json["metadata"]
   };
 }
 function GetJob200ResponseReleaseToJSON(value) {
@@ -27157,7 +27218,8 @@ function GetJob200ResponseReleaseToJSON(value) {
   }
   return {
     id: value["id"],
-    version: value["version"]
+    version: value["version"],
+    metadata: value["metadata"]
   };
 }
 
@@ -27592,6 +27654,49 @@ var DefaultApi = class extends BaseAPI {
     return await response.value();
   }
   /**
+   * Creates a release
+   */
+  async createReleaseRaw(requestParameters, initOverrides) {
+    if (requestParameters["createReleaseRequest"] == null) {
+      throw new RequiredError(
+        "createReleaseRequest",
+        'Required parameter "createReleaseRequest" was null or undefined when calling createRelease().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    headerParameters["Content-Type"] = "application/json";
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/releases`,
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: CreateReleaseRequestToJSON(
+          requestParameters["createReleaseRequest"]
+        )
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => CreateRelease200ResponseFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Creates a release
+   */
+  async createRelease(requestParameters, initOverrides) {
+    const response = await this.createReleaseRaw(
+      requestParameters,
+      initOverrides
+    );
+    return await response.value();
+  }
+  /**
    * Get a agents running jobs
    */
   async getAgentRunningJobRaw(requestParameters, initOverrides) {
@@ -27960,34 +28065,35 @@ async function run() {
         setOutputAndLog("target_kind", target?.kind);
         setOutputAndLog("target_version", target?.version);
         setOutputAndLog("target_identifier", target?.identifier);
+        setOutputsRecursively("target_config", target?.config);
         setOutputAndLog("workspace_id", target?.workspaceId);
         setOutputAndLog("environment_id", environment?.id);
         setOutputAndLog("environment_name", environment?.name);
         setOutputAndLog("release_id", release?.id);
         setOutputAndLog("release_version", release?.version);
+        setOutputsRecursively("release_metadata", release?.metadata);
         setOutputAndLog("deployment_id", deployment?.id);
         setOutputAndLog("deployment_name", deployment?.name);
         setOutputAndLog("deployment_slug", deployment?.slug);
+        setOutputsRecursively("deployment_variables", variables ?? {});
         setOutputAndLog("runbook_id", runbook?.id);
         setOutputAndLog("runbook_name", runbook?.name);
-        setOutputAndLog("system_id", deployment?.systemId ?? runbook?.systemId ?? environment?.systemId);
-        setOutputAndLog("agent_id", deployment?.jobAgentId ?? runbook?.jobAgentId);
-        setOutputsRecursively("target_config", target?.config);
-        setOutputsRecursively("variables", variables ?? {});
+        const systemId = deployment?.systemId ?? runbook?.systemId ?? environment?.systemId;
+        setOutputAndLog("system_id", systemId);
+        const agentId = deployment?.jobAgentId ?? runbook?.jobAgentId;
+        setOutputAndLog("agent_id", agentId);
     })
         .then(() => {
-        if (requiredOutputs.length > 0) {
-            core.info(`The required_outputs for this job are: ${requiredOutputs.join(", ")}`);
-            const missingOutputs = requiredOutputs.filter((output) => !outputTracker.has(output));
-            if (missingOutputs.length > 0)
-                core.setFailed(`Missing required outputs: ${missingOutputs.join(", ")}`);
+        if (requiredOutputs.length === 0) {
+            core.info("No required_outputs set for this job");
             return;
         }
-        core.info("No required_outputs set for this job");
+        core.info(`The required_outputs for this job are: ${requiredOutputs.join(", ")}`);
+        const missingOutputs = requiredOutputs.filter((output) => !outputTracker.has(output));
+        if (missingOutputs.length > 0)
+            core.setFailed(`Missing required outputs: ${missingOutputs.join(", ")}`);
     })
-        .catch((error) => {
-        core.setFailed(`Action failed: ${error.message}`);
-    });
+        .catch((error) => core.setFailed(`Action failed: ${error.message}`));
 }
 run();
 

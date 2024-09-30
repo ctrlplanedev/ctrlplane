@@ -6,10 +6,16 @@ import { db } from "@ctrlplane/db/client";
 import { jobAgent } from "@ctrlplane/db/schema";
 import { databaseJobQueue } from "@ctrlplane/job-dispatch/queue";
 
+import { getUser } from "~/app/api/v1/auth";
+
 export const GET = async (
-  _: NextRequest,
+  req: NextRequest,
   { params }: { params: { workspace: string; agentId: string } },
 ) => {
+  const user = await getUser(req);
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const jd = await db
     .select()
     .from(jobAgent)

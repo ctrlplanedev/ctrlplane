@@ -18,10 +18,16 @@ import {
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
+import { getUser } from "~/app/api/v1/auth";
+
 export const GET = async (
-  _: NextRequest,
+  req: NextRequest,
   { params }: { params: { jobId: string } },
 ) => {
+  const user = await getUser(req);
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const je = await db
     .select()
     .from(job)

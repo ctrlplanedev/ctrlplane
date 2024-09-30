@@ -14,6 +14,8 @@
 
 import type {
   AcknowledgeJob200Response,
+  CreateRelease200Response,
+  CreateReleaseRequest,
   GetAgentRunningJob200ResponseInner,
   GetJob200Response,
   GetNextJobs200Response,
@@ -26,6 +28,10 @@ import type {
 import {
   AcknowledgeJob200ResponseFromJSON,
   AcknowledgeJob200ResponseToJSON,
+  CreateRelease200ResponseFromJSON,
+  CreateRelease200ResponseToJSON,
+  CreateReleaseRequestFromJSON,
+  CreateReleaseRequestToJSON,
   GetAgentRunningJob200ResponseInnerFromJSON,
   GetAgentRunningJob200ResponseInnerToJSON,
   GetJob200ResponseFromJSON,
@@ -47,6 +53,10 @@ import * as runtime from "../runtime";
 
 export interface AcknowledgeJobRequest {
   jobId: string;
+}
+
+export interface CreateReleaseOperationRequest {
+  createReleaseRequest: CreateReleaseRequest;
 }
 
 export interface GetAgentRunningJobRequest {
@@ -134,6 +144,63 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<AcknowledgeJob200Response> {
     const response = await this.acknowledgeJobRaw(
+      requestParameters,
+      initOverrides,
+    );
+    return await response.value();
+  }
+
+  /**
+   * Creates a release
+   */
+  async createReleaseRaw(
+    requestParameters: CreateReleaseOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<CreateRelease200Response>> {
+    if (requestParameters["createReleaseRequest"] == null) {
+      throw new runtime.RequiredError(
+        "createReleaseRequest",
+        'Required parameter "createReleaseRequest" was null or undefined when calling createRelease().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/releases`,
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: CreateReleaseRequestToJSON(
+          requestParameters["createReleaseRequest"],
+        ),
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse(response, (jsonValue) =>
+      CreateRelease200ResponseFromJSON(jsonValue),
+    );
+  }
+
+  /**
+   * Creates a release
+   */
+  async createRelease(
+    requestParameters: CreateReleaseOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<CreateRelease200Response> {
+    const response = await this.createReleaseRaw(
       requestParameters,
       initOverrides,
     );

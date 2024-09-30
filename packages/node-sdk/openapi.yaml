@@ -288,7 +288,9 @@ paths:
                         type: string
                       version:
                         type: string
-                    required: [id, version]
+                      metadata:
+                        type: object
+                    required: [id, version, metadata]
 
                   deployment:
                     type: object
@@ -418,6 +420,40 @@ paths:
                     type: boolean
                 required:
                   - success
+  /v1/releases:
+    post:
+      summary: Creates a release
+      operationId: createRelease
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                version:
+                  type: string
+                deploymentId:
+                  type: string
+                metadata:
+                  type: object
+              required:
+                - version
+                - deploymentId
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  version:
+                    type: string
+                  metadata:
+                    type: object
 components:
   securitySchemes:
     apiKey:

@@ -32,6 +32,12 @@ export interface GetJob200ResponseRelease {
    * @memberof GetJob200ResponseRelease
    */
   version: string;
+  /**
+   *
+   * @type {object}
+   * @memberof GetJob200ResponseRelease
+   */
+  metadata: object;
 }
 
 /**
@@ -42,6 +48,7 @@ export function instanceOfGetJob200ResponseRelease(
 ): value is GetJob200ResponseRelease {
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("version" in value) || value["version"] === undefined) return false;
+  if (!("metadata" in value) || value["metadata"] === undefined) return false;
   return true;
 }
 
@@ -61,6 +68,7 @@ export function GetJob200ResponseReleaseFromJSONTyped(
   return {
     id: json["id"],
     version: json["version"],
+    metadata: json["metadata"],
   };
 }
 
@@ -73,5 +81,6 @@ export function GetJob200ResponseReleaseToJSON(
   return {
     id: value["id"],
     version: value["version"],
+    metadata: value["metadata"],
   };
 }
