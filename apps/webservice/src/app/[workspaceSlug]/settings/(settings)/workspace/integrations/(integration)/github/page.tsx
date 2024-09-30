@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "@icons-pack/react-simple-icons";
 
 import { auth } from "@ctrlplane/auth";
-import { logger } from "@ctrlplane/logger";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
@@ -44,13 +43,6 @@ export default async function GitHubIntegrationPage({
   const githubUser = await api.github.user.byUserId(session.user.id);
 
   const configFiles = await api.github.configFile.list(workspace.id);
-  logger.info("Github configured", {
-    githubUrl,
-    githubBotName,
-    githubBotClientId,
-    githubUser,
-    configFiles,
-  });
 
   return (
     <div className="flex flex-col gap-12">
