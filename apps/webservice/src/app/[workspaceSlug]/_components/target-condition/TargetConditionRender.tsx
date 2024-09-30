@@ -6,6 +6,7 @@ import {
   isKindCondition,
   isMetadataCondition,
   isNameCondition,
+  isProviderCondition,
 } from "@ctrlplane/validators/targets";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
@@ -13,6 +14,7 @@ import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { KindConditionRender } from "./KindConditionRender";
 import { MetadataConditionRender } from "./MetadataConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
+import { ProviderConditionRender } from "./ProviderConditionRender";
 
 /**
  * The parent container should have min width of 1000px
@@ -57,6 +59,17 @@ export const TargetConditionRender: React.FC<
   if (isNameCondition(condition))
     return (
       <NameConditionRender
+        condition={condition}
+        onChange={onChange}
+        onRemove={onRemove}
+        depth={depth}
+        className={className}
+      />
+    );
+
+  if (isProviderCondition(condition))
+    return (
+      <ProviderConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}
