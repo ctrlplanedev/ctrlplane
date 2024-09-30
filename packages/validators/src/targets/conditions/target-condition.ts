@@ -4,22 +4,26 @@ import type { ComparisonCondition } from "./comparison-condition.js";
 import type { KindCondition } from "./kind-condition.js";
 import type { MetadataCondition } from "./metadata-condition.js";
 import type { NameCondition } from "./name-condition.js";
+import type { ProviderCondition } from "./provider-condition.js";
 import { comparisonCondition } from "./comparison-condition.js";
 import { kindCondition } from "./kind-condition.js";
 import { metadataCondition } from "./metadata-condition.js";
 import { nameCondition } from "./name-condition.js";
+import { providerCondition } from "./provider-condition.js";
 
 export type TargetCondition =
   | ComparisonCondition
   | MetadataCondition
   | KindCondition
-  | NameCondition;
+  | NameCondition
+  | ProviderCondition;
 
 export const targetCondition = z.union([
   comparisonCondition,
   metadataCondition,
   kindCondition,
   nameCondition,
+  providerCondition,
 ]);
 
 export enum TargetOperator {
@@ -35,6 +39,7 @@ export enum TargetFilterType {
   Metadata = "metadata",
   Kind = "kind",
   Name = "name",
+  Provider = "provider",
   Comparison = "comparison",
 }
 
@@ -88,6 +93,11 @@ export const isNameCondition = (
   condition: TargetCondition,
 ): condition is NameCondition => condition.type === TargetFilterType.Name;
 
+export const isProviderCondition = (
+  condition: TargetCondition,
+): condition is ProviderCondition =>
+  condition.type === TargetFilterType.Provider;
+
 export const isValidTargetCondition = (condition: TargetCondition): boolean => {
   // a default condition is valid - it means the user wants to clear the filter
   // so it gets set to undefined, which matches all targets
@@ -98,6 +108,7 @@ export const isValidTargetCondition = (condition: TargetCondition): boolean => {
   }
   if (isKindCondition(condition)) return condition.value.length > 0;
   if (isNameCondition(condition)) return condition.value.length > 0;
+  if (isProviderCondition(condition)) return condition.value.length > 0;
   if (isMetadataCondition(condition)) {
     if (condition.operator === TargetOperator.Null)
       return condition.value == null && condition.key.length > 0;

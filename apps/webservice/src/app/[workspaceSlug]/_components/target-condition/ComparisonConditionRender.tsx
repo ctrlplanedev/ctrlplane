@@ -295,6 +295,17 @@ export const ComparisonConditionRender: React.FC<
             >
               Name
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                addCondition({
+                  type: TargetFilterType.Provider,
+                  operator: TargetOperator.Equals,
+                  value: "",
+                })
+              }
+            >
+              Provider
+            </DropdownMenuItem>
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
