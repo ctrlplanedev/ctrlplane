@@ -1,6 +1,6 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
@@ -34,7 +34,13 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     .set({ status })
     .where(eq(schema.job.externalRunId, id.toString()))
     .returning()
-    .then(takeFirst);
+    .then(takeFirstOrNull);
+
+  // Addressing a race condition: When the job is created externally on GitHub,
+  // it triggers a webhook event. However, our system hasn't updated the job with
+  // the externalRunId yet, as it depends on the job's instantiation. Therefore,
+  // the first event lacks the run ID, so we skip it and wait for the next event.
+  if (job == null) return;
 
   if (job.status === JobStatus.Completed) return onJobCompletion(job);
 };
