@@ -359,7 +359,6 @@ paths:
                   - createdAt
                   - updatedAt
                   - variable
-                  - config
     patch:
       summary: Update a job
       operationId: updateJob

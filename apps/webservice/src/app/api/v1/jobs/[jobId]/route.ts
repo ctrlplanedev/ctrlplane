@@ -49,13 +49,16 @@ export const GET = async (
       release: row.release,
     }));
 
-  const variables = await db
+  const jobVariableRows = await db
     .select()
     .from(jobVariable)
     .where(eq(jobVariable.jobId, params.jobId));
-  const variable = Object.fromEntries(variables.map((v) => [v.key, v.value]));
 
-  return NextResponse.json({ ...je.job, ...je, variable });
+  const variables = Object.fromEntries(
+    jobVariableRows.map((v) => [v.key, v.value]),
+  );
+
+  return NextResponse.json({ ...je.job, ...je, variables });
 };
 
 const bodySchema = updateJob;
