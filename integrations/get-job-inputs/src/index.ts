@@ -31,11 +31,13 @@ const setOutputAndLog = (key: string, value: any) => {
 const setOutputsRecursively = (prefix: string, obj: any) => {
   if (typeof obj === "object" && obj !== null) {
     for (const [key, value] of Object.entries(obj)) {
-      const sanitizedKey = key.split(".").join("_");
+      const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
       const newPrefix = prefix ? `${prefix}_${sanitizedKey}` : sanitizedKey;
-      if (typeof value === "object" && value !== null)
+      if (typeof value === "object" && value !== null) {
         setOutputsRecursively(newPrefix, value);
-      setOutputAndLog(newPrefix, value);
+      } else {
+        setOutputAndLog(newPrefix, value);
+      }
     }
     return;
   }
