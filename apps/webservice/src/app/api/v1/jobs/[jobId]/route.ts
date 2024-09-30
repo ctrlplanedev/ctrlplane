@@ -13,6 +13,7 @@ import {
   runbook,
   runbookJobTrigger,
   target,
+  targetMetadata,
   updateJob,
 } from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
@@ -58,7 +59,16 @@ export const GET = async (
     jobVariableRows.map((v) => [v.key, v.value]),
   );
 
-  return NextResponse.json({ ...je.job, ...je, variables });
+  const jobTargetMetadataRows = await db
+    .select()
+    .from(targetMetadata)
+    .where(eq(targetMetadata.targetId, je.target?.id ?? ""));
+
+  const metadata = Object.fromEntries(
+    jobTargetMetadataRows.map((m) => [m.key, m.value]),
+  );
+
+  return NextResponse.json({ ...je.job, ...je, variables, metadata });
 };
 
 const bodySchema = updateJob;

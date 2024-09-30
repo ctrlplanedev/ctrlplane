@@ -59,6 +59,7 @@ async function run() {
       setOutputAndLog("target_version", target?.version);
       setOutputAndLog("target_identifier", target?.identifier);
       setOutputsRecursively("target_config", target?.config);
+      setOutputsRecursively("target_metadata", target?.metadata);
 
       setOutputAndLog("workspace_id", target?.workspaceId);
 

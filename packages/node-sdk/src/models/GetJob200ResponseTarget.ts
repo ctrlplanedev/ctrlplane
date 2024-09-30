@@ -62,6 +62,12 @@ export interface GetJob200ResponseTarget {
    * @memberof GetJob200ResponseTarget
    */
   config: object;
+  /**
+   *
+   * @type {object}
+   * @memberof GetJob200ResponseTarget
+   */
+  metadata: object;
 }
 
 /**
@@ -79,6 +85,7 @@ export function instanceOfGetJob200ResponseTarget(
   if (!("workspaceId" in value) || value["workspaceId"] === undefined)
     return false;
   if (!("config" in value) || value["config"] === undefined) return false;
+  if (!("metadata" in value) || value["metadata"] === undefined) return false;
   return true;
 }
 
@@ -103,6 +110,7 @@ export function GetJob200ResponseTargetFromJSONTyped(
     identifier: json["identifier"],
     workspaceId: json["workspaceId"],
     config: json["config"],
+    metadata: json["metadata"],
   };
 }
 
@@ -120,5 +128,6 @@ export function GetJob200ResponseTargetToJSON(
     identifier: value["identifier"],
     workspaceId: value["workspaceId"],
     config: value["config"],
+    metadata: value["metadata"],
   };
 }

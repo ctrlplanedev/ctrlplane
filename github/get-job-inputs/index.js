@@ -27269,6 +27269,7 @@ function instanceOfGetJob200ResponseTarget(value) {
   if (!("workspaceId" in value) || value["workspaceId"] === void 0)
     return false;
   if (!("config" in value) || value["config"] === void 0) return false;
+  if (!("metadata" in value) || value["metadata"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseTargetFromJSON(json) {
@@ -27285,7 +27286,8 @@ function GetJob200ResponseTargetFromJSONTyped(json, ignoreDiscriminator) {
     kind: json["kind"],
     identifier: json["identifier"],
     workspaceId: json["workspaceId"],
-    config: json["config"]
+    config: json["config"],
+    metadata: json["metadata"]
   };
 }
 function GetJob200ResponseTargetToJSON(value) {
@@ -27299,7 +27301,8 @@ function GetJob200ResponseTargetToJSON(value) {
     kind: value["kind"],
     identifier: value["identifier"],
     workspaceId: value["workspaceId"],
-    config: value["config"]
+    config: value["config"],
+    metadata: value["metadata"]
   };
 }
 
@@ -28066,6 +28069,7 @@ async function run() {
         setOutputAndLog("target_version", target?.version);
         setOutputAndLog("target_identifier", target?.identifier);
         setOutputsRecursively("target_config", target?.config);
+        setOutputsRecursively("target_metadata", target?.metadata);
         setOutputAndLog("workspace_id", target?.workspaceId);
         setOutputAndLog("environment_id", environment?.id);
         setOutputAndLog("environment_name", environment?.name);
