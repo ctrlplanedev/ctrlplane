@@ -340,16 +340,14 @@ paths:
                       metadata:
                         type: object
                     required:
-                      [
-                        id,
-                        name,
-                        version,
-                        kind,
-                        identifier,
-                        workspaceId,
-                        config,
-                        metadata,
-                      ]
+                      - id
+                      - name
+                      - version
+                      - kind
+                      - identifier
+                      - workspaceId
+                      - config
+                      - metadata
 
                   environment:
                     type: object
