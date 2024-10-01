@@ -190,10 +190,6 @@ export const ReleaseTable: React.FC<{
                         d.release.id === r.id &&
                         d.releaseJobTrigger.environmentId === env.id,
                     ).length ?? 0;
-                  console.log(
-                    "activeDeploymentCount**********************",
-                    activeDeploymentCount,
-                  );
                   const hasTargets = env.targets.length > 0;
                   const hasRelease =
                     environmentReleaseReleaseJobTriggers.length > 0;
