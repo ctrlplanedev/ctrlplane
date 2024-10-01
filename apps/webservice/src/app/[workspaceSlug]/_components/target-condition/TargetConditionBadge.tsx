@@ -206,12 +206,12 @@ export const TargetConditionBadge: React.FC<{
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
-      <div className="cursor-pointer rounded-lg bg-neutral-950 text-muted-foreground">
+      <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
         <StringifiedTargetCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>
     <HoverCardContent align="start" className={cn(!tabbed && "w-max")}>
-      <div className="cursor-pointer rounded-lg bg-neutral-950 text-muted-foreground">
+      <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
         <StringifiedTargetCondition condition={condition} tabbed={tabbed} />
       </div>
     </HoverCardContent>
