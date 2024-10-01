@@ -68,7 +68,17 @@ export const GET = async (
     jobTargetMetadataRows.map((m) => [m.key, m.value]),
   );
 
-  return NextResponse.json({ ...je.job, ...je, variables, metadata });
+  const targetWithMetadata = {
+    ...je.target,
+    metadata,
+  };
+
+  return NextResponse.json({
+    ...je.job,
+    ...je,
+    variables,
+    target: targetWithMetadata,
+  });
 };
 
 const bodySchema = updateJob;

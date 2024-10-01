@@ -33,11 +33,9 @@ const setOutputsRecursively = (prefix: string, obj: any) => {
     for (const [key, value] of Object.entries(obj)) {
       const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
       const newPrefix = prefix ? `${prefix}_${sanitizedKey}` : sanitizedKey;
-      if (typeof value === "object" && value !== null) {
+      if (typeof value === "object" && value !== null)
         setOutputsRecursively(newPrefix, value);
-      } else {
-        setOutputAndLog(newPrefix, value);
-      }
+      setOutputAndLog(newPrefix, value);
     }
     return;
   }
@@ -52,8 +50,6 @@ async function run() {
     .then((response) => {
       const { variables, target, release, environment, runbook, deployment } =
         response;
-
-      console.log("Job response", JSON.stringify(response));
 
       setOutputAndLog("base_url", baseUrl);
 
