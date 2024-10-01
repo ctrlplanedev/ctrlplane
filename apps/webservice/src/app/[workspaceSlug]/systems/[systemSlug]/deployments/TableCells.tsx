@@ -137,7 +137,17 @@ export const Release: React.FC<{
     systemSlug,
     deploymentSlug,
   } = props;
-  const data = _.chain(releaseJobTriggers)
+
+  const latestJobsByTarget = _.chain(releaseJobTriggers)
+    .groupBy((r) => r.target.id)
+    .mapValues((triggers) =>
+      _.maxBy(triggers, (t) => new Date(t.job.createdAt ?? 0)),
+    )
+    .values()
+    .compact()
+    .value();
+
+  const data = _.chain(latestJobsByTarget)
     .groupBy((r) => r.job.status)
     .entries()
     .map(([name, value]) => ({ name, count: value.length }))
@@ -164,7 +174,7 @@ export const Release: React.FC<{
             href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
             className="flex w-full items-center gap-2"
           >
-            <ReleaseIcon releaseJobTriggers={releaseJobTriggers} />
+            <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-semibold">{name}</span>

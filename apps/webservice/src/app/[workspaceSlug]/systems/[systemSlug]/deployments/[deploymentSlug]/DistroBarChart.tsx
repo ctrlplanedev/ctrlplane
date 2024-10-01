@@ -13,7 +13,7 @@ export const DistroBarChart: React.FC<{
     { deploymentId },
     { refetchInterval: 10_000 },
   );
-  const distribution = api.deployment.distrubtionById.useQuery(deploymentId, {
+  const distribution = api.deployment.distributionById.useQuery(deploymentId, {
     refetchInterval: 2_000,
   });
 

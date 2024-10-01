@@ -47,7 +47,7 @@ const latestReleaseSubQuery = (db: Tx) =>
 
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
-  distrubtionById: protectedProcedure
+  distributionById: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -56,33 +56,34 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(z.string())
     .query(({ ctx, input }) => {
-      const latestCompletedJob = ctx.db
+      const latestJobsPerTarget = ctx.db
         .select({
           id: job.id,
           status: job.status,
-          rank: sql<number>`ROW_NUMBER() OVER (ORDER BY job.created_at DESC)`.as(
+          targetId: releaseJobTrigger.targetId,
+          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY release_job_trigger.target_id ORDER BY job.created_at DESC)`.as(
             "rank",
           ),
         })
         .from(job)
-        .where(eq(job.status, "completed"))
-        .as("job");
+        .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+        .as("latest_jobs");
 
       return ctx.db
         .select()
-        .from(latestCompletedJob)
+        .from(latestJobsPerTarget)
         .innerJoin(
           releaseJobTrigger,
-          eq(releaseJobTrigger.jobId, latestCompletedJob.id),
+          eq(releaseJobTrigger.jobId, latestJobsPerTarget.id),
         )
         .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .innerJoin(target, eq(target.id, releaseJobTrigger.targetId))
         .where(
-          and(eq(release.deploymentId, input), eq(latestCompletedJob.rank, 1)),
+          and(eq(release.deploymentId, input), eq(latestJobsPerTarget.rank, 1)),
         )
         .then((r) =>
           r.map((row) => ({
-            ...row.job,
+            ...row.latest_jobs,
             release: row.release,
             target: row.target,
             releaseJobTrigger: row.release_job_trigger,
