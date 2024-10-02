@@ -189,7 +189,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                   filter: LZString.compressToEncodedURIComponent(
                     JSON.stringify(node.data.targetFilter),
                   ),
-                }).toString()}`}
+                })}`}
                 passHref
               >
                 <Button variant="ghost" size="sm" asChild>
