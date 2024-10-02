@@ -42,6 +42,8 @@ export default async function TargetProvidersPage({
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Kind</TableHead>
+            <TableHead>Version</TableHead>
+            <TableHead>Created</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -92,6 +94,23 @@ export default async function TargetProvidersPage({
                       className="mr-1 h-7 gap-1.5 rounded-full bg-neutral-900 bg-transparent px-2 text-xs text-muted-foreground"
                     >
                       {kind.kind}
+                    </Badge>
+                  ))
+                ) : (
+                  <span className="text-xs italic text-muted-foreground">
+                    No targets
+                  </span>
+                )}
+              </TableCell>
+              <TableCell>
+                {provider.kinds.length > 0 ? (
+                  provider.kinds.map((version) => (
+                    <Badge
+                      key={version.version}
+                      variant="outline"
+                      className="mr-1 h-7 gap-1.5 rounded-full bg-neutral-900 bg-transparent px-2 text-xs text-muted-foreground"
+                    >
+                      {version.version}
                     </Badge>
                   ))
                 ) : (
