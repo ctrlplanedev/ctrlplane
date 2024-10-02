@@ -112,9 +112,10 @@ export const ReleaseTable: React.FC<{
     }));
 
   const firstRelease = releases.data?.at(0);
-  const distrubtion = api.deployment.distrubtionById.useQuery(deployment.id, {
+  const distribution = api.deployment.distributionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
   });
+  console.log("distribution.data**********************", distribution);
   const releaseIds = releases.data?.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
     releaseIds,
@@ -183,8 +184,8 @@ export const ReleaseTable: React.FC<{
                       (t) => t.releaseId === r.id && t.environmentId === env.id,
                     );
 
-                  const hasActiveDeployment =
-                    distrubtion.data?.filter(
+                  const activeDeploymentCount =
+                    distribution.data?.filter(
                       (d) =>
                         d.release.id === r.id &&
                         d.releaseJobTrigger.environmentId === env.id,
@@ -212,7 +213,7 @@ export const ReleaseTable: React.FC<{
                         releaseIdx === 0 && "border-t",
                         idx === environments.length - 1 &&
                           "border-r-neutral-800",
-                        hasActiveDeployment > 0 && "bg-neutral-400/5",
+                        activeDeploymentCount > 0 && "bg-neutral-400/5",
                       )}
                     >
                       {showRelease && (
@@ -222,7 +223,7 @@ export const ReleaseTable: React.FC<{
                           deploymentSlug={deployment.slug}
                           releaseId={r.id}
                           environment={env}
-                          activeDeploymentCount={hasActiveDeployment}
+                          activeDeploymentCount={activeDeploymentCount}
                           name={r.version}
                           deployedAt={
                             environmentReleaseReleaseJobTriggers[0]!.createdAt

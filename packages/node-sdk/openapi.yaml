@@ -337,8 +337,17 @@ paths:
                         type: string
                       config:
                         type: object
+                      metadata:
+                        type: object
                     required:
-                      [id, name, version, kind, identifier, workspaceId, config]
+                      - id
+                      - name
+                      - version
+                      - kind
+                      - identifier
+                      - workspaceId
+                      - config
+                      - metadata
 
                   environment:
                     type: object

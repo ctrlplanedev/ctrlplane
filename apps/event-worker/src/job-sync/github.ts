@@ -9,7 +9,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { convertStatus, getInstallationOctokit } from "../github-utils.js";
 
 export const syncGithubJob = async (je: Job) => {
-  if (je.externalRunId == null) {
+  if (je.externalId == null) {
     await db.update(job).set({
       status: JobStatus.ExternalRunNotFound,
       message: `Run ID not found for job ${je.id}`,
@@ -17,7 +17,7 @@ export const syncGithubJob = async (je: Job) => {
     return;
   }
 
-  const runId = Number(je.externalRunId);
+  const runId = Number(je.externalId);
 
   const config = je.jobAgentConfig;
   const parsed = configSchema.safeParse(config);

@@ -30,7 +30,7 @@ class DatabaseJobQueue implements JobQueue {
             "completed",
             "invalid_job_agent",
           ]),
-          isNull(job.externalRunId),
+          isNull(job.externalId),
         ),
       );
 
