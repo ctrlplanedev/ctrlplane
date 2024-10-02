@@ -147,6 +147,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
         .where(and(eq(release.id, input), isNull(environment.deletedAt)))
+        .orderBy(desc(releaseJobTrigger.createdAt))
         .then((data) =>
           _.chain(data)
             .groupBy((row) => row.release_job_trigger.id)
