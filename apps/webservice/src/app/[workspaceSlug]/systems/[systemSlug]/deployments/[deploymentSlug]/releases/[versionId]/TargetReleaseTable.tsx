@@ -107,7 +107,7 @@ const validForceReleaseJobStatus = [
   "scheduled",
   "action_required",
   "skipped",
-  "failed",
+  "failure",
   "cancelled",
   "completed",
 ];
