@@ -2,6 +2,7 @@
 
 import type { Workspace } from "@ctrlplane/db/schema";
 import React, { Fragment, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle, IconDots, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -241,15 +242,13 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     idx !== jobs.length - 1 && "border-b-neutral-800/50",
                   )}
                 >
-                  <TableCell
-                    className="hover:bg-neutral-800/55"
-                    onClick={() => {
-                      router.push(
-                        `/${workspace.slug}/targets?target_id=${job.target?.id}`,
-                      );
-                    }}
-                  >
-                    {job.target?.name}
+                  <TableCell className="hover:bg-neutral-800/55">
+                    <Link
+                      href={`/${workspace.slug}/targets?target_id=${job.target?.id}`}
+                      className="block w-full hover:text-blue-300"
+                    >
+                      {job.target?.name}
+                    </Link>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
