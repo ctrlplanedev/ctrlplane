@@ -221,7 +221,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
           .map(([envId, jobs]) => (
             <Fragment key={envId}>
               <TableRow className={cn("sticky bg-neutral-800/40")}>
-                <TableCell colSpan={4}>
+                <TableCell colSpan={6}>
                   {jobs[0]?.environment != null && (
                     <div className="flex items-center gap-4">
                       <div className="flex-grow">
@@ -248,7 +248,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   <TableCell>{job.type}</TableCell>
                   <TableCell>
                     {job.job.externalId != null ? (
-                      <code className="font-mono text-sm">
+                      <code className="font-mono text-xs">
                         {job.job.externalId}
                       </code>
                     ) : (
