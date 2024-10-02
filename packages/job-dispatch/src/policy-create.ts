@@ -37,10 +37,13 @@ export const createJobApprovals = async (
 
   if (policiesToCheck.length === 0) return;
 
-  await db.insert(environmentPolicyApproval).values(
-    policiesToCheck.map((p) => ({
-      policyId: p.environment_policy.id,
-      releaseId: p.release.id,
-    })),
-  );
+  await db
+    .insert(environmentPolicyApproval)
+    .values(
+      policiesToCheck.map((p) => ({
+        policyId: p.environment_policy.id,
+        releaseId: p.release.id,
+      })),
+    )
+    .onConflictDoNothing();
 };
