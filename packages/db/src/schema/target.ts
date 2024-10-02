@@ -17,6 +17,8 @@ import { and, eq } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { targetCondition } from "@ctrlplane/validators/targets";
+
 import type { Tx } from "../common.js";
 import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
@@ -74,6 +76,26 @@ export const targetSchema = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
+
+export const targetView = pgTable("target_view", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspace.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").default(""),
+  filter: jsonb("filter").notNull().$type<TargetCondition>(),
+});
+
+export type TargetView = InferSelectModel<typeof targetView>;
+
+export const createTargetView = createInsertSchema(targetView, {
+  filter: targetCondition,
+}).omit({
+  id: true,
+});
+
+export const updateTargetView = createTargetView.partial();
 
 export const targetMetadata = pgTable(
   "target_metadata",

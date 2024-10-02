@@ -46,16 +46,15 @@ export enum TargetFilterType {
 export const defaultCondition: TargetCondition = {
   type: TargetFilterType.Comparison,
   operator: TargetOperator.And,
+  not: false,
   conditions: [],
 };
 
-export const isDefaultCondition = (condition: TargetCondition): boolean => {
-  return (
-    condition.type === TargetFilterType.Comparison &&
-    condition.operator === TargetOperator.And &&
-    condition.conditions.length === 0
-  );
-};
+export const isDefaultCondition = (condition: TargetCondition): boolean =>
+  condition.type === TargetFilterType.Comparison &&
+  condition.operator === TargetOperator.And &&
+  condition.conditions.length === 0 &&
+  !condition.not;
 
 export const isComparisonCondition = (
   condition: TargetCondition,
@@ -98,10 +97,7 @@ export const isProviderCondition = (
 ): condition is ProviderCondition =>
   condition.type === TargetFilterType.Provider;
 
-export const isValidTargetCondition = (condition: TargetCondition): boolean => {
-  // a default condition is valid - it means the user wants to clear the filter
-  // so it gets set to undefined, which matches all targets
-  if (isDefaultCondition(condition)) return true;
+const isValidTargetConditionBase = (condition: TargetCondition): boolean => {
   if (isComparisonCondition(condition)) {
     if (condition.conditions.length === 0) return false;
     return condition.conditions.every((c) => isValidTargetCondition(c));
@@ -115,4 +111,18 @@ export const isValidTargetCondition = (condition: TargetCondition): boolean => {
     return condition.value.length > 0 && condition.key.length > 0;
   }
   return false;
+};
+
+export const isValidTargetCondition = (condition: TargetCondition): boolean => {
+  // a default condition is valid - it means the user wants to clear the filter
+  // so it gets set to undefined, which matches all targets
+  if (isDefaultCondition(condition)) return true;
+  return isValidTargetConditionBase(condition);
+};
+
+export const isValidTargetViewCondition = (
+  condition: TargetCondition,
+): boolean => {
+  if (isDefaultCondition(condition)) return false;
+  return isValidTargetConditionBase(condition);
 };

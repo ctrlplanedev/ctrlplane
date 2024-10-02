@@ -17,6 +17,7 @@ import {
   target,
   targetMetadataGroup,
   targetProvider,
+  targetView,
   variableSet,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -190,6 +191,20 @@ const getTargetProviderScopes = async (id: string) => {
   ];
 };
 
+const getTargetViewScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(targetView, eq(targetView.workspaceId, workspace.id))
+    .where(eq(targetView.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "targetView" as const, id: result.target_view.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 const getDeploymentScopes = async (id: string) => {
   const result = await db
     .select()
@@ -288,6 +303,7 @@ export const scopeHandlers: Record<
   (id: string) => Promise<Array<Scope>>
 > = {
   target: getTargetScopes,
+  targetView: getTargetViewScopes,
   targetProvider: getTargetProviderScopes,
   deployment: getDeploymentScopes,
   deploymentVariable: getDeploymentVariableScopes,
