@@ -39,7 +39,7 @@ export default async function SystemValueSetsPage({
         <VariableSetGettingStarted systemId={system.id} />
       ) : (
         <>
-          <div>
+          <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-110px)] overflow-auto">
             <div className="flex items-center gap-4 border-b p-2 pl-4">
               <h1 className="flex-grow">Value Sets</h1>
               <CreateVariableSetDialog systemId={system.id}>

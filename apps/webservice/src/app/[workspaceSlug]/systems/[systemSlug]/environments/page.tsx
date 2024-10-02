@@ -29,27 +29,29 @@ export default async function SystemEnvironmentPage({
   return (
     <PanelProvider>
       <DeleteNodeDialogProvider>
-        <ReactFlowProvider>
-          <ResizablePanelGroup direction="horizontal">
-            <ResizablePanel defaultSize={60}>
-              <div className="h-[calc(100vh-53px)]">
-                <EnvFlowBuilder
-                  systemId={sys.id}
-                  envs={envs}
-                  policies={policies}
-                  policyDeployments={policyDeployments}
-                />
-              </div>
-            </ResizablePanel>
-            <ResizableHandle />
-            <ResizablePanel
-              className="min-w-[350px] max-w-[600px]"
-              defaultSize={30}
-            >
-              <Sidebar systemId={sys.id} />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ReactFlowProvider>
+        <div key={sys.id}>
+          <ReactFlowProvider>
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel defaultSize={60}>
+                <div className="h-[calc(100vh-53px)]">
+                  <EnvFlowBuilder
+                    systemId={sys.id}
+                    envs={envs}
+                    policies={policies}
+                    policyDeployments={policyDeployments}
+                  />
+                </div>
+              </ResizablePanel>
+              <ResizableHandle />
+              <ResizablePanel
+                className="min-w-[350px] max-w-[600px]"
+                defaultSize={30}
+              >
+                <Sidebar systemId={sys.id} />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ReactFlowProvider>
+        </div>
       </DeleteNodeDialogProvider>
     </PanelProvider>
   );

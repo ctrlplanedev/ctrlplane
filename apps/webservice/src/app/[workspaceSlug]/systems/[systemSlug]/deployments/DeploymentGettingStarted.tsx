@@ -23,7 +23,7 @@ export const DeploymentGettingStarted: React.FC<{ systemId: string }> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CreateDeploymentDialog defaultSystemId={systemId}>
+          <CreateDeploymentDialog systemId={systemId}>
             <Button size="sm">Create Deployment</Button>
           </CreateDeploymentDialog>
           <Button size="sm" variant="secondary">

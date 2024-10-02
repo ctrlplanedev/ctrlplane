@@ -16,24 +16,26 @@ export default async function WorkspaceGeneralSettingsPage({
   if (workspace == null) notFound();
 
   return (
-    <div className="container mx-auto max-w-2xl space-y-8">
-      <div className="space-y-1">
-        <h1 className="text-xl font-semibold">General</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage your workspace settings
-        </p>
+    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-40px)] overflow-auto">
+      <div className="container mx-auto max-w-2xl space-y-8">
+        <div className="space-y-1">
+          <h1 className="text-xl font-semibold">General</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your workspace settings
+          </p>
+        </div>
+        <div className="border-b" />
+
+        <div className="space-y-6">
+          <div>General</div>
+
+          <WorkspaceUpdateSection />
+        </div>
+
+        <div className="border-b" />
+
+        <WorkspaceDeleteSection />
       </div>
-      <div className="border-b" />
-
-      <div className="space-y-6">
-        <div>General</div>
-
-        <WorkspaceUpdateSection />
-      </div>
-
-      <div className="border-b" />
-
-      <WorkspaceDeleteSection />
     </div>
   );
 }
