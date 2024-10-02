@@ -46,8 +46,8 @@ export default async function TargetProvidersPage({
             <TableHead className="w-[1%]"></TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-40px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-40px)] overflow-auto">
+          <TableBody>
             {targetProviders.map((provider) => (
               <TableRow
                 key={provider.id}
@@ -123,8 +123,8 @@ export default async function TargetProvidersPage({
                 </TableCell>
               </TableRow>
             ))}
-          </div>
-        </TableBody>
+          </TableBody>
+        </div>
       </Table>
     </div>
   );
