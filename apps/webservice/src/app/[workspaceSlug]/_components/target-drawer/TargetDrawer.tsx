@@ -20,6 +20,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
+import { EditTargetDialog } from "../EditTarget";
 import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
@@ -85,6 +86,7 @@ export const TargetDrawer: React.FC = () => {
   const lockTarget = api.target.lock.useMutation();
   const unlockTarget = api.target.unlock.useMutation();
   const router = useRouter();
+  const utils = api.useUtils();
 
   const links =
     target?.metadata[ReservedMetadataKey.Links] != null
@@ -139,7 +141,7 @@ export const TargetDrawer: React.FC = () => {
               >
                 {target.lockedAt != null ? (
                   <>
-                    <IconLockOpen className="h-4 w-4" /> Unlocked
+                    <IconLockOpen className="h-4 w-4" /> Unlock
                   </>
                 ) : (
                   <>
@@ -147,6 +149,21 @@ export const TargetDrawer: React.FC = () => {
                   </>
                 )}
               </Button>
+
+              {target.provider == null && (
+                <EditTargetDialog
+                  target={target}
+                  onSuccess={() => utils.target.byId.invalidate(target.id)}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={target.lockedAt != null}
+                  >
+                    Edit Target
+                  </Button>
+                </EditTargetDialog>
+              )}
             </div>
           )}
         </div>
