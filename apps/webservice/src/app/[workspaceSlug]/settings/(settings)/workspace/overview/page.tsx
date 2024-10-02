@@ -23,7 +23,7 @@ export default function OverviewPage({
 }) {
   const { workspaceSlug } = params;
   return (
-    <div className="container mx-auto max-w-7xl space-y-8">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 container mx-auto h-[calc(100vh-40px)] max-w-7xl space-y-8 overflow-auto">
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Workspace</h1>
         <p className="text-sm text-muted-foreground">

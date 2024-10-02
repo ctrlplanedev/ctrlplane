@@ -25,7 +25,7 @@ export default async function SystemDeploymentsPage({
       {deployments.length === 0 ? (
         <DeploymentGettingStarted systemId={system.id} />
       ) : (
-        <div className="container mx-auto p-8">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 container mx-auto h-[calc(100vh-40px)] overflow-auto p-8">
           <DeploymentTable
             deployments={deployments}
             environments={environments}
