@@ -60,6 +60,8 @@ class DispatchBuilder {
 
     for (const func of this._then) await func(this.db, t);
 
+    console.log(`Dispatching ${wfs.length} jobs to the dispatch queue`);
+
     await dispatchJobsQueue.addBulk(
       wfs.map((wf) => ({ name: wf.id, data: { jobId: wf.id } })),
     );

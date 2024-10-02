@@ -4,6 +4,7 @@ import { Worker } from "bullmq";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -25,6 +26,8 @@ export const createDispatchExecutionJobWorker = () =>
         .then(takeFirstOrNull)
         .then(async (je) => {
           if (je == null) return;
+
+          logger.info(`Dispatching job ${je.job.id}...`);
 
           try {
             if (je.job_agent.type === String(JobAgentType.GithubApp))

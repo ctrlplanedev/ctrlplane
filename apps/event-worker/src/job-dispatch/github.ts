@@ -4,17 +4,21 @@ import pRetry from "p-retry";
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { githubOrganization, job } from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { convertStatus, getInstallationOctokit } from "../github-utils.js";
 
 export const dispatchGithubJob = async (je: Job) => {
-  console.log(`Dispatching job ${je.id}...`);
+  logger.info(`Dispatching github job ${je.id}...`);
 
   const config = je.jobAgentConfig;
   const parsed = configSchema.safeParse(config);
   if (!parsed.success) {
+    logger.error(
+      `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
+    );
     await db.update(job).set({
       status: JobStatus.InvalidJobAgent,
       message: `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
@@ -43,6 +47,7 @@ export const dispatchGithubJob = async (je: Job) => {
 
   const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {
+    logger.error(`GitHub bot not configured for job ${je.id}`);
     await db.update(job).set({
       status: JobStatus.InvalidJobAgent,
       message: "GitHub bot not configured",
@@ -54,6 +59,16 @@ export const dispatchGithubJob = async (je: Job) => {
     type: "installation",
     installationId: parsed.data.installationId,
   })) as { token: string };
+
+  logger.info(`Creating workflow dispatch for job ${je.id}...`, {
+    owner: parsed.data.owner,
+    repo: parsed.data.repo,
+    workflow_id: parsed.data.workflowId,
+    ref: ghOrg.branch,
+    inputs: {
+      job_id: je.id,
+    },
+  });
 
   await octokit.actions.createWorkflowDispatch({
     owner: parsed.data.owner,
@@ -88,6 +103,8 @@ export const dispatchGithubJob = async (je: Job) => {
 
         if (run == null) throw new Error("Run not found");
 
+        logger.info(`Run found for job ${je.id}`, { run });
+
         return { runId: run.id, status: run.status };
       },
       { retries: 15, minTimeout: 1000 },
@@ -95,7 +112,8 @@ export const dispatchGithubJob = async (je: Job) => {
 
     runId = runId_;
     status = status_;
-  } catch {
+  } catch (error) {
+    logger.error(`Job ${je.id} dispatch to GitHub failed`, { error });
     await db.update(job).set({
       status: JobStatus.ExternalRunNotFound,
       message: `Run ID not found for job ${je.id}`,
@@ -103,7 +121,7 @@ export const dispatchGithubJob = async (je: Job) => {
     return;
   }
 
-  console.log(`>>> runId: ${runId}, status: ${status}`);
+  logger.info(`Job ${je.id} dispatched to GitHub`, { runId, status });
 
   await db
     .update(job)
