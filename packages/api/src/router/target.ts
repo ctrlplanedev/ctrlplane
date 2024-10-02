@@ -7,6 +7,7 @@ import {
   asc,
   eq,
   inArray,
+  not,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -286,14 +287,49 @@ export const targetRouter = createTRPCRouter({
           .perform(Permission.TargetUpdate)
           .on({ type: "target", id: input.id }),
     })
-    .input(z.object({ id: z.string().uuid(), data: updateTarget }))
-    .mutation(({ ctx, input: { id, data } }) =>
-      ctx.db
-        .update(target)
-        .set(data)
-        .where(eq(target.id, id))
-        .returning()
-        .then(takeFirst),
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: updateTarget.and(z.object({ metadata: z.record(z.string()) })),
+      }),
+    )
+    .mutation(async ({ ctx, input: { id, data } }) =>
+      ctx.db.transaction(async (tx) => {
+        const updatedTarget = await tx
+          .update(target)
+          .set(data)
+          .where(eq(target.id, id))
+          .returning()
+          .then(takeFirst);
+
+        const metadataEntries = Object.entries(data.metadata).map(
+          ([key, value]) => ({
+            targetId: id,
+            key,
+            value,
+          }),
+        );
+
+        await tx
+          .insert(targetMetadata)
+          .values(metadataEntries)
+          .onConflictDoUpdate({
+            target: [targetMetadata.targetId, targetMetadata.key],
+            set: { value: sql`EXCLUDED.value` },
+          })
+          .then(() =>
+            tx
+              .delete(targetMetadata)
+              .where(
+                and(
+                  eq(targetMetadata.targetId, id),
+                  not(inArray(targetMetadata.key, Object.keys(data.metadata))),
+                ),
+              ),
+          );
+
+        return updatedTarget;
+      }),
     ),
 
   delete: protectedProcedure
