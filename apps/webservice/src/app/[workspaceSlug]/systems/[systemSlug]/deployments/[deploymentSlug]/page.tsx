@@ -14,6 +14,7 @@ import {
   ResizablePanelGroup,
 } from "@ctrlplane/ui/resizable";
 
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/server";
 import { EditAgentConfigDialog } from "../../_components/EditAgentConfigDialog";
 import { ReleaseTable } from "../TableRelease";
@@ -58,7 +59,11 @@ export default async function DeploymentPage({
       <ResizableHandle />
       <ResizablePanel className="min-w-[250px]">
         <div className="border-b p-6">
-          <h3 className="font-semibold">{deployment.name}</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">{deployment.name}</h3>
+            <DeploymentOptionsDropdown {...deployment} />
+          </div>
+
           {deployment.description && (
             <p className="text-sm text-muted-foreground">
               {deployment.description}

@@ -13,7 +13,6 @@ import {
   navigationMenuTriggerStyle,
 } from "@ctrlplane/ui/navigation-menu";
 
-import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/react";
 import { CreateVariableDialog } from "./CreateVariableDialog";
 
@@ -52,11 +51,6 @@ export const DeploymentsNavBar: React.FC = () => {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
-        <div className="flex-grow items-center">
-          {deployment.data && (
-            <DeploymentOptionsDropdown {...deployment.data} />
-          )}
-        </div>
       </div>
       {pathname.startsWith(`${baseUrl}/variables`) && (
         <CreateVariableDialog deploymentId={deployment.data?.id ?? ""}>
