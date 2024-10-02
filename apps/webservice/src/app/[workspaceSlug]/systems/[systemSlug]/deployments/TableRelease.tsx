@@ -115,7 +115,6 @@ export const ReleaseTable: React.FC<{
   const distribution = api.deployment.distributionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
   });
-  console.log("distribution.data**********************", distribution);
   const releaseIds = releases.data?.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
     releaseIds,
