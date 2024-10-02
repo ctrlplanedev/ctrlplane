@@ -1,9 +1,7 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
-import type { UseFormReturn } from "react-hook-form";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -15,27 +13,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  useForm,
-} from "@ctrlplane/ui/form";
-import { Input } from "@ctrlplane/ui/input";
-import { Textarea } from "@ctrlplane/ui/textarea";
+import { useForm } from "@ctrlplane/ui/form";
 import {
   defaultCondition,
   isDefaultCondition,
   isValidTargetCondition,
-  isValidTargetViewCondition,
   MAX_DEPTH_ALLOWED,
-  targetCondition,
 } from "@ctrlplane/validators/targets";
 
+import type { TargetViewFormSchema } from "./TargetViewForm";
 import { api } from "~/trpc/react";
 import { TargetConditionRender } from "./TargetConditionRender";
+import { TargetViewForm, targetViewFormSchema } from "./TargetViewForm";
 
 type TargetConditionDialogProps = {
   condition?: TargetCondition;
@@ -115,73 +104,6 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
   );
 };
 
-const targetViewFormSchema = z.object({
-  name: z.string().min(1),
-  filter: targetCondition.refine((data) => isValidTargetViewCondition(data), {
-    message: "Invalid target condition",
-  }),
-  description: z.string().optional(),
-});
-
-const TargetViewForm: React.FC<{
-  form: UseFormReturn<z.infer<typeof targetViewFormSchema>>;
-  onSubmit: (data: z.infer<typeof targetViewFormSchema>) => void;
-}> = ({ form, onSubmit }) => (
-  <Form {...form}>
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Name</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="description"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Description</FormLabel>
-            <FormControl>
-              <Textarea {...field} />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="filter"
-        render={({ field: { value, onChange } }) => (
-          <FormItem>
-            <FormLabel>Filter</FormLabel>
-            <FormControl>
-              <TargetConditionRender condition={value} onChange={onChange} />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      <DialogFooter>
-        <Button
-          variant="outline"
-          onClick={() => form.setValue("filter", defaultCondition)}
-        >
-          Clear
-        </Button>
-        <div className="flex-grow" />
-        <Button type="submit">Save</Button>
-      </DialogFooter>
-    </form>
-  </Form>
-);
-
 type CreateTargetViewDialogProps = {
   workspaceId: string;
   filter?: TargetCondition;
@@ -208,7 +130,7 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
 
   const createTargetView = api.target.view.create.useMutation();
 
-  const onFormSubmit = (data: z.infer<typeof targetViewFormSchema>) => {
+  const onFormSubmit = (data: TargetViewFormSchema) => {
     createTargetView
       .mutateAsync({
         ...data,
@@ -265,7 +187,7 @@ export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
 
   const updateTargetView = api.target.view.update.useMutation();
 
-  const onFormSubmit = (data: z.infer<typeof targetViewFormSchema>) => {
+  const onFormSubmit = (data: TargetViewFormSchema) => {
     updateTargetView
       .mutateAsync({
         id: view.id,
