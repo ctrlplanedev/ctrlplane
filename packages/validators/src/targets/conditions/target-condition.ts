@@ -97,11 +97,9 @@ export const isProviderCondition = (
 ): condition is ProviderCondition =>
   condition.type === TargetFilterType.Provider;
 
-const isValidTargetConditionBase = (condition: TargetCondition): boolean => {
-  if (isComparisonCondition(condition)) {
-    if (condition.conditions.length === 0) return false;
+export const isValidTargetCondition = (condition: TargetCondition): boolean => {
+  if (isComparisonCondition(condition))
     return condition.conditions.every((c) => isValidTargetCondition(c));
-  }
   if (isKindCondition(condition)) return condition.value.length > 0;
   if (isNameCondition(condition)) return condition.value.length > 0;
   if (isProviderCondition(condition)) return condition.value.length > 0;
@@ -111,18 +109,4 @@ const isValidTargetConditionBase = (condition: TargetCondition): boolean => {
     return condition.value.length > 0 && condition.key.length > 0;
   }
   return false;
-};
-
-export const isValidTargetCondition = (condition: TargetCondition): boolean => {
-  // a default condition is valid - it means the user wants to clear the filter
-  // so it gets set to undefined, which matches all targets
-  if (isDefaultCondition(condition)) return true;
-  return isValidTargetConditionBase(condition);
-};
-
-export const isValidTargetViewCondition = (
-  condition: TargetCondition,
-): boolean => {
-  if (isDefaultCondition(condition)) return false;
-  return isValidTargetConditionBase(condition);
 };

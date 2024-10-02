@@ -16,7 +16,6 @@ import {
 import { useForm } from "@ctrlplane/ui/form";
 import {
   defaultCondition,
-  isDefaultCondition,
   isValidTargetCondition,
   MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/targets";
@@ -89,9 +88,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
                 );
                 return;
               }
-              onChange(
-                isDefaultCondition(localCondition) ? undefined : localCondition,
-              );
+              onChange(localCondition);
               setOpen(false);
               setError(null);
             }}

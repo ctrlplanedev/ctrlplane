@@ -176,7 +176,8 @@ const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
 
   if (cond.type === "provider") return eq(target.providerId, cond.value);
 
-  if (cond.conditions.length === 0) return sql`FALSE`;
+  if (cond.conditions.length === 0 && cond.not) return sql`FALSE`;
+  if (cond.conditions.length === 0) return sql`TRUE`;
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con = cond.operator === "and" ? and(...subCon)! : or(...subCon)!;

@@ -14,7 +14,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   defaultCondition,
-  isValidTargetViewCondition,
+  isValidTargetCondition,
   targetCondition,
 } from "@ctrlplane/validators/targets";
 
@@ -22,7 +22,7 @@ import { TargetConditionRender } from "./TargetConditionRender";
 
 export const targetViewFormSchema = z.object({
   name: z.string().min(1),
-  filter: targetCondition.refine((data) => isValidTargetViewCondition(data), {
+  filter: targetCondition.refine((data) => isValidTargetCondition(data), {
     message: "Invalid target condition",
   }),
   description: z.string().optional(),
