@@ -12,15 +12,17 @@ export default function IntegrationLayout({
 }) {
   const { workspaceSlug } = params;
   return (
-    <div className="flex justify-center">
-      <div className="flex max-w-3xl flex-col gap-4">
-        <Link href={`/${workspaceSlug}/settings/workspace/integrations`}>
-          <Button variant="ghost" className="flex w-fit items-center gap-2">
-            <IconArrowLeft className="h-4 w-4" /> Integrations
-          </Button>
-        </Link>
+    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-110px)] overflow-auto">
+      <div className="flex justify-center">
+        <div className="flex max-w-3xl flex-col gap-4">
+          <Link href={`/${workspaceSlug}/settings/workspace/integrations`}>
+            <Button variant="ghost" className="flex w-fit items-center gap-2">
+              <IconArrowLeft className="h-4 w-4" /> Integrations
+            </Button>
+          </Link>
 
-        {children}
+          {children}
+        </div>
       </div>
     </div>
   );
