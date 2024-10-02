@@ -202,9 +202,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
 }) => {
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     release.id,
-    {
-      refetchInterval: 5_000,
-    },
+    { refetchInterval: 5_000 },
   );
 
   if (releaseJobTriggerQuery.isLoading)
@@ -248,6 +246,28 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     </div>
                   </TableCell>
                   <TableCell>{job.type}</TableCell>
+                  <TableCell>
+                    {job.job.externalId != null ? (
+                      <code className="font-mono text-sm">
+                        {job.job.externalId}
+                      </code>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        No external ID
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {job.job.externalUrl != null ? (
+                      <a href={job.job.externalUrl} rel="nofollow noreferrer">
+                        {job.job.externalUrl}
+                      </a>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        No external URL
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <TargetDropdownMenu
                       release={release}
