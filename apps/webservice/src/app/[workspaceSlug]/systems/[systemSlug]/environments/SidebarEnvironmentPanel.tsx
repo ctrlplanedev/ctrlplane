@@ -1,7 +1,7 @@
 "use client";
 
 import type { TargetCondition } from "@ctrlplane/validators/targets";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -132,18 +132,6 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       );
     });
 
-  const setTargetFilterUrl = useCallback(() => {
-    if (!workspaceSlug || !node.data.targetFilter) return null;
-
-    const filterParams = new URLSearchParams({
-      filter: LZString.compressToEncodedURIComponent(
-        JSON.stringify(node.data.targetFilter),
-      ),
-    });
-
-    return `/${workspaceSlug}/targets?${filterParams}`;
-  }, [workspaceSlug, node.data.targetFilter]);
-
   return (
     <Form {...form}>
       <h2 className="flex items-center gap-4 p-6 text-2xl font-semibold">
@@ -197,14 +185,18 @@ export const SidebarEnvironmentPanel: React.FC = () => {
             </span>
             {node.data.targetFilter != null && (
               <Link
-                href={setTargetFilterUrl() ?? "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center"
+                href={`/${workspaceSlug}/targets?${new URLSearchParams({
+                  filter: LZString.compressToEncodedURIComponent(
+                    JSON.stringify(node.data.targetFilter),
+                  ),
+                })}`}
+                passHref
               >
-                <Button variant="ghost" size="sm">
-                  <IconExternalLink className="mr-1 h-4 w-4" />
-                  View Targets
+                <Button variant="ghost" size="sm" asChild>
+                  <a target="_blank" rel="noopener noreferrer">
+                    <IconExternalLink className="mr-1 h-4 w-4" />
+                    View Targets
+                  </a>
                 </Button>
               </Link>
             )}
