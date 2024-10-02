@@ -108,7 +108,7 @@ export const dispatchGithubJob = async (je: Job) => {
   await db
     .update(job)
     .set({
-      externalRunId: runId.toString(),
+      externalId: runId.toString(),
       status: convertStatus(status ?? JobStatus.InProgress),
     })
     .where(eq(job.id, je.id));
