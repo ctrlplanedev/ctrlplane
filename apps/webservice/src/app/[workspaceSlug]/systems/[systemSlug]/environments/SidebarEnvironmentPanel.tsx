@@ -2,8 +2,14 @@
 
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import { useEffect } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconInfoCircle, IconPlant } from "@tabler/icons-react";
+import {
+  IconExternalLink,
+  IconInfoCircle,
+  IconPlant,
+} from "@tabler/icons-react";
+import LZString from "lz-string";
 import { useReactFlow } from "reactflow";
 import { z } from "zod";
 
@@ -169,12 +175,31 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         />
 
         <div className="flex flex-col gap-2">
-          <Label>
-            Target Filter (
-            {node.data.targetFilter != null && targets.data != null
-              ? targets.data.total
-              : "-"}
-            )
+          <Label className="flex items-center gap-2">
+            <span>
+              Target Filter (
+              {node.data.targetFilter != null && targets.data != null
+                ? targets.data.total
+                : "-"}
+              )
+            </span>
+            {node.data.targetFilter != null && (
+              <Link
+                href={`/${workspaceSlug}/targets?${new URLSearchParams({
+                  filter: LZString.compressToEncodedURIComponent(
+                    JSON.stringify(node.data.targetFilter),
+                  ),
+                })}`}
+                passHref
+              >
+                <Button variant="ghost" size="sm" asChild>
+                  <a target="_blank" rel="noopener noreferrer">
+                    <IconExternalLink className="mr-1 h-4 w-4" />
+                    View Targets
+                  </a>
+                </Button>
+              </Link>
+            )}
           </Label>
           {node.data.targetFilter == null && (
             <span className="text-sm text-muted-foreground">
