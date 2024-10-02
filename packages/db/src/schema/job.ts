@@ -43,7 +43,8 @@ export const job = pgTable("job", {
     .default("{}")
     .$type<Record<string, any>>(),
 
-  externalRunId: text("external_run_id"),
+  externalId: text("external_id"),
+  externalUrl: text("external_url"),
   // metadata: jsonb("metadata")
   //   .notNull()
   //   .default("{}")

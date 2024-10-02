@@ -32,7 +32,7 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   const job = await db
     .update(schema.job)
     .set({ status })
-    .where(eq(schema.job.externalRunId, id.toString()))
+    .where(eq(schema.job.externalId, id.toString()))
     .returning()
     .then(takeFirstOrNull);
 

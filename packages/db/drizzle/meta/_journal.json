@@ -43,6 +43,13 @@
       "when": 1727671459816,
       "tag": "0005_yummy_robin_chapel",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1727840940359,
+      "tag": "0006_stiff_gargoyle",
+      "breakpoints": true
     }
   ]
 }
