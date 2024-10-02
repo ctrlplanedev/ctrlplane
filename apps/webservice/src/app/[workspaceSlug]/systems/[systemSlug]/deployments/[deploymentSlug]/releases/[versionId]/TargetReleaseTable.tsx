@@ -1,6 +1,8 @@
 "use client";
 
+import type { Workspace } from "@ctrlplane/db/schema";
 import React, { Fragment, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle, IconDots, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -34,8 +36,8 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
+import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
-import { JobTableStatusIcon } from "../../../../../../_components/JobTableStatusIcon";
 
 const ForceReleaseTargetDialog: React.FC<{
   release: { id: string; version: string };
@@ -192,11 +194,13 @@ const TargetDropdownMenu: React.FC<{
 };
 
 type TargetReleaseTableProps = {
+  workspace: Workspace;
   release: { id: string; version: string };
   deploymentName: string;
 };
 
 export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
+  workspace,
   release,
   deploymentName,
 }) => {
@@ -204,7 +208,6 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     release.id,
     { refetchInterval: 5_000 },
   );
-
   if (releaseJobTriggerQuery.isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center py-12">
@@ -238,7 +241,14 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     idx !== jobs.length - 1 && "border-b-neutral-800/50",
                   )}
                 >
-                  <TableCell>{job.target?.name}</TableCell>
+                  <TableCell className="hover:bg-neutral-800/55">
+                    <Link
+                      href={`/${workspace.slug}/targets?target_id=${job.target?.id}`}
+                      className="block w-full hover:text-blue-300"
+                    >
+                      {job.target?.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <JobTableStatusIcon status={job.job.status} />

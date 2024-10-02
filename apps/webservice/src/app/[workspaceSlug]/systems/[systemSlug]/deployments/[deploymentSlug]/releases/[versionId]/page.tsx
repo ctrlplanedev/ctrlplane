@@ -27,6 +27,8 @@ export default async function ReleasePage({
 }) {
   const release = await api.release.byId(params.versionId);
   const deployment = await api.deployment.bySlug(params);
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) return notFound();
 
   if (release == null || deployment == null) notFound();
 
@@ -86,6 +88,7 @@ export default async function ReleasePage({
         </div>
 
         <TargetReleaseTable
+          workspace={workspace}
           release={release}
           deploymentName={deployment.name}
         />
