@@ -43,9 +43,9 @@ const deploymentForm = z.object(deploymentSchema.omit({ id: true }).shape);
 
 export const CreateDeploymentDialog: React.FC<{
   children?: React.ReactNode;
-  defaultSystemId?: string;
+  systemId?: string;
   onSuccess?: () => void;
-}> = ({ children, defaultSystemId = undefined, onSuccess }) => {
+}> = ({ children, onSuccess, ...props }) => {
   const [open, setOpen] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
@@ -59,7 +59,7 @@ export const CreateDeploymentDialog: React.FC<{
   const form = useForm({
     schema: deploymentForm,
     defaultValues: {
-      systemId: defaultSystemId ?? systems.data?.items[0]?.id,
+      systemId: props.systemId ?? systems.data?.items[0]?.id,
       name: "",
       slug: "",
       description: "",
