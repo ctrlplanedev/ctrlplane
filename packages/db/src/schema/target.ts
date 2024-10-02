@@ -91,9 +91,7 @@ export type TargetView = InferSelectModel<typeof targetView>;
 
 export const createTargetView = createInsertSchema(targetView, {
   filter: targetCondition,
-}).omit({
-  id: true,
-});
+}).omit({ id: true });
 
 export const updateTargetView = createTargetView.partial();
 
