@@ -208,7 +208,6 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     release.id,
     { refetchInterval: 5_000 },
   );
-  const router = useRouter();
   if (releaseJobTriggerQuery.isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center py-12">
