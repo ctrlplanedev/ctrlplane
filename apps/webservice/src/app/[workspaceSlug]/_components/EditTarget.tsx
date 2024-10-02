@@ -168,111 +168,111 @@ export const EditTargetDialog: React.FC<{
               )}
             />
 
-            {!target.providerId && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="version"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Version</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Version" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="kind"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Kind</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Kind" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+            {/* {!target.providerId && ( */}
+            <>
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="config"
-                  render={({ field: { onChange, value } }) => (
+                  name="version"
+                  render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Config</FormLabel>
+                      <FormLabel>Version</FormLabel>
                       <FormControl>
-                        <TargetConfigEditor value={value} onChange={onChange} />
+                        <Input placeholder="Version" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div>
-                  <div className="pb-2">
-                    <Label>Metadata</Label>
-                  </div>
-                  {fields.map((field, index) => (
-                    <FormField
-                      key={field.id}
-                      control={form.control}
-                      name={`metadata.${index}`}
-                      render={({ field: { onChange, value } }) => (
-                        <FormItem>
-                          <FormControl>
-                            <div className="flex items-center gap-4">
-                              <Input
-                                value={value.key}
-                                placeholder="Key"
-                                onChange={(e) =>
-                                  onChange({
-                                    ...value,
-                                    key: e.target.value,
-                                  })
-                                }
-                              />
-                              <Input
-                                value={value.value}
-                                placeholder="Value"
-                                onChange={(e) =>
-                                  onChange({
-                                    ...value,
-                                    value: e.target.value,
-                                  })
-                                }
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => remove(index)}
-                              >
-                                <IconX className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => append({ key: "", value: "" })}
-                    className="mt-4"
-                  >
-                    Add Metadata
-                  </Button>
+                <FormField
+                  control={form.control}
+                  name="kind"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kind</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Kind" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="config"
+                render={({ field: { onChange, value } }) => (
+                  <FormItem>
+                    <FormLabel>Config</FormLabel>
+                    <FormControl>
+                      <TargetConfigEditor value={value} onChange={onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div>
+                <div className="pb-2">
+                  <Label>Metadata</Label>
                 </div>
-              </>
-            )}
+                {fields.map((field, index) => (
+                  <FormField
+                    key={field.id}
+                    control={form.control}
+                    name={`metadata.${index}`}
+                    render={({ field: { onChange, value } }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="flex items-center gap-4">
+                            <Input
+                              value={value.key}
+                              placeholder="Key"
+                              onChange={(e) =>
+                                onChange({
+                                  ...value,
+                                  key: e.target.value,
+                                })
+                              }
+                            />
+                            <Input
+                              value={value.value}
+                              placeholder="Value"
+                              onChange={(e) =>
+                                onChange({
+                                  ...value,
+                                  value: e.target.value,
+                                })
+                              }
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => remove(index)}
+                            >
+                              <IconX className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append({ key: "", value: "" })}
+                  className="mt-4"
+                >
+                  Add Metadata
+                </Button>
+              </div>
+            </>
+            {/* )} */}
 
             <FormRootError />
 
