@@ -1,8 +1,6 @@
 "use client";
 
-import type { Workspace } from "@ctrlplane/db/schema";
 import React, { Fragment, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle, IconDots, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -37,6 +35,7 @@ import {
 } from "@ctrlplane/ui/tooltip";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
+import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/TargetDrawer";
 import { api } from "~/trpc/react";
 
 const ForceReleaseTargetDialog: React.FC<{
@@ -194,16 +193,15 @@ const TargetDropdownMenu: React.FC<{
 };
 
 type TargetReleaseTableProps = {
-  workspace: Workspace;
   release: { id: string; version: string };
   deploymentName: string;
 };
 
 export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
-  workspace,
   release,
   deploymentName,
 }) => {
+  const { setTargetId } = useTargetDrawer();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     release.id,
     { refetchInterval: 5_000 },
@@ -224,14 +222,29 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
           .map(([envId, jobs]) => (
             <Fragment key={envId}>
               <TableRow className={cn("sticky bg-neutral-800/40")}>
-                <TableCell colSpan={6}>
+                <TableCell>
                   {jobs[0]?.environment != null && (
                     <div className="flex items-center gap-4">
                       <div className="flex-grow">
-                        {jobs[0].environment.name}
+                        <strong>{jobs[0].environment.name}</strong>
                       </div>
                     </div>
                   )}
+                </TableCell>
+                <TableCell>
+                  <strong>Status</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Type</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>External ID</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>External URL</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Actions</strong>
                 </TableCell>
               </TableRow>
               {jobs.map((job, idx) => (
@@ -240,15 +253,9 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   className={cn(
                     idx !== jobs.length - 1 && "border-b-neutral-800/50",
                   )}
+                  onClick={() => job.target?.id && setTargetId(job.target.id)}
                 >
-                  <TableCell className="hover:bg-neutral-800/55">
-                    <Link
-                      href={`/${workspace.slug}/targets?target_id=${job.target?.id}`}
-                      className="block w-full hover:text-blue-300"
-                    >
-                      {job.target?.name}
-                    </Link>
-                  </TableCell>
+                  <TableCell>{job.target?.name}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <JobTableStatusIcon status={job.job.status} />
@@ -267,7 +274,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {job.job.externalUrl != null ? (
                       <a href={job.job.externalUrl} rel="nofollow noreferrer">
                         {job.job.externalUrl}
@@ -278,7 +285,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                       </span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <TargetDropdownMenu
                       release={release}
                       deploymentName={deploymentName}

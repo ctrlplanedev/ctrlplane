@@ -88,7 +88,6 @@ export default async function ReleasePage({
         </div>
 
         <TargetReleaseTable
-          workspace={workspace}
           release={release}
           deploymentName={deployment.name}
         />
