@@ -21,7 +21,7 @@
     "@octokit/auth-app": "^7.1.0",
     "@octokit/rest": "catalog:",
     "@t3-oss/env-core": "catalog:",
-    "bullmq": "^5.12.10",
+    "bullmq": "catalog:",
     "cron": "^3.1.7",
     "dotenv": "^16.4.5",
     "google-auth-library": "^9.13.0",
