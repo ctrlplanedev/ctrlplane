@@ -71,8 +71,6 @@ export const checkEntityPermissionForResource = async (
   resource: { type: ScopeType; id: string },
   permissions: string[],
 ): Promise<boolean> => {
-  console.log({ resource });
-
   const scopes = await fetchScopeHierarchyForResource(resource);
   const role = await findFirstMatchingScopeWithPermission(
     entity,
