@@ -88,6 +88,7 @@ export default async function TargetProvidersPage({
                   provider.kinds.map((kind) => (
                     <Badge
                       key={kind.kind}
+                      variant="outline"
                       className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
                     >
                       {kind.version}:{kind.kind}
