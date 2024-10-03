@@ -22,7 +22,14 @@ const convertStatus = (
   status === JobStatus.Completed ? JobStatus.Completed : JobStatus.InProgress;
 
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
-  const { id, status: externalStatus, conclusion } = event.workflow_run;
+  const {
+    id,
+    status: externalStatus,
+    conclusion,
+    repository,
+  } = event.workflow_run;
+
+  const externalUrl = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
 
   const status =
     conclusion != null
@@ -31,7 +38,7 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
 
   const job = await db
     .update(schema.job)
-    .set({ status, externalUrl: event.workflow_run.url })
+    .set({ status, externalUrl })
     .where(eq(schema.job.externalId, id.toString()))
     .returning()
     .then(takeFirstOrNull);
