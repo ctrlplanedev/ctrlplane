@@ -54,19 +54,19 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  <strong>Status</strong>
+                  Status
                 </TableCell>
                 <TableCell>
-                  <strong>Type</strong>
+                  Type
                 </TableCell>
                 <TableCell>
-                  <strong>External ID</strong>
+                  External ID
                 </TableCell>
                 <TableCell>
-                  <strong>External URL</strong>
+                  External URL
                 </TableCell>
                 <TableCell>
-                  <strong>Actions</strong>
+                  Actions
                 </TableCell>
               </TableRow>
               {jobs.map((job, idx) => (
