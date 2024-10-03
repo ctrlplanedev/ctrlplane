@@ -55,7 +55,7 @@ export interface GetAgentRunningJob200ResponseInner {
    * @type {string}
    * @memberof GetAgentRunningJob200ResponseInner
    */
-  externalRunId: string | null;
+  externalId: string | null;
   /**
    *
    * @type {object}
@@ -107,7 +107,7 @@ export function instanceOfGetAgentRunningJob200ResponseInner(
     return false;
   if (!("jobAgentConfig" in value) || value["jobAgentConfig"] === undefined)
     return false;
-  if (!("externalRunId" in value) || value["externalRunId"] === undefined)
+  if (!("externalId" in value) || value["externalId"] === undefined)
     return false;
   if (!("config" in value) || value["config"] === undefined) return false;
   return true;
@@ -132,7 +132,7 @@ export function GetAgentRunningJob200ResponseInnerFromJSONTyped(
     message: json["message"],
     jobAgentId: json["jobAgentId"],
     jobAgentConfig: json["jobAgentConfig"],
-    externalRunId: json["externalRunId"],
+    externalId: json["externalId"],
     release: json["release"] == null ? undefined : json["release"],
     deployment: json["deployment"] == null ? undefined : json["deployment"],
     config: json["config"],
@@ -154,7 +154,7 @@ export function GetAgentRunningJob200ResponseInnerToJSON(
     message: value["message"],
     jobAgentId: value["jobAgentId"],
     jobAgentConfig: value["jobAgentConfig"],
-    externalRunId: value["externalRunId"],
+    externalId: value["externalId"],
     release: value["release"],
     deployment: value["deployment"],
     config: value["config"],
