@@ -16,12 +16,14 @@ import {
   releaseJobTrigger,
   system,
   target,
+  updateJob,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   dispatchReleaseJobTriggers,
   getRolloutDateForReleaseJobTrigger,
   isDateInTimeWindow,
+  onJobCompletion,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -147,6 +149,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
         .where(and(eq(release.id, input), isNull(environment.deletedAt)))
+        .orderBy(desc(releaseJobTrigger.createdAt))
         .then((data) =>
           _.chain(data)
             .groupBy((row) => row.release_job_trigger.id)
@@ -299,6 +302,29 @@ export const jobRouter = createTRPCRouter({
             environment: t.environment,
           })),
         ),
+    ),
+
+  update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.JobUpdate).on({ type: "job", id: input.id }),
+    })
+    .input(z.object({ id: z.string().uuid(), data: updateJob }))
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .update(job)
+        .set(input.data)
+        .where(eq(job.id, input.id))
+        .returning()
+        .then(takeFirst)
+        .then((job) => {
+          if (
+            input.data.status === JobStatus.Completed &&
+            job.status === JobStatus.Completed
+          )
+            onJobCompletion(job);
+          return job;
+        }),
     ),
 
   config: releaseJobTriggerRouter,

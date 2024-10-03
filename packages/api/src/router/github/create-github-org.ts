@@ -225,5 +225,6 @@ export const createNewGithubOrganization = async (
         .filter(isPresent),
     );
 
+    if (parsedConfigFiles.length === 0) return;
     await processParsedConfigFiles(db, parsedConfigFiles, org);
   });

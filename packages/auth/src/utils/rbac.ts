@@ -1,6 +1,6 @@
 import type { EntityType, ScopeType } from "@ctrlplane/db/schema";
 
-import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
+import { and, eq, inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -8,11 +8,14 @@ import {
   entityRole,
   environment,
   environmentPolicy,
+  job,
   jobAgent,
   release,
+  releaseJobTrigger,
   role,
   rolePermission,
   runbook,
+  runbookJobTrigger,
   system,
   target,
   targetMetadataGroup,
@@ -68,6 +71,8 @@ export const checkEntityPermissionForResource = async (
   resource: { type: ScopeType; id: string },
   permissions: string[],
 ): Promise<boolean> => {
+  console.log({ resource });
+
   const scopes = await fetchScopeHierarchyForResource(resource);
   const role = await findFirstMatchingScopeWithPermission(
     entity,
@@ -296,6 +301,51 @@ const getJobAgentScopes = async (id: string) => {
   ];
 };
 
+const getJobScopes = async (id: string) => {
+  const runbookResult = await db
+    .select()
+    .from(job)
+    .innerJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
+    .innerJoin(runbook, eq(runbookJobTrigger.runbookId, runbook.id))
+    .innerJoin(system, eq(runbook.systemId, system.id))
+    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+    .where(eq(job.id, id))
+    .then(takeFirstOrNull);
+
+  if (runbookResult != null)
+    return [
+      { type: "job" as const, id: runbookResult.job.id },
+      { type: "runbook" as const, id: runbookResult.runbook.id },
+      { type: "system" as const, id: runbookResult.system.id },
+      { type: "workspace" as const, id: runbookResult.workspace.id },
+    ];
+
+  const result = await db
+    .select()
+    .from(job)
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+    .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+    .innerJoin(system, eq(deployment.systemId, system.id))
+    .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+    .where(eq(job.id, id))
+    .then(takeFirstOrNull);
+
+  if (result == null) return [];
+
+  return [
+    { type: "job" as const, id: result.job.id },
+    { type: "target" as const, id: result.target.id },
+    { type: "environment" as const, id: result.environment.id },
+    { type: "release" as const, id: result.release.id },
+    { type: "deployment" as const, id: result.deployment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 type Scope = { type: ScopeType; id: string };
 
 export const scopeHandlers: Record<
@@ -316,6 +366,7 @@ export const scopeHandlers: Record<
   targetMetadataGroup: getTargetMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
+  job: getJobScopes,
 };
 
 const fetchScopeHierarchyForResource = async (resource: {
