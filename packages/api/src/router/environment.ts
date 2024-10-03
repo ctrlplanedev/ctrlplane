@@ -185,10 +185,12 @@ const policyRouter = createTRPCRouter({
             releaseJobTrigger,
             eq(releaseJobTrigger.environmentId, environment.id),
           )
+          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
           .where(
             and(
               eq(environmentPolicyApproval.id, envApproval.id),
               isNull(environment.deletedAt),
+              eq(release.id, input.releaseId),
             ),
           );
 
