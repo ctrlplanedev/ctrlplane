@@ -10,6 +10,7 @@ import {
   IconLock,
   IconLockOpen,
   IconPackage,
+  IconServer,
   IconTopologyStar3,
   IconVariable,
 } from "@tabler/icons-react";
@@ -25,6 +26,7 @@ import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
 import { RelationshipsContent } from "./relationships/RelationshipContent";
+import { SystemsContent } from "./SystemContent";
 import { VariableContent } from "./VariablesContent";
 
 const TabButton: React.FC<{
@@ -103,7 +105,7 @@ export const TargetDrawer: React.FC = () => {
         className="left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none focus-visible:outline-none"
       >
         <div className="border-b p-6">
-          <div className="flex items-center ">
+          <div className="flex items-center">
             <DrawerTitle className="flex-grow">{target?.name}</DrawerTitle>
           </div>
           {target != null && (
@@ -185,6 +187,12 @@ export const TargetDrawer: React.FC = () => {
                   label="Deployments"
                 />
                 <TabButton
+                  active={activeTab === "systems"}
+                  onClick={() => setActiveTab("systems")}
+                  icon={<IconServer className="h-4 w-4" />}
+                  label="Systems"
+                />
+                <TabButton
                   active={activeTab === "jobs"}
                   onClick={() => setActiveTab("jobs")}
                   icon={<IconHistory className="h-4 w-4" />}
@@ -204,11 +212,17 @@ export const TargetDrawer: React.FC = () => {
                 />
               </div>
               <div className="w-full overflow-auto">
+                {activeTab === "overview" && (
+                  <OverviewContent target={target} />
+                )}
                 {activeTab === "deployments" && (
                   <DeploymentsContent targetId={target.id} />
                 )}
-                {activeTab === "overview" && (
-                  <OverviewContent target={target} />
+                {activeTab === "systems" && (
+                  <SystemsContent
+                    targetId={target.id}
+                    workspaceId={target.workspaceId}
+                  />
                 )}
                 {activeTab === "relationships" && (
                   <RelationshipsContent target={target} />
