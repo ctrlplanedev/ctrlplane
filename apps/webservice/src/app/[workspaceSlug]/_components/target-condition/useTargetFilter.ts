@@ -1,3 +1,4 @@
+import type * as schema from "@ctrlplane/db/schema";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,5 +33,25 @@ export const useTargetFilter = () => {
     [router],
   );
 
-  return { filter, setFilter };
+  const setView = useCallback(
+    (view: schema.TargetView) => {
+      const query = new URLSearchParams(window.location.search);
+      const filterJson = LZString.compressToEncodedURIComponent(
+        JSON.stringify(view.filter),
+      );
+      query.set("filter", filterJson);
+      query.set("view", view.id);
+      router.replace(`?${query.toString()}`);
+    },
+    [router],
+  );
+
+  const removeView = () => {
+    const query = new URLSearchParams(window.location.search);
+    query.delete("view");
+    query.delete("filter");
+    router.replace(`?${query.toString()}`);
+  };
+
+  return { filter, setFilter, setView, removeView };
 };

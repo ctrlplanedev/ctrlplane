@@ -5,10 +5,18 @@ import { TargetPageContent } from "./TargetPageContent";
 
 export default async function TargetsPage({
   params,
+  searchParams,
 }: {
   params: { workspaceSlug: string };
+  searchParams: { view?: string };
 }) {
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
-  return <TargetPageContent workspace={workspace} />;
+
+  const view =
+    searchParams.view != null
+      ? await api.target.view.byId(searchParams.view)
+      : null;
+
+  return <TargetPageContent workspace={workspace} view={view} />;
 }

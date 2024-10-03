@@ -1,7 +1,7 @@
 import ms from "ms";
 import { z } from "zod";
 
-import { eq, inArray, sql, takeFirst } from "@ctrlplane/db";
+import { eq, inArray, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createTargetProvider,
   createTargetProviderGoogle,
@@ -77,6 +77,22 @@ export const targetProviderRouter = createTRPCRouter({
           .map(({ kind, count }) => ({ kind, count })),
       }));
     }),
+
+  byId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "targetProvider", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(targetProvider)
+        .where(eq(targetProvider.id, input))
+        .then(takeFirstOrNull),
+    ),
 
   managed: createTRPCRouter({
     google: createTRPCRouter({

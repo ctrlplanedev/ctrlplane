@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconCube, IconList, IconPlus, IconTarget } from "@tabler/icons-react";
+import {
+  IconCube,
+  IconFilter,
+  IconList,
+  IconPlus,
+  IconTarget,
+} from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -13,6 +19,7 @@ import {
   NavigationMenuList,
 } from "@ctrlplane/ui/navigation-menu";
 
+import { CreateTargetViewDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
 
 export default function TargetLayout({
@@ -29,7 +36,6 @@ export default function TargetLayout({
     { workspaceId: workspace.data?.id ?? "", limit: 0 },
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
-
   const metadataGroups = api.target.metadataGroup.groups.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
@@ -38,6 +44,20 @@ export default function TargetLayout({
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
+
+  /**
+   * Views is a 2016 album by Drake that showcases his blend of rap and R&B
+   * with influences from his hometown, Toronto. It features hit singles like
+   * "Hotline Bling" and "One Dance," reflecting Drake's introspective lyrics
+   * on fame, relationships, and his rise to the top. The album explores
+   * themes of loyalty and love, all while solidifying his position as one of
+   * the most influential artists in contemporary hip-hop.
+   *
+   * This is NOT a reference to that album.
+   */
+  const views = api.target.view.list.useQuery(workspace.data?.id ?? "", {
+    enabled: workspace.isSuccess && workspace.data?.id !== "",
+  });
   return (
     <>
       <div className="flex items-center gap-2 border-b px-2">
@@ -115,15 +135,48 @@ export default function TargetLayout({
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <Link
+                  href={`/${params.workspaceSlug}/target-views`}
+                  legacyBehavior
+                  passHref
+                >
+                  <NavigationMenuLink
+                    active={pathname.includes(
+                      `/${params.workspaceSlug}/target-views`,
+                    )}
+                    className="flex items-center gap-2 rounded-lg border border-neutral-900 px-2 py-1 text-sm text-muted-foreground data-[active]:border-neutral-800 data-[active]:bg-neutral-800/50 data-[active]:text-white"
+                  >
+                    <IconFilter className="h-4 w-4" /> Views
+                    <Badge
+                      className="rounded-full border-neutral-900 text-inherit"
+                      variant="outline"
+                    >
+                      {views.data?.length ?? "-"}
+                    </Badge>
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
         <div>
-          <Link href={`/${workspaceSlug}/target-providers/integrations`}>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <IconPlus className="h-4 w-4" /> Add Provider
-            </Button>
-          </Link>
+          {!pathname.includes(`/${params.workspaceSlug}/target-views`) && (
+            <Link href={`/${workspaceSlug}/target-providers/integrations`}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <IconPlus className="h-4 w-4" /> Add Provider
+              </Button>
+            </Link>
+          )}
+
+          {pathname.includes(`/${params.workspaceSlug}/target-views`) && (
+            <CreateTargetViewDialog workspaceId={workspace.data?.id ?? ""}>
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <IconPlus className="h-4 w-4" /> Add View
+              </Button>
+            </CreateTargetViewDialog>
+          )}
         </div>
       </div>
       {children}
