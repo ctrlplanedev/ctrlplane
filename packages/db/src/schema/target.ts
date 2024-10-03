@@ -191,7 +191,7 @@ export function targetMatchesMetadata(
     : buildCondition(tx, metadata);
 }
 
-const targetRelationshipType = pgEnum("target_relationship_type", [
+export const targetRelationshipType = pgEnum("target_relationship_type", [
   "depends_on",
   "created_by",
 ]);

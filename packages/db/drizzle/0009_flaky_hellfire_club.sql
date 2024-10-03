@@ -1,3 +1,9 @@
+DO $$ BEGIN
+ CREATE TYPE "public"."target_relationship_type" AS ENUM('depends_on', 'created_by');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+---
 CREATE TABLE IF NOT EXISTS "target_relationship" (
 	"uuid" uuid,
 	"source_id" uuid NOT NULL,
