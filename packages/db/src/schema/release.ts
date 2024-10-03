@@ -1,6 +1,5 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
-  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -53,13 +52,12 @@ export const release = pgTable(
   "release",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
     version: text("version").notNull(),
-    notes: text("notes").default(""),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
-    metadata: jsonb("metadata").notNull().default("{}"),
   },
   (t) => ({ unq: uniqueIndex().on(t.deploymentId, t.version) }),
 );
@@ -73,6 +71,19 @@ export const createRelease = createInsertSchema(release)
       .array(createReleaseDependency.omit({ releaseId: true }))
       .default([]),
   });
+
+export const releaseMetadata = pgTable(
+  "release_metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    releaseId: uuid("release_id")
+      .references(() => release.id, { onDelete: "cascade" })
+      .notNull(),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.releaseId) }),
+);
 
 export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
   "new_release", //  release was created

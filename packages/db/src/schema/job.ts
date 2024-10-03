@@ -45,11 +45,6 @@ export const job = pgTable("job", {
     .$type<Record<string, any>>(),
 
   externalId: text("external_id"),
-  externalUrl: text("external_url"),
-  // metadata: jsonb("metadata")
-  //   .notNull()
-  //   .default("{}")
-  //   .$type<Record<string, any>>(),
 
   status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
@@ -59,6 +54,19 @@ export const job = pgTable("job", {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+export const releaseMetadata = pgTable(
+  "job_metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    jobId: uuid("job_id")
+      .references(() => job.id, { onDelete: "cascade" })
+      .notNull(),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.jobId) }),
+);
 
 export type Job = InferSelectModel<typeof job>;
 export type JobStatus = Job["status"];
