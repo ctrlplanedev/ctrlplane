@@ -79,7 +79,7 @@ export const SelectPreconnectedOrgDialogContent: React.FC<
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className=" items-center justify-start py-5"
+            className="items-center justify-start py-5"
           >
             <div className="flex h-10 items-center gap-2">
               {image !== null && (
@@ -89,7 +89,7 @@ export const SelectPreconnectedOrgDialogContent: React.FC<
                 </Avatar>
               )}
 
-              <span className=" overflow-hidden text-ellipsis">
+              <span className="overflow-hidden text-ellipsis">
                 {value ?? "Select organization..."}
               </span>
             </div>

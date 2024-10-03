@@ -129,7 +129,7 @@ export const MetadataConditionRender: React.FC<
             />
           </div>
         ) : (
-          <div className="col-span-4 h-9  cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
+          <div className="col-span-4 h-9 cursor-not-allowed rounded-r-md bg-neutral-900 bg-opacity-50" />
         )}
       </div>
     </div>
