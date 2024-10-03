@@ -50,12 +50,6 @@ export const defaultCondition: TargetCondition = {
   conditions: [],
 };
 
-export const isDefaultCondition = (condition: TargetCondition): boolean =>
-  condition.type === TargetFilterType.Comparison &&
-  condition.operator === TargetOperator.And &&
-  condition.conditions.length === 0 &&
-  !condition.not;
-
 export const isComparisonCondition = (
   condition: TargetCondition,
 ): condition is ComparisonCondition =>
