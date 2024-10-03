@@ -91,9 +91,7 @@ export const userApiKey = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     userId: uuid("user_id")
       .notNull()
-      .references(() => user.id, {
-        onDelete: "cascade",
-      }),
+      .references(() => user.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 255 }).notNull(),
     keyPreview: text("key_preview").notNull(),
     keyHash: text("key_hash").notNull(),

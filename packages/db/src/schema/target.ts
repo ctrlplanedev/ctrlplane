@@ -170,11 +170,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 
 const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
   if (cond.type === "metadata") return buildMetadataCondition(tx, cond);
-
   if (cond.type === "kind") return eq(target.kind, cond.value);
-
   if (cond.type === "name") return like(target.name, cond.value);
-
   if (cond.type === "provider") return eq(target.providerId, cond.value);
 
   if (cond.conditions.length === 0 && cond.not) return sql`FALSE`;
