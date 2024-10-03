@@ -7,6 +7,7 @@ import { exists, like, not, notExists, or, sql } from "drizzle-orm";
 import {
   json,
   jsonb,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -192,3 +193,29 @@ export function targetMatchesMetadata(
     ? undefined
     : buildCondition(tx, metadata);
 }
+
+const targetRelationshipType = pgEnum("target_relationship_type", [
+  "depends_on",
+  "created_by",
+]);
+
+export const targetRelationship = pgTable(
+  "target_relationship",
+  {
+    id: uuid("uuid"),
+    sourceId: uuid("source_id")
+      .references(() => target.id, { onDelete: "cascade" })
+      .notNull(),
+    relationshipType: targetRelationshipType("relationship_type").notNull(),
+    targetId: uuid("target_id")
+      .references(() => target.id, { onDelete: "cascade" })
+      .notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.targetId, t.sourceId) }),
+);
+
+export const createTargetRelationship = createInsertSchema(
+  targetRelationship,
+).omit({ id: true });
+
+export const updateTargetRelationship = createTargetRelationship.partial();
