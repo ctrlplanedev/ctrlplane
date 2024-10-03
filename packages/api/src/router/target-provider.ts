@@ -53,6 +53,7 @@ export const targetProviderRouter = createTRPCRouter({
         .select({
           providerId: target.providerId,
           kind: target.kind,
+          version: target.version,
           count: sql<number>`count(*)`.as("count"),
         })
         .from(target)
@@ -62,7 +63,7 @@ export const targetProviderRouter = createTRPCRouter({
             providers.map((p) => p.target_provider.id),
           ),
         )
-        .groupBy(target.providerId, target.kind)
+        .groupBy(target.providerId, target.kind, target.version)
         .orderBy(sql`count(*) DESC`);
 
       return providers.map((provider) => ({
@@ -74,7 +75,7 @@ export const targetProviderRouter = createTRPCRouter({
           )?.count ?? 0,
         kinds: providerKinds
           .filter((pk) => pk.providerId === provider.target_provider.id)
-          .map(({ kind, count }) => ({ kind, count })),
+          .map(({ kind, version, count }) => ({ kind, version, count })),
       }));
     }),
 
