@@ -91,9 +91,13 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   </TableCell>
                   <TableCell>
                     {job.job.externalUrl != null ? (
-                      <a href={job.job.externalUrl} rel="nofollow noreferrer">
+                      <Link
+                        href={job.job.externalUrl}
+                        rel="nofollow noreferrer"
+                        target="_blank"
+                      >
                         {job.job.externalUrl}
-                      </a>
+                      </Link>
                     ) : (
                       <span className="text-sm text-muted-foreground">
                         No external URL
