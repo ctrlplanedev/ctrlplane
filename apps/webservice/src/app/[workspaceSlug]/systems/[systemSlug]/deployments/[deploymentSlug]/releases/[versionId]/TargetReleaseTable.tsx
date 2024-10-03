@@ -3,7 +3,7 @@
 import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { usePathname } from "next/navigation";
 import { IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
@@ -24,7 +24,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   release,
   deploymentName,
 }) => {
-  const router = useRouter();
+  const pathname = usePathname();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     release.id,
     { refetchInterval: 5_000 },
@@ -64,7 +64,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                 >
                   <TableCell className="hover:bg-neutral-800/55">
                     <Link
-                      href={`${router.pathname}?target_id=${job.target?.id}`}
+                      href={`${pathname}?target_id=${job.target?.id}`}
                       className="block w-full hover:text-blue-300"
                     >
                       {job.target?.name}
