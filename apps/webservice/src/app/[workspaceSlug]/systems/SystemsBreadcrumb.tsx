@@ -104,7 +104,7 @@ export const SystemBreadcrumbNavbar = async ({
                     <BreadcrumbItem>
                       <BreadcrumbLink
                         href={crumb.path}
-                        className="flex items-center gap-2 text-base "
+                        className="flex items-center gap-2 text-base"
                       >
                         {crumb.name}
                       </BreadcrumbLink>

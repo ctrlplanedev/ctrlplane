@@ -16,7 +16,7 @@ export const NameConditionRender: React.FC<
       <div className="grid w-full grid-cols-12">
         <div
           className={cn(
-            "col-span-3 flex items-center rounded-l-md border  bg-transparent px-3 text-sm text-muted-foreground",
+            "col-span-3 flex items-center rounded-l-md border bg-transparent px-3 text-sm text-muted-foreground",
           )}
         >
           Name contains

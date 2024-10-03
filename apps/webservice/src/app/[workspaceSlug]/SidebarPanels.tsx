@@ -26,7 +26,7 @@ export const SidebarPanels: React.FC<{
         className="min-w-[220px] max-w-[300px] bg-black"
         defaultSize={10}
       >
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900  h-[100vh] overflow-auto pb-12">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[100vh] overflow-auto pb-12">
           {isSettingsPage ? (
             <SidebarSettings workspaceSlug={workspace.slug} />
           ) : (
