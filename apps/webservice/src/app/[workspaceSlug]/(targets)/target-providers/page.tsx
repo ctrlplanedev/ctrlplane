@@ -88,10 +88,9 @@ export default async function TargetProvidersPage({
                   provider.kinds.map((kind) => (
                     <Badge
                       key={kind.kind}
-                      variant="outline"
-                      className="mr-1 h-7 gap-1.5 rounded-full bg-neutral-900 bg-transparent px-2 text-xs text-muted-foreground"
+                      className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
                     >
-                      {kind.kind} {kind.version}
+                      {kind.version}:{kind.kind}
                     </Badge>
                   ))
                 ) : (
@@ -104,7 +103,7 @@ export default async function TargetProvidersPage({
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
-                      <span>
+                      <span className="text-xs text-muted-foreground">
                         {new Date(provider.createdAt).toLocaleDateString()}
                       </span>
                     </TooltipTrigger>
