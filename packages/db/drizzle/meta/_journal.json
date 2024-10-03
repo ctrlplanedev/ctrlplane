@@ -50,13 +50,6 @@
       "when": 1727840940359,
       "tag": "0006_stiff_gargoyle",
       "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1727852489041,
-      "tag": "0007_nebulous_harrier",
-      "breakpoints": true
     }
   ]
 }
