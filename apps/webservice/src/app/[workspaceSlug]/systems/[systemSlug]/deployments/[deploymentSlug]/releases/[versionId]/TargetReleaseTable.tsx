@@ -42,83 +42,85 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
         {_.chain(releaseJobTriggerQuery.data)
           .groupBy((r) => r.environmentId)
           .entries()
-          .map(([envId, jobs]) => (
-            <Fragment key={envId}>
-              <TableRow className={cn("sticky bg-neutral-800/40")}>
-                <TableCell colSpan={6}>
-                  {jobs[0]?.environment != null && (
-                    <div className="flex items-center gap-4">
-                      <div className="flex-grow">
-                        {jobs[0].environment.name}
+          .map(([envId, jobs]) => {
+            return (
+              <Fragment key={envId}>
+                <TableRow className={cn("sticky bg-neutral-800/40")}>
+                  <TableCell colSpan={6}>
+                    {jobs[0]?.environment != null && (
+                      <div className="flex items-center gap-4">
+                        <div className="flex-grow">
+                          {jobs[0].environment.name}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-              {jobs.map((job, idx) => (
-                <TableRow
-                  key={job.id}
-                  className={cn(
-                    idx !== jobs.length - 1 && "border-b-neutral-800/50",
-                  )}
-                >
-                  <TableCell className="hover:bg-neutral-800/55">
-                    <Link
-                      href={`${pathname}?target_id=${job.target?.id}`}
-                      className="block w-full hover:text-blue-300"
-                    >
-                      {job.target?.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <JobTableStatusIcon status={job.job.status} />
-                      {capitalCase(job.job.status)}
-                    </div>
-                  </TableCell>
-                  <TableCell>{job.type}</TableCell>
-                  <TableCell>
-                    {job.job.externalId != null ? (
-                      <code className="font-mono text-xs">
-                        {job.job.externalId}
-                      </code>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No external ID
-                      </span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    {job.job.externalUrl != null ? (
-                      <Link
-                        href={job.job.externalUrl}
-                        rel="nofollow noreferrer"
-                        target="_blank"
-                      >
-                        {job.job.externalUrl}
-                      </Link>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No external URL
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <TargetDropdownMenu
-                      release={release}
-                      deploymentName={deploymentName}
-                      target={job.target}
-                      environmentId={job.environmentId}
-                      job={{
-                        id: job.job.id,
-                        status: job.job.status as JobStatus,
-                      }}
-                    />
                   </TableCell>
                 </TableRow>
-              ))}
-            </Fragment>
-          ))
+                {jobs.map((job, idx) => (
+                  <TableRow
+                    key={job.id}
+                    className={cn(
+                      idx !== jobs.length - 1 && "border-b-neutral-800/50",
+                    )}
+                  >
+                    <TableCell className="hover:bg-neutral-800/55">
+                      <Link
+                        href={`${pathname}?target_id=${job.target?.id}`}
+                        className="block w-full hover:text-blue-300"
+                      >
+                        {job.target?.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <JobTableStatusIcon status={job.job.status} />
+                        {capitalCase(job.job.status)}
+                      </div>
+                    </TableCell>
+                    <TableCell>{job.type}</TableCell>
+                    <TableCell>
+                      {job.job.externalId != null ? (
+                        <code className="font-mono text-xs">
+                          {job.job.externalId}
+                        </code>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          No external ID
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {/* {job.job.externalUrl != null ? (
+                        <Link
+                          href={job.job.externalUrl}
+                          rel="nofollow noreferrer"
+                          target="_blank"
+                        >
+                          {job.job.externalUrl}
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          No external URL
+                        </span>
+                      )} */}
+                    </TableCell>
+                    <TableCell>
+                      <TargetDropdownMenu
+                        release={release}
+                        deploymentName={deploymentName}
+                        target={job.target}
+                        environmentId={job.environmentId}
+                        job={{
+                          id: job.job.id,
+                          status: job.job.status as JobStatus,
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </Fragment>
+            );
+          })
           .value()}
       </TableBody>
     </Table>

@@ -14,7 +14,7 @@ const variableOptions = [
   { key: "workspace.name", description: "Workspace Name" },
   { key: "workspace.id", description: "Workspace ID" },
   { key: "job.id", description: "Job ID" },
-  { key: "job.externalRunId", description: "Job External Run ID" },
+  { key: "job.externalId", description: "Job Run ID" },
   { key: "job.status", description: "Job Status" },
   { key: "job.message", description: "Job Message" },
 ];

@@ -110,7 +110,7 @@ export const CreateReleaseDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
-    const release = await create.mutateAsync(data);
+    const release = await create.mutateAsync({ ...data, name: data.version });
     await utils.release.list.invalidate({ deploymentId: release.deploymentId });
 
     const deployment = deployments.data?.find(
