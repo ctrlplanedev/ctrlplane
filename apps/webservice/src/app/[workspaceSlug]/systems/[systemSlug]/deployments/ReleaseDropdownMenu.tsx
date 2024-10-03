@@ -67,6 +67,7 @@ const RedeployReleaseDialog: React.FC<{
 
         <DialogFooter>
           <Button
+            disabled={redeploy.isPending}
             onClick={() =>
               redeploy
                 .mutateAsync({

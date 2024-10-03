@@ -1,27 +1,32 @@
 "use client";
 
-import type { Workspace } from "@ctrlplane/db/schema";
+import type * as schema from "@ctrlplane/db/schema";
 import React from "react";
-import { IconFilter } from "@tabler/icons-react";
+import { IconDots, IconFilter } from "@tabler/icons-react";
 import range from "lodash/range";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
+import { NoFilterMatch } from "~/app/[workspaceSlug]/_components/filter/NoFilterMatch";
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
+import {
+  CreateTargetViewDialog,
+  TargetConditionDialog,
+} from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
+import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/_components/target-condition/TargetViewActionsDropdown";
+import { useTargetFilter } from "~/app/[workspaceSlug]/_components/target-condition/useTargetFilter";
+import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/TargetDrawer";
 import { api } from "~/trpc/react";
-import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
-import { TargetConditionBadge } from "../../_components/target-condition/TargetConditionBadge";
-import { TargetConditionDialog } from "../../_components/target-condition/TargetConditionDialog";
-import { useTargetFilter } from "../../_components/target-condition/useTargetFilter";
-import { useTargetDrawer } from "../../_components/target-drawer/TargetDrawer";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
 export const TargetPageContent: React.FC<{
-  workspace: Workspace;
-}> = ({ workspace }) => {
-  const { filter, setFilter } = useTargetFilter();
+  workspace: schema.Workspace;
+  view: schema.TargetView | null;
+}> = ({ workspace, view }) => {
+  const { filter, setFilter, setView } = useTargetFilter();
 
   const targetsAll = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
@@ -39,33 +44,59 @@ export const TargetPageContent: React.FC<{
   return (
     <div className="h-full text-sm">
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-        <TargetConditionDialog
-          condition={filter}
-          onChange={(filter) => setFilter(filter)}
-        >
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-            >
-              <IconFilter className="h-4 w-4" />
-            </Button>
+        <TargetConditionDialog condition={filter} onChange={setFilter}>
+          <div className="flex items-center gap-2">
+            {view == null && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+              >
+                <IconFilter className="h-4 w-4" />
+              </Button>
+            )}
 
-            {filter != null && <TargetConditionBadge condition={filter} />}
+            {filter != null && view == null && (
+              <TargetConditionBadge condition={filter} />
+            )}
+            {view != null && (
+              <>
+                <span>{view.name}</span>
+                <TargetViewActionsDropdown view={view}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+                  >
+                    <IconDots className="h-4 w-4" />
+                  </Button>
+                </TargetViewActionsDropdown>
+              </>
+            )}
           </div>
         </TargetConditionDialog>
-        {targets.data?.total != null && (
-          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
-            Total:
-            <Badge
-              variant="outline"
-              className="rounded-full border-neutral-800 text-inherit"
+        <div className="flex items-center gap-2">
+          {filter != null && view == null && (
+            <CreateTargetViewDialog
+              workspaceId={workspace.id}
+              filter={filter}
+              onSubmit={setView}
             >
-              {targets.data.total}
-            </Badge>
-          </div>
-        )}
+              <Button className="h-7">Save view</Button>
+            </CreateTargetViewDialog>
+          )}
+          {targets.data?.total != null && (
+            <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
+              Total:
+              <Badge
+                variant="outline"
+                className="rounded-full border-neutral-800 text-inherit"
+              >
+                {targets.data.total}
+              </Badge>
+            </div>
+          )}
+        </div>
       </div>
 
       {targets.isLoading && (

@@ -3,6 +3,7 @@ import type {
   KindCondition,
   MetadataCondition,
   NameCondition,
+  ProviderCondition,
   TargetCondition,
 } from "@ctrlplane/validators/targets";
 import React from "react";
@@ -20,8 +21,11 @@ import {
   isKindCondition,
   isMetadataCondition,
   isNameCondition,
+  isProviderCondition,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
+
+import { api } from "~/trpc/react";
 
 const operatorVerbs = {
   [TargetOperator.And]: "and",
@@ -170,6 +174,22 @@ const StringifiedNameCondition: React.FC<{
   </ConditionBadge>
 );
 
+const StringifiedProviderCondition: React.FC<{
+  condition: ProviderCondition;
+}> = ({ condition }) => {
+  const provider = api.target.provider.byId.useQuery(condition.value);
+
+  return (
+    <ConditionBadge>
+      <span className="text-white">Provider</span>
+      <span className="text-muted-foreground">
+        {operatorVerbs[condition.operator]}
+      </span>
+      <span className="text-white">{provider.data?.name}</span>
+    </ConditionBadge>
+  );
+};
+
 const StringifiedTargetCondition: React.FC<{
   condition: TargetCondition;
   depth?: number;
@@ -198,6 +218,9 @@ const StringifiedTargetCondition: React.FC<{
 
   if (isNameCondition(condition))
     return <StringifiedNameCondition condition={condition} />;
+
+  if (isProviderCondition(condition))
+    return <StringifiedProviderCondition condition={condition} />;
 };
 
 export const TargetConditionBadge: React.FC<{
@@ -206,7 +229,7 @@ export const TargetConditionBadge: React.FC<{
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
-      <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
+      <div className="cursor-pointer rounded-lg bg-inherit text-xs text-muted-foreground">
         <StringifiedTargetCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>

@@ -2,6 +2,8 @@
 
 import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
@@ -24,6 +26,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   deploymentName,
 }) => {
   const { setTargetId } = useTargetDrawer();
+  const pathname = usePathname();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     release.id,
     { refetchInterval: 5_000 },
@@ -53,21 +56,11 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     </div>
                   )}
                 </TableCell>
-                <TableCell>
-                  Status
-                </TableCell>
-                <TableCell>
-                  Type
-                </TableCell>
-                <TableCell>
-                  External ID
-                </TableCell>
-                <TableCell>
-                  External URL
-                </TableCell>
-                <TableCell>
-                  Actions
-                </TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>External ID</TableCell>
+                <TableCell>External URL</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
               {jobs.map((job, idx) => (
                 <TableRow
@@ -78,6 +71,14 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   onClick={() => job.target?.id && setTargetId(job.target.id)}
                 >
                   <TableCell>{job.target?.name}</TableCell>
+                  <TableCell className="hover:bg-neutral-800/55">
+                    <Link
+                      href={`${pathname}?target_id=${job.target?.id}`}
+                      className="block w-full hover:text-blue-300"
+                    >
+                      {job.target?.name}
+                    </Link>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <JobTableStatusIcon status={job.job.status} />
@@ -98,9 +99,13 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     {job.job.externalUrl != null ? (
-                      <a href={job.job.externalUrl} rel="nofollow noreferrer">
+                      <Link
+                        href={job.job.externalUrl}
+                        rel="nofollow noreferrer"
+                        target="_blank"
+                      >
                         {job.job.externalUrl}
-                      </a>
+                      </Link>
                     ) : (
                       <span className="text-sm text-muted-foreground">
                         No external URL

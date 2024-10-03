@@ -313,6 +313,7 @@ export const ComparisonConditionRender: React.FC<
                     type: TargetFilterType.Comparison,
                     operator: TargetOperator.And,
                     conditions: [],
+                    not: false,
                   })
                 }
               >
