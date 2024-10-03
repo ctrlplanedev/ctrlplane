@@ -57,6 +57,13 @@
       "when": 1727908849167,
       "tag": "0007_fancy_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1727917563393,
+      "tag": "0008_living_blonde_phantom",
+      "breakpoints": true
     }
   ]
 }

@@ -46,15 +46,8 @@ export enum TargetFilterType {
 export const defaultCondition: TargetCondition = {
   type: TargetFilterType.Comparison,
   operator: TargetOperator.And,
+  not: false,
   conditions: [],
-};
-
-export const isDefaultCondition = (condition: TargetCondition): boolean => {
-  return (
-    condition.type === TargetFilterType.Comparison &&
-    condition.operator === TargetOperator.And &&
-    condition.conditions.length === 0
-  );
 };
 
 export const isComparisonCondition = (
@@ -99,13 +92,8 @@ export const isProviderCondition = (
   condition.type === TargetFilterType.Provider;
 
 export const isValidTargetCondition = (condition: TargetCondition): boolean => {
-  // a default condition is valid - it means the user wants to clear the filter
-  // so it gets set to undefined, which matches all targets
-  if (isDefaultCondition(condition)) return true;
-  if (isComparisonCondition(condition)) {
-    if (condition.conditions.length === 0) return false;
+  if (isComparisonCondition(condition))
     return condition.conditions.every((c) => isValidTargetCondition(c));
-  }
   if (isKindCondition(condition)) return condition.value.length > 0;
   if (isNameCondition(condition)) return condition.value.length > 0;
   if (isProviderCondition(condition)) return condition.value.length > 0;

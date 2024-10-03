@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/no-base-to-string */
 import { createServer } from "node:http";
 import type { Express } from "express";
@@ -8,6 +9,7 @@ import { WebSocketServer } from "ws";
 
 import { eq, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+// @ts-ignore
 import { WebShellInstance } from "@ctrlplane/db/schema";
 
 import { getSession } from "./auth";
@@ -90,6 +92,7 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
 };
 
 export const addSocket = (expressApp: Express) => {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   const server = createServer(expressApp);
   const wss = new WebSocketServer({ noServer: true });
 

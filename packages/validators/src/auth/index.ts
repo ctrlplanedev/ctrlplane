@@ -34,6 +34,12 @@ export enum Permission {
   TargetProviderDelete = "targetProvider.delete",
   TargetProviderUpdate = "targetProvider.update",
 
+  TargetViewCreate = "targetView.create",
+  TargetViewList = "targetView.list",
+  TargetViewGet = "targetView.get",
+  TargetViewUpdate = "targetView.update",
+  TargetViewDelete = "targetView.delete",
+
   TargetMetadataGroupList = "targetMetadataGroup.list",
   TargetMetadataGroupGet = "targetMetadataGroup.get",
   TargetMetadataGroupCreate = "targetMetadataGroup.create",

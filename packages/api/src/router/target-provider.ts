@@ -1,7 +1,7 @@
 import ms from "ms";
 import { z } from "zod";
 
-import { eq, inArray, sql, takeFirst } from "@ctrlplane/db";
+import { eq, inArray, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createTargetProvider,
   createTargetProviderGoogle,
@@ -53,6 +53,7 @@ export const targetProviderRouter = createTRPCRouter({
         .select({
           providerId: target.providerId,
           kind: target.kind,
+          version: target.version,
           count: sql<number>`count(*)`.as("count"),
         })
         .from(target)
@@ -62,7 +63,7 @@ export const targetProviderRouter = createTRPCRouter({
             providers.map((p) => p.target_provider.id),
           ),
         )
-        .groupBy(target.providerId, target.kind)
+        .groupBy(target.providerId, target.kind, target.version)
         .orderBy(sql`count(*) DESC`);
 
       return providers.map((provider) => ({
@@ -74,9 +75,25 @@ export const targetProviderRouter = createTRPCRouter({
           )?.count ?? 0,
         kinds: providerKinds
           .filter((pk) => pk.providerId === provider.target_provider.id)
-          .map(({ kind, count }) => ({ kind, count })),
+          .map(({ kind, version, count }) => ({ kind, version, count })),
       }));
     }),
+
+  byId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetList)
+          .on({ type: "targetProvider", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(targetProvider)
+        .where(eq(targetProvider.id, input))
+        .then(takeFirstOrNull),
+    ),
 
   managed: createTRPCRouter({
     google: createTRPCRouter({

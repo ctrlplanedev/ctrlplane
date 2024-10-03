@@ -5,6 +5,7 @@ import { z } from "zod";
 import {
   and,
   asc,
+  count,
   eq,
   inArray,
   not,
@@ -12,15 +13,7 @@ import {
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
-import {
-  createTarget,
-  target,
-  targetMatchesMetadata,
-  targetMetadata,
-  targetProvider,
-  updateTarget,
-  workspace,
-} from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
@@ -155,29 +148,134 @@ const targetRelations = createTRPCRouter({
     }),
 });
 
+const targetViews = createTRPCRouter({
+  create: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetViewCreate)
+          .on({ type: "workspace", id: input.workspaceId }),
+    })
+    .input(schema.createTargetView)
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .insert(schema.targetView)
+        .values(input)
+        .returning()
+        .then(takeFirst),
+    ),
+
+  update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetViewUpdate)
+          .on({ type: "targetView", id: input.id }),
+    })
+    .input(z.object({ id: z.string().uuid(), data: schema.updateTargetView }))
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .update(schema.targetView)
+        .set(input.data)
+        .where(eq(schema.targetView.id, input.id))
+        .returning()
+        .then(takeFirst),
+    ),
+
+  delete: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetViewDelete)
+          .on({ type: "targetView", id: input }),
+    })
+    .input(z.string().uuid())
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.delete(schema.targetView).where(eq(schema.targetView.id, input)),
+    ),
+
+  byId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetViewGet)
+          .on({ type: "targetView", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(schema.targetView)
+        .where(eq(schema.targetView.id, input))
+        .then(takeFirst),
+    ),
+
+  list: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetViewList)
+          .on({ type: "workspace", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) => {
+      const views = await ctx.db
+        .select()
+        .from(schema.targetView)
+        .orderBy(schema.targetView.name)
+        .where(eq(schema.targetView.workspaceId, input));
+
+      return Promise.all(
+        views.map(async (view) => {
+          const total = await ctx.db
+            .select({ count: count() })
+            .from(schema.target)
+            .where(schema.targetMatchesMetadata(ctx.db, view.filter))
+            .then(takeFirst)
+            .then((t) => t.count);
+
+          return {
+            ...view,
+            total,
+          };
+        }),
+      );
+    }),
+});
+
 type _StringStringRecord = Record<string, string>;
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
     .select({
-      target: target,
-      targetProvider: targetProvider,
-      workspace: workspace,
+      target: schema.target,
+      targetProvider: schema.targetProvider,
+      workspace: schema.workspace,
       targetMetadata:
         sql<_StringStringRecord>`jsonb_object_agg(target_metadata.key,
        target_metadata.value)`.as("target_metadata"),
     })
-    .from(target)
-    .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
-    .innerJoin(workspace, eq(target.workspaceId, workspace.id))
-    .leftJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
+    .from(schema.target)
+    .leftJoin(
+      schema.targetProvider,
+      eq(schema.target.providerId, schema.targetProvider.id),
+    )
+    .innerJoin(
+      schema.workspace,
+      eq(schema.target.workspaceId, schema.workspace.id),
+    )
+    .leftJoin(
+      schema.targetMetadata,
+      eq(schema.targetMetadata.targetId, schema.target.id),
+    )
     .where(and(...checks))
-    .groupBy(target.id, targetProvider.id, workspace.id)
-    .orderBy(asc(target.kind), asc(target.name));
+    .groupBy(schema.target.id, schema.targetProvider.id, schema.workspace.id)
+    .orderBy(asc(schema.target.kind), asc(schema.target.name));
 
 export const targetRouter = createTRPCRouter({
   metadataGroup: targetMetadataGroupRouter,
   provider: targetProviderRouter,
   relations: targetRelations,
+  view: targetViews,
 
   byId: protectedProcedure
     .meta({
@@ -188,14 +286,17 @@ export const targetRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const metadata = await ctx.db
         .select()
-        .from(targetMetadata)
-        .where(eq(targetMetadata.targetId, input))
+        .from(schema.targetMetadata)
+        .where(eq(schema.targetMetadata.targetId, input))
         .then((lbs) => Object.fromEntries(lbs.map((lb) => [lb.key, lb.value])));
       return ctx.db
         .select()
-        .from(target)
-        .leftJoin(targetProvider, eq(target.providerId, targetProvider.id))
-        .where(eq(target.id, input))
+        .from(schema.target)
+        .leftJoin(
+          schema.targetProvider,
+          eq(schema.target.providerId, schema.targetProvider.id),
+        )
+        .where(eq(schema.target.id, input))
         .then(takeFirstOrNull)
         .then((a) =>
           a == null
@@ -221,8 +322,14 @@ export const targetRouter = createTRPCRouter({
         }),
       )
       .query(({ ctx, input }) => {
-        const workspaceIdCheck = eq(target.workspaceId, input.workspaceId);
-        const targetConditions = targetMatchesMetadata(ctx.db, input.filter);
+        const workspaceIdCheck = eq(
+          schema.target.workspaceId,
+          input.workspaceId,
+        );
+        const targetConditions = schema.targetMatchesMetadata(
+          ctx.db,
+          input.filter,
+        );
         const checks = [workspaceIdCheck, targetConditions].filter(isPresent);
 
         const items = targetQuery(ctx.db, checks)
@@ -240,7 +347,7 @@ export const targetRouter = createTRPCRouter({
           .select({
             count: sql`COUNT(*)`.mapWith(Number),
           })
-          .from(target)
+          .from(schema.target)
           .where(and(...checks))
           .then(takeFirst)
           .then((t) => t.count);
@@ -259,16 +366,18 @@ export const targetRouter = createTRPCRouter({
           .perform(Permission.TargetCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(createTarget.and(z.object({ metadata: z.record(z.string()) })))
+    .input(
+      schema.createTarget.and(z.object({ metadata: z.record(z.string()) })),
+    )
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
         const tg = await tx
-          .insert(target)
+          .insert(schema.target)
           .values(input)
           .returning()
           .then(takeFirst);
 
-        await tx.insert(targetMetadata).values(
+        await tx.insert(schema.targetMetadata).values(
           Object.entries(input.metadata).map(([key, value]) => ({
             targetId: tg.id,
             key,
@@ -290,15 +399,17 @@ export const targetRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().uuid(),
-        data: updateTarget.and(z.object({ metadata: z.record(z.string()) })),
+        data: schema.updateTarget.and(
+          z.object({ metadata: z.record(z.string()) }),
+        ),
       }),
     )
     .mutation(async ({ ctx, input: { id, data } }) =>
       ctx.db.transaction(async (tx) => {
         const updatedTarget = await tx
-          .update(target)
+          .update(schema.target)
           .set(data)
-          .where(eq(target.id, id))
+          .where(eq(schema.target.id, id))
           .returning()
           .then(takeFirst);
 
@@ -311,19 +422,24 @@ export const targetRouter = createTRPCRouter({
         );
 
         await tx
-          .insert(targetMetadata)
+          .insert(schema.targetMetadata)
           .values(metadataEntries)
           .onConflictDoUpdate({
-            target: [targetMetadata.targetId, targetMetadata.key],
+            target: [schema.targetMetadata.targetId, schema.targetMetadata.key],
             set: { value: sql`EXCLUDED.value` },
           })
           .then(() =>
             tx
-              .delete(targetMetadata)
+              .delete(schema.targetMetadata)
               .where(
                 and(
-                  eq(targetMetadata.targetId, id),
-                  not(inArray(targetMetadata.key, Object.keys(data.metadata))),
+                  eq(schema.targetMetadata.targetId, id),
+                  not(
+                    inArray(
+                      schema.targetMetadata.key,
+                      Object.keys(data.metadata),
+                    ),
+                  ),
                 ),
               ),
           );
@@ -344,7 +460,10 @@ export const targetRouter = createTRPCRouter({
     })
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) =>
-      ctx.db.delete(target).where(inArray(target.id, input)).returning(),
+      ctx.db
+        .delete(schema.target)
+        .where(inArray(schema.target.id, input))
+        .returning(),
     ),
 
   metadataKeys: protectedProcedure
@@ -357,10 +476,13 @@ export const targetRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
-        .selectDistinct({ key: targetMetadata.key })
-        .from(target)
-        .innerJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
-        .where(eq(target.workspaceId, input))
+        .selectDistinct({ key: schema.targetMetadata.key })
+        .from(schema.target)
+        .innerJoin(
+          schema.targetMetadata,
+          eq(schema.targetMetadata.targetId, schema.target.id),
+        )
+        .where(eq(schema.target.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),
 
@@ -374,9 +496,9 @@ export const targetRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(target)
+        .update(schema.target)
         .set({ lockedAt: new Date() })
-        .where(eq(target.id, input))
+        .where(eq(schema.target.id, input))
         .returning()
         .then(takeFirst),
     ),
@@ -391,9 +513,9 @@ export const targetRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(target)
+        .update(schema.target)
         .set({ lockedAt: null })
-        .where(eq(target.id, input))
+        .where(eq(schema.target.id, input))
         .returning()
         .then(takeFirst),
     ),

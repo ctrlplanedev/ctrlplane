@@ -1,5 +1,7 @@
+import type * as schema from "@ctrlplane/db/schema";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -11,14 +13,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
+import { useForm } from "@ctrlplane/ui/form";
 import {
   defaultCondition,
-  isDefaultCondition,
   isValidTargetCondition,
   MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/targets";
 
+import type { TargetViewFormSchema } from "./TargetViewForm";
+import { api } from "~/trpc/react";
 import { TargetConditionRender } from "./TargetConditionRender";
+import { TargetViewForm, targetViewFormSchema } from "./TargetViewForm";
 
 type TargetConditionDialogProps = {
   condition?: TargetCondition;
@@ -48,7 +53,10 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="min-w-[1000px]">
+      <DialogContent
+        className="min-w-[1000px]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle>Edit Target Filter</DialogTitle>
           <DialogDescription>
@@ -80,9 +88,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
                 );
                 return;
               }
-              onChange(
-                isDefaultCondition(localCondition) ? undefined : localCondition,
-              );
+              onChange(localCondition);
               setOpen(false);
               setError(null);
             }}
@@ -90,6 +96,126 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
             Save
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+type CreateTargetViewDialogProps = {
+  workspaceId: string;
+  filter?: TargetCondition;
+  onSubmit?: (view: schema.TargetView) => void;
+  children: React.ReactNode;
+};
+
+export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
+  workspaceId,
+  filter,
+  onSubmit,
+  children,
+}) => {
+  const [open, setOpen] = useState(false);
+  const form = useForm({
+    schema: targetViewFormSchema,
+    defaultValues: {
+      name: "",
+      description: "",
+      filter: filter ?? defaultCondition,
+    },
+  });
+  const router = useRouter();
+
+  const createTargetView = api.target.view.create.useMutation();
+
+  const onFormSubmit = (data: TargetViewFormSchema) => {
+    createTargetView
+      .mutateAsync({
+        ...data,
+        workspaceId,
+      })
+      .then((view) => onSubmit?.(view))
+      .then(() => form.reset())
+      .then(() => setOpen(false))
+      .then(() => router.refresh());
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent
+        className="min-w-[1000px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogHeader>
+          <DialogTitle>Create Target View</DialogTitle>
+          <DialogDescription>
+            Create a target view for this workspace.
+          </DialogDescription>
+        </DialogHeader>
+        <TargetViewForm form={form} onSubmit={onFormSubmit} />
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+type EditTargetViewDialogProps = {
+  view: schema.TargetView;
+  onClose?: () => void;
+  onSubmit?: (view: schema.TargetView) => void;
+  children: React.ReactNode;
+};
+
+export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
+  view,
+  onClose,
+  onSubmit,
+  children,
+}) => {
+  const [open, setOpen] = useState(false);
+  const form = useForm({
+    schema: targetViewFormSchema,
+    defaultValues: {
+      name: view.name,
+      description: view.description ?? "",
+      filter: view.filter,
+    },
+  });
+  const router = useRouter();
+
+  const updateTargetView = api.target.view.update.useMutation();
+
+  const onFormSubmit = (data: TargetViewFormSchema) => {
+    updateTargetView
+      .mutateAsync({
+        id: view.id,
+        data,
+      })
+      .then((view) => onSubmit?.(view))
+      .then(() => setOpen(false))
+      .then(onClose)
+      .then(() => router.refresh());
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        if (!open) onClose?.();
+      }}
+    >
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent
+        className="min-w-[1000px]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <DialogHeader>
+          <DialogTitle>Create Target View</DialogTitle>
+          <DialogDescription>
+            Create a target view for this workspace.
+          </DialogDescription>
+        </DialogHeader>
+        <TargetViewForm form={form} onSubmit={onFormSubmit} />
       </DialogContent>
     </Dialog>
   );

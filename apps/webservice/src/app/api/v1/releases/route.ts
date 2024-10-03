@@ -16,6 +16,7 @@ export const POST = async (req: NextRequest) => {
   const user = await getUser(req);
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   try {
     const response = await req.json();
     const body = createRelease.safeParse(response);
