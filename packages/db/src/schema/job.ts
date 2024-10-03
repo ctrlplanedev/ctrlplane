@@ -12,6 +12,7 @@ import { createInsertSchema } from "drizzle-zod";
 
 import { jobAgent } from "./job-agent.js";
 
+// if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
   "completed",
   "cancelled",

@@ -61,13 +61,14 @@ export const createTriggeredRunbookJob = async (
 
   logger.info(`Created triggered runbook job`, { jobId: job.id });
 
-  await db.insert(schema.jobVariable).values(
-    Object.entries(variableValues).map(([key, value]) => ({
-      key,
-      value,
-      jobId: job.id,
-    })),
-  );
+  const variables = Object.entries(variableValues).map(([key, value]) => ({
+    key,
+    value,
+    jobId: job.id,
+  }));
+
+  if (variables.length > 0)
+    await db.insert(schema.jobVariable).values(variables);
 
   return job;
 };
