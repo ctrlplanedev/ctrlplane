@@ -55,7 +55,7 @@ export const job = pgTable("job", {
     .$onUpdate(() => new Date()),
 });
 
-export const releaseMetadata = pgTable(
+export const jobMetadata = pgTable(
   "job_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
