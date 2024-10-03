@@ -14,7 +14,7 @@ export default function DeploymentLayout({
       <TopNav>
         <SystemBreadcrumbNavbar params={params} />
       </TopNav>
-      <DeploymentsNavBar />
+      {/* <DeploymentsNavBar /> */}
       {children}
     </>
   );

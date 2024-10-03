@@ -117,15 +117,15 @@ export const SystemBreadcrumbNavbar = async ({
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      <div>
+      {/* <div>
         {system && (
           <SystemActionsDropdown system={system}>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" className="h-5 w-5">
               <IconDotsVertical className="h-4 w-4" />
             </Button>
           </SystemActionsDropdown>
         )}
-      </div>
+      </div> */}
     </div>
   );
 };
