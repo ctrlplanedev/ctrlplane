@@ -7,6 +7,7 @@ import { z } from "zod";
 
 import {
   and,
+  count,
   desc,
   eq,
   inArray,
@@ -25,6 +26,7 @@ import {
   release,
   releaseDependency,
   releaseJobTrigger,
+  releaseMatchesCondition,
   releaseMetadata,
   target,
 } from "@ctrlplane/db/schema";
@@ -39,6 +41,7 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { releaseCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -53,19 +56,36 @@ export const releaseRouter = createTRPCRouter({
     .input(
       z.object({
         deploymentId: z.string(),
+        filter: releaseCondition.optional(),
         limit: z.number().optional(),
         offset: z.number().optional(),
       }),
     )
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(({ ctx, input }) => {
+      const deploymentIdCheck = eq(release.deploymentId, input.deploymentId);
+      const releaseConditionCheck = releaseMatchesCondition(
+        ctx.db,
+        input.filter,
+      );
+      const checks = [deploymentIdCheck, releaseConditionCheck].filter(
+        isPresent,
+      );
+
+      const items = ctx.db
         .select()
         .from(release)
         .leftJoin(
           releaseDependency,
           eq(release.id, releaseDependency.releaseId),
         )
-        .where(eq(release.deploymentId, input.deploymentId))
+        .where(
+          and(
+            ...[
+              eq(release.deploymentId, input.deploymentId),
+              releaseMatchesCondition(ctx.db, input.filter),
+            ].filter(isPresent),
+          ),
+        )
         .orderBy(desc(release.createdAt))
         .limit(input.limit ?? 1000)
         .offset(input.offset ?? 0)
@@ -79,8 +99,22 @@ export const releaseRouter = createTRPCRouter({
                 .filter(isPresent),
             }))
             .value(),
-        ),
-    ),
+        );
+
+      const total = ctx.db
+        .select({
+          count: count().mapWith(Number),
+        })
+        .from(release)
+        .where(and(...checks))
+        .then(takeFirst)
+        .then((t) => t.count);
+
+      return Promise.all([items, total]).then(([items, total]) => ({
+        items,
+        total,
+      }));
+    }),
 
   byId: protectedProcedure
     .meta({
@@ -377,5 +411,25 @@ export const releaseRouter = createTRPCRouter({
         },
         {} as Record<string, string[]>,
       );
+    }),
+
+  metadataKeys: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ReleaseGet)
+          .on({ type: "deployment", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(async ({ input }) => {
+      const keys = await db
+        .selectDistinct({ key: releaseMetadata.key })
+        .from(release)
+        .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
+        .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+        .where(eq(deployment.id, input))
+        .then((r) => r.map((row) => row.key));
+
+      return keys;
     }),
 });

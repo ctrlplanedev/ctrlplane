@@ -143,8 +143,8 @@ export const CreateReleaseDialog: React.FC<{
   });
 
   useEffect(() => {
-    if (latestRelease.data != null)
-      latestRelease.data.at(0)?.releaseDependencies.forEach((rd) => {
+    if ((latestRelease.data?.items.length ?? 0) > 0)
+      latestRelease.data?.items[0]!.releaseDependencies.forEach((rd) => {
         append({
           ...rd,
           targetMetadataGroupId: rd.targetMetadataGroupId ?? undefined,
@@ -355,7 +355,7 @@ export const CreateReleaseDialog: React.FC<{
                     deploymentId: "",
                     rule: "",
                     ruleType:
-                      valid(latestRelease.data?.at(0)?.version) != null
+                      valid(latestRelease.data?.items[0]?.version) != null
                         ? "semver"
                         : "regex",
                   })

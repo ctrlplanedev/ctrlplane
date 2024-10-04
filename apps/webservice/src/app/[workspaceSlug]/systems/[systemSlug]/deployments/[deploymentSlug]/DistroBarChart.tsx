@@ -17,7 +17,7 @@ export const DistroBarChart: React.FC<{
     refetchInterval: 2_000,
   });
 
-  const distro = _.chain(releases.data ?? [])
+  const distro = _.chain(releases.data?.items ?? [])
     .map((r) => ({
       version: r.version,
       count: (distribution.data ?? []).filter((d) => d.release.id === r.id)

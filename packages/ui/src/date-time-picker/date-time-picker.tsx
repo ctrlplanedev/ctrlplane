@@ -19,7 +19,7 @@ import { useForwardedRef } from "./useForwardedRef";
 
 const DateTimePicker = React.forwardRef<
   HTMLDivElement,
-  DatePickerStateOptions<DateValue>
+  DatePickerStateOptions<DateValue> & { variant?: string }
 >((props, forwardedRef) => {
   const ref = useForwardedRef(forwardedRef);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -49,20 +49,23 @@ const DateTimePicker = React.forwardRef<
       ref={ref}
       className={cn(groupProps.className, "flex items-center rounded-md")}
     >
-      <DateField {...fieldProps} />
+      <DateField {...fieldProps} variant={props.variant} />
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             {...buttonProps}
             variant="outline"
-            className="h-8 rounded-l-none"
+            className={cn(
+              "rounded-l-none",
+              props.variant === "filter" ? "h-9" : "h-8",
+            )}
             disabled={props.isDisabled}
             onClick={() => setOpen(true)}
           >
             <IconCalendar className="h-5 w-5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent ref={contentRef} className="w-full">
+        <PopoverContent ref={contentRef} className="w-full" align="end">
           <div {...dialogProps} className="space-y-3">
             <Calendar {...calendarProps} />
             {!!state.hasTime && (
