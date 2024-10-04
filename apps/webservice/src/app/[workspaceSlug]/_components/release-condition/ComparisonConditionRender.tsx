@@ -295,39 +295,6 @@ export const ComparisonConditionRender: React.FC<
             >
               Version
             </DropdownMenuItem>
-            {/* <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ReleaseFilterType.Kind,
-                  operator: ReleaseOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Kind
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: TargetFilterType.Name,
-                  operator: TargetOperator.Like,
-                  value: "",
-                })
-              }
-            >
-              Name
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: TargetFilterType.Provider,
-                  operator: TargetOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Provider
-            </DropdownMenuItem> */}
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>

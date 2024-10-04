@@ -62,8 +62,6 @@ export const releaseRouter = createTRPCRouter({
       }),
     )
     .query(({ ctx, input }) => {
-      console.log(input.filter);
-
       const deploymentIdCheck = eq(release.deploymentId, input.deploymentId);
       const releaseConditionCheck = releaseMatchesCondition(
         ctx.db,

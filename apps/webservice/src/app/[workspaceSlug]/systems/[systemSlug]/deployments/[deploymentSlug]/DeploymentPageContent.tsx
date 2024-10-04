@@ -3,12 +3,9 @@
 import type * as schema from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  IconAlertTriangle,
-  IconCircleFilled,
-  IconFilter,
-} from "@tabler/icons-react";
+import { IconAlertTriangle, IconFilter } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
+import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -29,6 +26,7 @@ import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
+import { useReleaseDrawer } from "../../../../_components/release-drawer/ReleaseDrawer";
 import { DeployButton } from "../DeployButton";
 import { Release } from "../TableCells";
 import { DistroBarChart } from "./DistroBarChart";
@@ -47,6 +45,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   environments,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
+  const { setReleaseId } = useReleaseDrawer();
 
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
@@ -56,6 +55,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const releaseJobTriggersQuery = api.job.config.byDeploymentId.useQuery(
     deployment.id,
     { refetchInterval: 2_000 },
+  );
+
+  const releasesAll = api.release.list.useQuery(
+    { deploymentId: deployment.id, limit: 0 },
+    { refetchInterval: 10_000 },
   );
 
   const releases = api.release.list.useQuery(
@@ -90,7 +94,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const loading = releases.isLoading || releaseJobTriggersQuery.isLoading;
 
-  // TODO: the deployment totals should be for all deployments
   return (
     <div>
       <div className="flex border-b">
@@ -118,7 +121,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           <div className="col-span-1 flex flex-col gap-2 border-r px-6 py-6">
             <span className="text-xs text-muted-foreground">Releases</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releases.data?.total ?? "-"}
+              {releasesAll.data?.total ?? "-"}
             </span>
           </div>
 
@@ -151,6 +154,15 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               {filter != null && <ReleaseConditionBadge condition={filter} />}
             </div>
           </ReleaseConditionDialog>
+          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
+            Total:
+            <Badge
+              variant="outline"
+              className="rounded-full border-neutral-800 text-inherit"
+            >
+              {releases.data?.total ?? "-"}
+            </Badge>
+          </div>
         </div>
       </div>
       <div className="h-full text-sm">
@@ -171,16 +183,13 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
-                    <div className="flex h-[60px] items-center pl-2 backdrop-blur-sm">
+                    <div className="flex items-center pl-2 backdrop-blur-sm">
                       Version
                     </div>
                   </TableHead>
                   {environments.map((env) => (
-                    <TableHead
-                      className="h-[60px] min-w-[220px] border-l pl-4"
-                      key={env.id}
-                    >
-                      <div className="flex items-center gap-2">
+                    <TableHead className="border-l pl-4" key={env.id}>
+                      <div className="flex w-[220px] items-center gap-2">
                         {env.name}
                         <Badge
                           variant="outline"
@@ -195,20 +204,28 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               </TableHeader>
               <TableBody>
                 {releases.data.items.map((release, releaseIdx) => (
-                  <TableRow key={release.id} className="hover:bg-transparent">
+                  <TableRow
+                    key={release.id}
+                    className="cursor-pointer hover:bg-transparent"
+                    onClick={() => setReleaseId(release.id)}
+                  >
                     <TableCell
                       className={cn(
-                        "sticky left-0 z-10 min-w-[500px] p-0",
+                        "sticky left-0 z-10 min-w-[500px] pl-4 text-base",
                         releaseIdx === releases.data.items.length - 1 &&
                           "border-b",
                       )}
                     >
-                      <div className="flex h-[60px] items-center gap-2 pl-2 backdrop-blur-sm">
-                        <div className="relative h-[25px] w-[25px]">
-                          <IconCircleFilled className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
-                          <IconCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
-                        </div>
-                        <span>{release.version}</span>
+                      <div className="flex items-center gap-2">
+                        {release.version}{" "}
+                        <Badge
+                          variant="secondary"
+                          className="text-xs hover:bg-secondary"
+                        >
+                          {formatDistanceToNowStrict(release.createdAt, {
+                            addSuffix: true,
+                          })}
+                        </Badge>
                       </div>
                     </TableCell>
                     {environments.map((env) => {
@@ -243,7 +260,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       return (
                         <TableCell
                           className={cn(
-                            "h-[60px] min-w-[220px] border-l",
+                            "h-[60px] w-[220px] border-l",
                             releaseIdx === releases.data.items.length - 1 &&
                               "border-b",
                           )}
