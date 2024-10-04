@@ -13,7 +13,10 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { getUser } from "~/app/api/v1/auth";
 
 const bodySchema = createRelease.and(
-  z.object({ metadata: z.record(z.string()).optional() }),
+  z.object({
+    metadata: z.record(z.string()).optional(),
+    createdAt: z.string().transform((s) => new Date(s)),
+  }),
 );
 
 export const POST = async (req: NextRequest) => {
