@@ -26,19 +26,25 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { toast } from "@ctrlplane/ui/toast";
 
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
+import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
-import { TargetConditionBadge } from "../../../_components/target-condition/TargetConditionBadge";
-import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
 import { usePanel } from "./SidepanelContext";
+import {
+  UniqueFilterAcrossTargets,
+  useUniqueFilterAcrossTargets,
+} from "./UniqueFilterAcrossTargets";
 
 const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
+  targetFilter: z.any().optional(),
 });
 
 export const SidebarEnvironmentPanel: React.FC = () => {
-  const { getNode, setNodes } = useReactFlow();
+  const { getNode, getNodes, setNodes } = useReactFlow();
   const { selectedNodeId } = usePanel();
   const node = getNode(selectedNodeId ?? "")!;
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
@@ -51,6 +57,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     defaultValues: {
       name: node.data.label,
       description: node.data.description,
+      targetFilter: node.data.targetFilter,
     },
   });
 
@@ -63,6 +70,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     form.reset({
       name: node.data.label,
       description: node.data.description,
+      targetFilter: node.data.targetFilter,
     });
   }, [node, form]);
 
@@ -86,9 +94,11 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           id: node.id,
           data: { ...values },
         })
-        .then(() =>
-          utils.environment.bySystemId.invalidate(node.data.systemId),
-        );
+        .then(() => {
+          utils.environment.bySystemId.invalidate(node.data.systemId);
+          toast.success(`Environment updated successfully`);
+        })
+        .catch(() => toast.error(`Failed to update environment`));
       return nodes.map((n) =>
         n.id === selectedNodeId
           ? {
@@ -109,17 +119,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
 
-      update
-        .mutateAsync({
-          id: node.id,
-          data: {
-            targetFilter: condition ?? null,
-          },
-        })
-        .then(() =>
-          utils.environment.bySystemId.invalidate(node.data.systemId),
-        );
-      return nodes.map((n) =>
+      const updatedNodes = nodes.map((n) =>
         n.id === selectedNodeId
           ? {
               ...n,
@@ -130,7 +130,18 @@ export const SidebarEnvironmentPanel: React.FC = () => {
             }
           : n,
       );
+      form.setValue("targetFilter", condition);
+      utils.target.byWorkspaceId.list.invalidate({
+        workspaceId: workspace.data?.id ?? "",
+      });
+      return updatedNodes;
     });
+
+  const nodes = getNodes();
+  const uniqueFilterResult = useUniqueFilterAcrossTargets(
+    nodes,
+    workspace.data?.id ?? "",
+  );
 
   return (
     <Form {...form}>
@@ -175,7 +186,10 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         />
 
         <div className="flex flex-col gap-2">
-          <Label className="flex items-center gap-2">
+          <Label
+            className="flex items-center gap-2"
+            onClick={(e) => e.preventDefault()}
+          >
             <span>
               Target Filter (
               {node.data.targetFilter != null && targets.data != null
@@ -184,21 +198,27 @@ export const SidebarEnvironmentPanel: React.FC = () => {
               )
             </span>
             {node.data.targetFilter != null && (
-              <Link
-                href={`/${workspaceSlug}/targets?${new URLSearchParams({
-                  filter: LZString.compressToEncodedURIComponent(
-                    JSON.stringify(node.data.targetFilter),
-                  ),
-                })}`}
-                passHref
-              >
-                <Button variant="ghost" size="sm" asChild>
-                  <a target="_blank" rel="noopener noreferrer">
-                    <IconExternalLink className="mr-1 h-4 w-4" />
-                    View Targets
-                  </a>
-                </Button>
-              </Link>
+              <>
+                <UniqueFilterAcrossTargets
+                  nodes={nodes}
+                  workspaceId={workspace.data?.id ?? ""}
+                />
+                <Link
+                  href={`/${workspaceSlug}/targets?${new URLSearchParams({
+                    filter: LZString.compressToEncodedURIComponent(
+                      JSON.stringify(node.data.targetFilter),
+                    ),
+                  })}`}
+                  passHref
+                >
+                  <Button variant="ghost" size="sm" asChild>
+                    <a target="_blank" rel="noopener noreferrer">
+                      <IconExternalLink className="mr-1 h-4 w-4" />
+                      View Targets
+                    </a>
+                  </Button>
+                </Link>
+              </>
             )}
           </Label>
           {node.data.targetFilter == null && (
@@ -220,7 +240,10 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={update.isPending}>
+          <Button
+            type="submit"
+            disabled={update.isPending || uniqueFilterResult?.isUnique == false}
+          >
             Save
           </Button>
           <Button
