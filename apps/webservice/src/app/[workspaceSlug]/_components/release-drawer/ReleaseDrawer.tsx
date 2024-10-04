@@ -1,11 +1,18 @@
 "use client";
 
 import type { Release, ReleaseDependency } from "@ctrlplane/db/schema";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { IconSparkles } from "@tabler/icons-react";
+import {
+  IconInfoCircle,
+  IconProgress,
+  IconSparkles,
+} from "@tabler/icons-react";
 import { format } from "date-fns";
 import yaml from "js-yaml";
 
+import { cn } from "@ctrlplane/ui";
+import { Button } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { Input } from "@ctrlplane/ui/input";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
@@ -13,6 +20,27 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ConfigEditor } from "../ConfigEditor";
+
+const TabButton: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}> = ({ active, onClick, icon, label }) => (
+  <Button
+    onClick={onClick}
+    variant="ghost"
+    className={cn(
+      "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
+      active
+        ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
+        : "text-muted-foreground",
+    )}
+  >
+    {icon}
+    {label}
+  </Button>
+);
 
 const param = "release_id";
 export const useReleaseDrawer = () => {
@@ -45,6 +73,8 @@ export const ReleaseDrawer: React.FC = () => {
   });
   const release = releaseQ.data;
 
+  const [activeTab, setActiveTab] = useState("overview");
+
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
@@ -57,7 +87,28 @@ export const ReleaseDrawer: React.FC = () => {
           </div>
         </div>
         <div className="flex w-full gap-6 p-6">
-          {release && <OverviewContent release={release} />}
+          <div className="space-y-1">
+            <TabButton
+              active={activeTab === "overview"}
+              onClick={() => setActiveTab("overview")}
+              icon={<IconInfoCircle className="h-4 w-4" />}
+              label="Overview"
+            />
+            <TabButton
+              active={activeTab === "jobs"}
+              onClick={() => setActiveTab("jobs")}
+              icon={<IconProgress className="h-4 w-4" />}
+              label="Jobs"
+            />
+          </div>
+
+          {release != null && (
+            <div className="w-full overflow-auto">
+              {activeTab === "overview" && (
+                <OverviewContent release={release} />
+              )}
+            </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>
@@ -98,10 +149,13 @@ const OverviewContent: React.FC<{
               style={{ tableLayout: "fixed" }}
             >
               <tbody>
-                <tr>
-                  <td className="p-1 pr-2 text-muted-foreground">Name</td>
-                  <td>{release.name}</td>
-                </tr>
+                {release.name !== release.version && (
+                  <tr>
+                    <td className="p-1 pr-2 text-muted-foreground">Name</td>
+                    <td>{release.name}</td>
+                  </tr>
+                )}
+
                 <tr>
                   <td className="p-1 pr-2 text-muted-foreground">Version</td>
                   <td>{release.version}</td>
@@ -111,6 +165,7 @@ const OverviewContent: React.FC<{
                   <td className="p-1 pr-2 text-muted-foreground">Created At</td>
                   <td>{format(release.createdAt, "MM/dd/yyyy mm:hh:ss")}</td>
                 </tr>
+
                 <tr>
                   <td className="p-1 pr-2 align-top text-muted-foreground">
                     Links
@@ -146,14 +201,7 @@ const OverviewContent: React.FC<{
               style={{ tableLayout: "fixed" }}
             >
               <tbody>
-                <tr>
-                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
-                    External ID
-                  </td>
-                  <td>
-                    <div className="overflow-hidden text-ellipsis whitespace-nowrap"></div>
-                  </td>
-                </tr>
+                <tr></tr>
               </tbody>
             </table>
           </div>
