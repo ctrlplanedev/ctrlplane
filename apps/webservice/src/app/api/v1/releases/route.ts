@@ -12,6 +12,10 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
 
+const bodySchema = createRelease.and(
+  z.object({ metadata: z.record(z.string()).optional() }),
+);
+
 export const POST = async (req: NextRequest) => {
   const user = await getUser(req);
   if (!user)
@@ -19,9 +23,10 @@ export const POST = async (req: NextRequest) => {
 
   try {
     const response = await req.json();
-    const body = createRelease.safeParse(response);
+    const body = bodySchema.safeParse(response);
     if (!body.success) return NextResponse.json(body.error, { status: 400 });
 
+    const { metadata = {}, ...releaseData } = body.data;
     const canCreateReleases = await can()
       .user(user.id)
       .perform(Permission.ReleaseCreate)
@@ -31,11 +36,20 @@ export const POST = async (req: NextRequest) => {
 
     const release = await db
       .insert(schema.release)
-      .values(body.data)
+      .values(releaseData)
       .returning()
       .then(takeFirst);
 
-    return NextResponse.json(release, { status: 201 });
+    if (Object.keys(metadata).length > 0)
+      await db.insert(schema.releaseMetadata).values(
+        Object.entries(metadata).map(([key, value]) => ({
+          releaseId: release.id,
+          key,
+          value,
+        })),
+      );
+
+    return NextResponse.json({ ...release, metadata }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError)
       return NextResponse.json({ error: error.errors }, { status: 400 });

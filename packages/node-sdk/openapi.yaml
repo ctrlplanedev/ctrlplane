@@ -177,7 +177,7 @@ paths:
                       type: string
                     jobAgentConfig:
                       type: object
-                    externalRunId:
+                    externalId:
                       type: [string, "null"]
                       nullable: true
                     release:
@@ -198,7 +198,7 @@ paths:
                     - message
                     - jobAgentId
                     - jobAgentConfig
-                    - externalRunId
+                    - externalId
                     - config
   /v1/job-agents/{agentId}/queue/next:
     get:
@@ -390,7 +390,7 @@ paths:
                 message:
                   type: [string, "null"]
                   nullable: true
-                externalRunId:
+                externalId:
                   type: [string, "null"]
                   nullable: true
       responses:

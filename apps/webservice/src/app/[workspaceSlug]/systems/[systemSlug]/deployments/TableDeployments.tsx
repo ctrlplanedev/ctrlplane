@@ -62,7 +62,12 @@ const ReleaseCell: React.FC<{
   workspaceSlug: string;
   systemSlug: string;
   environment: Environment & { targets: Target[] };
-  release: { id: string; version: string; createdAt: Date } | null;
+  release: {
+    id: string;
+    name: string;
+    version: string;
+    createdAt: Date;
+  } | null;
   deployment: Deployment;
 }> = async ({
   release,
@@ -97,7 +102,7 @@ const ReleaseCell: React.FC<{
         <Release
           releaseId={release.id}
           environment={env}
-          name={release.version}
+          name={release.name}
           deployedAt={release.createdAt}
           releaseJobTriggers={jc}
           workspaceSlug={workspaceSlug}
@@ -122,7 +127,12 @@ const DeploymentTable: React.FC<{
   environments: Array<Environment & { targets: Target[] }>;
   deployments: Array<
     Deployment & {
-      latestRelease: { id: string; version: string; createdAt: Date } | null;
+      latestRelease: {
+        id: string;
+        name: string;
+        version: string;
+        createdAt: Date;
+      } | null;
     }
   >;
   workspaceSlug: string;

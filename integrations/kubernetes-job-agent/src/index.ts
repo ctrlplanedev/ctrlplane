@@ -49,7 +49,7 @@ const deployManifest = async (
       jobId,
       updateJobRequest: {
         status: "in_progress",
-        externalRunId: `${namespace}/${name}`,
+        externalId: `${namespace}/${name}`,
         message: "Job created successfully.",
       },
     });
@@ -116,11 +116,11 @@ const updateExecutionStatus = async (agentId: string) => {
     logger.info(`Found ${jobs.length} running execution(s)`);
     await Promise.allSettled(
       jobs.map(async (job) => {
-        const [namespace, name] = job.externalRunId?.split("/") ?? [];
+        const [namespace, name] = job.externalId?.split("/") ?? [];
         if (namespace == null || name == null) {
           logger.error("Invalid external run ID", {
             jobId: job.id,
-            externalRunId: job.externalRunId,
+            externalId: job.externalId,
           });
           return;
         }

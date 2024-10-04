@@ -64,6 +64,13 @@
       "when": 1727917563393,
       "tag": "0008_living_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1727989623771,
+      "tag": "0009_flaky_hellfire_club",
+      "breakpoints": true
     }
   ]
 }

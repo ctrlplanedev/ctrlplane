@@ -47,7 +47,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
           .map(([envId, jobs]) => (
             <Fragment key={envId}>
               <TableRow className={cn("sticky bg-neutral-800/40")}>
-                <TableCell>
+                <TableCell colSpan={6}>
                   {jobs[0]?.environment != null && (
                     <div className="flex items-center gap-4">
                       <div className="flex-grow">
@@ -56,11 +56,6 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     </div>
                   )}
                 </TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>External ID</TableCell>
-                <TableCell>External URL</TableCell>
-                <TableCell>Actions</TableCell>
               </TableRow>
               {jobs.map((job, idx) => (
                 <TableRow
@@ -98,19 +93,19 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     )}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    {job.job.externalUrl != null ? (
-                      <Link
-                        href={job.job.externalUrl}
-                        rel="nofollow noreferrer"
-                        target="_blank"
-                      >
-                        {job.job.externalUrl}
-                      </Link>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No external URL
-                      </span>
-                    )}
+                    {/* {job.job.externalUrl != null ? (
+                        <Link
+                          href={job.job.externalUrl}
+                          rel="nofollow noreferrer"
+                          target="_blank"
+                        >
+                          {job.job.externalUrl}
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          No external URL
+                        </span>
+                      )} */}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <TargetDropdownMenu
