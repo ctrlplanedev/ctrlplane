@@ -51,13 +51,13 @@ function Calendar(props: CalendarProps<DateValue>) {
 
   return (
     <div {...calendarProps} className="space-y-4">
-      <div className="relative flex items-center justify-center pt-1">
+      <div className="relative flex items-center justify-center bg-red-500 pt-1">
         <Button
           {...prevButtonProps}
           ref={prevButtonRef}
           variant={"outline"}
           className={cn(
-            "absolute left-1 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+            "absolute left-0 h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
           )}
         >
           <IconChevronLeft className="h-4 w-4" />

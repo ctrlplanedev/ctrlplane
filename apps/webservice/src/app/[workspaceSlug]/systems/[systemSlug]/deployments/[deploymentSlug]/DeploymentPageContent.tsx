@@ -25,6 +25,9 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
+import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
+import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
 import { DeployButton } from "../DeployButton";
 import { Release } from "../TableCells";
@@ -43,6 +46,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   deployment,
   environments,
 }) => {
+  const { filter, setFilter } = useReleaseFilter();
+
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
     systemSlug: string;
@@ -54,7 +59,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   );
 
   const releases = api.release.list.useQuery(
-    { deploymentId: deployment.id },
+    { deploymentId: deployment.id, filter, limit: 30 },
     { refetchInterval: 10_000 },
   );
 
@@ -77,7 +82,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const distribution = api.deployment.distributionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
   });
-  const releaseIds = releases.data?.map((r) => r.id) ?? [];
+  const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
     releaseIds,
     { enabled: releaseIds.length > 0 },
@@ -85,6 +90,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const loading = releases.isLoading || releaseJobTriggersQuery.isLoading;
 
+  // TODO: the deployment totals should be for all deployments
   return (
     <div>
       <div className="flex border-b">
@@ -112,7 +118,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           <div className="col-span-1 flex flex-col gap-2 border-r px-6 py-6">
             <span className="text-xs text-muted-foreground">Releases</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releases.data?.length ?? "-"}
+              {releases.data?.total ?? "-"}
             </span>
           </div>
 
@@ -132,15 +138,19 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
       </div>
       <div className="h-full text-sm">
         <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-            >
-              <IconFilter className="h-4 w-4" />
-            </Button>
-          </div>
+          <ReleaseConditionDialog condition={filter} onChange={setFilter}>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+              >
+                <IconFilter className="h-4 w-4" />
+              </Button>
+
+              {filter != null && <ReleaseConditionBadge condition={filter} />}
+            </div>
+          </ReleaseConditionDialog>
         </div>
       </div>
       <div className="h-full text-sm">
@@ -184,12 +194,13 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {releases.data.map((release, releaseIdx) => (
+                {releases.data.items.map((release, releaseIdx) => (
                   <TableRow key={release.id} className="hover:bg-transparent">
                     <TableCell
                       className={cn(
                         "sticky left-0 z-10 min-w-[500px] p-0",
-                        releaseIdx === releases.data.length - 1 && "border-b",
+                        releaseIdx === releases.data.items.length - 1 &&
+                          "border-b",
                       )}
                     >
                       <div className="flex h-[60px] items-center gap-2 pl-2 backdrop-blur-sm">
@@ -233,7 +244,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         <TableCell
                           className={cn(
                             "h-[60px] min-w-[220px] border-l",
-                            releaseIdx === releases.data.length - 1 &&
+                            releaseIdx === releases.data.items.length - 1 &&
                               "border-b",
                           )}
                         >

@@ -1,4 +1,24 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type {
+  CreatedAtCondition,
+  MetadataCondition,
+  ReleaseCondition,
+  VersionCondition,
+} from "@ctrlplane/validators/releases";
+import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  gt,
+  gte,
+  like,
+  lt,
+  lte,
+  not,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   jsonb,
   pgEnum,
@@ -11,6 +31,12 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import {
+  ReleaseFilterType,
+  ReleaseOperator,
+} from "@ctrlplane/validators/releases";
+
+import type { Tx } from "../common.js";
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
@@ -138,3 +164,104 @@ export type ReleaseJobTriggerType = ReleaseJobTrigger["type"];
 export type ReleaseJobTriggerInsert = InferInsertModel<
   typeof releaseJobTrigger
 >;
+
+const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
+  if (cond.operator === "null")
+    return notExists(
+      tx
+        .select()
+        .from(releaseMetadata)
+        .where(
+          and(
+            eq(releaseMetadata.releaseId, release.id),
+            eq(releaseMetadata.key, cond.key),
+          ),
+        ),
+    );
+
+  if (cond.operator === "regex")
+    return exists(
+      tx
+        .select()
+        .from(releaseMetadata)
+        .where(
+          and(
+            eq(releaseMetadata.releaseId, release.id),
+            eq(releaseMetadata.key, cond.key),
+            sql`${releaseMetadata.value} ~ ${cond.value}`,
+          ),
+        ),
+    );
+
+  if (cond.operator === "like")
+    return exists(
+      tx
+        .select()
+        .from(releaseMetadata)
+        .where(
+          and(
+            eq(releaseMetadata.releaseId, release.id),
+            eq(releaseMetadata.key, cond.key),
+            like(releaseMetadata.value, cond.value),
+          ),
+        ),
+    );
+
+  return exists(
+    tx
+      .select()
+      .from(releaseMetadata)
+      .where(
+        and(
+          eq(releaseMetadata.releaseId, release.id),
+          eq(releaseMetadata.key, cond.key),
+          eq(releaseMetadata.value, cond.value),
+        ),
+      ),
+  );
+};
+
+const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
+  const date = new Date(cond.value);
+  if (cond.operator === ReleaseOperator.Before)
+    return lt(release.createdAt, date);
+  if (cond.operator === ReleaseOperator.After)
+    return gt(release.createdAt, date);
+  if (cond.operator === ReleaseOperator.BeforeOrOn)
+    return lte(release.createdAt, date);
+  return gte(release.createdAt, date);
+};
+
+const buildVersionCondition = (cond: VersionCondition): SQL => {
+  if (cond.operator === ReleaseOperator.Equals)
+    return eq(release.version, cond.value);
+  if (cond.operator === ReleaseOperator.Like)
+    return like(release.version, cond.value);
+  return sql`${release.version} ~ ${cond.value}`;
+};
+
+const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
+  if (cond.type === ReleaseFilterType.Metadata)
+    return buildMetadataCondition(tx, cond);
+  if (cond.type === ReleaseFilterType.CreatedAt)
+    return buildCreatedAtCondition(cond);
+  if (cond.type === ReleaseFilterType.Version)
+    return buildVersionCondition(cond);
+
+  if (cond.conditions.length === 0 && cond.not) return sql`FALSE`;
+  if (cond.conditions.length === 0) return sql`TRUE`;
+
+  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
+  const con =
+    cond.operator === ReleaseOperator.And ? and(...subCon)! : or(...subCon)!;
+  return cond.not ? not(con) : con;
+};
+
+export function releaseMatchesCondition(
+  tx: Tx,
+  condition?: ReleaseCondition,
+): SQL<unknown> | undefined {
+  return condition == null || Object.keys(condition).length === 0
+    ? undefined
+    : buildCondition(tx, condition);
+}

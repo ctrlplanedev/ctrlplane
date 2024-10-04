@@ -12,6 +12,10 @@
       "types": "./src/targets/index.ts",
       "default": "./dist/targets/index.js"
     },
+    "./releases": {
+      "types": "./src/releases/index.ts",
+      "default": "./dist/releases/index.js"
+    },
     "./events": {
       "types": "./src/events/index.ts",
       "default": "./dist/events/index.js"
