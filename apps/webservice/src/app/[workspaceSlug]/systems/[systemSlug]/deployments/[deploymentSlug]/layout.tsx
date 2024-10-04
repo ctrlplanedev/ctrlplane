@@ -1,6 +1,5 @@
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
-import { DeploymentsNavBar } from "./DeploymentNavBar";
 
 export default function DeploymentLayout({
   children,
@@ -14,7 +13,6 @@ export default function DeploymentLayout({
       <TopNav>
         <SystemBreadcrumbNavbar params={params} />
       </TopNav>
-      <DeploymentsNavBar />
       {children}
     </>
   );

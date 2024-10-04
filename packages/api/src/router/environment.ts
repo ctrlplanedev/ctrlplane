@@ -469,6 +469,7 @@ export const environmentRouter = createTRPCRouter({
         .select()
         .from(environment)
         .innerJoin(system, eq(system.id, environment.systemId))
+        .orderBy(environment.name)
         .where(
           and(eq(environment.systemId, input), isNull(environment.deletedAt)),
         );

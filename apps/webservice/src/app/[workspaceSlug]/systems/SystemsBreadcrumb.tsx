@@ -19,6 +19,7 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { SystemActionsDropdown } from "~/app/[workspaceSlug]/systems/SystemActionsDropdown";
 import { api } from "~/trpc/server";
+import { DeploymentNavigationMenu } from "./DeploymentNavigationMenu";
 
 export const SystemBreadcrumbNavbar = async ({
   params,
@@ -87,7 +88,7 @@ export const SystemBreadcrumbNavbar = async ({
   ].filter((t) => t.isSet);
 
   return (
-    <div className="flex items-center gap-2 p-3">
+    <div className="flex w-full items-center gap-2 p-3">
       <Breadcrumb>
         <BreadcrumbList>
           {crumbs.map((crumb, idx) => {
@@ -117,10 +118,16 @@ export const SystemBreadcrumbNavbar = async ({
           })}
         </BreadcrumbList>
       </Breadcrumb>
+      {crumbs.length === 3 && (
+        <>
+          <div className="w-2" />
+          <DeploymentNavigationMenu />
+        </>
+      )}
       <div>
-        {system && (
+        {system && crumbs.length === 2 && (
           <SystemActionsDropdown system={system}>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" className="h-5 w-5">
               <IconDotsVertical className="h-4 w-4" />
             </Button>
           </SystemActionsDropdown>

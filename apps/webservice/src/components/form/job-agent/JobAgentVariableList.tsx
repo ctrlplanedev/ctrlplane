@@ -1,3 +1,5 @@
+"use client";
+
 import { Input } from "@ctrlplane/ui/input";
 
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
