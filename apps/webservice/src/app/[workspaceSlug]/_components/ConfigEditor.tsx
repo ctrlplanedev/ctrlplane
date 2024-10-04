@@ -17,7 +17,7 @@ loader.init().then((monaco) => {
   });
 });
 
-export const TargetConfigEditor: React.FC<{
+export const ConfigEditor: React.FC<{
   value: string;
   onChange?: (v: string) => void;
   readOnly?: boolean;

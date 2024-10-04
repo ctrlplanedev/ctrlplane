@@ -169,57 +169,53 @@ export const TargetDrawer: React.FC = () => {
         </div>
 
         {target != null && (
-          <>
-            <div className="flex w-full gap-6 p-6">
-              <div className="space-y-1">
-                <TabButton
-                  active={activeTab === "overview"}
-                  onClick={() => setActiveTab("overview")}
-                  icon={<IconInfoCircle className="h-4 w-4" />}
-                  label="Overview"
-                />
-                <TabButton
-                  active={activeTab === "deployments"}
-                  onClick={() => setActiveTab("deployments")}
-                  icon={<IconPackage className="h-4 w-4" />}
-                  label="Deployments"
-                />
-                <TabButton
-                  active={activeTab === "jobs"}
-                  onClick={() => setActiveTab("jobs")}
-                  icon={<IconHistory className="h-4 w-4" />}
-                  label="Job History"
-                />
-                <TabButton
-                  active={activeTab === "variables"}
-                  onClick={() => setActiveTab("variables")}
-                  icon={<IconVariable className="h-4 w-4" />}
-                  label="Variables"
-                />
-                <TabButton
-                  active={activeTab === "relationships"}
-                  onClick={() => setActiveTab("relationships")}
-                  icon={<IconTopologyStar3 className="h-4 w-4" />}
-                  label="Relationships"
-                />
-              </div>
-              <div className="w-full overflow-auto">
-                {activeTab === "deployments" && (
-                  <DeploymentsContent targetId={target.id} />
-                )}
-                {activeTab === "overview" && (
-                  <OverviewContent target={target} />
-                )}
-                {activeTab === "relationships" && (
-                  <RelationshipsContent target={target} />
-                )}
-                {activeTab === "jobs" && <JobsContent targetId={target.id} />}
-                {activeTab === "variables" && (
-                  <VariableContent targetId={target.id} />
-                )}
-              </div>
+          <div className="flex w-full gap-6 p-6">
+            <div className="space-y-1">
+              <TabButton
+                active={activeTab === "overview"}
+                onClick={() => setActiveTab("overview")}
+                icon={<IconInfoCircle className="h-4 w-4" />}
+                label="Overview"
+              />
+              <TabButton
+                active={activeTab === "deployments"}
+                onClick={() => setActiveTab("deployments")}
+                icon={<IconPackage className="h-4 w-4" />}
+                label="Deployments"
+              />
+              <TabButton
+                active={activeTab === "jobs"}
+                onClick={() => setActiveTab("jobs")}
+                icon={<IconHistory className="h-4 w-4" />}
+                label="Job History"
+              />
+              <TabButton
+                active={activeTab === "variables"}
+                onClick={() => setActiveTab("variables")}
+                icon={<IconVariable className="h-4 w-4" />}
+                label="Variables"
+              />
+              <TabButton
+                active={activeTab === "relationships"}
+                onClick={() => setActiveTab("relationships")}
+                icon={<IconTopologyStar3 className="h-4 w-4" />}
+                label="Relationships"
+              />
             </div>
-          </>
+            <div className="w-full overflow-auto">
+              {activeTab === "deployments" && (
+                <DeploymentsContent targetId={target.id} />
+              )}
+              {activeTab === "overview" && <OverviewContent target={target} />}
+              {activeTab === "relationships" && (
+                <RelationshipsContent target={target} />
+              )}
+              {activeTab === "jobs" && <JobsContent targetId={target.id} />}
+              {activeTab === "variables" && (
+                <VariableContent targetId={target.id} />
+              )}
+            </div>
+          </div>
         )}
       </DrawerContent>
     </Drawer>

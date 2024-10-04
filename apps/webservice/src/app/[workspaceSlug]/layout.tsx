@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@ctrlplane/auth";
 
 import { api } from "~/trpc/server";
+import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
 import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
 import { SidebarPanels } from "./SidebarPanels";
 
@@ -31,6 +32,7 @@ export default async function WorkspaceLayout({
         </SidebarPanels>
       </div>
       <TargetDrawer />
+      <ReleaseDrawer />
     </>
   );
 }

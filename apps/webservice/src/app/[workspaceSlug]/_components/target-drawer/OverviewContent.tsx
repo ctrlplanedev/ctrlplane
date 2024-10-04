@@ -16,13 +16,13 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
-import { TargetConfigEditor } from "../TargetConfigEditor";
+import { ConfigEditor } from "../ConfigEditor";
 
 const TargetConfigInfo: React.FC<{ config: Record<string, any> }> = ({
   config,
 }) => {
   yaml.dump(config);
-  return <TargetConfigEditor value={yaml.dump(config)} readOnly />;
+  return <ConfigEditor value={yaml.dump(config)} readOnly />;
 };
 
 const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (

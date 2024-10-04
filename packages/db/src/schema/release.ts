@@ -45,6 +45,8 @@ export const releaseDependency = pgTable(
   }),
 );
 
+export type ReleaseDependency = InferSelectModel<typeof releaseDependency>;
+
 const createReleaseDependency = createInsertSchema(releaseDependency).omit({
   id: true,
 });
@@ -55,7 +57,10 @@ export const release = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     version: text("version").notNull(),
-    config: jsonb("config").notNull().default("{}"),
+    config: jsonb("config")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, any>>(),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
@@ -66,7 +71,11 @@ export const release = pgTable(
 
 export type Release = InferSelectModel<typeof release>;
 
-export const createRelease = createInsertSchema(release)
+export const createRelease = createInsertSchema(release, {
+  version: z.string().min(1),
+  name: z.string().min(1),
+  config: z.record(z.any()),
+})
   .omit({ id: true })
   .extend({
     releaseDependencies: z

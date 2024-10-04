@@ -56,10 +56,7 @@ export const authConfig: NextAuthConfig = {
       const { user } = opts;
       if (user.email == null || user.id == null) return;
       const domain = user.email.split("@")[1]!;
-
       if (opts.profile?.email_verified == null) return;
-
-      // Add user to all workspaces they match domain of
       const isNotAlreadyMember = isNull(schema.entityRole.id);
       const domainMatchingWorkspaces = await db
         .select()
@@ -75,7 +72,11 @@ export const authConfig: NextAuthConfig = {
         )
         .leftJoin(
           schema.entityRole,
-          eq(schema.entityRole.scopeId, schema.workspace.id),
+          and(
+            eq(schema.entityRole.scopeId, schema.workspace.id),
+            eq(schema.entityRole.entityId, user.id),
+            eq(schema.entityRole.entityType, "user"),
+          ),
         )
         .where(
           and(

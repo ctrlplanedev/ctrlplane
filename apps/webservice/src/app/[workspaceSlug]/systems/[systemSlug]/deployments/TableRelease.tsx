@@ -13,6 +13,7 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
+import { useReleaseDrawer } from "~/app/[workspaceSlug]/_components/release-drawer/ReleaseDrawer";
 import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
@@ -83,6 +84,7 @@ export const ReleaseTable: React.FC<{
     targets: { id: string }[];
   }[];
 }> = ({ deployment, environments }) => {
+  const { setReleaseId } = useReleaseDrawer();
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
     systemSlug: string;
@@ -168,6 +170,7 @@ export const ReleaseTable: React.FC<{
             return (
               <tr key={r.id} className="bg-neutral-800/10">
                 <td
+                  onClick={() => setReleaseId(r.id)}
                   className={cn(
                     "sticky left-0 z-10 min-w-[250px] backdrop-blur-lg",
                     "items-center border-b border-l px-4 text-lg",
