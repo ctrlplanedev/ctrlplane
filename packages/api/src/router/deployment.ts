@@ -166,12 +166,7 @@ export const deploymentRouter = createTRPCRouter({
     })
     .query(({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) =>
       ctx.db
-        .select({
-          deployment: deployment,
-          system: system,
-          workspace: workspace,
-          jobAgent: jobAgent,
-        })
+        .select()
         .from(deployment)
         .innerJoin(system, eq(system.id, deployment.systemId))
         .innerJoin(workspace, eq(system.workspaceId, workspace.id))
@@ -190,7 +185,7 @@ export const deploymentRouter = createTRPCRouter({
             : {
                 ...r.deployment,
                 system: { ...r.system, workspace: r.workspace },
-                agent: r.jobAgent,
+                agent: r.job_agent,
               },
         ),
     ),
