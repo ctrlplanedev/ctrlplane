@@ -37,6 +37,8 @@ const latestReleaseSubQuery = (db: Tx) =>
       deploymentId: release.deploymentId,
       version: release.version,
       createdAt: release.createdAt,
+      name: release.name,
+      config: release.config,
 
       rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY deployment_id ORDER BY created_at DESC)`.as(
         "rank",
