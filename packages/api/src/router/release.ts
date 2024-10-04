@@ -25,6 +25,7 @@ import {
   release,
   releaseDependency,
   releaseJobTrigger,
+  releaseMetadata,
   target,
 } from "@ctrlplane/db/schema";
 import {
@@ -110,7 +111,20 @@ export const releaseRouter = createTRPCRouter({
             }))
             .value()
             .at(0),
-        ),
+        )
+        .then(async (data) => {
+          if (data == null) return null;
+          return {
+            ...data,
+            metadata: Object.fromEntries(
+              await ctx.db
+                .select()
+                .from(releaseMetadata)
+                .where(eq(releaseMetadata.releaseId, data.id))
+                .then((r) => r.map((k) => [k.key, k.value])),
+            ),
+          };
+        }),
     ),
 
   deploy: createTRPCRouter({

@@ -32,7 +32,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
-import { TargetConfigEditor } from "./TargetConfigEditor";
+import { ConfigEditor } from "./ConfigEditor";
 
 type TargetWithMetadata = Target & {
   metadata: Record<string, string>;
@@ -207,7 +207,7 @@ export const EditTargetDialog: React.FC<{
                   <FormItem>
                     <FormLabel>Config</FormLabel>
                     <FormControl>
-                      <TargetConfigEditor value={value} onChange={onChange} />
+                      <ConfigEditor value={value} onChange={onChange} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

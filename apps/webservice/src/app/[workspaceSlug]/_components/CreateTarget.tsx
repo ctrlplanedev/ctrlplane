@@ -33,7 +33,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
-import { TargetConfigEditor } from "./TargetConfigEditor";
+import { ConfigEditor } from "./ConfigEditor";
 
 const createTargetSchema = z.object({
   name: z.string(),
@@ -183,7 +183,7 @@ export const CreateTargetDialog: React.FC<{
                 <FormItem>
                   <FormLabel>Config</FormLabel>
                   <FormControl>
-                    <TargetConfigEditor value={value} onChange={onChange} />
+                    <ConfigEditor value={value} onChange={onChange} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
