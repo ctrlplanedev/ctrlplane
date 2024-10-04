@@ -1,6 +1,6 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
@@ -29,8 +29,6 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     repository,
   } = event.workflow_run;
 
-  const externalUrl = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
-
   const status =
     conclusion != null
       ? convertConclusion(conclusion)
@@ -38,7 +36,7 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
 
   const job = await db
     .update(schema.job)
-    .set({ status, externalUrl })
+    .set({ status })
     .where(eq(schema.job.externalId, id.toString()))
     .returning()
     .then(takeFirstOrNull);
@@ -48,6 +46,26 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
   // the externalRunId yet, as it depends on the job's instantiation. Therefore,
   // the first event lacks the run ID, so we skip it and wait for the next event.
   if (job == null) return;
+
+  const existingUrlMetadata = await db
+    .select()
+    .from(schema.jobMetadata)
+    .where(
+      and(
+        eq(schema.jobMetadata.jobId, job.id),
+        eq(schema.jobMetadata.key, "ctrlplane/links"),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  const links = JSON.stringify({
+    ...JSON.parse(existingUrlMetadata?.value ?? "{}"),
+    GitHub: `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`,
+  });
+
+  await db
+    .insert(schema.jobMetadata)
+    .values([{ jobId: job.id, key: "ctrlplane/links", value: links }]);
 
   if (job.status === JobStatus.Completed) return onJobCompletion(job);
 };

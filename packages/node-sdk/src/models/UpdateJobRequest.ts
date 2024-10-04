@@ -37,7 +37,7 @@ export interface UpdateJobRequest {
    * @type {string}
    * @memberof UpdateJobRequest
    */
-  externalRunId?: string | null;
+  externalId?: string | null;
 }
 
 /**
@@ -63,8 +63,7 @@ export function UpdateJobRequestFromJSONTyped(
   return {
     status: json["status"] == null ? undefined : json["status"],
     message: json["message"] == null ? undefined : json["message"],
-    externalRunId:
-      json["externalRunId"] == null ? undefined : json["externalRunId"],
+    externalId: json["externalId"] == null ? undefined : json["externalId"],
   };
 }
 
@@ -75,6 +74,6 @@ export function UpdateJobRequestToJSON(value?: UpdateJobRequest | null): any {
   return {
     status: value["status"],
     message: value["message"],
-    externalRunId: value["externalRunId"],
+    externalId: value["externalId"],
   };
 }
