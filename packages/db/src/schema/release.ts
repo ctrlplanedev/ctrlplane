@@ -75,6 +75,10 @@ export const createRelease = createInsertSchema(release, {
   version: z.string().min(1),
   name: z.string().min(1),
   config: z.record(z.any()),
+  createdAt: z
+    .string()
+    .transform((s) => new Date(s))
+    .optional(),
 })
   .omit({ id: true })
   .extend({
