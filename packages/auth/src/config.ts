@@ -56,6 +56,7 @@ export const authConfig: NextAuthConfig = {
       const { user } = opts;
       if (user.email == null || user.id == null) return;
       const domain = user.email.split("@")[1]!;
+      if (opts.profile?.email_verified == null) return;
       const isNotAlreadyMember = isNull(schema.entityRole.id);
       const domainMatchingWorkspaces = await db
         .select()
