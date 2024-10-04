@@ -33,9 +33,9 @@ import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-
 import { api } from "~/trpc/react";
 import { usePanel } from "./SidepanelContext";
 import {
-  UniqueFilterAcrossTargets,
-  useUniqueFilterAcrossTargets,
-} from "./UniqueFilterAcrossTargets";
+  TargetFilterUniquenessIndicator,
+  useTargetFilterUniqueness,
+} from "./TargetFilterUniquenessIndicator";
 
 const environmentForm = z.object({
   name: z.string(),
@@ -138,7 +138,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     });
 
   const nodes = getNodes();
-  const uniqueFilterResult = useUniqueFilterAcrossTargets(
+  const uniqueFilterResult = useTargetFilterUniqueness(
     nodes,
     workspace.data?.id ?? "",
   );
@@ -199,7 +199,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
             </span>
             {node.data.targetFilter != null && (
               <>
-                <UniqueFilterAcrossTargets
+                <TargetFilterUniquenessIndicator
                   nodes={nodes}
                   workspaceId={workspace.data?.id ?? ""}
                 />

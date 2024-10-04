@@ -22,7 +22,7 @@ type UniqueFilterResult = {
   }[];
 };
 
-export const useUniqueFilterAcrossTargets = (
+export const useTargetFilterUniqueness = (
   nodes: Node[],
   workspaceId: string,
 ): UniqueFilterResult | null => {
@@ -89,11 +89,11 @@ export const useUniqueFilterAcrossTargets = (
   return result;
 };
 
-export const UniqueFilterAcrossTargets: React.FC<{
+export const TargetFilterUniquenessIndicator: React.FC<{
   nodes: Node[];
   workspaceId: string;
 }> = ({ nodes, workspaceId }) => {
-  const result = useUniqueFilterAcrossTargets(nodes, workspaceId);
+  const result = useTargetFilterUniqueness(nodes, workspaceId);
 
   const tooltipContent = !result ? (
     <p className="text-sx p-1 text-gray-300">Checking target uniqueness...</p>
