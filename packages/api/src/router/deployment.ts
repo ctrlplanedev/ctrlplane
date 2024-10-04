@@ -1,10 +1,8 @@
 import type { Tx } from "@ctrlplane/db";
-import type { Release } from "@ctrlplane/db/schema";
 import { z } from "zod";
 
 import {
   and,
-  desc,
   eq,
   inArray,
   isNotNull,
@@ -166,51 +164,35 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "system", id: sys.system.id });
       },
     })
-    .query(
-      async ({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) => {
-        const orderedReleases = ctx.db
-          .select()
-          .from(release)
-          .where(eq(release.deploymentId, deployment.id))
-          .orderBy(desc(release.createdAt))
-          .limit(30);
-
-        return await ctx.db
-          .select({
-            deployment: deployment,
-            system: system,
-            workspace: workspace,
-            jobAgent: jobAgent,
-            releases: sql<Release[]>`
-              (
-                SELECT jsonb_agg(to_jsonb(r.*))
-                FROM (${orderedReleases}) AS r
-              )
-            `.as("releases"),
-          })
-          .from(deployment)
-          .innerJoin(system, eq(system.id, deployment.systemId))
-          .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-          .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
-          .where(
-            and(
-              eq(deployment.slug, deploymentSlug),
-              eq(system.slug, systemSlug),
-              eq(workspace.slug, workspaceSlug),
-            ),
-          )
-          .then(takeFirstOrNull)
-          .then((r) =>
-            r == null
-              ? null
-              : {
-                  ...r.deployment,
-                  system: { ...r.system, workspace: r.workspace },
-                  agent: r.jobAgent,
-                  releases: r.releases,
-                },
-          );
-      },
+    .query(({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) =>
+      ctx.db
+        .select({
+          deployment: deployment,
+          system: system,
+          workspace: workspace,
+          jobAgent: jobAgent,
+        })
+        .from(deployment)
+        .innerJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+        .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+        .where(
+          and(
+            eq(deployment.slug, deploymentSlug),
+            eq(system.slug, systemSlug),
+            eq(workspace.slug, workspaceSlug),
+          ),
+        )
+        .then(takeFirstOrNull)
+        .then((r) =>
+          r == null
+            ? null
+            : {
+                ...r.deployment,
+                system: { ...r.system, workspace: r.workspace },
+                agent: r.jobAgent,
+              },
+        ),
     ),
 
   bySystemId: protectedProcedure

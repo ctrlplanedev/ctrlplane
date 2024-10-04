@@ -167,7 +167,7 @@ export const Release: React.FC<{
   );
 
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex w-full items-center justify-between px-1">
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
