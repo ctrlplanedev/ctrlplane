@@ -44,10 +44,7 @@ export const ComparisonConditionRender: React.FC<
   ReleaseConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
   const setOperator = (operator: ReleaseOperator.And | ReleaseOperator.Or) =>
-    onChange({
-      ...condition,
-      operator,
-    });
+    onChange({ ...condition, operator });
 
   const updateCondition = (index: number, changedCondition: ReleaseCondition) =>
     onChange({
