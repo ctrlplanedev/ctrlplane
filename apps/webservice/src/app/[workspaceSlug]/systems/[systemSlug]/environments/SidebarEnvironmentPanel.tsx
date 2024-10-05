@@ -13,7 +13,7 @@ import LZString from "lz-string";
 import { useReactFlow } from "reactflow";
 import { z } from "zod";
 
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Form,
   FormControl,
@@ -32,10 +32,7 @@ import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-c
 import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
 import { usePanel } from "./SidepanelContext";
-import {
-  TargetFilterUniquenessIndicator,
-  useTargetFilterUniqueness,
-} from "./TargetFilterUniquenessIndicator";
+import { TargetFilterUniquenessIndicator } from "./TargetFilterUniquenessIndicator";
 
 const environmentForm = z.object({
   name: z.string(),
@@ -46,7 +43,7 @@ const environmentForm = z.object({
 export const SidebarEnvironmentPanel: React.FC = () => {
   const { getNode, getNodes, setNodes } = useReactFlow();
   const { selectedNodeId } = usePanel();
-  const node = getNode(selectedNodeId ?? "")!;
+  const node = getNode(selectedNodeId!)!;
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const update = api.environment.update.useMutation();
@@ -72,6 +69,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       description: node.data.description,
       targetFilter: node.data.targetFilter,
     });
+    form.setValue("targetFilter", node.data.targetFilter);
   }, [node, form]);
 
   const targets = api.target.byWorkspaceId.list.useQuery(
@@ -114,7 +112,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     });
   });
 
-  const onFilterDialogSubmit = (condition: TargetCondition | undefined) =>
+  const onFilterDialogSubmit = (condition: TargetCondition | undefined) => {
     setNodes((nodes) => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
@@ -125,23 +123,27 @@ export const SidebarEnvironmentPanel: React.FC = () => {
               ...n,
               data: {
                 ...n.data,
-                targetFilter: condition,
+                targetFilter: condition ?? null,
               },
             }
           : n,
       );
       form.setValue("targetFilter", condition);
+      utils.environment.bySystemId.invalidate(node.data.systemId);
       utils.target.byWorkspaceId.list.invalidate({
         workspaceId: workspace.data?.id ?? "",
+        filter: condition,
       });
       return updatedNodes;
     });
+    form.reset({
+      name: node.data.label,
+      description: node.data.description,
+      targetFilter: condition,
+    });
+  };
 
   const nodes = getNodes();
-  const uniqueFilterResult = useTargetFilterUniqueness(
-    nodes,
-    workspace.data?.id ?? "",
-  );
 
   return (
     <Form {...form}>
@@ -209,14 +211,12 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                       JSON.stringify(node.data.targetFilter),
                     ),
                   })}`}
-                  passHref
+                  className={buttonVariants({ variant: "ghost" })}
                 >
-                  <Button variant="ghost" size="sm" asChild>
-                    <a target="_blank" rel="noopener noreferrer">
-                      <IconExternalLink className="mr-1 h-4 w-4" />
-                      View Targets
-                    </a>
-                  </Button>
+                  <span className="flex items-center">
+                    <IconExternalLink className="mr-1 h-4 w-4" />
+                    View Targets
+                  </span>
                 </Link>
               </>
             )}
@@ -240,10 +240,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button
-            type="submit"
-            disabled={update.isPending || uniqueFilterResult?.isUnique == false}
-          >
+          <Button type="submit" disabled={update.isPending}>
             Save
           </Button>
           <Button

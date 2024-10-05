@@ -27,11 +27,19 @@ export const useTargetFilterUniqueness = (
   workspaceId: string,
 ): UniqueFilterResult | null => {
   const utils = api.useUtils();
-  const filteredNodes = nodes.filter((node) => node.data.targetFilter);
+  const filteredNodes = useMemo(
+    () => nodes.filter((node) => node.data.targetFilter),
+    [nodes],
+  );
 
   const queries = useQueries({
     queries: filteredNodes.map((node) => ({
-      queryKey: ["target", workspaceId, node.data.targetFilter, node.id],
+      queryKey: [
+        "target",
+        workspaceId,
+        JSON.stringify(node.data.targetFilter),
+        node.id,
+      ],
       queryFn: () =>
         utils.target.byWorkspaceId.list.fetch({
           workspaceId,
@@ -44,7 +52,7 @@ export const useTargetFilterUniqueness = (
   const isLoading = queries.some((query) => query.isLoading);
   const isError = queries.some((query) => query.isError);
 
-  const result = useMemo<UniqueFilterResult | null>(() => {
+  const calculateResult = () => {
     if (!workspaceId || filteredNodes.length === 0 || isLoading) return null;
     if (isError) return { isUnique: false, overlaps: [] };
 
@@ -84,9 +92,15 @@ export const useTargetFilterUniqueness = (
       isUnique: overlaps.length === 0,
       overlaps,
     };
-  }, [workspaceId, filteredNodes, queries, isLoading, isError]);
+  };
 
-  return result;
+  return useMemo(calculateResult, [
+    workspaceId,
+    filteredNodes,
+    queries,
+    isLoading,
+    isError,
+  ]);
 };
 
 export const TargetFilterUniquenessIndicator: React.FC<{
