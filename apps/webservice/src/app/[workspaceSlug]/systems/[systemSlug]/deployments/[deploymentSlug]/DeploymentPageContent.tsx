@@ -217,7 +217,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        {release.version}{" "}
+                        {release.name}{" "}
                         <Badge
                           variant="secondary"
                           className="text-xs hover:bg-secondary"
