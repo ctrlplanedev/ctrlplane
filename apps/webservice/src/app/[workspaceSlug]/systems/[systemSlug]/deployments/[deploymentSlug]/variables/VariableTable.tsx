@@ -20,16 +20,10 @@ import {
   CollapsibleTrigger,
 } from "@ctrlplane/ui/collapsible";
 import { Input } from "@ctrlplane/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@ctrlplane/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
 import type { VariableData } from "./variable-data";
+import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/TargetDrawer";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
@@ -81,6 +75,8 @@ export const VariableTable: React.FC<{
       return newState;
     });
 
+  const { setTargetId } = useTargetDrawer();
+
   return (
     <>
       <div className="mb-[1px]">
@@ -94,13 +90,6 @@ export const VariableTable: React.FC<{
       </div>
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 overflow-auto border-t bg-neutral-950">
         <Table className="table-fixed">
-          <TableHeader>
-            <TableRow className="text-xs">
-              <TableHead className="h-7">Key</TableHead>
-              <TableHead className="h-7" />
-            </TableRow>
-          </TableHeader>
-
           <TableBody>
             {result.map((variable) => (
               <Collapsible key={variable.id} asChild>
@@ -251,6 +240,7 @@ export const VariableTable: React.FC<{
                                     <TableCell
                                       className="h-10 cursor-pointer py-0 pl-[56px]"
                                       colSpan={2}
+                                      onClick={() => setTargetId(t.id)}
                                     >
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7">
                                         <div className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6">
