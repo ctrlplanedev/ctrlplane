@@ -20,7 +20,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { CreateReleaseDialog } from "../_components/CreateRelease";
-import { CreateVariableDialog } from "./[systemSlug]/deployments/[deploymentSlug]/CreateVariableDialog";
+import { CreateVariableDialog } from "./[systemSlug]/deployments/[deploymentSlug]/releases/CreateVariableDialog";
 
 export const DeploymentNavigationMenu: React.FC = () => {
   const pathname = usePathname();

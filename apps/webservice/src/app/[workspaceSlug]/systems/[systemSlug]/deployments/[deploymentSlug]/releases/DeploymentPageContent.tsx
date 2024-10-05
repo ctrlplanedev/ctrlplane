@@ -24,9 +24,9 @@ import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
-import { useReleaseDrawer } from "../../../../_components/release-drawer/ReleaseDrawer";
-import { DeployButton } from "../DeployButton";
-import { Release } from "../TableCells";
+import { useReleaseDrawer } from "../../../../../_components/release-drawer/ReleaseDrawer";
+import { DeployButton } from "../../DeployButton";
+import { Release } from "../../TableCells";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type DeploymentPageContentProps = {
