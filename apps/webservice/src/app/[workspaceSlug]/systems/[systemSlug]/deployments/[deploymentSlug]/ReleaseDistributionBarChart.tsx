@@ -5,7 +5,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 import { api } from "~/trpc/react";
 
-export const DistroBarChart: React.FC<{
+export const ReleaseDistributionBarChart: React.FC<{
   deploymentId: string;
   showPreviousReleaseDistro: number;
 }> = ({ deploymentId, showPreviousReleaseDistro }) => {

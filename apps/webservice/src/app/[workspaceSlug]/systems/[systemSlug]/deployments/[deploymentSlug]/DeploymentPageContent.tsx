@@ -1,10 +1,8 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconAlertTriangle, IconFilter } from "@tabler/icons-react";
-import { capitalCase } from "change-case";
+import { IconFilter, IconGraph } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
@@ -29,7 +27,7 @@ import { api } from "~/trpc/react";
 import { useReleaseDrawer } from "../../../../_components/release-drawer/ReleaseDrawer";
 import { DeployButton } from "../DeployButton";
 import { Release } from "../TableCells";
-import { DistroBarChart } from "./DistroBarChart";
+import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type DeploymentPageContentProps = {
   deployment: schema.Deployment;
@@ -57,11 +55,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     { refetchInterval: 2_000 },
   );
 
-  const releasesAll = api.release.list.useQuery(
-    { deploymentId: deployment.id, limit: 0 },
-    { refetchInterval: 10_000 },
-  );
-
   const releases = api.release.list.useQuery(
     { deploymentId: deployment.id, filter, limit: 30 },
     { refetchInterval: 10_000 },
@@ -81,8 +74,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
       releaseId: releaseJobTrigger.releaseId,
     }));
 
-  const showPreviousReleaseDistro = 30;
-
   const distribution = api.deployment.distributionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
   });
@@ -96,64 +87,24 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   return (
     <div>
-      <div className="flex border-b">
-        <div className="flex flex-1 flex-col justify-center px-6 py-5 sm:py-6">
-          <div className="flex items-center gap-2 font-semibold">
-            {capitalCase(deployment.name)}{" "}
-            {deployment.jobAgentId == null && (
-              <Link href={`${deployment.slug}/configure/job-agent`}>
-                <Badge
-                  variant="outline"
-                  className="ml-2 flex w-fit items-center gap-2 border-orange-700 text-orange-700"
-                >
-                  <IconAlertTriangle className="h-4 w-4" />
-                  Job agent not configured
-                </Badge>
-              </Link>
-            )}
-          </div>
-          <span className="text-muted-foreground">
-            Distribution of the last {showPreviousReleaseDistro} releases across
-            all targets
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 border-l">
-          <div className="col-span-1 flex flex-col gap-2 border-r px-6 py-6">
-            <span className="text-xs text-muted-foreground">Releases</span>
-            <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releasesAll.data?.total ?? "-"}
-            </span>
-          </div>
-
-          <div className="col-span-1 flex flex-col gap-2 border-neutral-800 px-6 py-6">
-            <span className="text-xs text-muted-foreground">Jobs</span>
-            <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releaseJobTriggers.length}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div className="border-b px-1 py-2">
-        <DistroBarChart
-          deploymentId={deployment.id}
-          showPreviousReleaseDistro={showPreviousReleaseDistro}
-        />
-      </div>
       <div className="h-full text-sm">
-        <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-          <ReleaseConditionDialog condition={filter} onChange={setFilter}>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-              >
-                <IconFilter className="h-4 w-4" />
-              </Button>
+        <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
+          <div className="flex-grow">
+            <ReleaseConditionDialog condition={filter} onChange={setFilter}>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+                >
+                  <IconFilter className="h-4 w-4" />
+                </Button>
 
-              {filter != null && <ReleaseConditionBadge condition={filter} />}
-            </div>
-          </ReleaseConditionDialog>
+                {filter != null && <ReleaseConditionBadge condition={filter} />}
+              </div>
+            </ReleaseConditionDialog>
+          </div>
+
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
             Total:
             <Badge
@@ -163,6 +114,16 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               {releases.data?.total ?? "-"}
             </Badge>
           </div>
+
+          <ReleaseDistributionGraphPopover deployment={deployment}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+            >
+              <IconGraph className="h-4 w-4" />
+            </Button>
+          </ReleaseDistributionGraphPopover>
         </div>
       </div>
       <div className="h-full text-sm">
