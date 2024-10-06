@@ -85,13 +85,8 @@ export const JobHistoryChart: React.FC<{
       <CardContent className="px-2 sm:p-6">
         <ChartContainer
           config={{
-            views: {
-              label: "Job Executions",
-            },
-            jobs: {
-              label: "Executions",
-              color: "hsl(var(--chart-1))",
-            },
+            views: { label: "Job Executions" },
+            jobs: { label: "Executions", color: "hsl(var(--chart-1))" },
           }}
           className="aspect-auto h-[150px] w-full"
         >

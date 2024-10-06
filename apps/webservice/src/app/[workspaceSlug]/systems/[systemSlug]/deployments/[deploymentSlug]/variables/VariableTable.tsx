@@ -264,13 +264,13 @@ export const VariableTable: React.FC<{
                                       className="h-10 cursor-pointer py-0 pl-[56px]"
                                       colSpan={2}
                                     >
-                                      <div className="flex h-full items-center border-l border-neutral-800 pl-7">
+                                      <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground hover:text-white">
                                         <Link
                                           className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6"
                                           href={`/${workspaceSlug}/targets?filter=${v.filterHash}`}
                                           target="_blank"
                                         >
-                                          <IconDotsVertical className="h-4 w-4" />{" "}
+                                          <IconDotsVertical className="h-4 w-4" />
                                           View {v.targetCount} targets...
                                         </Link>
                                       </div>

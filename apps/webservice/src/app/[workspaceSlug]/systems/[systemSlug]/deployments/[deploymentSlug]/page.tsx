@@ -8,18 +8,14 @@ import { notFound } from "next/navigation";
 import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@ctrlplane/ui/card";
+import { Card } from "@ctrlplane/ui/card";
 import {
   TargetFilterType,
   TargetOperator,
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/server";
+import { JobAgentSection } from "./JobAgentSection";
 import { VariableTable } from "./variables/VariableTable";
 
 const Variables: React.FC<{
@@ -126,11 +122,16 @@ const Variables: React.FC<{
   const variables = await Promise.all(variablesPromises);
 
   return (
-    <div className="container m-8 mx-auto max-w-5xl space-y-4">
+    <div className="container m-8 mx-auto max-w-5xl space-y-2">
       <div>
         <h2 className="">Variables</h2>
+        <div className="text-xs text-muted-foreground">
+          Deployment variables allow you to configure target-specific settings
+          for your application. Learn more about variable precedence here.
+        </div>
       </div>
-      <Card>
+
+      <Card className="pb-2">
         <VariableTable variables={variables} />
       </Card>
     </div>
@@ -146,42 +147,55 @@ export default async function DeploymentPage({
   if (workspace == null) return notFound();
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
-
-  const releases = await api.release.list({
-    deploymentId: deployment.id,
-    limit: 0,
-  });
+  const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
+  const jobAgent = jobAgents.find((a) => a.id === deployment.jobAgentId);
 
   return (
     <>
-      <CardHeader className="space-y-0 border-b p-0">
-        <div className="container mx-auto flex max-w-5xl flex-col items-stretch sm:flex-row">
-          <div className="flex flex-1 flex-col justify-center gap-1 py-5 sm:py-6">
-            <CardTitle>{deployment.name}</CardTitle>
-            <CardDescription>
-              {deployment.description !== "" ? (
-                deployment.description
-              ) : (
-                <span className="italic">Add description ...</span>
-              )}
-            </CardDescription>
-          </div>
-          <div className="flex">
-            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-              <span className="text-xs text-muted-foreground">Releases</span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {releases.total}
-              </span>
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <div className="container m-8 mx-auto max-w-5xl">
+      <div className="container m-8 mx-auto max-w-5xl space-y-2">
         <div>
-          <h2 className="">Releases</h2>
+          <h2 className="">Properties</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <table
+              width="100%"
+              className="text-xs"
+              style={{ tableLayout: "fixed" }}
+            >
+              <tbody>
+                <tr>
+                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
+                    ID
+                  </td>
+                  <td>{deployment.id}</td>
+                </tr>
+
+                <tr>
+                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
+                    Name
+                  </td>
+                  <td>{deployment.name}</td>
+                </tr>
+
+                <tr>
+                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
+                    Slug
+                  </td>
+                  <td>{deployment.slug}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
+
+      <JobAgentSection
+        jobAgents={jobAgents}
+        workspace={workspace}
+        jobAgent={jobAgent}
+        config={deployment.jobAgentConfig}
+      />
 
       <Variables workspaceId={workspace.id} deployment={deployment} />
     </>
