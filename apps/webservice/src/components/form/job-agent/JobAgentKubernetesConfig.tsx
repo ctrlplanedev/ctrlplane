@@ -4,17 +4,6 @@ import React, { useEffect } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import colors from "tailwindcss/colors";
 
-loader.init().then((monaco) => {
-  monaco.editor.defineTheme("vs-dark-custom", {
-    base: "vs-dark",
-    inherit: true,
-    rules: [],
-    colors: {
-      "editor.background": colors.neutral[950],
-    },
-  });
-});
-
 const defaultManifest = `apiVersion: batch/v1
 kind: Job
 metadata:
@@ -44,6 +33,19 @@ export const JobAgentKubernetesConfig: React.FC<{
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
 }> = ({ value, onChange }) => {
+  useEffect(() => {
+    loader.init().then((monaco) => {
+      monaco.editor.defineTheme("vs-dark-custom", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: {
+          "editor.background": colors.neutral[950],
+        },
+      });
+    });
+  }, []);
+
   useEffect(() => {
     if (value.manifest == null) {
       onChange({ manifest: defaultManifest });
