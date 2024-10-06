@@ -271,6 +271,12 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
     .groupBy(schema.target.id, schema.targetProvider.id, schema.workspace.id)
     .orderBy(asc(schema.target.kind), asc(schema.target.name));
 
+const overlappingTargetsInput = z.object({
+  workspaceId: z.string().uuid(),
+  filterA: targetCondition.optional(),
+  filterB: targetCondition.optional(),
+});
+
 export const targetRouter = createTRPCRouter({
   metadataGroup: targetMetadataGroupRouter,
   provider: targetProviderRouter,
@@ -356,6 +362,36 @@ export const targetRouter = createTRPCRouter({
           items,
           total,
         }));
+      }),
+
+    overlappingTargets: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.TargetList)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
+      .input(overlappingTargetsInput)
+      .query(async ({ ctx, input }) => {
+        const { workspaceId, filterA, filterB } = input;
+        const workspaceIdCheck = eq(schema.target.workspaceId, workspaceId);
+        const combinedConditions: SQL<unknown>[] = [
+          workspaceIdCheck,
+          ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterA)),
+          ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterB)),
+        ];
+        const overlappingItems = await targetQuery(
+          ctx.db,
+          combinedConditions,
+        ).then((t) =>
+          t.map((a) => ({
+            ...a.target,
+            provider: a.targetProvider,
+            metadata: a.targetMetadata,
+          })),
+        );
+
+        return overlappingItems;
       }),
   }),
 
@@ -520,3 +556,6 @@ export const targetRouter = createTRPCRouter({
         .then(takeFirst),
     ),
 });
+
+const ensureArray = <T>(input: T | T[] | undefined): T[] =>
+  input ? (Array.isArray(input) ? input : [input]) : [];

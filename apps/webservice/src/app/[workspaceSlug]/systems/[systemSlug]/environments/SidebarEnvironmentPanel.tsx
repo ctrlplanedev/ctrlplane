@@ -200,32 +200,27 @@ export const SidebarEnvironmentPanel: React.FC = () => {
               )
             </span>
             {node.data.targetFilter != null && (
-              <>
-                <TargetFilterUniquenessIndicator
-                  nodes={nodes}
-                  workspaceId={workspace.data?.id ?? ""}
-                />
-                <Link
-                  href={`/${workspaceSlug}/targets?${new URLSearchParams({
-                    filter: LZString.compressToEncodedURIComponent(
-                      JSON.stringify(node.data.targetFilter),
-                    ),
-                  })}`}
-                  className={buttonVariants({ variant: "ghost" })}
-                >
-                  <span className="flex items-center">
-                    <IconExternalLink className="mr-1 h-4 w-4" />
-                    View Targets
-                  </span>
-                </Link>
-              </>
+              <Link
+                href={`/${workspaceSlug}/targets?${new URLSearchParams({
+                  filter: LZString.compressToEncodedURIComponent(
+                    JSON.stringify(node.data.targetFilter),
+                  ),
+                })}`}
+                className={buttonVariants({ variant: "ghost" })}
+              >
+                <span className="flex items-center">
+                  <IconExternalLink className="mr-1 h-4 w-4" />
+                  View Targets
+                </span>
+              </Link>
             )}
           </Label>
-          {node.data.targetFilter == null && (
-            <span className="text-sm text-muted-foreground">
-              Add a filter to select targets for this environment.
-            </span>
-          )}
+          <TargetFilterUniquenessIndicator
+            nodes={nodes}
+            currentNode={node}
+            workspaceId={workspace.data?.id ?? ""}
+            workspaceSlug={workspaceSlug}
+          />
           {node.data.targetFilter != null && (
             <TargetConditionBadge condition={node.data.targetFilter} tabbed />
           )}
