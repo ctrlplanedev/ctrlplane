@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import { CardDescription, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -58,18 +57,6 @@ export default async function DeploymentLayout({
       <TopNav>
         <SystemBreadcrumbNavbar params={params} />
       </TopNav>
-      <CardHeader className="flex flex-col items-center space-y-0 border-b p-4 sm:flex-row">
-        <div className="flex flex-1 flex-col justify-center gap-1 p-0">
-          <CardTitle>{deployment.name}</CardTitle>
-          <CardDescription>
-            {deployment.description !== "" ? (
-              deployment.description
-            ) : (
-              <span className="italic">Add description ...</span>
-            )}
-          </CardDescription>
-        </div>
-      </CardHeader>
       <div className="flex items-center justify-between border-b p-2">
         <div>
           <NavigationMenu>
