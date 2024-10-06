@@ -73,7 +73,7 @@ export const VariableBooleanInput: React.FC<{
   onChange: (v: boolean) => void;
 }> = ({ value, onChange }) => (
   <Select
-    value={value ? value.toString() : undefined}
+    value={value != null ? value.toString() : undefined}
     onValueChange={(v) => onChange(v === "true")}
   >
     <SelectTrigger>

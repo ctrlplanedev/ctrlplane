@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { IconAlertTriangle } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
-import { Button } from "@ctrlplane/ui/button";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -18,10 +17,10 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
-import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
+import { NavigationMenuAction } from "./NavigationMenuAction";
 
 function nFormatter(num: number, digits = 1) {
   const lookup = [
@@ -130,16 +129,10 @@ export default async function DeploymentLayout({
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        <div>
-          <CreateReleaseDialog
-            deploymentId={deployment.id}
-            systemId={deployment.systemId}
-          >
-            <Button size="sm" variant="secondary">
-              New Release
-            </Button>
-          </CreateReleaseDialog>
-        </div>
+        <NavigationMenuAction
+          deploymentId={deployment.id}
+          systemId={deployment.systemId}
+        />
       </div>
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-53px-49px)] overflow-auto">

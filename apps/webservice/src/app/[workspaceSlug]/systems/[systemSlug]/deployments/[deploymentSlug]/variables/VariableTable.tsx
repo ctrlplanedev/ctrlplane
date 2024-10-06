@@ -146,11 +146,11 @@ export const VariableTable: React.FC<{
                                 className={cn(
                                   "h-10 py-0",
                                   idx === 0 && "pl-6",
-                                  idx !== 0 && "pl-[72px]",
+                                  idx !== 0 && "pl-14",
                                 )}
                               >
                                 {idx !== 0 && (
-                                  <div className="flex h-full items-center gap-1 border-l border-neutral-800 pl-7">
+                                  <div className="flex h-full items-center gap-1 border-l border-neutral-800 pl-4">
                                     <CollapsibleTrigger asChild>
                                       <Button
                                         variant="ghost"
@@ -168,7 +168,9 @@ export const VariableTable: React.FC<{
                                         />
                                       </Button>
                                     </CollapsibleTrigger>
-                                    {String(v.value)}
+                                    <span className="rounded-md border-x border-y px-1 font-mono text-red-400">
+                                      {String(v.value)}
+                                    </span>
                                     {variable.defaultValueId === v.id && (
                                       <Badge className="hover:bg-primary">
                                         default
@@ -221,7 +223,10 @@ export const VariableTable: React.FC<{
                                   {v.targetCount} target
                                   {v.targetCount === 1 ? "" : "s"}
                                 </Badge>
-                                <VariableValueDropdown value={v}>
+                                <VariableValueDropdown
+                                  value={v}
+                                  variable={variable}
+                                >
                                   <Button
                                     variant="ghost"
                                     size="icon"

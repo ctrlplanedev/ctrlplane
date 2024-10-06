@@ -74,23 +74,45 @@ const valueRouter = createTRPCRouter({
     .input(
       z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
     )
-    .mutation(async ({ ctx, input }) =>
-      ctx.db
-        .update(deploymentVariableValue)
-        .set(input.data)
+    .mutation(async ({ ctx, input }) => {
+      const defaultValueId = await ctx.db
+        .select()
+        .from(deploymentVariableValue)
+        .innerJoin(
+          deploymentVariable,
+          eq(deploymentVariableValue.variableId, deploymentVariable.id),
+        )
         .where(eq(deploymentVariableValue.id, input.id))
-        .returning()
         .then(takeFirst)
-        .then(async (value) => {
-          if (input.data.default)
-            await ctx.db
-              .update(deploymentVariable)
-              .set({ defaultValueId: value.id })
-              .where(eq(deploymentVariable.id, value.variableId));
+        .then((v) => v.deployment_variable.defaultValueId);
 
-          return value;
-        }),
-    ),
+      return ctx.db.transaction((tx) =>
+        tx
+          .update(deploymentVariableValue)
+          .set(input.data)
+          .where(eq(deploymentVariableValue.id, input.id))
+          .returning()
+          .then(takeFirst)
+          .then(async (updatedValue) => {
+            if (input.data.default && defaultValueId !== updatedValue.id)
+              await tx
+                .update(deploymentVariable)
+                .set({ defaultValueId: updatedValue.id })
+                .where(eq(deploymentVariable.id, updatedValue.variableId));
+
+            if (
+              input.data.default === false &&
+              defaultValueId === updatedValue.id
+            )
+              await tx
+                .update(deploymentVariable)
+                .set({ defaultValueId: null })
+                .where(eq(deploymentVariable.id, updatedValue.variableId));
+
+            return updatedValue;
+          }),
+      );
+    }),
 
   delete: protectedProcedure
     .meta({
