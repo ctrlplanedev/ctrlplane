@@ -88,6 +88,12 @@ const valueRouter = createTRPCRouter({
               .set({ defaultValueId: value.id })
               .where(eq(deploymentVariable.id, value.variableId));
 
+          if (input.data.default === false)
+            await ctx.db
+              .update(deploymentVariable)
+              .set({ defaultValueId: null })
+              .where(eq(deploymentVariable.id, value.variableId));
+
           return value;
         }),
     ),
