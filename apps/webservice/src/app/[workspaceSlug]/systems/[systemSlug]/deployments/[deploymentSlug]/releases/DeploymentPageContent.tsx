@@ -139,7 +139,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           </div>
         )}
         {!loading && releases.data && (
-          <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 flex h-[calc(100vh-467px)] flex-col overflow-auto">
+          <div className="flex flex-col">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">

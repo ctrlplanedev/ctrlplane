@@ -11,6 +11,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@ctrlplane/ui/navigation-menu";
 
+import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
@@ -99,13 +100,18 @@ export default async function DeploymentLayout({
           </NavigationMenu>
         </div>
         <div>
-          <Button size="sm" variant="secondary">
-            New Release
-          </Button>
+          <CreateReleaseDialog
+            deploymentId={deployment.id}
+            systemId={deployment.systemId}
+          >
+            <Button size="sm" variant="secondary">
+              New Release
+            </Button>
+          </CreateReleaseDialog>
         </div>
       </div>
 
-      <div className="h-[calc(100vh-53px-73px-49px)] overflow-auto pb-8">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-53px-49px)] overflow-auto">
         {children}
       </div>
     </>
