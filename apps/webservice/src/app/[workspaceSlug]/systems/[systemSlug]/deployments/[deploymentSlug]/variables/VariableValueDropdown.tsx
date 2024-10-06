@@ -165,6 +165,7 @@ const EditVariableValueDialog: React.FC<{
                       onChange={onChange}
                     />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
