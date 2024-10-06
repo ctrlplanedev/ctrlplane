@@ -222,11 +222,7 @@ export const releaseRouter = createTRPCRouter({
               ? (_, releaseJobTriggers) => releaseJobTriggers
               : isPassingReleaseSequencingCancelPolicy,
           )
-          .then(
-            input.isForcedRelease
-              ? cancelPreviousJobs
-              : createJobApprovals(true),
-          )
+          .then(input.isForcedRelease ? cancelPreviousJobs : createJobApprovals)
           .insert();
 
         await dispatchReleaseJobTriggers(ctx.db)
@@ -309,7 +305,7 @@ export const releaseRouter = createTRPCRouter({
                     ? (_tx, releaseJobTriggers) => releaseJobTriggers
                     : isPassingReleaseSequencingCancelPolicy,
                 )
-                .then(createJobApprovals(input.isForcedRelease))
+                .then(input.isForcedRelease ? () => {} : createJobApprovals)
                 .insert();
 
         await dispatchReleaseJobTriggers(ctx.db)
@@ -356,7 +352,7 @@ export const releaseRouter = createTRPCRouter({
           .filter(isPassingReleaseStringCheckPolicy)
           .releases([rel.id])
           .filter(isPassingReleaseSequencingCancelPolicy)
-          .then(createJobApprovals())
+          .then(createJobApprovals)
           .insert();
 
         await dispatchReleaseJobTriggers(db)

@@ -63,7 +63,7 @@ export const POST = async (req: NextRequest) => {
       .filter(isPassingReleaseStringCheckPolicy)
       .filter(isPassingReleaseSequencingCancelPolicy)
       .releases([release.id])
-      .then(createJobApprovals())
+      .then(createJobApprovals)
       .insert()
       .then((releaseJobTriggers) => {
         dispatchReleaseJobTriggers(db)
