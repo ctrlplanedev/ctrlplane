@@ -13,10 +13,7 @@ import { ConfigEditor } from "../ConfigEditor";
 
 const ReleaseConfigInfo: React.FC<{ config: Record<string, any> }> = ({
   config,
-}) => {
-  yaml.dump(config);
-  return <ConfigEditor value={yaml.dump(config)} readOnly />;
-};
+}) => <ConfigEditor value={yaml.dump(config)} readOnly />;
 
 export const OverviewContent: React.FC<{
   release: Release & {

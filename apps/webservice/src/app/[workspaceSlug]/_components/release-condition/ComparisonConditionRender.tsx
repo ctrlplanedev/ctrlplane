@@ -1,7 +1,7 @@
 import type {
   ComparisonCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+  ReleaseCondition,
+} from "@ctrlplane/validators/releases";
 import {
   IconChevronDown,
   IconCopy,
@@ -33,20 +33,20 @@ import {
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
+  ReleaseFilterType,
+  ReleaseOperator,
+} from "@ctrlplane/validators/releases";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
-import { TargetConditionRender } from "./TargetConditionRender";
+import type { ReleaseConditionRenderProps } from "./release-condition-props";
+import { ReleaseConditionRender } from "./ReleaseConditionRender";
 
 export const ComparisonConditionRender: React.FC<
-  TargetConditionRenderProps<ComparisonCondition>
+  ReleaseConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
-  const setOperator = (operator: TargetOperator.And | TargetOperator.Or) =>
+  const setOperator = (operator: ReleaseOperator.And | ReleaseOperator.Or) =>
     onChange({ ...condition, operator });
 
-  const updateCondition = (index: number, changedCondition: TargetCondition) =>
+  const updateCondition = (index: number, changedCondition: ReleaseCondition) =>
     onChange({
       ...condition,
       conditions: condition.conditions.map((c, i) =>
@@ -54,7 +54,7 @@ export const ComparisonConditionRender: React.FC<
       ),
     });
 
-  const addCondition = (changedCondition: TargetCondition) =>
+  const addCondition = (changedCondition: ReleaseCondition) =>
     onChange({
       ...condition,
       conditions: [...condition.conditions, changedCondition],
@@ -71,8 +71,8 @@ export const ComparisonConditionRender: React.FC<
     if (!cond) return;
 
     const newComparisonCondition: ComparisonCondition = {
-      type: TargetFilterType.Comparison,
-      operator: TargetOperator.And,
+      type: ReleaseFilterType.Comparison,
+      operator: ReleaseOperator.And,
       conditions: [cond],
     };
 
@@ -106,8 +106,8 @@ export const ComparisonConditionRender: React.FC<
     }
 
     const newNotComparisonCondition: ComparisonCondition = {
-      type: TargetFilterType.Comparison,
-      operator: TargetOperator.And,
+      type: ReleaseFilterType.Comparison,
+      operator: ReleaseOperator.And,
       not: true,
       conditions: [cond],
     };
@@ -164,13 +164,13 @@ export const ComparisonConditionRender: React.FC<
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value={TargetOperator.And}>And</SelectItem>
-                      <SelectItem value={TargetOperator.Or}>Or</SelectItem>
+                      <SelectItem value={ReleaseOperator.And}>And</SelectItem>
+                      <SelectItem value={ReleaseOperator.Or}>Or</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               )}
-              <TargetConditionRender
+              <ReleaseConditionRender
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}
@@ -261,8 +261,8 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: TargetFilterType.Metadata,
-                  operator: TargetOperator.Equals,
+                  type: ReleaseFilterType.Metadata,
+                  operator: ReleaseOperator.Equals,
                   key: "",
                   value: "",
                 })
@@ -273,42 +273,31 @@ export const ComparisonConditionRender: React.FC<
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: TargetFilterType.Kind,
-                  operator: TargetOperator.Equals,
-                  value: "",
+                  type: ReleaseFilterType.CreatedAt,
+                  operator: ReleaseOperator.Before,
+                  value: new Date().toISOString(),
                 })
               }
             >
-              Kind
+              Created at
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>
                 addCondition({
-                  type: TargetFilterType.Name,
-                  operator: TargetOperator.Like,
+                  type: ReleaseFilterType.Version,
+                  operator: ReleaseOperator.Equals,
                   value: "",
                 })
               }
             >
-              Name
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: TargetFilterType.Provider,
-                  operator: TargetOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Provider
+              Version
             </DropdownMenuItem>
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: TargetFilterType.Comparison,
-                    operator: TargetOperator.And,
+                    type: ReleaseFilterType.Comparison,
+                    operator: ReleaseOperator.And,
                     conditions: [],
                     not: false,
                   })
@@ -321,8 +310,8 @@ export const ComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: TargetFilterType.Comparison,
-                    operator: TargetOperator.And,
+                    type: ReleaseFilterType.Comparison,
+                    operator: ReleaseOperator.And,
                     not: true,
                     conditions: [],
                   })

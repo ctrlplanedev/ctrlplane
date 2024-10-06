@@ -1,14 +1,9 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  IconAlertTriangle,
-  IconCircleFilled,
-  IconFilter,
-} from "@tabler/icons-react";
-import { capitalCase } from "change-case";
+import { IconFilter, IconGraph } from "@tabler/icons-react";
+import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -25,10 +20,14 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
+import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
+import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
-import { DeployButton } from "../DeployButton";
-import { Release } from "../TableCells";
-import { DistroBarChart } from "./DistroBarChart";
+import { useReleaseDrawer } from "../../../../../_components/release-drawer/ReleaseDrawer";
+import { DeployButton } from "../../DeployButton";
+import { Release } from "../../TableCells";
+import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type DeploymentPageContentProps = {
   deployment: schema.Deployment;
@@ -43,6 +42,9 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   deployment,
   environments,
 }) => {
+  const { filter, setFilter } = useReleaseFilter();
+  const { setReleaseId } = useReleaseDrawer();
+
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
     systemSlug: string;
@@ -54,7 +56,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   );
 
   const releases = api.release.list.useQuery(
-    { deploymentId: deployment.id },
+    { deploymentId: deployment.id, filter, limit: 30 },
     { refetchInterval: 10_000 },
   );
 
@@ -72,12 +74,10 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
       releaseId: releaseJobTrigger.releaseId,
     }));
 
-  const showPreviousReleaseDistro = 30;
-
   const distribution = api.deployment.distributionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
   });
-  const releaseIds = releases.data?.map((r) => r.id) ?? [];
+  const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
     releaseIds,
     { enabled: releaseIds.length > 0 },
@@ -87,60 +87,43 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   return (
     <div>
-      <div className="flex border-b">
-        <div className="flex flex-1 flex-col justify-center px-6 py-5 sm:py-6">
-          <div className="flex items-center gap-2 font-semibold">
-            {capitalCase(deployment.name)}{" "}
-            {deployment.jobAgentId == null && (
-              <Link href={`${deployment.slug}/configure/job-agent`}>
-                <Badge
-                  variant="outline"
-                  className="ml-2 flex w-fit items-center gap-2 border-orange-700 text-orange-700"
+      <div className="h-full text-sm">
+        <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
+          <div className="flex-grow">
+            <ReleaseConditionDialog condition={filter} onChange={setFilter}>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
                 >
-                  <IconAlertTriangle className="h-4 w-4" />
-                  Job agent not configured
-                </Badge>
-              </Link>
-            )}
-          </div>
-          <span className="text-muted-foreground">
-            Distribution of the last {showPreviousReleaseDistro} releases across
-            all targets
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-2 border-l">
-          <div className="col-span-1 flex flex-col gap-2 border-r px-6 py-6">
-            <span className="text-xs text-muted-foreground">Releases</span>
-            <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releases.data?.length ?? "-"}
-            </span>
+                  <IconFilter className="h-4 w-4" />
+                </Button>
+
+                {filter != null && <ReleaseConditionBadge condition={filter} />}
+              </div>
+            </ReleaseConditionDialog>
           </div>
 
-          <div className="col-span-1 flex flex-col gap-2 border-neutral-800 px-6 py-6">
-            <span className="text-xs text-muted-foreground">Jobs</span>
-            <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releaseJobTriggers.length}
-            </span>
+          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
+            Total:
+            <Badge
+              variant="outline"
+              className="rounded-full border-neutral-800 text-inherit"
+            >
+              {releases.data?.total ?? "-"}
+            </Badge>
           </div>
-        </div>
-      </div>
-      <div className="border-b px-1 py-2">
-        <DistroBarChart
-          deploymentId={deployment.id}
-          showPreviousReleaseDistro={showPreviousReleaseDistro}
-        />
-      </div>
-      <div className="h-full text-sm">
-        <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-          <div className="flex items-center">
+
+          <ReleaseDistributionGraphPopover deployment={deployment}>
             <Button
               variant="ghost"
               size="icon"
               className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
             >
-              <IconFilter className="h-4 w-4" />
+              <IconGraph className="h-4 w-4" />
             </Button>
-          </div>
+          </ReleaseDistributionGraphPopover>
         </div>
       </div>
       <div className="h-full text-sm">
@@ -156,21 +139,18 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           </div>
         )}
         {!loading && releases.data && (
-          <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 flex h-[calc(100vh-467px)] flex-col overflow-auto">
+          <div className="flex flex-col">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
-                    <div className="flex h-[60px] items-center pl-2 backdrop-blur-sm">
+                    <div className="flex items-center pl-2 backdrop-blur-sm">
                       Version
                     </div>
                   </TableHead>
                   {environments.map((env) => (
-                    <TableHead
-                      className="h-[60px] min-w-[220px] border-l pl-4"
-                      key={env.id}
-                    >
-                      <div className="flex items-center gap-2">
+                    <TableHead className="border-l pl-4" key={env.id}>
+                      <div className="flex w-[220px] items-center gap-2">
                         {env.name}
                         <Badge
                           variant="outline"
@@ -184,20 +164,29 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {releases.data.map((release, releaseIdx) => (
-                  <TableRow key={release.id} className="hover:bg-transparent">
+                {releases.data.items.map((release, releaseIdx) => (
+                  <TableRow
+                    key={release.id}
+                    className="cursor-pointer hover:bg-transparent"
+                  >
                     <TableCell
                       className={cn(
-                        "sticky left-0 z-10 min-w-[500px] p-0",
-                        releaseIdx === releases.data.length - 1 && "border-b",
+                        "sticky left-0 z-10 min-w-[500px] pl-4 text-base",
+                        releaseIdx === releases.data.items.length - 1 &&
+                          "border-b",
                       )}
+                      onClick={() => setReleaseId(release.id)}
                     >
-                      <div className="flex h-[60px] items-center gap-2 pl-2 backdrop-blur-sm">
-                        <div className="relative h-[25px] w-[25px]">
-                          <IconCircleFilled className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
-                          <IconCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
-                        </div>
-                        <span>{release.version}</span>
+                      <div className="flex items-center gap-2">
+                        {release.name}{" "}
+                        <Badge
+                          variant="secondary"
+                          className="text-xs hover:bg-secondary"
+                        >
+                          {formatDistanceToNowStrict(release.createdAt, {
+                            addSuffix: true,
+                          })}
+                        </Badge>
                       </div>
                     </TableCell>
                     {environments.map((env) => {
@@ -232,8 +221,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       return (
                         <TableCell
                           className={cn(
-                            "h-[60px] min-w-[220px] border-l",
-                            releaseIdx === releases.data.length - 1 &&
+                            "h-[60px] w-[220px] border-l",
+                            releaseIdx === releases.data.items.length - 1 &&
                               "border-b",
                           )}
                         >

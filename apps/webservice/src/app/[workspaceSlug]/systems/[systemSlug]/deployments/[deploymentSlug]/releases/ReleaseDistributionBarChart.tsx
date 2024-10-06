@@ -5,7 +5,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 import { api } from "~/trpc/react";
 
-export const DistroBarChart: React.FC<{
+export const ReleaseDistributionBarChart: React.FC<{
   deploymentId: string;
   showPreviousReleaseDistro: number;
 }> = ({ deploymentId, showPreviousReleaseDistro }) => {
@@ -17,7 +17,7 @@ export const DistroBarChart: React.FC<{
     refetchInterval: 2_000,
   });
 
-  const distro = _.chain(releases.data ?? [])
+  const distro = _.chain(releases.data?.items ?? [])
     .map((r) => ({
       version: r.version,
       count: (distribution.data ?? []).filter((d) => d.release.id === r.id)

@@ -122,12 +122,10 @@ export default async function VariablesPage({
   const variables = await Promise.all(variablesPromises);
 
   return (
-    <>
-      <div className="h-full overflow-y-auto pb-[100px]">
-        <div className="min-h-full">
-          <VariableTable variables={variables} />
-        </div>
+    <div className="h-full overflow-y-auto pb-[100px]">
+      <div className="min-h-full">
+        <VariableTable variables={variables} />
       </div>
-    </>
+    </div>
   );
 }

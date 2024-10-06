@@ -173,7 +173,7 @@ const DeploymentTable: React.FC<{
                     <IconCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
                   </div>
                   <Link
-                    href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${r.slug}`}
+                    href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
                     className="flex-grow hover:text-blue-300"
                   >
                     {r.name}

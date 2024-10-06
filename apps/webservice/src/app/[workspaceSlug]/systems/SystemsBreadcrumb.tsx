@@ -19,7 +19,6 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { SystemActionsDropdown } from "~/app/[workspaceSlug]/systems/SystemActionsDropdown";
 import { api } from "~/trpc/server";
-import { DeploymentNavigationMenu } from "./DeploymentNavigationMenu";
 
 export const SystemBreadcrumbNavbar = async ({
   params,
@@ -74,7 +73,7 @@ export const SystemBreadcrumbNavbar = async ({
           <IconShip className="h-4 w-4" /> {deployment?.name}
         </>
       ),
-      path: `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`,
+      path: `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/releases`,
     },
     {
       isSet: release?.version != null,
@@ -118,12 +117,6 @@ export const SystemBreadcrumbNavbar = async ({
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      {crumbs.length === 3 && (
-        <>
-          <div className="w-2" />
-          <DeploymentNavigationMenu />
-        </>
-      )}
       <div>
         {system && crumbs.length === 2 && (
           <SystemActionsDropdown system={system}>

@@ -157,7 +157,7 @@ const DeploymentNode: React.FC<
     data.latestRelease?.id,
   );
   const releases = api.release.list.useQuery({ deploymentId: data.id });
-  const release = releases.data?.find((r) => r.id === selectedRelease);
+  const release = releases.data?.items.find((r) => r.id === selectedRelease);
 
   const onLayout = useOnLayout();
   useEffect(() => {
@@ -195,7 +195,7 @@ const DeploymentNode: React.FC<
             <ReleaseSelector
               value={selectedRelease ?? data.latestRelease?.id ?? ""}
               onChange={setSelectedRelease}
-              releases={releases.data}
+              releases={releases.data.items}
             />
           )}
         </div>

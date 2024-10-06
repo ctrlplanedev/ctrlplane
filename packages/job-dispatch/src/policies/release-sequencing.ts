@@ -96,12 +96,26 @@ export const isPassingReleaseSequencingWaitPolicy: ReleaseIdPolicyChecker =
   };
 
 /**
+ * This function implements the release sequencing cancel policy. It determines
+ * which release job triggers can proceed based on the current state of active
+ * jobs in the environment. Here's what it does:
  *
- * @param db
- * @param releaseJobTriggers
- * @returns ReleaseJobTriggers that pass the release sequencing policy - the release
- * sequencing cancel policy will cancel all other active jobs in the
- * environment.
+ * 1. It filters out environments that are deleted or don't have a "cancel"
+ *    release sequencing policy.
+ * 2. It queries the database for active jobs in the affected environments.
+ * 3. It then filters the input release job triggers, allowing only those where
+ *    there are no active jobs in the same environment.
+ *
+ * The purpose of this policy is to ensure that when a new release is triggered
+ * in an environment with a environment "cancel" policy configured, it will only
+ * proceed if there are no other active jobs in that environment. This
+ * effectively implements a "cancel and replace" strategy for releases in these
+ * environments if enabled.
+ *
+ * @param db - The database transaction object
+ * @param releaseJobTriggers - An array of release job triggers to be evaluated
+ * @returns An array of release job triggers that pass the policy (i.e., can
+ * proceed)
  */
 export const isPassingReleaseSequencingCancelPolicy = async (
   db: Tx,

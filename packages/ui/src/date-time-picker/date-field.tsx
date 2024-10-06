@@ -10,7 +10,9 @@ import { cn } from "@ctrlplane/ui";
 
 import { DateSegment } from "./date-segment";
 
-function DateField(props: AriaDatePickerProps<DateValue>) {
+function DateField(
+  props: AriaDatePickerProps<DateValue> & { variant?: string },
+) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   const { locale } = useLocale();
@@ -26,7 +28,10 @@ function DateField(props: AriaDatePickerProps<DateValue>) {
       {...fieldProps}
       ref={ref}
       className={cn(
-        "flex h-8 w-full items-center rounded-l-md border border-r-0 bg-transparent px-2 py-1",
+        "flex w-full items-center border border-r-0 bg-transparent px-2 py-1",
+        props.variant === "filter"
+          ? "h-9 text-muted-foreground"
+          : "h-8 rounded-l-md",
         props.isDisabled ? "cursor-not-allowed opacity-50" : "",
       )}
     >

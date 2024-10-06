@@ -7,6 +7,15 @@ import { takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createRelease } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
+import {
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createJobApprovals,
+  createReleaseJobTriggers,
+  dispatchReleaseJobTriggers,
+  isPassingAllPolicies,
+  isPassingReleaseSequencingCancelPolicy,
+  isPassingReleaseStringCheckPolicy,
+} from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -48,6 +57,27 @@ export const POST = async (req: NextRequest) => {
           value,
         })),
       );
+
+    createReleaseJobTriggers(db, "new_release")
+      .causedById(user.id)
+      .filter(isPassingReleaseStringCheckPolicy)
+      .filter(isPassingReleaseSequencingCancelPolicy)
+      .releases([release.id])
+      .then(createJobApprovals)
+      .insert()
+      .then((releaseJobTriggers) => {
+        dispatchReleaseJobTriggers(db)
+          .releaseTriggers(releaseJobTriggers)
+          .filter(isPassingAllPolicies)
+          .then(cancelOldReleaseJobTriggersOnJobDispatch)
+          .dispatch();
+      })
+      .then(() => {
+        logger.info(
+          `Release for ${release.id} job triggers created and dispatched.`,
+          req,
+        );
+      });
 
     return NextResponse.json({ ...release, metadata }, { status: 201 });
   } catch (error) {

@@ -72,85 +72,88 @@ export const JobAgentGitHubConfig: React.FC<{
   }, [workflows.data, value.workflowId]);
 
   return (
-    <>
-      <Popover open={repoOpen} onOpenChange={setRepoOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={repoOpen}
-            className={cn("items-center justify-start gap-2 px-2", className)}
-          >
-            <IconSelector className="h-4 w-4" />
-            <span className="overflow-hidden text-ellipsis">
-              {repo ?? "Select repo..."}
-            </span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className={cn("p-0", className)}>
-          <Command>
-            <CommandInput placeholder="Search repo..." />
-            <CommandGroup>
-              <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
-                {repos.data?.map((repo) => (
-                  <CommandItem
-                    key={repo.id}
-                    value={repo.name}
-                    onSelect={(currentValue) => {
-                      setRepo(currentValue);
-                      setRepoOpen(false);
-                    }}
-                  >
-                    {repo.name}
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-
-      <Popover open={workflowOpen} onOpenChange={setWorkflowOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={workflowOpen}
-            className={cn("items-center justify-start gap-2 px-2", className)}
-          >
-            <IconSelector className="h-4 w-4" />
-            <span className="overflow-hidden text-ellipsis">
-              {workflow ?? "Select workflow..."}
-            </span>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className={cn("p-0", className)}>
-          <Command>
-            <CommandInput placeholder="Search workflow..." />
-            <CommandGroup>
-              <CommandList>
-                {(workflows.data == null ||
-                  workflows.data.data.total_count === 0) && (
-                  <CommandItem disabled>No workflows found</CommandItem>
-                )}
-                {workflows.data?.data.workflows.map((wf) => (
-                  <CommandItem
-                    key={wf.id}
-                    value={wf.name}
-                    onSelect={(currentValue) => {
-                      setWorkflow(currentValue);
-                      setWorkflowOpen(false);
-                      handleFormChange(currentValue);
-                    }}
-                  >
-                    {wf.name}
-                  </CommandItem>
-                ))}
-              </CommandList>
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </>
+    <div className={cn("flex items-center gap-3", className)}>
+      <div>
+        <Popover open={repoOpen} onOpenChange={setRepoOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={repoOpen}
+              className={cn("items-center justify-start gap-2 px-2", className)}
+            >
+              <IconSelector className="h-4 w-4" />
+              <span className="overflow-hidden text-ellipsis">
+                {repo ?? "Select repo..."}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className={cn("p-0", className)}>
+            <Command>
+              <CommandInput placeholder="Search repo..." />
+              <CommandGroup>
+                <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
+                  {repos.data?.map((repo) => (
+                    <CommandItem
+                      key={repo.id}
+                      value={repo.name}
+                      onSelect={(currentValue) => {
+                        setRepo(currentValue);
+                        setRepoOpen(false);
+                      }}
+                    >
+                      {repo.name}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+      <div>
+        <Popover open={workflowOpen} onOpenChange={setWorkflowOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={workflowOpen}
+              className={cn("items-center justify-start gap-2 px-2", className)}
+            >
+              <IconSelector className="h-4 w-4" />
+              <span className="overflow-hidden text-ellipsis">
+                {workflow ?? "Select workflow..."}
+              </span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className={cn("p-0", className)}>
+            <Command>
+              <CommandInput placeholder="Search workflow..." />
+              <CommandGroup>
+                <CommandList>
+                  {(workflows.data == null ||
+                    workflows.data.data.total_count === 0) && (
+                    <CommandItem disabled>No workflows found</CommandItem>
+                  )}
+                  {workflows.data?.data.workflows.map((wf) => (
+                    <CommandItem
+                      key={wf.id}
+                      value={wf.name}
+                      onSelect={(currentValue) => {
+                        setWorkflow(currentValue);
+                        setWorkflowOpen(false);
+                        handleFormChange(currentValue);
+                      }}
+                    >
+                      {wf.name}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+    </div>
   );
 };
