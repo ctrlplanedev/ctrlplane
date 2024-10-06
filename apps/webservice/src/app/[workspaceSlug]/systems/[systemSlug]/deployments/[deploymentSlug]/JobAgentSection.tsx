@@ -93,7 +93,7 @@ export const JobAgentSection: React.FC<{
   workspace: { id: string; slug: string };
 }> = (props) => {
   return (
-    <div className="container m-8 mx-auto max-w-5xl space-y-2">
+    <div className="container m-8 mx-auto max-w-3xl space-y-2">
       <div>
         <h2 className="">Job Agent</h2>
       </div>

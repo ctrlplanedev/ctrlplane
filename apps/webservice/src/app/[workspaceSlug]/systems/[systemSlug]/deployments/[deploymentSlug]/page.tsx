@@ -15,6 +15,7 @@ import {
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/server";
+import { EditDeploymentSection } from "./EditDeploymentSection";
 import { JobAgentSection } from "./JobAgentSection";
 import { VariableTable } from "./variables/VariableTable";
 
@@ -122,7 +123,7 @@ const Variables: React.FC<{
   const variables = await Promise.all(variablesPromises);
 
   return (
-    <div className="container m-8 mx-auto max-w-5xl space-y-2">
+    <div className="container m-8 mx-auto max-w-3xl space-y-2">
       <div>
         <h2 className="">Variables</h2>
         <div className="text-xs text-muted-foreground">
@@ -151,44 +152,8 @@ export default async function DeploymentPage({
   const jobAgent = jobAgents.find((a) => a.id === deployment.jobAgentId);
 
   return (
-    <>
-      <div className="container m-8 mx-auto max-w-5xl space-y-2">
-        <div>
-          <h2 className="">Properties</h2>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <table
-              width="100%"
-              className="text-xs"
-              style={{ tableLayout: "fixed" }}
-            >
-              <tbody>
-                <tr>
-                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
-                    ID
-                  </td>
-                  <td>{deployment.id}</td>
-                </tr>
-
-                <tr>
-                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
-                    Name
-                  </td>
-                  <td>{deployment.name}</td>
-                </tr>
-
-                <tr>
-                  <td className="w-[110px] p-1 pr-2 text-muted-foreground">
-                    Slug
-                  </td>
-                  <td>{deployment.slug}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-10">
+      <EditDeploymentSection deployment={deployment} />
 
       <JobAgentSection
         jobAgents={jobAgents}
@@ -198,6 +163,6 @@ export default async function DeploymentPage({
       />
 
       <Variables workspaceId={workspace.id} deployment={deployment} />
-    </>
+    </div>
   );
 }

@@ -69,52 +69,58 @@ export default async function DeploymentLayout({
             )}
           </CardDescription>
         </div>
-        <div>
-          <Button>New Release</Button>
-        </div>
       </CardHeader>
-      <div className="border-b p-2">
-        <NavigationMenu>
-          <NavigationMenuList>
-            <NavigationMenuItem>
-              <Link href={releasesUrl} legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Releases
-                  <Badge
-                    variant="outline"
-                    className="ml-1.5 rounded-full text-muted-foreground"
-                  >
-                    {nFormatter(releases.total)}
-                  </Badge>
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href={variablesUrl} legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Variables
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href={variablesUrl} legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Jobs
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-            <NavigationMenuItem>
-              <Link href={overviewUrl} legacyBehavior passHref>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                  Configure
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+      <div className="flex items-center justify-between border-b p-2">
+        <div>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <Link href={releasesUrl} legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Releases
+                    <Badge
+                      variant="outline"
+                      className="ml-1.5 rounded-full text-muted-foreground"
+                    >
+                      {nFormatter(releases.total)}
+                    </Badge>
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link href={variablesUrl} legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Variables
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link href={variablesUrl} legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Jobs
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link href={overviewUrl} legacyBehavior passHref>
+                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                    Settings
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+        <div>
+          <Button size="sm" variant="secondary">
+            New Release
+          </Button>
+        </div>
       </div>
 
-      {children}
+      <div className="h-[calc(100vh-53px-73px-49px)] overflow-auto pb-8">
+        {children}
+      </div>
     </>
   );
 }
