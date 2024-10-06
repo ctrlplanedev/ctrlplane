@@ -187,9 +187,10 @@ const EditVariableValueDialog: React.FC<{
             <DialogFooter>
               <Button
                 variant="outline"
+                type="button"
                 onClick={() => form.setValue("targetFilter", null)}
               >
-                Clear
+                Clear filter
               </Button>
               <div className="flex-grow" />
               <Button type="submit">Save</Button>
