@@ -168,7 +168,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                   <TableRow
                     key={release.id}
                     className="cursor-pointer hover:bg-transparent"
-                    onClick={() => setReleaseId(release.id)}
                   >
                     <TableCell
                       className={cn(
@@ -176,6 +175,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         releaseIdx === releases.data.items.length - 1 &&
                           "border-b",
                       )}
+                      onClick={() => setReleaseId(release.id)}
                     >
                       <div className="flex items-center gap-2">
                         {release.name}{" "}
