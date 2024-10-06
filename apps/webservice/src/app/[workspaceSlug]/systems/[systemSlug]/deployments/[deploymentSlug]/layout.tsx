@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IconAlertTriangle } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -10,6 +11,12 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@ctrlplane/ui/navigation-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
 import { api } from "~/trpc/server";
@@ -56,7 +63,31 @@ export default async function DeploymentLayout({
   return (
     <>
       <TopNav>
-        <SystemBreadcrumbNavbar params={params} />
+        <div className="flex items-center">
+          <SystemBreadcrumbNavbar params={params} />
+          {deployment.jobAgentId == null && (
+            <div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      className="flex items-center text-yellow-500"
+                      href={overviewUrl}
+                    >
+                      <IconAlertTriangle className="h-4 w-4" />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[300px]">
+                    <p>
+                      Deployment has not been configured with a job agent, and
+                      therefore creating releases will not trigger a job.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+        </div>
       </TopNav>
       <div className="flex items-center justify-between border-b p-2">
         <div>
