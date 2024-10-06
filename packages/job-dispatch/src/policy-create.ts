@@ -11,39 +11,42 @@ import {
   releaseJobTrigger,
 } from "@ctrlplane/db/schema";
 
-export const createJobApprovals = async (
-  db: Tx,
-  releaseJobTriggers: ReleaseJobTrigger[],
-) => {
-  const policiesToCheck = await db
-    .selectDistinctOn([release.id, environmentPolicy.id])
-    .from(releaseJobTrigger)
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(
-      environmentPolicy,
-      and(
-        isNull(environment.deletedAt),
-        eq(environment.policyId, environmentPolicy.id),
-        eq(environmentPolicy.approvalRequirement, "manual"),
-      ),
-    )
-    .where(
-      inArray(
-        release.id,
-        releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
-      ),
-    );
+export const createJobApprovals =
+  (approved = false) =>
+  async (db: Tx, releaseJobTriggers: ReleaseJobTrigger[]) => {
+    const policiesToCheck = await db
+      .selectDistinctOn([release.id, environmentPolicy.id])
+      .from(releaseJobTrigger)
+      .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+      .innerJoin(
+        environment,
+        eq(releaseJobTrigger.environmentId, environment.id),
+      )
+      .innerJoin(
+        environmentPolicy,
+        and(
+          isNull(environment.deletedAt),
+          eq(environment.policyId, environmentPolicy.id),
+          eq(environmentPolicy.approvalRequirement, "manual"),
+        ),
+      )
+      .where(
+        inArray(
+          release.id,
+          releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
+        ),
+      );
 
-  if (policiesToCheck.length === 0) return;
+    if (policiesToCheck.length === 0) return;
 
-  await db
-    .insert(environmentPolicyApproval)
-    .values(
-      policiesToCheck.map((p) => ({
-        policyId: p.environment_policy.id,
-        releaseId: p.release.id,
-      })),
-    )
-    .onConflictDoNothing();
-};
+    await db
+      .insert(environmentPolicyApproval)
+      .values(
+        policiesToCheck.map((p) => ({
+          policyId: p.environment_policy.id,
+          releaseId: p.release.id,
+          status: approved ? ("approved" as const) : ("pending" as const),
+        })),
+      )
+      .onConflictDoNothing();
+  };

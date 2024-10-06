@@ -15,7 +15,6 @@ import {
   createEnvironment,
   createEnvironmentPolicy,
   createEnvironmentPolicyDeployment,
-  deployment,
   environment,
   environmentPolicy,
   environmentPolicyApproval,
@@ -32,12 +31,9 @@ import {
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
-  createJobApprovals,
-  createReleaseJobTriggers,
   dispatchJobsForNewTargets,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingReleaseSequencingCancelPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -376,62 +372,6 @@ export const createEnv = async (
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
-
-  deploy: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemUpdate)
-          .on({ type: "environment", id: input.environmentId }),
-    })
-    .input(
-      z.object({
-        environmentId: z.string().uuid(),
-        releaseId: z.string().uuid(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { environmentId, releaseId } = input;
-      const env = await ctx.db
-        .select()
-        .from(environment)
-        .where(
-          and(eq(environment.id, environmentId), isNull(environment.deletedAt)),
-        )
-        .then(takeFirstOrNull);
-      if (!env) throw new Error("Environment not found");
-
-      const rel = await ctx.db
-        .select()
-        .from(release)
-        .innerJoin(deployment, eq(deployment.id, release.deploymentId))
-        .where(eq(release.id, releaseId))
-        .then(takeFirstOrNull);
-      if (!rel) throw new Error("Release not found");
-
-      const releaseJobTriggers = await createReleaseJobTriggers(
-        ctx.db,
-        "redeploy",
-      )
-        .causedById(ctx.session.user.id)
-        .environments([env.id])
-        .releases([rel.release.id])
-        .filter(isPassingReleaseSequencingCancelPolicy)
-        .then(createJobApprovals)
-        .insert();
-
-      await dispatchReleaseJobTriggers(ctx.db)
-        .releaseTriggers(releaseJobTriggers)
-        .filter(isPassingAllPolicies)
-        .then(cancelOldReleaseJobTriggersOnJobDispatch)
-        .dispatch();
-
-      return {
-        environment: env,
-        release: { ...rel.release, deployment: rel.deployment },
-        releaseJobTriggers,
-      };
-    }),
 
   byId: protectedProcedure
     .meta({
