@@ -1,9 +1,10 @@
+import type { UseQueryResult } from "@tanstack/react-query";
 import type { FC } from "react";
 import type { Node } from "reactflow";
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { IconAlertTriangle, IconCheck, IconLoader } from "@tabler/icons-react";
-import { useQueries, UseQueryResult } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import LZString from "lz-string";
 
 import {
@@ -15,14 +16,12 @@ import {
 
 import { api } from "~/trpc/react";
 
-type Overlap = {
-  nodeId: string;
-  overlappingTargetCount: number;
-};
-
 type UniqueFilterResult = {
   isUnique: boolean;
-  overlaps: Overlap[];
+  overlaps: {
+    nodeId: string;
+    overlappingTargetCount: number;
+  }[];
 } | null;
 
 const useTargetFilterUniqueness = (
@@ -65,7 +64,10 @@ const useTargetFilterUniqueness = (
   const overlaps = useMemo(() => {
     if (isLoading || isError) return null;
 
-    const overlappingResults: Overlap[] = [];
+    const overlappingResults: {
+      nodeId: string;
+      overlappingTargetCount: number;
+    }[] = [];
 
     overlappingQueries.forEach((query, index) => {
       const count = query.data ?? 0;
