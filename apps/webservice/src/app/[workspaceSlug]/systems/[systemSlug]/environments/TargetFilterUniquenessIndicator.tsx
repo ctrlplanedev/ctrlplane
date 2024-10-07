@@ -135,19 +135,19 @@ export const TargetFilterUniquenessIndicator: React.FC<{
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger onClick={(e) => e.preventDefault()}>
-          <div className="mt-2 flex items-center gap-1">
+          <div className="flex items-center gap-1">
             {statusIcon}
             <span className="text-xs">{statusText}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent className="mt-2 max-w-[350px] p-2 text-sm">
+        <TooltipContent className="max-w-[350px] p-2 text-sm">
           {result.overlaps.map((overlap) => {
             const overlappingNode = nodes.find(
               (node) => node.id === overlap.nodeId,
             );
             return (
               <div key={overlap.nodeId}>
-                <p className="mt-2 text-xs font-medium text-white">
+                <p className="mb-1 text-xs font-medium text-white">
                   <span className="font-medium text-white">
                     {overlappingNode?.data.name ?? "Unknown"}
                   </span>{" "}
