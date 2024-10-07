@@ -1,7 +1,6 @@
-import type { UseQueryResult } from "@tanstack/react-query";
 import type { FC } from "react";
 import type { Node } from "reactflow";
-import React, { useMemo } from "react";
+import React from "react";
 import Link from "next/link";
 import { IconAlertTriangle, IconCheck, IconLoader } from "@tabler/icons-react";
 import { useQueries } from "@tanstack/react-query";
@@ -17,11 +16,7 @@ import {
 import { api } from "~/trpc/react";
 
 type UniqueFilterResult = {
-  isUnique: boolean;
-  overlaps: {
-    nodeId: string;
-    overlappingTargetCount: number;
-  }[];
+  overlaps: { nodeId: string; overlappingTargetCount: number }[];
 } | null;
 
 const useTargetFilterUniqueness = (
@@ -30,13 +25,8 @@ const useTargetFilterUniqueness = (
   currentNode: Node,
 ): UniqueFilterResult => {
   const utils = api.useUtils();
-
-  const otherNodes = useMemo(
-    () => nodes.filter((node) => node.id !== currentNode.id),
-    [nodes, currentNode.id],
-  );
-
-  const overlappingQueries: UseQueryResult<number, Error>[] = useQueries({
+  const otherNodes = nodes.filter((node) => node.id !== currentNode.id);
+  const overlappingQueries = useQueries({
     queries: otherNodes.map((node) => ({
       queryKey: [
         "target",
@@ -45,6 +35,7 @@ const useTargetFilterUniqueness = (
         currentNode.data.targetFilter,
         node.data.targetFilter,
         node.id,
+        { limit: 0 },
       ],
       queryFn: () =>
         utils.target.byWorkspaceId.list
@@ -59,41 +50,32 @@ const useTargetFilterUniqueness = (
               ],
             },
           })
-          .then((result) => result.total),
-      enabled: Boolean(
-        workspaceId && currentNode.data.targetFilter && node.data.targetFilter,
-      ),
+          .then((res) => res.total),
+      enabled:
+        currentNode.data.targetFilter != null && node.data.targetFilter != null,
     })),
   });
 
-  const isLoading = overlappingQueries.some((query) => query.isLoading);
-  const isError = overlappingQueries.some((query) => query.isError);
+  if (overlappingQueries.some((q) => q.isLoading || q.isError)) return null;
+  if (otherNodes.length !== overlappingQueries.length) return null;
 
-  const overlaps = useMemo(() => {
-    if (isLoading || isError) return null;
+  const overlaps = overlappingQueries.reduce(
+    (acc, query, index) => {
+      const count = query.data ?? 0;
+      if (count > 0)
+        acc.push({
+          nodeId: otherNodes[index]!.id,
+          overlappingTargetCount: count,
+        });
+      return acc;
+    },
+    [] as { nodeId: string; overlappingTargetCount: number }[],
+  );
 
-    const overlappingResults = overlappingQueries
-      .map((query, index) => {
-        const count = query.data ?? 0;
-        return count > 0 && otherNodes[index]
-          ? { nodeId: otherNodes[index].id, overlappingTargetCount: count }
-          : null;
-      })
-      .filter((result) => result !== null) as {
-      nodeId: string;
-      overlappingTargetCount: number;
-    }[];
-
-    return {
-      isUnique: overlappingResults.length === 0,
-      overlaps: overlappingResults,
-    };
-  }, [isLoading, isError, overlappingQueries, otherNodes]);
-
-  return overlaps;
+  return { overlaps };
 };
 
-const statusMap = {
+const StatusMap = {
   loading: {
     text: "Checking target uniqueness...",
     icon: <IconLoader className="mr-1 h-4 w-4 animate-spin text-blue-500" />,
@@ -123,27 +105,27 @@ export const TargetFilterUniquenessIndicator: FC<{
       </span>
     );
 
-  if (result === null)
+  if (result == null)
     return (
       <div className="mt-2 flex items-center gap-1">
-        {statusMap.loading.icon}
-        <span className="text-xs">{statusMap.loading.text}</span>
+        {StatusMap.loading.icon}
+        <span className="text-xs">{StatusMap.loading.text}</span>
       </div>
     );
 
-  const { isUnique, overlaps } = result;
+  const { overlaps } = result;
+  const isUnique = overlaps.length === 0;
   const { text: statusText, icon: statusIcon } = isUnique
-    ? statusMap.unique
-    : statusMap.overlapping;
+    ? StatusMap.unique
+    : StatusMap.overlapping;
 
-  if (isUnique) {
+  if (isUnique)
     return (
       <div className="mt-2 flex items-center gap-1">
         {statusIcon}
         <span className="text-xs">{statusText}</span>
       </div>
     );
-  }
 
   return (
     <TooltipProvider>
