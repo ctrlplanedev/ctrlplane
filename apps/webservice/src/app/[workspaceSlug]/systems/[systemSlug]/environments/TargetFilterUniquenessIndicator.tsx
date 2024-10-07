@@ -41,8 +41,8 @@ export const useTargetFilterUniqueness = (
         "target",
         "overlappingTargets",
         workspaceId,
-        JSON.stringify(currentNode.data.targetFilter),
-        JSON.stringify(node.data.targetFilter),
+        currentNode.data.targetFilter,
+        node.data.targetFilter,
         node.id,
       ],
       queryFn: () =>
@@ -54,10 +54,10 @@ export const useTargetFilterUniqueness = (
       enabled: Boolean(
         workspaceId && currentNode.data.targetFilter && node.data.targetFilter,
       ),
-      staleTime: 5 * 60 * 1000,
-      cacheTime: 30 * 60 * 1000,
     })),
   });
+
+  new Promise((resolve) => setTimeout(resolve, 1000));
 
   const isLoading = overlappingQueries.some((query) => query.isLoading);
   const isError = overlappingQueries.some((query) => query.isError);
@@ -89,6 +89,21 @@ export const useTargetFilterUniqueness = (
   return overlaps;
 };
 
+const statusMap = {
+  loading: {
+    text: "Checking target uniqueness...",
+    icon: <IconLoader className="mr-1 h-4 w-4 animate-spin text-blue-500" />,
+  },
+  unique: {
+    text: "All Environments have unique targets",
+    icon: <IconCheck className="mr-1 h-4 w-4 text-green-400" />,
+  },
+  overlapping: {
+    text: "Targets overlap Environments for this System",
+    icon: <IconAlertTriangle className="mr-1 h-4 w-4 text-orange-400" />,
+  },
+};
+
 export const TargetFilterUniquenessIndicator: React.FC<{
   nodes: Node[];
   workspaceId: string;
@@ -97,57 +112,42 @@ export const TargetFilterUniquenessIndicator: React.FC<{
 }> = ({ nodes, workspaceId, workspaceSlug, currentNode }) => {
   const result = useTargetFilterUniqueness(nodes, workspaceId, currentNode);
 
-  if (!currentNode.data.targetFilter && !result)
+  if (!currentNode.data.targetFilter)
     return (
-      <span className="text-sm text-muted-foreground">
-        Add a filter to select targets for this environment.
+      <span className="mt-2 text-sm text-muted-foreground">
+        Please add a target filter to select targets for this environment.
       </span>
     );
 
-  const statusMap = {
-    loading: {
-      text: "Checking target uniqueness...",
-      icon: <IconLoader className="mr-1 h-4 w-4 animate-spin text-blue-500" />,
-    },
-    unique: {
-      text: "All Environments have unique targets",
-      icon: <IconCheck className="mr-1 h-4 w-4 text-green-400" />,
-    },
-    overlapping: {
-      text: "Targets overlap Environments for this System",
-      icon: <IconAlertTriangle className="mr-1 h-4 w-4 text-orange-400" />,
-    },
-  };
+  if (result === null)
+    return (
+      <div className="mt-2 flex items-center gap-1">
+        {statusMap.loading.icon}
+        <span className="text-xs">{statusMap.loading.text}</span>
+      </div>
+    );
 
-  const { text: statusText, icon: statusIcon } = !result
-    ? statusMap.loading
-    : result.isUnique
-      ? statusMap.unique
-      : statusMap.overlapping;
+  const { text: statusText, icon: statusIcon } = result.isUnique
+    ? statusMap.unique
+    : statusMap.overlapping;
 
-  const hasOverlaps = result && !result.isUnique;
-
-  const content = (
-    <div className="flex items-center gap-1">
-      {statusIcon}
-      <span className="text-xs">{statusText}</span>
-    </div>
-  );
-
-  return hasOverlaps ? (
+  return !result.isUnique ? (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger onClick={(e) => e.preventDefault()}>
-          {content}
+          <div className="mt-2 flex items-center gap-1">
+            {statusIcon}
+            <span className="text-xs">{statusText}</span>
+          </div>
         </TooltipTrigger>
-        <TooltipContent className="max-w-[350px] p-2 text-sm">
+        <TooltipContent className="mt-2 max-w-[350px] p-2 text-sm">
           {result.overlaps.map((overlap) => {
             const overlappingNode = nodes.find(
               (node) => node.id === overlap.nodeId,
             );
             return (
-              <div key={overlap.nodeId} className="mt-1">
-                <p className="text-xs font-medium text-white">
+              <div key={overlap.nodeId}>
+                <p className="mt-2 text-xs font-medium text-white">
                   <span className="font-medium text-white">
                     {overlappingNode?.data.name ?? "Unknown"}
                   </span>{" "}
@@ -181,6 +181,10 @@ export const TargetFilterUniquenessIndicator: React.FC<{
       </Tooltip>
     </TooltipProvider>
   ) : (
-    content
+    <div className="mt-2 flex items-center gap-1">
+      {" "}
+      {statusIcon}
+      <span className="text-xs">{statusText}</span>
+    </div>
   );
 };

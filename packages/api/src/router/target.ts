@@ -375,6 +375,8 @@ export const targetRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         const { workspaceId, filterA, filterB } = input;
         const workspaceIdCheck = eq(schema.target.workspaceId, workspaceId);
+        const ensureArray = <T>(input: T | T[] | undefined): T[] =>
+          Array.isArray(input) ? input : input != null ? [input] : [];
         const combinedConditions: SQL<unknown>[] = [
           workspaceIdCheck,
           ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterA)),
@@ -556,6 +558,3 @@ export const targetRouter = createTRPCRouter({
         .then(takeFirst),
     ),
 });
-
-const ensureArray = <T>(input: T | T[] | undefined): T[] =>
-  input ? (Array.isArray(input) ? input : [input]) : [];

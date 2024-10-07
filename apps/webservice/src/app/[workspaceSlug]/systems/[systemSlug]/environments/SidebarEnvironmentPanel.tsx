@@ -161,7 +161,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         </Button>
       </h2>
       <Separator />
-      <form onSubmit={onSubmit} className="m-6 space-y-8">
+      <form onSubmit={onSubmit} className="m-5 space-y-8">
         <FormField
           control={form.control}
           name="name"
@@ -215,12 +215,14 @@ export const SidebarEnvironmentPanel: React.FC = () => {
               </Link>
             )}
           </Label>
-          <TargetFilterUniquenessIndicator
-            nodes={nodes}
-            currentNode={node}
-            workspaceId={workspace.data?.id ?? ""}
-            workspaceSlug={workspaceSlug}
-          />
+          {workspace.data?.id && (
+            <TargetFilterUniquenessIndicator
+              nodes={nodes}
+              currentNode={node}
+              workspaceId={workspace.data.id}
+              workspaceSlug={workspaceSlug}
+            />
+          )}
           {node.data.targetFilter != null && (
             <TargetConditionBadge condition={node.data.targetFilter} tabbed />
           )}
