@@ -103,9 +103,10 @@ export const JobAgentSection: React.FC<{
 }> = (props) => {
   return (
     <div className="container m-8 mx-auto max-w-3xl space-y-2">
-      <div>
+      <div id="job-agent">
         <h2 className="">Job Agent</h2>
       </div>
+
       {props.jobAgent == null && (
         <Alert className="space-y-2 border-red-400 text-red-300">
           <AlertTitle className="font-semibold">

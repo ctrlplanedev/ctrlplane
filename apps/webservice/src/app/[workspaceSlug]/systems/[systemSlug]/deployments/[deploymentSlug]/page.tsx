@@ -17,6 +17,7 @@ import {
 import { api } from "~/trpc/server";
 import { EditDeploymentSection } from "./EditDeploymentSection";
 import { JobAgentSection } from "./JobAgentSection";
+import { SidebarSection } from "./SettingsSidebar";
 import { VariableTable } from "./variables/VariableTable";
 
 const Variables: React.FC<{
@@ -125,7 +126,7 @@ const Variables: React.FC<{
   return (
     <div className="container m-8 mx-auto max-w-3xl space-y-2">
       <div>
-        <h2 className="">Variables</h2>
+        <h2 id="variables">Variables</h2>
         <div className="text-xs text-muted-foreground">
           Deployment variables allow you to configure target-specific settings
           for your application. Learn more about variable precedence here.
@@ -152,18 +153,27 @@ export default async function DeploymentPage({
   const jobAgent = jobAgents.find((a) => a.id === deployment.jobAgentId);
 
   return (
-    <div className="mb-10 space-y-10">
-      <EditDeploymentSection deployment={deployment} />
+    <div className="container mx-auto flex max-w-5xl gap-12">
+      <div className="sticky top-8 my-8 h-full w-[150px] flex-shrink-0">
+        <div>
+          <SidebarSection id="properties">Properties</SidebarSection>
+          <SidebarSection id="job-agent">Job Agent</SidebarSection>
+          <SidebarSection id="variables">Variables</SidebarSection>
+        </div>
+      </div>
+      <div className="mb-16 flex-grow space-y-10">
+        <EditDeploymentSection deployment={deployment} />
 
-      <JobAgentSection
-        deployment={deployment}
-        jobAgents={jobAgents}
-        workspace={workspace}
-        jobAgent={jobAgent}
-        config={deployment.jobAgentConfig}
-      />
+        <JobAgentSection
+          deployment={deployment}
+          jobAgents={jobAgents}
+          workspace={workspace}
+          jobAgent={jobAgent}
+          config={deployment.jobAgentConfig}
+        />
 
-      <Variables workspaceId={workspace.id} deployment={deployment} />
+        <Variables workspaceId={workspace.id} deployment={deployment} />
+      </div>
     </div>
   );
 }
