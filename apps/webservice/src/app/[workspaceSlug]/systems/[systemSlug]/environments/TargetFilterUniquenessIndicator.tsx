@@ -30,7 +30,6 @@ const useTargetFilterUniqueness = (
     queries: otherNodes.map((node) => ({
       queryKey: [
         "target",
-        "overlappingTargetsCount",
         workspaceId,
         currentNode.data.targetFilter,
         node.data.targetFilter,
