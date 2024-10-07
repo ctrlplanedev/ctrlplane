@@ -156,6 +156,7 @@ export default async function DeploymentPage({
       <EditDeploymentSection deployment={deployment} />
 
       <JobAgentSection
+        deployment={deployment}
         jobAgents={jobAgents}
         workspace={workspace}
         jobAgent={jobAgent}

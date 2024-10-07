@@ -19,8 +19,9 @@ const JobAgentForm: React.FC<{
   jobAgent?: schema.JobAgent;
   jobAgents: schema.JobAgent[];
   config: Record<string, any>;
+  deployment: schema.Deployment;
   workspace: { id: string; slug: string };
-}> = ({ jobAgents, workspace, jobAgent, config }) => {
+}> = ({ deployment, jobAgents, workspace, jobAgent, config }) => {
   const form = useForm({
     schema: z.object({
       jobAgentId: z.string().uuid(),
@@ -33,7 +34,7 @@ const JobAgentForm: React.FC<{
   const router = useRouter();
   const onFormSubmit = form.handleSubmit(async (data) => {
     await update.mutateAsync({
-      id: workspace.id,
+      id: deployment.id,
       data: {
         jobAgentId: data.jobAgentId,
         jobAgentConfig: data.config,
@@ -94,6 +95,7 @@ const JobAgentForm: React.FC<{
 };
 
 export const JobAgentSection: React.FC<{
+  deployment: schema.Deployment;
   jobAgent?: schema.JobAgent;
   jobAgents: schema.JobAgent[];
   config: Record<string, any>;
