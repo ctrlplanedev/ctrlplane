@@ -103,6 +103,7 @@ const ReleaseCell: React.FC<{
           releaseId={release.id}
           environment={env}
           name={release.name}
+          version={release.version}
           deployedAt={release.createdAt}
           releaseJobTriggers={jc}
           workspaceSlug={workspaceSlug}
