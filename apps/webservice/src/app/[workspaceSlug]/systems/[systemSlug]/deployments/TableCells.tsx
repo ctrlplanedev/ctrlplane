@@ -28,6 +28,12 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
@@ -177,7 +183,18 @@ export const Release: React.FC<{
             <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">
-                <span className="font-semibold">{name}</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <span className="font-semibold">
+                        {name.substring(0, 15)}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[180px]">
+                      {name}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {activeDeploymentCount != null && activeDeploymentCount > 0 && (
                   <Badge
                     variant="outline"
