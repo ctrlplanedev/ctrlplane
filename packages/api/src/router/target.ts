@@ -271,12 +271,6 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
     .groupBy(schema.target.id, schema.targetProvider.id, schema.workspace.id)
     .orderBy(asc(schema.target.kind), asc(schema.target.name));
 
-const overlappingTargetsInput = z.object({
-  workspaceId: z.string().uuid(),
-  filterA: targetCondition.optional(),
-  filterB: targetCondition.optional(),
-});
-
 export const targetRouter = createTRPCRouter({
   metadataGroup: targetMetadataGroupRouter,
   provider: targetProviderRouter,
@@ -371,7 +365,13 @@ export const targetRouter = createTRPCRouter({
             .perform(Permission.TargetList)
             .on({ type: "workspace", id: input.workspaceId }),
       })
-      .input(overlappingTargetsInput)
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          filterA: targetCondition.optional(),
+          filterB: targetCondition.optional(),
+        }),
+      )
       .query(async ({ ctx, input }) => {
         const { workspaceId, filterA, filterB } = input;
         const workspaceIdCheck = eq(schema.target.workspaceId, workspaceId);
