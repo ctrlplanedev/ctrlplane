@@ -31,11 +31,19 @@ const JobAgentForm: React.FC<{
 
   const update = api.deployment.update.useMutation();
   const router = useRouter();
-  const onFormSubmit = form.handleSubmit((data) =>
-    update.mutateAsync({ id: workspace.id, data }).then(() => router.refresh()),
-  );
+  const onFormSubmit = form.handleSubmit(async (data) => {
+    await update.mutateAsync({
+      id: workspace.id,
+      data: {
+        jobAgentId: data.jobAgentId,
+        config: data.config,
+      },
+    });
+    router.refresh();
+  });
 
   const { jobAgentId, config: formConfig } = form.watch();
+  console.log(jobAgentId, config);
   const selectedJobAgent = jobAgents.find((j) => j.id === jobAgentId);
 
   return (

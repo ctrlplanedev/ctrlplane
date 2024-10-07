@@ -117,7 +117,8 @@ export const deploymentRouter = createTRPCRouter({
       ctx.db
         .update(deployment)
         .set(input.data)
-        .where(eq(deployment.id, input.id)),
+        .where(eq(deployment.id, input.id))
+        .returning(),
     ),
 
   delete: protectedProcedure
