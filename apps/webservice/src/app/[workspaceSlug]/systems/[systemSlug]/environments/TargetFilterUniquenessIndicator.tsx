@@ -154,23 +154,21 @@ export const TargetFilterUniquenessIndicator: FC<{
               (node) => node.id === overlap.nodeId,
             );
             if (!overlappingNode) return null;
-            const overlappingNodeName = overlappingNode.data.name ?? "Unknown";
-            const combinedFilter = {
-              type: "comparison",
-              operator: "and",
-              conditions: [
-                overlappingNode.data.targetFilter,
-                currentNode.data.targetFilter,
-              ],
-            };
             const compressedFilter = LZString.compressToEncodedURIComponent(
-              JSON.stringify(combinedFilter),
+              JSON.stringify({
+                type: "comparison",
+                operator: "and",
+                conditions: [
+                  overlappingNode.data.targetFilter,
+                  currentNode.data.targetFilter,
+                ],
+              }),
             );
             return (
               <div key={overlap.nodeId}>
                 <p className="mb-1 text-xs font-medium text-white">
                   <span className="font-medium text-white">
-                    {overlappingNodeName}
+                    {overlappingNode.data.name}
                   </span>{" "}
                   <span className="text-muted-foreground">has</span>{" "}
                   <Link
