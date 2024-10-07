@@ -117,6 +117,7 @@ const ReleaseIcon: React.FC<{
 
 export const Release: React.FC<{
   name: string;
+  version: string;
   releaseId: string;
   environment: { id: string; name: string };
   activeDeploymentCount?: number;
@@ -138,6 +139,7 @@ export const Release: React.FC<{
     releaseJobTriggers,
     activeDeploymentCount,
     releaseId,
+    version,
     environment,
     workspaceSlug,
     systemSlug,
@@ -186,12 +188,12 @@ export const Release: React.FC<{
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
-                      <span className="font-semibold">
-                        {name.substring(0, 15)}
-                      </span>
+                      <div className="max-w-36 overflow-hidden text-ellipsis">
+                        <span className="whitespace-nowrap">{version}</span>
+                      </div>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-[180px]">
-                      {name}
+                    <TooltipContent className="max-w-[200px]">
+                      {version}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
