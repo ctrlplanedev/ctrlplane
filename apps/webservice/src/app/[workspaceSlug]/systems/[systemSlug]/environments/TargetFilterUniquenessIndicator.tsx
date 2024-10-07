@@ -64,19 +64,17 @@ const useTargetFilterUniqueness = (
   const overlaps = useMemo(() => {
     if (isLoading || isError) return null;
 
-    const overlappingResults: {
+    const overlappingResults = overlappingQueries
+      .map((query, index) => {
+        const count = query.data ?? 0;
+        return count > 0 && otherNodes[index]
+          ? { nodeId: otherNodes[index].id, overlappingTargetCount: count }
+          : null;
+      })
+      .filter((result) => result !== null) as {
       nodeId: string;
       overlappingTargetCount: number;
-    }[] = [];
-
-    overlappingQueries.forEach((query, index) => {
-      const count = query.data ?? 0;
-      if (count > 0 && otherNodes[index])
-        overlappingResults.push({
-          nodeId: otherNodes[index].id,
-          overlappingTargetCount: count,
-        });
-    });
+    }[];
 
     return {
       isUnique: overlappingResults.length === 0,
