@@ -117,10 +117,14 @@ export const SystemBreadcrumbNavbar = async ({
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      <div>
+      <div className="flex">
         {system && crumbs.length === 2 && (
           <SystemActionsDropdown system={system}>
-            <Button variant="ghost" className="h-5 w-5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex h-6 w-6 items-center"
+            >
               <IconDotsVertical className="h-4 w-4" />
             </Button>
           </SystemActionsDropdown>
