@@ -33,12 +33,11 @@ const useTargetFilterUniqueness = (
         workspaceId,
         currentNode.data.targetFilter,
         node.data.targetFilter,
-        node.id,
-        { limit: 0 },
       ],
       queryFn: () =>
         utils.target.byWorkspaceId.list
           .fetch({
+            limit: 0,
             workspaceId,
             filter: {
               type: "comparison",
