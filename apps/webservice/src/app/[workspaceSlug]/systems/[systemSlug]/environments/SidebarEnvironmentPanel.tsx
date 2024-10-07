@@ -13,7 +13,7 @@ import LZString from "lz-string";
 import { useReactFlow } from "reactflow";
 import { z } from "zod";
 
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Form,
   FormControl,
@@ -26,21 +26,24 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { toast } from "@ctrlplane/ui/toast";
 
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
+import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
-import { TargetConditionBadge } from "../../../_components/target-condition/TargetConditionBadge";
-import { TargetConditionDialog } from "../../../_components/target-condition/TargetConditionDialog";
 import { usePanel } from "./SidepanelContext";
+import { TargetFilterUniquenessIndicator } from "./TargetFilterUniquenessIndicator";
 
 const environmentForm = z.object({
   name: z.string(),
   description: z.string().default(""),
+  targetFilter: z.any().optional(),
 });
 
 export const SidebarEnvironmentPanel: React.FC = () => {
-  const { getNode, setNodes } = useReactFlow();
+  const { getNode, getNodes, setNodes } = useReactFlow();
   const { selectedNodeId } = usePanel();
-  const node = getNode(selectedNodeId ?? "")!;
+  const node = getNode(selectedNodeId!)!;
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const update = api.environment.update.useMutation();
@@ -51,6 +54,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     defaultValues: {
       name: node.data.label,
       description: node.data.description,
+      targetFilter: node.data.targetFilter,
     },
   });
 
@@ -63,7 +67,9 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     form.reset({
       name: node.data.label,
       description: node.data.description,
+      targetFilter: node.data.targetFilter,
     });
+    form.setValue("targetFilter", node.data.targetFilter);
   }, [node, form]);
 
   const targets = api.target.byWorkspaceId.list.useQuery(
@@ -86,9 +92,11 @@ export const SidebarEnvironmentPanel: React.FC = () => {
           id: node.id,
           data: { ...values },
         })
-        .then(() =>
-          utils.environment.bySystemId.invalidate(node.data.systemId),
-        );
+        .then(() => {
+          utils.environment.bySystemId.invalidate(node.data.systemId);
+          toast.success(`Environment updated successfully`);
+        })
+        .catch(() => toast.error(`Failed to update environment`));
       return nodes.map((n) =>
         n.id === selectedNodeId
           ? {
@@ -104,33 +112,39 @@ export const SidebarEnvironmentPanel: React.FC = () => {
     });
   });
 
-  const onFilterDialogSubmit = (condition: TargetCondition | undefined) =>
+  const onFilterDialogSubmit = (condition: TargetCondition | undefined) => {
     setNodes((nodes) => {
       const node = nodes.find((n) => n.id === selectedNodeId);
       if (!node) return nodes;
 
-      update
-        .mutateAsync({
-          id: node.id,
-          data: {
-            targetFilter: condition ?? null,
-          },
-        })
-        .then(() =>
-          utils.environment.bySystemId.invalidate(node.data.systemId),
-        );
-      return nodes.map((n) =>
+      const updatedNodes = nodes.map((n) =>
         n.id === selectedNodeId
           ? {
               ...n,
               data: {
                 ...n.data,
-                targetFilter: condition,
+                targetFilter: condition ?? null,
               },
             }
           : n,
       );
+      form.setValue("targetFilter", condition);
+      utils.environment.bySystemId.invalidate(node.data.systemId);
+      if (workspace.data)
+        utils.target.byWorkspaceId.list.invalidate({
+          workspaceId: workspace.data.id,
+          filter: condition,
+        });
+      return updatedNodes;
     });
+    form.reset({
+      name: node.data.label,
+      description: node.data.description,
+      targetFilter: condition,
+    });
+  };
+
+  const nodes = getNodes();
 
   return (
     <Form {...form}>
@@ -148,7 +162,7 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         </Button>
       </h2>
       <Separator />
-      <form onSubmit={onSubmit} className="m-6 space-y-8">
+      <form onSubmit={onSubmit} className="m-5 space-y-8">
         <FormField
           control={form.control}
           name="name"
@@ -175,7 +189,10 @@ export const SidebarEnvironmentPanel: React.FC = () => {
         />
 
         <div className="flex flex-col gap-2">
-          <Label className="flex items-center gap-2">
+          <Label
+            className="flex items-center gap-2"
+            onClick={(e) => e.preventDefault()}
+          >
             <span>
               Target Filter (
               {node.data.targetFilter != null && targets.data != null
@@ -190,21 +207,22 @@ export const SidebarEnvironmentPanel: React.FC = () => {
                     JSON.stringify(node.data.targetFilter),
                   ),
                 })}`}
-                passHref
+                className={buttonVariants({ variant: "ghost" })}
               >
-                <Button variant="ghost" size="sm" asChild>
-                  <a target="_blank" rel="noopener noreferrer">
-                    <IconExternalLink className="mr-1 h-4 w-4" />
-                    View Targets
-                  </a>
-                </Button>
+                <span className="flex items-center">
+                  <IconExternalLink className="mr-1 h-4 w-4" />
+                  View Targets
+                </span>
               </Link>
             )}
           </Label>
-          {node.data.targetFilter == null && (
-            <span className="text-sm text-muted-foreground">
-              Add a filter to select targets for this environment.
-            </span>
+          {workspace.data?.id && (
+            <TargetFilterUniquenessIndicator
+              nodes={nodes}
+              currentNode={node}
+              workspaceId={workspace.data.id}
+              workspaceSlug={workspaceSlug}
+            />
           )}
           {node.data.targetFilter != null && (
             <TargetConditionBadge condition={node.data.targetFilter} tabbed />
