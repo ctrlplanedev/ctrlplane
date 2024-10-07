@@ -130,10 +130,11 @@ export const SidebarEnvironmentPanel: React.FC = () => {
       );
       form.setValue("targetFilter", condition);
       utils.environment.bySystemId.invalidate(node.data.systemId);
-      utils.target.byWorkspaceId.list.invalidate({
-        workspaceId: workspace.data?.id ?? "",
-        filter: condition,
-      });
+      if (workspace.data)
+        utils.target.byWorkspaceId.list.invalidate({
+          workspaceId: workspace.data.id,
+          filter: condition,
+        });
       return updatedNodes;
     });
     form.reset({
