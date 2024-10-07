@@ -36,14 +36,13 @@ const JobAgentForm: React.FC<{
       id: workspace.id,
       data: {
         jobAgentId: data.jobAgentId,
-        config: data.config,
+        jobAgentConfig: data.config,
       },
     });
     router.refresh();
   });
 
   const { jobAgentId, config: formConfig } = form.watch();
-  console.log(jobAgentId, config);
   const selectedJobAgent = jobAgents.find((j) => j.id === jobAgentId);
 
   return (
