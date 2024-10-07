@@ -153,9 +153,18 @@ export const TargetFilterUniquenessIndicator: FC<{
             const overlappingNode = nodes.find(
               (node) => node.id === overlap.nodeId,
             );
-            const overlappingNodeName = overlappingNode?.data.name ?? "Unknown";
+            if (!overlappingNode) return null;
+            const overlappingNodeName = overlappingNode.data.name ?? "Unknown";
+            const combinedFilter = {
+              type: "comparison",
+              operator: "and",
+              conditions: [
+                overlappingNode.data.targetFilter,
+                currentNode.data.targetFilter,
+              ],
+            };
             const compressedFilter = LZString.compressToEncodedURIComponent(
-              JSON.stringify(overlappingNode?.data.targetFilter ?? {}),
+              JSON.stringify(combinedFilter),
             );
             return (
               <div key={overlap.nodeId}>
