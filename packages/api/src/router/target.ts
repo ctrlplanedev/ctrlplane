@@ -358,7 +358,7 @@ export const targetRouter = createTRPCRouter({
         }));
       }),
 
-    overlappingTargets: protectedProcedure
+    overlappingTargetsCount: protectedProcedure
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
@@ -382,18 +382,16 @@ export const targetRouter = createTRPCRouter({
           ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterA)),
           ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterB)),
         ];
-        const overlappingItems = await targetQuery(
-          ctx.db,
-          combinedConditions,
-        ).then((t) =>
-          t.map((a) => ({
-            ...a.target,
-            provider: a.targetProvider,
-            metadata: a.targetMetadata,
-          })),
-        );
+        const overlappingItemsCount = await ctx.db
+          .select({
+            count: sql`COUNT(*)`,
+          })
+          .from(schema.target)
+          .where(and(...combinedConditions))
+          .then(takeFirst)
+          .then((t) => t.count);
 
-        return overlappingItems;
+        return overlappingItemsCount;
       }),
   }),
 
