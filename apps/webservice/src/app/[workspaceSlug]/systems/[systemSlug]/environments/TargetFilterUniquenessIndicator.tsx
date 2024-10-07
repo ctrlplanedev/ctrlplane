@@ -47,11 +47,19 @@ const useTargetFilterUniqueness = (
         node.id,
       ],
       queryFn: () =>
-        utils.target.byWorkspaceId.overlappingTargetsCount.fetch({
-          workspaceId,
-          filterA: currentNode.data.targetFilter,
-          filterB: node.data.targetFilter,
-        }),
+        utils.target.byWorkspaceId.list
+          .fetch({
+            workspaceId,
+            filter: {
+              type: "comparison",
+              operator: "and",
+              conditions: [
+                currentNode.data.targetFilter,
+                node.data.targetFilter,
+              ],
+            },
+          })
+          .then((result) => result.total),
       enabled: Boolean(
         workspaceId && currentNode.data.targetFilter && node.data.targetFilter,
       ),

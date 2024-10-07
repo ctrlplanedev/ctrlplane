@@ -357,42 +357,6 @@ export const targetRouter = createTRPCRouter({
           total,
         }));
       }),
-
-    overlappingTargetsCount: protectedProcedure
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.TargetList)
-            .on({ type: "workspace", id: input.workspaceId }),
-      })
-      .input(
-        z.object({
-          workspaceId: z.string().uuid(),
-          filterA: targetCondition.optional(),
-          filterB: targetCondition.optional(),
-        }),
-      )
-      .query(async ({ ctx, input }) => {
-        const { workspaceId, filterA, filterB } = input;
-        const workspaceIdCheck = eq(schema.target.workspaceId, workspaceId);
-        const ensureArray = <T>(input: T | T[] | undefined): T[] =>
-          Array.isArray(input) ? input : input != null ? [input] : [];
-        const combinedConditions: SQL<unknown>[] = [
-          workspaceIdCheck,
-          ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterA)),
-          ...ensureArray(schema.targetMatchesMetadata(ctx.db, filterB)),
-        ];
-        const overlappingItemsCount = await ctx.db
-          .select({
-            count: sql`COUNT(*)`,
-          })
-          .from(schema.target)
-          .where(and(...combinedConditions))
-          .then(takeFirst)
-          .then((t) => t.count);
-
-        return overlappingItemsCount;
-      }),
   }),
 
   create: protectedProcedure
