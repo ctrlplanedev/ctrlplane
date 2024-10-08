@@ -3,9 +3,15 @@ import type {
   EnvironmentPolicyDeployment,
   Release,
 } from "@ctrlplane/db/schema";
+import type {
+  RegexCheck,
+  SemverCheck,
+  VersionCheck,
+} from "@ctrlplane/validators/environment-policies";
+import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
 import { addMilliseconds, isBefore } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
@@ -26,7 +32,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
+import {
+  isRegexCheck,
+  isFilterCheck as isReleaseFilterCheck,
+  isSemverCheck,
+} from "@ctrlplane/validators/environment-policies";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  ReleaseFilterType,
+  ReleaseOperator,
+} from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 
@@ -80,7 +95,7 @@ const Cancelled: React.FC = () => (
 
 const Blocked: React.FC = () => (
   <div className="rounded-full bg-red-400 p-0.5 dark:text-black">
-    <IconX strokeWidth={3} className="h-4 w-4" />
+    <IconX strokeWidth={3} className="h-3 w-3" />
   </div>
 );
 
@@ -104,38 +119,82 @@ type PolicyNodeProps = NodeProps<
 >;
 
 const evaluateVersionCheck = (
-  evaluateWith: "regex" | "semver" | "none",
-  evaluate: string,
+  check: RegexCheck | SemverCheck,
   version: string,
 ) =>
-  evaluateWith === "none"
-    ? true
-    : evaluateWith === "regex"
-      ? new RegExp(evaluate).test(version)
-      : satisfies(version, evaluate);
+  check.evaluateWith === "regex"
+    ? new RegExp(check.evaluate).test(version)
+    : satisfies(version, check.evaluate);
 
 const EvaluateCheck: React.FC<{
   version: string;
-  evaluateWith: "regex" | "semver" | "none";
-  evaluate: string;
-}> = ({ version, evaluateWith, evaluate }) => {
-  if (evaluateWith === "none") return;
-
-  const passes = evaluateVersionCheck(evaluateWith, evaluate, version);
-  if (evaluateWith === "regex") {
+  check: RegexCheck | SemverCheck;
+}> = ({ version, check }) => {
+  const passes = evaluateVersionCheck(check, version);
+  if (check.evaluateWith === "semver")
     return (
       <div className="flex items-center gap-2">
-        {passes ? <Passing /> : <Blocked />} Satified <pre>{evaluate}</pre>
+        {passes ? <Passing /> : <Blocked />} Satisfied{" "}
+        <pre>{check.evaluate}</pre>
       </div>
     );
-  }
 
   return (
     <div className="flex items-center gap-2">
-      {passes ? <Passing /> : <Blocked />} Matchs regex
+      {passes ? <Passing /> : <Blocked />} Matches regex
     </div>
   );
 };
+
+const useEvaluateReleaseFilterCheck = (
+  check: VersionCheck,
+  release: Release,
+) => {
+  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>();
+  const deploymentQ = api.deployment.bySlug.useQuery({
+    workspaceSlug,
+    systemSlug,
+    deploymentSlug,
+  });
+  const deployment = deploymentQ.data;
+  const filter: ReleaseCondition = {
+    type: ReleaseFilterType.Comparison,
+    operator: ReleaseOperator.And,
+    conditions: isReleaseFilterCheck(check)
+      ? [
+          {
+            type: ReleaseFilterType.Version,
+            operator: ReleaseOperator.Equals,
+            value: release.version,
+          },
+          check.evaluate,
+        ]
+      : [],
+  };
+
+  const targetsQ = api.release.list.useQuery(
+    { deploymentId: deployment?.id ?? "", filter },
+    { enabled: deployment?.id != null && isReleaseFilterCheck(check) },
+  );
+
+  return {
+    loading: targetsQ.isLoading,
+    passing: (targetsQ.data?.total ?? 0) > 0,
+  };
+};
+
+const EvaluateFilterCheck: React.FC<{
+  passing: boolean;
+}> = ({ passing }) => (
+  <div className="flex items-center gap-2">
+    {passing ? <Passing /> : <Blocked />}
+    Release version satisfies filter
+  </div>
+);
 
 const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
   successMinimum,
@@ -245,16 +304,30 @@ const ApprovalCheck: React.FC<PolicyNodeProps["data"]> = ({ id, release }) => {
 };
 
 export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
-  const passesVersionStringCheck = evaluateVersionCheck(
-    data.evaluateWith,
-    data.evaluate,
-    data.release.version,
-  );
+  const check: VersionCheck = {
+    evaluateWith: data.evaluateWith,
+    evaluate: data.evaluate,
+  };
 
-  const noStringCheck = data.evaluateWith === "none";
+  const isFilterCheck = isReleaseFilterCheck(check);
+  const { loading: isFilterCheckLoading, passing: isFilterCheckPassing } =
+    useEvaluateReleaseFilterCheck(check, data.release);
+
+  const isStringCheck = isRegexCheck(check) || isSemverCheck(check);
+
   const noMinSuccess = data.successType === "optional";
   const noRollout = data.duration === 0;
   const noApproval = data.approvalRequirement === "automatic";
+
+  if (isFilterCheck && isFilterCheckLoading)
+    return (
+      <div
+        className={cn(
+          "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
+        )}
+      />
+    );
+
   return (
     <>
       <div
@@ -262,28 +335,23 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
           "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
         )}
       >
-        {passesVersionStringCheck ? (
-          <>
-            {!noStringCheck && (
-              <EvaluateCheck
-                evaluateWith={data.evaluateWith}
-                evaluate={data.evaluate}
-                version={data.release.version}
-              />
-            )}
-            {!noMinSuccess && <MinSucessCheck {...data} />}
-            {!noRollout && <GradualRolloutCheck {...data} />}
-            {!noApproval && <ApprovalCheck {...data} />}
-
-            {noStringCheck && noMinSuccess && noRollout && noApproval && (
-              <div className="text-muted-foreground">No policy checks.</div>
-            )}
-          </>
-        ) : (
-          <div className="text-muted-foreground">
-            Release does not match pattern
-          </div>
+        {isStringCheck && (
+          <EvaluateCheck check={check} version={data.release.version} />
         )}
+        {isFilterCheck && (
+          <EvaluateFilterCheck passing={isFilterCheckPassing} />
+        )}
+        {!noMinSuccess && <MinSucessCheck {...data} />}
+        {!noRollout && <GradualRolloutCheck {...data} />}
+        {!noApproval && <ApprovalCheck {...data} />}
+
+        {!isStringCheck &&
+          !isFilterCheck &&
+          noMinSuccess &&
+          noRollout &&
+          noApproval && (
+            <div className="text-muted-foreground">No policy checks.</div>
+          )}
       </div>
 
       <Handle

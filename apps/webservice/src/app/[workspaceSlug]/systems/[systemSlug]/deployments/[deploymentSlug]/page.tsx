@@ -165,11 +165,11 @@ export default async function DeploymentPage({
         <EditDeploymentSection deployment={deployment} />
 
         <JobAgentSection
-          deployment={deployment}
           jobAgents={jobAgents}
           workspace={workspace}
           jobAgent={jobAgent}
-          config={deployment.jobAgentConfig}
+          jobAgentConfig={deployment.jobAgentConfig}
+          deploymentId={deployment.id}
         />
 
         <Variables workspaceId={workspace.id} deployment={deployment} />

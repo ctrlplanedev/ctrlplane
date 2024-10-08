@@ -71,6 +71,20 @@
       "when": 1727989623771,
       "tag": "0009_flaky_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1728354690899,
+      "tag": "0010_sharp_shriek",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1728354754889,
+      "tag": "0011_flippant_amazoness",
+      "breakpoints": true
     }
   ]
 }

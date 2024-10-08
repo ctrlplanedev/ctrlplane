@@ -3,6 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@ctrlplane/auth";
 
 import { api } from "~/trpc/server";
+import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer/EnvironmentPolicyDrawer";
+import { EnvironmentDrawer } from "./_components/EnvironmentDrawer";
 import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
 import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
 import { SidebarPanels } from "./SidebarPanels";
@@ -33,6 +35,8 @@ export default async function WorkspaceLayout({
       </div>
       <TargetDrawer />
       <ReleaseDrawer />
+      <EnvironmentDrawer />
+      <EnvironmentPolicyDrawer />
     </>
   );
 }

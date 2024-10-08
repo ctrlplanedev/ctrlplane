@@ -1,9 +1,15 @@
+import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
-import { environment, environmentPolicy, release } from "@ctrlplane/db/schema";
+import { and, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
+import {
+  isFilterCheck,
+  isRegexCheck,
+  isSemverCheck,
+} from "@ctrlplane/validators/environment-policies";
 
 import type { ReleasePolicyChecker } from "./utils.js";
 
@@ -21,33 +27,56 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
   const envIds = wf.map((v) => v.environmentId).filter(isPresent);
   const policies = await db
     .select()
-    .from(environment)
+    .from(schema.environment)
     .innerJoin(
-      environmentPolicy,
-      eq(environment.policyId, environmentPolicy.id),
+      schema.environmentPolicy,
+      eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
-    .where(and(inArray(environment.id, envIds), isNull(environment.deletedAt)));
+    .where(
+      and(
+        inArray(schema.environment.id, envIds),
+        isNull(schema.environment.deletedAt),
+      ),
+    );
 
   const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);
   const rels = await db
     .select()
-    .from(release)
-    .where(inArray(release.id, releaseIds));
+    .from(schema.release)
+    .where(inArray(schema.release.id, releaseIds));
 
-  return wf.filter((v) => {
-    const policy = policies.find((p) => p.environment.id === v.environmentId);
-    if (policy == null) return true;
+  return Promise.all(
+    wf.map(async (v) => {
+      const policy = policies.find((p) => p.environment.id === v.environmentId);
+      if (policy == null) return v;
 
-    const rel = rels.find((r) => r.id === v.releaseId);
-    if (rel == null) return true;
+      const rel = rels.find((r) => r.id === v.releaseId);
+      if (rel == null) return v;
 
-    const { environment_policy: envPolicy } = policy;
-    if (envPolicy.evaluateWith === "semver")
-      return satisfies(rel.version, policy.environment_policy.evaluate);
+      const { environment_policy: envPolicy } = policy;
+      const check: VersionCheck = { ...envPolicy };
+      if (isSemverCheck(check) && satisfies(rel.version, check.evaluate))
+        return v;
 
-    if (envPolicy.evaluateWith === "regex")
-      return new RegExp(policy.environment_policy.evaluate).test(rel.version);
+      if (isRegexCheck(check) && new RegExp(check.evaluate).test(rel.version))
+        return v;
 
-    return true;
-  });
+      if (isFilterCheck(check)) {
+        const release = await db
+          .select()
+          .from(schema.release)
+          .where(
+            and(
+              eq(schema.release.id, rel.id),
+              schema.releaseMatchesCondition(db, check.evaluate),
+            ),
+          )
+          .then(takeFirstOrNull);
+
+        return isPresent(release) ? v : null;
+      }
+
+      return null;
+    }),
+  ).then((results) => results.filter(isPresent));
 };

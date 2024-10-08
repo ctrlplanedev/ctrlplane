@@ -1,6 +1,6 @@
+import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
-import type { z } from "zod";
 import { sql } from "drizzle-orm";
 import {
   bigint,
@@ -14,7 +14,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
+import { releaseCondition } from "@ctrlplane/validators/releases";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { release } from "./release.js";
@@ -58,6 +60,7 @@ export const environmentPolicyDeploymentSuccessType = pgEnum(
 export const evaluationType = pgEnum("evaluation_type", [
   "semver",
   "regex",
+  "filter",
   "none",
 ]);
 
@@ -91,7 +94,9 @@ export const environmentPolicy = pgTable("environment_policy", {
   duration: bigint("duration", { mode: "number" }).notNull().default(0),
 
   evaluateWith: evaluationType("evaluate_with").notNull().default("none"),
-  evaluate: text("evaluate").notNull().default(""),
+  evaluate: jsonb("evaluate")
+    .$type<ReleaseCondition | string | null>()
+    .default(sql`NULL`),
 
   releaseSequencing: releaseSequencingType("release_sequencing")
     .notNull()
@@ -100,13 +105,11 @@ export const environmentPolicy = pgTable("environment_policy", {
 
 export type EnvironmentPolicy = InferSelectModel<typeof environmentPolicy>;
 
-export const createEnvironmentPolicy = createInsertSchema(
-  environmentPolicy,
-).omit({ id: true });
+export const createEnvironmentPolicy = createInsertSchema(environmentPolicy, {
+  evaluate: z.union([releaseCondition, z.string(), z.null()]),
+}).omit({ id: true });
 
-export const updateEnvironmentPolicy = createInsertSchema(
-  environmentPolicy,
-).omit({ id: true, systemId: true });
+export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
 
 export const recurrenceType = pgEnum("recurrence_type", [
   "hourly",

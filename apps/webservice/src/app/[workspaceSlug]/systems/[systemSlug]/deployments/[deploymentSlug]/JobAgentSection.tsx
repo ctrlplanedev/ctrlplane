@@ -18,32 +18,25 @@ import { api } from "~/trpc/react";
 const JobAgentForm: React.FC<{
   jobAgent?: schema.JobAgent;
   jobAgents: schema.JobAgent[];
-  config: Record<string, any>;
-  deployment: schema.Deployment;
+  jobAgentConfig: Record<string, any>;
   workspace: { id: string; slug: string };
-}> = ({ deployment, jobAgents, workspace, jobAgent, config }) => {
+  deploymentId: string;
+}> = ({ jobAgents, workspace, jobAgent, jobAgentConfig, deploymentId }) => {
   const form = useForm({
     schema: z.object({
       jobAgentId: z.string().uuid(),
-      config: z.record(z.any()),
+      jobAgentConfig: z.record(z.any()),
     }),
-    defaultValues: { jobAgentId: jobAgent?.id ?? "", config },
+    defaultValues: { jobAgentId: jobAgent?.id ?? "", jobAgentConfig },
   });
 
   const update = api.deployment.update.useMutation();
   const router = useRouter();
-  const onFormSubmit = form.handleSubmit(async (data) => {
-    await update.mutateAsync({
-      id: deployment.id,
-      data: {
-        jobAgentId: data.jobAgentId,
-        jobAgentConfig: data.config,
-      },
-    });
-    router.refresh();
-  });
+  const onFormSubmit = form.handleSubmit((data) =>
+    update.mutateAsync({ id: deploymentId, data }).then(() => router.refresh()),
+  );
 
-  const { jobAgentId, config: formConfig } = form.watch();
+  const { jobAgentId, jobAgentConfig: formConfig } = form.watch();
   const selectedJobAgent = jobAgents.find((j) => j.id === jobAgentId);
 
   return (
@@ -65,7 +58,7 @@ const JobAgentForm: React.FC<{
         <Card className="rounded-md border-neutral-900 p-4">
           <FormField
             control={form.control}
-            name="config"
+            name="jobAgentConfig"
             render={({ field: { value, onChange } }) =>
               selectedJobAgent == null ? (
                 <span className="px-2 text-sm text-muted-foreground">
@@ -85,7 +78,7 @@ const JobAgentForm: React.FC<{
 
         <Button
           type="submit"
-          disabled={update.isPending || _.isEqual(formConfig, config)}
+          disabled={update.isPending || _.isEqual(formConfig, jobAgentConfig)}
         >
           Save
         </Button>
@@ -95,11 +88,11 @@ const JobAgentForm: React.FC<{
 };
 
 export const JobAgentSection: React.FC<{
-  deployment: schema.Deployment;
   jobAgent?: schema.JobAgent;
   jobAgents: schema.JobAgent[];
-  config: Record<string, any>;
+  jobAgentConfig: Record<string, any>;
   workspace: { id: string; slug: string };
+  deploymentId: string;
 }> = (props) => {
   return (
     <div className="container m-8 mx-auto max-w-3xl space-y-2">

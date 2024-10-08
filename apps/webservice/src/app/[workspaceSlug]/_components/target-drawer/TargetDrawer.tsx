@@ -14,39 +14,18 @@ import {
   IconVariable,
 } from "@tabler/icons-react";
 
-import { cn } from "@ctrlplane/ui";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 import { EditTargetDialog } from "../EditTarget";
+import { TabButton } from "../TabButton";
 import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
 import { RelationshipsContent } from "./relationships/RelationshipContent";
 import { VariableContent } from "./VariablesContent";
-
-const TabButton: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}> = ({ active, onClick, icon, label }) => (
-  <Button
-    onClick={onClick}
-    variant="ghost"
-    className={cn(
-      "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
-      active
-        ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-        : "text-muted-foreground",
-    )}
-  >
-    {icon}
-    {label}
-  </Button>
-);
 
 const param = "target_id";
 export const useTargetDrawer = () => {
