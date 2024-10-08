@@ -73,7 +73,6 @@ export default async function ReleasePage({
                 <PolicyApprovalRow
                   key={approval.id}
                   approval={approval}
-                  release={release}
                   environments={environments.filter(
                     (env) => env.policyId === approval.policyId,
                   )}

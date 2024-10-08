@@ -14,7 +14,6 @@ import { api } from "~/trpc/react";
 type PolicyApprovalRowProps = {
   approval: EnvironmentPolicyApproval;
   environments: Environment[];
-  release: { id: string; version: string };
 };
 
 export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
