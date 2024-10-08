@@ -4,7 +4,6 @@ import type {
   EnvironmentPolicy,
   EnvironmentPolicyReleaseWindow,
 } from "@ctrlplane/db/schema";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { ZonedDateTime } from "@internationalized/date";
 import {
   IconBolt,
@@ -18,7 +17,6 @@ import {
 import _ from "lodash";
 import ms from "ms";
 import prettyMilliseconds from "pretty-ms";
-import { useFieldArray, useForm } from "react-hook-form";
 import { validRange } from "semver";
 import { z } from "zod";
 
@@ -30,6 +28,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  useFieldArray,
+  useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
@@ -44,6 +44,7 @@ import {
 } from "@ctrlplane/ui/select";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { releaseCondition } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 
@@ -101,9 +102,7 @@ const policyForm = z
       .or(
         z.object({
           evaluateWith: z.literal("none"),
-          evaluate: z
-            .string()
-            .max(0, `'none' cannot have a string to be evaluated.`),
+          evaluate: z.null(),
         }),
       )
       .or(
@@ -113,10 +112,14 @@ const policyForm = z
             .string()
             .refine((s) => validRange(s) !== null, "Invalid semver range"),
         }),
+      )
+      .or(
+        z.object({
+          evaluateWith: z.literal("filter"),
+          evaluate: releaseCondition,
+        }),
       ),
   );
-
-type PhaseFormValues = z.infer<typeof policyForm>;
 
 const toZonedDateTime = (date: Date): ZonedDateTime => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -148,13 +151,27 @@ export const SidebarPhasePanel: React.FC<{
   };
   systemId: string;
 }> = ({ policy, systemId }) => {
-  const form = useForm<PhaseFormValues>({
-    resolver: zodResolver(policyForm),
-    defaultValues: {
-      ...policy,
-      description: policy.description ?? "",
-      duration: prettyMilliseconds(policy.duration),
+  const defaultValues = _.merge(
+    {},
+    policy,
+    { duration: prettyMilliseconds(policy.duration) },
+    policy.evaluateWith === "filter" && {
+      evaluate: releaseCondition.parse(policy.evaluate),
     },
+    policy.evaluateWith === "none" && {
+      evaluate: null,
+    },
+    policy.evaluateWith === "semver" && {
+      evaluate: policy.evaluate,
+    },
+    policy.evaluateWith === "regex" && {
+      evaluate: policy.evaluate,
+    },
+  );
+
+  const form = useForm({
+    schema: policyForm,
+    defaultValues,
     mode: "onChange",
   });
 

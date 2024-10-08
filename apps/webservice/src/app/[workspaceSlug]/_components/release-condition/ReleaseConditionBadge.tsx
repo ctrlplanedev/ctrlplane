@@ -216,7 +216,7 @@ export const ReleaseConditionBadge: React.FC<{
         <StringifiedReleaseCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>
-    <HoverCardContent align="start" className={cn("w-full")}>
+    <HoverCardContent align="start" className="w-full">
       <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
         <StringifiedReleaseCondition condition={condition} tabbed={tabbed} />
       </div>

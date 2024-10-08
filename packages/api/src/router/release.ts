@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
+import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
@@ -28,7 +29,9 @@ import {
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
+  system,
   target,
+  workspace,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -41,6 +44,11 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  isFilterCheck,
+  isRegexCheck,
+  isSemverCheck,
+} from "@ctrlplane/validators/environment-policies";
 import { releaseCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -222,6 +230,11 @@ export const releaseRouter = createTRPCRouter({
               ? (_, releaseJobTriggers) => releaseJobTriggers
               : isPassingReleaseSequencingCancelPolicy,
           )
+          .filter(
+            input.isForcedRelease
+              ? (_, releaseJobTriggers) => releaseJobTriggers
+              : isPassingReleaseStringCheckPolicy,
+          )
           .then(input.isForcedRelease ? cancelPreviousJobs : createJobApprovals)
           .insert();
 
@@ -304,6 +317,11 @@ export const releaseRouter = createTRPCRouter({
                   input.isForcedRelease
                     ? (_tx, releaseJobTriggers) => releaseJobTriggers
                     : isPassingReleaseSequencingCancelPolicy,
+                )
+                .filter(
+                  input.isForcedRelease
+                    ? (_, releaseJobTriggers) => releaseJobTriggers
+                    : isPassingReleaseStringCheckPolicy,
                 )
                 .then(input.isForcedRelease ? () => {} : createJobApprovals)
                 .insert();
@@ -393,20 +411,52 @@ export const releaseRouter = createTRPCRouter({
           ),
         );
 
-      return policies.reduce(
-        (acc, { release, environment, environment_policy }) => {
-          if (!acc[release.id]) acc[release.id] = [];
+      const blockedEnvironments = await Promise.all(
+        policies.map(
+          async ({ release: rel, environment, environment_policy }) => {
+            const check: VersionCheck = { ...environment_policy };
 
-          const isInvalidSemver =
-            environment_policy.evaluateWith === "semver" &&
-            !satisfies(release.version, environment_policy.evaluate);
-          const isInvalidRegex =
-            environment_policy.evaluateWith === "regex" &&
-            !new RegExp(environment_policy.evaluate).test(release.version);
+            if (isSemverCheck(check) && satisfies(rel.version, check.evaluate))
+              return null;
+            if (
+              isRegexCheck(check) &&
+              new RegExp(check.evaluate).test(rel.version)
+            )
+              return null;
+            if (isFilterCheck(check)) {
+              const { evaluate } = check;
 
-          if (isInvalidSemver || isInvalidRegex)
-            acc[release.id]!.push(environment.id);
+              const r = await db
+                .select()
+                .from(release)
+                .where(
+                  and(
+                    eq(release.id, rel.id),
+                    releaseMatchesCondition(db, evaluate),
+                  ),
+                )
+                .then(takeFirstOrNull);
 
+              return r != null
+                ? null
+                : {
+                    releaseId: rel.id,
+                    environmentId: environment.id,
+                  };
+            }
+
+            return {
+              releaseId: rel.id,
+              environmentId: environment.id,
+            };
+          },
+        ),
+      ).then((r) => r.filter(isPresent));
+
+      return blockedEnvironments.reduce(
+        (acc, { releaseId, environmentId }) => {
+          if (!acc[releaseId]) acc[releaseId] = [];
+          acc[releaseId].push(environmentId);
           return acc;
         },
         {} as Record<string, string[]>,
@@ -415,21 +465,51 @@ export const releaseRouter = createTRPCRouter({
 
   metadataKeys: protectedProcedure
     .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
+      authorizationCheck: async ({ canUser, input }) => {
+        if (input.systemSlug != null) {
+          const sys = await db
+            .select()
+            .from(system)
+            .where(eq(system.slug, input.systemSlug))
+            .then(takeFirstOrNull);
+          if (sys == null) return false;
+
+          return canUser
+            .perform(Permission.ReleaseGet)
+            .on({ type: "system", id: sys.id });
+        }
+
+        const ws = await db
+          .select()
+          .from(workspace)
+          .where(eq(workspace.slug, input.workspaceSlug))
+          .then(takeFirstOrNull);
+        if (ws == null) return false;
+
+        return canUser
           .perform(Permission.ReleaseGet)
-          .on({ type: "deployment", id: input }),
+          .on({ type: "workspace", id: ws.id });
+      },
     })
-    .input(z.string().uuid())
-    .query(async ({ input }) => {
-      const keys = await db
+    .input(
+      z.object({
+        workspaceSlug: z.string(),
+        systemSlug: z.string().optional(),
+      }),
+    )
+    .query(({ input }) => {
+      const baseQuery = db
         .selectDistinct({ key: releaseMetadata.key })
         .from(release)
         .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
         .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-        .where(eq(deployment.id, input))
-        .then((r) => r.map((row) => row.key));
+        .innerJoin(system, eq(deployment.systemId, system.id));
 
-      return keys;
+      if (input.systemSlug != null)
+        return baseQuery.where(eq(system.slug, input.systemSlug));
+
+      return baseQuery
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+        .where(eq(workspace.slug, input.workspaceSlug));
     }),
 });

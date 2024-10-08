@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import type { EnvironmentPolicyReleaseWindow } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import {
   eq,
   isNull,
   not,
+  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -282,10 +284,42 @@ const policyRouter = createTRPCRouter({
     })
     .input(z.string())
     .query(({ ctx, input }) =>
-      ctx.db.query.environmentPolicy.findMany({
-        where: eq(system.id, input),
-        with: {},
-      }),
+      ctx.db
+        .select({
+          environmentPolicy: environmentPolicy,
+          releaseWindows: sql<EnvironmentPolicyReleaseWindow[]>`
+          COALESCE(
+            array_agg(
+              CASE WHEN ${environmentPolicyReleaseWindow.id} IS NOT NULL
+              THEN json_build_object(
+                'id', ${environmentPolicyReleaseWindow.id},
+                'policyId', ${environmentPolicyReleaseWindow.policyId},
+                'recurrence', ${environmentPolicyReleaseWindow.recurrence},
+                'startTime', ${environmentPolicyReleaseWindow.startTime},
+                'endTime', ${environmentPolicyReleaseWindow.endTime}
+              )
+              ELSE NULL END
+            ) FILTER (WHERE ${environmentPolicyReleaseWindow.id} IS NOT NULL),
+            ARRAY[]::json[]
+          )
+        `.as("releaseWindows"),
+        })
+        .from(environmentPolicy)
+        .leftJoin(
+          environmentPolicyReleaseWindow,
+          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+        )
+        .where(eq(environmentPolicy.id, input))
+        .groupBy(environmentPolicy.id)
+        .then(takeFirst)
+        .then((p) => ({
+          ...p.environmentPolicy,
+          releaseWindows: p.releaseWindows.map((r) => ({
+            ...r,
+            startTime: new Date(r.startTime),
+            endTime: new Date(r.endTime),
+          })),
+        })),
     ),
 
   create: protectedProcedure
@@ -459,12 +493,16 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
-      await ctx.db
+      console.log("input", input);
+
+      const updatedEnv = await ctx.db
         .update(environment)
         .set(input.data)
         .where(eq(environment.id, input.id))
         .returning()
         .then(takeFirst);
+
+      console.log("updatedEnv", updatedEnv);
 
       const { targetFilter } = input.data;
       const isUpdatingTargetFilter = targetFilter != null;
@@ -515,14 +553,10 @@ export const environmentRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       ctx.db.transaction((db) =>
         db
-          .update(environment)
-          .set({ deletedAt: new Date() })
+          .delete(environment)
           .where(eq(environment.id, input))
-          .then(() =>
-            db
-              .delete(environmentPolicyDeployment)
-              .where(eq(environmentPolicyDeployment.environmentId, input)),
-          ),
+          .returning()
+          .then(takeFirst),
       ),
     ),
 });

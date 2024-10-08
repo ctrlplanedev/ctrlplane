@@ -9,34 +9,13 @@ import {
   IconProgress,
 } from "@tabler/icons-react";
 
-import { cn } from "@ctrlplane/ui";
-import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import { buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
+import { TabButton } from "../TabButton";
 import { OverviewContent } from "./OverviewContent";
-
-const TabButton: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-}> = ({ active, onClick, icon, label }) => (
-  <Button
-    onClick={onClick}
-    variant="ghost"
-    className={cn(
-      "flex h-7 w-full items-center justify-normal gap-2 p-2 py-0 pr-3",
-      active
-        ? "bg-blue-500/10 text-blue-300 hover:bg-blue-500/10 hover:text-blue-300"
-        : "text-muted-foreground",
-    )}
-  >
-    {icon}
-    {label}
-  </Button>
-);
 
 const param = "release_id";
 export const useReleaseDrawer = () => {

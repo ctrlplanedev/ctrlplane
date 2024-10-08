@@ -22,8 +22,14 @@ import { useMatchSorter } from "~/utils/useMatchSorter";
 export const MetadataConditionRender: React.FC<
   ReleaseConditionRenderProps<MetadataCondition>
 > = ({ condition, onChange, className }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const { workspaceSlug, systemSlug } = useParams();
+  const wSlug = workspaceSlug! as string;
+  const sSlug = systemSlug as string | undefined;
+
+  const metadataKeys = api.release.metadataKeys.useQuery({
+    workspaceSlug: wSlug,
+    systemSlug: sSlug,
+  });
 
   const setKey = (key: string) => onChange({ ...condition, key });
 
@@ -43,10 +49,6 @@ export const MetadataConditionRender: React.FC<
       : onChange({ ...condition, operator, value: condition.value ?? "" });
 
   const [open, setOpen] = useState(false);
-  const metadataKeys = api.target.metadataKeys.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess && workspace.data != null },
-  );
   const filteredMetadataKeys = useMatchSorter(
     metadataKeys.data ?? [],
     condition.key,
@@ -74,14 +76,14 @@ export const MetadataConditionRender: React.FC<
                 <Button
                   variant="ghost"
                   size="sm"
-                  key={k}
+                  key={k.key}
                   className="w-full rounded-none text-left"
                   onClick={() => {
-                    setKey(k);
+                    setKey(k.key);
                     setOpen(false);
                   }}
                 >
-                  <div className="w-full">{k}</div>
+                  <div className="w-full">{k.key}</div>
                 </Button>
               ))}
             </PopoverContent>

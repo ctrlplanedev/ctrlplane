@@ -1,0 +1,87 @@
+import type * as schema from "@ctrlplane/db/schema";
+import React from "react";
+import { z } from "zod";
+
+import { Button } from "@ctrlplane/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  useForm,
+} from "@ctrlplane/ui/form";
+import { Input } from "@ctrlplane/ui/input";
+import { Textarea } from "@ctrlplane/ui/textarea";
+
+import { api } from "~/trpc/react";
+
+const overviewForm = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+
+export const Overview: React.FC<{
+  environmentPolicy: schema.EnvironmentPolicy;
+}> = ({ environmentPolicy }) => {
+  const form = useForm({
+    schema: overviewForm,
+    defaultValues: {
+      name: environmentPolicy.name,
+      description: environmentPolicy.description ?? "",
+    },
+  });
+
+  const updatePolicy = api.environment.policy.update.useMutation();
+  const utils = api.useUtils();
+  const onSubmit = form.handleSubmit((data) =>
+    updatePolicy
+      .mutateAsync({
+        id: environmentPolicy.id,
+        data,
+      })
+      .then(() => form.reset(data))
+      .then(() =>
+        utils.environment.policy.byId.invalidate(environmentPolicy.id),
+      ),
+  );
+
+  return (
+    <Form {...form}>
+      <form onSubmit={onSubmit} className="space-y-6 p-2">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea placeholder="Add a description..." {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <Button
+          type="submit"
+          disabled={updatePolicy.isPending || !form.formState.isDirty}
+        >
+          Save
+        </Button>
+      </form>
+    </Form>
+  );
+};
