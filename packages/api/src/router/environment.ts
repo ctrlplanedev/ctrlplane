@@ -8,6 +8,7 @@ import {
   eq,
   isNull,
   not,
+  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -207,19 +208,32 @@ const policyRouter = createTRPCRouter({
       .input(
         z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
       )
-      .mutation(async ({ ctx, input }) => {
-        return ctx.db
-          .update(environmentPolicyApproval)
-          .set({ status: "rejected" })
-          .where(
-            and(
-              eq(environmentPolicyApproval.policyId, input.policyId),
-              eq(environmentPolicyApproval.releaseId, input.releaseId),
-            ),
-          )
-          .returning()
-          .then(takeFirst);
-      }),
+      .mutation(({ ctx, input }) =>
+        ctx.db.transaction(async (tx) => {
+          await tx
+            .update(environmentPolicyApproval)
+            .set({ status: "rejected" })
+            .where(
+              and(
+                eq(environmentPolicyApproval.policyId, input.policyId),
+                eq(environmentPolicyApproval.releaseId, input.releaseId),
+              ),
+            );
+
+          const updateResult = await tx.execute(
+            sql`UPDATE job
+                SET status = 'cancelled'
+                FROM release_job_trigger rjt
+                INNER JOIN environment env ON rjt.environment_id = env.id
+                WHERE job.status = 'pending'
+                  AND rjt.job_id = job.id
+                  AND rjt.release_id = ${input.releaseId}
+                  AND env.policy_id = ${input.policyId}`,
+          );
+
+          return { cancelledJobCount: updateResult.rowCount };
+        }),
+      ),
 
     statusByReleasePolicyId: protectedProcedure
       .meta({
