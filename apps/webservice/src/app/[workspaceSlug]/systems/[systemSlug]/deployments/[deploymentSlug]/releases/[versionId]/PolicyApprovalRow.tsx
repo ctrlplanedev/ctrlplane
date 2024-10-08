@@ -34,9 +34,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
         `Rejected release to ${environmentNames} and cancelled ${cancelledJobCount} job${cancelledJobCount !== 1 ? "s" : ""}`,
       );
     },
-    onError: () => {
-      toast.error("Error rejecting release");
-    },
+    onError: () => toast.error("Error rejecting release"),
   });
 
   const approveMutation = api.environment.policy.approval.approve.useMutation({
@@ -46,20 +44,12 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
       utils.job.config.invalidate();
       toast.success(`Approved release to ${environmentNames}`);
     },
-    onError: () => {
-      toast.error("Error approving release");
-    },
+    onError: () => toast.error("Error approving release"),
   });
 
   const environmentNames = environments.map((e) => e.name).join(", ");
-
-  const handleReject = () => {
-    rejectMutation.mutate({ releaseId, policyId });
-  };
-
-  const handleApprove = () => {
-    approveMutation.mutate(approval);
-  };
+  const handleReject = () => rejectMutation.mutate({ releaseId, policyId });
+  const handleApprove = () => approveMutation.mutate(approval);
 
   return (
     <div className="flex items-center gap-2 rounded-md border border-blue-400/50 bg-blue-500/10 p-2 text-sm">
