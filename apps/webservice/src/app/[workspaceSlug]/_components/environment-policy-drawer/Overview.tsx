@@ -1,4 +1,4 @@
-import type * as schema from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { z } from "zod";
 
@@ -29,7 +29,7 @@ import { api } from "~/trpc/react";
 import { useEnvironmentPolicyDrawer } from "./EnvironmentPolicyDrawer";
 
 const DeleteEnvironmentPolicyDialog: React.FC<{
-  environmentPolicy: schema.EnvironmentPolicy;
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
   children: React.ReactNode;
 }> = ({ environmentPolicy, children }) => {
   const deleteEnvironmentPolicy = api.environment.policy.delete.useMutation();
@@ -71,16 +71,13 @@ const DeleteEnvironmentPolicyDialog: React.FC<{
   );
 };
 
-const overviewForm = z.object({
-  name: z.string(),
-  description: z.string(),
-});
+const schema = z.object({ name: z.string(), description: z.string() });
 
 export const Overview: React.FC<{
-  environmentPolicy: schema.EnvironmentPolicy;
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
   const form = useForm({
-    schema: overviewForm,
+    schema,
     defaultValues: {
       name: environmentPolicy.name,
       description: environmentPolicy.description ?? "",
@@ -89,16 +86,14 @@ export const Overview: React.FC<{
 
   const updatePolicy = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
+
+  const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     updatePolicy
-      .mutateAsync({
-        id: environmentPolicy.id,
-        data,
-      })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   return (

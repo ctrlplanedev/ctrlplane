@@ -108,18 +108,13 @@ const EnvironmentForm: React.FC<{
 
   const utils = api.useUtils();
 
+  const { id, systemId } = environment;
   const onSubmit = form.handleSubmit((data) =>
     update
-      .mutateAsync({
-        id: environment.id,
-        data: {
-          name: data.name,
-          description: data.description,
-        },
-      })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
-      .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
-      .then(() => utils.environment.byId.invalidate(environment.id)),
+      .then(() => utils.environment.bySystemId.invalidate(systemId))
+      .then(() => utils.environment.byId.invalidate(id)),
   );
 
   return (
@@ -161,8 +156,9 @@ const EnvironmentForm: React.FC<{
             variant="outline"
             onClick={() =>
               envOverride
-                .mutateAsync(environment.id)
-                .then(() => utils.invalidate())
+                .mutateAsync(id)
+                .then(() => utils.environment.bySystemId.invalidate(systemId))
+                .then(() => utils.environment.byId.invalidate(id))
             }
           >
             Override
@@ -201,9 +197,7 @@ const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: {
-      targetFilter: environment.targetFilter ?? undefined,
-    },
+    defaultValues: { targetFilter: environment.targetFilter ?? undefined },
   });
 
   const { targetFilter } = form.watch();

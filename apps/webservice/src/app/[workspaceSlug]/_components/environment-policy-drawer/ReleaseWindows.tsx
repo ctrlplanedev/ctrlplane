@@ -76,16 +76,13 @@ export const ReleaseWindows: React.FC<{
   const setPolicyWindows = api.environment.policy.setWindows.useMutation();
   const utils = api.useUtils();
 
+  const { id: policyId, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     setPolicyWindows
-      .mutateAsync({
-        policyId: environmentPolicy.id,
-        releaseWindows: data.releaseWindows,
-      })
+      .mutateAsync({ policyId, releaseWindows: data.releaseWindows })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(policyId))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   return (

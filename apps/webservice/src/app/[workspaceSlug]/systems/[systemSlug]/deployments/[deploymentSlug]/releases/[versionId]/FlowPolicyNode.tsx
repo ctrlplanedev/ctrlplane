@@ -177,10 +177,7 @@ const useEvaluateReleaseFilterCheck = (
   };
 
   const targetsQ = api.release.list.useQuery(
-    {
-      deploymentId: deployment?.id ?? "",
-      filter,
-    },
+    { deploymentId: deployment?.id ?? "", filter },
     { enabled: deployment?.id != null && isReleaseFilterCheck(check) },
   );
 

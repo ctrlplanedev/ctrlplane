@@ -1,4 +1,4 @@
-import type * as schema from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import ms from "ms";
 import prettyMilliseconds from "pretty-ms";
 import { z } from "zod";
@@ -20,37 +20,30 @@ import { api } from "~/trpc/react";
 
 const isValidDuration = (str: string) => !isNaN(ms(str));
 
-const gradualRolloutForm = z.object({
+const schema = z.object({
   duration: z.string().refine(isValidDuration, {
     message: "Invalid duration pattern",
   }),
 });
 
 export const GradualRollouts: React.FC<{
-  environmentPolicy: schema.EnvironmentPolicy;
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
   const form = useForm({
-    schema: gradualRolloutForm,
-    defaultValues: {
-      duration: prettyMilliseconds(environmentPolicy.duration),
-    },
+    schema,
+    defaultValues: { duration: prettyMilliseconds(environmentPolicy.duration) },
   });
 
   const updatePolicy = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
 
+  const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     updatePolicy
-      .mutateAsync({
-        id: environmentPolicy.id,
-        data: {
-          duration: ms(data.duration),
-        },
-      })
+      .mutateAsync({ id, data: { duration: ms(data.duration) } })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   return (

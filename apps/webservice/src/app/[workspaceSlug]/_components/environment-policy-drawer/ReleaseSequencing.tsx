@@ -1,4 +1,4 @@
-import type * as schema from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -15,33 +15,23 @@ import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 
 import { api } from "~/trpc/react";
 
-const releaseSequencingForm = z.object({
-  releaseSequencing: z.enum(["wait", "cancel"]),
-});
+const schema = z.object({ releaseSequencing: z.enum(["wait", "cancel"]) });
 
 export const ReleaseSequencing: React.FC<{
-  environmentPolicy: schema.EnvironmentPolicy;
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
-  const form = useForm({
-    schema: releaseSequencingForm,
-    defaultValues: {
-      releaseSequencing: environmentPolicy.releaseSequencing,
-    },
-  });
+  const form = useForm({ schema, defaultValues: { ...environmentPolicy } });
 
   const updatePolicy = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
 
+  const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     updatePolicy
-      .mutateAsync({
-        id: environmentPolicy.id,
-        data,
-      })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   return (

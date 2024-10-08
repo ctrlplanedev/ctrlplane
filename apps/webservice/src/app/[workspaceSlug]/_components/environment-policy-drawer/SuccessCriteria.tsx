@@ -35,19 +35,13 @@ export const SuccessCriteria: React.FC<{
   const updatePolicy = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
 
+  const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     updatePolicy
-      .mutateAsync({
-        id: environmentPolicy.id,
-        data: {
-          successType: data.successType,
-          successMinimum: data.successMinimum,
-        },
-      })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   const { successMinimum } = form.watch();

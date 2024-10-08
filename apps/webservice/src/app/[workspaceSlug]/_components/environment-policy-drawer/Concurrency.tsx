@@ -1,4 +1,4 @@
-import type * as schema from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { z } from "zod";
 
@@ -17,35 +17,26 @@ import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 
 import { api } from "~/trpc/react";
 
-const concurrencyForm = z.object({
+const schema = z.object({
   concurrencyType: z.enum(["all", "some"]),
   concurrencyLimit: z.number().min(1, "Must be a positive number"),
 });
 
 export const Concurrency: React.FC<{
-  environmentPolicy: schema.EnvironmentPolicy;
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
-  const form = useForm({
-    schema: concurrencyForm,
-    defaultValues: {
-      concurrencyType: environmentPolicy.concurrencyType,
-      concurrencyLimit: environmentPolicy.concurrencyLimit,
-    },
-  });
+  const form = useForm({ schema, defaultValues: { ...environmentPolicy } });
 
   const updatePolicy = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
 
+  const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     updatePolicy
-      .mutateAsync({
-        id: environmentPolicy.id,
-        data,
-      })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   const { concurrencyLimit } = form.watch();

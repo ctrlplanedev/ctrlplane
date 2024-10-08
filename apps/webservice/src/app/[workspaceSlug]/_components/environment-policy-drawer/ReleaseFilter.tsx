@@ -1,4 +1,5 @@
-import type * as schema from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
 import _ from "lodash";
 import { validRange } from "semver";
 import { z } from "zod";
@@ -15,6 +16,12 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
+import {
+  isFilterCheck,
+  isNoneCheck,
+  isRegexCheck,
+  isSemverCheck,
+} from "@ctrlplane/validators/environment-policies";
 import {
   defaultCondition,
   isValidReleaseCondition,
@@ -33,7 +40,7 @@ const isValidRegex = (str: string) => {
   }
 };
 
-const releaseFilterForm = z
+const schema = z
   .object({
     evaluateWith: z.literal("regex"),
     evaluate: z.string().refine(isValidRegex, {
@@ -64,45 +71,32 @@ const releaseFilterForm = z
   );
 
 export const ReleaseFilter: React.FC<{
-  environmentPolicy: schema.EnvironmentPolicy;
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
+  const check: VersionCheck = { ...environmentPolicy };
+  // schema complains about type mismatching unless we add type guards
   const defaultValues = _.merge(
     {},
     environmentPolicy,
-    environmentPolicy.evaluateWith === "filter" && {
-      evaluate: releaseCondition.parse(environmentPolicy.evaluate),
-    },
-    environmentPolicy.evaluateWith === "none" && {
-      evaluate: null,
-    },
-    environmentPolicy.evaluateWith === "semver" && {
-      evaluate: environmentPolicy.evaluate,
-    },
-    environmentPolicy.evaluateWith === "regex" && {
-      evaluate: environmentPolicy.evaluate,
-    },
+    isFilterCheck(check) && { evaluate: check.evaluate },
+    isNoneCheck(check) && { evaluate: check.evaluate },
+    isSemverCheck(check) && { evaluate: check.evaluate },
+    isRegexCheck(check) && { evaluate: check.evaluate },
   );
 
-  const form = useForm({
-    schema: releaseFilterForm,
-    defaultValues,
-  });
-
+  const form = useForm({ schema, defaultValues });
   const { evaluateWith, evaluate } = form.watch();
 
   const policyUpdate = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
 
+  const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) =>
     policyUpdate
-      .mutateAsync({
-        id: environmentPolicy.id,
-        data,
-      })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
-      .then(() =>
-        utils.environment.policy.byId.invalidate(environmentPolicy.id),
-      ),
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
   return (
