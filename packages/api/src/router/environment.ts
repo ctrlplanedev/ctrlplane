@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   and,
   eq,
+  inArray,
   isNull,
   not,
   takeFirst,
@@ -206,15 +207,10 @@ const policyRouter = createTRPCRouter({
             .on({ type: "release", id: input.releaseId }),
       })
       .input(
-        z.object({
-          releaseId: z.string().uuid(),
-          policyId: z.string().uuid(),
-        }),
+        z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
       )
       .mutation(async ({ ctx, input }) => {
-        let cancelledJobCount = 0;
-
-        await ctx.db.transaction(async (tx) => {
+        return await ctx.db.transaction(async (tx) => {
           await tx
             .update(environmentPolicyApproval)
             .set({ status: "rejected" })
@@ -227,37 +223,39 @@ const policyRouter = createTRPCRouter({
             .returning()
             .then(takeFirst);
 
-          const jobIds = await tx
-            .select({ id: job.id })
-            .from(job)
-            .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-            .innerJoin(
-              environment,
-              eq(releaseJobTrigger.environmentId, environment.id),
-            )
+          const cancelledJobCount = await tx
+            .update(job)
+            .set({ status: "cancelled" })
             .where(
               and(
-                eq(environment.policyId, input.policyId),
-                eq(releaseJobTrigger.releaseId, input.releaseId),
                 eq(job.status, "pending"),
+                inArray(
+                  job.id,
+                  tx
+                    .select({ id: job.id })
+                    .from(job)
+                    .innerJoin(
+                      releaseJobTrigger,
+                      eq(releaseJobTrigger.jobId, job.id),
+                    )
+                    .innerJoin(
+                      environment,
+                      eq(releaseJobTrigger.environmentId, environment.id),
+                    )
+                    .where(
+                      and(
+                        eq(environment.policyId, input.policyId),
+                        eq(releaseJobTrigger.releaseId, input.releaseId),
+                      ),
+                    ),
+                ),
               ),
             )
-            .then((rows) => rows.map((row) => row.id));
+            .returning()
+            .then((rows) => rows.length);
 
-          if (jobIds.length > 0) {
-            await Promise.all(
-              jobIds.map((jobId) =>
-                tx
-                  .update(job)
-                  .set({ status: "cancelled" })
-                  .where(eq(job.id, jobId)),
-              ),
-            );
-            cancelledJobCount = jobIds.length;
-          }
+          return { cancelledJobCount };
         });
-
-        return { cancelledJobCount };
       }),
 
     statusByReleasePolicyId: protectedProcedure
