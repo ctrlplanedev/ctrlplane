@@ -209,8 +209,8 @@ const policyRouter = createTRPCRouter({
       .input(
         z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
       )
-      .mutation(async ({ ctx, input }) => {
-        return await ctx.db.transaction(async (tx) => {
+      .mutation(({ ctx, input }) =>
+        ctx.db.transaction(async (tx) => {
           await tx
             .update(environmentPolicyApproval)
             .set({ status: "rejected" })
@@ -221,35 +221,30 @@ const policyRouter = createTRPCRouter({
               ),
             );
 
+          const releaseJobSubquery = tx
+            .select()
+            .from(releaseJobTrigger)
+            .innerJoin(
+              environment,
+              eq(releaseJobTrigger.environmentId, environment.id),
+            )
+            .where(
+              and(
+                eq(releaseJobTrigger.jobId, job.id),
+                eq(environment.policyId, input.policyId),
+                eq(releaseJobTrigger.releaseId, input.releaseId),
+              ),
+            );
+
           const updateResult = await tx
             .update(job)
             .set({ status: "cancelled" })
-            .where(
-              and(
-                eq(job.status, "pending"),
-                exists(
-                  tx
-                    .select()
-                    .from(releaseJobTrigger)
-                    .innerJoin(
-                      environment,
-                      eq(releaseJobTrigger.environmentId, environment.id),
-                    )
-                    .where(
-                      and(
-                        eq(releaseJobTrigger.jobId, job.id),
-                        eq(environment.policyId, input.policyId),
-                        eq(releaseJobTrigger.releaseId, input.releaseId),
-                      ),
-                    ),
-                ),
-              ),
-            )
+            .where(and(eq(job.status, "pending"), exists(releaseJobSubquery)))
             .execute();
 
           return { cancelledJobCount: updateResult.rowCount };
-        });
-      }),
+        }),
+      ),
 
     statusByReleasePolicyId: protectedProcedure
       .meta({
