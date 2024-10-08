@@ -257,7 +257,7 @@ const policyRouter = createTRPCRouter({
           }
         });
 
-        return { success: true, cancelledJobCount: cancelledJobsCount };
+        return { cancelledJobCount: cancelledJobsCount };
       }),
 
     statusByReleasePolicyId: protectedProcedure
