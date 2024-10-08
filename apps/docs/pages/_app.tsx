@@ -1,4 +1,3 @@
-import "tailwindcss/tailwind.css";
 import "./globals.css";
 
 function App({ Component, pageProps }: any) {
