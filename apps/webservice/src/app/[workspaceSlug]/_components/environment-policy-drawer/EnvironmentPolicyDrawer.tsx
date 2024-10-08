@@ -1,5 +1,6 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -50,6 +51,30 @@ export const useEnvironmentPolicyDrawer = () => {
     setEnvironmentPolicyId,
     removeEnvironmentPolicyId,
   };
+};
+
+const View: React.FC<{
+  activeTab: string;
+  environmentPolicy: SCHEMA.EnvironmentPolicy & {
+    releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
+  };
+}> = ({ activeTab, environmentPolicy }) => {
+  return {
+    overview: <Overview environmentPolicy={environmentPolicy} />,
+    approval: <Approval environmentPolicy={environmentPolicy} />,
+    concurrency: <Concurrency environmentPolicy={environmentPolicy} />,
+    "gradual-rollout": (
+      <GradualRollouts environmentPolicy={environmentPolicy} />
+    ),
+    "success-criteria": (
+      <SuccessCriteria environmentPolicy={environmentPolicy} />
+    ),
+    "release-sequencing": (
+      <ReleaseSequencing environmentPolicy={environmentPolicy} />
+    ),
+    "release-windows": <ReleaseWindows environmentPolicy={environmentPolicy} />,
+    "release-filter": <ReleaseFilter environmentPolicy={environmentPolicy} />,
+  }[activeTab];
 };
 
 export const EnvironmentPolicyDrawer: React.FC = () => {
@@ -132,30 +157,10 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
 
           {environmentPolicy != null && (
             <div className="w-full overflow-auto">
-              {activeTab === "overview" && (
-                <Overview environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "approval" && (
-                <Approval environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "concurrency" && (
-                <Concurrency environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "gradual-rollout" && (
-                <GradualRollouts environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "success-criteria" && (
-                <SuccessCriteria environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "release-sequencing" && (
-                <ReleaseSequencing environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "release-windows" && (
-                <ReleaseWindows environmentPolicy={environmentPolicy} />
-              )}
-              {activeTab === "release-filter" && (
-                <ReleaseFilter environmentPolicy={environmentPolicy} />
-              )}
+              <View
+                activeTab={activeTab}
+                environmentPolicy={environmentPolicy}
+              />
             </div>
           )}
         </div>
