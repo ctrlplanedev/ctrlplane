@@ -20,6 +20,7 @@ import {
   environmentPolicyApproval,
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
+  job,
   release,
   releaseJobTrigger,
   setPolicyReleaseWindow,
@@ -205,20 +206,58 @@ const policyRouter = createTRPCRouter({
             .on({ type: "release", id: input.releaseId }),
       })
       .input(
-        z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
+        z.object({
+          releaseId: z.string().uuid(),
+          policyId: z.string().uuid(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
-        return ctx.db
-          .update(environmentPolicyApproval)
-          .set({ status: "rejected" })
-          .where(
-            and(
-              eq(environmentPolicyApproval.policyId, input.policyId),
-              eq(environmentPolicyApproval.releaseId, input.releaseId),
-            ),
-          )
-          .returning()
-          .then(takeFirst);
+        let cancelledJobsCount = 0;
+
+        await ctx.db.transaction(async (tx) => {
+          await tx
+            .update(environmentPolicyApproval)
+            .set({ status: "rejected" })
+            .where(
+              and(
+                eq(environmentPolicyApproval.policyId, input.policyId),
+                eq(environmentPolicyApproval.releaseId, input.releaseId),
+              ),
+            )
+            .returning()
+            .then(takeFirst);
+
+          const jobIds = await tx
+            .select({ id: job.id })
+            .from(job)
+            .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+            .innerJoin(
+              environment,
+              eq(releaseJobTrigger.environmentId, environment.id),
+            )
+            .where(
+              and(
+                eq(environment.policyId, input.policyId),
+                eq(releaseJobTrigger.releaseId, input.releaseId),
+                eq(job.status, "pending"),
+              ),
+            )
+            .then((rows) => rows.map((row) => row.id));
+
+          if (jobIds.length > 0) {
+            await Promise.all(
+              jobIds.map((jobId) =>
+                tx
+                  .update(job)
+                  .set({ status: "cancelled" })
+                  .where(eq(job.id, jobId)),
+              ),
+            );
+            cancelledJobsCount = jobIds.length;
+          }
+        });
+
+        return { success: true, cancelledJobCount: cancelledJobsCount };
       }),
 
     statusByReleasePolicyId: protectedProcedure
