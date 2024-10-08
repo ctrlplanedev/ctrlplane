@@ -6,9 +6,9 @@ import { z } from "zod";
 import {
   and,
   eq,
-  exists,
   isNull,
   not,
+  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -21,7 +21,6 @@ import {
   environmentPolicyApproval,
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
-  job,
   release,
   releaseJobTrigger,
   setPolicyReleaseWindow,
@@ -221,26 +220,16 @@ const policyRouter = createTRPCRouter({
               ),
             );
 
-          const releaseJobSubquery = tx
-            .select()
-            .from(releaseJobTrigger)
-            .innerJoin(
-              environment,
-              eq(releaseJobTrigger.environmentId, environment.id),
-            )
-            .where(
-              and(
-                eq(releaseJobTrigger.jobId, job.id),
-                eq(environment.policyId, input.policyId),
-                eq(releaseJobTrigger.releaseId, input.releaseId),
-              ),
-            );
-
-          const updateResult = await tx
-            .update(job)
-            .set({ status: "cancelled" })
-            .where(and(eq(job.status, "pending"), exists(releaseJobSubquery)))
-            .execute();
+          const updateResult = await tx.execute(
+            sql`UPDATE job
+                SET status = 'cancelled'
+                FROM release_job_trigger rjt
+                INNER JOIN environment env ON rjt.environment_id = env.id
+                WHERE job.status = 'pending'
+                  AND rjt.job_id = job.id
+                  AND rjt.release_id = ${input.releaseId}
+                  AND env.policy_id = ${input.policyId}`,
+          );
 
           return { cancelledJobCount: updateResult.rowCount };
         }),
