@@ -26,11 +26,9 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   const router = useRouter();
   const utils = api.useUtils();
 
-  const rejectMutation =
-    api.environment.policy.approval.reject.useMutation().mutateAsync;
-  const approveMutation =
-    api.environment.policy.approval.approve.useMutation().mutateAsync;
-  const updateJob = api.job.update.useMutation().mutateAsync;
+  const rejectMutation = api.environment.policy.approval.reject.useMutation();
+  const approveMutation = api.environment.policy.approval.approve.useMutation();
+  const updateJob = api.job.update.useMutation();
 
   const { data: jobTriggers } = api.job.config.byReleaseId.useQuery(
     release.id,
@@ -49,13 +47,13 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   const handleReject = () => {
     Promise.all(
       jobIds.map((jobId) =>
-        updateJob({
+        updateJob.mutateAsync({
           id: jobId,
           data: { status: JobStatus.Cancelled },
         }),
       ),
     )
-      .then(() => rejectMutation(approval))
+      .then(() => rejectMutation.mutateAsync(approval))
       .then(() => {
         router.refresh();
         utils.environment.policy.invalidate();
@@ -66,7 +64,8 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   };
 
   const handleApprove = () =>
-    approveMutation(approval)
+    approveMutation
+      .mutateAsync(approval)
       .then(() => {
         router.refresh();
         utils.environment.policy.invalidate();
