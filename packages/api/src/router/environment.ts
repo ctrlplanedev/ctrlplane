@@ -212,7 +212,7 @@ const policyRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        let cancelledJobsCount = 0;
+        let cancelledJobCount = 0;
 
         await ctx.db.transaction(async (tx) => {
           await tx
@@ -253,11 +253,11 @@ const policyRouter = createTRPCRouter({
                   .where(eq(job.id, jobId)),
               ),
             );
-            cancelledJobsCount = jobIds.length;
+            cancelledJobCount = jobIds.length;
           }
         });
 
-        return { cancelledJobsCount };
+        return { cancelledJobCount };
       }),
 
     statusByReleasePolicyId: protectedProcedure
