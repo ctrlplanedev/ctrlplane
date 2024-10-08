@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import {
   Form,
@@ -62,7 +62,7 @@ const DeleteEnvironmentDialog: React.FC<{
     deleteEnvironment
       .mutateAsync(environment.id)
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
-      .then(() => removeEnvironmentId());
+      .then(removeEnvironmentId);
 
   return (
     <AlertDialog>
@@ -77,7 +77,12 @@ const DeleteEnvironmentDialog: React.FC<{
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+          <AlertDialogAction
+            onClick={onDelete}
+            className={buttonVariants({ variant: "destructive" })}
+          >
+            Delete
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -112,9 +117,9 @@ const EnvironmentForm: React.FC<{
           description: data.description,
         },
       })
+      .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
-      .then(() => utils.environment.byId.invalidate(environment.id))
-      .then(() => form.reset(data)),
+      .then(() => utils.environment.byId.invalidate(environment.id)),
   );
 
   return (
@@ -223,9 +228,9 @@ const EditFilterForm: React.FC<{
           targetFilter: targetFilter ?? null,
         },
       })
+      .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
-      .then(() => utils.environment.byId.invalidate(environment.id))
-      .then(() => form.reset(data)),
+      .then(() => utils.environment.byId.invalidate(environment.id)),
   );
 
   return (

@@ -493,17 +493,6 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
-      console.log("input", input);
-
-      const updatedEnv = await ctx.db
-        .update(environment)
-        .set(input.data)
-        .where(eq(environment.id, input.id))
-        .returning()
-        .then(takeFirst);
-
-      console.log("updatedEnv", updatedEnv);
-
       const { targetFilter } = input.data;
       const isUpdatingTargetFilter = targetFilter != null;
       if (isUpdatingTargetFilter) {

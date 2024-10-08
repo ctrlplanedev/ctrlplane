@@ -1,10 +1,15 @@
+import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
 import _ from "lodash";
 import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { releaseCondition } from "@ctrlplane/validators/releases";
+import {
+  isFilterCheck,
+  isRegexCheck,
+  isSemverCheck,
+} from "@ctrlplane/validators/environment-policies";
 
 import type { ReleasePolicyChecker } from "./utils.js";
 
@@ -49,32 +54,21 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
       if (rel == null) return v;
 
       const { environment_policy: envPolicy } = policy;
-      if (
-        envPolicy.evaluateWith === "semver" &&
-        satisfies(rel.version, policy.environment_policy.evaluate as string)
-      )
+      const check: VersionCheck = { ...envPolicy };
+      if (isSemverCheck(check) && satisfies(rel.version, check.evaluate))
         return v;
 
-      if (
-        envPolicy.evaluateWith === "regex" &&
-        new RegExp(policy.environment_policy.evaluate as string).test(
-          rel.version,
-        )
-      )
+      if (isRegexCheck(check) && new RegExp(check.evaluate).test(rel.version))
         return v;
 
-      if (envPolicy.evaluateWith === "filter") {
-        const filter = releaseCondition.parse(
-          policy.environment_policy.evaluate,
-        );
-
+      if (isFilterCheck(check)) {
         const release = await db
           .select()
           .from(schema.release)
           .where(
             and(
               eq(schema.release.id, rel.id),
-              schema.releaseMatchesCondition(db, filter),
+              schema.releaseMatchesCondition(db, check.evaluate),
             ),
           )
           .then(takeFirstOrNull);
