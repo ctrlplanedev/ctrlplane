@@ -58,10 +58,10 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Button variant="secondary" size="sm" onClick={handleReject}>
-          {"Reject"}
+          Reject
         </Button>
         <Button size="sm" onClick={handleApprove}>
-          {"Approve"}
+          Approve
         </Button>
       </div>
     </div>
