@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   and,
   eq,
+  exists,
   inArray,
   isNull,
   not,
@@ -219,31 +220,25 @@ const policyRouter = createTRPCRouter({
                 eq(environmentPolicyApproval.policyId, input.policyId),
                 eq(environmentPolicyApproval.releaseId, input.releaseId),
               ),
-            )
-            .returning()
-            .then(takeFirst);
+            );
 
-          const cancelledJobCount = await tx
+          const updateResult = await tx
             .update(job)
             .set({ status: "cancelled" })
             .where(
               and(
                 eq(job.status, "pending"),
-                inArray(
-                  job.id,
+                exists(
                   tx
-                    .select({ id: job.id })
-                    .from(job)
-                    .innerJoin(
-                      releaseJobTrigger,
-                      eq(releaseJobTrigger.jobId, job.id),
-                    )
+                    .select()
+                    .from(releaseJobTrigger)
                     .innerJoin(
                       environment,
                       eq(releaseJobTrigger.environmentId, environment.id),
                     )
                     .where(
                       and(
+                        eq(releaseJobTrigger.jobId, job.id),
                         eq(environment.policyId, input.policyId),
                         eq(releaseJobTrigger.releaseId, input.releaseId),
                       ),
@@ -251,10 +246,9 @@ const policyRouter = createTRPCRouter({
                 ),
               ),
             )
-            .returning()
-            .then((rows) => rows.length);
+            .execute();
 
-          return { cancelledJobCount };
+          return { cancelledJobCount: updateResult.rowCount };
         });
       }),
 
