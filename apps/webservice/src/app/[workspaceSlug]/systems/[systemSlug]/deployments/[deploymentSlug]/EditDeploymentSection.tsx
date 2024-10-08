@@ -47,7 +47,9 @@ export const EditDeploymentSection: React.FC<{
   });
   return (
     <div className="container m-8 mx-auto max-w-3xl space-y-2">
-      <h2 className="">Properties</h2>
+      <h2 className="" id="properties">
+        Properties
+      </h2>
 
       <Form {...form}>
         <form onSubmit={onSubmit} className="space-y-2">

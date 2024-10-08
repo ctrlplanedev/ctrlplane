@@ -28,6 +28,12 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
@@ -111,6 +117,7 @@ const ReleaseIcon: React.FC<{
 
 export const Release: React.FC<{
   name: string;
+  version: string;
   releaseId: string;
   environment: { id: string; name: string };
   activeDeploymentCount?: number;
@@ -132,6 +139,7 @@ export const Release: React.FC<{
     releaseJobTriggers,
     activeDeploymentCount,
     releaseId,
+    version,
     environment,
     workspaceSlug,
     systemSlug,
@@ -177,7 +185,18 @@ export const Release: React.FC<{
             <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">
-                <span className="font-semibold">{name}</span>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <div className="max-w-36 overflow-hidden text-ellipsis">
+                        <span className="whitespace-nowrap">{version}</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-[200px]">
+                      {version}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 {activeDeploymentCount != null && activeDeploymentCount > 0 && (
                   <Badge
                     variant="outline"
