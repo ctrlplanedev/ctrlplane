@@ -121,6 +121,8 @@ export const ComparisonConditionRender: React.FC<
     onChange(newCondition);
   };
 
+  const clear = () => onChange({ ...condition, conditions: [] });
+
   const not = condition.not ?? false;
 
   return (
@@ -239,90 +241,96 @@ export const ComparisonConditionRender: React.FC<
         ))}
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="w-max focus-visible:outline-none"
-          asChild
-        >
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(
-              "flex items-center gap-1 bg-inherit px-2 text-muted-foreground hover:bg-neutral-800/50",
-              depth === 0 && "border-neutral-800/70",
-            )}
+      <div className="flex">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="w-max focus-visible:outline-none"
+            asChild
           >
-            <IconPlus className="h-4 w-4" /> Add Condition{" "}
-            <IconChevronDown className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="text-muted-foreground">
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ReleaseFilterType.Metadata,
-                  operator: ReleaseOperator.Equals,
-                  key: "",
-                  value: "",
-                })
-              }
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(
+                "flex items-center gap-1 bg-inherit px-2 text-muted-foreground hover:bg-neutral-800/50",
+                depth === 0 && "border-neutral-800/70",
+              )}
             >
-              Metadata
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ReleaseFilterType.CreatedAt,
-                  operator: ReleaseOperator.Before,
-                  value: new Date().toISOString(),
-                })
-              }
-            >
-              Created at
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ReleaseFilterType.Version,
-                  operator: ReleaseOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Version
-            </DropdownMenuItem>
-            {depth < 2 && (
+              <IconPlus className="h-4 w-4" /> Add Condition{" "}
+              <IconChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="text-muted-foreground">
+            <DropdownMenuGroup>
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: ReleaseFilterType.Comparison,
-                    operator: ReleaseOperator.And,
-                    conditions: [],
-                    not: false,
+                    type: ReleaseFilterType.Metadata,
+                    operator: ReleaseOperator.Equals,
+                    key: "",
+                    value: "",
                   })
                 }
               >
-                Filter group
+                Metadata
               </DropdownMenuItem>
-            )}
-            {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: ReleaseFilterType.Comparison,
-                    operator: ReleaseOperator.And,
-                    not: true,
-                    conditions: [],
+                    type: ReleaseFilterType.CreatedAt,
+                    operator: ReleaseOperator.Before,
+                    value: new Date().toISOString(),
                   })
                 }
               >
-                Not group
+                Created at
               </DropdownMenuItem>
-            )}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+              <DropdownMenuItem
+                onClick={() =>
+                  addCondition({
+                    type: ReleaseFilterType.Version,
+                    operator: ReleaseOperator.Equals,
+                    value: "",
+                  })
+                }
+              >
+                Version
+              </DropdownMenuItem>
+              {depth < 2 && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    addCondition({
+                      type: ReleaseFilterType.Comparison,
+                      operator: ReleaseOperator.And,
+                      conditions: [],
+                      not: false,
+                    })
+                  }
+                >
+                  Filter group
+                </DropdownMenuItem>
+              )}
+              {depth < 2 && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    addCondition({
+                      type: ReleaseFilterType.Comparison,
+                      operator: ReleaseOperator.And,
+                      not: true,
+                      conditions: [],
+                    })
+                  }
+                >
+                  Not group
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="flex-grow" />
+        <Button variant="outline" type="button" onClick={clear}>
+          Clear
+        </Button>
+      </div>
     </div>
   );
 };

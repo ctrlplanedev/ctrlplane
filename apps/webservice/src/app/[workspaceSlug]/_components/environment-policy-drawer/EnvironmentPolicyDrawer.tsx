@@ -6,27 +6,32 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconCalendar,
-  IconCheck,
-  IconChecklist,
   IconCircuitDiode,
-  IconClock,
+  IconDotsVertical,
+  IconEye,
   IconFilter,
   IconInfoCircle,
-  IconPlayerPause,
+  IconRocket,
+  IconTrash,
 } from "@tabler/icons-react";
 
+import { Button } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
 import { TabButton } from "../TabButton";
-import { Approval } from "./Approval";
-import { Concurrency } from "./Concurrency";
-import { GradualRollouts } from "./GradualRollouts";
+import { ApprovalAndGovernance } from "./ApprovalAndGovernance";
+import { DeploymentControl } from "./DeploymentControl";
 import { Overview } from "./Overview";
-import { ReleaseFilter } from "./ReleaseFilter";
-import { ReleaseSequencing } from "./ReleaseSequencing";
-import { ReleaseWindows } from "./ReleaseWindows";
-import { SuccessCriteria } from "./SuccessCriteria";
+import { DeleteEnvironmentPolicyDialog } from "./PolicyDeleteDialog";
+import { ReleaseManagement } from "./ReleaseManagement";
+import { RolloutAndTiming } from "./RolloutAndTiming";
 
 const param = "environment_policy_id";
 export const useEnvironmentPolicyDrawer = () => {
@@ -61,20 +66,33 @@ const View: React.FC<{
 }> = ({ activeTab, environmentPolicy }) => {
   return {
     overview: <Overview environmentPolicy={environmentPolicy} />,
-    approval: <Approval environmentPolicy={environmentPolicy} />,
-    concurrency: <Concurrency environmentPolicy={environmentPolicy} />,
-    "gradual-rollout": (
-      <GradualRollouts environmentPolicy={environmentPolicy} />
-    ),
-    "success-criteria": (
-      <SuccessCriteria environmentPolicy={environmentPolicy} />
-    ),
-    "release-sequencing": (
-      <ReleaseSequencing environmentPolicy={environmentPolicy} />
-    ),
-    "release-windows": <ReleaseWindows environmentPolicy={environmentPolicy} />,
-    "release-filter": <ReleaseFilter environmentPolicy={environmentPolicy} />,
+    approval: <ApprovalAndGovernance environmentPolicy={environmentPolicy} />,
+    concurrency: <DeploymentControl environmentPolicy={environmentPolicy} />,
+    management: <ReleaseManagement environmentPolicy={environmentPolicy} />,
+    rollout: <RolloutAndTiming environmentPolicy={environmentPolicy} />,
   }[activeTab];
+};
+
+const PolicyDropdownMenu: React.FC<{
+  environmentPolicy: SCHEMA.EnvironmentPolicy;
+  children: React.ReactNode;
+}> = ({ environmentPolicy, children }) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DeleteEnvironmentPolicyDialog environmentPolicy={environmentPolicy}>
+          <DropdownMenuItem
+            className="flex items-center gap-2"
+            onSelect={(e) => e.preventDefault()}
+          >
+            <IconTrash className="h-4 w-4 text-red-500" />
+            <span>Delete</span>
+          </DropdownMenuItem>
+        </DeleteEnvironmentPolicyDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 };
 
 export const EnvironmentPolicyDrawer: React.FC = () => {
@@ -100,7 +118,18 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
           <div className="flex-shrink-0 rounded bg-purple-500/20 p-1 text-purple-400">
             <IconFilter className="h-4 w-4" />
           </div>
-          {environmentPolicy?.name ?? "Policy"}
+          {(environmentPolicy == null || environmentPolicy.name === "") &&
+            "Policy"}
+          {environmentPolicy != null && environmentPolicy.name !== "" && (
+            <span>{environmentPolicy.name}</span>
+          )}
+          {environmentPolicy != null && (
+            <PolicyDropdownMenu environmentPolicy={environmentPolicy}>
+              <Button variant="ghost" size="icon">
+                <IconDotsVertical className="h-4 w-4" />
+              </Button>
+            </PolicyDropdownMenu>
+          )}
         </DrawerTitle>
 
         <div className="flex w-full gap-6 p-6">
@@ -114,44 +143,26 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
             <TabButton
               active={activeTab === "approval"}
               onClick={() => setActiveTab("approval")}
-              icon={<IconCheck className="h-4 w-4" />}
-              label="Approval"
+              icon={<IconEye className="h-4 w-4" />}
+              label="Approval & Governance"
             />
             <TabButton
               active={activeTab === "concurrency"}
               onClick={() => setActiveTab("concurrency")}
               icon={<IconCircuitDiode className="h-4 w-4" />}
-              label="Concurrency"
+              label="Deployment Control"
             />
             <TabButton
-              active={activeTab === "gradual-rollout"}
-              onClick={() => setActiveTab("gradual-rollout")}
-              icon={<IconClock className="h-4 w-4" />}
-              label="Gradual Rollout"
+              active={activeTab === "management"}
+              onClick={() => setActiveTab("management")}
+              icon={<IconRocket className="h-4 w-4" />}
+              label="Release Management"
             />
             <TabButton
-              active={activeTab === "success-criteria"}
-              onClick={() => setActiveTab("success-criteria")}
-              icon={<IconChecklist className="h-4 w-4" />}
-              label="Success Criteria"
-            />
-            <TabButton
-              active={activeTab === "release-sequencing"}
-              onClick={() => setActiveTab("release-sequencing")}
-              icon={<IconPlayerPause className="h-4 w-4" />}
-              label="Release Sequencing"
-            />
-            <TabButton
-              active={activeTab === "release-windows"}
-              onClick={() => setActiveTab("release-windows")}
+              active={activeTab === "rollout"}
+              onClick={() => setActiveTab("rollout")}
               icon={<IconCalendar className="h-4 w-4" />}
-              label="Release Windows"
-            />
-            <TabButton
-              active={activeTab === "release-filter"}
-              onClick={() => setActiveTab("release-filter")}
-              icon={<IconFilter className="h-4 w-4" />}
-              label="Release Filter"
+              label="Rollout and Timing"
             />
           </div>
 
