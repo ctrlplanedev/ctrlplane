@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { SiGithub, SiKubernetes } from "@icons-pack/react-simple-icons";
 import { IconSettings } from "@tabler/icons-react";
 
@@ -27,7 +28,11 @@ const AgentHeading: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="space-y-1">{children}</div>;
 
-export default function AgentPage() {
+export default function AgentPage({
+  params: { workspaceSlug },
+}: {
+  params: { workspaceSlug: string };
+}) {
   return (
     <div className="p-16">
       <div className="container mx-auto max-w-5xl">
@@ -48,7 +53,11 @@ export default function AgentPage() {
               </p>
             </AgentContent>
 
-            <AgentActionButton>Configure</AgentActionButton>
+            <Link
+              href={`/${workspaceSlug}/settings/workspace/integrations/github`}
+            >
+              <AgentActionButton>Configure</AgentActionButton>
+            </Link>
           </AgentCard>
         </div>
 
