@@ -506,6 +506,13 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
+      const updatedEnv = await ctx.db
+        .update(environment)
+        .set(input.data)
+        .where(eq(environment.id, input.id))
+        .returning()
+        .then(takeFirst);
+
       const { targetFilter } = input.data;
       const isUpdatingTargetFilter = targetFilter != null;
       if (isUpdatingTargetFilter) {
@@ -542,6 +549,8 @@ export const environmentRouter = createTRPCRouter({
           }
         }
       }
+
+      return updatedEnv;
     }),
 
   delete: protectedProcedure
