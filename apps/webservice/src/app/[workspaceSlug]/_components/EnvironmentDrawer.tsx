@@ -1,14 +1,12 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
 import {
   IconExternalLink,
-  IconFilter,
-  IconInfoCircle,
   IconPlant,
   IconServer,
   IconTarget,
@@ -40,6 +38,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
+import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   defaultCondition,
@@ -47,7 +46,6 @@ import {
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
-import { TabButton } from "./TabButton";
 import { TargetConditionRender } from "./target-condition/TargetConditionRender";
 
 const DeleteEnvironmentDialog: React.FC<{
@@ -355,8 +353,6 @@ export const EnvironmentDrawer: React.FC = () => {
   const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
   const workspace = workspaceQ.data;
 
-  const [activeTab, setActiveTab] = useState("overview");
-
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
@@ -371,29 +367,11 @@ export const EnvironmentDrawer: React.FC = () => {
         </DrawerTitle>
 
         <div className="flex w-full gap-6 p-6">
-          <div className="space-y-1">
-            <TabButton
-              active={activeTab === "overview"}
-              onClick={() => setActiveTab("overview")}
-              icon={<IconInfoCircle className="h-4 w-4" />}
-              label="Overview"
-            />
-            <TabButton
-              active={activeTab === "filter"}
-              onClick={() => setActiveTab("filter")}
-              icon={<IconFilter className="h-4 w-4" />}
-              label="Filter"
-            />
-          </div>
-
           {environment != null && workspace != null && (
-            <div className="w-full overflow-auto">
-              {activeTab === "overview" && (
-                <EnvironmentForm environment={environment} />
-              )}
-              {activeTab === "filter" && (
-                <EditFilterForm environment={environment} />
-              )}
+            <div className="w-full space-y-12 overflow-auto">
+              <EnvironmentForm environment={environment} />
+              <Separator />
+              <EditFilterForm environment={environment} />
             </div>
           )}
         </div>
