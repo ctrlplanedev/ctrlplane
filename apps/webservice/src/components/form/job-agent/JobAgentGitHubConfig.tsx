@@ -2,7 +2,7 @@
 
 import type { JobAgent } from "@ctrlplane/db/schema";
 import { useEffect, useState } from "react";
-import { IconSelector } from "@tabler/icons-react";
+import { IconLoader2, IconSelector } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -45,14 +45,11 @@ export const JobAgentGitHubConfig: React.FC<{
 
   const [workflowOpen, setWorkflowOpen] = useState(false);
   const [workflow, setWorkflow] = useState<string | null>(
-    workflows.data?.data.workflows.find((w) => w.id === value.workflowId)
-      ?.name ?? null,
+    workflows.data?.find((w) => w.id === value.workflowId)?.name ?? null,
   );
 
   const handleFormChange = (workflow: string) => {
-    const workflowId = workflows.data?.data.workflows.find(
-      (w) => w.name === workflow,
-    )?.id;
+    const workflowId = workflows.data?.find((w) => w.name === workflow)?.id;
     if (workflowId == null) return;
 
     onChange({
@@ -66,8 +63,7 @@ export const JobAgentGitHubConfig: React.FC<{
   useEffect(() => {
     if (workflows.data != null && value.workflowId != null)
       setWorkflow(
-        workflows.data.data.workflows.find((w) => w.id === value.workflowId)
-          ?.name ?? null,
+        workflows.data.find((w) => w.id === value.workflowId)?.name ?? null,
       );
   }, [workflows.data, value.workflowId]);
 
@@ -105,6 +101,12 @@ export const JobAgentGitHubConfig: React.FC<{
                       {repo.name}
                     </CommandItem>
                   ))}
+                  {repos.isLoading && (
+                    <CommandItem disabled>
+                      <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading repositories...
+                    </CommandItem>
+                  )}
                 </CommandList>
               </CommandGroup>
             </Command>
@@ -131,11 +133,10 @@ export const JobAgentGitHubConfig: React.FC<{
               <CommandInput placeholder="Search workflow..." />
               <CommandGroup>
                 <CommandList>
-                  {(workflows.data == null ||
-                    workflows.data.data.total_count === 0) && (
+                  {(workflows.data == null || workflows.data.length === 0) && (
                     <CommandItem disabled>No workflows found</CommandItem>
                   )}
-                  {workflows.data?.data.workflows.map((wf) => (
+                  {workflows.data?.map((wf) => (
                     <CommandItem
                       key={wf.id}
                       value={wf.name}
@@ -148,6 +149,12 @@ export const JobAgentGitHubConfig: React.FC<{
                       {wf.name}
                     </CommandItem>
                   ))}
+                  {workflows.isLoading && (
+                    <CommandItem disabled>
+                      <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading workflows...
+                    </CommandItem>
+                  )}
                 </CommandList>
               </CommandGroup>
             </Command>

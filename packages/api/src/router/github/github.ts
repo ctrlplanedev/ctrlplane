@@ -164,13 +164,26 @@ const reposRouter = createTRPCRouter({
           installationId: input.installationId,
         })) as { token: string };
 
-        return installationOctokit.actions.listRepoWorkflows({
-          ...input,
-          headers: {
-            "X-GitHub-Api-Version": "2022-11-28",
-            authorization: `Bearer ${installationToken.token}`,
-          },
-        });
+        const workflows: RestEndpointMethodTypes["actions"]["listRepoWorkflows"]["response"]["data"]["workflows"] =
+          [];
+
+        const getWorkflows = async (page: number) => {
+          const { data } = await installationOctokit.actions.listRepoWorkflows({
+            ...input,
+            page,
+            per_page: 100,
+            headers: {
+              "X-GitHub-Api-Version": "2022-11-28",
+              authorization: `Bearer ${installationToken.token}`,
+            },
+          });
+          workflows.push(...data.workflows);
+          if (data.workflows.length < 100) return;
+          return getWorkflows(page + 1);
+        };
+
+        await getWorkflows(1);
+        return workflows;
       }),
   }),
 });
@@ -232,17 +245,29 @@ export const githubRouter = createTRPCRouter({
                     installationId: i.id,
                   })) as { token: string };
 
-                  const members = await installationOctokit.orgs.listMembers({
-                    org: i.account?.login ?? "",
-                    headers: {
-                      "X-GitHub-Api-Version": "2022-11-28",
-                      authorization: `Bearer ${installationToken.token}`,
-                    },
-                  });
+                  const members: RestEndpointMethodTypes["orgs"]["listMembers"]["response"]["data"][number][] =
+                    [];
 
+                  const getMembers = async (page: number) => {
+                    const { data } = await installationOctokit.orgs.listMembers(
+                      {
+                        org: i.account?.login ?? "",
+                        per_page: 100,
+                        page,
+                        headers: {
+                          "X-GitHub-Api-Version": "2022-11-28",
+                          authorization: `Bearer ${installationToken.token}`,
+                        },
+                      },
+                    );
+                    members.push(...data);
+                    if (data.length < 100) return;
+                    return getMembers(page + 1);
+                  };
+
+                  await getMembers(1);
                   const isUserInGithubOrg =
-                    members.data.find((m) => m.id === input.githubUserId) !=
-                    null;
+                    members.find((m) => m.id === input.githubUserId) != null;
                   if (!isUserInGithubOrg) return null;
 
                   const orgData = await installationOctokit.orgs.get({
