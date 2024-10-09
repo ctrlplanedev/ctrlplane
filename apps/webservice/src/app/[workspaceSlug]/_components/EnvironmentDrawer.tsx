@@ -366,7 +366,7 @@ export const EnvironmentDrawer: React.FC = () => {
           {environment?.name}
         </DrawerTitle>
 
-        <div className="flex w-full gap-6 p-6">
+        <div className="flex w-full gap-6">
           {environment != null && workspace != null && (
             <div className="w-full space-y-12 overflow-auto">
               <EnvironmentForm environment={environment} />

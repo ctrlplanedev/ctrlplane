@@ -252,8 +252,7 @@ const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
   if (cond.type === ReleaseFilterType.Version)
     return buildVersionCondition(cond);
 
-  if (cond.conditions.length === 0 && cond.not) return sql`FALSE`;
-  if (cond.conditions.length === 0) return sql`TRUE`;
+  if (cond.conditions.length === 0) return sql`FALSE`;
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =
