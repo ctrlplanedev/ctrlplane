@@ -9,12 +9,12 @@ import { env } from "~/env";
 import { handleCommitWebhookEvent } from "./commit/handler";
 import { handleWorkflowWebhookEvent } from "./workflow/handler";
 
-const secret = env.GITHUB_WEBHOOK_SECRET;
-if (secret == null) throw new Error("GITHUB_WEBHOOK_SECRET is not set");
-const webhooks = new Webhooks({ secret });
-
 export const POST = async (req: NextRequest) => {
   try {
+    const secret = env.GITHUB_WEBHOOK_SECRET;
+    if (secret == null) throw new Error("GITHUB_WEBHOOK_SECRET is not set");
+    const webhooks = new Webhooks({ secret });
+
     const signature = req.headers.get("x-hub-signature-256")?.toString();
     if (signature == null)
       return new NextResponse("No signature", { status: 401 });
