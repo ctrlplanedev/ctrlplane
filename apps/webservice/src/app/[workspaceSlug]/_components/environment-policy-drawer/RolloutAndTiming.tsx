@@ -78,12 +78,10 @@ export const RolloutAndTiming: React.FC<{
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
   };
 }> = ({ environmentPolicy }) => {
+  const duration = prettyMilliseconds(environmentPolicy.duration);
   const form = useForm({
     schema,
-    defaultValues: {
-      ...environmentPolicy,
-      duration: prettyMilliseconds(environmentPolicy.duration),
-    },
+    defaultValues: { ...environmentPolicy, duration },
   });
 
   const { fields, append, remove } = useFieldArray({
