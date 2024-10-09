@@ -76,24 +76,22 @@ const View: React.FC<{
 const PolicyDropdownMenu: React.FC<{
   environmentPolicy: SCHEMA.EnvironmentPolicy;
   children: React.ReactNode;
-}> = ({ environmentPolicy, children }) => {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DeleteEnvironmentPolicyDialog environmentPolicy={environmentPolicy}>
-          <DropdownMenuItem
-            className="flex items-center gap-2"
-            onSelect={(e) => e.preventDefault()}
-          >
-            <IconTrash className="h-4 w-4 text-red-500" />
-            <span>Delete</span>
-          </DropdownMenuItem>
-        </DeleteEnvironmentPolicyDialog>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+}> = ({ environmentPolicy, children }) => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+    <DropdownMenuContent>
+      <DeleteEnvironmentPolicyDialog environmentPolicy={environmentPolicy}>
+        <DropdownMenuItem
+          className="flex items-center gap-2"
+          onSelect={(e) => e.preventDefault()}
+        >
+          <IconTrash className="h-4 w-4 text-red-500" />
+          <span>Delete</span>
+        </DropdownMenuItem>
+      </DeleteEnvironmentPolicyDialog>
+    </DropdownMenuContent>
+  </DropdownMenu>
+);
 
 export const EnvironmentPolicyDrawer: React.FC = () => {
   const { environmentPolicyId, removeEnvironmentPolicyId } =
