@@ -1,5 +1,6 @@
 import type { ClusterManagerClient } from "@google-cloud/container";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
+import type { AuthClient } from "google-auth-library";
 import Container from "@google-cloud/container";
 import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
@@ -24,16 +25,15 @@ export const getImpersonatedClient = async (targetPrincipal: string) =>
 
 export const getGoogleClusterClient = async (
   targetPrincipal?: string | null,
-) => {
-  let authClient: Impersonated | undefined;
+): Promise<[ClusterManagerClient, AuthClient | undefined]> => {
+  if (targetPrincipal == null)
+    return [
+      new Container.v1.ClusterManagerClient(),
+      await sourceCredentials.getClient(),
+    ];
 
-  if (targetPrincipal != null)
-    authClient = await getImpersonatedClient(targetPrincipal);
-
-  return [
-    new Container.v1.ClusterManagerClient({ authClient }),
-    authClient,
-  ] as const;
+  const authClient = await getImpersonatedClient(targetPrincipal);
+  return [new Container.v1.ClusterManagerClient({ authClient }), authClient];
 };
 
 export const getClusters = async (
@@ -48,7 +48,7 @@ export const getClusters = async (
 
 export const connectToCluster = async (
   clusterClient: ClusterManagerClient,
-  authClient: Impersonated | undefined,
+  authClient: AuthClient | undefined,
   project: string,
   clusterName: string,
   clusterLocation: string,
