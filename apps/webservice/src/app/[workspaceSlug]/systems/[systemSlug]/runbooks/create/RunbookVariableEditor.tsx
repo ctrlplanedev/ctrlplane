@@ -26,9 +26,10 @@ import {
 import {
   BooleanConfigFields,
   ChoiceConfigFields,
-  ConfigTypeSelector,
   NumberConfigFields,
+  RunbookConfigTypeSelector,
   StringConfigFields,
+  TargetConfigFields,
 } from "~/app/[workspaceSlug]/systems/[systemSlug]/_components/variables/ConfigFields";
 
 type RunbookVariableEditorProps = {
@@ -68,7 +69,7 @@ export const RunbookVariableEditor = forwardRef<
 
       <div className="space-y-1">
         <Label>Input Display</Label>
-        <ConfigTypeSelector
+        <RunbookConfigTypeSelector
           value={value.config?.type}
           onChange={(type: any) =>
             onChange({
@@ -91,8 +92,9 @@ export const RunbookVariableEditor = forwardRef<
       {config?.type === "number" && (
         <NumberConfigFields config={config} updateConfig={updateConfig} />
       )}
-
-      <pre>{JSON.stringify(config, null, 2)}</pre>
+      {config?.type === "target" && (
+        <TargetConfigFields config={config} updateConfig={updateConfig} />
+      )}
     </div>
   );
 });

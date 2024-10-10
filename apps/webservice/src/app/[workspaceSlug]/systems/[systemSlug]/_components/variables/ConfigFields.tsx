@@ -1,14 +1,15 @@
 "use client";
 
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
   NumberVariableConfigType,
   StringVariableConfigType,
+  TargetVariableConfigType,
   VariableConfigType,
 } from "@ctrlplane/validators/variables";
 import { IconX } from "@tabler/icons-react";
-import _ from "lodash";
 
 import { Button } from "@ctrlplane/ui/button";
 import { FormControl, FormItem, FormLabel } from "@ctrlplane/ui/form";
@@ -21,6 +22,12 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import {
+  defaultCondition,
+  isEmptyCondition,
+} from "@ctrlplane/validators/targets";
+
+import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;
@@ -35,6 +42,24 @@ export const ConfigTypeSelector: React.FC<{
       <SelectItem value="number">Number</SelectItem>
       <SelectItem value="boolean">Boolean</SelectItem>
       <SelectItem value="choice">Choice</SelectItem>
+    </SelectContent>
+  </Select>
+);
+
+export const RunbookConfigTypeSelector: React.FC<{
+  value: string | undefined;
+  onChange: (type: string) => void;
+}> = ({ value, onChange }) => (
+  <Select value={value} onValueChange={onChange}>
+    <SelectTrigger>
+      <SelectValue placeholder="Select type" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="string">String</SelectItem>
+      <SelectItem value="number">Number</SelectItem>
+      <SelectItem value="boolean">Boolean</SelectItem>
+      <SelectItem value="choice">Choice</SelectItem>
+      <SelectItem value="target">Target</SelectItem>
     </SelectContent>
   </Select>
 );
@@ -225,5 +250,25 @@ export const ChoiceConfigFields: ConfigFieldsFC<ChoiceVariableConfigType> = ({
         </FormControl>
       </FormItem>
     </>
+  );
+};
+
+export const TargetConfigFields: ConfigFieldsFC<TargetVariableConfigType> = ({
+  config,
+  updateConfig,
+}) => {
+  const onFilterChange = (condition: TargetCondition | undefined) => {
+    const cond = condition ?? defaultCondition;
+    if (isEmptyCondition(cond)) updateConfig({ filter: undefined });
+    if (!isEmptyCondition(cond)) updateConfig({ filter: cond });
+  };
+
+  return (
+    <TargetConditionDialog
+      condition={config.filter ?? defaultCondition}
+      onChange={onFilterChange}
+    >
+      <Button variant="outline">Edit Filter</Button>
+    </TargetConditionDialog>
   );
 };
