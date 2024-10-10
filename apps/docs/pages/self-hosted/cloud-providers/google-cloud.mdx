@@ -10,9 +10,9 @@ GKE cluster and use the [Helm Chart](/install/helm) based install.
 ### Using Terraform
 
 You can find the terraform registry module
-[here](https://registry.terraform.io/modules/sizzldev/ctrlplane/google/latest),
+[here](https://registry.terraform.io/modules/ctrlplanedev/ctrlplane/google/latest),
 and the terraform repository
-[here](https://github.com/sizzldev/terraform-google-ctrlplane).
+[here](https://github.com/ctrlplanedev/terraform-google-ctrlplane).
 
 This module creates a reslient and fault tolerant Ctrlplane installation using
 Google Kubernetes Engine (GKE) as the computing environment and the following
@@ -26,7 +26,7 @@ services for storing data:
 
 ```hcl
 module "ctrlplane" {
-  source  = "sizzldev/ctrlplane/google"
+  source  = "ctrlplanedev/ctrlplane/google"
   version = "x.x.x" // Use the latest version
 
   namespace = "ctrlplane"

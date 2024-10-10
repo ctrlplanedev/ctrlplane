@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@v4
 
       - id: ctrlplane
-        uses: sizzldev/ctrlplane/github/get-job-inputs@main
+        uses: ctrlplanedev/ctrlplane/github/get-job-inputs@main
         with:
           base_url: https://ctrlplane.dev
           job_id: ${{ inputs.job_id }}

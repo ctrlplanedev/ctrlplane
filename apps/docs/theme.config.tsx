@@ -9,10 +9,10 @@ const config: DocsThemeConfig = {
       Ctrlplane
     </div>
   ),
-  project: { link: "https://github.com/sizzldev/ctrlplane" },
+  project: { link: "https://github.com/ctrlplanedev/ctrlplane" },
   toc: { float: true },
   docsRepositoryBase:
-    "https://github.com/sizzldev/ctrlplane/blob/main/apps/docs",
+    "https://github.com/ctrlplanedev/ctrlplane/blob/main/apps/docs",
   chat: { link: "https://ctrlplane.dev/discord" },
   feedback: { content: "Question? Give us feedback →" },
   sidebar: { defaultMenuCollapseLevel: 1 },

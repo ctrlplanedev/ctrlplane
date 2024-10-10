@@ -9,13 +9,13 @@
 </p>
 
 <p align="center">
-  <a aria-label="Join the community on GitHub" href="https://github.com/sizzldev/ctrlplane/discussions"><img alt="" src="https://img.shields.io/badge/Join_the_community-blueviolet?style=for-the-badge"></a>
-  <a aria-label="Commit activity" href="https://github.com/sizzldev/ctrlplane/activity"><img alt="" src="https://img.shields.io/github/commit-activity/m/sizzldev/ctrlplane/main?style=for-the-badge"></a>
+  <a aria-label="Join the community on GitHub" href="https://github.com/ctrlplanedev/ctrlplane/discussions"><img alt="" src="https://img.shields.io/badge/Join_the_community-blueviolet?style=for-the-badge"></a>
+  <a aria-label="Commit activity" href="https://github.com/ctrlplanedev/ctrlplane/activity"><img alt="" src="https://img.shields.io/github/commit-activity/m/ctrlplanedev/ctrlplane/main?style=for-the-badge"></a>
 </p>
 
 <p align="center">
   <a href="https://ctrlplane.dev"><b>Website</b></a> •
-  <a href="https://github.com/sizzldev/ctrlplane/releases"><b>Releases</b></a> •
+  <a href="https://github.com/ctrlplanedev/ctrlplane/releases"><b>Releases</b></a> •
   <a href="https://docs.ctrlplane.dev"><b>Documentation</b></a>
 </p>
 
@@ -29,9 +29,9 @@ Cloud](https://app.ctrlplane.dev) account.
 
 If you would like to self-host Plane, please see our [deployment guide](https://docs.ctrlplane.dev/install/helm).
 
-| Installation methods | Docs link                                                                                                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docker               | [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/docker-compose)               |
+| Installation methods | Docs link                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker               | [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/docker-compose)         |
 | Kubernetes           | [![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/kubernetes) |
 
 ## :rocket: Features
@@ -54,7 +54,7 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 
 1. Clone the code locally using:
    ```
-   git clone https://github.com/sizzldev/ctrlplane.git
+   git clone https://github.com/ctrlplanedev/ctrlplane.git
    ```
 2. Switch to the code folder:
    ```
@@ -81,7 +81,7 @@ Thats it!
 ## :heart: Community
 
 The Ctrlplane community can be found on [GitHub
-Discussions](https://github.com/sizzldev/ctrlplane/discussions), and our [Discord
+Discussions](https://github.com/ctrlplanedev/ctrlplane/discussions), and our [Discord
 server](https://ctrlplane.dev/discord)
 
 Ask questions, report bugs, join discussions, voice ideas, make feature
@@ -97,6 +97,6 @@ Email security@ctrlplane.dev to disclose any security vulnerabilities.
 
 ### We couldn't have done this without you.
 
-<a href="https://github.com/sizzldev/ctrlplane/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=sizzldev/ctrlplane" />
+<a href="https://github.com/ctrlplanedev/ctrlplane/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ctrlplanedev/ctrlplane" />
 </a>
