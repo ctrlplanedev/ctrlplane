@@ -1,4 +1,4 @@
-import type { VariableConfigType } from "@ctrlplane/validators/variables";
+import type { RunbookVariableConfigType } from "@ctrlplane/validators/variables";
 import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
@@ -11,7 +11,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { VariableConfig } from "@ctrlplane/validators/variables";
+import { RunbookVariableConfig } from "@ctrlplane/validators/variables";
 
 import { runbook } from "./runbook.js";
 
@@ -25,7 +25,7 @@ export const runbookVariable = pgTable(
     runbookId: uuid("runbook_id")
       .notNull()
       .references(() => runbook.id, { onDelete: "cascade" }),
-    config: jsonb("schema").$type<VariableConfigType>(),
+    config: jsonb("schema").$type<RunbookVariableConfigType>(),
     required: boolean("required").default(false).notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.runbookId, t.key) }),
@@ -36,7 +36,7 @@ export type RunbookVariable = InferSelectModel<typeof runbookVariable>;
 export const createRunbookVariable = createInsertSchema(runbookVariable, {
   key: z.string().min(1),
   name: z.string().min(1),
-  config: VariableConfig,
+  config: RunbookVariableConfig,
 }).omit({ id: true, runbookId: true });
 export const updateRunbookVariable = createRunbookVariable.partial();
 export type InsertRunbookVariable = z.infer<typeof createRunbookVariable>;

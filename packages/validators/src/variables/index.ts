@@ -43,10 +43,12 @@ export const VariableConfig = z.union([
   NumberVariableConfig,
   BooleanVariableConfig,
   ChoiceVariableConfig,
-  TargetVariableConfig,
 ]);
 
 export type VariableConfigType = z.infer<typeof VariableConfig>;
+
+export const RunbookVariableConfig = VariableConfig.or(TargetVariableConfig);
+export type RunbookVariableConfigType = z.infer<typeof RunbookVariableConfig>;
 
 export function validateJSONSchema(
   schema: unknown,

@@ -5,6 +5,7 @@ import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
   NumberVariableConfigType,
+  RunbookVariableConfigType,
   StringVariableConfigType,
   TargetVariableConfigType,
   VariableConfigType,
@@ -254,10 +255,14 @@ export const ChoiceConfigFields: ConfigFieldsFC<ChoiceVariableConfigType> = ({
   );
 };
 
-export const TargetConfigFields: ConfigFieldsFC<TargetVariableConfigType> = ({
-  config,
-  updateConfig,
-}) => {
+type RunbookConfigFieldsFC<T extends RunbookVariableConfigType> = React.FC<{
+  config: T;
+  updateConfig: (updates: Partial<T>) => void;
+}>;
+
+export const TargetConfigFields: RunbookConfigFieldsFC<
+  TargetVariableConfigType
+> = ({ config, updateConfig }) => {
   const onFilterChange = (condition: TargetCondition | undefined) => {
     const cond = condition ?? defaultCondition;
     if (isEmptyCondition(cond)) updateConfig({ ...config, filter: undefined });
