@@ -27,6 +27,7 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/targets";
 
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
 import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 
 export const ConfigTypeSelector: React.FC<{
@@ -259,16 +260,19 @@ export const TargetConfigFields: ConfigFieldsFC<TargetVariableConfigType> = ({
 }) => {
   const onFilterChange = (condition: TargetCondition | undefined) => {
     const cond = condition ?? defaultCondition;
-    if (isEmptyCondition(cond)) updateConfig({ filter: undefined });
-    if (!isEmptyCondition(cond)) updateConfig({ filter: cond });
+    if (isEmptyCondition(cond)) updateConfig({ ...config, filter: undefined });
+    if (!isEmptyCondition(cond)) updateConfig({ ...config, filter: cond });
   };
 
   return (
-    <TargetConditionDialog
-      condition={config.filter ?? defaultCondition}
-      onChange={onFilterChange}
-    >
-      <Button variant="outline">Edit Filter</Button>
-    </TargetConditionDialog>
+    <>
+      {config.filter && <TargetConditionBadge condition={config.filter} />}
+      <TargetConditionDialog
+        condition={config.filter ?? defaultCondition}
+        onChange={onFilterChange}
+      >
+        <Button variant="outline">Edit Filter</Button>
+      </TargetConditionDialog>
+    </>
   );
 };

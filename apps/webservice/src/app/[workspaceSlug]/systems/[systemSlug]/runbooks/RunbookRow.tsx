@@ -41,7 +41,10 @@ export const RunbookRow: React.FC<{
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <TriggerRunbookDialog runbook={runbook}>
+          <TriggerRunbookDialog
+            runbook={runbook}
+            onSuccess={() => setOpen(false)}
+          >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Trigger Runbook
             </DropdownMenuItem>

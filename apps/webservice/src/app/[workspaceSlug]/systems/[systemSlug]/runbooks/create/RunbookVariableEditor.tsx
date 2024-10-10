@@ -45,8 +45,18 @@ export const RunbookVariableEditor = forwardRef<
   const update = (update: Partial<InsertRunbookVariable>) =>
     onChange(_.merge(value, update));
 
-  const updateConfig = (config: Partial<InsertRunbookVariable["config"]>) =>
-    update({ config: _.merge(value.config, config) });
+  const updateConfig = (config: Partial<InsertRunbookVariable["config"]>) => {
+    const mergedConfig = _.merge(value.config, config);
+
+    // explicitly overwrite the filter instead of merging
+    const isTargetType =
+      mergedConfig?.type === "target" && config?.type === "target";
+    const isTargetFilterChanged =
+      isTargetType && mergedConfig.filter !== config.filter;
+    if (isTargetFilterChanged) mergedConfig.filter = config.filter;
+
+    update({ config: mergedConfig });
+  };
 
   return (
     <div className="space-y-4" ref={ref}>
