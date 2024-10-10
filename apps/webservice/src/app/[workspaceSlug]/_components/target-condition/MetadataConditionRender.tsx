@@ -44,7 +44,7 @@ export const MetadataConditionRender: React.FC<
 
   const [open, setOpen] = useState(false);
   const metadataKeys = api.target.metadataKeys.useQuery(
-    workspace.data?.id ?? "",
+    { workspaceId: workspace.data?.id ?? "" },
     { enabled: workspace.isSuccess && workspace.data != null },
   );
   const filteredMetadataKeys = useMatchSorter(
