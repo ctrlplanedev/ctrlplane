@@ -65,7 +65,11 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
 
   await db
     .insert(schema.jobMetadata)
-    .values([{ jobId: job.id, key: "ctrlplane/links", value: links }]);
+    .values([{ jobId: job.id, key: "ctrlplane/links", value: links }])
+    .onConflictDoUpdate({
+      target: [schema.jobMetadata.jobId, schema.jobMetadata.key],
+      set: { value: links },
+    });
 
   if (job.status === JobStatus.Completed) return onJobCompletion(job);
 };

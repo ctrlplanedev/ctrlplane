@@ -347,6 +347,9 @@ importers:
       '@octokit/rest':
         specifier: 'catalog:'
         version: 20.1.1
+      '@octokit/webhooks':
+        specifier: ^13.3.0
+        version: 13.3.0
       '@octokit/webhooks-types':
         specifier: ^7.5.1
         version: 7.5.1
@@ -1379,7 +1382,7 @@ importers:
         version: 1.13.4(eslint@9.11.1(jiti@2.1.0))
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.30.0(eslint@9.11.1(jiti@2.1.0))
+        version: 2.30.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.1.0))(typescript@5.6.2))(eslint@9.11.1(jiti@2.1.0))
       eslint-plugin-jsx-a11y:
         specifier: ^6.9.0
         version: 6.10.0(eslint@9.11.1(jiti@2.1.0))
@@ -2883,6 +2886,9 @@ packages:
   '@octokit/openapi-types@22.2.0':
     resolution: {integrity: sha512-QBhVjcUa9W7Wwhm6DBFu6ZZ+1/t/oYxqc2tp81Pi41YNuJinbFRx8B133qVOrAaBbF7D/m0Et6f9/pZt9Rc+tg==}
 
+  '@octokit/openapi-webhooks-types@8.3.0':
+    resolution: {integrity: sha512-vKLsoR4xQxg4Z+6rU/F65ItTUz/EXbD+j/d4mlq2GW8TsA4Tc8Kdma2JTAAJ5hrKWUQzkR/Esn2fjsqiVRYaQg==}
+
   '@octokit/plugin-paginate-rest@11.3.1':
     resolution: {integrity: sha512-ryqobs26cLtM1kQxqeZui4v8FeznirUsksiA+RYemMPJ7Micju0WSkv50dBksTuZks9O5cg4wp+t8fZ/cLY56g==}
     engines: {node: '>= 18'}
@@ -2924,8 +2930,16 @@ packages:
   '@octokit/types@13.6.0':
     resolution: {integrity: sha512-CrooV/vKCXqwLa+osmHLIMUb87brpgUqlqkPGc6iE2wCkUvTrHiXFMhAKoDDaAAYJrtKtrFTgSQTg5nObBEaew==}
 
+  '@octokit/webhooks-methods@5.1.0':
+    resolution: {integrity: sha512-yFZa3UH11VIxYnnoOYCVoJ3q4ChuSOk2IVBBQ0O3xtKX4x9bmKb/1t+Mxixv2iUhzMdOl1qeWJqEhouXXzB3rQ==}
+    engines: {node: '>= 18'}
+
   '@octokit/webhooks-types@7.5.1':
     resolution: {integrity: sha512-1dozxWEP8lKGbtEu7HkRbK1F/nIPuJXNfT0gd96y6d3LcHZTtRtlf8xz3nicSJfesADxJyDh+mWBOsdLkqgzYw==}
+
+  '@octokit/webhooks@13.3.0':
+    resolution: {integrity: sha512-TUkJLtI163Bz5+JK0O+zDkQpn4gKwN+BovclUvCj6pI/6RXrFqQvUMRS2M+Rt8Rv0qR3wjoMoOPmpJKeOh0nBg==}
+    engines: {node: '>= 18'}
 
   '@openapitools/openapi-generator-cli@2.13.12':
     resolution: {integrity: sha512-ieYnbFiSYAEXmmLea+BLh50kMCnUxUoMfElKvFNFPkK8xDCFIzdsa5OVfR/gUKJRuWz/znbEF+zIY3rXlBT+3Q==}
@@ -11615,6 +11629,8 @@ snapshots:
 
   '@octokit/openapi-types@22.2.0': {}
 
+  '@octokit/openapi-webhooks-types@8.3.0': {}
+
   '@octokit/plugin-paginate-rest@11.3.1(@octokit/core@5.2.0)':
     dependencies:
       '@octokit/core': 5.2.0
@@ -11664,7 +11680,15 @@ snapshots:
     dependencies:
       '@octokit/openapi-types': 22.2.0
 
+  '@octokit/webhooks-methods@5.1.0': {}
+
   '@octokit/webhooks-types@7.5.1': {}
+
+  '@octokit/webhooks@13.3.0':
+    dependencies:
+      '@octokit/openapi-webhooks-types': 8.3.0
+      '@octokit/request-error': 6.1.5
+      '@octokit/webhooks-methods': 5.1.0
 
   '@openapitools/openapi-generator-cli@2.13.12':
     dependencies:
@@ -16265,16 +16289,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.1.0)):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.1.0))(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.1.0)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
+      '@typescript-eslint/parser': 8.7.0(eslint@9.11.1(jiti@2.1.0))(typescript@5.6.2)
       eslint: 9.11.1(jiti@2.1.0)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.30.0(eslint@9.11.1(jiti@2.1.0)):
+  eslint-plugin-import@2.30.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.1.0))(typescript@5.6.2))(eslint@9.11.1(jiti@2.1.0)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -16285,7 +16310,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.11.1(jiti@2.1.0)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.1.0))
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.1.0))(typescript@5.6.2))(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.1.0))
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -16295,6 +16320,8 @@ snapshots:
       object.values: 1.2.0
       semver: 6.3.1
       tsconfig-paths: 3.15.0
+    optionalDependencies:
+      '@typescript-eslint/parser': 8.7.0(eslint@9.11.1(jiti@2.1.0))(typescript@5.6.2)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
