@@ -1,6 +1,6 @@
 import type * as schema from "@ctrlplane/db/schema";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -38,17 +38,8 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [localCondition, setLocalCondition] = useState(
-    condition ?? defaultCondition,
-  );
-
-  // there is some weirdness with the sidebar environment panel,
-  // where the condition doesn't update properly. this useEffect
-  // guarantees that the local condition is always in sync with the
-  // condition prop.
-  useEffect(() => {
-    setLocalCondition(condition ?? defaultCondition);
-  }, [condition]);
+  const cond = condition ?? defaultCondition;
+  const [localCondition, setLocalCondition] = useState(cond);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
