@@ -5,34 +5,20 @@ import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
+import { useMatchSorter } from "~/utils/useMatchSorter";
 
-type MetadataFilterInputProps = {
+export const KindFilterInput: React.FC<{
   value: string;
   workspaceId: string;
-  selectedKeys?: string[];
-  selectedKinds?: string[];
+  selectedKinds: string[];
   onChange: (value: string) => void;
-};
-
-export const MetadataFilterInput: React.FC<MetadataFilterInputProps> = ({
-  value,
-  workspaceId,
-  selectedKeys = [],
-  selectedKinds = [],
-  onChange,
-}) => {
+}> = ({ value, workspaceId, selectedKinds = [], onChange }) => {
+  const { data: kinds } = api.workspace.targetKinds.useQuery(workspaceId);
   const [open, setOpen] = useState(false);
 
-  const { data: metadataKeys } = api.target.metadataKeys.useQuery({
-    workspaceId,
-    kinds: selectedKinds,
-  });
-
-  const filteredLabels = metadataKeys
-    ? metadataKeys
-        .filter((key) => !selectedKeys.includes(key))
-        .filter((key) => key.includes(value))
-    : [];
+  const filteredKinds = useMatchSorter(kinds ?? [], value).filter(
+    (k) => !selectedKinds.includes(k),
+  );
 
   return (
     <div className="flex items-center gap-2">
@@ -42,7 +28,7 @@ export const MetadataFilterInput: React.FC<MetadataFilterInputProps> = ({
           className="flex-grow"
         >
           <Input
-            placeholder="Key"
+            placeholder="Kind"
             className="h-8"
             value={value}
             onChange={(e) => onChange(e.target.value)}
@@ -53,19 +39,19 @@ export const MetadataFilterInput: React.FC<MetadataFilterInputProps> = ({
           className="max-h-[300px] w-[23rem] overflow-auto p-0 text-sm"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {filteredLabels.map((key) => (
+          {filteredKinds.map((k) => (
             <Button
               variant="ghost"
               size="sm"
-              key={key}
+              key={k}
               className="w-full rounded-none text-left"
               onClick={(e) => {
                 e.preventDefault();
-                onChange(key);
+                onChange(k);
                 setOpen(false);
               }}
             >
-              <div className="w-full">{key}</div>
+              <div className="w-full">{k}</div>
             </Button>
           ))}
         </PopoverContent>

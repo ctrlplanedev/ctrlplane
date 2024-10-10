@@ -85,6 +85,13 @@
       "when": 1728354754889,
       "tag": "0011_flippant_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1728534056220,
+      "tag": "0012_gigantic_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

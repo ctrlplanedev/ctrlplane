@@ -471,9 +471,14 @@ export const targetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetList)
-          .on({ type: "workspace", id: input }),
+          .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(z.string())
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        kinds: z.array(z.string()).optional(),
+      }),
+    )
     .query(({ ctx, input }) =>
       ctx.db
         .selectDistinct({ key: schema.targetMetadata.key })
@@ -482,7 +487,14 @@ export const targetRouter = createTRPCRouter({
           schema.targetMetadata,
           eq(schema.targetMetadata.targetId, schema.target.id),
         )
-        .where(eq(schema.target.workspaceId, input))
+        .where(
+          and(
+            eq(schema.target.workspaceId, input.workspaceId),
+            input.kinds?.length && input.kinds.length > 0
+              ? inArray(schema.target.kind, input.kinds)
+              : sql`TRUE`,
+          ),
+        )
         .then((r) => r.map((row) => row.key)),
     ),
 

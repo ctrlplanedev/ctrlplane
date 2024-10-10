@@ -31,6 +31,7 @@ import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
+import { KindFilterInput } from "./KindFilterInput";
 import { MetadataFilterInput } from "./MetadataFilterInput";
 
 const metadataGroupFormSchema = z.object({
@@ -67,6 +68,23 @@ export const EditMetadataGroupDialog: React.FC<{
     control: form.control,
   });
 
+  const { data: kinds } = api.workspace.targetKinds.useQuery(workspaceId);
+  const [kindInput, setKindInput] = useState("");
+  const [selectedKinds, setSelectedKinds] = useState<string[]>(
+    metadataGroup.kinds ?? [],
+  );
+
+  const addKind = () => {
+    if (kinds?.includes(kindInput) && !selectedKinds.includes(kindInput)) {
+      setSelectedKinds((prev) => [...prev, kindInput]);
+      setKindInput("");
+    }
+  };
+
+  const removeKind = (kind: string) => {
+    setSelectedKinds(selectedKinds.filter((k) => k !== kind));
+  };
+
   const onSubmit = form.handleSubmit((values) =>
     updateMetadataGroup
       .mutateAsync({
@@ -74,6 +92,7 @@ export const EditMetadataGroupDialog: React.FC<{
         data: {
           ...values,
           keys: values.keys.map((key) => key.value),
+          kinds: selectedKinds,
         },
       })
       .then(() => utils.target.metadataGroup.groups.invalidate())
@@ -88,6 +107,7 @@ export const EditMetadataGroupDialog: React.FC<{
       onOpenChange={() => {
         setOpen((open) => !open);
         form.reset();
+        setSelectedKinds(metadataGroup.kinds ?? []);
         router.refresh();
       }}
     >
@@ -127,6 +147,51 @@ export const EditMetadataGroupDialog: React.FC<{
             />
 
             <div>
+              <Label>Kinds</Label>
+              {selectedKinds.length > 0 && (
+                <div className="mb-1 flex flex-wrap gap-1">
+                  {selectedKinds.map((kind) => (
+                    <Badge
+                      key={kind}
+                      variant="outline"
+                      className="flex w-fit items-center gap-1 text-nowrap py-1 text-xs"
+                    >
+                      {kind}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5"
+                        onClick={() => removeKind(kind)}
+                      >
+                        <IconX className="h-3 w-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-1 flex items-center gap-3">
+                <div className="flex-grow">
+                  <KindFilterInput
+                    value={kindInput}
+                    workspaceId={workspaceId}
+                    onChange={setKindInput}
+                    selectedKinds={selectedKinds}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!kinds?.includes(kindInput) || kindInput === ""}
+                  onClick={addKind}
+                >
+                  Add Kind
+                </Button>
+              </div>
+            </div>
+
+            <div>
               <Label>Keys</Label>
               {fields.length > 0 && (
                 <div className="mb-1 flex flex-wrap gap-1">
@@ -157,6 +222,7 @@ export const EditMetadataGroupDialog: React.FC<{
                     workspaceId={workspaceId}
                     onChange={setInput}
                     selectedKeys={fields.map((field) => field.value)}
+                    selectedKinds={selectedKinds}
                   />
                 </div>
                 <div className="ml-auto">
@@ -190,7 +256,13 @@ export const EditMetadataGroupDialog: React.FC<{
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={!form.formState.isDirty}>
+              <Button
+                type="submit"
+                disabled={
+                  !form.formState.isDirty &&
+                  selectedKinds === metadataGroup.kinds
+                }
+              >
                 Save
               </Button>
             </DialogFooter>

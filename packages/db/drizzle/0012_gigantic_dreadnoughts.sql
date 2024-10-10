@@ -1,0 +1,1 @@
+ALTER TABLE "target_metadata_group" ADD COLUMN "kinds" text[];

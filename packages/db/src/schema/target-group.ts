@@ -13,6 +13,7 @@ export const targetMetadataGroup = pgTable("target_metadata_group", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   keys: text("keys").array().notNull(),
+  kinds: text("kinds").array(),
   includeNullCombinations: boolean("include_null_combinations")
     .notNull()
     .default(false),
@@ -24,6 +25,7 @@ export const createTargetMetadataGroup = createInsertSchema(targetMetadataGroup)
   })
   .extend({
     keys: z.array(z.string()),
+    kinds: z.array(z.string()).optional(),
   });
 export const updateTargetMetadataGroup = createTargetMetadataGroup.partial();
 export type TargetMetadataGroup = InferSelectModel<typeof targetMetadataGroup>;
