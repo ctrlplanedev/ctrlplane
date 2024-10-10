@@ -177,7 +177,7 @@ export const VariableTargetInput: React.FC<
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-60 items-center justify-start gap-2 px-2"
+            className="w-full items-center justify-start gap-2 px-2"
           >
             <IconSelector className="h-4 w-4" />
             <span className="overflow-hidden text-ellipsis">
@@ -185,7 +185,7 @@ export const VariableTargetInput: React.FC<
             </span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-60 p-0">
+        <PopoverContent className="w-[462px] p-0">
           <Command shouldFilter={false}>
             <div className="relative">
               <CommandInput value={search} onValueChange={setSearch} />
