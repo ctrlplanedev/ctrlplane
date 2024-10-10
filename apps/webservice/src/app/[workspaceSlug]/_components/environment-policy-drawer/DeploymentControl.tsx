@@ -106,6 +106,12 @@ export const DeploymentControl: React.FC<{
       .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
   );
 
+  const onEvaluateChange = (v: string) => {
+    if (v === "none") form.setValue("evaluate", null);
+    if (v === "filter") form.setValue("evaluate", defaultCondition);
+    if (v === "regex" || v === "semver") form.setValue("evaluate", "");
+  };
+
   const { concurrencyLimit } = form.watch();
 
   return (
@@ -184,7 +190,13 @@ export const DeploymentControl: React.FC<{
                     Filter which releases can be deployed to this environment.
                   </FormDescription>
                 </div>
-                <RadioGroup onValueChange={onChange} value={value}>
+                <RadioGroup
+                  onValueChange={(v) => {
+                    onEvaluateChange(v);
+                    onChange(v);
+                  }}
+                  value={value}
+                >
                   <FormItem className="flex items-center space-x-3 space-y-0">
                     <FormControl>
                       <RadioGroupItem value="none" />
