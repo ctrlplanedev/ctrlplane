@@ -73,6 +73,9 @@ export const doesConvertingToComparisonRespectMaxDepth = (
   return true;
 };
 
+export const isEmptyCondition = (condition: TargetCondition): boolean =>
+  isComparisonCondition(condition) && condition.conditions.length === 0;
+
 export const isMetadataCondition = (
   condition: TargetCondition,
 ): condition is MetadataCondition =>

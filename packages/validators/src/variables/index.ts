@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { targetCondition } from "../targets/index.js";
+
 export const ChoiceVariableConfig = z.object({
   type: z.literal("choice"),
   options: z.array(z.string()),
@@ -30,6 +32,12 @@ export const BooleanVariableConfig = z.object({
 });
 export type BooleanVariableConfigType = z.infer<typeof BooleanVariableConfig>;
 
+export const TargetVariableConfig = z.object({
+  type: z.literal("target"),
+  filter: targetCondition.optional(),
+});
+export type TargetVariableConfigType = z.infer<typeof TargetVariableConfig>;
+
 export const VariableConfig = z.union([
   StringVariableConfig,
   NumberVariableConfig,
@@ -38,6 +46,9 @@ export const VariableConfig = z.union([
 ]);
 
 export type VariableConfigType = z.infer<typeof VariableConfig>;
+
+export const RunbookVariableConfig = VariableConfig.or(TargetVariableConfig);
+export type RunbookVariableConfigType = z.infer<typeof RunbookVariableConfig>;
 
 export function validateJSONSchema(
   schema: unknown,
