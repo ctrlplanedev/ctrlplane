@@ -1,8 +1,10 @@
+import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { and, count, eq, like, or, takeFirst } from "@ctrlplane/db";
 import {
   createSystem,
+  environment,
   system,
   updateSystem,
   workspace,
@@ -92,14 +94,17 @@ export const systemRouter = createTRPCRouter({
         .select()
         .from(system)
         .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+        .leftJoin(environment, eq(environment.systemId, system.id))
         .where(
           and(
             eq(system.slug, input.systemSlug),
             eq(workspace.slug, input.workspaceSlug),
           ),
         )
-        .then(takeFirst)
-        .then((m) => ({ ...m.system, workspace: m.workspace })),
+        .then((rows) => ({
+          ...rows[0]!.system,
+          environments: rows.map((r) => r.environment).filter(isPresent),
+        })),
     ),
 
   create: protectedProcedure
