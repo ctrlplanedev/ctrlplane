@@ -7,7 +7,7 @@ import type {
 import { useRef } from "react";
 import { useDateSegment } from "react-aria";
 
-import { cn } from "@ctrlplane/ui";
+import { cn } from "../index";
 
 interface DateSegmentProps {
   segment: IDateSegment;

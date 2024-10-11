@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as DrawerPrimitive from "@radix-ui/react-dialog";
 
-import { cn } from "@ctrlplane/ui";
+import { cn } from "./index";
 
 const Drawer = ({
   ...props

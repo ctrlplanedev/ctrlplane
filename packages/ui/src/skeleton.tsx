@@ -1,4 +1,4 @@
-import { cn } from "@ctrlplane/ui";
+import { cn } from "./index";
 
 function Skeleton({
   className,

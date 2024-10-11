@@ -5,8 +5,7 @@ import { useRef } from "react";
 import { useLocale, useTimeField } from "react-aria";
 import { useTimeFieldState } from "react-stately";
 
-import { cn } from "@ctrlplane/ui";
-
+import { cn } from "../index";
 import { DateSegment } from "./date-segment";
 
 function TimeField(props: AriaTimeFieldProps<TimeValue>) {

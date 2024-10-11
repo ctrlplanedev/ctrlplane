@@ -20,9 +20,8 @@ import {
 } from "react-aria";
 import { useCalendarState } from "react-stately";
 
-import { cn } from "@ctrlplane/ui";
-
 import { Button } from "../button";
+import { cn } from "../index";
 
 function Calendar(props: CalendarProps<DateValue>) {
   const prevButtonRef = React.useRef<HTMLButtonElement | null>(null);

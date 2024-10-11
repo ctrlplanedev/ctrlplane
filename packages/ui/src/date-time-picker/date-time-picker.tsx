@@ -8,9 +8,8 @@ import { IconCalendar } from "@tabler/icons-react";
 import { useButton, useDatePicker, useInteractOutside } from "react-aria";
 import { useDatePickerState } from "react-stately";
 
-import { cn } from "@ctrlplane/ui";
-
 import { Button } from "../button";
+import { cn } from "../index";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover";
 import { Calendar } from "./calendar";
 import { DateField } from "./date-field";

@@ -20,8 +20,7 @@ import {
   useFormState,
 } from "react-hook-form";
 
-import { cn } from "@ctrlplane/ui";
-
+import { cn } from "./index";
 import { Label } from "./label";
 
 const useForm = <TOut, TDef extends ZodTypeDef, TIn extends FieldValues>(
