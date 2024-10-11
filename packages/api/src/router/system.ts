@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -52,9 +53,19 @@ export const systemRouter = createTRPCRouter({
       const items = ctx.db
         .select()
         .from(system)
+        .leftJoin(environment, eq(environment.systemId, system.id))
         .where(and(...checks))
         .limit(input.limit)
-        .offset(input.offset);
+        .offset(input.offset)
+        .then((rows) =>
+          _.chain(rows)
+            .groupBy((r) => r.system.id)
+            .map((r) => ({
+              ...r[0]!.system,
+              environments: r.map((r) => r.environment).filter(isPresent),
+            }))
+            .value(),
+        );
 
       const total = ctx.db
         .select({ count: count().as("total") })

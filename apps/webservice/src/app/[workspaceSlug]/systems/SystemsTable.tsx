@@ -1,6 +1,6 @@
 "use client";
 
-import type { System } from "@ctrlplane/db/schema";
+import type { Environment, System } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Fragment } from "react";
 import { useRouter } from "next/navigation";
@@ -23,7 +23,7 @@ import {
 
 import { SystemActionsDropdown } from "./SystemActionsDropdown";
 
-const columns: ColumnDef<System>[] = [
+const columns: ColumnDef<System & { environments: Environment[] }>[] = [
   {
     id: "name",
     header: "Name",
@@ -33,7 +33,7 @@ const columns: ColumnDef<System>[] = [
 ];
 
 export const SystemsTable: React.FC<{
-  systems: System[];
+  systems: (System & { environments: Environment[] })[];
   workspaceSlug: string;
 }> = ({ systems, workspaceSlug }) => {
   const router = useRouter();
