@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import {
   IconAlertTriangle,
   IconDotsVertical,
+  IconLock,
   IconReload,
 } from "@tabler/icons-react";
 
+import { Deployment } from "@ctrlplane/db/schema";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,11 +133,59 @@ const ForceReleaseDialog: React.FC<{
   );
 };
 
+const LockDeployDialog: React.FC<{
+  release: { id: string; name: string };
+  deployment: Deployment;
+  environment: { id: string; name: string };
+  children: React.ReactNode;
+}> = ({ release, deployment, environment, children }) => {
+  const lockDeploy = api.deployment.update.useMutation();
+  const router = useRouter();
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            Lock deployment of {release.name} in {environment.name}?
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            This will prevent any further deployments of this release in the
+            current environment until unlocked.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex">
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <div className="flex-grow" />
+          <AlertDialogAction
+            onClick={() => {
+              lockDeploy
+                .mutateAsync({
+                  id: deployment.id,
+                  data: {
+                    lockedEnvironmentIds: [
+                      ...deployment.lockedEnvironmentIds,
+                      environment.id,
+                    ],
+                  },
+                })
+                .then(() => router.refresh());
+            }}
+          >
+            Lock Deploy
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 export const ReleaseDropdownMenu: React.FC<{
   release: { id: string; name: string };
+  deployment: { id: string };
   environment: { id: string; name: string };
   isReleaseCompleted: boolean;
-}> = ({ release, environment, isReleaseCompleted }) => (
+}> = ({ release, deployment, environment, isReleaseCompleted }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
@@ -166,6 +216,19 @@ export const ReleaseDropdownMenu: React.FC<{
           <span>Force deploy</span>
         </DropdownMenuItem>
       </ForceReleaseDialog>
+      <LockDeployDialog
+        release={release}
+        deployment={deployment}
+        environment={environment}
+      >
+        <DropdownMenuItem
+          onSelect={(e) => e.preventDefault()}
+          className="space-x-2"
+        >
+          <IconLock className="h-4 w-4" />
+          <span>Lock Deploy</span>
+        </DropdownMenuItem>
+      </LockDeployDialog>
     </DropdownMenuContent>
   </DropdownMenu>
 );

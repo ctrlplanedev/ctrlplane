@@ -11,7 +11,7 @@
     "build:docker": "docker build -f apps/docs/Dockerfile -t docs .",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "check-links": "linkinator http://localhost:3001 --silent --timeout 5000"
+    "lint:mdx": "npx tsc .remarkrc.ts && remark . --frail"
   },
   "dependencies": {
     "@ctrlplane/ui": "workspace:*",
@@ -35,6 +35,15 @@
     "linkinator": "^6.1.2",
     "postcss-load-config": "^6.0.1",
     "prettier": "catalog:",
+    "remark": "^15.0.1",
+    "remark-cli": "^12.0.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-lint": "^10.0.0",
+    "remark-lint-are-links-valid": "^1.0.3",
+    "remark-lint-no-dead-urls": "^2.0.1",
+    "remark-mdx": "^3.0.1",
+    "remark-preset-lint-consistent": "^6.0.0",
+    "remark-preset-lint-recommended": "^7.0.0",
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
