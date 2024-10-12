@@ -116,7 +116,3 @@ export const authConfig: NextAuthConfig = {
     },
   },
 } satisfies NextAuthConfig;
-
-if (authConfig.providers.length === 0) {
-  throw new Error("No authentication providers configured");
-}
