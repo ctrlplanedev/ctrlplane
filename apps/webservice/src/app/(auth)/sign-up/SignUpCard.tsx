@@ -22,10 +22,7 @@ const schema = z.object({
   password: z.string().min(8),
 });
 
-export const SignUpCard: React.FC<{
-  isGoogleEnabled: boolean;
-  isOidcEnabled: boolean;
-}> = () => {
+export const SignUpCard: React.FC = () => {
   const router = useRouter();
   const signUp = api.user.auth.signUp.useMutation();
   const form = useForm({

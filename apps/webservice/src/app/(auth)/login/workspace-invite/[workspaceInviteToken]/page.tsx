@@ -4,7 +4,6 @@ import { IconPlane } from "@tabler/icons-react";
 import { auth, isGoogleAuthEnabled, isOIDCAuthEnabled } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
-import { env } from "~/env";
 import { LoginCard } from "../../LoginCard";
 
 export default async function LoginInvitePage() {
