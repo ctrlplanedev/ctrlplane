@@ -38,6 +38,7 @@ export const deployment = pgTable(
     systemId: uuid("system_id")
       .notNull()
       .references(() => system.id),
+    lockedEnvironmentIds: uuid("locked_environment_ids").array().default([]),
     jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
       onDelete: "set null",
     }),
