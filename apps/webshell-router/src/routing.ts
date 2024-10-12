@@ -92,7 +92,6 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
 };
 
 export const addSocket = (expressApp: Express) => {
-   
   const server = createServer(expressApp);
   const wss = new WebSocketServer({ noServer: true });
 
