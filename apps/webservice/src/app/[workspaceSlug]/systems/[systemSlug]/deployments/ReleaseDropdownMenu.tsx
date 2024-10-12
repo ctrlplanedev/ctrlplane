@@ -9,7 +9,7 @@ import {
   IconReload,
 } from "@tabler/icons-react";
 
-import { Deployment } from "@ctrlplane/db/schema";
+import type { Deployment } from "@ctrlplane/db/schema";
 import {
   AlertDialog,
   AlertDialogAction,

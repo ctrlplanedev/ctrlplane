@@ -7,11 +7,11 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint && pnpm check-links",
+    "lint": "eslint",
+    "lint:mdx": "remark \"pages/**/*.mdx\" --frail",
     "build:docker": "docker build -f apps/docs/Dockerfile -t docs .",
     "format": "prettier --check . --ignore-path ../../.gitignore",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "lint:mdx": "npx tsc .remarkrc.ts && remark . --frail"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@ctrlplane/ui": "workspace:*",

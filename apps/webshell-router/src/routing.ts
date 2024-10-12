@@ -92,7 +92,7 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
 };
 
 export const addSocket = (expressApp: Express) => {
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+   
   const server = createServer(expressApp);
   const wss = new WebSocketServer({ noServer: true });
 
