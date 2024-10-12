@@ -1,5 +1,6 @@
-import type { DefaultSession, NextAuthConfig } from "next-auth";
+import type { DefaultSession, NextAuthConfig, Profile } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+import type { OIDCConfig } from "next-auth/providers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import Google from "next-auth/providers/google";
 
@@ -25,10 +26,26 @@ export const authConfig: NextAuthConfig = {
     sessionsTable: schema.session,
   }),
   providers: [
-    Google({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
-    }),
+    ...(env.AUTH_GOOGLE_CLIENT_ID == null
+      ? []
+      : [
+          Google({
+            clientId: env.AUTH_GOOGLE_CLIENT_ID,
+            clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
+          }),
+        ]),
+    ...(env.AUTH_OIDC_ISSUER == null
+      ? []
+      : [
+          {
+            id: "oidc",
+            type: "oidc",
+            name: "Single Sign-On",
+            issuer: env.AUTH_OIDC_ISSUER,
+            clientId: env.AUTH_OIDC_CLIENT_ID!,
+            clientSecret: env.AUTH_OIDC_CLIENT_SECRET!,
+          } satisfies OIDCConfig<Profile>,
+        ]),
   ],
   callbacks: {
     session: (opts) => {
@@ -99,3 +116,7 @@ export const authConfig: NextAuthConfig = {
     },
   },
 } satisfies NextAuthConfig;
+
+if (authConfig.providers.length === 0) {
+  throw new Error("No authentication providers configured");
+}

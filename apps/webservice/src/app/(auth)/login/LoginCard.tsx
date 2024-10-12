@@ -1,11 +1,14 @@
 "use client";
 
-import { IconBrandGoogle } from "@tabler/icons-react";
+import { IconBrandGoogle, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-export const LoginCard: React.FC = () => {
+export const LoginCard: React.FC<{
+  isGoogleEnabled: boolean;
+  isOidcEnabled: boolean;
+}> = ({ isGoogleEnabled, isOidcEnabled }) => {
   return (
     <div className="container mx-auto mt-[150px] max-w-[375px]">
       <h1 className="mb-10 text-center text-3xl font-bold">
@@ -34,13 +37,26 @@ export const LoginCard: React.FC = () => {
           >
             <IconBrandBitbucket /> Continue with Bitbucket
           </Button> */}
-          <Button
-            onClick={() => signIn("google")}
-            size="lg"
-            className="w-full gap-2 rounded-lg bg-red-700 p-6 text-lg tracking-normal text-white hover:bg-red-600"
-          >
-            <IconBrandGoogle className="h-4 w-4" /> Continue with Google
-          </Button>
+
+          {isOidcEnabled && (
+            <Button
+              onClick={() => signIn("oidc")}
+              size="lg"
+              className="w-full gap-2 rounded-lg bg-blue-700 p-6 text-lg tracking-normal text-white hover:bg-blue-600"
+            >
+              <IconLock /> Continue with SSO
+            </Button>
+          )}
+
+          {isGoogleEnabled && (
+            <Button
+              onClick={() => signIn("google")}
+              size="lg"
+              className="w-full gap-2 rounded-lg bg-red-700 p-6 text-lg tracking-normal text-white hover:bg-red-600"
+            >
+              <IconBrandGoogle className="h-4 w-4" /> Continue with Google
+            </Button>
+          )}
         </div>
         {/* <Separator />
         <div className="space-y-2">

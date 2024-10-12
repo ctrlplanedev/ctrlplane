@@ -1,18 +1,17 @@
 version: "3.8"
 
 services:
-  database:
-    container_name: ctrlplane-database
+  postgres:
     image: postgres:16
-    restart: always
-    ports:
-      - "5432:5432"
+    container_name: ctrlplane-postgres
     environment:
-      POSTGRES_DB: ctrlplane
       POSTGRES_USER: ctrlplane
       POSTGRES_PASSWORD: ctrlplane
+      POSTGRES_DB: ctrlplane
+    ports:
+      - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:latest
@@ -21,18 +20,43 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
-  redisinsight:
-    image: redis/redisinsight:latest
-    container_name: ctrlplane-redisinsight
-    links:
-      - redis
+      - redis_data:/data
+
+  webservice:
+    image: ctrlplane/webservice
+    container_name: ctrlplane-webservice
+    environment:
+      BASE_URL: "http://127.0.0.1" # <set your instance url>
+      AUTH_SECRET: "<auth-secret>"
+
+      # AUTH_OIDC_ISSUER: "<oidc-issuer>"
+      # AUTH_OIDC_CLIENT_ID: "<oidc-client-id>"
+      # AUTH_OIDC_CLIENT_SECRET: "<oidc-client-secret>"
+
+      DATABASE_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+    depends_on:
+      - postgres
+      - rabbitmq
     ports:
-      - "5540:5540"
-    volumes:
-      - redisinsight-data:/data
+      - "8080:8080"
+
+  job-policy-checker:
+    image: ctrlplane/job-policy-checker
+    container_name: ctrlplane-job-policy-checker
+    environment:
+      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+    depends_on:
+      - postgres
+
+  event-worker:
+    image: ctrlplane/event-worker
+    container_name: ctrlplane-event-worker
+    environment:
+      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+    depends_on:
+      - postgres
+      - redis
 
 volumes:
-  db-data:
-  redis-data:
-  redisinsight-data:
+  postgres_data:
+  redis_data:
