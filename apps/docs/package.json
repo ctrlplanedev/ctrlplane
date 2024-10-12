@@ -32,7 +32,6 @@
     "@types/react": "catalog:react18",
     "@types/react-dom": "catalog:react18",
     "eslint": "catalog:",
-    "linkinator": "^6.1.2",
     "postcss-load-config": "^6.0.1",
     "prettier": "catalog:",
     "remark": "^15.0.1",
