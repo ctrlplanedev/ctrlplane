@@ -2,16 +2,19 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { IconPlane } from "@tabler/icons-react";
 
-import { auth, isGoogleAuthEnabled, isOIDCAuthEnabled } from "@ctrlplane/auth";
+import { auth, isCredentialsAuthEnabled } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
-import { LoginCard } from "./LoginCard";
+import { SignUpCard } from "./SignUpCard";
 
 export const metadata: Metadata = { title: "Ctrlplane Login" };
 
 export default async function LoginPage() {
+  if (!isCredentialsAuthEnabled) redirect("/login");
+
   const session = await auth();
   if (session != null) redirect("/");
+
   return (
     <div className="h-full">
       <div className="flex items-center gap-2 p-4">
@@ -22,10 +25,7 @@ export default async function LoginPage() {
         </Button>
         <Button variant="outline">Sign up</Button>
       </div>
-      <LoginCard
-        isGoogleEnabled={isGoogleAuthEnabled}
-        isOidcEnabled={isOIDCAuthEnabled}
-      />
+      <SignUpCard />
     </div>
   );
 }
