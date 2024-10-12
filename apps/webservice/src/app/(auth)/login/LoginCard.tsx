@@ -55,6 +55,7 @@ export const LoginCard: React.FC<{
         {isOidcEnabled && (
           <div className="space-y-2">
             <Button
+              onClick={() => signIn("oidc")}
               size="lg"
               variant="outline"
               className="w-full gap-2 rounded-lg p-6 text-lg tracking-normal"
