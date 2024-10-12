@@ -32,7 +32,7 @@ services:
       - postgres
 
   webservice:
-    image: ctrlplane/webservice:a324758
+    image: ctrlplane/webservice:4318330
     container_name: ctrlplane-webservice
     environment:
       BASE_URL: "http://127.0.0.1" # <set your instance url>
