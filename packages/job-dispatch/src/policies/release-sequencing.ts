@@ -2,19 +2,11 @@ import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, ne, notInArray } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
-
-const exitStatus = [
-  JobStatus.Completed,
-  JobStatus.InvalidJobAgent,
-  JobStatus.Failure,
-  JobStatus.Cancelled,
-  JobStatus.Skipped,
-];
 
 /**
  * Checks if job configurations pass the release sequencing wait policy.
@@ -60,10 +52,7 @@ export const isPassingReleaseSequencingWaitPolicy: ReleaseIdPolicyChecker =
       schema.releaseJobTrigger.id,
       releaseJobTriggers.map((t) => t.id).filter(isPresent),
     );
-    const isActiveJob = and(
-      notInArray(schema.job.status, exitStatus),
-      ne(schema.job.status, JobStatus.Pending),
-    );
+    const isActiveJob = eq(schema.job.status, JobStatus.InProgress);
 
     const activeJobs = await db
       .select()
@@ -131,10 +120,7 @@ export const isPassingReleaseSequencingCancelPolicy = async (
     schema.environmentPolicy.releaseSequencing,
     "cancel",
   );
-  const isActiveJob = and(
-    notInArray(schema.job.status, exitStatus),
-    ne(schema.job.status, JobStatus.Pending),
-  );
+  const isActiveJob = eq(schema.job.status, JobStatus.InProgress);
 
   const activeJobs = await db
     .select()
