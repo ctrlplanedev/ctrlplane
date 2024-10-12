@@ -7,9 +7,11 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
-    "lint": "eslint",
+    "lint": "eslint && pnpm check-links",
     "build:docker": "docker build -f apps/docs/Dockerfile -t docs .",
-    "format": "prettier --check . --ignore-path ../../.gitignore"
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "check-links": "linkinator http://localhost:3001 --silent --timeout 5000"
   },
   "dependencies": {
     "@ctrlplane/ui": "workspace:*",
@@ -30,6 +32,7 @@
     "@types/react": "catalog:react18",
     "@types/react-dom": "catalog:react18",
     "eslint": "catalog:",
+    "linkinator": "^6.1.2",
     "postcss-load-config": "^6.0.1",
     "prettier": "catalog:",
     "tailwindcss": "catalog:",
