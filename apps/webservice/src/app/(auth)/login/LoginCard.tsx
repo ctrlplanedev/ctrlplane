@@ -16,9 +16,6 @@ export const LoginCard: React.FC<{
         Log in to Ctrlplane
       </h1>
       <div className="space-y-6">
-        <>
-          <Separator />
-        </>
         <div className="space-y-2">
           {/* <Button
             onClick={() => signIn("github")}
@@ -42,16 +39,6 @@ export const LoginCard: React.FC<{
             <IconBrandBitbucket /> Continue with Bitbucket
           </Button> */}
 
-          {isOidcEnabled && (
-            <Button
-              onClick={() => signIn("oidc")}
-              size="lg"
-              className="w-full gap-2 rounded-lg bg-blue-700 p-6 text-lg tracking-normal text-white hover:bg-blue-600"
-            >
-              <IconLock /> Continue with SSO
-            </Button>
-          )}
-
           {isGoogleEnabled && (
             <Button
               onClick={() => signIn("google")}
@@ -62,23 +49,27 @@ export const LoginCard: React.FC<{
             </Button>
           )}
         </div>
-        {/* <Separator />
-        <div className="space-y-2">
-          <Button
-            size="lg"
-            variant="outline"
-            className="w-full gap-2 rounded-lg p-6 text-lg tracking-normal"
-          >
-            <IconLock /> Continue with SSO
-          </Button>
-          <Button
+
+        {isOidcEnabled && isGoogleEnabled && <Separator />}
+
+        {isOidcEnabled && (
+          <div className="space-y-2">
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full gap-2 rounded-lg p-6 text-lg tracking-normal"
+            >
+              <IconLock /> Continue with SSO
+            </Button>
+            {/* <Button
             size="lg"
             variant="outline"
             className="w-full gap-2 rounded-lg p-6 text-lg font-semibold tracking-normal"
           >
             <IconKey /> Login with Passkey
-          </Button>
-        </div> */}
+          </Button> */}
+          </div>
+        )}
       </div>
     </div>
   );
