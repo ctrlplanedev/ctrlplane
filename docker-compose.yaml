@@ -23,7 +23,7 @@ services:
       - redis_data:/data
 
   migrations:
-    image: ctrlplane/migrations:f8372a7
+    image: ctrlplane/migrations:c656deb
     container_name: ctrlplane-migrations
     restart: "no"
     environment:
@@ -32,7 +32,7 @@ services:
       - postgres
 
   webservice:
-    image: ctrlplane/webservice:4318330
+    image: ctrlplane/webservice:c656deb
     container_name: ctrlplane-webservice
     environment:
       BASE_URL: "http://127.0.0.1" # <set your instance url>
@@ -50,7 +50,7 @@ services:
       - "8080:8080"
 
   job-policy-checker:
-    image: ctrlplane/job-policy-checker:a324758
+    image: ctrlplane/job-policy-checker:c656deb
     container_name: ctrlplane-job-policy-checker
     environment:
       POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
@@ -58,7 +58,7 @@ services:
       - postgres
 
   event-worker:
-    image: ctrlplane/event-worker:a324758
+    image: ctrlplane/event-worker:c656deb
     container_name: ctrlplane-event-worker
     environment:
       POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
