@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 
 import { authConfig } from "./config";
 
+export * from "./config";
 export type { Session } from "next-auth";
 
 const {

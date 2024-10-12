@@ -1,11 +1,16 @@
+import { TRPCError } from "@trpc/server";
+import { hashSync } from "bcryptjs";
 import { omit } from "lodash";
 import { z } from "zod";
 
 import { can, generateApiKey, hash } from "@ctrlplane/auth/utils";
-import { and, eq, takeFirst } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
 import { scopeType, updateUser, user, userApiKey } from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
+import { signInSchema } from "@ctrlplane/validators/auth";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 
 export const profileRouter = createTRPCRouter({
   update: protectedProcedure
@@ -20,7 +25,32 @@ export const profileRouter = createTRPCRouter({
     ),
 });
 
+const authRouter = createTRPCRouter({
+  signUp: publicProcedure
+    .input(signInSchema.extend({ name: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { email, password, name } = input;
+
+      const user = await ctx.db
+        .select()
+        .from(schema.user)
+        .where(eq(schema.user.email, email))
+        .then(takeFirstOrNull);
+
+      if (user != null)
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+
+      const passwordHash = hashSync(password, 10);
+      return db
+        .insert(schema.user)
+        .values({ name, email, passwordHash })
+        .returning()
+        .then(takeFirst);
+    }),
+});
+
 export const userRouter = createTRPCRouter({
+  auth: authRouter,
   can: protectedProcedure
     .input(
       z.object({

@@ -1,14 +1,18 @@
-import type { DefaultSession, NextAuthConfig, Profile } from "next-auth";
+import type { DefaultSession, NextAuthConfig } from "next-auth";
 import type { JWT } from "next-auth/jwt";
-import type { OIDCConfig } from "next-auth/providers";
+import type { Provider } from "next-auth/providers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { ZodError } from "zod";
 
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { signInSchema } from "@ctrlplane/validators/auth";
 
 import { env } from "../env";
+import { getUserByCredentials } from "./utils/credentials";
 
 declare module "next-auth" {
   interface Session {
@@ -19,34 +23,57 @@ declare module "next-auth" {
   }
 }
 
+export const isGoogleAuthEnabled = env.AUTH_GOOGLE_CLIENT_ID != null;
+export const isOIDCAuthEnabled = env.AUTH_OIDC_CLIENT_ID != null;
+export const isCredentialsAuthEnabled =
+  !isGoogleAuthEnabled && !isOIDCAuthEnabled;
+
+const providers = (): Provider[] => {
+  const p: Provider[] = [];
+  if (isGoogleAuthEnabled)
+    p.push(
+      Google({
+        clientId: env.AUTH_GOOGLE_CLIENT_ID,
+      }),
+    );
+
+  if (isOIDCAuthEnabled)
+    p.push({
+      id: "oidc",
+      type: "oidc",
+      name: "Single Sign-On",
+      issuer: env.AUTH_OIDC_ISSUER,
+      clientId: env.AUTH_OIDC_CLIENT_ID,
+      clientSecret: env.AUTH_OIDC_CLIENT_SECRET,
+    });
+
+  if (isCredentialsAuthEnabled)
+    p.push(
+      Credentials({
+        credentials: { email: {}, password: {} },
+        authorize: async (credentials) => {
+          try {
+            const { email, password } = signInSchema.parse(credentials);
+            return getUserByCredentials(email, password);
+          } catch (error) {
+            // Return `null` to indicate that the credentials are invalid
+            if (error instanceof ZodError) return null;
+            throw error;
+          }
+        },
+      }),
+    );
+
+  return p;
+};
+
 export const authConfig: NextAuthConfig = {
   adapter: DrizzleAdapter(db, {
     usersTable: schema.user,
     accountsTable: schema.account,
     sessionsTable: schema.session,
   }),
-  providers: [
-    ...(env.AUTH_GOOGLE_CLIENT_ID == null
-      ? []
-      : [
-          Google({
-            clientId: env.AUTH_GOOGLE_CLIENT_ID,
-            clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
-          }),
-        ]),
-    ...(env.AUTH_OIDC_ISSUER == null
-      ? []
-      : [
-          {
-            id: "oidc",
-            type: "oidc",
-            name: "Single Sign-On",
-            issuer: env.AUTH_OIDC_ISSUER,
-            clientId: env.AUTH_OIDC_CLIENT_ID!,
-            clientSecret: env.AUTH_OIDC_CLIENT_SECRET!,
-          } satisfies OIDCConfig<Profile>,
-        ]),
-  ],
+  providers: providers(),
   callbacks: {
     session: (opts) => {
       if (!("user" in opts))

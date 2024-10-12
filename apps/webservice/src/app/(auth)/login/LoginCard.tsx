@@ -4,6 +4,7 @@ import { IconBrandGoogle, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 
 import { Button } from "@ctrlplane/ui/button";
+import { Separator } from "@ctrlplane/ui/separator";
 
 export const LoginCard: React.FC<{
   isGoogleEnabled: boolean;
@@ -15,6 +16,9 @@ export const LoginCard: React.FC<{
         Log in to Ctrlplane
       </h1>
       <div className="space-y-6">
+        <>
+          <Separator />
+        </>
         <div className="space-y-2">
           {/* <Button
             onClick={() => signIn("github")}

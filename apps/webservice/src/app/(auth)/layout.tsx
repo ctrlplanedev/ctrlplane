@@ -1,16 +1,8 @@
-import { redirect } from "next/navigation";
 import { IconPlane } from "@tabler/icons-react";
 
-import { auth, isGoogleAuthEnabled, isOIDCAuthEnabled } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
-import { env } from "~/env";
-import { LoginCard } from "../../LoginCard";
-
-export default async function LoginInvitePage() {
-  const session = await auth();
-  if (session != null) redirect("/");
-
+export default function AuthPage({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full">
       <div className="flex items-center gap-2 p-4">
@@ -21,10 +13,7 @@ export default async function LoginInvitePage() {
         </Button>
         <Button variant="outline">Sign up</Button>
       </div>
-      <LoginCard
-        isGoogleEnabled={isGoogleAuthEnabled}
-        isOidcEnabled={isOIDCAuthEnabled}
-      />
+      {children}
     </div>
   );
 }
