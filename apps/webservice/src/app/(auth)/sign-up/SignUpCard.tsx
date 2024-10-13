@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { z } from "zod";
 
+import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
   FormControl,
@@ -34,9 +36,10 @@ export const SignUpCard: React.FC = () => {
     },
   });
 
-  const onSubmit = form.handleSubmit((data) => {
-    signUp.mutate(data);
-    router.replace("/login");
+  const onSubmit = form.handleSubmit(async (data) => {
+    await signUp.mutateAsync(data);
+    await signIn("credentials", data);
+    router.replace("/");
   });
 
   return (
@@ -47,7 +50,7 @@ export const SignUpCard: React.FC = () => {
       <div className="space-y-6">
         <div className="space-y-2">
           <Form {...form}>
-            <form onSubmit={onSubmit}>
+            <form onSubmit={onSubmit} className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -89,6 +92,15 @@ export const SignUpCard: React.FC = () => {
                   </FormItem>
                 )}
               />
+
+              <Button
+                type="submit"
+                className="w-full"
+                size="lg"
+                disabled={signUp.isPending}
+              >
+                Continue
+              </Button>
             </form>
           </Form>
         </div>

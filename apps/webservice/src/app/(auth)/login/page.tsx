@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { IconPlane } from "@tabler/icons-react";
 
@@ -20,7 +21,9 @@ export default async function LoginPage() {
         <Button variant="ghost" className="text-muted-foreground">
           Contact
         </Button>
-        <Button variant="outline">Sign up</Button>
+        <Link href="/sign-up" passHref>
+          <Button variant="outline">Sign up</Button>
+        </Link>
       </div>
       <LoginCard
         isGoogleEnabled={isGoogleAuthEnabled}

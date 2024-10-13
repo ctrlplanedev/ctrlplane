@@ -38,7 +38,10 @@ const authRouter = createTRPCRouter({
         .then(takeFirstOrNull);
 
       if (user != null)
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "User already exists",
+        });
 
       const passwordHash = hashSync(password, 10);
       return db

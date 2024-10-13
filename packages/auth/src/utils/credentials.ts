@@ -16,5 +16,5 @@ export const getUserByCredentials = async (email: string, password: string) => {
   if (user == null) return null;
   const { passwordHash } = user;
   if (passwordHash == null) return null;
-  return compareSync(password, passwordHash) ? null : user;
+  return compareSync(password, passwordHash) ? user : null;
 };

@@ -6,7 +6,7 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { ZodError } from "zod";
 
-import { and, eq, isNull } from "@ctrlplane/db";
+import { and, eq, isNull, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { signInSchema } from "@ctrlplane/validators/auth";
@@ -26,7 +26,9 @@ declare module "next-auth" {
 export const isGoogleAuthEnabled = env.AUTH_GOOGLE_CLIENT_ID != null;
 export const isOIDCAuthEnabled = env.AUTH_OIDC_CLIENT_ID != null;
 export const isCredentialsAuthEnabled =
-  !isGoogleAuthEnabled && !isOIDCAuthEnabled;
+  env.AUTH_CREDENTIALS_ENABLED === "auto"
+    ? !isGoogleAuthEnabled && !isOIDCAuthEnabled
+    : env.AUTH_CREDENTIALS_ENABLED === "true";
 
 const providers = (): Provider[] => {
   const p: Provider[] = [];
@@ -34,6 +36,7 @@ const providers = (): Provider[] => {
     p.push(
       Google({
         clientId: env.AUTH_GOOGLE_CLIENT_ID,
+        clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
       }),
     );
 
@@ -54,8 +57,11 @@ const providers = (): Provider[] => {
         authorize: async (credentials) => {
           try {
             const { email, password } = signInSchema.parse(credentials);
-            return getUserByCredentials(email, password);
+            const user = await getUserByCredentials(email, password);
+            console.log(user);
+            return user;
           } catch (error) {
+            console.log(error);
             // Return `null` to indicate that the credentials are invalid
             if (error instanceof ZodError) return null;
             throw error;
@@ -68,23 +74,32 @@ const providers = (): Provider[] => {
 };
 
 export const authConfig: NextAuthConfig = {
+  pages: { signIn: "/login" },
+  session: { strategy: "jwt" },
+
   adapter: DrizzleAdapter(db, {
     usersTable: schema.user,
     accountsTable: schema.account,
     sessionsTable: schema.session,
   }),
+
   providers: providers(),
+  debug: true,
   callbacks: {
-    session: (opts) => {
-      if (!("user" in opts))
-        throw new Error("unreachable with session strategy");
+    session: async (opts) => {
+      const user =
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        opts.user ??
+        (await db
+          .select()
+          .from(schema.user)
+          .where(eq(schema.user.id, opts.token.sub!))
+          .then(takeFirst));
+
       return {
         ...opts.session,
         token: opts.token,
-        user: {
-          ...opts.session.user,
-          id: opts.user.id,
-        },
+        user: user,
       };
     },
     redirect: ({ url }) => {
