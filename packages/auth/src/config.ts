@@ -56,8 +56,11 @@ const providers = (): Provider[] => {
         credentials: { email: {}, password: {} },
         authorize: async (credentials) => {
           try {
-            const { email, password } = signInSchema.parse(credentials);
+            const { success, data } = signInSchema.safeParse(credentials);
+            if (!success) return null;
+            const { email, password } = data;
             const user = await getUserByCredentials(email, password);
+            if (!user) return null;
             console.log(user);
             return user;
           } catch (error) {
@@ -76,6 +79,8 @@ const providers = (): Provider[] => {
 export const authConfig: NextAuthConfig = {
   pages: { signIn: "/login" },
   session: { strategy: "jwt" },
+
+  secret: env.AUTH_SECRET,
 
   adapter: DrizzleAdapter(db, {
     usersTable: schema.user,

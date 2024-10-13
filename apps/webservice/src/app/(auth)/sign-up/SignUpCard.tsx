@@ -1,8 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,23 +12,19 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import * as schema from "@ctrlplane/validators/auth";
 
 import { api } from "~/trpc/react";
-
-const schema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-  password: z.string().min(8),
-});
 
 export const SignUpCard: React.FC = () => {
   const router = useRouter();
   const signUp = api.user.auth.signUp.useMutation();
   const form = useForm({
-    schema,
+    schema: schema.signUpSchema,
     defaultValues: {
       name: "",
       email: "",
@@ -36,10 +32,29 @@ export const SignUpCard: React.FC = () => {
     },
   });
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    await signUp.mutateAsync(data);
-    await signIn("credentials", data);
-    router.replace("/");
+  useEffect(() => {
+    const lastEnteredEmail = localStorage.getItem("lastEnteredEmail");
+    if (lastEnteredEmail) form.setValue("email", lastEnteredEmail);
+
+    const subscription = form.watch(
+      (value, { name }) =>
+        name === "email" &&
+        localStorage.setItem("lastEnteredEmail", value.email ?? ""),
+    );
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  const onSubmit = form.handleSubmit((data) => {
+    signUp
+      .mutateAsync(data)
+      .then(() => {
+        signIn("credentials", data).then(() => router.push("/"));
+      })
+      .catch(() => {
+        form.setError("root", {
+          message: "Sign up failed. Please try again.",
+        });
+      });
   });
 
   return (
@@ -92,7 +107,7 @@ export const SignUpCard: React.FC = () => {
                   </FormItem>
                 )}
               />
-
+              <FormRootError />
               <Button
                 type="submit"
                 className="w-full"

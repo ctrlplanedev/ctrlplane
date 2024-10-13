@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { IconBrandGoogle, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
-import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,25 +13,41 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import * as schema from "@ctrlplane/validators/auth";
 
 export const LoginCard: React.FC<{
   isGoogleEnabled: boolean;
   isOidcEnabled: boolean;
 }> = ({ isGoogleEnabled, isOidcEnabled }) => {
+  const router = useRouter();
   const form = useForm({
-    schema: z.object({
-      email: z.string().email(),
-      password: z.string().min(8),
-    }),
+    schema: schema.signInSchema,
     defaultValues: { email: "", password: "" },
   });
 
+  useEffect(() => {
+    const lastEnteredEmail = localStorage.getItem("lastEnteredEmail");
+    if (lastEnteredEmail) form.setValue("email", lastEnteredEmail);
+    const subscription = form.watch(({ email }) =>
+      localStorage.setItem("lastEnteredEmail", email ?? ""),
+    );
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   const onSubmit = form.handleSubmit((data, event) => {
     event?.preventDefault();
-    signIn("credentials", { ...data, callbackUrl: "/" });
+    signIn("credentials", { ...data })
+      .then(() => router.push("/"))
+      .catch((error) => {
+        console.error("Sign in error:", error);
+        form.setError("root", {
+          message: "Sign in failed. Please try again.",
+        });
+      });
   });
 
   return (
@@ -69,6 +86,8 @@ export const LoginCard: React.FC<{
                   </FormItem>
                 )}
               />
+
+              <FormRootError />
               <Button type="submit" className="w-full">
                 Login
               </Button>
