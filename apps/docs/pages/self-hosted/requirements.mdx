@@ -23,6 +23,10 @@ The requirements for Redis are as follows:
 - Redis 7.x (6.x may work, but is not officially supported)
 - Redis Eviction Policy: `noeviction`
 
+| Ctrlplane Version | Minimum Redis version | Maximum Redis version |
+| :---------------- | :-------------------- | :-------------------- |
+| 0.x               | 7.x                   | 7.x                   |
+
 ## PostgreSQL
 
 PostgreSQL is the only supported database, it stores most of the applications
@@ -30,7 +34,7 @@ data.
 
 | Ctrlplane Version | Minimum PostgreSQL version | Maximum PostgreSQL version |
 | :---------------- | :------------------------- | :------------------------- |
-| 1.x               | 16.x                       | 16.x                       |
+| 0.x               | 16.x                       | 17.x                       |
 
 <Callout type="warning">
   Do not make direct changes to the database, schemas, users, or other

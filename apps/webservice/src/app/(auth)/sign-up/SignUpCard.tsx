@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { useLocalStorage } from "react-use";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -32,17 +33,20 @@ export const SignUpCard: React.FC = () => {
     },
   });
 
+  const [lastEnteredEmail, setLastEnteredEmail] = useLocalStorage(
+    "lastEnteredEmail",
+    "",
+  );
+
   useEffect(() => {
-    const lastEnteredEmail = localStorage.getItem("lastEnteredEmail");
     if (lastEnteredEmail) form.setValue("email", lastEnteredEmail);
 
     const subscription = form.watch(
       (value, { name }) =>
-        name === "email" &&
-        localStorage.setItem("lastEnteredEmail", value.email ?? ""),
+        name === "email" && setLastEnteredEmail(value.email ?? ""),
     );
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, lastEnteredEmail, setLastEnteredEmail]);
 
   const onSubmit = form.handleSubmit((data) => {
     signUp

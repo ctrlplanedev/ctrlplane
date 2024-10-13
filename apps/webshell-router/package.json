@@ -18,7 +18,7 @@
     "express-rate-limit": "^7.3.0",
     "helmet": "^7.1.0",
     "ms": "^2.1.3",
-    "next-auth": "5.0.0-beta.18",
+    "next-auth": "catalog:",
     "ws": "^8.17.0",
     "zod": "catalog:"
   },
