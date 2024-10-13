@@ -19,8 +19,13 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
 ): Promise<void> => {
   if (releaseJobTriggers.length === 0) return;
 
+  // https://github.com/drizzle-team/drizzle-orm/issues/1242
   const triggersSubquery = sql`
-    select job.id as jobIdToCancel, release.id as cancelReleaseId, deployment.id as cancelDeploymentId, release_job_trigger.environment_id as cancelEnvironmentId
+    select 
+      ${schema.job.id} as jobIdToCancel, 
+      ${schema.release.id} as cancelReleaseId, 
+      ${schema.deployment.id} as cancelDeploymentId, 
+      ${schema.releaseJobTrigger.environmentId} as cancelEnvironmentId
     from ${schema.job}
     inner join ${schema.releaseJobTrigger} on ${schema.job.id} = ${schema.releaseJobTrigger.jobId}
     inner join ${schema.release} on ${schema.releaseJobTrigger.releaseId} = ${schema.release.id}
