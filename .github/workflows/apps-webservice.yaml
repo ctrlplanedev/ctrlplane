@@ -15,11 +15,11 @@ on:
       - packages/**
       - .github/workflows/apps-webservice.yaml
       - pnpm-lock.yaml
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     permissions:
       contents: read
       id-token: write
