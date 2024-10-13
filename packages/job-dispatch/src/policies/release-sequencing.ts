@@ -1,152 +1,50 @@
-import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
-import { isPresent } from "ts-is-present";
-
-import { and, eq, inArray, isNull, notInArray } from "@ctrlplane/db";
+import { and, eq, inArray, notExists, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { activeStatus } from "@ctrlplane/validators/jobs";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
 
 /**
- * Checks if job configurations pass the release sequencing wait policy.
  *
- * This function filters job configurations based on the release sequencing wait
- * policy. It ensures that new jobs are only dispatched when there are
- * no active jobs in the same environment. This policy helps maintain
- * a sequential order of jobs within an environment.
- *
- * The function performs the following steps:
- * 1. If no release job triggers are provided, it returns an empty array.
- * 2. It queries the database for active jobs in the affected
- *    environments.
- * 3. It applies several conditions to find relevant active jobs:
- *    - The environment must be one of those in the provided release job triggers.
- *    - The environment must not be deleted.
- *    - The environment policy must have release sequencing set to "wait".
- *    - The job config must not be one of those provided (to avoid
- *      self-blocking).
- *    - The job must be in an active state (not completed, failed,
- *      etc.).
- * 4. Finally, it filters the input release job triggers, allowing only those where there
- *    are no active jobs in the same environment.
- *
- * @param db - The database transaction object.
- * @param releaseJobTriggers - An array of ReleaseJobTrigger objects to be checked.
- * @returns An array of ReleaseJobTrigger objects that pass the release sequencing wait
- * policy.
+ * @param db
+ * @param releaseJobTriggers
+ * @returns job triggers that are not blocked by an active release
  */
-export const isPassingReleaseSequencingWaitPolicy: ReleaseIdPolicyChecker =
-  async (db, releaseJobTriggers) => {
-    if (releaseJobTriggers.length === 0) return [];
-    const isAffectedEnvironment = inArray(
-      schema.environment.id,
-      releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
-    );
-    const isNotDeletedEnvironment = isNull(schema.environment.deletedAt);
-    const doesEnvironmentPolicyMatchesStatus = eq(
-      schema.environmentPolicy.releaseSequencing,
-      "wait",
-    );
-    const isNotDispatchedReleaseJobTrigger = notInArray(
-      schema.releaseJobTrigger.id,
-      releaseJobTriggers.map((t) => t.id).filter(isPresent),
-    );
-    const isActiveJob = eq(schema.job.status, JobStatus.InProgress);
-
-    const activeJobs = await db
-      .select()
-      .from(schema.job)
-      .innerJoin(
-        schema.releaseJobTrigger,
-        eq(schema.job.id, schema.releaseJobTrigger.jobId),
-      )
-      .innerJoin(
-        schema.environment,
-        eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-      )
-      .innerJoin(
-        schema.environmentPolicy,
-        eq(schema.environment.policyId, schema.environmentPolicy.id),
-      )
-      .where(
-        and(
-          isAffectedEnvironment,
-          isNotDeletedEnvironment,
-          doesEnvironmentPolicyMatchesStatus,
-          isNotDispatchedReleaseJobTrigger,
-          isActiveJob,
-        ),
-      );
-
-    return releaseJobTriggers.filter((t) =>
-      activeJobs.every((w) => w.environment.id !== t.environmentId),
-    );
-  };
-
-/**
- * This function implements the release sequencing cancel policy. It determines
- * which release job triggers can proceed based on the current state of active
- * jobs in the environment. Here's what it does:
- *
- * 1. It filters out environments that are deleted or don't have a "cancel"
- *    release sequencing policy.
- * 2. It queries the database for active jobs in the affected environments.
- * 3. It then filters the input release job triggers, allowing only those where
- *    there are no active jobs in the same environment.
- *
- * The purpose of this policy is to ensure that when a new release is triggered
- * in an environment with a environment "cancel" policy configured, it will only
- * proceed if there are no other active jobs in that environment. This
- * effectively implements a "cancel and replace" strategy for releases in these
- * environments if enabled.
- *
- * @param db - The database transaction object
- * @param releaseJobTriggers - An array of release job triggers to be evaluated
- * @returns An array of release job triggers that pass the policy (i.e., can
- * proceed)
- */
-export const isPassingReleaseSequencingCancelPolicy = async (
-  db: Tx,
-  releaseJobTriggers: schema.ReleaseJobTriggerInsert[],
+export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
+  db,
+  releaseJobTriggers,
 ) => {
   if (releaseJobTriggers.length === 0) return [];
-  const isAffectedEnvironment = inArray(
-    schema.environment.id,
-    releaseJobTriggers.map((t) => t.environmentId).filter(isPresent),
-  );
-  const isNotDeletedEnvironment = isNull(schema.environment.deletedAt);
-  const doesEnvironmentPolicyMatchesStatus = eq(
-    schema.environmentPolicy.releaseSequencing,
-    "cancel",
-  );
-  const isActiveJob = eq(schema.job.status, JobStatus.InProgress);
 
-  const activeJobs = await db
+  const unblockedTriggers = await db
     .select()
-    .from(schema.job)
+    .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.releaseJobTrigger,
-      eq(schema.job.id, schema.releaseJobTrigger.jobId),
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
     )
     .innerJoin(
-      schema.environment,
-      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-    )
-    .innerJoin(
-      schema.environmentPolicy,
-      eq(schema.environment.policyId, schema.environmentPolicy.id),
+      schema.deployment,
+      eq(schema.release.deploymentId, schema.deployment.id),
     )
     .where(
       and(
-        isAffectedEnvironment,
-        isNotDeletedEnvironment,
-        doesEnvironmentPolicyMatchesStatus,
-        isActiveJob,
+        inArray(
+          schema.releaseJobTrigger.id,
+          releaseJobTriggers.map((t) => t.id),
+        ),
+        notExists(
+          db.execute(sql<schema.Job[]>`
+            select 1 from ${schema.job}
+            inner join ${schema.releaseJobTrigger} as rjt2 on ${schema.job.id} = rjt2.job_id
+            inner join ${schema.release} as release2 on rjt2.release_id = release2.id
+            where rjt2.environment_id = ${schema.releaseJobTrigger.environmentId}
+            and release2.deployment_id = ${schema.deployment.id}
+            and release2.id != ${schema.release.id}
+            and ${inArray(schema.job.status, activeStatus)}
+          `),
+        ),
       ),
     );
-
-  return releaseJobTriggers.filter((t) =>
-    activeJobs.every((w) => w.environment.id !== t.environmentId),
-  );
+  return unblockedTriggers.map((rjt) => rjt.release_job_trigger);
 };

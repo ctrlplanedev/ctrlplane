@@ -13,7 +13,6 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingReleaseSequencingCancelPolicy,
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
@@ -61,7 +60,6 @@ export const POST = async (req: NextRequest) => {
     createReleaseJobTriggers(db, "new_release")
       .causedById(user.id)
       .filter(isPassingReleaseStringCheckPolicy)
-      .filter(isPassingReleaseSequencingCancelPolicy)
       .releases([release.id])
       .then(createJobApprovals)
       .insert()

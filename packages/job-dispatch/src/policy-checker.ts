@@ -8,7 +8,7 @@ import { isPassingConcurrencyPolicy } from "./policies/concurrency-policy.js";
 import { isPassingJobRolloutPolicy } from "./policies/gradual-rollout.js";
 import { isPassingApprovalPolicy } from "./policies/manual-approval.js";
 import { isPassingReleaseDependencyPolicy } from "./policies/release-dependency.js";
-import { isPassingReleaseSequencingWaitPolicy } from "./policies/release-sequencing.js";
+import { isPassingNoActiveJobsPolicy } from "./policies/release-sequencing.js";
 import { isPassingReleaseWindowPolicy } from "./policies/release-window.js";
 import { isPassingCriteriaPolicy } from "./policies/success-rate-criteria-passing.js";
 
@@ -23,7 +23,7 @@ export const isPassingAllPolicies = async (
     isPassingCriteriaPolicy,
     isPassingConcurrencyPolicy,
     isPassingJobRolloutPolicy,
-    isPassingReleaseSequencingWaitPolicy,
+    isPassingNoActiveJobsPolicy,
     isPassingReleaseWindowPolicy,
     isPassingReleaseDependencyPolicy,
   ];

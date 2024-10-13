@@ -24,6 +24,26 @@ export const createEdgesWhereEnvironmentHasNoPolicy = (
     };
   });
 
+export const createEdgesFromPolicyToReleaseSequencing = (
+  envs: Array<{ id: string; policyId?: string | null }>,
+) =>
+  envs.map((e) => ({
+    id: `${e.policyId ?? "trigger"}-releaseSequencing-${e.id}`,
+    source: e.policyId ?? "trigger",
+    target: `${e.id}-releaseSequencing`,
+    markerEnd,
+  }));
+
+export const createEdgesFromReleaseSequencingToEnvironment = (
+  envs: Array<{ id: string; policyId?: string | null }>,
+) =>
+  envs.map((e) => ({
+    id: `${e.id}-releaseSequencing-${e.id}`,
+    source: `${e.id}-releaseSequencing`,
+    target: e.id,
+    markerEnd,
+  }));
+
 export const createEdgesFromPolicyDeployment = (
   policyDeployments: Array<EnvironmentPolicyDeployment>,
 ) =>
