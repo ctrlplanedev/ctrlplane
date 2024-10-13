@@ -77,6 +77,8 @@ export const authConfig: NextAuthConfig = {
   pages: { signIn: "/login" },
   session: { strategy: "jwt" },
 
+  secret: env.AUTH_SECRET,
+
   adapter: DrizzleAdapter(db, {
     usersTable: schema.user,
     accountsTable: schema.account,

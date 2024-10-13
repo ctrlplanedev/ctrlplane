@@ -24,7 +24,7 @@ export default async function LoginPage() {
         <Button variant="ghost" className="text-muted-foreground">
           Contact
         </Button>
-        <Link href="/sign-up" passHref>
+        <Link href="/login" passHref>
           <Button variant="outline">Login</Button>
         </Link>
       </div>

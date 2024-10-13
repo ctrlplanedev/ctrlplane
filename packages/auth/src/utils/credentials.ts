@@ -13,8 +13,9 @@ const getUserByEmail = (email: string) =>
 
 export const getUserByCredentials = async (email: string, password: string) => {
   const user = await getUserByEmail(email);
-  if (user == null) return null;
+  if (user == null) return new Error("Invalid credentials");
   const { passwordHash } = user;
-  if (passwordHash == null) return null;
-  return compareSync(password, passwordHash) ? user : null;
+  if (passwordHash == null) return new Error("Invalid credentials");
+  const isPasswordCorrect = compareSync(password, passwordHash);
+  return isPasswordCorrect ? user : new Error("Invalid credentials");
 };

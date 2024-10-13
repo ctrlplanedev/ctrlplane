@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { IconBrandGoogle, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
-import { z } from "zod";
+import { useLocalStorage } from "react-use";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,25 +14,44 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import * as schema from "@ctrlplane/validators/auth";
 
 export const LoginCard: React.FC<{
   isGoogleEnabled: boolean;
   isOidcEnabled: boolean;
 }> = ({ isGoogleEnabled, isOidcEnabled }) => {
+  const router = useRouter();
   const form = useForm({
-    schema: z.object({
-      email: z.string().email(),
-      password: z.string().min(8),
-    }),
+    schema: schema.signInSchema,
     defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = form.handleSubmit((data, event) => {
+  const [lastEnteredEmail, setLastEnteredEmail] = useLocalStorage(
+    "lastEnteredEmail",
+    "",
+  );
+
+  useEffect(() => {
+    if (lastEnteredEmail) form.setValue("email", lastEnteredEmail);
+    const subscription = form.watch(({ email }) =>
+      setLastEnteredEmail(email ?? ""),
+    );
+    return () => subscription.unsubscribe();
+  }, [form, lastEnteredEmail, setLastEnteredEmail]);
+
+  const onSubmit = form.handleSubmit(async (data, event) => {
     event?.preventDefault();
-    signIn("credentials", { ...data, callbackUrl: "/" });
+    await signIn("credentials", { ...data })
+      .then(() => router.push("/"))
+      .catch(() => {
+        form.setError("root", {
+          message: "Sign in failed. Please try again.",
+        });
+      });
   });
 
   return (
@@ -69,6 +90,8 @@ export const LoginCard: React.FC<{
                   </FormItem>
                 )}
               />
+
+              <FormRootError />
               <Button type="submit" className="w-full">
                 Login
               </Button>

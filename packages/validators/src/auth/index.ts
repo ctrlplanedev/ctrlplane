@@ -12,6 +12,10 @@ export const signInSchema = z.object({
     .max(32, "Password must be less than 32 characters"),
 });
 
+export const signUpSchema = signInSchema.extend({
+  name: z.string().min(1, "Name is required"),
+});
+
 export enum Permission {
   IamSetPolicy = "iam.setIamPolicy",
 
