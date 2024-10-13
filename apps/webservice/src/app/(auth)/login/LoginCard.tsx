@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { IconBrandGoogle, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
+import { useLocalStorage } from "react-use";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -29,21 +30,24 @@ export const LoginCard: React.FC<{
     defaultValues: { email: "", password: "" },
   });
 
+  const [lastEnteredEmail, setLastEnteredEmail] = useLocalStorage(
+    "lastEnteredEmail",
+    "",
+  );
+
   useEffect(() => {
-    const lastEnteredEmail = localStorage.getItem("lastEnteredEmail");
     if (lastEnteredEmail) form.setValue("email", lastEnteredEmail);
     const subscription = form.watch(({ email }) =>
-      localStorage.setItem("lastEnteredEmail", email ?? ""),
+      setLastEnteredEmail(email ?? ""),
     );
     return () => subscription.unsubscribe();
-  }, [form]);
+  }, [form, lastEnteredEmail, setLastEnteredEmail]);
 
-  const onSubmit = form.handleSubmit((data, event) => {
+  const onSubmit = form.handleSubmit(async (data, event) => {
     event?.preventDefault();
-    signIn("credentials", { ...data })
+    await signIn("credentials", { ...data })
       .then(() => router.push("/"))
-      .catch((error) => {
-        console.error("Sign in error:", error);
+      .catch(() => {
         form.setError("root", {
           message: "Sign in failed. Please try again.",
         });
