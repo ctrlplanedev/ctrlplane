@@ -1,0 +1,41 @@
+---
+title: Integrations Overview
+---
+
+# Integrations Overview
+
+Integrations allow you to connect Ctrlplane with various services, enhancing
+your deployment capabilities and workflows. Below are the available integrations
+you can set up.
+
+## Available Integrations
+
+import { Cards } from "nextra/components";
+import { SiGithub, SiGooglecloud, SiKubernetes } from "react-icons/si";
+
+<Cards>
+  <Cards.Card
+    icon={<SiGithub className="h-8 w-8" />}
+    title="GitHub"
+    href="/integrations/github"
+  />
+  <Cards.Card
+    icon={<SiGooglecloud className="h-8 w-8" />}
+    title="Google Cloud"
+    href="/integrations/google-cloud/compute-scanner"
+  />
+  <Cards.Card
+    icon={<SiKubernetes className="h-8 w-8" />}
+    title="Kubernetes"
+    href="/integrations/kubernetes/jobs-agent"
+  />
+</Cards>
+
+## How to Set Up Integrations
+
+To set up an integration, follow the specific instructions provided in the
+respective integration documentation. Ensure you have the necessary permissions
+and configurations in place to connect Ctrlplane with the external service.
+
+For more detailed information on each integration, please refer to the links
+provided in the cards above.
