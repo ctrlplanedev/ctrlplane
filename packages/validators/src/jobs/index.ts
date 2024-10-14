@@ -15,9 +15,13 @@ export enum JobStatus {
   ExternalRunNotFound = "external_run_not_found",
 }
 
+export const activeStatus = [JobStatus.InProgress, JobStatus.ActionRequired];
+
 export const exitedStatus = [
   JobStatus.Completed,
   JobStatus.InvalidJobAgent,
+  JobStatus.InvalidIntegration,
+  JobStatus.ExternalRunNotFound,
   JobStatus.Failure,
   JobStatus.Cancelled,
   JobStatus.Skipped,

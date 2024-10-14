@@ -67,7 +67,7 @@ export const ReleaseManagement: React.FC<{
                       <RadioGroupItem value="wait" />
                     </FormControl>
                     <FormLabel className="flex items-center gap-2 font-normal">
-                      Pause deployment until active releases are completed
+                      Keep pending releases
                     </FormLabel>
                   </FormItem>
                   <FormItem className="flex items-center space-x-3 space-y-0">
