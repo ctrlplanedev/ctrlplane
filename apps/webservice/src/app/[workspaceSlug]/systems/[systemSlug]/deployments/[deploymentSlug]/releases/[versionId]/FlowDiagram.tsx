@@ -29,7 +29,7 @@ import { ReleaseSequencingNode } from "./ReleaseSequencingNode";
 const nodeTypes: NodeTypes = {
   environment: EnvironmentNode,
   policy: PolicyNode,
-  releaseSequencing: ReleaseSequencingNode,
+  "release-sequencing": ReleaseSequencingNode,
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const FlowDiagram: React.FC<{
@@ -65,8 +65,8 @@ export const FlowDiagram: React.FC<{
     ...envs.map((env) => {
       const policy = policies.find((p) => p.id === env.policyId);
       return {
-        id: env.id + "-releaseSequencing",
-        type: "releaseSequencing",
+        id: env.id + "-release-sequencing",
+        type: "release-sequencing",
         position: { x: 0, y: 0 },
         data: {
           releaseId: release.id,

@@ -28,9 +28,9 @@ export const createEdgesFromPolicyToReleaseSequencing = (
   envs: Array<{ id: string; policyId?: string | null }>,
 ) =>
   envs.map((e) => ({
-    id: `${e.policyId ?? "trigger"}-releaseSequencing-${e.id}`,
+    id: `${e.policyId ?? "trigger"}-release-sequencing-${e.id}`,
     source: e.policyId ?? "trigger",
-    target: `${e.id}-releaseSequencing`,
+    target: `${e.id}-release-sequencing`,
     markerEnd,
   }));
 
@@ -38,8 +38,8 @@ export const createEdgesFromReleaseSequencingToEnvironment = (
   envs: Array<{ id: string; policyId?: string | null }>,
 ) =>
   envs.map((e) => ({
-    id: `${e.id}-releaseSequencing-${e.id}`,
-    source: `${e.id}-releaseSequencing`,
+    id: `${e.id}-release-sequencing-${e.id}`,
+    source: `${e.id}-release-sequencing`,
     target: e.id,
     markerEnd,
   }));

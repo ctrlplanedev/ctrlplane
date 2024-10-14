@@ -20,6 +20,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   if (releaseJobTriggers.length === 0) return;
 
   // https://github.com/drizzle-team/drizzle-orm/issues/1242
+  // https://github.com/drizzle-team/drizzle-orm/issues/2772
   const triggersSubquery = sql`
     select 
       ${schema.job.id} as jobIdToCancel, 
@@ -48,14 +49,12 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
       schema.releaseJobTrigger.id,
       releaseJobTriggers.map((t) => t.id),
     )}
-    and ${schema.environmentPolicy.releaseSequencing} = ${"cancel"}
+    and ${schema.environmentPolicy.releaseSequencing} = ${schema.releaseSequencingType.enumValues.at(1)}
   `;
 
   const jobsToCancel = await db
     .execute(jobsToCancelQuery)
     .then((r) => r.rows.map((r) => String(r.jobidtocancel)));
-
-  console.log("jobsToCancel", jobsToCancel);
 
   await db
     .update(schema.job)
