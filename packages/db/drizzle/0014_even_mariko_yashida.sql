@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "deployment_lock" (
+packages/db/drizzle/0014_even_mariko_yashida.sqlCREATE TABLE IF NOT EXISTS "deployment_lock" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"deployment_id" uuid,
 	"environment_id" uuid,
