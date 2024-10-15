@@ -1,4 +1,5 @@
 export default {
+  overview: "Overview",
   systems: "Systems",
   targets: "Targets",
   environments: "Environments",
