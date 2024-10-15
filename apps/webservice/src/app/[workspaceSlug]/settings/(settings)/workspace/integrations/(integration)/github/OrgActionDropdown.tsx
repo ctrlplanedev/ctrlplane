@@ -1,3 +1,4 @@
+import type * as schema from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { IconChevronDown, IconExternalLink } from "@tabler/icons-react";
 
@@ -9,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import type { GithubOrganizationWithConfigFiles } from "./GithubRemoveOrgDialog";
 import { DisconnectDropdownActionButton } from "./DisconnectDropdownActionButton";
 import { GithubRemoveOrgDialog } from "./GithubRemoveOrgDialog";
 
@@ -19,7 +19,7 @@ type OrgActionDropdownProps = {
     botName: string;
     clientId: string;
   };
-  org: GithubOrganizationWithConfigFiles;
+  org: schema.GithubOrganization;
 };
 
 export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
