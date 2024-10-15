@@ -13,6 +13,7 @@ import {
 import {
   createDeployment,
   deployment,
+  deploymentLock,
   environment,
   job,
   jobAgent,
@@ -320,4 +321,55 @@ export const deploymentRouter = createTRPCRouter({
           r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
         );
     }),
+
+  lock: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentLock)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .insert(deploymentLock)
+        .values({
+          deploymentId: input.deploymentId,
+          environmentId: input.environmentId,
+          lockedAt: new Date(),
+        })
+        .returning()
+        .then(takeFirst),
+    ),
+
+  unlock: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentUnlock)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+      }),
+    )
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .delete(deploymentLock)
+        .where(
+          and(
+            eq(deploymentLock.deploymentId, input.deploymentId),
+            eq(deploymentLock.environmentId, input.environmentId),
+          ),
+        )
+        .returning()
+        .then(takeFirst),
+    ),
 });

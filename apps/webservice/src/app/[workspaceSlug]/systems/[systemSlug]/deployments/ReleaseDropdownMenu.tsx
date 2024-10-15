@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   IconAlertTriangle,
   IconDotsVertical,
+  IconLock,
+  IconLockOpen,
   IconReload,
 } from "@tabler/icons-react";
 
@@ -38,6 +40,7 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
+import { LockReleaseDialog } from "./LockReleaseDialog";
 
 const RedeployReleaseDialog: React.FC<{
   release: { id: string; name: string };
@@ -166,6 +169,19 @@ export const ReleaseDropdownMenu: React.FC<{
           <span>Force deploy</span>
         </DropdownMenuItem>
       </ForceReleaseDialog>
+      <LockReleaseDialog
+        deploymentId={release.id}
+        environmentId={environment.id}
+        environmentName={environment.name}
+      >
+        <DropdownMenuItem
+          onSelect={(e) => e.preventDefault()}
+          className="space-x-2"
+        >
+          <IconLockOpen className="h-4 w-4" />
+          <span>Lock Deployment</span>
+        </DropdownMenuItem>
+      </LockReleaseDialog>
     </DropdownMenuContent>
   </DropdownMenu>
 );
