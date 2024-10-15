@@ -3,6 +3,36 @@ info:
   title: Ctrlplane API
   version: 1.0.0
 paths:
+  /v1/workspaces/{workspace}/config:
+    post:
+      summary: Create resources from a config file
+      operationId: updateConfig
+      parameters:
+        - name: workspace
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the workspace
+      requestBody:
+        required: true
+        content:
+          application/yaml:
+            schema:
+              type: string
+      responses:
+        "200":
+          description: Successfully created resources
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Workspace not found
+        "500":
+          description: Internal server error
   /v1/workspaces/{workspace}/job-agents/name:
     patch:
       summary: Upserts the agent

@@ -39,6 +39,10 @@
     "./environment-policies": {
       "types": "./src/environment-policies/index.ts",
       "default": "./dist/environment-policies/index.js"
+    },
+    "./cac": {
+      "types": "./src/cac/index.ts",
+      "default": "./dist/cac/index.js"
     }
   },
   "license": "MIT",

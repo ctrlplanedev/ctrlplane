@@ -11,7 +11,6 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { environment } from "./environment.js";
-import { githubConfigFile } from "./github.js";
 import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
 
@@ -53,10 +52,6 @@ export const deployment = pgTable(
       .default("{}")
       .$type<Record<string, any>>()
       .notNull(),
-    githubConfigFileId: uuid("github_config_file_id").references(
-      () => githubConfigFile.id,
-      { onDelete: "set null" },
-    ),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );
