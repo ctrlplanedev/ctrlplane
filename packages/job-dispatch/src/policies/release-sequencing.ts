@@ -1,3 +1,5 @@
+import _ from "lodash";
+
 import { and, eq, inArray, notExists, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { activeStatus } from "@ctrlplane/validators/jobs";
@@ -46,5 +48,20 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
         ),
       ),
     );
-  return unblockedTriggers.map((rjt) => rjt.release_job_trigger);
+
+  // edge case - if multiple releases are created at the same time, only take latest, then highest lexicographical version
+  return _.chain(unblockedTriggers)
+    .groupBy((rjt) => [
+      rjt.deployment.id,
+      rjt.release_job_trigger.environmentId,
+    ])
+    .flatMap((rjt) => {
+      const maxRelease = _.maxBy(rjt, (rjt) => [
+        rjt.release.createdAt,
+        rjt.release.version,
+      ]);
+      return rjt.filter((rjt) => rjt.release.id === maxRelease?.release.id);
+    })
+    .map((rjt) => rjt.release_job_trigger)
+    .value();
 };

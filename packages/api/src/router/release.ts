@@ -93,7 +93,7 @@ export const releaseRouter = createTRPCRouter({
             ].filter(isPresent),
           ),
         )
-        .orderBy(desc(release.createdAt))
+        .orderBy(desc(release.createdAt), desc(release.version))
         .limit(input.limit ?? 1000)
         .offset(input.offset ?? 0)
         .then((data) =>
