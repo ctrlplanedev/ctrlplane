@@ -1,1 +1,0 @@
-ALTER TABLE "deployment" ADD COLUMN "locked_environment_ids" uuid[] DEFAULT '{}';

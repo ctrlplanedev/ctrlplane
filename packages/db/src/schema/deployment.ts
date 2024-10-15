@@ -1,8 +1,16 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { environment } from "./environment.js";
 import { githubConfigFile } from "./github.js";
 import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
@@ -38,7 +46,6 @@ export const deployment = pgTable(
     systemId: uuid("system_id")
       .notNull()
       .references(() => system.id),
-    lockedEnvironmentIds: uuid("locked_environment_ids").array().default([]),
     jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
       onDelete: "set null",
     }),
@@ -52,6 +59,21 @@ export const deployment = pgTable(
     ),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
+);
+
+export const deploymentLock = pgTable(
+  "deployment_lock",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    deploymentId: uuid("deployment_id").references(() => deployment.id, {
+      onDelete: "cascade",
+    }),
+    environmentId: uuid("environment_id").references(() => environment.id, {
+      onDelete: "cascade",
+    }),
+    lockedAt: timestamp("locked_at").default(new Date()),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.environmentId) }),
 );
 
 const deploymentInsert = createInsertSchema(deployment, {
