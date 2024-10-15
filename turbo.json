@@ -32,8 +32,12 @@
       "outputLogs": "new-only"
     },
     "lint": {
-      "dependsOn": ["^topo", "^build"],
+      "dependsOn": ["^topo", "^build", "lint:mdx"],
       "outputs": ["node_modules/.cache/.eslintcache"]
+    },
+    "lint:mdx": {
+      "dependsOn": ["^topo", "^build"],
+      "cache": true
     },
     "typecheck": {
       "dependsOn": ["^topo", "^build"],

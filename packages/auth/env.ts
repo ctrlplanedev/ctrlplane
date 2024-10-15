@@ -8,8 +8,15 @@ export const env = createEnv({
       process.env.NODE_ENV === "production"
         ? z.string().min(1)
         : z.string().min(1).default("devmode"),
-    GOOGLE_CLIENT_ID: z.string().min(1),
-    GOOGLE_CLIENT_SECRET: z.string().min(1),
+
+    AUTH_CREDENTIALS_ENABLED: z.enum(["true", "auto", "false"]).default("auto"),
+
+    AUTH_GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    AUTH_GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+
+    AUTH_OIDC_ISSUER: z.string().min(1).optional(),
+    AUTH_OIDC_CLIENT_ID: z.string().min(1).optional(),
+    AUTH_OIDC_CLIENT_SECRET: z.string().min(1).optional(),
   },
   client: {},
   experimental__runtimeEnv: {},

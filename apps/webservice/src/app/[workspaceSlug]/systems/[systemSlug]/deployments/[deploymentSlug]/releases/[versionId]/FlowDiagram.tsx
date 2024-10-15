@@ -17,16 +17,19 @@ import ReactFlow, {
 import { ArrowEdge } from "~/app/[workspaceSlug]/_components/reactflow/ArrowEdge";
 import {
   createEdgesFromPolicyDeployment,
-  createEdgesWhereEnvironmentHasNoPolicy,
+  createEdgesFromPolicyToReleaseSequencing,
+  createEdgesFromReleaseSequencingToEnvironment,
   createEdgesWherePolicyHasNoEnvironment,
 } from "~/app/[workspaceSlug]/_components/reactflow/edges";
 import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
 import { EnvironmentNode } from "./FlowNode";
 import { PolicyNode } from "./FlowPolicyNode";
+import { ReleaseSequencingNode } from "./ReleaseSequencingNode";
 
 const nodeTypes: NodeTypes = {
   environment: EnvironmentNode,
   policy: PolicyNode,
+  "release-sequencing": ReleaseSequencingNode,
 };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const FlowDiagram: React.FC<{
@@ -59,10 +62,26 @@ export const FlowDiagram: React.FC<{
         release,
       },
     })),
+    ...envs.map((env) => {
+      const policy = policies.find((p) => p.id === env.policyId);
+      return {
+        id: env.id + "-release-sequencing",
+        type: "release-sequencing",
+        position: { x: 0, y: 0 },
+        data: {
+          releaseId: release.id,
+          deploymentId: release.deploymentId,
+          environmentId: env.id,
+          policyType: policy?.releaseSequencing,
+          label: `${env.name} - release sequencing`,
+        },
+      };
+    }),
   ]);
 
   const [edges, setEdges, onEdgesChange] = useEdgesState([
-    ...createEdgesWhereEnvironmentHasNoPolicy(envs),
+    ...createEdgesFromPolicyToReleaseSequencing(envs),
+    ...createEdgesFromReleaseSequencingToEnvironment(envs),
     ...createEdgesWherePolicyHasNoEnvironment(policies, policyDeployments),
     ...createEdgesFromPolicyDeployment(policyDeployments),
   ]);

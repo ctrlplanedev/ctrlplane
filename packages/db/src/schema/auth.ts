@@ -30,6 +30,7 @@ export const user = pgTable("user", {
   activeWorkspaceId: uuid("active_workspace_id")
     .references(() => workspace.id, { onDelete: "set null" })
     .default(sql`null`),
+  passwordHash: text("password_hash").default(sql`null`),
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -54,13 +55,13 @@ export const account = pgTable(
       .notNull(),
     provider: varchar("provider", { length: 255 }).notNull(),
     providerAccountId: varchar("providerAccountId", { length: 255 }).notNull(),
-    refresh_token: varchar("refresh_token", { length: 255 }),
+    refresh_token: text("refresh_token"),
     access_token: text("access_token"),
     expires_at: integer("expires_at"),
     token_type: varchar("token_type", { length: 255 }),
     scope: varchar("scope", { length: 255 }),
     id_token: text("id_token"),
-    session_state: varchar("session_state", { length: 255 }),
+    session_state: text("session_state"),
   },
   (account) => ({
     compoundKey: primaryKey({
@@ -74,7 +75,7 @@ export const accountRelations = relations(account, ({ one }) => ({
 }));
 
 export const session = pgTable("session", {
-  sessionToken: varchar("sessionToken", { length: 255 }).notNull().primaryKey(),
+  sessionToken: text("sessionToken").notNull().primaryKey(),
   userId: uuid("userId")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

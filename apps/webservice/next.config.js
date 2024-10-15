@@ -32,6 +32,10 @@ const config = {
       "@opentelemetry/sdk-node",
       "@opentelemetry/auto-instrumentations-node",
       "@appsignal/opentelemetry-instrumentation-bullmq",
+      "@opentelemetry/exporter-trace-otlp-http",
+      "@opentelemetry/resources",
+      "@opentelemetry/sdk-node",
+      "@opentelemetry/semantic-conventions",
     ],
   },
 

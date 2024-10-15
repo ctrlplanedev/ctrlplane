@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { IconPlane } from "@tabler/icons-react";
 
-import { auth } from "@ctrlplane/auth";
+import { auth, isGoogleAuthEnabled, isOIDCAuthEnabled } from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
 import { LoginCard } from "./LoginCard";
@@ -20,9 +21,14 @@ export default async function LoginPage() {
         <Button variant="ghost" className="text-muted-foreground">
           Contact
         </Button>
-        <Button variant="outline">Sign up</Button>
+        <Link href="/sign-up" passHref>
+          <Button variant="outline">Sign up</Button>
+        </Link>
       </div>
-      <LoginCard />
+      <LoginCard
+        isGoogleEnabled={isGoogleAuthEnabled}
+        isOidcEnabled={isOIDCAuthEnabled}
+      />
     </div>
   );
 }

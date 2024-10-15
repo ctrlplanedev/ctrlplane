@@ -1,4 +1,3 @@
-import { BullMQInstrumentation } from "@appsignal/opentelemetry-instrumentation-bullmq";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { Resource } from "@opentelemetry/resources";
@@ -42,9 +41,6 @@ const sdk = new NodeSDK({
       "@opentelemetry/instrumentation-winston": {
         enabled: true,
       },
-    }),
-    new BullMQInstrumentation({
-      enabled: true,
     }),
   ],
   sampler:

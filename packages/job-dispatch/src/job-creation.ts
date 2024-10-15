@@ -1,24 +1,9 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq, isNotNull, or, takeFirst } from "@ctrlplane/db";
+import { and, eq, isNotNull, ne, or, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-// import {
-//   deployment,
-//   environment,
-//   environmentPolicy,
-//   environmentPolicyDeployment,
-//   job,
-//   jobAgent,
-//   release,
-//   releaseDependency,
-//   releaseJobTrigger,
-// } from "@ctrlplane/db/schema";
-/**
- * Converts a job config into a job which means they can now be
- * picked up by job agents
- */
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -97,10 +82,6 @@ export const onJobCompletion = async (je: schema.Job) => {
       eq(schema.releaseJobTrigger.releaseId, schema.release.id),
     )
     .innerJoin(
-      schema.environment,
-      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-    )
-    .innerJoin(
       schema.deployment,
       eq(schema.release.deploymentId, schema.deployment.id),
     )
@@ -111,28 +92,38 @@ export const onJobCompletion = async (je: schema.Job) => {
     eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
     eq(
       schema.environmentPolicyDeployment.environmentId,
-      triggers.environment.id,
+      triggers.release_job_trigger.environmentId,
     ),
-  );
-
-  const isWaitingOnPreviousReleasesInSameEnvironment = and(
-    eq(schema.environmentPolicy.releaseSequencing, "wait"),
-    eq(schema.environment.id, triggers.environment.id),
   );
 
   const isWaitingOnConcurrencyRequirementInSameRelease = and(
     eq(schema.environmentPolicy.concurrencyType, "some"),
-    eq(schema.environment.id, triggers.environment.id),
+    eq(schema.environment.id, triggers.release_job_trigger.environmentId),
     eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
+    eq(schema.job.status, JobStatus.Pending),
   );
 
   const isDependentOnVersionOfTriggerDeployment = isNotNull(
     schema.releaseDependency.id,
   );
 
+  const isWaitingOnJobToFinish = and(
+    eq(schema.environment.id, triggers.release_job_trigger.environmentId),
+    eq(schema.deployment.id, triggers.deployment.id),
+    ne(schema.release.id, triggers.release.id),
+  );
+
   const affectedReleaseJobTriggers = await db
     .select()
     .from(schema.releaseJobTrigger)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.release.deploymentId, schema.deployment.id),
+    )
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
     .innerJoin(
       schema.environment,
@@ -164,7 +155,7 @@ export const onJobCompletion = async (je: schema.Job) => {
         eq(schema.job.status, JobStatus.Pending),
         or(
           isDependentOnTriggerForCriteria,
-          isWaitingOnPreviousReleasesInSameEnvironment,
+          isWaitingOnJobToFinish,
           isWaitingOnConcurrencyRequirementInSameRelease,
           isDependentOnVersionOfTriggerDeployment,
         ),

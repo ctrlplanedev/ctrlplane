@@ -7,6 +7,7 @@ import { and, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import {
   isFilterCheck,
+  isNoneCheck,
   isRegexCheck,
   isSemverCheck,
 } from "@ctrlplane/validators/environment-policies";
@@ -55,6 +56,8 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
 
       const { environment_policy: envPolicy } = policy;
       const check: VersionCheck = { ...envPolicy };
+      if (isNoneCheck(check)) return v;
+
       if (isSemverCheck(check) && satisfies(rel.version, check.evaluate))
         return v;
 

@@ -3,7 +3,14 @@ import pRetry from "p-retry";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { githubOrganization, job } from "@ctrlplane/db/schema";
+import {
+  environment,
+  githubOrganization,
+  job,
+  releaseJobTrigger,
+  system,
+  workspace,
+} from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -26,24 +33,34 @@ export const dispatchGithubJob = async (je: Job) => {
     return;
   }
 
-  const ghOrg = await db
+  const ghOrgResult = await db
     .select()
     .from(githubOrganization)
+    .innerJoin(workspace, eq(githubOrganization.workspaceId, workspace.id))
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(environment, eq(environment.systemId, system.id))
+    .innerJoin(
+      releaseJobTrigger,
+      eq(releaseJobTrigger.environmentId, environment.id),
+    )
     .where(
       and(
         eq(githubOrganization.installationId, parsed.data.installationId),
         eq(githubOrganization.organizationName, parsed.data.owner),
+        eq(releaseJobTrigger.jobId, je.id),
       ),
     )
     .then(takeFirstOrNull);
 
-  if (ghOrg == null) {
+  if (ghOrgResult == null) {
     await db.update(job).set({
       status: JobStatus.InvalidIntegration,
       message: `GitHub organization not found for job ${je.id}`,
     });
     return;
   }
+
+  const ghOrg = ghOrgResult.github_organization;
 
   const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {

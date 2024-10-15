@@ -1,8 +1,11 @@
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { and, count, eq, like, or, takeFirst } from "@ctrlplane/db";
 import {
   createSystem,
+  environment,
   system,
   updateSystem,
   workspace,
@@ -50,9 +53,19 @@ export const systemRouter = createTRPCRouter({
       const items = ctx.db
         .select()
         .from(system)
+        .leftJoin(environment, eq(environment.systemId, system.id))
         .where(and(...checks))
         .limit(input.limit)
-        .offset(input.offset);
+        .offset(input.offset)
+        .then((rows) =>
+          _.chain(rows)
+            .groupBy((r) => r.system.id)
+            .map((r) => ({
+              ...r[0]!.system,
+              environments: r.map((r) => r.environment).filter(isPresent),
+            }))
+            .value(),
+        );
 
       const total = ctx.db
         .select({ count: count().as("total") })
@@ -92,14 +105,17 @@ export const systemRouter = createTRPCRouter({
         .select()
         .from(system)
         .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+        .leftJoin(environment, eq(environment.systemId, system.id))
         .where(
           and(
             eq(system.slug, input.systemSlug),
             eq(workspace.slug, input.workspaceSlug),
           ),
         )
-        .then(takeFirst)
-        .then((m) => ({ ...m.system, workspace: m.workspace })),
+        .then((rows) => ({
+          ...rows[0]!.system,
+          environments: rows.map((r) => r.environment).filter(isPresent),
+        })),
     ),
 
   create: protectedProcedure

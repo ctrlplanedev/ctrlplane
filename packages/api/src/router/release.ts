@@ -40,7 +40,6 @@ import {
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
   isPassingLockingPolicy,
-  isPassingReleaseSequencingCancelPolicy,
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -228,11 +227,6 @@ export const releaseRouter = createTRPCRouter({
           .filter(
             input.isForcedRelease
               ? (_, releaseJobTriggers) => releaseJobTriggers
-              : isPassingReleaseSequencingCancelPolicy,
-          )
-          .filter(
-            input.isForcedRelease
-              ? (_, releaseJobTriggers) => releaseJobTriggers
               : isPassingReleaseStringCheckPolicy,
           )
           .then(input.isForcedRelease ? cancelPreviousJobs : createJobApprovals)
@@ -315,11 +309,6 @@ export const releaseRouter = createTRPCRouter({
                 .targets([t.id])
                 .filter(
                   input.isForcedRelease
-                    ? (_tx, releaseJobTriggers) => releaseJobTriggers
-                    : isPassingReleaseSequencingCancelPolicy,
-                )
-                .filter(
-                  input.isForcedRelease
                     ? (_, releaseJobTriggers) => releaseJobTriggers
                     : isPassingReleaseStringCheckPolicy,
                 )
@@ -369,7 +358,6 @@ export const releaseRouter = createTRPCRouter({
           .causedById(ctx.session.user.id)
           .filter(isPassingReleaseStringCheckPolicy)
           .releases([rel.id])
-          .filter(isPassingReleaseSequencingCancelPolicy)
           .then(createJobApprovals)
           .insert();
 

@@ -6,8 +6,7 @@ import { createCalendar } from "@internationalized/date";
 import { useDateField, useLocale } from "react-aria";
 import { useDateFieldState } from "react-stately";
 
-import { cn } from "@ctrlplane/ui";
-
+import { cn } from "../index";
 import { DateSegment } from "./date-segment";
 
 function DateField(
