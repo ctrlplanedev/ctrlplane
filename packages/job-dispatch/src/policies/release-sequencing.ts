@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { and, asc, desc, eq, inArray, notExists, sql } from "@ctrlplane/db";
+import { and, eq, inArray, notExists, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { activeStatus } from "@ctrlplane/validators/jobs";
 
@@ -47,11 +47,6 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
           `),
         ),
       ),
-    )
-    .orderBy(
-      asc(schema.deployment.id),
-      desc(schema.release.createdAt),
-      desc(schema.release.version),
     );
 
   // edge case - if multiple releases are created at the same time, only take latest, then highest lexicographical version
