@@ -6,10 +6,8 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
-  deployment,
-  githubConfigFile,
   githubOrganization,
   githubOrganizationInsert,
   githubUser,
@@ -187,28 +185,8 @@ const reposRouter = createTRPCRouter({
   }),
 });
 
-const configFileRouter = createTRPCRouter({
-  list: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.WorkspaceListIntegrations).on({
-          type: "workspace",
-          id: input,
-        }),
-    })
-    .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(githubConfigFile)
-        .where(eq(githubConfigFile.workspaceId, input)),
-    ),
-});
-
 export const githubRouter = createTRPCRouter({
   user: userRouter,
-
-  configFile: configFileRouter,
 
   organizations: createTRPCRouter({
     byGithubUserId: protectedProcedure
@@ -298,33 +276,12 @@ export const githubRouter = createTRPCRouter({
             githubUser,
             eq(githubOrganization.addedByUserId, githubUser.userId),
           )
-          .leftJoin(
-            githubConfigFile,
-            eq(githubConfigFile.organizationId, githubOrganization.id),
-          )
-          .leftJoin(
-            deployment,
-            eq(deployment.githubConfigFileId, githubConfigFile.id),
-          )
           .where(eq(githubOrganization.workspaceId, input))
-          .then((rows) =>
-            _.chain(rows)
-              .groupBy("github_organization.id")
-              .map((v) => ({
-                ...v[0]!.github_organization,
-                addedByUser: v[0]!.github_user,
-                configFiles: v
-                  .map((v) => v.github_config_file)
-                  .filter(isPresent)
-                  .map((cf) => ({
-                    ...cf,
-                    deployments: v
-                      .map((v) => v.deployment)
-                      .filter(isPresent)
-                      .filter((d) => d.githubConfigFileId === cf.id),
-                  })),
-              }))
-              .value(),
+          .then((orgs) =>
+            orgs.map((o) => ({
+              ...o.github_organization,
+              addedByUser: o.github_user,
+            })),
           ),
       ),
 
@@ -357,16 +314,10 @@ export const githubRouter = createTRPCRouter({
         z.object({
           id: z.string().uuid(),
           workspaceId: z.string().uuid(),
-          deleteDeployments: z.boolean(),
         }),
       )
       .mutation(({ ctx, input }) =>
         ctx.db.transaction(async (db) => {
-          const configFiles = await db
-            .select()
-            .from(githubConfigFile)
-            .where(eq(githubConfigFile.organizationId, input.id));
-
           const deletedOrg = await db
             .delete(githubOrganization)
             .where(eq(githubOrganization.id, input.id))
@@ -386,14 +337,6 @@ export const githubRouter = createTRPCRouter({
                 eq(jobAgent.type, "github-app"),
                 eq(jobAgent.name, deletedOrg.organizationName),
                 eq(jobAgent.workspaceId, deletedOrg.workspaceId),
-              ),
-            );
-
-          if (input.deleteDeployments)
-            await db.delete(deployment).where(
-              inArray(
-                deployment.githubConfigFileId,
-                configFiles.map((c) => c.id),
               ),
             );
         }),

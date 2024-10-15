@@ -8,6 +8,5 @@ export const configSchema = z.object({
 });
 
 export enum GithubEvent {
-  Push = "push",
   WorkflowRun = "workflow_run",
 }

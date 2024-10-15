@@ -61,8 +61,7 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
             Connected Github organizations
           </CardTitle>
           <CardDescription>
-            You can configure job agents and sync config files for these
-            organizations
+            You can configure job agents for these organizations
           </CardDescription>
         </div>
         {githubUser != null ? (
