@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const release = z.object({
-  name: z.string(),
+  name: z.string().optional(),
   config: z.record(z.any()).optional(),
   metadata: z.record(z.string()).optional(),
 });

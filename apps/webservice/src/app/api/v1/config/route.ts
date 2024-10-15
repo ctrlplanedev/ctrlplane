@@ -7,7 +7,13 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { can } from "@ctrlplane/auth/utils";
-import { and, eq, inArray, sql, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  buildConflictUpdateColumns,
+  eq,
+  inArray,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -23,7 +29,7 @@ import { cacV1 } from "@ctrlplane/validators/cac";
 
 import { getUser } from "~/app/api/v1/auth";
 
-const { entries } = Object;
+const { entries, fromEntries } = Object;
 
 const upsertSystems = async (db: Tx, config: CacV1) => {
   if (config.systems == null || entries(config.systems).length == 0) return;
@@ -42,10 +48,7 @@ const upsertSystems = async (db: Tx, config: CacV1) => {
     .values(systemInserts)
     .onConflictDoUpdate({
       target: [schema.system.workspaceId, schema.system.slug],
-      set: {
-        name: sql`excluded.name`,
-        description: sql`excluded.description`,
-      },
+      set: buildConflictUpdateColumns(schema.system, ["name", "description"]),
     });
 };
 
@@ -93,11 +96,11 @@ const upsertDeployments = async (db: Tx, config: CacV1) => {
     )
     .then((rows) => rows.map(({ id }) => id));
 
-  const systemMap = new Map(systems.map((system) => [system.slug, system]));
+  const systemMap = fromEntries(systems.map((system) => [system.slug, system]));
 
   const deploymentInserts = deploymentInfo
     .map(({ systemSlug, deployment }) => {
-      const system = systemMap.get(systemSlug);
+      const system = systemMap[systemSlug];
       if (system == null) return null;
       if (
         deployment.jobAgentId != null &&
@@ -115,12 +118,12 @@ const upsertDeployments = async (db: Tx, config: CacV1) => {
     .values(deploymentInserts)
     .onConflictDoUpdate({
       target: [schema.deployment.systemId, schema.deployment.slug],
-      set: {
-        name: sql`excluded.name`,
-        description: sql`excluded.description`,
-        jobAgentId: sql`excluded.job_agent_id`,
-        jobAgentConfig: sql`excluded.job_agent_config`,
-      },
+      set: buildConflictUpdateColumns(schema.deployment, [
+        "name",
+        "description",
+        "jobAgentId",
+        "jobAgentConfig",
+      ]),
     });
 };
 
@@ -129,18 +132,15 @@ const upsertReleases = async (db: Tx, config: CacV1, userId: string) => {
 
   const releaseInfo = entries(config.releases ?? {})
     .map(([slug, release]) => {
-      const [systemSlug, deploymentSlug, releaseVersion] = slug.split("/");
-      if (
-        systemSlug == null ||
-        deploymentSlug == null ||
-        releaseVersion == null
-      )
+      const [systemSlug, deploymentSlug, version] = slug.split("/");
+      if (systemSlug == null || deploymentSlug == null || version == null)
         return null;
 
+      const name = release.name ?? version;
       return {
         systemSlug,
         deploymentSlug,
-        release: { ...release, version: releaseVersion },
+        release: { ...release, version, name },
       };
     })
     .filter(isPresent);
@@ -250,7 +250,7 @@ const upsertReleases = async (db: Tx, config: CacV1, userId: string) => {
     });
 };
 
-export const POST = async (req: NextRequest) => {
+export const PATCH = async (req: NextRequest) => {
   const body = await req.text();
   const bodyObj = jsYaml.load(body);
   const parsed = cacV1.safeParse(bodyObj);
