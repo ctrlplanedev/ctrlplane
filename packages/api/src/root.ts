@@ -1,7 +1,7 @@
 import { dashboardRouter } from "./router/dashboard";
 import { deploymentRouter } from "./router/deployment";
 import { environmentRouter } from "./router/environment";
-import { githubRouter } from "./router/github/github";
+import { githubRouter } from "./router/github";
 import { jobRouter } from "./router/job";
 import { releaseRouter } from "./router/release";
 import { runbookRouter } from "./router/runbook";
