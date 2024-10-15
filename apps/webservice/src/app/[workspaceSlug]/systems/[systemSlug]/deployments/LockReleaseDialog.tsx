@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import {
   AlertDialog,
@@ -19,14 +18,37 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { api } from "~/trpc/react";
 
 export const LockReleaseDialog: React.FC<{
-  deploymentId: string;
-  environmentId: string;
-  environmentName: string; // Add environment name as prop
+  deployment: { id: string; slug: string };
+  environment: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ deploymentId, environmentId, environmentName, children }) => {
-  const router = useRouter();
+  isLocked: boolean;
+  onLockChange: () => void;
+}> = ({ deployment, environment, children, isLocked, onLockChange }) => {
   const unlockDeployment = api.deployment.unlock.useMutation();
+  const lockDeployment = api.deployment.lock.useMutation();
   const [isOpen, setIsOpen] = useState(false);
+
+  const handleUnlock = () =>
+    unlockDeployment
+      .mutateAsync({
+        deploymentId: deployment.id,
+        environmentId: environment.id,
+      })
+      .then(() => {
+        setIsOpen(false);
+        onLockChange();
+      });
+
+  const handleLock = () =>
+    lockDeployment
+      .mutateAsync({
+        deploymentId: deployment.id,
+        environmentId: environment.id,
+      })
+      .then(() => {
+        setIsOpen(false);
+        onLockChange();
+      });
 
   return (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
@@ -34,34 +56,21 @@ export const LockReleaseDialog: React.FC<{
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Unlock Deployment for{" "}
+            {isLocked ? "Unlock Deployments for " : "Lock Deployments for "}
             <Badge variant="secondary" className="h-7 text-lg">
-              {environmentName}
+              {environment.name}
             </Badge>
-            ?
+            {" Environment?"}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to unlock this deployment? This action cannot
-            be undone.
+            {`Are you sure you want to ${isLocked ? "unlock" : "lock"} this deployment? This will block further releases to this environment.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex">
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <div className="flex-grow" />
-          <AlertDialogAction
-            onClick={() =>
-              unlockDeployment
-                .mutateAsync({
-                  deploymentId,
-                  environmentId,
-                })
-                .then(() => {
-                  setIsOpen(false);
-                  router.refresh();
-                })
-            }
-          >
-            Unlock
+          <AlertDialogAction onClick={isLocked ? handleUnlock : handleLock}>
+            {isLocked ? "Unlock" : "Lock"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

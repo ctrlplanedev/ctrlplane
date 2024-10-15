@@ -67,6 +67,7 @@ export enum Permission {
   DeploymentGet = "deployment.get",
   DeploymentDelete = "deployment.delete",
   DeploymentList = "deployment.list",
+
   DeploymentLock = "deployment.lock",
   DeploymentUnlock = "deployment.unlock",
 

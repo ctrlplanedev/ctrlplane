@@ -138,50 +138,63 @@ export const ReleaseDropdownMenu: React.FC<{
   release: { id: string; name: string };
   environment: { id: string; name: string };
   isReleaseCompleted: boolean;
-}> = ({ release, environment, isReleaseCompleted }) => (
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-7 w-7 text-muted-foreground"
-      >
-        <IconDotsVertical className="h-4 w-4" />
-      </Button>
-    </DropdownMenuTrigger>
-    <DropdownMenuContent align="end">
-      <RedeployReleaseDialog release={release} environment={environment}>
-        <DropdownMenuItem
-          disabled={!isReleaseCompleted}
-          onSelect={(e) => e.preventDefault()}
-          className="space-x-2"
+  deployment: { id: string; slug: string };
+}> = ({ release, environment, isReleaseCompleted, deployment }) => {
+  const { data: isLocked, refetch } = api.deployment.isLocked.useQuery({
+    deploymentId: deployment.id,
+    environmentId: environment.id,
+  });
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground"
         >
-          <IconReload className="h-4 w-4" />
-          <span>Redeploy</span>
-        </DropdownMenuItem>
-      </RedeployReleaseDialog>
-      <ForceReleaseDialog release={release} environment={environment}>
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="space-x-2"
+          <IconDotsVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <RedeployReleaseDialog release={release} environment={environment}>
+          <DropdownMenuItem
+            disabled={!isReleaseCompleted}
+            onSelect={(e) => e.preventDefault()}
+            className="space-x-2"
+          >
+            <IconReload className="h-4 w-4" />
+            <span>Redeploy</span>
+          </DropdownMenuItem>
+        </RedeployReleaseDialog>
+        <ForceReleaseDialog release={release} environment={environment}>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="space-x-2"
+          >
+            <IconAlertTriangle className="h-4 w-4" />
+            <span>Force deploy</span>
+          </DropdownMenuItem>
+        </ForceReleaseDialog>
+        <LockReleaseDialog
+          deployment={deployment}
+          environment={environment}
+          isLocked={Boolean(isLocked)}
+          onLockChange={refetch}
         >
-          <IconAlertTriangle className="h-4 w-4" />
-          <span>Force deploy</span>
-        </DropdownMenuItem>
-      </ForceReleaseDialog>
-      <LockReleaseDialog
-        deploymentId={release.id}
-        environmentId={environment.id}
-        environmentName={environment.name}
-      >
-        <DropdownMenuItem
-          onSelect={(e) => e.preventDefault()}
-          className="space-x-2"
-        >
-          <IconLockOpen className="h-4 w-4" />
-          <span>Lock Deployment</span>
-        </DropdownMenuItem>
-      </LockReleaseDialog>
-    </DropdownMenuContent>
-  </DropdownMenu>
-);
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="space-x-2"
+          >
+            {isLocked ? (
+              <IconLock className="h-4 w-4" />
+            ) : (
+              <IconLockOpen className="h-4 w-4" />
+            )}
+            <span>{isLocked ? "Unlock Deployment" : "Lock Deployment"}</span>
+          </DropdownMenuItem>
+        </LockReleaseDialog>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};

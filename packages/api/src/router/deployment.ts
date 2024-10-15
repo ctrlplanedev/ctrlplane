@@ -372,4 +372,31 @@ export const deploymentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst),
     ),
+
+  isLocked: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentLock)
+          .on({ type: "deployment", id: input.deploymentId }),
+    })
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(deploymentLock)
+        .where(
+          and(
+            eq(deploymentLock.deploymentId, input.deploymentId),
+            eq(deploymentLock.environmentId, input.environmentId),
+          ),
+        )
+        .then(takeFirstOrNull)
+        .then((lock) => !!lock),
+    ),
 });

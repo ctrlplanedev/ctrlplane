@@ -231,6 +231,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                               <Release
                                 workspaceSlug={workspaceSlug}
                                 systemSlug={systemSlug}
+                                deploymentId={deployment.id}
                                 deploymentSlug={deployment.slug}
                                 releaseId={release.id}
                                 version={release.version}

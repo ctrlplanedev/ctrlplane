@@ -131,6 +131,7 @@ export const Release: React.FC<{
   >;
   workspaceSlug: string;
   systemSlug: string;
+  deployment: { id: string; slug: string };
   deploymentSlug: string;
 }> = (props) => {
   const {
@@ -143,7 +144,7 @@ export const Release: React.FC<{
     environment,
     workspaceSlug,
     systemSlug,
-    deploymentSlug,
+    deployment,
   } = props;
 
   const latestJobsByTarget = _.chain(releaseJobTriggers)
@@ -179,7 +180,7 @@ export const Release: React.FC<{
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
+            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug}/releases/${firstReleaseJobTrigger?.releaseId}`}
             className="flex w-full items-center gap-2"
           >
             <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
@@ -243,6 +244,7 @@ export const Release: React.FC<{
         release={{ id: releaseId, name }}
         environment={environment}
         isReleaseCompleted={isReleaseCompleted}
+        deployment={deployment}
       />
     </div>
   );
