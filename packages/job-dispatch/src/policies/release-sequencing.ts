@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
 import { and, asc, desc, eq, inArray, notExists, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
@@ -61,10 +60,13 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
       rjt.deployment.id,
       rjt.release_job_trigger.environmentId,
     ])
-    .map((rjt) =>
-      _.maxBy(rjt, (rjt) => [rjt.release.createdAt, rjt.release.version]),
-    )
-    .filter(isPresent)
+    .flatMap((rjt) => {
+      const maxRelease = _.maxBy(rjt, (rjt) => [
+        rjt.release.createdAt,
+        rjt.release.version,
+      ]);
+      return rjt.filter((rjt) => rjt.release.id === maxRelease?.release.id);
+    })
     .map((rjt) => rjt.release_job_trigger)
     .value();
 };
