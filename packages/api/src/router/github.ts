@@ -17,9 +17,8 @@ import {
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { env } from "../../config";
-import { createTRPCRouter, protectedProcedure } from "../../trpc";
-import { createNewGithubOrganization } from "./create-github-org";
+import { env } from "../config";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 const octokit =
   env.GITHUB_BOT_APP_ID == null
@@ -338,7 +337,13 @@ export const githubRouter = createTRPCRouter({
           }),
       })
       .input(githubOrganizationInsert)
-      .mutation(({ ctx, input }) => createNewGithubOrganization(ctx.db, input)),
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(githubOrganization)
+          .values(input)
+          .returning()
+          .then(takeFirst),
+      ),
 
     delete: protectedProcedure
       .meta({

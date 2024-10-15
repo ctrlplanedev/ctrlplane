@@ -76,6 +76,11 @@ export interface SetTargetProvidersTargetsOperationRequest {
   setTargetProvidersTargetsRequest: SetTargetProvidersTargetsRequest;
 }
 
+export interface UpdateConfigRequest {
+  workspace: string;
+  body: string;
+}
+
 export interface UpdateJobOperationRequest {
   jobId: string;
   updateJobRequest: UpdateJobRequest;
@@ -428,6 +433,65 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<void> {
     await this.setTargetProvidersTargetsRaw(requestParameters, initOverrides);
+  }
+
+  /**
+   * Create resources from a config file
+   */
+  async updateConfigRaw(
+    requestParameters: UpdateConfigRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<void>> {
+    if (requestParameters["workspace"] == null) {
+      throw new runtime.RequiredError(
+        "workspace",
+        'Required parameter "workspace" was null or undefined when calling updateConfig().',
+      );
+    }
+
+    if (requestParameters["body"] == null) {
+      throw new runtime.RequiredError(
+        "body",
+        'Required parameter "body" was null or undefined when calling updateConfig().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/yaml";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/workspaces/{workspace}/config`.replace(
+          `{${"workspace"}}`,
+          encodeURIComponent(String(requestParameters["workspace"])),
+        ),
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: requestParameters["body"] as any,
+      },
+      initOverrides,
+    );
+
+    return new runtime.VoidApiResponse(response);
+  }
+
+  /**
+   * Create resources from a config file
+   */
+  async updateConfig(
+    requestParameters: UpdateConfigRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<void> {
+    await this.updateConfigRaw(requestParameters, initOverrides);
   }
 
   /**
