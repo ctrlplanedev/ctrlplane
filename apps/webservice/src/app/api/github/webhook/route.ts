@@ -1,4 +1,4 @@
-import type { PushEvent, WorkflowRunEvent } from "@octokit/webhooks-types";
+import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { Webhooks } from "@octokit/webhooks";
@@ -6,7 +6,6 @@ import { Webhooks } from "@octokit/webhooks";
 import { GithubEvent } from "@ctrlplane/validators/github";
 
 import { env } from "~/env";
-import { handleCommitWebhookEvent } from "./commit/handler";
 import { handleWorkflowWebhookEvent } from "./workflow/handler";
 
 export const POST = async (req: NextRequest) => {
@@ -25,8 +24,6 @@ export const POST = async (req: NextRequest) => {
     if (!isVerified) return new NextResponse("Not verified", { status: 401 });
 
     const event = req.headers.get("x-github-event")?.toString();
-    if (event === GithubEvent.Push)
-      await handleCommitWebhookEvent(data as PushEvent);
     if (event === GithubEvent.WorkflowRun)
       await handleWorkflowWebhookEvent(data as WorkflowRunEvent);
     return new NextResponse("OK");

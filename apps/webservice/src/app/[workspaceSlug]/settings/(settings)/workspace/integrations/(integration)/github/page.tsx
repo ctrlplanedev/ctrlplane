@@ -9,7 +9,6 @@ import { Card } from "@ctrlplane/ui/card";
 import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { DeleteGithubUserButton } from "./DeleteGithubUserButton";
-import { GithubConfigFileSync } from "./GithubConfigFile";
 import { GithubConnectedOrgs } from "./GithubConnectedOrgs";
 
 const githubAuthUrl = (
@@ -42,8 +41,6 @@ export default async function GitHubIntegrationPage({
 
   const githubUser = await api.github.user.byUserId(session.user.id);
 
-  const configFiles = await api.github.configFile.list(workspace.id);
-
   return (
     <div className="flex flex-col gap-12">
       <div className="flex items-center gap-4">
@@ -51,8 +48,7 @@ export default async function GitHubIntegrationPage({
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold">GitHub</h1>
           <p className="text-sm text-muted-foreground">
-            Connect a Github organization to Ctrlplane to configure job agents
-            and sync config files.
+            Connect a Github organization to Ctrlplane to configure job agents.
           </p>
         </div>
       </div>
@@ -101,8 +97,6 @@ export default async function GitHubIntegrationPage({
             }}
           />
         )}
-
-        <GithubConfigFileSync configFiles={configFiles} />
       </div>
     </div>
   );
