@@ -1,4 +1,7 @@
-import { and, eq, inArray, notExists, sql } from "@ctrlplane/db";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
+
+import { and, asc, desc, eq, inArray, notExists, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { activeStatus } from "@ctrlplane/validators/jobs";
 
@@ -45,6 +48,23 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
           `),
         ),
       ),
+    )
+    .orderBy(
+      asc(schema.deployment.id),
+      desc(schema.release.createdAt),
+      desc(schema.release.version),
     );
-  return unblockedTriggers.map((rjt) => rjt.release_job_trigger);
+
+  // edge case - if multiple releases are created at the same time, only take latest, then highest lexicographical version
+  return _.chain(unblockedTriggers)
+    .groupBy((rjt) => [
+      rjt.deployment.id,
+      rjt.release_job_trigger.environmentId,
+    ])
+    .map((rjt) =>
+      _.maxBy(rjt, (rjt) => [rjt.release.createdAt, rjt.release.version]),
+    )
+    .filter(isPresent)
+    .map((rjt) => rjt.release_job_trigger)
+    .value();
 };
