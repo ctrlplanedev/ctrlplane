@@ -51,12 +51,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@ctrlplane/ui/tooltip";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
@@ -231,18 +225,9 @@ const ForceReleaseTargetDialog: React.FC<{
   );
 };
 
-const validForceReleaseJobStatus = [
-  "scheduled",
-  "action_required",
-  "skipped",
-  "failure",
-  "cancelled",
-  "completed",
-];
-
 export const TargetDropdownMenu: React.FC<{
   release: { id: string; version: string };
-  environmentId: string | null;
+  environmentId: string;
   target: { id: string; name: string; lockedAt: Date | null } | null;
   deploymentName: string;
   job: { id: string; status: JobStatus };
@@ -267,63 +252,21 @@ export const TargetDropdownMenu: React.FC<{
             </DropdownMenuItem>
           </OverrideJobStatusDialog>
 
-          {target.lockedAt == null &&
-            environmentId != null &&
-            validForceReleaseJobStatus.includes(job.status) && (
-              <ForceReleaseTargetDialog
-                release={release}
-                deploymentName={deploymentName}
-                target={target}
-                environmentId={environmentId}
-                onClose={() => setOpen(false)}
-              >
-                <DropdownMenuItem
-                  onSelect={(e) => e.preventDefault()}
-                  className="space-x-2"
-                >
-                  <IconAlertTriangle size={16} />
-                  <p>Force Release</p>
-                </DropdownMenuItem>
-              </ForceReleaseTargetDialog>
-            )}
-
-          {target.lockedAt == null &&
-            environmentId != null &&
-            !validForceReleaseJobStatus.includes(job.status) && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <DropdownMenuItem disabled className="space-x-2">
-                        <IconAlertTriangle size={16} />
-                        <p>Force Release</p>
-                      </DropdownMenuItem>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    Cannot force release while job is active
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-          {target.lockedAt != null && environmentId != null && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <DropdownMenuItem disabled className="space-x-2">
-                      <IconAlertTriangle size={16} />
-                      <p>Force Release</p>
-                    </DropdownMenuItem>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Cannot force release while target is locked
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
+          <ForceReleaseTargetDialog
+            release={release}
+            deploymentName={deploymentName}
+            target={target}
+            environmentId={environmentId}
+            onClose={() => setOpen(false)}
+          >
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="space-x-2"
+            >
+              <IconAlertTriangle size={16} />
+              <p>Force Release</p>
+            </DropdownMenuItem>
+          </ForceReleaseTargetDialog>
         </DropdownMenuContent>
       )}
     </DropdownMenu>
