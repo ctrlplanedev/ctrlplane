@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import IORedis from "ioredis";
 
 import { sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-
-import { env } from "~/env";
+import { checkHealth } from "@ctrlplane/job-dispatch";
 
 export const GET = async () => {
   try {
-    await new IORedis(env.REDIS_URL).ping();
+    await checkHealth();
     await db.execute(sql`SELECT 1`);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ status: "error", error }, { status: 500 });
   }
 

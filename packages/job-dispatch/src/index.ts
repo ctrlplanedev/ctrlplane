@@ -9,6 +9,8 @@ export * from "./gradual-rollout.js";
 export * from "./new-target.js";
 export * from "./target.js";
 export * from "./lock-checker.js";
+export * from "./queue.js";
+
 export { isDateInTimeWindow } from "./utils.js";
 
 export * from "./policies/gradual-rollout.js";
