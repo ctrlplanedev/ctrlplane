@@ -1,0 +1,126 @@
+# Configuration with `*.ctrlplane.yaml`
+
+This document explains how to define Ctrlplane constructs using a
+`*.ctrlplane.yaml` file. These constructs—such as systems, deployments, and
+releases—are essential for modeling your workflows and deployments. Once
+defined, the YAML content can be sent in the body of a PATCH request to the
+`/api/v1/config` endpoint:
+
+```
+PATCH /api/v1/config
+```
+
+## YAML Structure and Examples
+
+A `*.ctrlplane.yaml` file allows you to structure your configurations as
+follows:
+
+```yaml
+version: v1
+workspace: 00000000-0000-0000-0000-000000000000
+
+systems:
+  infra:
+    name: infra
+    description: Infrastructure system
+
+deployments:
+  infra/database:
+    name: database
+    description: Database deployment
+    jobAgent:
+      id: 00000000-0000-0000-0000-000000000000
+      config:
+        repo: ctrlplane
+        owner: ctrlplanedev
+        workflowId: 1234567890
+        installationId: 1234567890
+
+releases:
+  infra/database/0.0.1:
+    name: 0.0.1
+    metadata:
+      id: "123"
+      hello: world
+
+  infra/database/0.0.2:
+    name: 0.0.2
+    metadata:
+      id: "456"
+      hello: galaxy
+
+  infra/database/0.0.3:
+    name: 0.0.3
+    metadata:
+      id: "789"
+      hello: universe
+```
+
+### Version
+
+The `version` field is required and must be set to the version of the config API
+you want to use.
+
+### Workspace
+
+The `workspace` field is required and must be set to the ID of the workspace you
+want to update resources in.
+
+### Systems
+
+The `systems` field is optional and contains a record of system objects. The key
+is the slug of the system, and the value is the system object.
+
+The system object has the following properties:
+
+- `name` (optional): The name of the system.
+- `description` (optional): The description of the system.
+
+### Deployments
+
+The `deployments` field is optional and contains a record of deployment objects.
+The key is comprised of the system slug and the deployment slug, separated by a
+`/` (e.g. `system-slug/deployment-slug`).
+
+The deployment object has the following properties:
+
+- `name` (optional): The name of the deployment.
+- `description` (optional): The description of the deployment.
+- `jobAgent` (optional): The job agent object for the deployment.
+  - `id` (required if `jobAgent` is defined): The ID of the job agent.
+  - `config` (required if `jobAgent` is defined): The configuration of the job
+    agent for that deployment.
+
+### Releases
+
+The `releases` field is optional and contains a record of release objects. The
+key is comprised of the system slug, deployment slug, and release version,
+separated by `/` (e.g. `system-slug/deployment-slug/release-version`).
+
+The release object has the following properties:
+
+- `name` (optional): The name of the release.
+- `metadata` (optional): The metadata of the release, as a record of key-value
+  pairs, where the key is a string.
+- `config` (optional): The configuration of the release, as a record of
+  key-value pairs.
+
+## Example CURL Request
+
+```bash
+curl -X PATCH \
+  -H "x-api-key: $CTRLPLANE_API_KEY" \
+  -H "Content-Type: application/yaml" \
+  -d @config.yaml \
+  https://app.ctrlplane.dev/api/v1/config
+```
+
+A successful request will return a `200` status code.
+
+## Deleting Resources
+
+To delete a resource that was configured in a `*.ctrlplane.yaml` file, first
+remove the resource from the file. This ensures that future PATCH requests will
+not re-create the resource.
+
+Then, delete the resource from the workspace in the Ctrlplane UI.
