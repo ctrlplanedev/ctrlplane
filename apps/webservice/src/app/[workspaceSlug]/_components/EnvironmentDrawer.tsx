@@ -1,13 +1,16 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import React from "react";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
 import {
   IconExternalLink,
+  IconLoader2,
   IconPlant,
+  IconSelector,
   IconServer,
   IconTarget,
 } from "@tabler/icons-react";
@@ -26,6 +29,13 @@ import {
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@ctrlplane/ui/command";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import {
   Form,
@@ -38,6 +48,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
@@ -171,6 +182,60 @@ const EnvironmentForm: React.FC<{
   );
 };
 
+const TargetViewsCombobox: React.FC<{
+  workspaceId: string;
+  onChange: (targetCondition: TargetCondition) => void;
+}> = ({ workspaceId, onChange }) => {
+  const targetViewsQ = api.target.view.list.useQuery(workspaceId, {
+    enabled: workspaceId !== "",
+  });
+  const targetViews = targetViewsQ.data ?? [];
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="flex items-center gap-2"
+        >
+          <IconSelector className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">From target view...</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[462px] p-0">
+        <Command>
+          <CommandInput placeholder="Search target views..." />
+          <CommandGroup>
+            <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
+              {targetViewsQ.isLoading && (
+                <CommandItem disabled>
+                  <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading target views...
+                </CommandItem>
+              )}
+              {targetViews.map((targetView) => (
+                <CommandItem
+                  key={targetView.id}
+                  onSelect={() => {
+                    onChange(targetView.filter);
+                    setOpen(false);
+                  }}
+                  className="cursor-pointer"
+                >
+                  {targetView.name} ({targetView.total} targets)
+                </CommandItem>
+              ))}
+            </CommandList>
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 const TargetIcon: React.FC<{ version: string }> = ({ version }) => {
   if (version.includes("kubernetes"))
     return <SiKubernetes className="h-6 w-6 shrink-0 text-blue-300" />;
@@ -200,13 +265,11 @@ const EditFilterForm: React.FC<{
 
   const { targetFilter } = form.watch();
 
+  const workspaceId = workspace?.id ?? "";
+  const filter = targetFilter ?? undefined;
   const targets = api.target.byWorkspaceId.list.useQuery(
-    {
-      workspaceId: workspace?.id ?? "",
-      filter: targetFilter ?? undefined,
-      limit: 10,
-    },
-    { enabled: workspace != null },
+    { workspaceId, filter, limit: 10 },
+    { enabled: workspaceId !== "" },
   );
 
   const utils = api.useUtils();
@@ -236,10 +299,16 @@ const EditFilterForm: React.FC<{
               <FormItem>
                 <FormLabel>Target Filter</FormLabel>
                 <FormControl>
-                  <TargetConditionRender
-                    condition={targetFilter ?? defaultCondition}
-                    onChange={onChange}
-                  />
+                  <>
+                    <TargetViewsCombobox
+                      workspaceId={workspaceId}
+                      onChange={onChange}
+                    />
+                    <TargetConditionRender
+                      condition={targetFilter ?? defaultCondition}
+                      onChange={onChange}
+                    />
+                  </>
                 </FormControl>
                 <FormMessage />
                 {form.formState.isDirty && (
