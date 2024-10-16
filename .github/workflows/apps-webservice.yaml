@@ -19,15 +19,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     permissions:
       contents: read
       id-token: write
 
     strategy:
       matrix:
-        platform: [linux/amd64, linux/arm64]
-        
+        platform: [linux/amd64]
+
     steps:
       - uses: actions/checkout@v4
 

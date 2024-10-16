@@ -26,7 +26,7 @@ jobs:
 
     strategy:
       matrix:
-        platform: [linux/amd64, linux/arm64]
+        platform: [linux/amd64]
 
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +74,6 @@ jobs:
         if: github.ref == 'refs/heads/main' && env.DOCKERHUB_LOGIN == 'true'
         with:
           push: true
-          file: integrations/google-compute-scanner/Dockerfile 
+          file: integrations/google-compute-scanner/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
