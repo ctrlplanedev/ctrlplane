@@ -23,8 +23,10 @@ declare module "next-auth" {
   }
 }
 
-export const isGoogleAuthEnabled = env.AUTH_GOOGLE_CLIENT_ID != null;
-export const isOIDCAuthEnabled = env.AUTH_OIDC_CLIENT_ID != null;
+export const isGoogleAuthEnabled =
+  env.AUTH_GOOGLE_CLIENT_ID != null && env.AUTH_GOOGLE_CLIENT_ID !== "";
+export const isOIDCAuthEnabled =
+  env.AUTH_OIDC_CLIENT_ID != null && env.AUTH_OIDC_ISSUER !== "";
 export const isCredentialsAuthEnabled =
   env.AUTH_CREDENTIALS_ENABLED === "auto"
     ? !isGoogleAuthEnabled && !isOIDCAuthEnabled
