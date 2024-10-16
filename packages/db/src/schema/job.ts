@@ -36,9 +36,9 @@ export const jobReason = pgEnum("job_reason", [
 export const job = pgTable("job", {
   id: uuid("id").primaryKey().defaultRandom(),
 
-  jobAgentId: uuid("job_agent_id")
-    .notNull()
-    .references(() => jobAgent.id),
+  jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
+    onDelete: "set null",
+  }),
   jobAgentConfig: json("job_agent_config")
     .notNull()
     .default("{}")
