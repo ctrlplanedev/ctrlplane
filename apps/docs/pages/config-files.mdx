@@ -1,9 +1,7 @@
-# Configuration with `*.ctrlplane.yaml`
+# Configuration with YAML
 
-This document explains how to define Ctrlplane constructs using a
-`*.ctrlplane.yaml` file. These constructs—such as systems, deployments, and
-releases—are essential for modeling your workflows and deployments. Once
-defined, the YAML content can be sent in the body of a PATCH request to the
+This document explains how to define Ctrlplane constructs using a yaml file.
+Once defined, the YAML content can be sent in the body of a PATCH request to the
 `/api/v1/config` endpoint:
 
 ```
@@ -12,8 +10,7 @@ PATCH /api/v1/config
 
 ## YAML Structure and Examples
 
-A `*.ctrlplane.yaml` file allows you to structure your configurations as
-follows:
+The config API allows you to structure your configurations as follows:
 
 ```yaml
 version: v1
@@ -119,7 +116,7 @@ A successful request will return a `200` status code.
 
 ## Deleting Resources
 
-To delete a resource that was configured in a `*.ctrlplane.yaml` file, first
+To delete a resource that was created or updated from a config file, first
 remove the resource from the file. This ensures that future PATCH requests will
 not re-create the resource.
 
