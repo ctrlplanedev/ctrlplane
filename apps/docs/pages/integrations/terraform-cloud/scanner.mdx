@@ -1,0 +1,168 @@
+import { Callout } from "nextra/components";
+
+# Terraform Cloud Scanner
+
+The Terraform Cloud Scanner is a standalone tool that can be run in your own
+infrastructure. It imports all Terraform workspaces as ctrlplane targets and
+populates them with configuration and metadata that can be used with the
+[github actions dispatcher](../github/actions-dispatcher) for continuous
+delivery.
+
+This scanner runs as a Docker container and requires credentials to be provided
+to the access your Terraform Cloud Org.
+
+### Docker Image
+
+The Docker image for the Terraform Cloud Scanner can be pulled from
+[Docker Hub](https://hub.docker.com/r/ctrlplane/terraform-cloud-scanner)
+
+```bash
+docker pull ctrlplane/terraform-cloud-scanner:latest
+docker run --env-file .env ctrlplane/terraform-cloud-scanner:latest
+```
+
+Make sure to create a `.env` file with the necessary environment variables
+before running the container.
+
+### Environment Variables
+
+To configure the scanner, the following environment variables can be set.
+
+| Environment Variable     | Description                                 | Required | Default                           |
+| ------------------------ | ------------------------------------------- | -------- | --------------------------------- |
+| `CTRLPLANE_SCANNER_NAME` | Name of the scanner instance                | Yes      | N/A                               |
+| `CRON_ENABLED`           | Enable/Disable cron mode                    | No       | `true`                            |
+| `CRON_TIME`              | If cron is enabled, cron schedule           | No       | `*/5 * * * *`                     |
+| `CTRLPLANE_BASE_URL`     | Base URL for Ctrl Plane API                 | Yes      | N/A                               |
+| `CTRLPLANE_WORKSPACE_ID` | ID of the workspace to scan                 | Yes      | N/A                               |
+| `CTRLPLANE_API_KEY`      | API key for authenticating with Ctrl Plane  | Yes      | N/A                               |
+| `TFE_API_URL`            | Terraform Enterprise/Cloud API URL          | Yes      | `https://app.terraform.io/api/v2` |
+| `TFE_ORGANIZATION`       | Name of the Terraform Cloud organization    | Yes      | N/A                               |
+| `TFE_TOKEN`              | Token for accessing the Terraform Cloud API | Yes      | N/A                               |
+
+The workspace id can be found by navigating to
+
+```bash
+https://${CTRLPLANE_BASE_URL}/${WORKSPACE_SLUG}/settings/workspace/general
+```
+
+See the [API](../api) docs to set up an api key for the Terraform Cloud Scanner.
+
+### Properties
+
+The following properties will be populated for each target scanned into
+Ctrlplane:
+
+- **Identifier**: `example-workspace-id`
+- **Name**: `example-workspace-name`
+- **Version**: `terraform/v1`
+- **Kind**: `Workspace`
+- **Target Provider**: `terraform-cloud-scanner`
+- **Last Sync**: `MM/DD/YYYY HH:MM:SS`
+- **External ID**: `example-external-id`
+
+### Config
+
+The config for a Terraform Cloud workspace target adheres to the following
+schema:
+
+```yaml
+version: terraform/v1
+kind: Workspace
+config:
+  workspaceId: example-workspace-id
+metadata:
+  organization: example-org
+  name: example-workspace-name
+  autoApply: false
+  vcsRepo:
+    identifier: example-repo
+    branch: example-branch
+    repositoryHttpUrl: https://github.com/example/repo
+```
+
+This config structure provides essential information about the Terraform Cloud
+workspace, allowing Ctrlplane to interact with it consistently.
+
+### Metadata
+
+The following metadata will be automatically scanned into Ctrlplane:
+
+```yaml
+ctrlplane/external-id: example-external-id
+ctrlplane/links:
+  {
+    "Terraform Workspace": "https://app.terraform.io/app/example-org/workspaces/example-workspace-name",
+  }
+terraform-cloud/organization: example-org
+terraform-cloud/vcs-repo/branch: example-branch
+terraform-cloud/vcs-repo/identifier: example-repo
+terraform-cloud/vcs-repo/repository-http-url: https://github.com/example/repo
+terraform-cloud/workspace-auto-apply: false
+terraform-cloud/workspace-name: example-workspace-name
+terraform/version: 1.9.4
+```
+
+This metadata provides additional context and information about the Terraform
+Cloud workspace, facilitating organization and filtering within Ctrlplane. All
+metadata will be available to any job you have configured that uses the
+[github actions dispatcher](../github/actions-dispatcher)
+
+#### Variables
+
+The Terraform Cloud Scanner captures both Terraform variables and environment
+variables from your workspace. These variables are added to the metadata with
+the prefix `terraform-cloud/variables/`.
+
+- **Terraform Variables**: These are used directly in your Terraform
+  configuration.
+- **Environment Variables**: These are used by Terraform providers or external
+  scripts.
+
+Both types of variables are represented in the metadata as:
+
+```yaml
+terraform-cloud/variables/${variable_name}: ${value}
+```
+
+Examples:
+
+```yaml
+terraform-cloud/variables/deletion_protection: true
+terraform-cloud/variables/instance_type: t2.micro
+```
+
+<Callout type="info">
+  Sensitive variables (marked as sensitive in Terraform Cloud) will not be
+  scanned into the metadata. This approach ensures that sensitive information is
+  not leaked into the metadata.
+</Callout>
+
+#### Tags
+
+Any tags you have set on the Terraform Cloud workspace will be added to the
+metadata. The tag format in the metadata depends on whether the original tag
+contains a colon `:`.
+
+- If the tag contains a colon, it will be split into a key-value pair.
+- If the tag doesn't contain a colon, it will be set to `true`.
+
+Examples:
+
+| Terraform Workspace Tag | Metadata Entry                             |
+| ----------------------- | ------------------------------------------ |
+| `env:development`       | `terraform-cloud/tag/env: development`     |
+| `gcp`                   | `terraform-cloud/tag/gcp: true`            |
+| `region:us-central:1`   | `terraform-cloud/tag/region: us-central:1` |
+
+Here's how these tags would appear in the metadata:
+
+```yaml
+terraform-cloud/tag/env: development
+terraform-cloud/tag/gcp: true
+terraform-cloud/tag/region: us-central1
+```
+
+This approach allows for both simple flags and key-value pairs in your Terraform
+Cloud tags, which are then reflected in the Ctrl Plane metadata for easy
+filtering and organization when building a View, Group, or Environment Filter.
