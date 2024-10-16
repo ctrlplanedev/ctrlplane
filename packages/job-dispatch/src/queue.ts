@@ -12,5 +12,3 @@ export const dispatchJobsQueue = new Queue<DispatchJobEvent>(
   Channel.DispatchJob,
   { connection },
 );
-
-export const checkHealth = () => connection.ping();
