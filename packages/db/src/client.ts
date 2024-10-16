@@ -8,6 +8,7 @@ const { Pool } = pg;
 export const pool = new Pool({
   connectionString: env.POSTGRES_URL,
   ssl: false,
+  log: console.log,
 });
 
 export const db = drizzle(pool, { schema });
