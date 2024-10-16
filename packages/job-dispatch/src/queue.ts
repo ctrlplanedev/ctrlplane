@@ -10,7 +10,5 @@ const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
 
 export const dispatchJobsQueue = new Queue<DispatchJobEvent>(
   Channel.DispatchJob,
-  {
-    connection,
-  },
+  { connection },
 );
