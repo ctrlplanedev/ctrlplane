@@ -21,9 +21,10 @@ import { Input } from "@ctrlplane/ui/input";
 import * as schema from "@ctrlplane/validators/auth";
 
 export const LoginCard: React.FC<{
+  isCredentialsAuthEnabled: boolean;
   isGoogleEnabled: boolean;
   isOidcEnabled: boolean;
-}> = ({ isGoogleEnabled, isOidcEnabled }) => {
+}> = ({ isCredentialsAuthEnabled, isGoogleEnabled, isOidcEnabled }) => {
   const router = useRouter();
   const form = useForm({
     schema: schema.signInSchema,
@@ -60,7 +61,7 @@ export const LoginCard: React.FC<{
         Login to Ctrlplane
       </h1>
       <div className="space-y-6">
-        <>
+        {isCredentialsAuthEnabled && (
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-4">
               <FormField
@@ -97,7 +98,7 @@ export const LoginCard: React.FC<{
               </Button>
             </form>
           </Form>
-        </>
+        )}
         <div className="space-y-2">
           {/* <Button
             onClick={() => signIn("github")}
