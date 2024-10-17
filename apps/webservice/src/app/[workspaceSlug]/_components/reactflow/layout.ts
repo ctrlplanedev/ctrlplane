@@ -3,8 +3,6 @@
 import type { Edge, Node } from "reactflow";
 import dagre from "dagre";
 
-const dagreGraph = new dagre.graphlib.Graph().setDefaultEdgeLabel(() => ({}));
-
 const generateLevels = (nodes: Node[], edges: Edge[]) => {
   const levels: Record<string, number> = {};
   const edgeMap: Record<string, string[]> = {};
@@ -39,6 +37,8 @@ export const getLayoutedElementsDagre = (
   direction = "TB",
   extraEdgeLength = 0,
 ) => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
   dagreGraph.setGraph({ rankdir: direction });
 
   nodes.forEach((node) => dagreGraph.setNode(node.id, node));
