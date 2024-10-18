@@ -1,7 +1,7 @@
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   bigint,
   integer,
@@ -21,6 +21,7 @@ import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { release } from "./release.js";
 import { system } from "./system.js";
+import { variableSetAssignment } from "./variable-sets.js";
 
 export const environment = pgTable("environment", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -46,6 +47,10 @@ export const createEnvironment = createInsertSchema(environment, {
 
 export const updateEnvironment = createEnvironment.partial();
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
+
+export const environmentRelations = relations(environment, ({ many }) => ({
+  assignments: many(variableSetAssignment),
+}));
 
 export const approvalRequirement = pgEnum(
   "environment_policy_approval_requirement",

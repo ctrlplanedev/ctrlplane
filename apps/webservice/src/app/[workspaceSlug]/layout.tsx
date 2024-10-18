@@ -7,6 +7,7 @@ import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer
 import { EnvironmentDrawer } from "./_components/EnvironmentDrawer";
 import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
 import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
+import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { SidebarPanels } from "./SidebarPanels";
 
 export default async function WorkspaceLayout({
@@ -37,6 +38,7 @@ export default async function WorkspaceLayout({
       <ReleaseDrawer />
       <EnvironmentDrawer />
       <EnvironmentPolicyDrawer />
+      <VariableSetDrawer />
     </>
   );
 }

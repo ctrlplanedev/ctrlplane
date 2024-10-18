@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -55,6 +56,8 @@ const determineVariablesForReleaseJob = async (
 
   const jobVariables: schema.JobVariable[] = [];
 
+  const directMatches: string[] = [];
+
   await Promise.all(
     variables.map((variable) =>
       determineReleaseVariableValue(
@@ -62,17 +65,57 @@ const determineVariablesForReleaseJob = async (
         variable.deployment_variable.id,
         variable.deployment_variable.defaultValueId,
         jobTarget,
-      ).then(
-        (value) =>
-          value != null &&
-          jobVariables.push({
-            jobId: job.id,
-            key: variable.deployment_variable.key,
-            value: value.value,
-          }),
-      ),
+      ).then((value) => {
+        if (value == null) return;
+
+        jobVariables.push({
+          jobId: job.id,
+          key: variable.deployment_variable.key,
+          value: value.value.value,
+        });
+
+        if (value.directMatch)
+          directMatches.push(variable.deployment_variable.key);
+      }),
     ),
   );
+
+  const envVariableSets = await tx.query.environment.findMany({
+    where: eq(schema.environment.id, job.releaseJobTrigger.environmentId),
+    with: {
+      assignments: { with: { variableSet: { with: { values: true } } } },
+    },
+  });
+
+  envVariableSets.forEach((env) => {
+    env.assignments.forEach((assignment) => {
+      const { variableSet } = assignment;
+      variableSet.values.forEach((val) => {
+        const existingKeys = jobVariables.map((v) => v.key);
+
+        if (!existingKeys.includes(val.key)) {
+          jobVariables.push({
+            jobId: job.id,
+            key: val.key,
+            value: val.value,
+          });
+          directMatches.push(val.key);
+          return;
+        }
+
+        if (directMatches.includes(val.key)) return;
+
+        const existingVariableIdx = jobVariables.findIndex(
+          (v) => v.key === val.key,
+        );
+
+        if (existingVariableIdx === -1) return;
+
+        jobVariables[existingVariableIdx]!.value = val.value;
+        directMatches.push(val.key);
+      });
+    });
+  });
 
   return jobVariables;
 };
@@ -82,7 +125,10 @@ const determineReleaseVariableValue = async (
   variableId: string,
   defaultValueId: string | null,
   jobTarget: schema.Target,
-): Promise<schema.DeploymentVariableValue | null> => {
+): Promise<{
+  value: schema.DeploymentVariableValue;
+  directMatch: boolean;
+} | null> => {
   const deploymentVariableValues = await tx
     .select()
     .from(schema.deploymentVariableValue)
@@ -115,9 +161,20 @@ const determineReleaseVariableValue = async (
     }),
   ).then((values) => values.filter(isPresent));
 
-  if (valuesMatchedByFilter.length > 0) return valuesMatchedByFilter[0]!;
+  if (valuesMatchedByFilter.length > 0)
+    return {
+      value: valuesMatchedByFilter[0]!,
+      directMatch: true,
+    };
 
-  if (defaultValue != null) return defaultValue;
+  if (defaultValue != null)
+    return {
+      value: defaultValue,
+      directMatch: true,
+    };
 
-  return deploymentVariableValues[0]!;
+  return {
+    value: deploymentVariableValues[0]!,
+    directMatch: false,
+  };
 };

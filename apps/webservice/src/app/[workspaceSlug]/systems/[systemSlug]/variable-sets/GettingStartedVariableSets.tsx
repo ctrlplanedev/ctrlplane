@@ -1,12 +1,14 @@
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { IconVariable } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateVariableSetDialog } from "./CreateValueSetDialog";
+import { CreateVariableSetDialog } from "./CreateVariableSetDialog";
 
-export const VariableSetGettingStarted: React.FC<{ systemId: string }> = ({
-  systemId,
-}) => {
+export const VariableSetGettingStarted: React.FC<{
+  systemId: string;
+  environments: SCHEMA.Environment[];
+}> = ({ systemId, environments }) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -26,7 +28,10 @@ export const VariableSetGettingStarted: React.FC<{ systemId: string }> = ({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <CreateVariableSetDialog systemId={systemId}>
+          <CreateVariableSetDialog
+            systemId={systemId}
+            environments={environments}
+          >
             <Button size="sm">Create Variable Set</Button>
           </CreateVariableSetDialog>
           <Button size="sm" variant="secondary">
