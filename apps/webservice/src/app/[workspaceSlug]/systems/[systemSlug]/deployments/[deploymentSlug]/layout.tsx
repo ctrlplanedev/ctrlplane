@@ -22,7 +22,7 @@ import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
 import { NavigationMenuAction } from "./NavigationMenuAction";
 
-function nFormatter(num: number, digits = 1) {
+function nFormatter(num: number, digits: number) {
   const lookup = [
     { value: 1, symbol: "" },
     { value: 1e3, symbol: "k" },
@@ -33,12 +33,11 @@ function nFormatter(num: number, digits = 1) {
     { value: 1e18, symbol: "E" },
   ];
   const regexp = /\.0+$|(?<=\.[0-9]*[1-9])0+$/;
-  const item = lookup.find((item) => num >= item.value);
+  const item = lookup.reverse().find((item) => num >= item.value);
   return item
     ? (num / item.value).toFixed(digits).replace(regexp, "").concat(item.symbol)
     : "0";
 }
-
 export default async function DeploymentLayout({
   children,
   params,
@@ -100,7 +99,7 @@ export default async function DeploymentLayout({
                       variant="outline"
                       className="ml-1.5 rounded-full text-muted-foreground"
                     >
-                      {nFormatter(releases.total)}
+                      {nFormatter(releases.total, 1)}
                     </Badge>
                   </NavigationMenuLink>
                 </Link>
