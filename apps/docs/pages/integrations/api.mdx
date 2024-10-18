@@ -1,0 +1,44 @@
+import { Callout } from "nextra/components";
+
+# API
+
+API keys can be used to integrate Scanners, register Releases from continuous
+delivery pipelines, or interact with Ctrlplane programmatically. They are
+essential for automating workflows, integrating with external tools like the
+[Terraform Cloud Scanner](./terraform-cloud/scanner) or
+[GitHub Actions Dispatcher](./github/actions-dispatcher), and building custom
+integrations with your existing infrastructure management systems.
+
+Dirrect API access can be configured by navigating to
+
+```bash
+https://${CTRLPLANE_BASE_URL}/${WORKSPACE_SLUG}/ettings/account/api
+```
+
+to create a key.
+
+## Creating an API Key
+
+To create a new API key, follow these steps:
+
+1. Navigate to the API section in your account settings.
+2. Enter a name for your API key in the "Name" field.
+3. Click on the "Create new API key" button.
+
+<Callout type="info">
+  Once the API key is generated, it will only be shown once. Make sure to copy
+  it and store it securely, as you will not be able to view it again.
+</Callout>
+
+## Revoking an API Key
+
+If you no longer need an API key or suspect it has been compromised, you can
+revoke it at any time. To revoke an API key:
+
+1. Locate the API key you wish to revoke in the API section.
+2. Click the "Revoke" button next to the corresponding key.
+
+<Callout type="info">
+  This action will immediately disable the API key, preventing any further
+  access using that key.
+</Callout>
