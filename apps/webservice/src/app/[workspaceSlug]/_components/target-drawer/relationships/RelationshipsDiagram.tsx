@@ -132,7 +132,6 @@ const DepEdge: React.FC<EdgeProps> = ({
 const nodeTypes: NodeTypes = { target: TargetNode };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const useOnLayout = () => {
   const { getNodes, fitView, setNodes, setEdges, getEdges } = useReactFlow();
   return useCallback(() => {
@@ -145,12 +144,7 @@ const useOnLayout = () => {
     setNodes([...layouted.nodes]);
     setEdges([...layouted.edges]);
 
-    window.requestAnimationFrame(() => {
-      // hack to get it to center - we should figure out when the layout is done
-      // and then call fitView. We are betting that everything should be
-      // rendered correctly in 100ms before fitting the view.
-      sleep(100).then(() => fitView({ padding: 0.12, maxZoom: 1 }));
-    });
+    fitView({ padding: 0.12, maxZoom: 1 });
   }, [getNodes, getEdges, setNodes, setEdges, fitView]);
 };
 

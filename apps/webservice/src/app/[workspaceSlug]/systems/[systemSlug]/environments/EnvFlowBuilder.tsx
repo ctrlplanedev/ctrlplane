@@ -224,7 +224,8 @@ export const EnvFlowBuilder: React.FC<{
   }, [nodes, edges, setNodes, setEdges]);
 
   useEffect(() => {
-    if (reactFlowInstance && nodes.length) reactFlowInstance.fitView();
+    if (reactFlowInstance && nodes.length)
+      reactFlowInstance.fitView({ padding: 0.12, maxZoom: 1 });
   }, [reactFlowInstance, nodes]);
 
   useEffect(() => {
