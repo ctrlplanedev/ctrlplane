@@ -1,7 +1,12 @@
 import { redirect } from "next/navigation";
 import { IconPlane } from "@tabler/icons-react";
 
-import { auth, isGoogleAuthEnabled, isOIDCAuthEnabled } from "@ctrlplane/auth";
+import {
+  auth,
+  isCredentialsAuthEnabled,
+  isGoogleAuthEnabled,
+  isOIDCAuthEnabled,
+} from "@ctrlplane/auth";
 import { Button } from "@ctrlplane/ui/button";
 
 import { LoginCard } from "../../LoginCard";
@@ -21,6 +26,7 @@ export default async function LoginInvitePage() {
         <Button variant="outline">Sign up</Button>
       </div>
       <LoginCard
+        isCredentialsAuthEnabled={isCredentialsAuthEnabled}
         isGoogleEnabled={isGoogleAuthEnabled}
         isOidcEnabled={isOIDCAuthEnabled}
       />
