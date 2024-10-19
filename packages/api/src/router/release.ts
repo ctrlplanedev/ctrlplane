@@ -485,19 +485,23 @@ export const releaseRouter = createTRPCRouter({
         systemSlug: z.string().optional(),
       }),
     )
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const baseQuery = db
         .selectDistinct({ key: releaseMetadata.key })
         .from(release)
         .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
         .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-        .innerJoin(system, eq(deployment.systemId, system.id));
+        .innerJoin(system, eq(deployment.systemId, system.id))
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id));
 
       if (input.systemSlug != null)
-        return baseQuery.where(eq(system.slug, input.systemSlug));
+        return baseQuery.where(
+          and(
+            eq(system.slug, input.systemSlug),
+            eq(workspace.slug, input.workspaceSlug),
+          ),
+        );
 
-      return baseQuery
-        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-        .where(eq(workspace.slug, input.workspaceSlug));
+      return baseQuery.where(eq(workspace.slug, input.workspaceSlug));
     }),
 });
