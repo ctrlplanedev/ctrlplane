@@ -3,4 +3,5 @@ export default {
   methods: "Methods",
   "cloud-providers": "Cloud Providers",
   services: "Services",
+  auth: "Auth",
 };
