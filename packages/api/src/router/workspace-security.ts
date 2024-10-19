@@ -18,7 +18,7 @@ export const workspaceEmailDomainMatchingRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.WorkspaceUpdate)
+          .perform(Permission.WorkspaceListMembers)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
