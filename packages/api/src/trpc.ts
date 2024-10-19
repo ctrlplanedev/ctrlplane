@@ -25,7 +25,7 @@ export type AuthorizationCheckFunc<T = any> = (opts: {
   ctx: Context & { session: Session };
   input: T;
   canUser: PermissionChecker;
-}) => boolean | Promise<boolean>;
+}) => boolean | Promise<boolean | null>;
 export type Meta = {
   authorizationCheck?: AuthorizationCheckFunc;
 };
@@ -115,7 +115,7 @@ const authzProcedure = authnProcedure.use(
     if (authorizationCheck != null) {
       const canUser = can().user(ctx.session.user.id);
       const input = await getRawInput();
-      let check = false;
+      let check: boolean | null = null;
       try {
         check = await authorizationCheck({ ctx, input, canUser });
       } catch (e: any) {
@@ -125,6 +125,8 @@ const authzProcedure = authnProcedure.use(
           cause: e,
         });
       }
+
+      if (check == null) return next();
 
       if (!check)
         throw new TRPCError({

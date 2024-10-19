@@ -110,7 +110,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="left-auto right-0 top-0 mt-0 h-screen w-[1200px] overflow-auto rounded-none focus-visible:outline-none"
+        className="left-auto right-0 top-0 mt-0 h-screen w-[1100px] overflow-auto rounded-none focus-visible:outline-none"
       >
         <DrawerTitle className="flex items-center gap-2 border-b p-6">
           <div className="flex-shrink-0 rounded bg-purple-500/20 p-1 text-purple-400">

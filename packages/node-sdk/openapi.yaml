@@ -320,7 +320,9 @@ paths:
                         type: string
                       metadata:
                         type: object
-                    required: [id, version, metadata]
+                      config:
+                        type: object
+                    required: [id, version, metadata, config]
 
                   deployment:
                     type: object

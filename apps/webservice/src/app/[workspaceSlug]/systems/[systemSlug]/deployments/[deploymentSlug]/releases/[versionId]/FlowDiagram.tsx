@@ -8,11 +8,7 @@ import type {
 } from "@ctrlplane/db/schema";
 import type { NodeTypes, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
-import ReactFlow, {
-  useEdgesState,
-  useNodesState,
-  useReactFlow,
-} from "reactflow";
+import ReactFlow, { useEdgesState, useNodesState } from "reactflow";
 
 import { ArrowEdge } from "~/app/[workspaceSlug]/_components/reactflow/ArrowEdge";
 import {
@@ -31,7 +27,6 @@ const nodeTypes: NodeTypes = {
   policy: PolicyNode,
   "release-sequencing": ReleaseSequencingNode,
 };
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const FlowDiagram: React.FC<{
   systemId: string;
   release: Release;
@@ -86,20 +81,17 @@ export const FlowDiagram: React.FC<{
     ...createEdgesFromPolicyDeployment(policyDeployments),
   ]);
 
-  const { fitView } = useReactFlow();
   const onLayout = useCallback(() => {
     const layouted = getLayoutedElementsDagre(nodes, edges, "LR");
 
     setNodes([...layouted.nodes]);
     setEdges([...layouted.edges]);
+  }, [nodes, edges, setNodes, setEdges]);
 
-    window.requestAnimationFrame(() => {
-      // hack to get it to center - we should figure out when the layout is done
-      // and then call fitView. We are betting that everything should be
-      // rendered correctly in 100ms before fitting the view.
-      sleep(100).then(() => fitView({ padding: 0.12, maxZoom: 1 }));
-    });
-  }, [nodes, edges, setNodes, setEdges, fitView]);
+  useEffect(() => {
+    if (reactFlowInstance && nodes.length)
+      reactFlowInstance.fitView({ padding: 0.16, maxZoom: 1 });
+  }, [reactFlowInstance, nodes, edges]);
 
   useEffect(() => {
     if (reactFlowInstance != null) onLayout();

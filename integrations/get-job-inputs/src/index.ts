@@ -69,6 +69,7 @@ async function run() {
       setOutputAndLog("release_id", release?.id);
       setOutputAndLog("release_version", release?.version);
       setOutputsRecursively("release_metadata", release?.metadata);
+      setOutputsRecursively("release_config", release?.config);
 
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);

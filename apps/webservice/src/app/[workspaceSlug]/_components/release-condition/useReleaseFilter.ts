@@ -10,7 +10,11 @@ export const useReleaseFilter = () => {
   const filter = useMemo<ReleaseCondition | undefined>(() => {
     const filterJson = urlParams.get("filter");
     if (filterJson == null) return undefined;
-    return JSON.parse(LZString.decompressFromEncodedURIComponent(filterJson));
+    try {
+      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterJson));
+    } catch {
+      return undefined;
+    }
   }, [urlParams]);
 
   const setFilter = useCallback(

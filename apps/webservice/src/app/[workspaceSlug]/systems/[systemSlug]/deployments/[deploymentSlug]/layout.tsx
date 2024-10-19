@@ -2,14 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconAlertTriangle } from "@tabler/icons-react";
 
-import { Badge } from "@ctrlplane/ui/badge";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from "@ctrlplane/ui/navigation-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -20,24 +12,7 @@ import {
 import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
-import { NavigationMenuAction } from "./NavigationMenuAction";
-
-function nFormatter(num: number, digits = 1) {
-  const lookup = [
-    { value: 1, symbol: "" },
-    { value: 1e3, symbol: "k" },
-    { value: 1e6, symbol: "M" },
-    { value: 1e9, symbol: "G" },
-    { value: 1e12, symbol: "T" },
-    { value: 1e15, symbol: "P" },
-    { value: 1e18, symbol: "E" },
-  ];
-  const regexp = /\.0+$|(?<=\.[0-9]*[1-9])0+$/;
-  const item = lookup.find((item) => num >= item.value);
-  return item
-    ? (num / item.value).toFixed(digits).replace(regexp, "").concat(item.symbol)
-    : "0";
-}
+import { DeploymentNavBar } from "./DeploymentNavBar";
 
 export default async function DeploymentLayout({
   children,
@@ -57,8 +32,6 @@ export default async function DeploymentLayout({
   });
 
   const overviewUrl = `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}`;
-  const releasesUrl = `${overviewUrl}/releases`;
-  const variablesUrl = `${overviewUrl}/variables`;
   return (
     <>
       <TopNav>
@@ -88,52 +61,10 @@ export default async function DeploymentLayout({
           )}
         </div>
       </TopNav>
-      <div className="flex items-center justify-between border-b p-2">
-        <div>
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <Link href={releasesUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Releases
-                    <Badge
-                      variant="outline"
-                      className="ml-1.5 rounded-full text-muted-foreground"
-                    >
-                      {nFormatter(releases.total)}
-                    </Badge>
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link href={variablesUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Variables
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link href={variablesUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Jobs
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link href={overviewUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Settings
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
-        <NavigationMenuAction
-          deploymentId={deployment.id}
-          systemId={deployment.systemId}
-        />
-      </div>
+      <DeploymentNavBar
+        deployment={deployment}
+        totalReleases={releases.total}
+      />
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-53px-49px)] overflow-auto">
         {children}

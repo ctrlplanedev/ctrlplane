@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { TargetOperator } from "@ctrlplane/validators/targets";
+import { ReleaseOperator } from "@ctrlplane/validators/releases";
 
 import type { ReleaseConditionRenderProps } from "./release-condition-props";
 import { api } from "~/trpc/react";
@@ -34,17 +34,17 @@ export const MetadataConditionRender: React.FC<
   const setKey = (key: string) => onChange({ ...condition, key });
 
   const setValue = (value: string) =>
-    condition.operator !== TargetOperator.Null &&
+    condition.operator !== ReleaseOperator.Null &&
     onChange({ ...condition, value });
 
   const setOperator = (
     operator:
-      | TargetOperator.Equals
-      | TargetOperator.Like
-      | TargetOperator.Regex
-      | TargetOperator.Null,
+      | ReleaseOperator.Equals
+      | ReleaseOperator.Like
+      | ReleaseOperator.Regex
+      | ReleaseOperator.Null,
   ) =>
-    operator === TargetOperator.Null
+    operator === ReleaseOperator.Null
       ? onChange({ ...condition, operator, value: undefined })
       : onChange({ ...condition, operator, value: condition.value ?? "" });
 
@@ -94,10 +94,10 @@ export const MetadataConditionRender: React.FC<
             value={condition.operator}
             onValueChange={(
               v:
-                | TargetOperator.Equals
-                | TargetOperator.Like
-                | TargetOperator.Regex
-                | TargetOperator.Null,
+                | ReleaseOperator.Equals
+                | ReleaseOperator.Like
+                | ReleaseOperator.Regex
+                | ReleaseOperator.Null,
             ) => setOperator(v)}
           >
             <SelectTrigger className="rounded-none text-muted-foreground hover:bg-neutral-800/50">
@@ -107,21 +107,21 @@ export const MetadataConditionRender: React.FC<
               />
             </SelectTrigger>
             <SelectContent className="text-muted-foreground">
-              <SelectItem value={TargetOperator.Equals}>Equals</SelectItem>
-              <SelectItem value={TargetOperator.Regex}>Regex</SelectItem>
-              <SelectItem value={TargetOperator.Like}>Like</SelectItem>
-              <SelectItem value={TargetOperator.Null}>Is Null</SelectItem>
+              <SelectItem value={ReleaseOperator.Equals}>Equals</SelectItem>
+              <SelectItem value={ReleaseOperator.Regex}>Regex</SelectItem>
+              <SelectItem value={ReleaseOperator.Like}>Like</SelectItem>
+              <SelectItem value={ReleaseOperator.Null}>Is Null</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {condition.operator !== TargetOperator.Null ? (
+        {condition.operator !== ReleaseOperator.Null ? (
           <div className="col-span-4">
             <Input
               placeholder={
-                condition.operator === TargetOperator.Regex
+                condition.operator === ReleaseOperator.Regex
                   ? "^[a-zA-Z]+$"
-                  : condition.operator === TargetOperator.Like
+                  : condition.operator === ReleaseOperator.Like
                     ? "%value%"
                     : "Value"
               }

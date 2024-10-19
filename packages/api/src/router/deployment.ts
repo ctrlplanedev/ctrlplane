@@ -161,7 +161,8 @@ export const deploymentRouter = createTRPCRouter({
               eq(workspace.slug, workspaceSlug),
             ),
           )
-          .then(takeFirst);
+          .then(takeFirstOrNull);
+        if (sys == null) return null;
         return canUser
           .perform(Permission.DeploymentGet)
           .on({ type: "system", id: sys.system.id });

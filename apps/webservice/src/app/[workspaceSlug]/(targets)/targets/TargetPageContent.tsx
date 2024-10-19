@@ -48,7 +48,7 @@ export const TargetPageContent: React.FC<{
   const { targetId, setTargetId } = useTargetDrawer();
 
   if (targetsAll.isSuccess && targetsAll.data.total === 0)
-    return <TargetGettingStarted />;
+    return <TargetGettingStarted workspace={workspace} />;
   return (
     <div className="h-full text-sm">
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">

@@ -169,14 +169,12 @@ const useOnConnect = () => {
   return onConnect;
 };
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export const EnvFlowBuilder: React.FC<{
   systemId: string;
   envs: Array<Environment>;
   policies: Array<EnvironmentPolicy>;
   policyDeployments: Array<EnvironmentPolicyDeployment>;
 }> = ({ systemId, envs, policies, policyDeployments }) => {
-  const { fitView } = useReactFlow();
   const [nodes, setNodes, onNodesChange] = useNodesState([
     triggerNode,
     ...envs.map((env) => ({
@@ -223,14 +221,12 @@ export const EnvFlowBuilder: React.FC<{
 
     setNodes([...layouted.nodes]);
     setEdges([...layouted.edges]);
+  }, [nodes, edges, setNodes, setEdges]);
 
-    window.requestAnimationFrame(() => {
-      // hack to get it to center - we should figure out when the layout is done
-      // and then call fitView. We are betting that everything should be
-      // rendered correctly in 100ms before fitting the view.
-      sleep(100).then(() => fitView({ padding: 0.12, maxZoom: 1 }));
-    });
-  }, [nodes, edges, setNodes, setEdges, fitView]);
+  useEffect(() => {
+    if (reactFlowInstance && nodes.length)
+      reactFlowInstance.fitView({ padding: 0.12, maxZoom: 1 });
+  }, [reactFlowInstance, nodes]);
 
   useEffect(() => {
     if (reactFlowInstance != null) onLayout();
