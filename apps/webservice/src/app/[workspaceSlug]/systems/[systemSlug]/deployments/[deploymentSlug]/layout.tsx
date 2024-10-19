@@ -2,12 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconAlertTriangle } from "@tabler/icons-react";
 
-import { Badge } from "@ctrlplane/ui/badge";
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
-} from "@ctrlplane/ui/navigation-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -18,25 +12,8 @@ import {
 import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
-import { NavigationMenuAction } from "./NavigationMenuAction";
-import { NavigationMenuTab } from "./NavigationMenuTab";
+import { DeploymentNavBar } from "./DeploymentNavBar";
 
-function nFormatter(num: number, digits: number) {
-  const lookup = [
-    { value: 1, symbol: "" },
-    { value: 1e3, symbol: "k" },
-    { value: 1e6, symbol: "M" },
-    { value: 1e9, symbol: "G" },
-    { value: 1e12, symbol: "T" },
-    { value: 1e15, symbol: "P" },
-    { value: 1e18, symbol: "E" },
-  ];
-  const regexp = /\.0+$|(?<=\.[0-9]*[1-9])0+$/;
-  const item = lookup.reverse().find((item) => num >= item.value);
-  return item
-    ? (num / item.value).toFixed(digits).replace(regexp, "").concat(item.symbol)
-    : "0";
-}
 export default async function DeploymentLayout({
   children,
   params,
@@ -55,8 +32,6 @@ export default async function DeploymentLayout({
   });
 
   const overviewUrl = `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}`;
-  const releasesUrl = `${overviewUrl}/releases`;
-  const variablesUrl = `${overviewUrl}/variables`;
   return (
     <>
       <TopNav>
@@ -86,39 +61,10 @@ export default async function DeploymentLayout({
           )}
         </div>
       </TopNav>
-      <div className="flex items-center justify-between border-b p-2">
-        <div>
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTab href={releasesUrl}>
-                  Releases
-                  <Badge
-                    variant="outline"
-                    className="ml-1.5 rounded-full text-muted-foreground"
-                  >
-                    {nFormatter(releases.total, 1)}
-                  </Badge>
-                </NavigationMenuTab>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuTab href={variablesUrl}>
-                  Variables
-                </NavigationMenuTab>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuTab href={overviewUrl} exact>
-                  Settings
-                </NavigationMenuTab>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-        </div>
-        <NavigationMenuAction
-          deploymentId={deployment.id}
-          systemId={deployment.systemId}
-        />
-      </div>
+      <DeploymentNavBar
+        deployment={deployment}
+        totalReleases={releases.total}
+      />
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-53px-49px)] overflow-auto">
         {children}
