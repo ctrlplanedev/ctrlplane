@@ -45,5 +45,11 @@ export const createJobApprovals = async (
         releaseId: p.release.id,
       })),
     )
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: [
+        environmentPolicyApproval.policyId,
+        environmentPolicyApproval.releaseId,
+      ],
+      set: { status: "pending" },
+    });
 };
