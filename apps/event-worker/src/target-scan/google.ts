@@ -1,3 +1,4 @@
+import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/targets";
 import type { ClusterManagerClient } from "@google-cloud/container";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import type { AuthClient } from "google-auth-library";
@@ -89,7 +90,7 @@ export const clusterToTarget = (
   providerId: string,
   project: string,
   cluster: google.container.v1.ICluster,
-) => {
+): KubernetesClusterAPIV1 & { workspaceId: string; providerId: string } => {
   const masterVersion = new SemVer(cluster.currentMasterVersion ?? "0");
   const nodeVersion = new SemVer(cluster.currentNodeVersion ?? "0");
   const autoscaling = String(
@@ -105,9 +106,15 @@ export const clusterToTarget = (
     version: "kubernetes/v1",
     kind: "ClusterAPI",
     config: {
-      name: cluster.name,
-      status: cluster.status,
-      cluster: {
+      name: cluster.name!,
+      auth: {
+        method: "google/gke",
+        project,
+        location: cluster.location!,
+        clusterName: cluster.name!,
+      },
+      status: cluster.status?.toString() ?? "STATUS_UNSPECIFIED",
+      server: {
         certificateAuthorityData: cluster.masterAuth?.clusterCaCertificate,
         endpoint: `https://${cluster.endpoint}`,
       },

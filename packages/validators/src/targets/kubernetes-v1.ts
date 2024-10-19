@@ -2,10 +2,51 @@ import { z } from "zod";
 
 const clusterConfig = z.object({
   name: z.string(),
+  status: z.string().optional(),
   server: z.object({
-    certificateAuthorityData: z.string(),
+    certificateAuthorityData: z.string().nullish(),
     endpoint: z.string().url(),
   }),
+  auth: z.discriminatedUnion("method", [
+    z.object({
+      method: z.literal("token"),
+      token: z.string(),
+    }),
+    z.object({
+      method: z.literal("google/gke"),
+      project: z.string(),
+      location: z.string(),
+      clusterName: z.string(),
+    }),
+    z.object({
+      method: z.literal("aws/eks"),
+      region: z.string(),
+      clusterName: z.string(),
+    }),
+    z.object({
+      method: z.literal("azure/aks"),
+      resourceGroup: z.string(),
+      clusterName: z.string(),
+    }),
+    z.object({
+      method: z.literal("exec"),
+      command: z.string(),
+      args: z.array(z.string()).optional(),
+      env: z
+        .array(
+          z.object({
+            name: z.string(),
+            value: z.string(),
+          }),
+        )
+        .optional(),
+    }),
+    z.object({
+      method: z.literal("kubeconfig"),
+      path: z.string(),
+      context: z.string().optional(),
+    }),
+  ]),
 });
 
 export const kubernetesClusterApiV1 = z.object({

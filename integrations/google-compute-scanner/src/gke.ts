@@ -71,9 +71,15 @@ export const getKubernetesClusters = async (): Promise<
         identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}`,
         config: {
           name: cluster.name!,
+          auth: {
+            method: "google/gke",
+            project: env.GOOGLE_PROJECT_ID,
+            location: cluster.location!,
+            clusterName: cluster.name!,
+          },
+          status: cluster.status?.toString() ?? "STATUS_UNSPECIFIED",
           server: {
-            certificateAuthorityData:
-              cluster.masterAuth?.clusterCaCertificate ?? "",
+            certificateAuthorityData: cluster.masterAuth?.clusterCaCertificate,
             endpoint: `https://${cluster.endpoint}`,
           },
         },
