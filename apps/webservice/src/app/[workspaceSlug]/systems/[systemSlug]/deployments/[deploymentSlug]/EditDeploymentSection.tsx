@@ -1,7 +1,7 @@
 "use client";
 
 import type { Deployment } from "@ctrlplane/db/schema";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { deploymentSchema } from "@ctrlplane/db/schema";
@@ -33,12 +33,22 @@ export const EditDeploymentSection: React.FC<{
   });
   const { handleSubmit, setError } = form;
 
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
   const router = useRouter();
   const updateDeployment = api.deployment.update.useMutation();
   const onSubmit = handleSubmit((data) => {
     updateDeployment
       .mutateAsync({ id: deployment.id, data })
-      .then(() => router.refresh())
+      .then(() => {
+        if (data.slug !== deployment.slug)
+          router.replace(
+            `/${workspaceSlug}/systems/${systemSlug}/deployments/${data.slug}`,
+          );
+        router.refresh();
+      })
       .catch(() => {
         setError("root", {
           message: "Deployment with this slug already exists",

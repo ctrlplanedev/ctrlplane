@@ -1,8 +1,14 @@
+import type { Workspace } from "@ctrlplane/db/schema";
+import Link from "next/link";
 import { IconTopologyComplex } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 
-export const TargetGettingStarted: React.FC = () => {
+import { CreateTargetDialog } from "../../_components/CreateTarget";
+
+export const TargetGettingStarted: React.FC<{ workspace: Workspace }> = ({
+  workspace,
+}) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -25,10 +31,17 @@ export const TargetGettingStarted: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm">Register Target</Button>
-          <Button size="sm" variant="secondary">
+          <CreateTargetDialog workspace={workspace}>
+            <Button size="sm">Register Target</Button>
+          </CreateTargetDialog>
+          <Link
+            href="https://docs.ctrlplane.dev/core-concepts/targets"
+            target="_blank"
+            passHref
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
+          >
             Documentation
-          </Button>
+          </Link>
         </div>
       </div>
     </div>

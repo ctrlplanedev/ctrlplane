@@ -95,6 +95,7 @@ export const CreateTargetDialog: React.FC<{
     query.set("target_id", target.id);
     router.replace(`?${query.toString()}`);
     router.refresh();
+    setOpen(false);
     onSuccess?.();
   });
 

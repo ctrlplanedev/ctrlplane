@@ -9,6 +9,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -42,41 +43,43 @@ export const Overview: React.FC<{
   );
 
   return (
-    <Form {...form}>
-      <form onSubmit={onSubmit} className="space-y-6 p-2">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Add a description..." {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <Button
-          type="submit"
-          disabled={updatePolicy.isPending || !form.formState.isDirty}
-        >
-          Save
-        </Button>
-      </form>
-    </Form>
+    <div className="max-w-xl">
+      <Form {...form}>
+        <form onSubmit={onSubmit} className="space-y-6 p-2">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <Textarea placeholder="Add a description..." {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <Button
+            type="submit"
+            disabled={updatePolicy.isPending || !form.formState.isDirty}
+          >
+            Save
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 };
