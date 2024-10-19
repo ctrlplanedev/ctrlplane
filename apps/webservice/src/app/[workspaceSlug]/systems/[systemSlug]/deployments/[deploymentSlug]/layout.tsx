@@ -6,9 +6,7 @@ import { Badge } from "@ctrlplane/ui/badge";
 import {
   NavigationMenu,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
-  navigationMenuTriggerStyle,
 } from "@ctrlplane/ui/navigation-menu";
 import {
   Tooltip,
@@ -21,6 +19,7 @@ import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
 import { NavigationMenuAction } from "./NavigationMenuAction";
+import { NavigationMenuTab } from "./NavigationMenuTab";
 
 function nFormatter(num: number, digits: number) {
   const lookup = [
@@ -92,38 +91,25 @@ export default async function DeploymentLayout({
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <Link href={releasesUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Releases
-                    <Badge
-                      variant="outline"
-                      className="ml-1.5 rounded-full text-muted-foreground"
-                    >
-                      {nFormatter(releases.total, 1)}
-                    </Badge>
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuTab href={releasesUrl}>
+                  Releases
+                  <Badge
+                    variant="outline"
+                    className="ml-1.5 rounded-full text-muted-foreground"
+                  >
+                    {nFormatter(releases.total, 1)}
+                  </Badge>
+                </NavigationMenuTab>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href={variablesUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Variables
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuTab href={variablesUrl}>
+                  Variables
+                </NavigationMenuTab>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link href={variablesUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Jobs
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <Link href={overviewUrl} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Settings
-                  </NavigationMenuLink>
-                </Link>
+                <NavigationMenuTab href={overviewUrl} exact>
+                  Settings
+                </NavigationMenuTab>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
