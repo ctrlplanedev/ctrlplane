@@ -11,7 +11,11 @@ export const useTargetFilter = () => {
   const filter = useMemo<TargetCondition | undefined>(() => {
     const filterJson = urlParams.get("filter");
     if (filterJson == null) return undefined;
-    return JSON.parse(LZString.decompressFromEncodedURIComponent(filterJson));
+    try {
+      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterJson));
+    } catch {
+      return undefined;
+    }
   }, [urlParams]);
 
   const setFilter = useCallback(
