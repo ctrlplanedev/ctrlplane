@@ -22,6 +22,7 @@ import {
   environmentPolicyApproval,
   environmentPolicyDeployment,
   environmentPolicyReleaseWindow,
+  job,
   release,
   releaseJobTrigger,
   setPolicyReleaseWindow,
@@ -38,6 +39,7 @@ import {
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -183,12 +185,14 @@ const policyRouter = createTRPCRouter({
             releaseJobTrigger,
             eq(releaseJobTrigger.environmentId, environment.id),
           )
+          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
           .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
           .where(
             and(
               eq(environmentPolicyApproval.id, envApproval.id),
               isNull(environment.deletedAt),
               eq(release.id, input.releaseId),
+              eq(job.status, JobStatus.Pending),
             ),
           );
 
