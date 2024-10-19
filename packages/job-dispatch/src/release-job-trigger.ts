@@ -20,7 +20,7 @@ import {
   targetMatchesMetadata,
 } from "@ctrlplane/db/schema";
 
-import { createReleaseVariables } from "./job-variables-deployment.js";
+import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
 
 type FilterFunc = (
   tx: Tx,

@@ -21,7 +21,8 @@
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "test": "vitest"
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
@@ -50,7 +51,7 @@
     "prettier": "catalog:",
     "typescript": "^5.6.2",
     "vite-tsconfig-paths": "^5.0.1",
-    "vitest": "^2.1.1"
+    "vitest": "^2.1.2"
   },
   "prettier": "@ctrlplane/prettier-config"
 }
