@@ -73,7 +73,7 @@ const runJob = async (job: string) => {
     logger.error(`Error running job ${job}: ${error.message}`, error);
   }
 };
-const main = () => {
+const main = async () => {
   const parsedValues = parseJobArgs();
   const jobSchedulePairs = parseJobSchedulePairs(parsedValues);
 
@@ -81,14 +81,21 @@ const main = () => {
     `Starting jobs: ${jobSchedulePairs.map((pair) => pair.job).join(", ")}`,
   );
 
+  if (parsedValues.runOnce) {
+    const jobPromises = jobSchedulePairs.map(({ job }) => {
+      if (job == null) return Promise.resolve();
+      logger.info(`Running job ${job} once`);
+      return runJob(job);
+    });
+
+    await Promise.all(jobPromises);
+    logger.info("All jobs completed. Exiting.");
+    process.exit(0);
+  }
+
   for (const { job, schedule } of jobSchedulePairs) {
     if (job == null) continue;
 
-    if (parsedValues.runOnce) {
-      logger.info(`Running job ${job} once`);
-      runJob(job);
-      continue;
-    }
     const cronJob = new CronJob(schedule, () => runJob(job));
 
     cronJob.start();
