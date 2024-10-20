@@ -495,13 +495,17 @@ export const releaseRouter = createTRPCRouter({
         .innerJoin(workspace, eq(system.workspaceId, workspace.id));
 
       if (input.systemSlug != null)
-        return baseQuery.where(
-          and(
-            eq(system.slug, input.systemSlug),
-            eq(workspace.slug, input.workspaceSlug),
-          ),
-        );
+        return baseQuery
+          .where(
+            and(
+              eq(system.slug, input.systemSlug),
+              eq(workspace.slug, input.workspaceSlug),
+            ),
+          )
+          .then((r) => r.map((row) => row.key));
 
-      return baseQuery.where(eq(workspace.slug, input.workspaceSlug));
+      return baseQuery
+        .where(eq(workspace.slug, input.workspaceSlug))
+        .then((r) => r.map((row) => row.key));
     }),
 });

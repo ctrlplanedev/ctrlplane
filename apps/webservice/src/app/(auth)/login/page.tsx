@@ -23,12 +23,16 @@ export default async function LoginPage() {
       <div className="flex items-center gap-2 p-4">
         <IconPlane className="h-10 w-10" />
         <div className="flex-grow" />
-        <Button variant="ghost" className="text-muted-foreground">
-          Contact
-        </Button>
-        <Link href="/sign-up" passHref>
-          <Button variant="outline">Sign up</Button>
+        <Link href="https://discord.gg/sUmH9NyWhp" passHref>
+          <Button variant="ghost" className="text-muted-foreground">
+            Contact
+          </Button>
         </Link>
+        {isCredentialsAuthEnabled && (
+          <Link href="/sign-up" passHref>
+            <Button variant="outline">Sign up</Button>
+          </Link>
+        )}
       </div>
       <LoginCard
         isCredentialsAuthEnabled={isCredentialsAuthEnabled}

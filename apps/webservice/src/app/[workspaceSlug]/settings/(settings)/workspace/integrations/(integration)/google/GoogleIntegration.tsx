@@ -86,7 +86,7 @@ export const GoogleIntegration: React.FC<{
 
             <div className="flex items-center justify-between p-4 text-sm text-neutral-200">
               <div className="flex items-center gap-2">
-                <span className="max-w-[350px] truncate font-mono text-xs">
+                <span className="truncate font-mono text-xs">
                   {workspace.googleServiceAccountEmail}
                 </span>
                 <Button variant="ghost" size="sm" onClick={handleCopy}>

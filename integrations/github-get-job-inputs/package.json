@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/get-job-inputs",
+  "name": "@ctrlplane/github-get-job-inputs",
   "description": "GitHub Action to get variables from an Ctrlplane job execution",
   "version": "1.0.0",
   "keywords": [

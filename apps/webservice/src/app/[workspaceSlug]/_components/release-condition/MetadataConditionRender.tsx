@@ -76,14 +76,14 @@ export const MetadataConditionRender: React.FC<
                 <Button
                   variant="ghost"
                   size="sm"
-                  key={k.key}
+                  key={k}
                   className="w-full rounded-none text-left"
                   onClick={() => {
-                    setKey(k.key);
+                    setKey(k);
                     setOpen(false);
                   }}
                 >
-                  <div className="w-full">{k.key}</div>
+                  <div className="w-full">{k}</div>
                 </Button>
               ))}
             </PopoverContent>

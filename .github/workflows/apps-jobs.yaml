@@ -1,21 +1,21 @@
-name: Apps / Job Policy Checker
+name: Apps / Jobs
 
 on:
   pull_request:
     branches: ["*"]
     paths:
-      - apps/job-policy-checker/**
+      - apps/jobs/**
       - packages/job-dispatch/**
       - packages/db/**
-      - .github/workflows/apps-job-policy-checker.yaml
+      - .github/workflows/apps-jobs.yaml
       - pnpm-lock.yaml
   push:
     branches: ["main"]
     paths:
-      - apps/job-policy-checker/**
+      - apps/jobs/**
       - packages/job-dispatch/**
       - packages/db/**
-      - .github/workflows/apps-job-policy-checker.yaml
+      - .github/workflows/apps-jobs.yaml
       - pnpm-lock.yaml
 
 jobs:
@@ -58,7 +58,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ctrlplane/job-policy-checker
+          images: ctrlplane/jobs
           tags: |
             type=sha,format=short,prefix=
 
@@ -67,7 +67,7 @@ jobs:
         if: github.ref != 'refs/heads/main'
         with:
           push: false
-          file: apps/job-policy-checker/Dockerfile
+          file: apps/jobs/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
 
@@ -76,6 +76,6 @@ jobs:
         if: github.ref == 'refs/heads/main' && env.DOCKERHUB_LOGIN == 'true'
         with:
           push: true
-          file: apps/job-policy-checker/Dockerfile
+          file: apps/jobs/Dockerfile
           platforms: ${{ matrix.platform }}
           tags: ${{ steps.meta.outputs.tags }}
