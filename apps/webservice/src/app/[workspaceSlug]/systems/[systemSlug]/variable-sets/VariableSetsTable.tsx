@@ -23,9 +23,13 @@ type VariableSet = SCHEMA.VariableSet & {
   assignments: Assignment[];
 };
 
-export const VariableSetsTable: React.FC<{
+type VariableSetsTableProps = {
   variableSets: VariableSet[];
-}> = ({ variableSets }) => {
+};
+
+export const VariableSetsTable: React.FC<VariableSetsTableProps> = ({
+  variableSets,
+}) => {
   const { setVariableSetId } = useVariableSetDrawer();
 
   return (

@@ -73,11 +73,10 @@ export const determineVariablesForReleaseJob = async (
     a.variableSet.name.localeCompare(b.variableSet.name),
   );
 
-  const existingKeys = jobVariables.map((v) => v.key);
-
   for (const assignment of assignments) {
     const { variableSet } = assignment;
-    variableSet.values.forEach((val) => {
+    for (const val of variableSet.values) {
+      const existingKeys = jobVariables.map((v) => v.key);
       if (!existingKeys.includes(val.key)) {
         jobVariables.push({
           jobId: job.id,
@@ -85,20 +84,20 @@ export const determineVariablesForReleaseJob = async (
           value: val.value,
         });
         directMatches.push(val.key);
-        return;
+        continue;
       }
 
-      if (directMatches.includes(val.key)) return;
+      if (directMatches.includes(val.key)) continue;
 
       const existingVariableIdx = jobVariables.findIndex(
         (v) => v.key === val.key,
       );
 
-      if (existingVariableIdx === -1) return;
+      if (existingVariableIdx === -1) continue;
 
       jobVariables[existingVariableIdx]!.value = val.value;
       directMatches.push(val.key);
-    });
+    }
   }
 
   return jobVariables;

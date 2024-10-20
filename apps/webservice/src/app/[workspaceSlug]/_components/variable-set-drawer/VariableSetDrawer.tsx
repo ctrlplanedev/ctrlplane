@@ -30,7 +30,7 @@ export const VariableSetDrawer: React.FC = () => {
         showBar={false}
         className="left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none"
       >
-        <div className="flex items-center gap-2 border-b p-6">
+        <div className="flex items-center gap-2 border-b px-6 py-4">
           <DrawerTitle>{variableSet?.name}</DrawerTitle>
           {variableSet != null && (
             <VariableSetActionsDropdown variableSet={variableSet} />

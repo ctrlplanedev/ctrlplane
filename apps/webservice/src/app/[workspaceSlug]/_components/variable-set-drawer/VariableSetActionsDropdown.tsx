@@ -79,7 +79,7 @@ export const VariableSetActionsDropdown: React.FC<
 > = ({ variableSet }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
-      <Button variant="ghost" className="size-8 p-0">
+      <Button variant="ghost" size="icon">
         <IconDotsVertical className="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>
