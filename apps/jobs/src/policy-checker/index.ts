@@ -6,40 +6,18 @@ import {
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
-import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
-
-const log = logger.child({ label: "policy-checker" });
 
 export const run = async () => {
   const releaseJobTriggers = await db
-    .select({ releaseJobTrigger: schema.releaseJobTrigger })
+    .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
-    .innerJoin(
-      schema.environment,
-      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-    )
-    .leftJoin(
-      schema.environmentPolicyApproval,
-      eq(
-        schema.environment.policyId,
-        schema.environmentPolicyApproval.policyId,
-      ),
-    )
-    .where(
-      and(
-        eq(schema.job.status, JobStatus.Pending),
-        or(
-          isNull(schema.environmentPolicyApproval.id),
-          eq(schema.environmentPolicyApproval.status, "approved"),
-        ),
-      ),
-    )
-    .then((rows) => rows.map((row) => row.releaseJobTrigger));
+    .where(eq(schema.job.status, JobStatus.Pending))
+    .then((rows) => rows.map((row) => row.release_job_trigger));
 
   if (releaseJobTriggers.length === 0) return;
-  log.info(
+  console.log(
     `Found [${releaseJobTriggers.length}] release job triggers to dispatch`,
   );
 
