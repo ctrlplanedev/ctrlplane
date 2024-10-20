@@ -63,38 +63,41 @@ export const determineVariablesForReleaseJob = async (
     ),
   );
 
-  const envVariableSets = await utils.getEnvironment(
+  const env = await utils.getEnvironment(
     tx,
     job.releaseJobTrigger.environmentId,
   );
 
-  envVariableSets.forEach((env) => {
-    env.assignments.forEach((assignment) => {
-      const { variableSet } = assignment;
-      variableSet.values.forEach((val) => {
-        const existingKeys = jobVariables.map((v) => v.key);
+  if (!env) return jobVariables;
+  const assignments = env.assignments.sort((a, b) =>
+    a.variableSet.name.localeCompare(b.variableSet.name),
+  );
 
-        if (!existingKeys.includes(val.key)) {
-          jobVariables.push({
-            jobId: job.id,
-            key: val.key,
-            value: val.value,
-          });
-          directMatches.push(val.key);
-          return;
-        }
+  assignments.forEach((assignment) => {
+    const { variableSet } = assignment;
+    variableSet.values.forEach((val) => {
+      const existingKeys = jobVariables.map((v) => v.key);
 
-        if (directMatches.includes(val.key)) return;
-
-        const existingVariableIdx = jobVariables.findIndex(
-          (v) => v.key === val.key,
-        );
-
-        if (existingVariableIdx === -1) return;
-
-        jobVariables[existingVariableIdx]!.value = val.value;
+      if (!existingKeys.includes(val.key)) {
+        jobVariables.push({
+          jobId: job.id,
+          key: val.key,
+          value: val.value,
+        });
         directMatches.push(val.key);
-      });
+        return;
+      }
+
+      if (directMatches.includes(val.key)) return;
+
+      const existingVariableIdx = jobVariables.findIndex(
+        (v) => v.key === val.key,
+      );
+
+      if (existingVariableIdx === -1) return;
+
+      jobVariables[existingVariableIdx]!.value = val.value;
+      directMatches.push(val.key);
     });
   });
 

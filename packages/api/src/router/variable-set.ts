@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { asc, eq, takeFirst } from "@ctrlplane/db";
 
 import "@ctrlplane/db/schema";
 
@@ -26,6 +26,7 @@ export const variableSetRouter = createTRPCRouter({
       ctx.db.query.variableSet.findMany({
         where: eq(variableSet.systemId, input),
         with: { values: true, assignments: { with: { environment: true } } },
+        orderBy: [asc(variableSet.name)],
       }),
     ),
 

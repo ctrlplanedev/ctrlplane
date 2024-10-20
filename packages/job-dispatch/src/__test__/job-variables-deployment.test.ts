@@ -124,7 +124,7 @@ describe("job-variables-deployment", () => {
     vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(
       variableValues[1]!,
     );
-    vi.mocked(utils.getEnvironment).mockResolvedValue([]);
+    vi.mocked(utils.getEnvironment).mockResolvedValue(undefined);
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -159,7 +159,7 @@ describe("job-variables-deployment", () => {
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
     vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(null);
-    vi.mocked(utils.getEnvironment).mockResolvedValue([]);
+    vi.mocked(utils.getEnvironment).mockResolvedValue(undefined);
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -194,7 +194,7 @@ describe("job-variables-deployment", () => {
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
     vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(null);
-    vi.mocked(utils.getEnvironment).mockResolvedValue([]);
+    vi.mocked(utils.getEnvironment).mockResolvedValue(undefined);
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -232,38 +232,36 @@ describe("job-variables-deployment", () => {
       variableValues[1]!,
     );
 
-    vi.mocked(utils.getEnvironment).mockResolvedValue([
-      {
-        id: "0",
-        name: "test",
-        description: null,
-        systemId: "0",
-        policyId: null,
-        targetFilter: null,
-        deletedAt: null,
-        assignments: [
-          {
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
             id: "0",
-            variableSetId: "0",
-            environmentId: "0",
-            variableSet: {
-              id: "0",
-              name: "test",
-              description: null,
-              systemId: "0",
-              values: [
-                {
-                  id: "0",
-                  value: "test4",
-                  key: "test2",
-                  variableSetId: "0",
-                },
-              ],
-            },
+            name: "test",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test2",
+                variableSetId: "0",
+              },
+            ],
           },
-        ],
-      },
-    ]);
+        },
+      ],
+    });
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -302,38 +300,36 @@ describe("job-variables-deployment", () => {
       variableValues[1]!,
     );
 
-    vi.mocked(utils.getEnvironment).mockResolvedValue([
-      {
-        id: "0",
-        name: "test",
-        description: null,
-        systemId: "0",
-        policyId: null,
-        targetFilter: null,
-        deletedAt: null,
-        assignments: [
-          {
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
             id: "0",
-            variableSetId: "0",
-            environmentId: "0",
-            variableSet: {
-              id: "0",
-              name: "test",
-              description: null,
-              systemId: "0",
-              values: [
-                {
-                  id: "0",
-                  value: "test4",
-                  key: "test",
-                  variableSetId: "0",
-                },
-              ],
-            },
+            name: "test",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test",
+                variableSetId: "0",
+              },
+            ],
           },
-        ],
-      },
-    ]);
+        },
+      ],
+    });
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -369,38 +365,36 @@ describe("job-variables-deployment", () => {
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
     vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(null);
 
-    vi.mocked(utils.getEnvironment).mockResolvedValue([
-      {
-        id: "0",
-        name: "test",
-        description: null,
-        systemId: "0",
-        policyId: null,
-        targetFilter: null,
-        deletedAt: null,
-        assignments: [
-          {
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
             id: "0",
-            variableSetId: "0",
-            environmentId: "0",
-            variableSet: {
-              id: "0",
-              name: "test",
-              description: null,
-              systemId: "0",
-              values: [
-                {
-                  id: "0",
-                  value: "test4",
-                  key: "test",
-                  variableSetId: "0",
-                },
-              ],
-            },
+            name: "test",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test",
+                variableSetId: "0",
+              },
+            ],
           },
-        ],
-      },
-    ]);
+        },
+      ],
+    });
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -436,38 +430,36 @@ describe("job-variables-deployment", () => {
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
     vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(null);
 
-    vi.mocked(utils.getEnvironment).mockResolvedValue([
-      {
-        id: "0",
-        name: "test",
-        description: null,
-        systemId: "0",
-        policyId: null,
-        targetFilter: null,
-        deletedAt: null,
-        assignments: [
-          {
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
             id: "0",
-            variableSetId: "0",
-            environmentId: "0",
-            variableSet: {
-              id: "0",
-              name: "test",
-              description: null,
-              systemId: "0",
-              values: [
-                {
-                  id: "0",
-                  value: "test4",
-                  key: "test",
-                  variableSetId: "0",
-                },
-              ],
-            },
+            name: "test",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test",
+                variableSetId: "0",
+              },
+            ],
           },
-        ],
-      },
-    ]);
+        },
+      ],
+    });
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -481,7 +473,7 @@ describe("job-variables-deployment", () => {
     expect(result[0]!.value).toEqual("test4");
   });
 
-  it("should override value with first variable set value if no direct match or default value exists and more than one variable set is assigned", async () => {
+  it("should override value with variable set value from first alphabetically sorted variable set if no direct match or default value exists and more than one variable set is assigned", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
     const variables: variable[] = [
@@ -503,57 +495,55 @@ describe("job-variables-deployment", () => {
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
     vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(null);
 
-    vi.mocked(utils.getEnvironment).mockResolvedValue([
-      {
-        id: "0",
-        name: "test",
-        description: null,
-        systemId: "0",
-        policyId: null,
-        targetFilter: null,
-        deletedAt: null,
-        assignments: [
-          {
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
             id: "0",
-            variableSetId: "0",
-            environmentId: "0",
-            variableSet: {
-              id: "0",
-              name: "test",
-              description: null,
-              systemId: "0",
-              values: [
-                {
-                  id: "0",
-                  value: "test4",
-                  key: "test",
-                  variableSetId: "0",
-                },
-              ],
-            },
+            name: "testb",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test",
+                variableSetId: "0",
+              },
+            ],
           },
-          {
+        },
+        {
+          id: "1",
+          variableSetId: "1",
+          environmentId: "0",
+          variableSet: {
             id: "1",
-            variableSetId: "1",
-            environmentId: "0",
-            variableSet: {
-              id: "1",
-              name: "test",
-              description: null,
-              systemId: "0",
-              values: [
-                {
-                  id: "1",
-                  value: "test5",
-                  key: "test",
-                  variableSetId: "1",
-                },
-              ],
-            },
+            name: "testa",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "1",
+                value: "test5",
+                key: "test",
+                variableSetId: "1",
+              },
+            ],
           },
-        ],
-      },
-    ]);
+        },
+      ],
+    });
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
       db,
@@ -564,6 +554,6 @@ describe("job-variables-deployment", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0]!.value).toEqual("test4");
+    expect(result[0]!.value).toEqual("test5");
   });
 });

@@ -4,7 +4,6 @@ import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
-import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/react";
 import { OverviewContent } from "./OverviewContent";
@@ -63,7 +62,6 @@ export const VariableSetDrawer: React.FC = () => {
               environments={environments}
             />
           )}
-          <Separator />
         </div>
       </DrawerContent>
     </Drawer>
