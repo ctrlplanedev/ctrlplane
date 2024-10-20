@@ -4,7 +4,7 @@
 // node index.js -j policy-checker
 //
 // Run jobs with policy-checker running every 5 minutes:
-// node index.js -j "policy-checker=*/5 * * * *""
+// node index.js -j "policy-checker=*/5 * * * *"
 //
 // Run all jobs once:
 // node index.js -r
