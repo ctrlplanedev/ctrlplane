@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/job-policy-checker",
+  "name": "@ctrlplane/jobs",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -15,8 +15,8 @@
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-    "@t3-oss/env-core": "catalog:",
     "cron": "^3.1.7",
     "zod": "catalog:"
   },

@@ -53,10 +53,10 @@ services:
     ports:
       - "8080:8080"
 
-  job-policy-checker:
+  jobs:
     platform: linux/amd64
-    image: ctrlplane/job-policy-checker:c656deb
-    container_name: ctrlplane-job-policy-checker
+    image: ctrlplane/jobs:c656deb
+    container_name: ctrlplane-jobs
     environment:
       POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
     depends_on:

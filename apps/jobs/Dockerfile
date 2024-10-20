@@ -27,13 +27,13 @@ COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
-COPY apps/job-policy-checker/package.json ./apps/job-policy-checker/package.json
+COPY apps/jobs/package.json ./apps/jobs/package.json
 
 RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-RUN turbo build --filter=...@ctrlplane/job-policy-checker
+RUN turbo build --filter=...@ctrlplane/jobs
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
@@ -41,4 +41,6 @@ USER nodejs
 
 ENV NODE_ENV=production
 
-CMD ["node", "apps/job-policy-checker/dist/index.js"]
+WORKDIR apps/jobs/dist/
+
+CMD ["node", "index.js"]

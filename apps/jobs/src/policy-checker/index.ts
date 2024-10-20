@@ -1,5 +1,3 @@
-import { CronJob } from "cron";
-
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -10,9 +8,7 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import { env } from "./config.js";
-
-const run = async () => {
+export const run = async () => {
   const releaseJobTriggers = await db
     .select()
     .from(schema.releaseJobTrigger)
@@ -31,11 +27,3 @@ const run = async () => {
     .then(cancelOldReleaseJobTriggersOnJobDispatch)
     .dispatch();
 };
-
-const releaseJobTriggerPolicyChecker = new CronJob(env.CRON_TIME, run);
-
-console.log("Starting job config policy checker cronjob");
-
-run().catch(console.error);
-
-if (env.CRON_ENABLED) releaseJobTriggerPolicyChecker.start();
