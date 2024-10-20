@@ -14,11 +14,7 @@ import type { StorageFile } from "../../StorageFile.js";
 
 type FSDriverOptions = {
   location?: string;
-  generateSignedURL?(
-    key: string,
-    filePath: string,
-    options: SignedURLOptions,
-  ): Promise<string>;
+  generateSignedURL?(key: string, options: SignedURLOptions): Promise<string>;
 };
 
 export class FSDriver implements StorageDriver {
@@ -88,7 +84,7 @@ export class FSDriver implements StorageDriver {
       throw new Error("generateSignedURL is not defined");
 
     const location = path.join(this._location, key);
-    return this.options.generateSignedURL(location, location, opts);
+    return this.options.generateSignedURL(location, opts);
   }
 
   async getMetaData(key: string): Promise<ObjectMetadata> {

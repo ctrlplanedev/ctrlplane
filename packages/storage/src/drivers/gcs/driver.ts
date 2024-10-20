@@ -85,10 +85,7 @@ export class GCSStorageDriver implements StorageDriver {
 
   async getSignedUrl(path: string, opts: SignedURLOptions): Promise<string> {
     const expires = new Date();
-    const m =
-      typeof opts.expiresIn === "number"
-        ? opts.expiresIn
-        : ms(opts.expiresIn ?? "30m");
+    const m = opts.expiresIn ?? ms("30m");
     expires.setSeconds(new Date().getMilliseconds() + m);
     const [url] = await this.bucket.file(path).getSignedUrl({
       action: opts.action,

@@ -16,7 +16,7 @@ export type FileMetadata = z.infer<typeof FileMetadata>;
  * Options accepted during the creation of a signed URL.
  */
 export type SignedURLOptions = {
-  expiresIn?: string | number;
+  expiresIn?: number;
   contentType?: string;
   contentDisposition?: string;
 } & Record<string, any>;
