@@ -1,6 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
 import * as schema from "@ctrlplane/db/schema";
 
@@ -122,25 +120,16 @@ export const determineReleaseVariableValue = async (
   const defaultValue = deploymentVariableValues.find(
     (v) => v.id === defaultValueId,
   );
-  const valuesWithFilters = deploymentVariableValues.filter(
-    (v) => v.targetFilter != null,
+
+  const firstMatchedValue = await utils.getFirstMatchedTarget(
+    tx,
+    jobTarget.id,
+    deploymentVariableValues,
   );
 
-  const valuesMatchedByFilter = await Promise.all(
-    valuesWithFilters.map(async (value) => {
-      const matchedTarget = await utils.getMatchedTarget(
-        tx,
-        jobTarget.id,
-        value.targetFilter,
-      );
-
-      if (matchedTarget != null) return value;
-    }),
-  ).then((values) => values.filter(isPresent));
-
-  if (valuesMatchedByFilter.length > 0)
+  if (firstMatchedValue != null)
     return {
-      value: valuesMatchedByFilter[0]!,
+      value: firstMatchedValue,
       directMatch: true,
     };
 

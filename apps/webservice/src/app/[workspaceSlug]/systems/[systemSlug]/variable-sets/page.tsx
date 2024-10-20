@@ -26,7 +26,10 @@ export default async function SystemValueSetsPage({
   const variableSet = await api.variableSet.bySystemId(system.id);
   if (variableSet.length === 0)
     return (
-      <VariableSetGettingStarted systemId={system.id} environments={system.environments} />
+      <VariableSetGettingStarted
+        systemId={system.id}
+        environments={system.environments}
+      />
     );
   return (
     <>

@@ -2,50 +2,53 @@ import type { Tx } from "@ctrlplane/db";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
-import * as schema from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 
 export const getJob = (tx: Tx, jobId: string) =>
   tx
     .select()
-    .from(schema.job)
+    .from(SCHEMA.job)
     .innerJoin(
-      schema.releaseJobTrigger,
-      eq(schema.releaseJobTrigger.jobId, schema.job.id),
+      SCHEMA.releaseJobTrigger,
+      eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
     )
-    .where(eq(schema.job.id, jobId))
+    .where(eq(SCHEMA.job.id, jobId))
     .then(takeFirstOrNull);
 
 export const getDeploymentVariables = (tx: Tx, releaseId: string) =>
   tx
     .select()
-    .from(schema.deploymentVariable)
+    .from(SCHEMA.deploymentVariable)
     .innerJoin(
-      schema.release,
-      eq(schema.release.deploymentId, schema.deploymentVariable.deploymentId),
+      SCHEMA.release,
+      eq(SCHEMA.release.deploymentId, SCHEMA.deploymentVariable.deploymentId),
     )
-    .where(eq(schema.release.id, releaseId));
+    .where(eq(SCHEMA.release.id, releaseId));
 
 export const getTarget = (tx: Tx, targetId: string) =>
   tx
     .select()
-    .from(schema.target)
-    .where(eq(schema.target.id, targetId))
+    .from(SCHEMA.target)
+    .where(eq(SCHEMA.target.id, targetId))
     .then(takeFirstOrNull);
 
 export const getEnvironment = (tx: Tx, environmentId: string) =>
   tx.query.environment.findMany({
-    where: eq(schema.environment.id, environmentId),
+    where: eq(SCHEMA.environment.id, environmentId),
     with: {
-      assignments: { with: { variableSet: { with: { values: true } } } },
+      assignments: {
+        with: { variableSet: { with: { values: true } } },
+        orderBy: SCHEMA.environment.name,
+      },
     },
   });
 
 export const getVariableValues = (tx: Tx, variableId: string) =>
   tx
     .select()
-    .from(schema.deploymentVariableValue)
-    .orderBy(schema.deploymentVariableValue.value)
-    .where(eq(schema.deploymentVariableValue.variableId, variableId));
+    .from(SCHEMA.deploymentVariableValue)
+    .orderBy(SCHEMA.deploymentVariableValue.value)
+    .where(eq(SCHEMA.deploymentVariableValue.variableId, variableId));
 
 export const getMatchedTarget = (
   tx: Tx,
@@ -54,11 +57,28 @@ export const getMatchedTarget = (
 ) =>
   tx
     .select()
-    .from(schema.target)
+    .from(SCHEMA.target)
     .where(
       and(
-        eq(schema.target.id, targetId),
-        schema.targetMatchesMetadata(tx, targetFilter),
+        eq(SCHEMA.target.id, targetId),
+        SCHEMA.targetMatchesMetadata(tx, targetFilter),
       ),
     )
     .then(takeFirstOrNull);
+
+export const getFirstMatchedTarget = (
+  tx: Tx,
+  targetId: string,
+  values: SCHEMA.DeploymentVariableValue[],
+) => {
+  const promise = values.map(async (value) => {
+    const matchedTarget = await getMatchedTarget(
+      tx,
+      targetId,
+      value.targetFilter,
+    );
+    return matchedTarget != null ? value : null;
+  });
+
+  return Promise.all(promise).then(takeFirstOrNull);
+};
