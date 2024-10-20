@@ -68,7 +68,7 @@ const runJob = async (job: string) => {
     await jobs[job]?.run();
     logger.info(`Job ${job} completed successfully`);
   } catch (error) {
-    logger.error(`Error running job ${job}:`, error);
+    logger.error(`Error running job ${job}: ${error.message}`, error);
   }
 };
 
