@@ -3,7 +3,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, desc, eq, isNull, takeFirst } from "@ctrlplane/db";
+import { and, asc, desc, eq, isNull, sql, takeFirst } from "@ctrlplane/db";
 import {
   createJobAgent,
   deployment,
@@ -42,33 +42,65 @@ const releaseJobTriggerQuery = (tx: Tx) =>
     .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId));
 
 const releaseJobTriggerRouter = createTRPCRouter({
-  byWorkspaceId: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemList)
-          .on({ type: "workspace", id: input }),
-    })
-    .query(({ ctx, input }) =>
-      releaseJobTriggerQuery(ctx.db)
-        .leftJoin(system, eq(system.id, deployment.systemId))
-        .where(
-          and(eq(system.workspaceId, input), isNull(environment.deletedAt)),
-        )
-        .orderBy(asc(releaseJobTrigger.createdAt))
-        .limit(1_000)
-        .then((data) =>
-          data.map((t) => ({
-            ...t.release_job_trigger,
-            job: t.job,
-            agent: t.job_agent,
-            target: t.target,
-            release: { ...t.release, deployment: t.deployment },
-            environment: t.environment,
-          })),
-        ),
-    ),
+  byWorkspaceId: createTRPCRouter({
+    list: protectedProcedure
+      .input(z.string().uuid())
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.SystemList)
+            .on({ type: "workspace", id: input }),
+      })
+      .query(({ ctx, input }) =>
+        releaseJobTriggerQuery(ctx.db)
+          .leftJoin(system, eq(system.id, deployment.systemId))
+          .where(
+            and(eq(system.workspaceId, input), isNull(environment.deletedAt)),
+          )
+          .orderBy(asc(releaseJobTrigger.createdAt))
+          .limit(1_000)
+          .then((data) =>
+            data.map((t) => ({
+              ...t.release_job_trigger,
+              job: t.job,
+              agent: t.job_agent,
+              target: t.target,
+              release: { ...t.release, deployment: t.deployment },
+              environment: t.environment,
+            })),
+          ),
+      ),
+    dailyCount: protectedProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          timezone: z.string(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.SystemList)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
+      .query(async ({ ctx, input }) => {
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
+        return ctx.db
+          .select({
+            date: dateTruncExpr.as("date"),
+            count: sql<number>`COUNT(*)`.as("count"),
+          })
+          .from(releaseJobTrigger)
+          .innerJoin(
+            environment,
+            eq(releaseJobTrigger.environmentId, environment.id),
+          )
+          .innerJoin(system, eq(environment.systemId, system.id))
+          .where(eq(system.workspaceId, input.workspaceId))
+          .groupBy(dateTruncExpr)
+          .orderBy(dateTruncExpr);
+      }),
+  }),
 
   byDeploymentAndEnvironment: protectedProcedure
     .meta({
