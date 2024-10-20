@@ -25,7 +25,7 @@ const jobs: Record<string, { run: () => Promise<void>; schedule: string }> = {
 };
 
 const jobSchema = z.object({
-  job: z.array(z.string()),
+  job: z.array(z.string()).optional(),
   runOnce: z.boolean().optional(),
 });
 
@@ -55,7 +55,9 @@ const getJobConfig = (jobName: string) => {
 };
 
 const parseJobSchedulePairs = (parsedValues: z.infer<typeof jobSchema>) => {
-  if (parsedValues.job.length > 0) return parsedValues.job.map(getJobConfig);
+  if (parsedValues.job != null && parsedValues.job.length > 0)
+    return parsedValues.job.map(getJobConfig);
+
   return Object.entries(jobs).map(([job, config]) => ({
     job,
     schedule: config.schedule,
@@ -71,15 +73,9 @@ const runJob = async (job: string) => {
     logger.error(`Error running job ${job}: ${error.message}`, error);
   }
 };
-
 const main = () => {
   const parsedValues = parseJobArgs();
   const jobSchedulePairs = parseJobSchedulePairs(parsedValues);
-
-  if (jobSchedulePairs.length === 0) {
-    logger.info("No jobs specified to run.");
-    return;
-  }
 
   logger.info(
     `Starting jobs: ${jobSchedulePairs.map((pair) => pair.job).join(", ")}`,
