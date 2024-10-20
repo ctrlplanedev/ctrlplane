@@ -20,7 +20,6 @@ export const GoogleActionButton: React.FC<GoogleActionButtonProps> = ({
     api.workspace.integrations.google.createServiceAccount.useMutation();
 
   const router = useRouter();
-
   if (workspace.googleServiceAccountEmail != null)
     return (
       <GoogleDialog workspace={workspace}>
