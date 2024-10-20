@@ -1,4 +1,4 @@
-import { eq } from "@ctrlplane/db";
+import { and, eq, isNull, or } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -10,11 +10,30 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const run = async () => {
   const releaseJobTriggers = await db
-    .select()
+    .select({ releaseJobTrigger: schema.releaseJobTrigger })
     .from(schema.releaseJobTrigger)
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
-    .where(eq(schema.job.status, JobStatus.Pending))
-    .then((rows) => rows.map((row) => row.release_job_trigger));
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .leftJoin(
+      schema.environmentPolicyApproval,
+      eq(
+        schema.environment.policyId,
+        schema.environmentPolicyApproval.policyId,
+      ),
+    )
+    .where(
+      and(
+        eq(schema.job.status, JobStatus.Pending),
+        or(
+          isNull(schema.environmentPolicyApproval.id),
+          eq(schema.environmentPolicyApproval.status, "approved"),
+        ),
+      ),
+    )
+    .then((rows) => rows.map((row) => row.releaseJobTrigger));
 
   if (releaseJobTriggers.length === 0) return;
   console.log(
