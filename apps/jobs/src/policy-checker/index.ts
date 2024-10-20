@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from "@ctrlplane/db";
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
