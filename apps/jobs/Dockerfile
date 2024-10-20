@@ -41,4 +41,6 @@ USER nodejs
 
 ENV NODE_ENV=production
 
-CMD ["node", "apps/jobs/dist/index.js"]
+WORKDIR apps/jobs/dist/
+
+CMD ["node", "index.js"]
