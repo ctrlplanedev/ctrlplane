@@ -77,6 +77,12 @@ const releaseJobTriggerRouter = createTRPCRouter({
           timezone: z.string(),
         }),
       )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.SystemList)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
       .query(async ({ ctx, input }) => {
         const dateTruncExpr = sql<Date>`date_trunc('day', ${releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
         return ctx.db
