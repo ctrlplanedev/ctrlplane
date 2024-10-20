@@ -56,7 +56,7 @@ import { api } from "~/trpc/react";
 
 const schema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string(),
+  description: z.string().max(1000),
   environmentIds: z.array(z.object({ id: z.string().uuid() })),
   values: z.array(
     z.object({
@@ -103,12 +103,13 @@ export const CreateVariableSetDialog: React.FC<{
   });
 
   const router = useRouter();
-  const onSubmit = form.handleSubmit(async (data) => {
+  const onSubmit = form.handleSubmit((data) => {
     const environmentIds = data.environmentIds.map((env) => env.id);
-    await create.mutateAsync({ ...data, systemId, environmentIds });
-    form.reset();
-    setOpen(false);
-    router.refresh();
+    create
+      .mutateAsync({ ...data, systemId, environmentIds })
+      .then(() => form.reset())
+      .then(() => setOpen(false))
+      .then(() => router.refresh());
   });
 
   const selectedEnvsIds = form.watch("environmentIds").map((env) => env.id);

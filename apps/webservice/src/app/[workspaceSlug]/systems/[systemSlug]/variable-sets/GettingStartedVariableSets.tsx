@@ -5,10 +5,14 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { CreateVariableSetDialog } from "./CreateVariableSetDialog";
 
-export const VariableSetGettingStarted: React.FC<{
+type VariableSetGettingStartedProps = {
   systemId: string;
   environments: SCHEMA.Environment[];
-}> = ({ systemId, environments }) => {
+};
+
+export const VariableSetGettingStarted: React.FC<
+  VariableSetGettingStartedProps
+> = ({ systemId, environments }) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">

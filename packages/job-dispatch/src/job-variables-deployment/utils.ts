@@ -68,7 +68,7 @@ export const getFirstMatchedTarget = (
   targetId: string,
   values: SCHEMA.DeploymentVariableValue[],
 ) => {
-  const promise = values.map(async (value) => {
+  const promises = values.map(async (value) => {
     const matchedTarget = await getMatchedTarget(
       tx,
       targetId,
@@ -77,5 +77,5 @@ export const getFirstMatchedTarget = (
     return matchedTarget != null ? value : null;
   });
 
-  return Promise.all(promise).then(takeFirstOrNull);
+  return Promise.all(promises).then(takeFirstOrNull);
 };

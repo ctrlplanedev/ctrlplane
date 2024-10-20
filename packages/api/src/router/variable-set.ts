@@ -60,22 +60,20 @@ export const variableSetRouter = createTRPCRouter({
           .values(input)
           .returning()
           .then(takeFirst);
-        await tx
-          .insert(variableSetValue)
-          .values(
-            input.values.map((value) => ({
-              key: value.key,
-              value: value.value,
-              variableSetId: vs.id,
-            })),
-          )
-          .returning();
-        await tx.insert(variableSetAssignment).values(
-          input.environmentIds.map((environmentId) => ({
+        await tx.insert(variableSetValue).values(
+          input.values.map((value) => ({
+            key: value.key,
+            value: value.value,
             variableSetId: vs.id,
-            environmentId,
           })),
         );
+        if (input.environmentIds.length > 0)
+          await tx.insert(variableSetAssignment).values(
+            input.environmentIds.map((environmentId) => ({
+              variableSetId: vs.id,
+              environmentId,
+            })),
+          );
         return tx.query.variableSet.findFirst({
           where: eq(variableSet.id, vs.id),
           with: { values: true, assignments: { with: { environment: true } } },
@@ -117,6 +115,18 @@ export const variableSetRouter = createTRPCRouter({
             })),
           );
         }
+
+        if (input.data.environmentIds != null) {
+          await tx
+            .delete(variableSetAssignment)
+            .where(eq(variableSetAssignment.variableSetId, input.id));
+          await tx.insert(variableSetAssignment).values(
+            input.data.environmentIds.map((environmentId) => ({
+              variableSetId: input.id,
+              environmentId,
+            })),
+          );
+        }
       }),
     ),
 
@@ -128,22 +138,7 @@ export const variableSetRouter = createTRPCRouter({
           .on({ type: "variableSet", id: input }),
     })
     .input(z.string().uuid())
-    .mutation(() => {}),
-
-  set: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemUpdate)
-          .on({ type: "variableSet", id: input.id }),
-    })
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        data: updateVariableSet.and(
-          z.object({ values: z.record(z.string()).optional() }),
-        ),
-      }),
-    )
-    .mutation(() => {}),
+    .mutation(({ ctx, input }) =>
+      ctx.db.delete(variableSet).where(eq(variableSet.id, input)),
+    ),
 });

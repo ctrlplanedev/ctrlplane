@@ -12,20 +12,24 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { useVariableSetDrawer } from "~/app/[workspaceSlug]/_components/variable-set-drawer/VariableSetDrawer";
+import { useVariableSetDrawer } from "~/app/[workspaceSlug]/_components/variable-set-drawer/useVariableSetDrawer";
+
+type Assignment = SCHEMA.VariableSetAssignment & {
+  environment: SCHEMA.Environment;
+};
+
+type VariableSet = SCHEMA.VariableSet & {
+  values: SCHEMA.VariableSetValue[];
+  assignments: Assignment[];
+};
 
 export const VariableSetsTable: React.FC<{
-  variableSets: (SCHEMA.VariableSet & {
-    values: SCHEMA.VariableSetValue[];
-    assignments: (SCHEMA.VariableSetAssignment & {
-      environment: SCHEMA.Environment;
-    })[];
-  })[];
+  variableSets: VariableSet[];
 }> = ({ variableSets }) => {
   const { setVariableSetId } = useVariableSetDrawer();
 
   return (
-    <Table>
+    <Table className="table-fixed">
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
