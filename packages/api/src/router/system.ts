@@ -118,6 +118,25 @@ export const systemRouter = createTRPCRouter({
         })),
     ),
 
+  byId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.SystemGet).on({ type: "system", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx: { db }, input }) =>
+      db
+        .select()
+        .from(system)
+        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
+        .leftJoin(environment, eq(environment.systemId, system.id))
+        .where(eq(system.id, input))
+        .then((rows) => ({
+          ...rows[0]!.system,
+          environments: rows.map((r) => r.environment).filter(isPresent),
+        })),
+    ),
+
   create: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
