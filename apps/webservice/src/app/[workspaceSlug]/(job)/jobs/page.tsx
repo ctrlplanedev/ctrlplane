@@ -21,7 +21,9 @@ export default async function JobsPage({
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
 
-  const releaseJobTriggers = await api.job.config.byWorkspaceId(workspace.id);
+  const releaseJobTriggers = await api.job.config.byWorkspaceId.list(
+    workspace.id,
+  );
 
   if (releaseJobTriggers.length === 0) return <JobsGettingStarted />;
 

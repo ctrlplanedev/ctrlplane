@@ -1,7 +1,7 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
-import { startOfDay, sub } from "date-fns";
+import { isSameDay, startOfDay, sub } from "date-fns";
 import _ from "lodash";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
@@ -25,21 +25,21 @@ export const JobHistoryChart: React.FC<{
   workspace: Workspace;
   className?: string;
 }> = ({ className, workspace }) => {
-  const releaseJobTriggers = api.job.config.byWorkspaceId.useQuery(
+  const releaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
     workspace.id,
     { refetchInterval: 60_000 },
   );
 
+  const dailyCounts = api.job.config.byWorkspaceId.dailyCount.useQuery({
+    workspaceId: workspace.id,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+
   const now = startOfDay(new Date());
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
     (d) => ({
-      date: d.toString(),
-      jobs: (releaseJobTriggers.data ?? []).filter(
-        (j) =>
-          j.job.createdAt != null &&
-          j.job.status !== JobStatus.Pending &&
-          startOfDay(j.job.createdAt).toString() === d.toString(),
-      ).length,
+      date: d,
+      jobs: dailyCounts.data?.find((c) => isSameDay(c.date, d))?.count ?? 0,
     }),
   );
 
