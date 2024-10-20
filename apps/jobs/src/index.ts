@@ -25,7 +25,7 @@ const jobs: Record<string, { run: () => Promise<void>; schedule: string }> = {
 };
 
 const jobSchema = z.object({
-  job: z.array(z.string()).optional(),
+  job: z.array(z.string().transform((value) => value.trim())).optional(),
   runOnce: z.boolean().optional(),
 });
 
