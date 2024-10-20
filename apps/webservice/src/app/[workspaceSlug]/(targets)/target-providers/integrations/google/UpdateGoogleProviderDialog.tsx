@@ -3,10 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconBulb, IconCheck, IconCopy, IconX } from "@tabler/icons-react";
-import { useCopyToClipboard } from "react-use";
+import { IconBulb } from "@tabler/icons-react";
 
-import { cn } from "@ctrlplane/ui";
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -25,11 +23,16 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import { Label } from "@ctrlplane/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
 import { createGoogleSchema } from "./GoogleDialog";
@@ -37,15 +40,20 @@ import { createGoogleSchema } from "./GoogleDialog";
 export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
-  projectIds: string[];
+  projectId: string;
   onClose?: () => void;
   children: React.ReactNode;
-}> = ({ providerId, name, projectIds, onClose, children }) => {
+}> = ({ providerId, name, projectId, onClose, children }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const { data: integrations, isLoading: isLoadingIntegrations } =
+    api.workspace.integrations.google.listIntegrations.useQuery(
+      workspace.data?.id ?? "",
+    );
+
   const form = useForm({
     schema: createGoogleSchema,
-    defaultValues: { name, projectIds: projectIds.map((p) => ({ value: p })) },
+    defaultValues: { name, projectId },
     mode: "onChange",
   });
 
@@ -56,29 +64,14 @@ export const UpdateGoogleProviderDialog: React.FC<{
     await update.mutateAsync({
       ...data,
       targetProviderId: providerId,
-      config: { projectIds: data.projectIds.map((p) => p.value) },
+      config: { projectIds: [data.projectId] },
     });
     await utils.target.provider.byWorkspaceId.invalidate();
     setOpen(false);
     onClose?.();
   });
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "projectIds",
-  });
-
   const [open, setOpen] = useState(false);
-
-  const [isCopied, setIsCopied] = useState(false);
-  const [, copy] = useCopyToClipboard();
-  const handleCopy = () => {
-    copy(workspace.data?.googleServiceAccountEmail ?? "");
-    setIsCopied(true);
-    setTimeout(() => {
-      setIsCopied(false);
-    }, 1000);
-  };
 
   return (
     <Dialog
@@ -121,30 +114,6 @@ export const UpdateGoogleProviderDialog: React.FC<{
               </Alert>
             </DialogHeader>
 
-            <div className="space-y-2">
-              <Label>Service Account</Label>
-              <div className="relative flex items-center">
-                <Input
-                  value={workspace.data?.googleServiceAccountEmail ?? ""}
-                  className="disabled:cursor-default"
-                  disabled
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  type="button"
-                  onClick={handleCopy}
-                  className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
-                >
-                  {isCopied ? (
-                    <IconCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
-                  ) : (
-                    <IconCopy className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
             <FormField
               control={form.control}
               name="name"
@@ -159,49 +128,46 @@ export const UpdateGoogleProviderDialog: React.FC<{
               )}
             />
 
-            <div>
-              {fields.map((field, index) => (
-                <FormField
-                  control={form.control}
-                  key={field.id}
-                  name={`projectIds.${index}.value`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className={cn(index !== 0 && "sr-only")}>
-                        Google Projects
-                      </FormLabel>
-                      <FormControl>
-                        <div className="relative flex items-center">
-                          <Input placeholder="my-gcp-project-id" {...field} />
-
-                          {fields.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="absolute right-2 h-4 w-4 bg-neutral-950 hover:bg-neutral-950"
-                              onClick={() => remove(index)}
-                            >
-                              <IconX className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mt-4"
-                onClick={() => append({ value: "" })}
-              >
-                Add Project
-              </Button>
-            </div>
+            <FormField
+              control={form.control}
+              name="projectId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Google Project</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a project" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {isLoadingIntegrations ? (
+                        <SelectItem value="loading" disabled>
+                          Loading projects...
+                        </SelectItem>
+                      ) : integrations && integrations.length > 0 ? (
+                        integrations.map((integration) => (
+                          <SelectItem
+                            key={integration.projectId}
+                            value={integration.projectId}
+                          >
+                            {integration.projectId}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="none" disabled>
+                          No projects available
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button

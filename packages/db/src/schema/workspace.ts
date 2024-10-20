@@ -16,7 +16,6 @@ export const workspace = pgTable("workspace", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  googleServiceAccountEmail: text("google_service_account_email"),
 });
 
 export const workspaceSchema = z.object({
@@ -80,5 +79,34 @@ export const createWorkspaceEmailDomainMatching = createInsertSchema(
   verified: true,
   domain: true,
   verificationEmail: true,
+  createdAt: true,
+});
+
+export const workspaceGoogleIntegration = pgTable(
+  "workspace_google_integration",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspace.id, { onDelete: "cascade" })
+      .notNull(),
+    serviceAccountEmail: text("service_account_email").notNull(),
+    projectId: text("project_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(t.workspaceId, t.projectId),
+  }),
+);
+
+export type WorkspaceGoogleIntegration = InferSelectModel<
+  typeof workspaceGoogleIntegration
+>;
+
+export const createWorkspaceGoogleIntegration = createInsertSchema(
+  workspaceGoogleIntegration,
+).omit({
+  id: true,
   createdAt: true,
 });

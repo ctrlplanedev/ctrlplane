@@ -65,7 +65,7 @@ export const ProviderActionsDropdown: React.FC<{
           <UpdateGoogleProviderDialog
             providerId={provider.id}
             name={provider.name}
-            projectIds={provider.googleConfig.projectIds}
+            projectId={provider.googleConfig.projectIds[0] ?? ""}
             onClose={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>

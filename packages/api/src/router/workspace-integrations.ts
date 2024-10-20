@@ -3,12 +3,8 @@ import { auth } from "google-auth-library";
 import { google } from "googleapis";
 import { z } from "zod";
 
-import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
-import {
-  targetProvider,
-  targetProviderGoogle,
-  workspace,
-} from "@ctrlplane/db/schema";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { workspace, workspaceGoogleIntegration } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -20,14 +16,19 @@ export const integrationsRouter = createTRPCRouter({
         authorizationCheck: ({ canUser, input }) =>
           canUser
             .perform(Permission.WorkspaceUpdate)
-            .on({ type: "workspace", id: input }),
+            .on({ type: "workspace", id: input.workspaceId }),
       })
-      .input(z.string().uuid())
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          projectId: z.string(),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
         const ws = await ctx.db
           .select()
           .from(workspace)
-          .where(eq(workspace.id, input))
+          .where(eq(workspace.id, input.workspaceId))
           .then(takeFirstOrNull);
 
         if (ws == null)
@@ -36,22 +37,38 @@ export const integrationsRouter = createTRPCRouter({
             message: "Workspace not found",
           });
 
-        if (ws.googleServiceAccountEmail !== null)
+        const existingIntegration = await ctx.db
+          .select()
+          .from(workspaceGoogleIntegration)
+          .where(
+            and(
+              eq(workspaceGoogleIntegration.workspaceId, input.workspaceId),
+              eq(workspaceGoogleIntegration.projectId, input.projectId),
+            ),
+          )
+          .then(takeFirstOrNull);
+
+        if (existingIntegration)
           throw new TRPCError({
             code: "CONFLICT",
-            message: "Google service account already exists.",
+            message:
+              "Google service account already exists for this workspace and project.",
           });
 
-        const projectId = await auth.getProjectId();
+        const accountIdBase = `ctrlplane-${ws.slug}`;
+        const accountId = accountIdBase
+          .slice(0, 30)
+          .toLowerCase()
+          .replace(/[^a-z0-9-]/g, "-");
 
         const sa = await google.iam("v1").projects.serviceAccounts.create({
-          name: `projects/${projectId}`,
+          name: `projects/${input.projectId}`,
           auth,
           requestBody: {
-            accountId: `ctrlplane-${ws.slug}`,
+            accountId: accountId,
             serviceAccount: {
-              displayName: `Workspace ${ws.slug}`,
-              description: `Service account for ${ws.slug} (${ws.id})`,
+              displayName: `Workspace ${ws.slug} - ${input.projectId}`,
+              description: `Service account for ${ws.slug} (${ws.id}) in project ${input.projectId}`,
             },
           },
         });
@@ -60,11 +77,12 @@ export const integrationsRouter = createTRPCRouter({
           throw new Error("No email server account response");
 
         return ctx.db
-          .update(workspace)
-          .set({
-            googleServiceAccountEmail: sa.data.email,
+          .insert(workspaceGoogleIntegration)
+          .values({
+            workspaceId: input.workspaceId,
+            projectId: input.projectId,
+            serviceAccountEmail: sa.data.email,
           })
-          .where(eq(workspace.id, input))
           .returning()
           .then(takeFirst);
       }),
@@ -74,59 +92,93 @@ export const integrationsRouter = createTRPCRouter({
         authorizationCheck: ({ canUser, input }) =>
           canUser
             .perform(Permission.WorkspaceUpdate)
-            .on({ type: "workspace", id: input }),
+            .on({ type: "workspace", id: input.workspaceId }),
       })
-      .input(z.string().uuid())
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          projectId: z.string(),
+        }),
+      )
       .mutation(async ({ ctx, input }) => {
-        const ws = await ctx.db
+        const integration = await ctx.db
           .select()
-          .from(workspace)
-          .where(eq(workspace.id, input))
+          .from(workspaceGoogleIntegration)
+          .where(
+            and(
+              eq(workspaceGoogleIntegration.workspaceId, input.workspaceId),
+              eq(workspaceGoogleIntegration.projectId, input.projectId),
+            ),
+          )
           .then(takeFirstOrNull);
 
-        if (ws == null)
+        if (integration == null)
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Workspace not found",
-          });
-
-        if (ws.googleServiceAccountEmail == null)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Google service account does not exist.",
-          });
-
-        const existingGoogleProviders = await ctx.db
-          .select()
-          .from(targetProvider)
-          .innerJoin(
-            targetProviderGoogle,
-            eq(targetProvider.id, targetProviderGoogle.targetProviderId),
-          )
-          .where(eq(targetProvider.workspaceId, input));
-
-        if (existingGoogleProviders.length > 0)
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
             message:
-              "Cannot delete Google service account while active target providers exist.",
+              "Google service account does not exist for this workspace and project.",
           });
-
-        const projectId = await auth.getProjectId();
 
         await google.iam("v1").projects.serviceAccounts.delete({
-          name: `projects/${projectId}/serviceAccounts/${ws.googleServiceAccountEmail}`,
+          name: `projects/${input.projectId}/serviceAccounts/${integration.serviceAccountEmail}`,
           auth,
         });
 
         return ctx.db
-          .update(workspace)
-          .set({
-            googleServiceAccountEmail: null,
-          })
-          .where(eq(workspace.id, input))
+          .delete(workspaceGoogleIntegration)
+          .where(eq(workspaceGoogleIntegration.id, integration.id))
           .returning()
           .then(takeFirst);
+      }),
+
+    listIntegrations: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.WorkspaceListIntegrations)
+            .on({ type: "workspace", id: input }),
+      })
+      .input(z.string().uuid())
+      .query(async ({ ctx, input }) => {
+        return ctx.db
+          .select()
+          .from(workspaceGoogleIntegration)
+          .where(eq(workspaceGoogleIntegration.workspaceId, input));
+      }),
+
+    listAvailableProjectIds: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.WorkspaceListIntegrations)
+            .on({ type: "workspace", id: input }),
+      })
+      .input(z.string().uuid())
+      .query(async ({ ctx, input }) => {
+        const cloudResourceManager = google.cloudresourcemanager("v1");
+
+        const res = await cloudResourceManager.projects.list({
+          auth,
+          filter: `lifecycleState:ACTIVE`,
+        });
+
+        const allProjectIds =
+          res.data.projects?.map((project) => project.projectId) ?? [];
+
+        const existingIntegrations = await ctx.db
+          .select()
+          .from(workspaceGoogleIntegration)
+          .where(eq(workspaceGoogleIntegration.workspaceId, input));
+
+        const existingProjectIds = existingIntegrations
+          .map((integration) => integration.projectId)
+          .filter((id): id is string => id !== "");
+
+        const availableProjectIds = allProjectIds
+          .filter((id): id is string => id != null)
+          .filter((projectId) => !existingProjectIds.includes(projectId));
+
+        return availableProjectIds;
       }),
   }),
 });

@@ -113,6 +113,13 @@
       "when": 1729035549648,
       "tag": "0015_furry_omega_red",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1729382931950,
+      "tag": "0016_abnormal_wendigo",
+      "breakpoints": true
     }
   ]
 }

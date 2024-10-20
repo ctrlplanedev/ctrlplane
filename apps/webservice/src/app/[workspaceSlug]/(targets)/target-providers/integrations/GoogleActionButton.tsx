@@ -16,11 +16,20 @@ type GoogleActionButtonProps = {
 export const GoogleActionButton: React.FC<GoogleActionButtonProps> = ({
   workspace,
 }) => {
-  const createServiceAccount =
-    api.workspace.integrations.google.createServiceAccount.useMutation();
+  const { data: integrations, isLoading } =
+    api.workspace.integrations.google.listIntegrations.useQuery(workspace.id);
 
   const router = useRouter();
-  if (workspace.googleServiceAccountEmail != null)
+
+  if (isLoading) {
+    return (
+      <Button variant="outline" size="sm" className="w-full" disabled>
+        Loading...
+      </Button>
+    );
+  }
+
+  if (integrations && integrations.length > 0) {
     return (
       <GoogleDialog workspace={workspace}>
         <Button variant="outline" size="sm" className="w-full">
@@ -28,17 +37,15 @@ export const GoogleActionButton: React.FC<GoogleActionButtonProps> = ({
         </Button>
       </GoogleDialog>
     );
+  }
 
   return (
     <Button
       variant="outline"
       size="sm"
       className="w-full"
-      disabled={createServiceAccount.isPending}
-      onClick={async () =>
-        createServiceAccount
-          .mutateAsync(workspace.id)
-          .then(() => router.refresh())
+      onClick={() =>
+        router.push(`/${workspace.slug}/settings/workspace/integrations/google`)
       }
     >
       Enable
