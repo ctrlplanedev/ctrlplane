@@ -38,7 +38,7 @@ export const JobHistoryChart: React.FC<{
   const now = startOfDay(new Date());
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
     (d) => ({
-      date: d,
+      date: new Date(d).toISOString(),
       jobs: dailyCounts.data?.find((c) => isSameDay(c.date, d))?.count ?? 0,
     }),
   );
