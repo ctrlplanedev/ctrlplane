@@ -16,7 +16,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@ctrlplane/ui/chart";
-import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
@@ -25,21 +24,19 @@ export const JobHistoryChart: React.FC<{
   workspace: Workspace;
   className?: string;
 }> = ({ className, workspace }) => {
-  const releaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
-    workspace.id,
-    { refetchInterval: 60_000 },
-  );
-
   const dailyCounts = api.job.config.byWorkspaceId.dailyCount.useQuery({
     workspaceId: workspace.id,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
+  console.log(dailyCounts.data);
+
   const now = startOfDay(new Date());
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
     (d) => ({
       date: new Date(d).toISOString(),
-      jobs: dailyCounts.data?.find((c) => isSameDay(c.date, d))?.count ?? 0,
+      jobs:
+        dailyCounts.data?.find((c) => isSameDay(c.date, d))?.totalCount ?? 0,
     }),
   );
 
@@ -47,6 +44,12 @@ export const JobHistoryChart: React.FC<{
     workspaceId: workspace.id,
   });
   const deployments = api.deployment.byWorkspaceId.useQuery(workspace.id, {});
+
+  const totalJobs = dailyCounts.data?.reduce(
+    (acc, c) => acc + Number(c.totalCount),
+    0,
+  );
+  console.log(totalJobs);
 
   return (
     <div className={className}>
@@ -61,9 +64,7 @@ export const JobHistoryChart: React.FC<{
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {releaseJobTriggers.data?.filter(
-                (t) => t.job.status !== JobStatus.Pending,
-              ).length ?? "-"}
+              {totalJobs ?? "-"}
             </span>
           </div>
 

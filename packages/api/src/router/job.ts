@@ -85,20 +85,39 @@ const releaseJobTriggerRouter = createTRPCRouter({
       })
       .query(async ({ ctx, input }) => {
         const dateTruncExpr = sql<Date>`date_trunc('day', ${releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
-        return ctx.db
+
+        const subquery = ctx.db
           .select({
             date: dateTruncExpr.as("date"),
-            count: sql<number>`COUNT(*)`.as("count"),
+            status: job.status,
+            countPerStatus: sql<number>`COUNT(*)`.as("countPerStatus"),
           })
           .from(releaseJobTrigger)
+          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
           .innerJoin(
             environment,
             eq(releaseJobTrigger.environmentId, environment.id),
           )
           .innerJoin(system, eq(environment.systemId, system.id))
           .where(eq(system.workspaceId, input.workspaceId))
-          .groupBy(dateTruncExpr)
-          .orderBy(dateTruncExpr);
+          .groupBy(dateTruncExpr, job.status)
+          .as("sub");
+
+        return ctx.db
+          .select({
+            date: subquery.date,
+            totalCount: sql<number>`SUM(${subquery.countPerStatus})`.as(
+              "totalCount",
+            ),
+            statusCounts: sql<Record<JobStatus, number>>`
+              jsonb_object_agg(${subquery.status},
+              ${subquery.countPerStatus} 
+              ORDER BY ${subquery.status})
+            `.as("statusCounts"),
+          })
+          .from(subquery)
+          .groupBy(subquery.date)
+          .orderBy(subquery.date);
       }),
   }),
 
