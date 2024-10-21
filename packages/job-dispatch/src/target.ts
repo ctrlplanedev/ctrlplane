@@ -8,7 +8,6 @@ import {
   eq,
   inArray,
   isNotNull,
-  isNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
@@ -24,14 +23,19 @@ import { dispatchJobsForNewTargets } from "./new-target.js";
 
 const log = logger.child({ label: "upsert-targets" });
 
-const getExistingTargets = (db: Tx, providerId: string | null) =>
+const getExistingTargets = (
+  db: Tx,
+  workspaceId: string,
+  identifiers: string[],
+) =>
   db
     .select()
     .from(target)
     .where(
-      providerId === null
-        ? isNull(target.providerId)
-        : eq(target.providerId, providerId),
+      and(
+        eq(target.workspaceId, workspaceId),
+        inArray(target.identifier, identifiers),
+      ),
     );
 
 const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
@@ -74,11 +78,23 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
 
 export const upsertTargets = async (
   tx: Tx,
-  providerId: string | null,
   targetsToInsert: Array<InsertTarget & { metadata?: Record<string, string> }>,
 ) => {
   try {
-    const targetsBeforeInsert = await getExistingTargets(tx, providerId);
+    const targetsBeforeInsertPromises = _.chain(targetsToInsert)
+      .groupBy((t) => t.workspaceId)
+      .map(async (t) =>
+        getExistingTargets(
+          tx,
+          t[0]!.workspaceId,
+          t.map((t) => t.identifier),
+        ),
+      )
+      .value();
+
+    const targetsBeforeInsert = (
+      await Promise.all(targetsBeforeInsertPromises)
+    ).flat();
 
     const targets = await tx
       .insert(target)

@@ -66,7 +66,6 @@ export const PATCH = async (
 
   const targets = await upsertTargets(
     db,
-    null,
     parsedTargets.map((t) => ({ ...t, workspaceId })),
   );
 

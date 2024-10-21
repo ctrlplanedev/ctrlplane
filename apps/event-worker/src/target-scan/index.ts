@@ -71,7 +71,7 @@ export const createTargetScanWorker = () =>
         logger.info(
           `Upserting ${targets.length} targets for provider ${tp.target_provider.id}`,
         );
-        await upsertTargets(db, tp.target_provider.id, targets);
+        await upsertTargets(db, targets);
       } catch (error: any) {
         logger.error(
           `Error upserting targets for provider ${tp.target_provider.id}: ${error.message}`,
