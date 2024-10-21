@@ -250,9 +250,10 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       target: schema.target,
       targetProvider: schema.targetProvider,
       workspace: schema.workspace,
-      targetMetadata:
-        sql<_StringStringRecord>`jsonb_object_agg(target_metadata.key,
-       target_metadata.value)`.as("target_metadata"),
+      targetMetadata: sql<_StringStringRecord>`
+        jsonb_object_agg(target_metadata.key, target_metadata.value) 
+        FILTER (WHERE target_metadata.key IS NOT NULL)
+      `.as("target_metadata"),
     })
     .from(schema.target)
     .leftJoin(

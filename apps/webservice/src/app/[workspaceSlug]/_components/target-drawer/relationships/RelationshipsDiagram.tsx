@@ -8,8 +8,6 @@ import type {
   ReactFlowInstance,
 } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
-import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
-import { IconTarget } from "@tabler/icons-react";
 import ReactFlow, {
   BaseEdge,
   EdgeLabelRenderer,
@@ -27,6 +25,7 @@ import colors from "tailwindcss/colors";
 import { cn } from "@ctrlplane/ui";
 
 import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
+import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { api } from "~/trpc/react";
 
 type TargetNodeProps = NodeProps<{
@@ -53,13 +52,7 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
         )}
       >
         <div className="flex h-12 w-12 items-center justify-center rounded-full">
-          {isKubernetes ? (
-            <SiKubernetes className="h-8 w-8 text-blue-500" />
-          ) : isTerraform ? (
-            <SiTerraform className="h-8 w-8 text-purple-300" />
-          ) : (
-            <IconTarget className="h-8 w-8 text-neutral-500" />
-          )}
+          <TargetIcon version={data.version} kind={data.kind} />
         </div>
         <div className="text-sm font-medium text-muted-foreground">
           {data.kind}

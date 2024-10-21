@@ -5,14 +5,11 @@ import type { TargetCondition } from "@ctrlplane/validators/targets";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
 import {
   IconExternalLink,
   IconLoader2,
   IconPlant,
   IconSelector,
-  IconServer,
-  IconTarget,
 } from "@tabler/icons-react";
 import * as LZString from "lz-string";
 import { z } from "zod";
@@ -58,6 +55,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { TargetConditionRender } from "./target-condition/TargetConditionRender";
+import { TargetIcon } from "./TargetIcon";
 
 const DeleteEnvironmentDialog: React.FC<{
   environment: schema.Environment;
@@ -236,16 +234,6 @@ const TargetViewsCombobox: React.FC<{
   );
 };
 
-const TargetIcon: React.FC<{ version: string }> = ({ version }) => {
-  if (version.includes("kubernetes"))
-    return <SiKubernetes className="h-6 w-6 shrink-0 text-blue-300" />;
-  if (version.includes("vm") || version.includes("compute"))
-    return <IconServer className="h-6 w-6 shrink-0 text-cyan-300" />;
-  if (version.includes("terraform"))
-    return <SiTerraform className="h-6 w-6 shrink-0 text-purple-300" />;
-  return <IconTarget className="h-6 w-6 shrink-0 text-neutral-300" />;
-};
-
 const filterForm = z.object({
   targetFilter: targetCondition.optional(),
 });
@@ -353,7 +341,7 @@ const EditFilterForm: React.FC<{
               <div className="space-y-2">
                 {targets.data.items.map((target) => (
                   <div className="flex items-center gap-2" key={target.id}>
-                    <TargetIcon version={target.version} />
+                    <TargetIcon version={target.version} kind={target.kind} />
                     <div className="flex flex-col">
                       <span className="overflow-hidden text-nowrap text-sm">
                         {target.name}

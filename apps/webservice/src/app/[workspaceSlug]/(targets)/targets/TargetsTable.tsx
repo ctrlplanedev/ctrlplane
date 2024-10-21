@@ -2,8 +2,7 @@
 
 import type { Target } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
-import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
-import { IconLock, IconServer, IconTarget, IconX } from "@tabler/icons-react";
+import { IconLock, IconX } from "@tabler/icons-react";
 import {
   flexRender,
   getCoreRowModel,
@@ -35,6 +34,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { api } from "~/trpc/react";
 
 const columns: ColumnDef<Target>[] = [
@@ -78,24 +78,15 @@ const columns: ColumnDef<Target>[] = [
     header: "Name",
     accessorKey: "name",
     cell: (info) => {
-      const includes = (key: string) => info.row.original.version.includes(key);
-      const isKube = includes("kubernetes");
-      const isVm = includes("vm") || includes("compute");
       const isLocked = info.row.original.lockedAt != null;
-      const isTerraform = includes("terraform");
-
       return (
         <div className="flex items-center gap-2 px-2 py-1">
-          {isLocked ? (
-            <IconLock className="h-4 w-4 shrink-0 text-red-300" />
-          ) : isKube ? (
-            <SiKubernetes className="h-4 w-4 shrink-0 text-blue-300" />
-          ) : isVm ? (
-            <IconServer className="h-4 w-4 shrink-0 text-cyan-300" />
-          ) : isTerraform ? (
-            <SiTerraform className="h-4 w-4 shrink-0 text-purple-300" />
-          ) : (
-            <IconTarget className="h-4 w-4 shrink-0 text-neutral-300" />
+          {isLocked && <IconLock className="h-4 w-4 shrink-0 text-red-300" />}
+          {!isLocked && (
+            <TargetIcon
+              version={info.row.original.version}
+              kind={info.row.original.kind}
+            />
           )}
           {info.getValue<string>()}
         </div>

@@ -1,7 +1,7 @@
 import type { Readable } from "node:stream";
 import { z } from "zod";
 
-import type { StorageFile } from "./StorageFile";
+// import type { StorageFile } from "./StorageFile.js";
 
 export const FileMetadata = z.object({
   name: z.string(),
@@ -43,7 +43,7 @@ export interface StorageDriver {
   put(key: string, value: string): Promise<void>;
   putStream(key: string, value: Readable): Promise<void>;
 
-  list(prefix: string): Promise<StorageFile[]>;
+  // list(prefix: string): Promise<StorageFile[]>;
 
   getMetaData(key: string): Promise<ObjectMetadata>;
   getSignedUrl(path: string, opts: SignedURLOptions): Promise<string>;

@@ -9,7 +9,7 @@ import { createTarget } from "@ctrlplane/db/schema";
 import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { getUser } from "../../../auth";
+import { getUser } from "~/app/api/v1/auth";
 
 const bodySchema = z.array(
   createTarget
@@ -23,20 +23,22 @@ const canUpsertTarget = async (userId: string, workspaceId: string) =>
     .perform(Permission.TargetCreate)
     .on({ type: "workspace", id: workspaceId });
 
-const parseBody = (rawBody: string): object => {
+const parseJson = (rawBody: string): object => {
   try {
     return JSON.parse(rawBody);
-  } catch {
-    try {
-      const yamlResult = yaml.load(rawBody);
-      if (typeof yamlResult === "object" && yamlResult !== null) {
-        return yamlResult;
-      }
-    } catch {
-      // YAML parsing failed
-    }
+  } catch (e) {
+    throw new Error("Invalid input: not valid JSON", { cause: e });
   }
-  throw new Error("Invalid input: not valid JSON or YAML");
+};
+
+const parseYaml = (rawBody: string) => {
+  try {
+    const targets: unknown[] = [];
+    yaml.loadAll(rawBody, (obj) => targets.push(obj));
+    return targets;
+  } catch (e) {
+    throw new Error("Invalid input: not valid YAML", { cause: e });
+  }
 };
 
 export const PATCH = async (
@@ -53,8 +55,14 @@ export const PATCH = async (
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 
   const rawBody = await req.text();
-  const parsedBody = parseBody(rawBody);
+  const contentType = req.headers.get("content-type");
+  const parsedBody =
+    contentType === "application/x-yaml" || contentType === "application/yaml"
+      ? parseYaml(rawBody)
+      : parseJson(rawBody);
+
   const parsedTargets = bodySchema.parse(parsedBody);
+  if (parsedTargets.length === 0) return NextResponse.json({ count: 0 });
 
   const targets = await upsertTargets(
     db,

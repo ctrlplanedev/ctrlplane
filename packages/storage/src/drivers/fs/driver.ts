@@ -10,7 +10,8 @@ import type {
   SignedURLOptions,
   StorageDriver,
 } from "../../Storage.js";
-import type { StorageFile } from "../../StorageFile.js";
+
+// import type { StorageFile } from "../../StorageFile.js";
 
 type FSDriverOptions = {
   location?: string;
@@ -75,9 +76,9 @@ export class FSDriver implements StorageDriver {
     await fs.writeFile(location, value);
   }
 
-  list(_: string): Promise<StorageFile[]> {
-    throw new Error("Method not implemented.");
-  }
+  // list(_: string): Promise<StorageFile[]> {
+  //   throw new Error("Method not implemented.");
+  // }
 
   getSignedUrl(key: string, opts: SignedURLOptions): Promise<string> {
     if (this.options.generateSignedURL == null)

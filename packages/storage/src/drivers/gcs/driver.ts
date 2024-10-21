@@ -8,7 +8,8 @@ import type {
   SignedURLOptions,
   StorageDriver,
 } from "../../Storage.js";
-import type { StorageFile } from "../../StorageFile.js";
+
+// import type { StorageFile } from "../../StorageFile.js";
 
 type GCSDriverBaseOptions = {
   bucket: string;
@@ -66,9 +67,9 @@ export class GCSStorageDriver implements StorageDriver {
     });
   }
 
-  list(_: string): Promise<StorageFile[]> {
-    throw new Error("Not implemented");
-  }
+  // list(_: string): Promise<StorageFile[]> {
+  //   throw new Error("Not implemented");
+  // }
 
   async getMetaData(key: string): Promise<ObjectMetadata> {
     const [metadata] = await this.bucket.file(key).getMetadata();

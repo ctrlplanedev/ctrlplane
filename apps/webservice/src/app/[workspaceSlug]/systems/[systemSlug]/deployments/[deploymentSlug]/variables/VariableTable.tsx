@@ -3,13 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
-import {
-  IconChevronRight,
-  IconDotsVertical,
-  IconServer,
-  IconTarget,
-} from "@tabler/icons-react";
+import { IconChevronRight, IconDotsVertical } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -24,19 +18,10 @@ import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
 import type { VariableData } from "./variable-data";
 import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/TargetDrawer";
+import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
-
-const TargetIcon: React.FC<{ version: string }> = ({ version }) => {
-  if (version.includes("kubernetes"))
-    return <SiKubernetes className="h-6 w-6 shrink-0 text-blue-300" />;
-  if (version.includes("vm") || version.includes("compute"))
-    return <IconServer className="h-6 w-6 shrink-0 text-cyan-300" />;
-  if (version.includes("terraform"))
-    return <SiTerraform className="h-6 w-6 shrink-0 text-purple-300" />;
-  return <IconTarget className="h-6 w-6 shrink-0 text-neutral-300" />;
-};
 
 export const VariableTable: React.FC<{
   variables: VariableData[];
@@ -249,7 +234,10 @@ export const VariableTable: React.FC<{
                                     >
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7">
                                         <div className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6">
-                                          <TargetIcon version={t.version} />
+                                          <TargetIcon
+                                            version={t.version}
+                                            kind={t.kind}
+                                          />
                                           <div className="flex flex-col">
                                             <span className="overflow-hidden text-nowrap text-sm">
                                               {t.name}

@@ -135,17 +135,18 @@ export const upsertTargets = async (
         ),
     );
 
-    await tx
-      .insert(targetMetadata)
-      .values(targetMetadataValues)
-      .onConflictDoUpdate({
-        target: [targetMetadata.targetId, targetMetadata.key],
-        set: buildConflictUpdateColumns(targetMetadata, ["value"]),
-      })
-      .catch((err) => {
-        log.error("Error inserting target metadata", { error: err });
-        throw err;
-      });
+    if (targetMetadataValues.length > 0)
+      await tx
+        .insert(targetMetadata)
+        .values(targetMetadataValues)
+        .onConflictDoUpdate({
+          target: [targetMetadata.targetId, targetMetadata.key],
+          set: buildConflictUpdateColumns(targetMetadata, ["value"]),
+        })
+        .catch((err) => {
+          log.error("Error inserting target metadata", { error: err });
+          throw err;
+        });
 
     await tx
       .delete(targetMetadata)
