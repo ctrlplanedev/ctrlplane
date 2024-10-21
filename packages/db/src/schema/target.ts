@@ -56,7 +56,7 @@ export const createTarget = createInsertSchema(target, {
   version: z.string().min(1),
   name: z.string().min(1),
   kind: z.string().min(1),
-  providerId: z.string().uuid(),
+  providerId: z.string().uuid().optional(),
   config: z.record(z.any()),
 }).omit({ id: true });
 

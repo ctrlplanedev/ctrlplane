@@ -8,6 +8,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  isNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
@@ -23,8 +24,15 @@ import { dispatchJobsForNewTargets } from "./new-target.js";
 
 const log = logger.child({ label: "upsert-targets" });
 
-const getExistingTargets = (db: Tx, providerId: string) =>
-  db.select().from(target).where(eq(target.providerId, providerId));
+const getExistingTargets = (db: Tx, providerId: string | null) =>
+  db
+    .select()
+    .from(target)
+    .where(
+      providerId === null
+        ? isNull(target.providerId)
+        : eq(target.providerId, providerId),
+    );
 
 const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
   const [firstTarget] = newTargets;
@@ -66,25 +74,11 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
 
 export const upsertTargets = async (
   tx: Tx,
-  providerId: string,
+  providerId: string | null,
   targetsToInsert: Array<InsertTarget & { metadata?: Record<string, string> }>,
 ) => {
   try {
     const targetsBeforeInsert = await getExistingTargets(tx, providerId);
-
-    const duplicateTargetIdentifiers = _.chain(targetsToInsert)
-      .groupBy((target) => [target.identifier, target.workspaceId])
-      .filter((targets) => targets.length > 1)
-      .map((targets) => targets[0]!.identifier)
-      .value();
-
-    if (duplicateTargetIdentifiers.length > 0) {
-      const errorMessage = `Duplicate target identifiers found: ${duplicateTargetIdentifiers.join(
-        ", ",
-      )}`;
-      logger.error(errorMessage);
-      throw new Error(errorMessage);
-    }
 
     const targets = await tx
       .insert(target)
