@@ -28814,8 +28814,9 @@ const trackOutput = (key, value) => {
         outputTracker.add(key);
 };
 const setOutputAndLog = (key, value) => {
-    core.setOutput(key, value);
-    core.info(`${key}: ${value}`);
+    const stringValue = typeof value === "string" ? value : JSON.stringify(value);
+    core.setOutput(key, stringValue);
+    core.info(`${key}: ${stringValue}`);
     trackOutput(key, value);
 };
 const setOutputsRecursively = (prefix, obj) => {
@@ -28838,6 +28839,7 @@ async function run() {
         .then((response) => {
         const { variables, target, release, environment, runbook, deployment } = response;
         setOutputAndLog("base_url", baseUrl);
+        setOutputAndLog("target", target);
         setOutputAndLog("target_id", target?.id);
         setOutputAndLog("target_name", target?.name);
         setOutputAndLog("target_kind", target?.kind);
@@ -28850,8 +28852,8 @@ async function run() {
         setOutputAndLog("environment_name", environment?.name);
         setOutputAndLog("release_id", release?.id);
         setOutputAndLog("release_version", release?.version);
-        setOutputsRecursively("release_metadata", release?.metadata);
         setOutputsRecursively("release_config", release?.config);
+        setOutputsRecursively("release_metadata", release?.metadata);
         setOutputAndLog("deployment_id", deployment?.id);
         setOutputAndLog("deployment_name", deployment?.name);
         setOutputAndLog("deployment_slug", deployment?.slug);
