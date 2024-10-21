@@ -37,7 +37,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     );
 
   return (
-    <Table>
+    <Table className="table-fixed">
       <TableBody>
         {_.chain(releaseJobTriggerQuery.data)
           .groupBy((r) => r.environmentId)
@@ -90,7 +90,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                       )}
                     </TableCell>
                     <TableCell>
-                      {/* {job.job.externalUrl != null ? (
+                      {job.job.externalUrl != null ? (
                         <Link
                           href={job.job.externalUrl}
                           rel="nofollow noreferrer"
@@ -102,19 +102,21 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                         <span className="text-sm text-muted-foreground">
                           No external URL
                         </span>
-                      )} */}
+                      )}
                     </TableCell>
                     <TableCell>
-                      <TargetDropdownMenu
-                        release={release}
-                        deploymentName={deploymentName}
-                        target={job.target}
-                        environmentId={job.environmentId}
-                        job={{
-                          id: job.job.id,
-                          status: job.job.status as JobStatus,
-                        }}
-                      />
+                      <div className="flex justify-end">
+                        <TargetDropdownMenu
+                          release={release}
+                          deploymentName={deploymentName}
+                          target={job.target}
+                          environmentId={job.environmentId}
+                          job={{
+                            id: job.job.id,
+                            status: job.job.status as JobStatus,
+                          }}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

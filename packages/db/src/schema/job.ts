@@ -45,6 +45,7 @@ export const job = pgTable("job", {
     .$type<Record<string, any>>(),
 
   externalId: text("external_id"),
+  externalUrl: text("external_url"),
 
   status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
