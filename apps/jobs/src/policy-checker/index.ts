@@ -1,4 +1,4 @@
-import { and, eq, notInArray } from "@ctrlplane/db";
+import { and, eq, isNull, or } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -9,9 +9,10 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const run = async () => {
-  const isPassingApprovalGate = notInArray(
-    schema.environmentPolicyApproval.status,
-    ["pending", "rejected"],
+  const isPassingApprovalGate = or(
+    isNull(schema.environment.policyId),
+    eq(schema.environmentPolicy.approvalRequirement, "automatic"),
+    eq(schema.environmentPolicyApproval.status, "approved"),
   );
 
   const releaseJobTriggers = await db
