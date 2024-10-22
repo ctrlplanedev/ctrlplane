@@ -4,6 +4,7 @@ import type { Workspace } from "@ctrlplane/db/schema";
 import { isSameDay, startOfDay, sub } from "date-fns";
 import _ from "lodash";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import colors from "tailwindcss/colors";
 
 import {
   CardContent,
@@ -11,14 +12,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@ctrlplane/ui/card";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@ctrlplane/ui/chart";
+import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
+
+const statusColors = {
+  [JobStatus.ActionRequired]: colors.yellow[500],
+  [JobStatus.ExternalRunNotFound]: colors.red[700],
+  [JobStatus.InvalidIntegration]: colors.amber[700],
+  [JobStatus.InvalidJobAgent]: colors.amber[400],
+  [JobStatus.Failure]: colors.red[500],
+  [JobStatus.Cancelled]: colors.neutral[600],
+  [JobStatus.Skipped]: colors.neutral[500],
+  [JobStatus.Pending]: colors.neutral[400],
+  [JobStatus.InProgress]: colors.blue[500],
+  [JobStatus.Completed]: colors.green[500],
+};
 
 export const JobHistoryChart: React.FC<{
   workspace: Workspace;
@@ -29,15 +40,14 @@ export const JobHistoryChart: React.FC<{
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
-  console.log(dailyCounts.data);
-
   const now = startOfDay(new Date());
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
-    (d) => ({
-      date: new Date(d).toISOString(),
-      jobs:
-        dailyCounts.data?.find((c) => isSameDay(c.date, d))?.totalCount ?? 0,
-    }),
+    (d) => {
+      const dayData =
+        dailyCounts.data?.find((c) => isSameDay(c.date, d))?.statusCounts ?? {};
+      const date = new Date(d).toISOString();
+      return { date, ...dayData };
+    },
   );
 
   const targets = api.target.byWorkspaceId.list.useQuery({
@@ -49,7 +59,6 @@ export const JobHistoryChart: React.FC<{
     (acc, c) => acc + Number(c.totalCount),
     0,
   );
-  console.log(totalJobs);
 
   return (
     <div className={className}>
@@ -115,21 +124,43 @@ export const JobHistoryChart: React.FC<{
               }}
             />
             <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  className="w-[150px]"
-                  nameKey="views"
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    });
-                  }}
-                />
-              }
+              content={({ active, payload, label }) => {
+                if (active && payload?.length)
+                  return (
+                    <div className="rounded-lg border bg-background p-2 shadow-sm">
+                      <div className="font-semibold">
+                        {new Date(label).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                      {payload.reverse().map((entry, index) => (
+                        <div
+                          key={`item-${index}`}
+                          className="flex items-center gap-2"
+                        >
+                          <div
+                            className="h-3 w-3 rounded-full"
+                            style={{ backgroundColor: entry.color }}
+                          />
+                          <span className="capitalize">{entry.name}: </span>
+                          <span className="font-semibold">{entry.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                return null;
+              }}
             />
-            <Bar dataKey="jobs" fill={`hsl(var(--chart-1))`} />
+            {Object.entries(statusColors).map(([status, color]) => (
+              <Bar
+                key={status}
+                dataKey={status.toLowerCase()}
+                stackId="jobs"
+                fill={color}
+              />
+            ))}
           </BarChart>
         </ChartContainer>
       </CardContent>
