@@ -102,7 +102,7 @@ export const GET = async (
       })),
     );
 
-  const total = db
+  const total = await db
     .select({
       count: sql`COUNT(*)`.mapWith(Number),
     })
