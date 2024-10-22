@@ -103,14 +103,9 @@ export const dispatchGithubJob = async (je: Job) => {
 
   let runId: number | null = null;
   let status: string | null = null;
-  let externalUrl: string | null = null;
 
   try {
-    const {
-      runId: runId_,
-      status: status_,
-      url: externalUrl_,
-    } = await pRetry(
+    const { runId: runId_, status: status_ } = await pRetry(
       async () => {
         const runs = await octokit.actions.listWorkflowRuns({
           owner: parsed.data.owner,
@@ -134,7 +129,6 @@ export const dispatchGithubJob = async (je: Job) => {
 
     runId = runId_;
     status = status_;
-    externalUrl = externalUrl_;
   } catch (error) {
     logger.error(`Job ${je.id} dispatch to GitHub failed`, { error });
     await db.update(job).set({
@@ -147,7 +141,6 @@ export const dispatchGithubJob = async (je: Job) => {
   logger.info(`Job ${je.id} dispatched to GitHub`, {
     runId,
     status,
-    externalUrl,
   });
 
   await db
@@ -155,7 +148,6 @@ export const dispatchGithubJob = async (je: Job) => {
     .set({
       externalId: runId.toString(),
       status: convertStatus(status ?? JobStatus.InProgress),
-      externalUrl,
     })
     .where(eq(job.id, je.id));
 };

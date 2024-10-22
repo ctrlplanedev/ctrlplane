@@ -4,12 +4,14 @@ import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconLoader2 } from "@tabler/icons-react";
+import { IconExternalLink, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
+import { buttonVariants } from "@ctrlplane/ui/button";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
+import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
@@ -56,70 +58,88 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     )}
                   </TableCell>
                 </TableRow>
-                {jobs.map((job, idx) => (
-                  <TableRow
-                    key={job.id}
-                    className={cn(
-                      idx !== jobs.length - 1 && "border-b-neutral-800/50",
-                    )}
-                  >
-                    <TableCell className="hover:bg-neutral-800/55">
-                      <Link
-                        href={`${pathname}?target_id=${job.target?.id}`}
-                        className="block w-full hover:text-blue-300"
-                      >
-                        {job.target?.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <JobTableStatusIcon status={job.job.status} />
-                        {capitalCase(job.job.status)}
-                      </div>
-                    </TableCell>
-                    <TableCell>{job.type}</TableCell>
-                    <TableCell>
-                      {job.job.externalId != null ? (
-                        <code className="font-mono text-xs">
-                          {job.job.externalId}
-                        </code>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No external ID
-                        </span>
+                {jobs.map((job, idx) => {
+                  const linksMetadata = job.job.metadata.find(
+                    (m) => m.key === String(ReservedMetadataKey.Links),
+                  )?.value;
+
+                  const links =
+                    linksMetadata != null
+                      ? (JSON.parse(linksMetadata) as Record<string, string>)
+                      : null;
+
+                  return (
+                    <TableRow
+                      key={job.id}
+                      className={cn(
+                        idx !== jobs.length - 1 && "border-b-neutral-800/50",
                       )}
-                    </TableCell>
-                    <TableCell>
-                      {job.job.externalUrl != null ? (
+                    >
+                      <TableCell className="hover:bg-neutral-800/55">
                         <Link
-                          href={job.job.externalUrl}
-                          rel="nofollow noreferrer"
-                          target="_blank"
+                          href={`${pathname}?target_id=${job.target?.id}`}
+                          className="block w-full hover:text-blue-300"
                         >
-                          {job.job.externalUrl}
+                          {job.target?.name}
                         </Link>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No external URL
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <TargetDropdownMenu
-                          release={release}
-                          deploymentName={deploymentName}
-                          target={job.target}
-                          environmentId={job.environmentId}
-                          job={{
-                            id: job.job.id,
-                            status: job.job.status as JobStatus,
-                          }}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <JobTableStatusIcon status={job.job.status} />
+                          {capitalCase(job.job.status)}
+                        </div>
+                      </TableCell>
+                      <TableCell>{job.type}</TableCell>
+                      <TableCell>
+                        {job.job.externalId != null ? (
+                          <code className="font-mono text-xs">
+                            {job.job.externalId}
+                          </code>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            No external ID
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {links != null && (
+                          <div className="flex items-center gap-1">
+                            {Object.entries(links).map(([label, url]) => (
+                              <Link
+                                key={label}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={buttonVariants({
+                                  variant: "secondary",
+                                  size: "sm",
+                                  className: "gap-1",
+                                })}
+                              >
+                                <IconExternalLink className="h-4 w-4" />
+                                {label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end">
+                          <TargetDropdownMenu
+                            release={release}
+                            deploymentName={deploymentName}
+                            target={job.target}
+                            environmentId={job.environmentId}
+                            job={{
+                              id: job.job.id,
+                              status: job.job.status as JobStatus,
+                            }}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </Fragment>
             );
           })

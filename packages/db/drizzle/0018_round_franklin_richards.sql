@@ -1,0 +1,1 @@
+ALTER TABLE "job" DROP COLUMN IF EXISTS "external_url";

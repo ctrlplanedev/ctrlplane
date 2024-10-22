@@ -32,7 +32,6 @@ const job: Job = {
     jobAgentId: null,
     jobAgentConfig: {},
     externalId: null,
-    externalUrl: null,
     status: JobStatus.Pending,
     message: null,
     reason: "policy_passing",

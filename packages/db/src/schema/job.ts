@@ -45,7 +45,6 @@ export const job = pgTable("job", {
     .$type<Record<string, any>>(),
 
   externalId: text("external_id"),
-  externalUrl: text("external_url"),
 
   status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
@@ -69,6 +68,7 @@ export const jobMetadata = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.key, t.jobId) }),
 );
 
+export type JobMetadata = InferSelectModel<typeof jobMetadata>;
 export type Job = InferSelectModel<typeof job>;
 export type JobStatus = Job["status"];
 export const updateJob = createInsertSchema(job)

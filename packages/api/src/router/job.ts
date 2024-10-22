@@ -12,6 +12,7 @@ import {
   environmentPolicyReleaseWindow,
   job,
   jobAgent,
+  jobMetadata,
   release,
   releaseJobTrigger,
   system,
@@ -189,6 +190,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
+        .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
         .leftJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
@@ -204,7 +206,10 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .groupBy((row) => row.release_job_trigger.id)
             .map((v) => ({
               ...v[0]!.release_job_trigger,
-              job: v[0]!.job,
+              job: {
+                ...v[0]!.job,
+                metadata: v.map((t) => t.job_metadata).filter(isPresent),
+              },
               jobAgent: v[0]!.job_agent,
               target: v[0]!.target,
               release: { ...v[0]!.release, deployment: v[0]!.deployment },
