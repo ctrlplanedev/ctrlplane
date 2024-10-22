@@ -49,6 +49,10 @@ export const defaultCondition: ReleaseCondition = {
   conditions: [],
 };
 
+export const isEmptyCondition = (condition: ReleaseCondition): boolean =>
+  condition.type === ReleaseFilterType.Comparison &&
+  condition.conditions.length === 0;
+
 export const isComparisonCondition = (
   condition: ReleaseCondition,
 ): condition is ComparisonCondition =>

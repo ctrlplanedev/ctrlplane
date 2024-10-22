@@ -1,8 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
-import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
 import _ from "lodash";
-import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -12,7 +10,7 @@ import {
   desc,
   eq,
   inArray,
-  ne,
+  isNotNull,
   notInArray,
   takeFirst,
   takeFirstOrNull,
@@ -43,11 +41,6 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
-import {
-  isFilterCheck,
-  isRegexCheck,
-  isSemverCheck,
-} from "@ctrlplane/validators/environment-policies";
 import { releaseCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -359,7 +352,7 @@ export const releaseRouter = createTRPCRouter({
       }),
     ),
 
-  blockedEnvironments: protectedProcedure
+  blocked: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.ReleaseGet).on(
@@ -383,48 +376,33 @@ export const releaseRouter = createTRPCRouter({
         .where(
           and(
             inArray(release.id, input),
-            ne(environmentPolicy.evaluateWith, "none"),
+            isNotNull(environmentPolicy.releaseFilter),
           ),
         );
 
       const blockedEnvironments = await Promise.all(
         policies.map(
           async ({ release: rel, environment, environment_policy }) => {
-            const check: VersionCheck = { ...environment_policy };
+            const { releaseFilter } = environment_policy;
+            if (releaseFilter == null) return null;
 
-            if (isSemverCheck(check) && satisfies(rel.version, check.evaluate))
-              return null;
-            if (
-              isRegexCheck(check) &&
-              new RegExp(check.evaluate).test(rel.version)
-            )
-              return null;
-            if (isFilterCheck(check)) {
-              const { evaluate } = check;
+            const r = await db
+              .select()
+              .from(release)
+              .where(
+                and(
+                  eq(release.id, rel.id),
+                  releaseMatchesCondition(db, releaseFilter),
+                ),
+              )
+              .then(takeFirstOrNull);
 
-              const r = await db
-                .select()
-                .from(release)
-                .where(
-                  and(
-                    eq(release.id, rel.id),
-                    releaseMatchesCondition(db, evaluate),
-                  ),
-                )
-                .then(takeFirstOrNull);
-
-              return r != null
-                ? null
-                : {
-                    releaseId: rel.id,
-                    environmentId: environment.id,
-                  };
-            }
-
-            return {
-              releaseId: rel.id,
-              environmentId: environment.id,
-            };
+            return r != null
+              ? null
+              : {
+                  releaseId: rel.id,
+                  environmentId: environment.id,
+                };
           },
         ),
       ).then((r) => r.filter(isPresent));

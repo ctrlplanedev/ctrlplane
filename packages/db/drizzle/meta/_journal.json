@@ -134,6 +134,13 @@
       "when": 1729564036579,
       "tag": "0018_round_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1729574588329,
+      "tag": "0019_stale_captain_marvel",
+      "breakpoints": true
     }
   ]
 }

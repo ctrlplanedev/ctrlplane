@@ -1,6 +1,7 @@
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
+import type { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 import {
   bigint,
@@ -14,7 +15,6 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod";
 
 import { releaseCondition } from "@ctrlplane/validators/releases";
 import { targetCondition } from "@ctrlplane/validators/targets";
@@ -62,13 +62,6 @@ export const environmentPolicyDeploymentSuccessType = pgEnum(
   ["all", "some", "optional"],
 );
 
-export const evaluationType = pgEnum("evaluation_type", [
-  "semver",
-  "regex",
-  "filter",
-  "none",
-]);
-
 export const releaseSequencingType = pgEnum("release_sequencing_type", [
   "wait",
   "cancel",
@@ -98,9 +91,8 @@ export const environmentPolicy = pgTable("environment_policy", {
 
   duration: bigint("duration", { mode: "number" }).notNull().default(0),
 
-  evaluateWith: evaluationType("evaluate_with").notNull().default("none"),
-  evaluate: jsonb("evaluate")
-    .$type<ReleaseCondition | string | null>()
+  releaseFilter: jsonb("release_filter")
+    .$type<ReleaseCondition | null>()
     .default(sql`NULL`),
 
   releaseSequencing: releaseSequencingType("release_sequencing")
@@ -111,7 +103,7 @@ export const environmentPolicy = pgTable("environment_policy", {
 export type EnvironmentPolicy = InferSelectModel<typeof environmentPolicy>;
 
 export const createEnvironmentPolicy = createInsertSchema(environmentPolicy, {
-  evaluate: z.union([releaseCondition, z.string(), z.null()]),
+  releaseFilter: releaseCondition.nullable(),
 }).omit({ id: true });
 
 export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
