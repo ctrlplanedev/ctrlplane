@@ -49,8 +49,11 @@ export const job = pgTable("job", {
   status: jobStatus("status").notNull().default("pending"),
   message: text("message"),
   reason: jobReason("reason").notNull().default("policy_passing"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at")
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
 });

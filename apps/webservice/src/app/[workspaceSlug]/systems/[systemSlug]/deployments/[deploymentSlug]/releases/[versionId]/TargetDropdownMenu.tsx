@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import {
   IconAdjustmentsExclamation,
   IconAlertTriangle,
-  IconDots,
   IconReload,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -287,16 +286,13 @@ export const TargetDropdownMenu: React.FC<{
   target: { id: string; name: string; lockedAt: Date | null } | null;
   deploymentName: string;
   job: { id: string; status: JobStatus };
-}> = ({ release, deploymentName, target, environmentId, job }) => {
+  children: React.ReactNode;
+}> = ({ release, deploymentName, target, environmentId, job, children }) => {
   const [open, setOpen] = useState(false);
   const isActive = activeStatus.includes(job.status);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <IconDots size={16} />
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       {target != null && (
         <DropdownMenuContent align="end">
           {isActive && (

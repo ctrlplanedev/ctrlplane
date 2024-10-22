@@ -1,4 +1,17 @@
 import type { Tx } from "@ctrlplane/db";
+import type {
+  Deployment,
+  Environment,
+  EnvironmentPolicy,
+  EnvironmentPolicyReleaseWindow,
+  Job,
+  JobAgent,
+  JobMetadata,
+  Release,
+  ReleaseJobTrigger,
+  Target,
+  User,
+} from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -27,6 +40,7 @@ import {
   system,
   target,
   updateJob,
+  user,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -45,11 +59,56 @@ const releaseJobTriggerQuery = (tx: Tx) =>
     .select()
     .from(releaseJobTrigger)
     .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-    .leftJoin(target, eq(releaseJobTrigger.targetId, target.id))
-    .leftJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .leftJoin(deployment, eq(release.deploymentId, deployment.id))
-    .leftJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
+    .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+    .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId));
+
+const processReleaseJobTriggerWithAdditionalDataRows = (
+  rows: Array<{
+    release_job_trigger: ReleaseJobTrigger;
+    job: Job;
+    target: Target;
+    release: Release;
+    deployment: Deployment;
+    environment: Environment;
+    job_agent: JobAgent;
+    job_metadata: JobMetadata | null;
+    environment_policy: EnvironmentPolicy | null;
+    environment_policy_release_window: EnvironmentPolicyReleaseWindow | null;
+    user?: User | null;
+  }>,
+) =>
+  _.chain(rows)
+    .groupBy((row) => row.release_job_trigger.id)
+    .map((v) => ({
+      ...v[0]!.release_job_trigger,
+      causedBy: v[0]!.user,
+      job: {
+        ...v[0]!.job,
+        metadata: v.map((t) => t.job_metadata).filter(isPresent),
+        status: v[0]!.job.status as JobStatus,
+      },
+      jobAgent: v[0]!.job_agent,
+      target: v[0]!.target,
+      release: { ...v[0]!.release, deployment: v[0]!.deployment },
+      environment: v[0]!.environment,
+      rolloutDate:
+        v[0]!.environment_policy != null
+          ? rolloutDateFromReleaseJobTrigger(
+              v[0]!.release_job_trigger.targetId,
+              v[0]!.release.id,
+              v[0]!.environment.id,
+              v[0]!.release.createdAt,
+              v[0]!.environment_policy.duration,
+              v
+                .map((r) => r.environment_policy_release_window)
+                .filter(isPresent),
+            )
+          : null,
+    }))
+    .value();
 
 const releaseJobTriggerRouter = createTRPCRouter({
   byWorkspaceId: createTRPCRouter({
@@ -219,37 +278,30 @@ const releaseJobTriggerRouter = createTRPCRouter({
         )
         .where(and(eq(release.id, input), isNull(environment.deletedAt)))
         .orderBy(desc(releaseJobTrigger.createdAt))
-        .then((data) =>
-          _.chain(data)
-            .groupBy((row) => row.release_job_trigger.id)
-            .map((v) => ({
-              ...v[0]!.release_job_trigger,
-              job: {
-                ...v[0]!.job,
-                metadata: v.map((t) => t.job_metadata).filter(isPresent),
-              },
-              jobAgent: v[0]!.job_agent,
-              target: v[0]!.target,
-              release: { ...v[0]!.release, deployment: v[0]!.deployment },
-              environment: v[0]!.environment,
-              rolloutDate:
-                v[0]!.environment_policy == null ||
-                v[0]!.release == null ||
-                v[0]!.environment == null
-                  ? null
-                  : rolloutDateFromReleaseJobTrigger(
-                      v[0]!.release_job_trigger.targetId,
-                      v[0]!.release.id,
-                      v[0]!.environment.id,
-                      v[0]!.release.createdAt,
-                      v[0]!.environment_policy.duration,
-                      v
-                        .map((r) => r.environment_policy_release_window)
-                        .filter(isPresent),
-                    ),
-            }))
-            .value(),
-        ),
+        .then(processReleaseJobTriggerWithAdditionalDataRows),
+    ),
+
+  byId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.JobGet).on({ type: "job", id: input }),
+    })
+    .query(({ ctx, input }) =>
+      releaseJobTriggerQuery(ctx.db)
+        .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
+        .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
+        .leftJoin(
+          environmentPolicy,
+          eq(environment.policyId, environmentPolicy.id),
+        )
+        .leftJoin(
+          environmentPolicyReleaseWindow,
+          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+        )
+        .where(eq(job.id, input))
+        .then(processReleaseJobTriggerWithAdditionalDataRows)
+        .then(takeFirst),
     ),
 });
 

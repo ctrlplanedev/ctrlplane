@@ -1,18 +1,18 @@
 "use client";
 
-import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconExternalLink, IconLoader2 } from "@tabler/icons-react";
+import { IconDots, IconExternalLink, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
-import { buttonVariants } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
+import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 import { TargetDropdownMenu } from "./TargetDropdownMenu";
@@ -27,6 +27,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   deploymentName,
 }) => {
   const pathname = usePathname();
+  const { setJobId } = useJobDrawer();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     release.id,
     { refetchInterval: 5_000 },
@@ -72,15 +73,17 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                     <TableRow
                       key={job.id}
                       className={cn(
+                        "cursor-pointer",
                         idx !== jobs.length - 1 && "border-b-neutral-800/50",
                       )}
+                      onClick={() => setJobId(job.job.id)}
                     >
                       <TableCell className="hover:bg-neutral-800/55">
                         <Link
-                          href={`${pathname}?target_id=${job.target?.id}`}
+                          href={`${pathname}?target_id=${job.target.id}`}
                           className="block w-full hover:text-blue-300"
                         >
-                          {job.target?.name}
+                          {job.target.name}
                         </Link>
                       </TableCell>
                       <TableCell>
@@ -132,9 +135,13 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                             environmentId={job.environmentId}
                             job={{
                               id: job.job.id,
-                              status: job.job.status as JobStatus,
+                              status: job.job.status,
                             }}
-                          />
+                          >
+                            <Button variant="ghost" size="icon">
+                              <IconDots size={16} />
+                            </Button>
+                          </TargetDropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -15,6 +15,19 @@ export enum JobStatus {
   ExternalRunNotFound = "external_run_not_found",
 }
 
+export const JobStatusReadable = {
+  [JobStatus.Completed]: "Completed",
+  [JobStatus.Cancelled]: "Cancelled",
+  [JobStatus.Skipped]: "Skipped",
+  [JobStatus.InProgress]: "In progress",
+  [JobStatus.ActionRequired]: "Action required",
+  [JobStatus.Pending]: "Pending",
+  [JobStatus.Failure]: "Failure",
+  [JobStatus.InvalidJobAgent]: "Invalid job agent",
+  [JobStatus.InvalidIntegration]: "Invalid integration",
+  [JobStatus.ExternalRunNotFound]: "External run not found",
+};
+
 export const activeStatus = [JobStatus.InProgress, JobStatus.ActionRequired];
 
 export const exitedStatus = [
