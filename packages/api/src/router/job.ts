@@ -3,7 +3,16 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, desc, eq, isNull, sql, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNull,
+  notInArray,
+  sql,
+  takeFirst,
+} from "@ctrlplane/db";
 import {
   createJobAgent,
   deployment,
@@ -100,7 +109,16 @@ const releaseJobTriggerRouter = createTRPCRouter({
             eq(releaseJobTrigger.environmentId, environment.id),
           )
           .innerJoin(system, eq(environment.systemId, system.id))
-          .where(eq(system.workspaceId, input.workspaceId))
+          .where(
+            and(
+              eq(system.workspaceId, input.workspaceId),
+              notInArray(job.status, [
+                JobStatus.Pending,
+                JobStatus.Cancelled,
+                JobStatus.Skipped,
+              ]),
+            ),
+          )
           .groupBy(dateTruncExpr, job.status)
           .as("sub");
 

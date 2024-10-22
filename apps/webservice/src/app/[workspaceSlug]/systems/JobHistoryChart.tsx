@@ -24,9 +24,6 @@ const statusColors = {
   [JobStatus.InvalidIntegration]: colors.amber[700],
   [JobStatus.InvalidJobAgent]: colors.amber[400],
   [JobStatus.Failure]: colors.red[500],
-  [JobStatus.Cancelled]: colors.neutral[600],
-  [JobStatus.Skipped]: colors.neutral[500],
-  [JobStatus.Pending]: colors.neutral[400],
   [JobStatus.InProgress]: colors.blue[500],
   [JobStatus.Completed]: colors.green[500],
 };
@@ -37,9 +34,6 @@ const statusLabels = {
   [JobStatus.InvalidIntegration]: "Invalid Integration",
   [JobStatus.InvalidJobAgent]: "Invalid Job Agent",
   [JobStatus.Failure]: "Failure",
-  [JobStatus.Cancelled]: "Cancelled",
-  [JobStatus.Skipped]: "Skipped",
-  [JobStatus.Pending]: "Pending",
   [JobStatus.InProgress]: "In Progress",
   [JobStatus.Completed]: "Completed",
 };
@@ -48,10 +42,11 @@ export const JobHistoryChart: React.FC<{
   workspace: Workspace;
   className?: string;
 }> = ({ className, workspace }) => {
-  const dailyCounts = api.job.config.byWorkspaceId.dailyCount.useQuery({
-    workspaceId: workspace.id,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-  });
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const dailyCounts = api.job.config.byWorkspaceId.dailyCount.useQuery(
+    { workspaceId: workspace.id, timezone },
+    { refetchInterval: 60_000 },
+  );
 
   const now = startOfDay(new Date());
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
@@ -157,7 +152,19 @@ export const JobHistoryChart: React.FC<{
                             className="h-3 w-3 rounded-full"
                             style={{ backgroundColor: entry.color }}
                           />
-                          <span>{statusLabels[entry.name as JobStatus]}: </span>
+                          <span>
+                            {
+                              statusLabels[
+                                entry.name as Exclude<
+                                  JobStatus,
+                                  | JobStatus.Cancelled
+                                  | JobStatus.Skipped
+                                  | JobStatus.Pending
+                                >
+                              ]
+                            }
+                            :{" "}
+                          </span>
                           <span className="font-semibold">{entry.value}</span>
                         </div>
                       ))}
