@@ -23,8 +23,8 @@ export const JobsTable: React.FC<{ releaseId: string }> = ({ releaseId }) => {
       <TableBody>
         {releaseJobTriggers.data?.map((job) => (
           <TableRow key={job.id} className={cn("border-b-neutral-800/50")}>
-            <TableCell>{job.environment?.name}</TableCell>
-            <TableCell>{job.target?.name}</TableCell>
+            <TableCell>{job.environment.name}</TableCell>
+            <TableCell>{job.target.name}</TableCell>
             <TableCell>{job.job.status}</TableCell>
             <TableCell>{job.type}</TableCell>
           </TableRow>

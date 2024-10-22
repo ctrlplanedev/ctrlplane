@@ -38,7 +38,7 @@ const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
                 j.job.status === JobStatus.Completed ||
                 j.job.status === JobStatus.Pending,
             )
-            .find((j) => j.deployment?.id === deployment.id);
+            .find((j) => j.deployment.id === deployment.id);
 
           return (
             <TableRow key={deployment.id}>

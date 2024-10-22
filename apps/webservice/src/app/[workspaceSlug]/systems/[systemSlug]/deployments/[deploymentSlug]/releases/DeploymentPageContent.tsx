@@ -67,12 +67,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
         isPresent(releaseJobTrigger.releaseId) &&
         isPresent(releaseJobTrigger.targetId),
     )
-    .map((releaseJobTrigger) => ({
-      ...releaseJobTrigger,
-      environmentId: releaseJobTrigger.environmentId,
-      target: releaseJobTrigger.target!,
-      releaseId: releaseJobTrigger.releaseId,
-    }));
+    .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
 
   const distribution = api.deployment.distributionById.useQuery(deployment.id, {
     refetchInterval: 2_000,
