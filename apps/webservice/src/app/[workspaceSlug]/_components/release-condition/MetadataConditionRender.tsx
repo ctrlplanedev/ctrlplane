@@ -1,6 +1,7 @@
 import type { MetadataCondition } from "@ctrlplane/validators/releases";
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { IconLoader2 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -22,14 +23,30 @@ import { useMatchSorter } from "~/utils/useMatchSorter";
 export const MetadataConditionRender: React.FC<
   ReleaseConditionRenderProps<MetadataCondition>
 > = ({ condition, onChange, className }) => {
-  const { workspaceSlug, systemSlug } = useParams();
-  const wSlug = workspaceSlug! as string;
-  const sSlug = systemSlug as string | undefined;
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug?: string;
+  }>();
 
-  const metadataKeys = api.release.metadataKeys.useQuery({
-    workspaceSlug: wSlug,
-    systemSlug: sSlug,
-  });
+  const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
+  const workspace = workspaceQ.data;
+  const systemQ = api.system.bySlug.useQuery(
+    { workspaceSlug, systemSlug: systemSlug ?? "" },
+    { enabled: systemSlug != null },
+  );
+  const system = systemQ.data;
+
+  const workspaceMetadataKeys = api.release.metadataKeys.byWorkspace.useQuery(
+    workspace?.id ?? "",
+    { enabled: workspace != null && system == null },
+  );
+  const systemMetadataKeys = api.release.metadataKeys.bySystem.useQuery(
+    system?.id ?? "",
+    { enabled: system != null },
+  );
+
+  const metadataKeys =
+    systemMetadataKeys.data ?? workspaceMetadataKeys.data ?? [];
 
   const setKey = (key: string) => onChange({ ...condition, key });
 
@@ -49,10 +66,13 @@ export const MetadataConditionRender: React.FC<
       : onChange({ ...condition, operator, value: condition.value ?? "" });
 
   const [open, setOpen] = useState(false);
-  const filteredMetadataKeys = useMatchSorter(
-    metadataKeys.data ?? [],
-    condition.key,
-  );
+  const filteredMetadataKeys = useMatchSorter(metadataKeys, condition.key);
+
+  const loadingMetadataKeys =
+    workspaceQ.isLoading ||
+    systemQ.isLoading ||
+    workspaceMetadataKeys.isLoading ||
+    systemMetadataKeys.isLoading;
 
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
@@ -72,20 +92,27 @@ export const MetadataConditionRender: React.FC<
               className="scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 max-h-[300px] overflow-y-auto p-0 text-sm"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
-              {filteredMetadataKeys.map((k) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  key={k}
-                  className="w-full rounded-none text-left"
-                  onClick={() => {
-                    setKey(k);
-                    setOpen(false);
-                  }}
-                >
-                  <div className="w-full">{k}</div>
-                </Button>
-              ))}
+              {!loadingMetadataKeys &&
+                filteredMetadataKeys.map((k) => (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    key={k}
+                    className="w-full rounded-none text-left"
+                    onClick={() => {
+                      setKey(k);
+                      setOpen(false);
+                    }}
+                  >
+                    <div className="w-full">{k}</div>
+                  </Button>
+                ))}
+              {loadingMetadataKeys && (
+                <div className="flex h-8 items-center gap-1 pl-2 text-xs text-muted-foreground">
+                  <IconLoader2 className="h-3 w-3 animate-spin" /> Loading
+                  keys...
+                </div>
+              )}
             </PopoverContent>
           </Popover>
         </div>

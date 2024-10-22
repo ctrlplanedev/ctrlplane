@@ -29,7 +29,6 @@ import {
   releaseMetadata,
   system,
   target,
-  workspace,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -417,61 +416,44 @@ export const releaseRouter = createTRPCRouter({
       );
     }),
 
-  metadataKeys: protectedProcedure
-    .meta({
-      authorizationCheck: async ({ canUser, input }) => {
-        if (input.systemSlug != null) {
-          const sys = await db
-            .select()
-            .from(system)
-            .where(eq(system.slug, input.systemSlug))
-            .then(takeFirstOrNull);
-          if (sys == null) return false;
+  metadataKeys: createTRPCRouter({
+    bySystem: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.ReleaseGet).on({
+            type: "system",
+            id: input,
+          }),
+      })
+      .input(z.string().uuid())
+      .query(async ({ input, ctx }) =>
+        ctx.db
+          .selectDistinct({ key: releaseMetadata.key })
+          .from(release)
+          .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
+          .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+          .where(eq(deployment.systemId, input))
+          .then((r) => r.map((row) => row.key)),
+      ),
 
-          return canUser
-            .perform(Permission.ReleaseGet)
-            .on({ type: "system", id: sys.id });
-        }
-
-        const ws = await db
-          .select()
-          .from(workspace)
-          .where(eq(workspace.slug, input.workspaceSlug))
-          .then(takeFirstOrNull);
-        if (ws == null) return false;
-
-        return canUser
-          .perform(Permission.ReleaseGet)
-          .on({ type: "workspace", id: ws.id });
-      },
-    })
-    .input(
-      z.object({
-        workspaceSlug: z.string(),
-        systemSlug: z.string().optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const baseQuery = db
-        .selectDistinct({ key: releaseMetadata.key })
-        .from(release)
-        .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
-        .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-        .innerJoin(system, eq(deployment.systemId, system.id))
-        .innerJoin(workspace, eq(system.workspaceId, workspace.id));
-
-      if (input.systemSlug != null)
-        return baseQuery
-          .where(
-            and(
-              eq(system.slug, input.systemSlug),
-              eq(workspace.slug, input.workspaceSlug),
-            ),
-          )
-          .then((r) => r.map((row) => row.key));
-
-      return baseQuery
-        .where(eq(workspace.slug, input.workspaceSlug))
-        .then((r) => r.map((row) => row.key));
-    }),
+    byWorkspace: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.ReleaseGet).on({
+            type: "workspace",
+            id: input,
+          }),
+      })
+      .input(z.string().uuid())
+      .query(async ({ input, ctx }) =>
+        ctx.db
+          .selectDistinct({ key: releaseMetadata.key })
+          .from(release)
+          .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
+          .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+          .innerJoin(system, eq(deployment.systemId, system.id))
+          .where(eq(system.workspaceId, input))
+          .then((r) => r.map((row) => row.key)),
+      ),
+  }),
 });
