@@ -21,6 +21,7 @@ import {
   targetMetadataGroup,
   targetProvider,
   targetView,
+  targetViewMetadataGroup,
   variableSet,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -344,6 +345,28 @@ const getJobScopes = async (id: string) => {
   ];
 };
 
+const getTargetViewMetadataGroupScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(targetView, eq(targetView.workspaceId, workspace.id))
+    .innerJoin(
+      targetViewMetadataGroup,
+      eq(targetViewMetadataGroup.viewId, targetView.id),
+    )
+    .where(eq(targetViewMetadataGroup.id, id))
+    .then(takeFirst);
+
+  return [
+    {
+      type: "targetViewMetadataGroup" as const,
+      id: result.target_view_metadata_group.id,
+    },
+    { type: "targetView" as const, id: result.target_view.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
 type Scope = { type: ScopeType; id: string };
 
 export const scopeHandlers: Record<
@@ -365,6 +388,7 @@ export const scopeHandlers: Record<
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
   job: getJobScopes,
+  targetViewMetadataGroup: getTargetViewMetadataGroupScopes,
 };
 
 const fetchScopeHierarchyForResource = async (resource: {

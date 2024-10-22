@@ -62,6 +62,12 @@ export enum Permission {
   TargetMetadataGroupUpdate = "targetMetadataGroup.update",
   TargetMetadataGroupDelete = "targetMetadataGroup.delete",
 
+  TargetViewMetadataGroupList = "targetViewMetadataGroup.list",
+  TargetViewMetadataGroupGet = "targetViewMetadataGroup.get",
+  TargetViewMetadataGroupCreate = "targetViewMetadataGroup.create",
+  TargetViewMetadataGroupUpdate = "targetViewMetadataGroup.update",
+  TargetViewMetadataGroupDelete = "targetViewMetadataGroup.delete",
+
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
   DeploymentGet = "deployment.get",
@@ -107,3 +113,22 @@ export const predefinedRoles = {
     permissions: [],
   },
 };
+
+// Add this type or extend an existing one to include 'targetViewMetadataGroup'
+export type AuthorizationResourceType =
+  | "workspace"
+  | "target"
+  | "targetView"
+  | "targetProvider"
+  | "deployment"
+  | "system"
+  | "environment"
+  | "environmentPolicy"
+  | "release"
+  | "job"
+  | "runbook"
+  | "deploymentVariable"
+  | "variableSet"
+  | "targetMetadataGroup"
+  | "jobAgent"
+  | "targetViewMetadataGroup";
