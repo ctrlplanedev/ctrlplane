@@ -113,3 +113,22 @@ export const predefinedRoles = {
     permissions: [],
   },
 };
+
+// Add this type or extend an existing one to include 'targetViewMetadataGroup'
+export type AuthorizationResourceType =
+  | "workspace"
+  | "target"
+  | "targetView"
+  | "targetProvider"
+  | "deployment"
+  | "system"
+  | "environment"
+  | "environmentPolicy"
+  | "release"
+  | "job"
+  | "runbook"
+  | "deploymentVariable"
+  | "variableSet"
+  | "targetMetadataGroup"
+  | "jobAgent"
+  | "targetViewMetadataGroup";

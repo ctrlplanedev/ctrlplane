@@ -30,7 +30,7 @@ export const targetViewMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewMetadataGroupList)
-          .on({ type: "targetView", id: input }),
+          .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -71,7 +71,7 @@ export const targetViewMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewMetadataGroupGet)
-          .on({ type: "targetMetadataGroup", id: input }),
+          .on({ type: "targetViewMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -138,7 +138,7 @@ export const targetViewMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewMetadataGroupCreate)
-          .on({ type: "targetView", id: input.viewId }),
+          .on({ type: "workspace", id: input.viewId }),
     })
     .input(
       createTargetViewMetadataGroup.extend({
@@ -152,7 +152,6 @@ export const targetViewMetadataGroupRouter = createTRPCRouter({
           .values(createTargetViewMetadataGroup.parse(input))
           .returning();
 
-        // Check if group is defined before proceeding
         if (!group) throw new Error("Group creation failed");
 
         await tx.insert(targetViewMetadataGroupKey).values(
@@ -171,7 +170,7 @@ export const targetViewMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewMetadataGroupUpdate)
-          .on({ type: "targetView", id: input.id }),
+          .on({ type: "targetViewMetadataGroup", id: input.id }),
     })
     .input(
       z.object({
@@ -216,7 +215,7 @@ export const targetViewMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewMetadataGroupDelete)
-          .on({ type: "targetMetadataGroup", id: input }),
+          .on({ type: "targetViewMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
