@@ -299,32 +299,6 @@ export const TargetDropdownMenu: React.FC<{
       </DropdownMenuTrigger>
       {target != null && (
         <DropdownMenuContent align="end">
-          <OverrideJobStatusDialog job={job} onClose={() => setOpen(false)}>
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              className="space-x-2"
-            >
-              <IconAdjustmentsExclamation size={16} />
-              <p>Override Job Status</p>
-            </DropdownMenuItem>
-          </OverrideJobStatusDialog>
-
-          <ForceReleaseTargetDialog
-            release={release}
-            deploymentName={deploymentName}
-            target={target}
-            environmentId={environmentId}
-            onClose={() => setOpen(false)}
-          >
-            <DropdownMenuItem
-              onSelect={(e) => e.preventDefault()}
-              className="space-x-2"
-            >
-              <IconAlertTriangle size={16} />
-              <p>Force Release</p>
-            </DropdownMenuItem>
-          </ForceReleaseTargetDialog>
-
           {isActive && (
             <TooltipProvider>
               <Tooltip>
@@ -359,6 +333,32 @@ export const TargetDropdownMenu: React.FC<{
               </DropdownMenuItem>
             </RedeployReleaseDialog>
           )}
+
+          <OverrideJobStatusDialog job={job} onClose={() => setOpen(false)}>
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="space-x-2"
+            >
+              <IconAdjustmentsExclamation size={16} />
+              <p>Override Job Status</p>
+            </DropdownMenuItem>
+          </OverrideJobStatusDialog>
+
+          <ForceReleaseTargetDialog
+            release={release}
+            deploymentName={deploymentName}
+            target={target}
+            environmentId={environmentId}
+            onClose={() => setOpen(false)}
+          >
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="space-x-2"
+            >
+              <IconAlertTriangle size={16} />
+              <p>Force Release</p>
+            </DropdownMenuItem>
+          </ForceReleaseTargetDialog>
         </DropdownMenuContent>
       )}
     </DropdownMenu>
