@@ -16,7 +16,7 @@ import { api } from "~/trpc/react";
 import { TargetDropdownMenu } from "./TargetDropdownMenu";
 
 type TargetReleaseTableProps = {
-  release: { id: string; version: string };
+  release: { id: string; version: string; name: string };
   deploymentName: string;
 };
 

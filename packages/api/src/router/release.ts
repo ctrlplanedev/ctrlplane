@@ -287,33 +287,21 @@ export const releaseRouter = createTRPCRouter({
           .then(takeFirstOrNull);
         if (!env) throw new Error("Environment not found");
 
-        const jc = await ctx.db
-          .select()
-          .from(releaseJobTrigger)
-          .where(
-            and(
-              eq(releaseJobTrigger.releaseId, input.releaseId),
-              eq(releaseJobTrigger.environmentId, input.environmentId),
-              eq(releaseJobTrigger.targetId, input.targetId),
-            ),
+        const releaseJobTriggers = await createReleaseJobTriggers(
+          ctx.db,
+          "force_deploy",
+        )
+          .causedById(ctx.session.user.id)
+          .environments([env.id])
+          .releases([rel.id])
+          .targets([t.id])
+          .filter(
+            input.isForcedRelease
+              ? (_, releaseJobTriggers) => releaseJobTriggers
+              : isPassingReleaseStringCheckPolicy,
           )
-          .then(takeFirstOrNull);
-
-        const releaseJobTriggers =
-          jc != null
-            ? [jc]
-            : await createReleaseJobTriggers(ctx.db, "force_deploy")
-                .causedById(ctx.session.user.id)
-                .environments([env.id])
-                .releases([rel.id])
-                .targets([t.id])
-                .filter(
-                  input.isForcedRelease
-                    ? (_, releaseJobTriggers) => releaseJobTriggers
-                    : isPassingReleaseStringCheckPolicy,
-                )
-                .then(input.isForcedRelease ? () => {} : createJobApprovals)
-                .insert();
+          .then(input.isForcedRelease ? () => {} : createJobApprovals)
+          .insert();
 
         await dispatchReleaseJobTriggers(ctx.db)
           .releaseTriggers(releaseJobTriggers)
