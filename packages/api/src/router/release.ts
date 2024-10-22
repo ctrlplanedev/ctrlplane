@@ -304,6 +304,8 @@ export const releaseRouter = createTRPCRouter({
           )
           .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
+
+        return releaseJobTriggers[0]!;
       }),
   }),
 

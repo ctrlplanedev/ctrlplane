@@ -15,7 +15,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
-import { TargetDropdownMenu } from "./TargetDropdownMenu";
+import { JobDropdownMenu } from "./JobDropdownMenu";
 
 type TargetReleaseTableProps = {
   release: { id: string; version: string; name: string };
@@ -128,7 +128,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end">
-                          <TargetDropdownMenu
+                          <JobDropdownMenu
                             release={release}
                             deploymentName={deploymentName}
                             target={job.target}
@@ -141,7 +141,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                             <Button variant="ghost" size="icon">
                               <IconDots size={16} />
                             </Button>
-                          </TargetDropdownMenu>
+                          </JobDropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>

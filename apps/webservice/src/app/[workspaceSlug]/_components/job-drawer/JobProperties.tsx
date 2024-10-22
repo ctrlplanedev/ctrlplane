@@ -47,7 +47,7 @@ export const JobPropertiesTable: React.FC<JobPropertiesTableProps> = ({
             <td className="w-[110px] p-1 pr-2 text-muted-foreground">
               Environment
             </td>
-            <td>{capitalCase(job.environment.name)}</td>
+            <td>{job.environment.name}</td>
           </tr>
           <tr>
             <td className="w-[110px] p-1 pr-2 text-muted-foreground">

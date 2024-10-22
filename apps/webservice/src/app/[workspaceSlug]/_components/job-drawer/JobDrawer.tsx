@@ -12,7 +12,7 @@ import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
-import { TargetDropdownMenu } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/TargetDropdownMenu";
+import { JobDropdownMenu } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
 import { api } from "~/trpc/react";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
@@ -51,7 +51,7 @@ export const JobDrawer: React.FC = () => {
             </div>
             Job
             {job != null && (
-              <TargetDropdownMenu
+              <JobDropdownMenu
                 release={job.release}
                 environmentId={job.environment.id}
                 target={job.target}
@@ -61,7 +61,7 @@ export const JobDrawer: React.FC = () => {
                 <Button variant="ghost" size="icon" className="h-6 w-6">
                   <IconDotsVertical className="h-3 w-3" />
                 </Button>
-              </TargetDropdownMenu>
+              </JobDropdownMenu>
             )}
           </div>
           {links != null && (
