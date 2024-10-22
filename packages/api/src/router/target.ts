@@ -318,8 +318,8 @@ export const targetRouter = createTRPCRouter({
         z.object({
           workspaceId: z.string().uuid(),
           filter: targetCondition.optional(),
-          limit: z.number().default(500),
-          offset: z.number().default(0),
+          limit: z.number().int().nonnegative().max(1000).default(500),
+          offset: z.number().int().nonnegative().default(0),
         }),
       )
       .query(({ ctx, input }) => {
