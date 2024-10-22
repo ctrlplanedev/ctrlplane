@@ -38,7 +38,7 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
       className="space-y-1 text-sm"
     >
       <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-800/50">
-        {system.name}
+        <span className="truncate">{system.name}</span>
         <IconChevronRight
           className={cn(
             "h-3 w-3 text-muted-foreground transition-all",
