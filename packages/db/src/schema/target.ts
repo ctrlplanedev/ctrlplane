@@ -96,13 +96,19 @@ export const createTargetView = createInsertSchema(targetView, {
 
 export const updateTargetView = createTargetView.partial();
 
-export const targetViewMetadataGroup = pgTable("target_view_metadata_group", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  viewId: uuid("view_id")
-    .notNull()
-    .references(() => targetView.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-});
+export const targetViewMetadataGroup = pgTable(
+  "target_view_metadata_group",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    viewId: uuid("view_id")
+      .notNull()
+      .references(() => targetView.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(t.viewId, t.name),
+  }),
+);
 
 export type TargetViewMetadataGroup = InferSelectModel<
   typeof targetViewMetadataGroup
@@ -123,6 +129,9 @@ export const targetViewMetadataGroupKey = pgTable(
       .references(() => targetViewMetadataGroup.id, { onDelete: "cascade" }),
     key: text("key").notNull(),
   },
+  (t) => ({
+    uniq: uniqueIndex().on(t.groupId, t.key),
+  }),
 );
 
 export type TargetViewMetadataGroupKey = InferSelectModel<
