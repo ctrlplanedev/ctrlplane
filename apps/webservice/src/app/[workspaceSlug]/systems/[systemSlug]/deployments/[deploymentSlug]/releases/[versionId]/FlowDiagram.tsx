@@ -21,11 +21,13 @@ import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reac
 import { EnvironmentNode } from "./FlowNode";
 import { PolicyNode } from "./FlowPolicyNode";
 import { ReleaseSequencingNode } from "./ReleaseSequencingNode";
+import { TriggerNode } from "./TriggerNode";
 
 const nodeTypes: NodeTypes = {
   environment: EnvironmentNode,
   policy: PolicyNode,
   "release-sequencing": ReleaseSequencingNode,
+  trigger: TriggerNode,
 };
 export const FlowDiagram: React.FC<{
   systemId: string;
@@ -38,6 +40,12 @@ export const FlowDiagram: React.FC<{
     useState<ReactFlowInstance | null>(null);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<{ label: string }>([
+    {
+      id: "trigger",
+      type: "trigger",
+      position: { x: 0, y: 0 },
+      data: { ...release, label: release.name },
+    },
     ...envs.map((env) => ({
       id: env.id,
       type: "environment",
