@@ -31,6 +31,19 @@ const statusColors = {
   [JobStatus.Completed]: colors.green[500],
 };
 
+const statusLabels = {
+  [JobStatus.ActionRequired]: "Action Required",
+  [JobStatus.ExternalRunNotFound]: "External Run Not Found",
+  [JobStatus.InvalidIntegration]: "Invalid Integration",
+  [JobStatus.InvalidJobAgent]: "Invalid Job Agent",
+  [JobStatus.Failure]: "Failure",
+  [JobStatus.Cancelled]: "Cancelled",
+  [JobStatus.Skipped]: "Skipped",
+  [JobStatus.Pending]: "Pending",
+  [JobStatus.InProgress]: "In Progress",
+  [JobStatus.Completed]: "Completed",
+};
+
 export const JobHistoryChart: React.FC<{
   workspace: Workspace;
   className?: string;
@@ -144,7 +157,7 @@ export const JobHistoryChart: React.FC<{
                             className="h-3 w-3 rounded-full"
                             style={{ backgroundColor: entry.color }}
                           />
-                          <span className="capitalize">{entry.name}: </span>
+                          <span>{statusLabels[entry.name as JobStatus]}: </span>
                           <span className="font-semibold">{entry.value}</span>
                         </div>
                       ))}

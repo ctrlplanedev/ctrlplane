@@ -110,9 +110,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
               "totalCount",
             ),
             statusCounts: sql<Record<JobStatus, number>>`
-              jsonb_object_agg(${subquery.status},
-              ${subquery.countPerStatus} 
-              ORDER BY ${subquery.status})
+              jsonb_object_agg(${subquery.status}, ${subquery.countPerStatus})
             `.as("statusCounts"),
           })
           .from(subquery)
