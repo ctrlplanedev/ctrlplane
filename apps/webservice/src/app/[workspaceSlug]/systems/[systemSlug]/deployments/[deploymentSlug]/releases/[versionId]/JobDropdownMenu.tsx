@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import {
   IconAdjustmentsExclamation,
   IconAlertTriangle,
-  IconDots,
   IconReload,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -61,6 +60,7 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
+import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { api } from "~/trpc/react";
 
 const overrideJobStatusFormSchema = z.object({
@@ -78,9 +78,7 @@ const OverrideJobStatusDialog: React.FC<{
 
   const form = useForm({
     schema: overrideJobStatusFormSchema,
-    defaultValues: {
-      status: JobStatus.Completed,
-    },
+    defaultValues: { status: job.status },
   });
 
   const onSubmit = form.handleSubmit((data) =>
@@ -90,6 +88,7 @@ const OverrideJobStatusDialog: React.FC<{
         data,
       })
       .then(() => utils.job.config.byReleaseId.invalidate())
+      .then(() => utils.job.config.byId.invalidate(job.id))
       .then(() => setOpen(false))
       .then(() => onClose()),
   );
@@ -126,13 +125,11 @@ const OverrideJobStatusDialog: React.FC<{
                         </SelectTrigger>
                         <SelectContent>
                           <SelectGroup>
-                            {Object.values(JobStatus)
-                              .filter((status) => status !== job.status)
-                              .map((status) => (
-                                <SelectItem key={status} value={status}>
-                                  {capitalCase(status)}
-                                </SelectItem>
-                              ))}
+                            {Object.values(JobStatus).map((status) => (
+                              <SelectItem key={status} value={status}>
+                                {capitalCase(status)}
+                              </SelectItem>
+                            ))}
                           </SelectGroup>
                         </SelectContent>
                       </SelectGroup>
@@ -156,6 +153,7 @@ const OverrideJobStatusDialog: React.FC<{
               <Button
                 type="submit"
                 className={buttonVariants({ variant: "destructive" })}
+                disabled={updateJob.isPending}
               >
                 Override
               </Button>
@@ -185,6 +183,7 @@ const ForceReleaseTargetDialog: React.FC<{
   const forceRelease = api.release.deploy.toTarget.useMutation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const { setJobId } = useJobDrawer();
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -218,11 +217,10 @@ const ForceReleaseTargetDialog: React.FC<{
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
-                .then(() => {
-                  router.refresh();
-                  setOpen(false);
-                  onClose();
-                })
+                .then((rjt) => setJobId(rjt.jobId))
+                .then(() => router.refresh())
+                .then(() => setOpen(false))
+                .then(() => onClose())
             }
           >
             Force Release
@@ -242,6 +240,7 @@ const RedeployReleaseDialog: React.FC<{
   const router = useRouter();
   const redeploy = api.release.deploy.toTarget.useMutation();
   const [isOpen, setIsOpen] = useState(false);
+  const { setJobId } = useJobDrawer();
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -269,8 +268,8 @@ const RedeployReleaseDialog: React.FC<{
                   targetId: target.id,
                   releaseId: release.id,
                 })
+                .then((rjt) => setJobId(rjt.jobId))
                 .then(() => router.refresh())
-                .then(() => setIsOpen(false))
             }
           >
             Redeploy
@@ -281,22 +280,19 @@ const RedeployReleaseDialog: React.FC<{
   );
 };
 
-export const TargetDropdownMenu: React.FC<{
+export const JobDropdownMenu: React.FC<{
   release: { id: string; version: string; name: string };
   environmentId: string;
   target: { id: string; name: string; lockedAt: Date | null } | null;
   deploymentName: string;
   job: { id: string; status: JobStatus };
-}> = ({ release, deploymentName, target, environmentId, job }) => {
+  children: React.ReactNode;
+}> = ({ release, deploymentName, target, environmentId, job, children }) => {
   const [open, setOpen] = useState(false);
   const isActive = activeStatus.includes(job.status);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <IconDots size={16} />
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       {target != null && (
         <DropdownMenuContent align="end">
           {isActive && (

@@ -32,7 +32,7 @@ export const ConfigEditor: React.FC<{
           value={value}
           theme="vs-dark-custom"
           onChange={(v) => onChange?.(v ?? "")}
-          options={{ readOnly }}
+          options={{ readOnly, minimap: { enabled: false } }}
         />
       </div>
     </Card>

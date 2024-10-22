@@ -149,7 +149,7 @@ export const Release: React.FC<{
   const latestJobsByTarget = _.chain(releaseJobTriggers)
     .groupBy((r) => r.target.id)
     .mapValues((triggers) =>
-      _.maxBy(triggers, (t) => new Date(t.job.createdAt ?? 0)),
+      _.maxBy(triggers, (t) => new Date(t.job.createdAt)),
     )
     .values()
     .compact()

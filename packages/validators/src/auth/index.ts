@@ -24,6 +24,7 @@ export enum Permission {
   WorkspaceListIntegrations = "workspace.listIntegrations",
 
   JobUpdate = "job.update",
+  JobGet = "job.get",
 
   JobAgentList = "jobAgent.list",
   JobAgentCreate = "jobAgent.create",
