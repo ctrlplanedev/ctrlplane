@@ -24,6 +24,7 @@ export const JobAgent: React.FC<JobAgentProps> = ({ job }) => (
           <td className="w-[110px] p-1 pr-2 align-top text-muted-foreground">
             Job Config
           </td>
+          <td />
         </tr>
       </tbody>
     </table>

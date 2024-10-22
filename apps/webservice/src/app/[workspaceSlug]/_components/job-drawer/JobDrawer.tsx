@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   IconDotsVertical,
   IconExternalLink,
+  IconLoader2,
   IconRocket,
 } from "@tabler/icons-react";
 
@@ -44,56 +45,64 @@ export const JobDrawer: React.FC = () => {
         showBar={false}
         className="left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none"
       >
-        <DrawerTitle className="border-b p-6">
-          <div className="flex items-center gap-2 ">
-            <div className="flex flex-shrink-0 items-center gap-2 rounded bg-blue-500/20 p-1 text-blue-400">
-              <IconRocket className="h-4 w-4" />
-            </div>
-            Job
-            {job != null && (
-              <JobDropdownMenu
-                release={job.release}
-                environmentId={job.environment.id}
-                target={job.target}
-                deploymentName={job.release.deployment.name}
-                job={job.job}
-              >
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <IconDotsVertical className="h-3 w-3" />
-                </Button>
-              </JobDropdownMenu>
-            )}
+        {jobQ.isLoading && (
+          <div className="flex h-full w-full items-center justify-center">
+            <IconLoader2 className="h-8 w-8 animate-spin" />
           </div>
-          {links != null && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <>
-                {Object.entries(links).map(([label, url]) => (
-                  <Link
-                    key={label}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={buttonVariants({
-                      variant: "secondary",
-                      size: "sm",
-                      className: "gap-1",
-                    })}
+        )}
+        {!jobQ.isLoading && (
+          <>
+            <DrawerTitle className="border-b p-6">
+              <div className="flex items-center gap-2 ">
+                <div className="flex flex-shrink-0 items-center gap-2 rounded bg-blue-500/20 p-1 text-blue-400">
+                  <IconRocket className="h-4 w-4" />
+                </div>
+                Job
+                {job != null && (
+                  <JobDropdownMenu
+                    release={job.release}
+                    environmentId={job.environment.id}
+                    target={job.target}
+                    deploymentName={job.release.deployment.name}
+                    job={job.job}
                   >
-                    <IconExternalLink className="h-4 w-4" />
-                    {label}
-                  </Link>
-                ))}
-              </>
-            </div>
-          )}
-        </DrawerTitle>
-
-        {job != null && (
-          <div className="flex w-full flex-col gap-6 p-6">
-            <JobPropertiesTable job={job} />
-            <JobMetadata job={job} />
-            <JobAgent job={job} />
-          </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <IconDotsVertical className="h-3 w-3" />
+                    </Button>
+                  </JobDropdownMenu>
+                )}
+              </div>
+              {links != null && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <>
+                    {Object.entries(links).map(([label, url]) => (
+                      <Link
+                        key={label}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={buttonVariants({
+                          variant: "secondary",
+                          size: "sm",
+                          className: "gap-1",
+                        })}
+                      >
+                        <IconExternalLink className="h-4 w-4" />
+                        {label}
+                      </Link>
+                    ))}
+                  </>
+                </div>
+              )}
+            </DrawerTitle>
+            {job != null && (
+              <div className="flex w-full flex-col gap-6 p-6">
+                <JobPropertiesTable job={job} />
+                <JobMetadata job={job} />
+                <JobAgent job={job} />
+              </div>
+            )}
+          </>
         )}
       </DrawerContent>
     </Drawer>

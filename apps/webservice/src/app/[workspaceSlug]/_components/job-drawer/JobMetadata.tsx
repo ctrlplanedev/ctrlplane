@@ -11,17 +11,9 @@ type JobMetadataProps = {
 };
 
 export const JobMetadata: React.FC<JobMetadataProps> = ({ job }) => {
-  const { metadata } = job.job;
-  const metadataRecord = metadata.reduce(
-    (acc, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    },
-    {} as Record<string, string>,
-  );
-  const sortedMetadata = Object.entries(metadataRecord).sort(([keyA], [keyB]) =>
-    keyA.localeCompare(keyB),
-  );
+  const sortedMetadata = job.job.metadata
+    .map(({ key, value }) => [key, value] as [string, string])
+    .sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
   const { search, setSearch, result } = useMatchSorterWithSearch(
     sortedMetadata,
     { keys: ["0", "1"] },
@@ -33,10 +25,17 @@ export const JobMetadata: React.FC<JobMetadataProps> = ({ job }) => {
         <Input
           className="w-full rounded-b-none text-xs"
           placeholder="Search ..."
+          aria-label="Search metadata"
+          role="searchbox"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
         <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 max-h-[250px] overflow-auto rounded-b-lg border-x border-b p-1.5">
+          {result.length === 0 && (
+            <div className="text-center text-muted-foreground">
+              No matching metadata found
+            </div>
+          )}
           {result.map(([key, value]) => (
             <div className="text-nowrap font-mono" key={key}>
               <span>
