@@ -3,11 +3,6 @@ import type {
   EnvironmentPolicyDeployment,
   Release,
 } from "@ctrlplane/db/schema";
-import type {
-  RegexCheck,
-  SemverCheck,
-  VersionCheck,
-} from "@ctrlplane/validators/environment-policies";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
 import { useState } from "react";
@@ -17,7 +12,6 @@ import { addMilliseconds, isBefore } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
 import { useTimeoutFn } from "react-use";
 import { Handle, Position } from "reactflow";
-import { satisfies } from "semver";
 import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
@@ -32,11 +26,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
-import {
-  isRegexCheck,
-  isFilterCheck as isReleaseFilterCheck,
-  isSemverCheck,
-} from "@ctrlplane/validators/environment-policies";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import {
   ReleaseFilterType,
@@ -118,36 +107,8 @@ type PolicyNodeProps = NodeProps<
   }
 >;
 
-const evaluateVersionCheck = (
-  check: RegexCheck | SemverCheck,
-  version: string,
-) =>
-  check.evaluateWith === "regex"
-    ? new RegExp(check.evaluate).test(version)
-    : satisfies(version, check.evaluate);
-
-const EvaluateCheck: React.FC<{
-  version: string;
-  check: RegexCheck | SemverCheck;
-}> = ({ version, check }) => {
-  const passes = evaluateVersionCheck(check, version);
-  if (check.evaluateWith === "semver")
-    return (
-      <div className="flex items-center gap-2">
-        {passes ? <Passing /> : <Blocked />} Satisfied{" "}
-        <pre>{check.evaluate}</pre>
-      </div>
-    );
-
-  return (
-    <div className="flex items-center gap-2">
-      {passes ? <Passing /> : <Blocked />} Matches regex
-    </div>
-  );
-};
-
 const useEvaluateReleaseFilterCheck = (
-  check: VersionCheck,
+  check: ReleaseCondition | null,
   release: Release,
 ) => {
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
@@ -164,21 +125,22 @@ const useEvaluateReleaseFilterCheck = (
   const filter: ReleaseCondition = {
     type: ReleaseFilterType.Comparison,
     operator: ReleaseOperator.And,
-    conditions: isReleaseFilterCheck(check)
-      ? [
-          {
-            type: ReleaseFilterType.Version,
-            operator: ReleaseOperator.Equals,
-            value: release.version,
-          },
-          check.evaluate,
-        ]
-      : [],
+    conditions:
+      check != null
+        ? [
+            {
+              type: ReleaseFilterType.Version,
+              operator: ReleaseOperator.Equals,
+              value: release.version,
+            },
+            check,
+          ]
+        : [],
   };
 
   const targetsQ = api.release.list.useQuery(
     { deploymentId: deployment?.id ?? "", filter },
-    { enabled: deployment?.id != null && isReleaseFilterCheck(check) },
+    { enabled: deployment?.id != null && check != null },
   );
 
   return {
@@ -304,22 +266,15 @@ const ApprovalCheck: React.FC<PolicyNodeProps["data"]> = ({ id, release }) => {
 };
 
 export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
-  const check: VersionCheck = {
-    evaluateWith: data.evaluateWith,
-    evaluate: data.evaluate,
-  };
-
-  const isFilterCheck = isReleaseFilterCheck(check);
+  const hasFilterCheck = data.releaseFilter != null;
   const { loading: isFilterCheckLoading, passing: isFilterCheckPassing } =
-    useEvaluateReleaseFilterCheck(check, data.release);
-
-  const isStringCheck = isRegexCheck(check) || isSemverCheck(check);
+    useEvaluateReleaseFilterCheck(data.releaseFilter, data.release);
 
   const noMinSuccess = data.successType === "optional";
   const noRollout = data.duration === 0;
   const noApproval = data.approvalRequirement === "automatic";
 
-  if (isFilterCheck && isFilterCheckLoading)
+  if (hasFilterCheck && isFilterCheckLoading)
     return (
       <div
         className={cn(
@@ -335,23 +290,16 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
           "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
         )}
       >
-        {isStringCheck && (
-          <EvaluateCheck check={check} version={data.release.version} />
-        )}
-        {isFilterCheck && (
+        {hasFilterCheck && (
           <EvaluateFilterCheck passing={isFilterCheckPassing} />
         )}
         {!noMinSuccess && <MinSucessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && <ApprovalCheck {...data} />}
 
-        {!isStringCheck &&
-          !isFilterCheck &&
-          noMinSuccess &&
-          noRollout &&
-          noApproval && (
-            <div className="text-muted-foreground">No policy checks.</div>
-          )}
+        {!hasFilterCheck && noMinSuccess && noRollout && noApproval && (
+          <div className="text-muted-foreground">No policy checks.</div>
+        )}
       </div>
 
       <Handle

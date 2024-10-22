@@ -1,8 +1,6 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
 import React from "react";
 import _ from "lodash";
-import { validRange } from "semver";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -19,98 +17,40 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 import {
-  isFilterCheck,
-  isNoneCheck,
-  isRegexCheck,
-  isSemverCheck,
-} from "@ctrlplane/validators/environment-policies";
-import {
   defaultCondition,
-  isValidReleaseCondition,
+  isEmptyCondition,
   releaseCondition,
 } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 import { ReleaseConditionRender } from "../release-condition/ReleaseConditionRender";
 
-const isValidRegex = (str: string) => {
-  try {
-    new RegExp(str);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-const filterSchema = z
-  .object({
-    evaluateWith: z.literal("regex"),
-    evaluate: z.string().refine(isValidRegex, {
-      message: "Invalid regex pattern",
-    }),
-  })
-  .or(
-    z.object({
-      evaluateWith: z.literal("none"),
-      evaluate: z.null(),
-    }),
-  )
-  .or(
-    z.object({
-      evaluateWith: z.literal("semver"),
-      evaluate: z
-        .string()
-        .refine((s) => validRange(s) !== null, "Invalid semver range"),
-    }),
-  )
-  .or(
-    z.object({
-      evaluateWith: z.literal("filter"),
-      evaluate: releaseCondition.refine(isValidReleaseCondition, {
-        message: "Invalid release condition",
-      }),
-    }),
-  );
-
-const schema = z
-  .object({
-    concurrencyType: z.enum(["all", "some"]),
-    concurrencyLimit: z.number().min(1, "Must be a positive number"),
-  })
-  .and(filterSchema);
+const schema = z.object({
+  concurrencyType: z.enum(["all", "some"]),
+  concurrencyLimit: z.number().min(1, "Must be a positive number"),
+  releaseFilter: releaseCondition.nullable(),
+});
 
 export const DeploymentControl: React.FC<{
   environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
-  const check: VersionCheck = { ...environmentPolicy };
-  const defaultValues = _.merge(
-    {},
-    environmentPolicy,
-    isFilterCheck(check) && { evaluate: check.evaluate },
-    isNoneCheck(check) && { evaluate: check.evaluate },
-    isSemverCheck(check) && { evaluate: check.evaluate },
-    isRegexCheck(check) && { evaluate: check.evaluate },
-  );
-  const form = useForm({ schema, defaultValues });
-  const { evaluateWith, evaluate } = form.watch();
+  const form = useForm({ schema, defaultValues: environmentPolicy });
 
   const updatePolicy = api.environment.policy.update.useMutation();
   const utils = api.useUtils();
 
   const { id, systemId } = environmentPolicy;
-  const onSubmit = form.handleSubmit((data) =>
+  const onSubmit = form.handleSubmit((data) => {
+    const releaseFilter =
+      data.releaseFilter != null && isEmptyCondition(data.releaseFilter)
+        ? null
+        : data.releaseFilter;
     updatePolicy
-      .mutateAsync({ id, data })
+      .mutateAsync({ id, data: { ...data, releaseFilter } })
       .then(() => form.reset(data))
       .then(() => utils.environment.policy.byId.invalidate(id))
-      .then(() => utils.environment.policy.bySystemId.invalidate(systemId)),
-  );
-
-  const onEvaluateChange = (v: string) => {
-    if (v === "none") form.setValue("evaluate", null);
-    if (v === "filter") form.setValue("evaluate", defaultCondition);
-    if (v === "regex" || v === "semver") form.setValue("evaluate", "");
-  };
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId));
+  });
 
   const { concurrencyLimit } = form.watch();
 
@@ -178,112 +118,27 @@ export const DeploymentControl: React.FC<{
           )}
         />
 
-        <div className="space-y-6">
-          <FormField
-            control={form.control}
-            name="evaluateWith"
-            render={({ field: { value, onChange } }) => (
-              <FormItem>
-                <div className="flex flex-col gap-1">
-                  <FormLabel>Release Filter</FormLabel>
-                  <FormDescription>
-                    Filter which releases can be deployed to this environment.
-                  </FormDescription>
-                </div>
-                <RadioGroup
-                  onValueChange={(v) => {
-                    onEvaluateChange(v);
-                    onChange(v);
-                  }}
-                  value={value}
-                >
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="none" />
-                    </FormControl>
-                    <FormLabel className="flex items-center gap-2 font-normal">
-                      None
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="regex" />
-                    </FormControl>
-                    <FormLabel className="flex items-center gap-2 font-normal">
-                      Regex
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="semver" />
-                    </FormControl>
-                    <FormLabel className="flex items-center gap-2 font-normal">
-                      Semver
-                    </FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value="filter" />
-                    </FormControl>
-                    <FormLabel className="flex items-center gap-2 font-normal">
-                      Filter
-                    </FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormItem>
-            )}
-          />
-
-          {evaluateWith === "regex" && (
-            <FormField
-              control={form.control}
-              name="evaluate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Regex</FormLabel>
-                  <Input {...field} placeholder="^v[0-9]+.[0-9]+.[0-9]+$" />
-                </FormItem>
+        <FormField
+          control={form.control}
+          name="releaseFilter"
+          render={({ field: { onChange, value } }) => (
+            <FormItem>
+              <FormLabel>Filter</FormLabel>
+              <FormControl>
+                <ReleaseConditionRender
+                  condition={value ?? defaultCondition}
+                  onChange={onChange}
+                />
+              </FormControl>
+              <FormMessage />
+              {form.formState.isDirty && (
+                <span className="text-xs text-muted-foreground">
+                  Save to apply
+                </span>
               )}
-            />
+            </FormItem>
           )}
-
-          {evaluateWith === "semver" && (
-            <FormField
-              control={form.control}
-              name="evaluate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Semver</FormLabel>
-                  <Input {...field} placeholder=">=v1.0.0" />
-                </FormItem>
-              )}
-            />
-          )}
-
-          {evaluateWith === "filter" && (
-            <FormField
-              control={form.control}
-              name="evaluate"
-              render={({ field: { onChange } }) => (
-                <FormItem>
-                  <FormLabel>Filter</FormLabel>
-                  <FormControl>
-                    <ReleaseConditionRender
-                      condition={evaluate ?? defaultCondition}
-                      onChange={onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                  {form.formState.isDirty && (
-                    <span className="text-xs text-muted-foreground">
-                      Save to apply
-                    </span>
-                  )}
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
+        />
 
         <Button
           type="submit"

@@ -78,10 +78,9 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     refetchInterval: 2_000,
   });
   const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
-  const blockedEnvByRelease = api.release.blockedEnvironments.useQuery(
-    releaseIds,
-    { enabled: releaseIds.length > 0 },
-  );
+  const blockedEnvByRelease = api.release.blocked.useQuery(releaseIds, {
+    enabled: releaseIds.length > 0,
+  });
 
   const loading = releases.isLoading || releaseJobTriggersQuery.isLoading;
 

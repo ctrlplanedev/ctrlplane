@@ -1,16 +1,7 @@
-import type { VersionCheck } from "@ctrlplane/validators/environment-policies";
-import _ from "lodash";
-import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import {
-  isFilterCheck,
-  isNoneCheck,
-  isRegexCheck,
-  isSemverCheck,
-} from "@ctrlplane/validators/environment-policies";
 
 import type { ReleasePolicyChecker } from "./utils.js";
 
@@ -51,35 +42,24 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
       const policy = policies.find((p) => p.environment.id === v.environmentId);
       if (policy == null) return v;
 
+      const { releaseFilter } = policy.environment_policy;
+      if (releaseFilter == null) return v;
+
       const rel = rels.find((r) => r.id === v.releaseId);
       if (rel == null) return v;
 
-      const { environment_policy: envPolicy } = policy;
-      const check: VersionCheck = { ...envPolicy };
-      if (isNoneCheck(check)) return v;
+      const release = await db
+        .select()
+        .from(schema.release)
+        .where(
+          and(
+            eq(schema.release.id, rel.id),
+            schema.releaseMatchesCondition(db, releaseFilter),
+          ),
+        )
+        .then(takeFirstOrNull);
 
-      if (isSemverCheck(check) && satisfies(rel.version, check.evaluate))
-        return v;
-
-      if (isRegexCheck(check) && new RegExp(check.evaluate).test(rel.version))
-        return v;
-
-      if (isFilterCheck(check)) {
-        const release = await db
-          .select()
-          .from(schema.release)
-          .where(
-            and(
-              eq(schema.release.id, rel.id),
-              schema.releaseMatchesCondition(db, check.evaluate),
-            ),
-          )
-          .then(takeFirstOrNull);
-
-        return isPresent(release) ? v : null;
-      }
-
-      return null;
+      return isPresent(release) ? v : null;
     }),
   ).then((results) => results.filter(isPresent));
 };
