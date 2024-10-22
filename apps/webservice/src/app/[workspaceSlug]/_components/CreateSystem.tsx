@@ -56,22 +56,16 @@ export const CreateSystemDialog: React.FC<{
       setValue("slug", slugify(data.name ?? "", { lower: true }));
   });
 
-  const onSubmit = handleSubmit(async (system) => {
-    const systemSlug = system.slug;
-    await createSystem
+  const errMsg = "System with this slug already exists";
+  const onSubmit = handleSubmit((system) =>
+    createSystem
       .mutateAsync({ workspaceId: workspace.id, ...system })
-      .then(() => {
-        router.push(`/${workspace.slug}/systems/${systemSlug}`);
-        router.refresh();
-        setOpen(false);
-        onSuccess?.();
-      })
-      .catch(() => {
-        setError("root", {
-          message: "System with this slug already exists",
-        });
-      });
-  });
+      .then(() => router.refresh())
+      .then(() => router.push(`/${workspace.slug}/systems/${system.slug}`))
+      .then(() => onSuccess?.())
+      .then(() => setOpen(false))
+      .catch(() => setError("root", { message: errMsg })),
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
