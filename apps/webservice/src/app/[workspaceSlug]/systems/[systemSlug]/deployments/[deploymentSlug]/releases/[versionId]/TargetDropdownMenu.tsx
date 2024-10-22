@@ -4,6 +4,7 @@ import {
   IconAdjustmentsExclamation,
   IconAlertTriangle,
   IconDots,
+  IconReload,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { z } from "zod";
@@ -24,6 +25,7 @@ import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -51,7 +53,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
+import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -225,14 +233,63 @@ const ForceReleaseTargetDialog: React.FC<{
   );
 };
 
+const RedeployReleaseDialog: React.FC<{
+  release: { id: string; name: string };
+  environmentId: string;
+  target: { id: string; name: string };
+  children: React.ReactNode;
+}> = ({ release, environmentId, target, children }) => {
+  const router = useRouter();
+  const redeploy = api.release.deploy.toTarget.useMutation();
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            Redeploy{" "}
+            <Badge variant="secondary" className="h-7 text-lg">
+              {release.name}
+            </Badge>{" "}
+            to {target.name}?
+          </DialogTitle>
+          <DialogDescription>
+            This will redeploy the release to {target.name}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <Button
+            disabled={redeploy.isPending}
+            onClick={() =>
+              redeploy
+                .mutateAsync({
+                  environmentId,
+                  targetId: target.id,
+                  releaseId: release.id,
+                })
+                .then(() => router.refresh())
+                .then(() => setIsOpen(false))
+            }
+          >
+            Redeploy
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 export const TargetDropdownMenu: React.FC<{
-  release: { id: string; version: string };
+  release: { id: string; version: string; name: string };
   environmentId: string;
   target: { id: string; name: string; lockedAt: Date | null } | null;
   deploymentName: string;
   job: { id: string; status: JobStatus };
 }> = ({ release, deploymentName, target, environmentId, job }) => {
   const [open, setOpen] = useState(false);
+  const isActive = activeStatus.includes(job.status);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
@@ -267,6 +324,41 @@ export const TargetDropdownMenu: React.FC<{
               <p>Force Release</p>
             </DropdownMenuItem>
           </ForceReleaseTargetDialog>
+
+          {isActive && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="space-x-2 text-muted-foreground hover:cursor-not-allowed focus:bg-transparent focus:text-muted-foreground"
+                  >
+                    <IconReload className="h-4 w-4" />
+                    <p>Redeploy</p>
+                  </DropdownMenuItem>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Cannot redeploy while job is in progress
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {!isActive && (
+            <RedeployReleaseDialog
+              release={release}
+              environmentId={environmentId}
+              target={target}
+            >
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="space-x-2"
+              >
+                <IconReload className="h-4 w-4" />
+                <p>Redeploy</p>
+              </DropdownMenuItem>
+            </RedeployReleaseDialog>
+          )}
         </DropdownMenuContent>
       )}
     </DropdownMenu>
