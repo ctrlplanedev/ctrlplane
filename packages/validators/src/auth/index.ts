@@ -62,6 +62,12 @@ export enum Permission {
   TargetMetadataGroupUpdate = "targetMetadataGroup.update",
   TargetMetadataGroupDelete = "targetMetadataGroup.delete",
 
+  TargetViewMetadataGroupList = "targetViewMetadataGroup.list",
+  TargetViewMetadataGroupGet = "targetViewMetadataGroup.get",
+  TargetViewMetadataGroupCreate = "targetViewMetadataGroup.create",
+  TargetViewMetadataGroupUpdate = "targetViewMetadataGroup.update",
+  TargetViewMetadataGroupDelete = "targetViewMetadataGroup.delete",
+
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
   DeploymentGet = "deployment.get",

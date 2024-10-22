@@ -96,6 +96,45 @@ export const createTargetView = createInsertSchema(targetView, {
 
 export const updateTargetView = createTargetView.partial();
 
+export const targetViewMetadataGroup = pgTable("target_view_metadata_group", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  viewId: uuid("view_id")
+    .notNull()
+    .references(() => targetView.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+});
+
+export type TargetViewMetadataGroup = InferSelectModel<
+  typeof targetViewMetadataGroup
+>;
+
+export const createTargetViewMetadataGroup = createInsertSchema(
+  targetViewMetadataGroup,
+).omit({ id: true });
+export const updateTargetViewMetadataGroup =
+  createTargetViewMetadataGroup.partial();
+
+export const targetViewMetadataGroupKey = pgTable(
+  "target_view_metadata_group_key",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => targetViewMetadataGroup.id, { onDelete: "cascade" }),
+    key: text("key").notNull(),
+  },
+);
+
+export type TargetViewMetadataGroupKey = InferSelectModel<
+  typeof targetViewMetadataGroupKey
+>;
+
+export const createTargetViewMetadataGroupKey = createInsertSchema(
+  targetViewMetadataGroupKey,
+).omit({ id: true });
+export const updateTargetViewMetadataGroupKey =
+  createTargetViewMetadataGroupKey.partial();
+
 export const targetMetadata = pgTable(
   "target_metadata",
   {
@@ -108,6 +147,13 @@ export const targetMetadata = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.targetId) }),
 );
+
+export type TargetMetadata = InferSelectModel<typeof targetMetadata>;
+
+export const createTargetMetadata = createInsertSchema(targetMetadata).omit({
+  id: true,
+});
+export const updateTargetMetadata = createTargetMetadata.partial();
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === "null")
