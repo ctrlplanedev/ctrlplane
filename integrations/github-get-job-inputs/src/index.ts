@@ -49,6 +49,8 @@ async function run() {
   await api
     .getJob({ jobId })
     .then((response) => {
+      core.info(JSON.stringify(response, null, 2));
+
       const { variables, target, release, environment, runbook, deployment } =
         response;
 
@@ -76,7 +78,8 @@ async function run() {
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);
       setOutputAndLog("deployment_slug", deployment?.slug);
-      setOutputsRecursively("deployment_variables", variables ?? {});
+
+      setOutputsRecursively("variable", variables ?? {});
 
       setOutputAndLog("runbook_id", runbook?.id);
       setOutputAndLog("runbook_name", runbook?.name);
