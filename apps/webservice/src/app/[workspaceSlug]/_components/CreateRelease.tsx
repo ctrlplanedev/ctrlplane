@@ -228,6 +228,10 @@ export const CreateReleaseDialog: React.FC<{
 
             <div className="flex flex-col space-y-3">
               <Label>Release Dependencies</Label>
+              <span className="text-sm text-muted-foreground">
+                Dependencies must be fulfilled per target before the release can
+                be applied to that target. A release dependency
+              </span>
 
               {fields.map((_, index) => (
                 <div key={index}>
