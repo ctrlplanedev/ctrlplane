@@ -2,7 +2,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
-import { Dialog, DialogContent, DialogTrigger } from "@ctrlplane/ui/dialog";
+import { Button } from "@ctrlplane/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogTrigger,
+} from "@ctrlplane/ui/dialog";
 import {
   Form,
   FormControl,
@@ -23,11 +29,11 @@ import {
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import type { VariableData } from "./variable-data";
-import { api } from "../../../../../../../trpc/react";
+import { api } from "~/trpc/react";
 
 const schema = z.object({
   key: z.string().min(1),
-  description: z.string().min(1).max(1000),
+  description: z.string().max(1000).optional(),
   defaultValueId: z.string().uuid().nullable(),
 });
 
@@ -118,6 +124,10 @@ export const EditVariableDialog: React.FC<EditVariableDialogProps> = ({
                 </FormItem>
               )}
             />
+
+            <DialogFooter>
+              <Button type="submit">Save</Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
