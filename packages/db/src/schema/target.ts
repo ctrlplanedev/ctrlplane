@@ -193,6 +193,7 @@ export function targetMatchesMetadata(
 export const targetRelationshipType = pgEnum("target_relationship_type", [
   "associated_with",
   "depends_on",
+  "extends",
 ]);
 
 export const targetRelationship = pgTable(

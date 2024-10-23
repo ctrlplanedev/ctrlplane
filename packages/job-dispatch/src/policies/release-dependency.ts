@@ -91,9 +91,10 @@ export const isPassingReleaseDependencyPolicy = async (
             releaseId: schema.releaseJobTrigger.releaseId,
             status: schema.job.status,
             createdAt: schema.job.createdAt,
-            rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY release_job_trigger.target_id ORDER BY job.created_at DESC)`.as(
-              "rank",
-            ),
+            rank: sql<number>`ROW_NUMBER() OVER (
+              PARTITION BY release_job_trigger.target_id, release_job_trigger.release_id
+              ORDER BY job.created_at DESC
+            )`.as("rank"),
           })
           .from(schema.job)
           .innerJoin(
