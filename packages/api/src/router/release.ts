@@ -327,7 +327,8 @@ export const releaseRouter = createTRPCRouter({
           ...rd,
           releaseId: rel.id,
         }));
-        await db.insert(releaseDependency).values(releaseDeps);
+        if (releaseDeps.length > 0)
+          await db.insert(releaseDependency).values(releaseDeps);
 
         const releaseJobTriggers = await createReleaseJobTriggers(
           db,

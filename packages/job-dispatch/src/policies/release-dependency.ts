@@ -15,7 +15,6 @@ export const isPassingReleaseDependencyPolicy = async (
 
   const passingReleasesJobTriggersPromises = releaseJobTriggers.map(
     async (trigger) => {
-      console.log("trigger", trigger);
       const release = await db
         .select()
         .from(schema.release)
@@ -29,7 +28,7 @@ export const isPassingReleaseDependencyPolicy = async (
 
       const deps = release.map((r) => r.release_dependency);
 
-      console.log(`found ${deps.length} deps`, deps);
+      if (deps.length === 0) return trigger;
 
       const results = await db.execute(
         sql`
@@ -72,8 +71,6 @@ export const isPassingReleaseDependencyPolicy = async (
         `,
       );
 
-      console.log("results", results);
-
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
         sourceId: String(r.source_id),
@@ -86,10 +83,7 @@ export const isPassingReleaseDependencyPolicy = async (
 
       const allIds = _.uniq([...sourceIds, ...targetIds]);
 
-      console.log("searchable relationships", allIds);
-
       const passingDepsPromises = deps.map(async (dep) => {
-        console.log("dep", dep);
         const latestJobSubquery = db
           .select({
             id: schema.releaseJobTrigger.id,
@@ -137,8 +131,6 @@ export const isPassingReleaseDependencyPolicy = async (
         deps.filter(isPresent),
       );
 
-      console.log("passingDeps", passingDeps);
-
       const isPassingAllDeps = passingDeps.length === deps.length;
       return isPassingAllDeps ? trigger : null;
     },
@@ -148,11 +140,5 @@ export const isPassingReleaseDependencyPolicy = async (
     passingReleasesJobTriggersPromises,
   ).then((triggers) => triggers.filter(isPresent));
 
-  console.log("passingTriggers", passingTriggers);
-
-  return [];
-
-  // return Promise.all(passingReleasesJobTriggersPromises).then((triggers) =>
-  //   triggers.filter(isPresent),
-  // );
+  return passingTriggers;
 };
