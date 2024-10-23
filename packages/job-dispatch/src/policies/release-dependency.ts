@@ -80,7 +80,47 @@ export const isPassingReleaseDependencyPolicy = async (
 
       const allIds = _.uniq([...sourceIds, ...targetIds]);
 
-      const targets = await db.select().from(schema.target).innerJoin();
+      const passingDepsPromises = deps.map(async (dep) => {
+        const latestJobSubquery = db
+          .select({
+            id: schema.releaseJobTrigger.id,
+            targetId: schema.releaseJobTrigger.targetId,
+            releaseId: schema.releaseJobTrigger.releaseId,
+            status: schema.job.status,
+            createdAt: schema.job.createdAt,
+            rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY release_job_trigger.target_id ORDER BY job.created_at DESC)`.as(
+              "rank",
+            ),
+          })
+          .from(schema.job)
+          .innerJoin(
+            schema.releaseJobTrigger,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          )
+          .as("latest_job");
+
+        const target = await db
+          .select()
+          .from(schema.release)
+          .innerJoin(
+            schema.deployment,
+            eq(schema.release.deploymentId, schema.deployment.id),
+          )
+          .innerJoin(
+            latestJobSubquery,
+            eq(latestJobSubquery.releaseId, schema.release.id),
+          )
+          .innerJoin(
+            schema.target,
+            eq(schema.target.id, latestJobSubquery.targetId),
+          )
+          .where(
+            and(
+              schema.releaseMatchesCondition(db, dep.releaseFilter),
+              eq(schema.deployment.id, dep.deploymentId),
+            ),
+          );
+      });
     },
   );
 };
