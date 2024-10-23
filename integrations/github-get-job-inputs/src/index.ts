@@ -82,7 +82,6 @@ async function run() {
       for (const [key, value] of Object.entries(variables ?? {})) {
         const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
         setOutputAndLog(`variable_${sanitizedKey}`, value);
-        console.log("VARIABLE:", `variable_${sanitizedKey}`, value);
       }
 
       setOutputAndLog("runbook_id", runbook?.id);
