@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import { isPresent } from "ts-is-present";
 
 import * as schema from "@ctrlplane/db/schema";
 
@@ -123,10 +124,14 @@ export const determineReleaseVariableValue = async (
     (v) => v.id === defaultValueId,
   );
 
+  const valuesWithFilter = deploymentVariableValues.filter((v) =>
+    isPresent(v.targetFilter),
+  );
+
   const firstMatchedValue = await utils.getFirstMatchedTarget(
     tx,
     jobTarget.id,
-    deploymentVariableValues,
+    valuesWithFilter,
   );
 
   if (firstMatchedValue != null)
