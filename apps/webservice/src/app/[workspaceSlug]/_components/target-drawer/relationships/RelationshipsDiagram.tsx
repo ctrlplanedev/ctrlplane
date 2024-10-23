@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import ReactFlow, {
   BaseEdge,
   EdgeLabelRenderer,
-  getBezierPath,
+  getSmoothStepPath,
   Handle,
   MarkerType,
   Position,
@@ -31,9 +31,10 @@ import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { api } from "~/trpc/react";
 import { useTargetDrawer } from "../TargetDrawer";
 
-const getAnimatedBorderColor = (version: string): string => {
+const getAnimatedBorderColor = (version: string, kind?: string): string => {
   if (version.includes("kubernetes")) return "#3b82f6";
   if (version.includes("terraform")) return "#8b5cf6";
+  if (kind?.toLowerCase().includes("sharedcluster")) return "#3b82f6";
   return "#a3a3a3";
 };
 
@@ -50,9 +51,10 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
 
   const isKubernetes = data.version.includes("kubernetes");
   const isTerraform = data.version.includes("terraform");
+  const isSharedCluster = data.kind.toLowerCase().includes("sharedcluster");
   const isSelected = data.id === targetId;
 
-  const animatedBorderColor = getAnimatedBorderColor(data.version);
+  const animatedBorderColor = getAnimatedBorderColor(data.version, data.kind);
 
   const selectedStyle: CSSProperties | undefined = isSelected
     ? {
@@ -66,32 +68,41 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
     <>
       <div
         className={cn(
-          "flex flex-col items-center justify-center text-center",
+          "flex flex-col",
           "w-[250px] gap-2 rounded-md border bg-neutral-900 px-4 py-3",
           isKubernetes && "border-blue-500/70 bg-blue-500/20",
           isTerraform && "border-purple-500/70 bg-purple-500/20",
+          isSharedCluster && "border-blue-500/70 bg-blue-500/20",
         )}
         style={selectedStyle}
       >
         {isSelected && <div className="animated-border" />}
-        <div className="flex h-12 w-12 items-center justify-center rounded-full">
+        <div className="flex items-center gap-2">
           <TargetIcon version={data.version} kind={data.kind} />
+          <span className="text-xs">{data.kind}</span>
         </div>
-        <div className="text-sm font-medium text-muted-foreground">
-          {data.kind}
-        </div>
-        <div className="text-base font-semibold">{data.label}</div>
+        <div className="text-sm">{data.name}</div>
       </div>
 
       <Handle
         type="target"
-        className="h-2 w-2 rounded-full border border-neutral-500"
+        className={cn(
+          "h-2 w-2 rounded-full border border-neutral-500",
+          isKubernetes && "border-blue-500/70",
+          isTerraform && "border-purple-500/70",
+          isSharedCluster && "border-blue-500/70",
+        )}
         style={{ background: colors.neutral[800] }}
         position={Position.Bottom}
       />
       <Handle
         type="source"
-        className="h-2 w-2 rounded-full border border-neutral-500"
+        className={cn(
+          "h-2 w-2 rounded-full border border-neutral-500",
+          isKubernetes && "border-blue-500/70",
+          isTerraform && "border-purple-500/70",
+          isSharedCluster && "border-blue-500/70",
+        )}
         style={{ background: colors.neutral[800] }}
         position={Position.Top}
       />
@@ -158,7 +169,7 @@ const DepEdge: React.FC<EdgeProps> = ({
   style = {},
   markerEnd,
 }) => {
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -171,7 +182,7 @@ const DepEdge: React.FC<EdgeProps> = ({
     <>
       <BaseEdge
         path={edgePath}
-        markerEnd={markerEnd}
+        markerStart={markerEnd}
         style={{ strokeWidth: 2, ...style }}
       />
       <EdgeLabelRenderer>
@@ -221,7 +232,7 @@ const TargetDiagram: React.FC<{
     targets.map((t) => ({
       id: t.id,
       type: "target",
-      position: { x: 0, y: 0 },
+      position: { x: 100, y: 100 },
       data: t,
     })),
   );
@@ -231,8 +242,8 @@ const TargetDiagram: React.FC<{
         id: `${t.sourceId}-${t.targetId}`,
         source: t.sourceId,
         target: t.targetId,
-        markerEnd: { type: MarkerType.Arrow, color: colors.neutral[500] },
-        style: { stroke: colors.neutral[500] },
+        markerEnd: { type: MarkerType.Arrow, color: colors.neutral[700] },
+        style: { stroke: colors.neutral[700] },
       };
     }),
   );

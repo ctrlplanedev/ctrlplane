@@ -148,7 +148,7 @@ export const TargetDrawer: React.FC = () => {
         </div>
 
         {target != null && (
-          <div className="flex h-full w-full gap-6 bg-red-500 p-6">
+          <div className="flex h-full w-full gap-6 p-6">
             <div className="space-y-1">
               <TabButton
                 active={activeTab === "overview"}
@@ -181,7 +181,7 @@ export const TargetDrawer: React.FC = () => {
                 label="Relationships"
               />
             </div>
-            <div className="h-full w-full overflow-auto bg-blue-500">
+            <div className="h-full w-full overflow-auto">
               {activeTab === "deployments" && (
                 <DeploymentsContent targetId={target.id} />
               )}

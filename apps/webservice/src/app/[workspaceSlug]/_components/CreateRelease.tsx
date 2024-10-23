@@ -2,11 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { IconFilter, IconTrash } from "@tabler/icons-react";
+import {
+  IconFilter,
+  IconFilterExclamation,
+  IconFilterFilled,
+  IconX,
+} from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
-import { Card } from "@ctrlplane/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +42,7 @@ import {
 } from "@ctrlplane/ui/select";
 import { toast } from "@ctrlplane/ui/toast";
 import {
+  isEmptyCondition,
   releaseCondition,
   ReleaseFilterType,
   ReleaseOperator,
@@ -229,69 +234,69 @@ export const CreateReleaseDialog: React.FC<{
             <div className="flex flex-col space-y-3">
               <Label>Release Dependencies</Label>
               <span className="text-sm text-muted-foreground">
-                Dependencies must be fulfilled per target before the release can
-                be applied to that target. A release dependency
+                Dependencies must be fulfilled for a target before this Release
+                can be applied to that target. Read more about release
+                dependencies here.
               </span>
 
               {fields.map((_, index) => (
-                <div key={index}>
-                  <div className="grid grid-cols-2 gap-2">
-                    <FormField
-                      control={form.control}
-                      name={`releaseDependencies.${index}.deploymentId`}
-                      render={({ field: { value, onChange } }) => (
-                        <FormItem className="col-span-1">
-                          <Select value={value} onValueChange={onChange}>
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue
-                                placeholder="Deployment"
-                                key={value}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {globalDeployments.data
-                                  ?.filter((d) => d.id !== deploymentId)
-                                  .map((deployment) => (
-                                    <SelectItem
-                                      key={deployment.id}
-                                      value={deployment.id}
-                                    >
-                                      {deployment.name}
-                                    </SelectItem>
-                                  ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`releaseDependencies.${index}.deploymentId`}
+                    render={({ field: { value, onChange } }) => (
+                      <FormItem>
+                        <Select value={value} onValueChange={onChange}>
+                          <SelectTrigger className="w-32 text-sm">
+                            <SelectValue placeholder="Deployment" key={value} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {globalDeployments.data
+                                ?.filter((d) => d.id !== deploymentId)
+                                .map((deployment) => (
+                                  <SelectItem
+                                    key={deployment.id}
+                                    value={deployment.id}
+                                  >
+                                    {deployment.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
 
-                    <FormField
-                      control={form.control}
-                      name={`releaseDependencies.${index}.releaseFilter`}
-                      render={({ field: { value, onChange } }) => (
-                        <FormItem className="col-span-1">
-                          <ReleaseConditionDialog
-                            condition={value}
-                            onChange={onChange}
-                          >
-                            <Button variant="outline">
-                              <IconFilter />
-                            </Button>
-                          </ReleaseConditionDialog>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name={`releaseDependencies.${index}.releaseFilter`}
+                    render={({ field: { value, onChange } }) => (
+                      <FormItem>
+                        <ReleaseConditionDialog
+                          condition={value}
+                          onChange={onChange}
+                        >
+                          <Button variant="ghost" size="icon">
+                            {isEmptyCondition(value) && (
+                              <IconFilterExclamation className="h-4 w-4" />
+                            )}
+                            {!isEmptyCondition(value) && (
+                              <IconFilterFilled className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </ReleaseConditionDialog>
+                      </FormItem>
+                    )}
+                  />
 
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="ml-2 h-8 w-8"
                     onClick={() => remove(index)}
                   >
-                    <IconTrash />
+                    <IconX className="h-4 w-4" />
                   </Button>
                 </div>
               ))}

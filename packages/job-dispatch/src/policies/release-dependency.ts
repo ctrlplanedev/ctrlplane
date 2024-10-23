@@ -15,6 +15,7 @@ export const isPassingReleaseDependencyPolicy = async (
 
   const passingReleasesJobTriggersPromises = releaseJobTriggers.map(
     async (trigger) => {
+      console.log("trigger", trigger);
       const release = await db
         .select()
         .from(schema.release)
@@ -27,6 +28,8 @@ export const isPassingReleaseDependencyPolicy = async (
       if (release.length === 0) return trigger;
 
       const deps = release.map((r) => r.release_dependency);
+
+      console.log(`found ${deps.length} deps`, deps);
 
       const results = await db.execute(
         sql`
@@ -60,13 +63,16 @@ export const isPassingReleaseDependencyPolicy = async (
                 NOT CASE
                     WHEN tr.source_id = rr.id THEN tr.target_id
                     ELSE tr.source_id
-                END = ANY(rr.visited)
+                END = ANY(rr.visited)                
+                AND tr.target_id != ${trigger.targetId}
         )
         SELECT DISTINCT tr_id AS id, source_id, target_id, type
         FROM reachable_relationships
         WHERE tr_id IS NOT NULL;
         `,
       );
+
+      console.log("results", results);
 
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
@@ -80,7 +86,10 @@ export const isPassingReleaseDependencyPolicy = async (
 
       const allIds = _.uniq([...sourceIds, ...targetIds]);
 
+      console.log("searchable relationships", allIds);
+
       const passingDepsPromises = deps.map(async (dep) => {
+        console.log("dep", dep);
         const latestJobSubquery = db
           .select({
             id: schema.releaseJobTrigger.id,
@@ -110,15 +119,11 @@ export const isPassingReleaseDependencyPolicy = async (
             latestJobSubquery,
             eq(latestJobSubquery.releaseId, schema.release.id),
           )
-          .innerJoin(
-            schema.target,
-            eq(schema.target.id, latestJobSubquery.targetId),
-          )
           .where(
             and(
               schema.releaseMatchesCondition(db, dep.releaseFilter),
               eq(schema.deployment.id, dep.deploymentId),
-              inArray(schema.target.id, allIds),
+              inArray(latestJobSubquery.targetId, allIds),
               eq(latestJobSubquery.rank, 1),
               eq(latestJobSubquery.status, JobStatus.Completed),
             ),
@@ -131,12 +136,23 @@ export const isPassingReleaseDependencyPolicy = async (
       const passingDeps = await Promise.all(passingDepsPromises).then((deps) =>
         deps.filter(isPresent),
       );
+
+      console.log("passingDeps", passingDeps);
+
       const isPassingAllDeps = passingDeps.length === deps.length;
       return isPassingAllDeps ? trigger : null;
     },
   );
 
-  return Promise.all(passingReleasesJobTriggersPromises).then((triggers) =>
-    triggers.filter(isPresent),
-  );
+  const passingTriggers = await Promise.all(
+    passingReleasesJobTriggersPromises,
+  ).then((triggers) => triggers.filter(isPresent));
+
+  console.log("passingTriggers", passingTriggers);
+
+  return [];
+
+  // return Promise.all(passingReleasesJobTriggersPromises).then((triggers) =>
+  //   triggers.filter(isPresent),
+  // );
 };
