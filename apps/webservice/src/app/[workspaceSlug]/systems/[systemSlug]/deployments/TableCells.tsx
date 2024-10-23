@@ -179,7 +179,7 @@ export const Release: React.FC<{
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
+            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${props.releaseId}`}
             className="flex w-full items-center gap-2"
           >
             <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
