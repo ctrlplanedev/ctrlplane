@@ -1,5 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
+import { isPresent } from "ts-is-present";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -67,15 +68,11 @@ export const getFirstMatchedTarget = (
   tx: Tx,
   targetId: string,
   values: SCHEMA.DeploymentVariableValue[],
-) => {
-  const promises = values.map(async (value) => {
-    const matchedTarget = await getMatchedTarget(
-      tx,
-      targetId,
-      value.targetFilter,
-    );
-    return matchedTarget != null ? value : null;
-  });
-
-  return Promise.all(promises).then(takeFirstOrNull);
-};
+) =>
+  Promise.all(
+    values.map((value) =>
+      getMatchedTarget(tx, targetId, value.targetFilter).then(
+        (matchedTarget) => (matchedTarget != null ? value : null),
+      ),
+    ),
+  ).then((res) => res.find(isPresent));

@@ -149,7 +149,7 @@ export const Release: React.FC<{
   const latestJobsByTarget = _.chain(releaseJobTriggers)
     .groupBy((r) => r.target.id)
     .mapValues((triggers) =>
-      _.maxBy(triggers, (t) => new Date(t.job.createdAt ?? 0)),
+      _.maxBy(triggers, (t) => new Date(t.job.createdAt)),
     )
     .values()
     .compact()
@@ -179,7 +179,7 @@ export const Release: React.FC<{
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${firstReleaseJobTrigger?.releaseId}`}
+            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${props.releaseId}`}
             className="flex w-full items-center gap-2"
           >
             <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />

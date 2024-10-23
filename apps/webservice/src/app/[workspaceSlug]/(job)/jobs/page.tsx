@@ -43,8 +43,8 @@ export default async function JobsPage({
         <TableBody>
           {releaseJobTriggers.map((job) => (
             <TableRow key={job.id}>
-              <TableCell>{job.environment?.name ?? "N/A"}</TableCell>
-              <TableCell>{job.target?.name ?? "N/A"}</TableCell>
+              <TableCell>{job.environment.name}</TableCell>
+              <TableCell>{job.target.name}</TableCell>
               <TableCell>{job.release.version}</TableCell>
               <TableCell>{job.type}</TableCell>
               <TableCell>{format(new Date(job.createdAt), "PPpp")}</TableCell>
