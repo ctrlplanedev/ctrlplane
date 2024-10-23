@@ -28837,6 +28837,7 @@ async function run() {
     await api
         .getJob({ jobId })
         .then((response) => {
+        core.info(JSON.stringify(response, null, 2));
         const { variables, target, release, environment, runbook, deployment } = response;
         setOutputAndLog("base_url", baseUrl);
         setOutputAndLog("target", target);
@@ -28857,7 +28858,10 @@ async function run() {
         setOutputAndLog("deployment_id", deployment?.id);
         setOutputAndLog("deployment_name", deployment?.name);
         setOutputAndLog("deployment_slug", deployment?.slug);
-        setOutputsRecursively("deployment_variables", variables ?? {});
+        for (const [key, value] of Object.entries(variables ?? {})) {
+            const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
+            setOutputAndLog(`variable_${sanitizedKey}`, value);
+        }
         setOutputAndLog("runbook_id", runbook?.id);
         setOutputAndLog("runbook_name", runbook?.name);
         const systemId = deployment?.systemId ?? runbook?.systemId ?? environment?.systemId;
