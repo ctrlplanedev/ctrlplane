@@ -87,13 +87,13 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
         type="target"
         className="h-2 w-2 rounded-full border border-neutral-500"
         style={{ background: colors.neutral[800] }}
-        position={Position.Top}
+        position={Position.Bottom}
       />
       <Handle
         type="source"
         className="h-2 w-2 rounded-full border border-neutral-500"
         style={{ background: colors.neutral[800] }}
-        position={Position.Bottom}
+        position={Position.Top}
       />
       <style jsx>{`
         .animated-border {
@@ -202,7 +202,7 @@ const useOnLayout = () => {
     const layouted = getLayoutedElementsDagre(
       getNodes(),
       getEdges(),
-      "TB",
+      "BT",
       0,
       50,
     );

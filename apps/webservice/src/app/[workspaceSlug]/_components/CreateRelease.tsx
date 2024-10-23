@@ -230,7 +230,7 @@ export const CreateReleaseDialog: React.FC<{
               <Label>Release Dependencies</Label>
 
               {fields.map((_, index) => (
-                <Card className="space-y-2 p-2" key={index}>
+                <div key={index}>
                   <div className="grid grid-cols-2 gap-2">
                     <FormField
                       control={form.control}
@@ -289,7 +289,7 @@ export const CreateReleaseDialog: React.FC<{
                   >
                     <IconTrash />
                   </Button>
-                </Card>
+                </div>
               ))}
 
               <Button

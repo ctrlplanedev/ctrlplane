@@ -1,11 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
-import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const isPassingReleaseDependencyPolicy = async (
   db: Tx,
@@ -99,7 +99,7 @@ export const isPassingReleaseDependencyPolicy = async (
           )
           .as("latest_job");
 
-        const target = await db
+        const targetFulfillingDependency = await db
           .select()
           .from(schema.release)
           .innerJoin(
@@ -118,9 +118,25 @@ export const isPassingReleaseDependencyPolicy = async (
             and(
               schema.releaseMatchesCondition(db, dep.releaseFilter),
               eq(schema.deployment.id, dep.deploymentId),
+              inArray(schema.target.id, allIds),
+              eq(latestJobSubquery.rank, 1),
+              eq(latestJobSubquery.status, JobStatus.Completed),
             ),
           );
+
+        const isPassing = targetFulfillingDependency.length > 0;
+        return isPassing ? dep : null;
       });
+
+      const passingDeps = await Promise.all(passingDepsPromises).then((deps) =>
+        deps.filter(isPresent),
+      );
+      const isPassingAllDeps = passingDeps.length === deps.length;
+      return isPassingAllDeps ? trigger : null;
     },
+  );
+
+  return Promise.all(passingReleasesJobTriggersPromises).then((triggers) =>
+    triggers.filter(isPresent),
   );
 };
