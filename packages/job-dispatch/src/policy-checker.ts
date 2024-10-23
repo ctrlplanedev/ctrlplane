@@ -7,7 +7,6 @@ import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingConcurrencyPolicy } from "./policies/concurrency-policy.js";
 import { isPassingJobRolloutPolicy } from "./policies/gradual-rollout.js";
 import { isPassingApprovalPolicy } from "./policies/manual-approval.js";
-import { isPassingReleaseDependencyPolicy } from "./policies/release-dependency.js";
 import { isPassingNoActiveJobsPolicy } from "./policies/release-sequencing.js";
 import { isPassingReleaseWindowPolicy } from "./policies/release-window.js";
 import { isPassingCriteriaPolicy } from "./policies/success-rate-criteria-passing.js";
@@ -25,7 +24,6 @@ export const isPassingAllPolicies = async (
     isPassingJobRolloutPolicy,
     isPassingNoActiveJobsPolicy,
     isPassingReleaseWindowPolicy,
-    isPassingReleaseDependencyPolicy,
   ];
 
   let passingJobs = releaseJobTriggers;

@@ -32,6 +32,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
+  releaseCondition,
   ReleaseFilterType,
   ReleaseOperator,
 } from "@ctrlplane/validators/releases";
@@ -41,13 +42,7 @@ import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { job } from "./job.js";
-import { targetMetadataGroup } from "./target-group.js";
 import { target } from "./target.js";
-
-export const releaseDependencyRuleType = pgEnum(
-  "release_dependency_rule_type",
-  ["regex", "semver"],
-);
 
 export const releaseDependency = pgTable(
   "release_dependency",
@@ -59,21 +54,16 @@ export const releaseDependency = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    targetMetadataGroupId: uuid("target_metadata_group_id").references(
-      () => targetMetadataGroup.id,
-      { onDelete: "cascade" },
-    ),
-    ruleType: releaseDependencyRuleType("rule_type").notNull(),
-    rule: text("rule").notNull(),
+    releaseFilter: jsonb("release_filter").notNull().$type<ReleaseCondition>(),
   },
-  (t) => ({
-    unq: uniqueIndex().on(t.releaseId, t.deploymentId, t.targetMetadataGroupId),
-  }),
+  (t) => ({ unq: uniqueIndex().on(t.releaseId, t.deploymentId) }),
 );
 
 export type ReleaseDependency = InferSelectModel<typeof releaseDependency>;
 
-const createReleaseDependency = createInsertSchema(releaseDependency).omit({
+const createReleaseDependency = createInsertSchema(releaseDependency, {
+  releaseFilter: releaseCondition,
+}).omit({
   id: true,
 });
 

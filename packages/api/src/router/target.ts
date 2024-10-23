@@ -1,4 +1,5 @@
 import type { SQL, Tx } from "@ctrlplane/db";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
@@ -25,126 +26,71 @@ const targetRelations = createTRPCRouter({
   hierarchy: protectedProcedure
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const results = await ctx.db.execute<{
-        id: string;
-        workpace_id: string;
-        name: string;
-        identifier: string;
-        level: number;
-        parent_identifier: string;
-        parent_workspace_id: string;
-      }>(
+      const results = await ctx.db.execute(
         sql`
-          -- Recursive CTE to find ancestors (parents)
-          WITH RECURSIVE ancestors AS (
-              -- Base case: start with the given target id, including parent info if exists
-              SELECT
-                  t.id,
-                  t.identifier,
-                  t.workspace_id,
-                  t.kind,
-                  t.version,
-                  t.name,
-                  0 AS level,
-                  ARRAY[t.id] AS path,
-                  parent_tm.value AS parent_identifier,
-                  parent_t.workspace_id AS parent_workspace_id
-              FROM
-                  target t
-                  LEFT JOIN target_metadata parent_tm ON parent_tm.target_id = t.id AND parent_tm.key = 'ctrlplane/parent-target-identifier'
-                  LEFT JOIN target parent_t ON parent_t.identifier = parent_tm.value AND parent_t.workspace_id = t.workspace_id
-              WHERE
-                  t.id = ${input}
-
-              UNION ALL
-
-              -- Recursive term: find the parent
-              SELECT
-                  parent_t.id,
-                  parent_t.identifier,
-                  parent_t.workspace_id,
-                  parent_t.kind,
-                  parent_t.version,
-                  parent_t.name,  -- Added name
-                  a.level - 1 AS level,
-                  a.path || parent_t.id,
-                  grandparent_tm.value AS parent_identifier,
-                  grandparent_t.workspace_id AS parent_workspace_id
-              FROM
-                  ancestors a
-                  JOIN target_metadata tm ON tm.target_id = a.id AND tm.key = 'ctrlplane/parent-target-identifier'
-                  JOIN target parent_t ON parent_t.identifier = tm.value AND parent_t.workspace_id = a.workspace_id
-                  LEFT JOIN target_metadata grandparent_tm ON grandparent_tm.target_id = parent_t.id AND grandparent_tm.key = 'ctrlplane/parent-target-identifier'
-                  LEFT JOIN target grandparent_t ON grandparent_t.identifier = grandparent_tm.value AND grandparent_t.workspace_id = parent_t.workspace_id
-              WHERE
-                  NOT parent_t.id = ANY(a.path)
-          ),
-
-          -- Recursive CTE to find descendants (children)
-          descendants AS (
-              -- Base case: start with the given target id, including parent info if exists
-              SELECT
-                  t.id,
-                  t.identifier,
-                  t.workspace_id,
-                  t.kind,
-                  t.version,
-                  t.name,
-                  0 AS level,
-                  ARRAY[t.id] AS path,
-                  parent_tm.value AS parent_identifier,
-                  parent_t.workspace_id AS parent_workspace_id
-              FROM
-                  target t
-                  LEFT JOIN target_metadata parent_tm ON parent_tm.target_id = t.id AND parent_tm.key = 'ctrlplane/parent-target-identifier'
-                  LEFT JOIN target parent_t ON parent_t.identifier = parent_tm.value AND parent_t.workspace_id = t.workspace_id
-              WHERE
-                  t.id = ${input}
-
-              UNION ALL
-
-              -- Recursive term: find the children
-              SELECT
-                  child_t.id,
-                  child_t.identifier,
-                  child_t.workspace_id,
-                  child_t.kind,
-                  child_t.version,
-                  child_t.name,  -- Added name
-                  d.level + 1 AS level,
-                  d.path || child_t.id,
-                  child_parent_tm.value AS parent_identifier,
-                  child_parent_t.workspace_id AS parent_workspace_id
-              FROM
-                  descendants d
-                  JOIN target_metadata tm ON tm.key = 'ctrlplane/parent-target-identifier' AND tm.value = d.identifier
-                  JOIN target child_t ON child_t.id = tm.target_id AND child_t.workspace_id = d.workspace_id
-                  LEFT JOIN target_metadata child_parent_tm ON child_parent_tm.target_id = child_t.id AND child_parent_tm.key = 'ctrlplane/parent-target-identifier'
-                  LEFT JOIN target child_parent_t ON child_parent_t.identifier = child_parent_tm.value AND child_parent_t.workspace_id = child_t.workspace_id
-              WHERE
-                  NOT child_t.id = ANY(d.path)
-          )
-
-          -- Combine the results from ancestors and descendants
-          SELECT DISTINCT
-              id,
-              identifier,
-              workspace_id,
-              kind,
-              version,
-              name,
-              level,
-              parent_identifier,
-              parent_workspace_id
-          FROM
-              (
-                  SELECT * FROM ancestors
-                  UNION ALL
-                  SELECT * FROM descendants
-              ) AS combined;
+          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
+            -- Base case: start with the given ID and no relationship
+            SELECT 
+                ${input}::uuid AS id, 
+                ARRAY[${input}::uuid] AS visited,
+                NULL::uuid AS tr_id,
+                NULL::uuid AS source_id,
+                NULL::uuid AS target_id,
+                NULL::target_relationship_type AS type
+            UNION ALL
+            -- Recursive case: find all relationships connected to the current set of IDs
+            SELECT
+                CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END AS id,
+                rr.visited || CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END,
+                tr.id AS tr_id,
+                tr.source_id,
+                tr.target_id,
+                tr.type
+            FROM reachable_relationships rr
+            JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+            WHERE
+                NOT CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END = ANY(rr.visited)
+        )
+        SELECT DISTINCT tr_id AS id, source_id, target_id, type
+        FROM reachable_relationships
+        WHERE tr_id IS NOT NULL;
         `,
       );
-      return results.rows;
+      const relationships = results.rows.map((r) => ({
+        id: String(r.id),
+        sourceId: String(r.source_id),
+        targetId: String(r.target_id),
+        type: r.type as "associated_with" | "depends_on",
+      }));
+      const sourceIds = relationships.map((r) => r.sourceId);
+      const targetIds = relationships.map((r) => r.targetId);
+
+      const allIds = _.uniq([...sourceIds, ...targetIds]);
+
+      console.log(allIds);
+      console.log(targetIds);
+
+      const targets = await ctx.db
+        .select()
+        .from(schema.target)
+        .where(inArray(schema.target.id, allIds));
+
+      console.log(relationships);
+      console.log(targets);
+
+      return {
+        relationships,
+        targets,
+      };
     }),
 });
 
@@ -521,3 +467,46 @@ export const targetRouter = createTRPCRouter({
         .then(takeFirst),
     ),
 });
+
+/*
+
+WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
+    -- Base case: start with the given ID and no relationship
+    SELECT 
+        '9bdf390b-c52a-45b1-9690-62192f676c70'::uuid AS id, 
+        ARRAY['9bdf390b-c52a-45b1-9690-62192f676c70'::uuid] AS visited,
+        NULL::uuid AS tr_id,
+        NULL::uuid AS source_id,
+        NULL::uuid AS target_id,
+        NULL::target_relationship_type AS type
+    UNION ALL
+    -- Recursive case: find all relationships connected to the current set of IDs
+    SELECT
+        CASE
+            WHEN tr.source_id = rr.id THEN tr.target_id
+            ELSE tr.source_id
+        END AS id,
+        rr.visited || CASE
+            WHEN tr.source_id = rr.id THEN tr.target_id
+            ELSE tr.source_id
+        END,
+        tr.id AS tr_id,
+        tr.source_id,
+        tr.target_id,
+        tr.type
+    FROM reachable_relationships rr
+    JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+    WHERE
+        NOT CASE
+            WHEN tr.source_id = rr.id THEN tr.target_id
+            ELSE tr.source_id
+        END = ANY(rr.visited)
+)
+SELECT DISTINCT tr_id AS id, source_id, target_id, type
+FROM reachable_relationships
+WHERE tr_id IS NOT NULL;
+
+
+
+
+*/

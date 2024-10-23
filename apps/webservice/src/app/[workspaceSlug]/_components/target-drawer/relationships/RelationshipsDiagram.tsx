@@ -1,5 +1,7 @@
 "use client";
 
+import type * as schema from "@ctrlplane/db/schema";
+import type { CSSProperties } from "react";
 import type {
   EdgeProps,
   EdgeTypes,
@@ -27,6 +29,13 @@ import { cn } from "@ctrlplane/ui";
 import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
 import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { api } from "~/trpc/react";
+import { useTargetDrawer } from "../TargetDrawer";
+
+const getAnimatedBorderColor = (version: string): string => {
+  if (version.includes("kubernetes")) return "#3b82f6";
+  if (version.includes("terraform")) return "#8b5cf6";
+  return "#a3a3a3";
+};
 
 type TargetNodeProps = NodeProps<{
   name: string;
@@ -36,10 +45,22 @@ type TargetNodeProps = NodeProps<{
   version: string;
 }>;
 const TargetNode: React.FC<TargetNodeProps> = (node) => {
+  const { targetId } = useTargetDrawer();
   const { data } = node;
 
   const isKubernetes = data.version.includes("kubernetes");
   const isTerraform = data.version.includes("terraform");
+  const isSelected = data.id === targetId;
+
+  const animatedBorderColor = getAnimatedBorderColor(data.version);
+
+  const selectedStyle: CSSProperties | undefined = isSelected
+    ? {
+        position: "relative",
+        borderColor: "transparent",
+        backgroundClip: "padding-box",
+      }
+    : undefined;
 
   return (
     <>
@@ -50,7 +71,9 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
           isKubernetes && "border-blue-500/70 bg-blue-500/20",
           isTerraform && "border-purple-500/70 bg-purple-500/20",
         )}
+        style={selectedStyle}
       >
+        {isSelected && <div className="animated-border" />}
         <div className="flex h-12 w-12 items-center justify-center rounded-full">
           <TargetIcon version={data.version} kind={data.kind} />
         </div>
@@ -64,14 +87,62 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
         type="target"
         className="h-2 w-2 rounded-full border border-neutral-500"
         style={{ background: colors.neutral[800] }}
-        position={Position.Left}
+        position={Position.Top}
       />
       <Handle
         type="source"
         className="h-2 w-2 rounded-full border border-neutral-500"
         style={{ background: colors.neutral[800] }}
-        position={Position.Right}
+        position={Position.Bottom}
       />
+      <style jsx>{`
+        .animated-border {
+          position: absolute;
+          top: -1px;
+          left: -1px;
+          right: -1px;
+          bottom: -1px;
+          background-image: linear-gradient(
+              90deg,
+              ${animatedBorderColor} 50%,
+              transparent 50%
+            ),
+            linear-gradient(90deg, ${animatedBorderColor} 50%, transparent 50%),
+            linear-gradient(0deg, ${animatedBorderColor} 50%, transparent 50%),
+            linear-gradient(0deg, ${animatedBorderColor} 50%, transparent 50%);
+          background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+          background-size:
+            20px 1px,
+            20px 1px,
+            1px 20px,
+            1px 20px;
+          background-position:
+            0 0,
+            0 100%,
+            0 0,
+            100% 0;
+          border-radius: calc(0.5rem - 2px);
+          animation: moveDashedBorder 1s linear infinite;
+          pointer-events: none;
+        }
+
+        @keyframes moveDashedBorder {
+          0% {
+            background-position:
+              0 0,
+              0 100%,
+              0 0,
+              100% 0;
+          }
+          100% {
+            background-position:
+              20px 0,
+              -20px 100%,
+              0 -20px,
+              100% 20px;
+          }
+        }
+      `}</style>
     </>
   );
 };
@@ -131,8 +202,9 @@ const useOnLayout = () => {
     const layouted = getLayoutedElementsDagre(
       getNodes(),
       getEdges(),
-      "LR",
-      100,
+      "TB",
+      0,
+      50,
     );
     setNodes([...layouted.nodes]);
     setEdges([...layouted.edges]);
@@ -142,42 +214,27 @@ const useOnLayout = () => {
 };
 
 const TargetDiagram: React.FC<{
-  targets: Array<{
-    id: string;
-    workpace_id: string;
-    name: string;
-    identifier: string;
-    level: number;
-    parent_identifier?: string;
-    parent_workspace_id?: string;
-  }>;
-}> = ({ targets }) => {
+  relationships: Array<schema.TargetRelationship>;
+  targets: Array<schema.Target>;
+}> = ({ relationships, targets }) => {
   const [nodes, _, onNodesChange] = useNodesState(
-    targets.map((d) => ({
-      id: `${d.workpace_id}-${d.identifier}`,
+    targets.map((t) => ({
+      id: t.id,
       type: "target",
       position: { x: 0, y: 0 },
-      data: { ...d, label: d.name },
+      data: t,
     })),
   );
   const [edges, __, onEdgesChange] = useEdgesState(
-    targets
-      .filter((t) => t.parent_identifier != null)
-      .map((t) => {
-        return {
-          id: `${t.id}-${t.parent_identifier}`,
-          source:
-            t.level > 0
-              ? `${t.workpace_id}-${t.parent_identifier}`
-              : `${t.workpace_id}-${t.identifier}`,
-          target:
-            t.level > 0
-              ? `${t.workpace_id}-${t.identifier}`
-              : `${t.workpace_id}-${t.parent_identifier}`,
-          markerEnd: { type: MarkerType.Arrow, color: colors.neutral[500] },
-          style: { stroke: colors.neutral[500] },
-        };
-      }),
+    relationships.map((t) => {
+      return {
+        id: `${t.sourceId}-${t.targetId}`,
+        source: t.sourceId,
+        target: t.targetId,
+        markerEnd: { type: MarkerType.Arrow, color: colors.neutral[500] },
+        style: { stroke: colors.neutral[500] },
+      };
+    }),
   );
   const onLayout = useOnLayout();
 
@@ -210,9 +267,10 @@ export const TargetHierarchyRelationshipsDiagram: React.FC<{
   const hierarchy = api.target.relations.hierarchy.useQuery(targetId);
 
   if (hierarchy.data == null) return null;
+  const { relationships, targets } = hierarchy.data;
   return (
     <ReactFlowProvider>
-      <TargetDiagram targets={hierarchy.data} />
+      <TargetDiagram relationships={relationships} targets={targets} />
     </ReactFlowProvider>
   );
 };

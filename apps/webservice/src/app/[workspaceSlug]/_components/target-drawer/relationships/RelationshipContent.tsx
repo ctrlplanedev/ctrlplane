@@ -11,7 +11,7 @@ export const RelationshipsContent: React.FC<{
     <div className="space-y-4">
       <div className="space-y-2 text-sm">
         <div>Hierarchy</div>
-        <Card className="px-3 py-2">
+        <Card>
           <div className="h-[450px] w-full">
             <TargetHierarchyRelationshipsDiagram targetId={target.id} />
           </div>

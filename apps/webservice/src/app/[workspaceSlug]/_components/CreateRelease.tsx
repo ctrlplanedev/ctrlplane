@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { IconTrash } from "@tabler/icons-react";
-import { valid } from "semver";
+import { IconFilter, IconTrash } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -38,14 +37,18 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { toast } from "@ctrlplane/ui/toast";
+import {
+  releaseCondition,
+  ReleaseFilterType,
+  ReleaseOperator,
+} from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
+import { ReleaseConditionDialog } from "./release-condition/ReleaseConditionDialog";
 
 const releaseDependency = z.object({
-  targetMetadataGroupId: z.string().uuid().optional(),
   deploymentId: z.string().uuid(),
-  rule: z.string().min(1).max(255),
-  ruleType: z.enum(["semver", "regex"]),
+  releaseFilter: releaseCondition,
 });
 
 const releaseForm = z.object({
@@ -86,14 +89,6 @@ export const CreateReleaseDialog: React.FC<{
   const globalDeployments = api.deployment.byWorkspaceId.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.data != null && workspace.data.id !== "" },
-  );
-  const targetMetadataGroups = api.target.metadataGroup.groups.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.data != null && workspace.data.id !== "" },
-  );
-  const latestRelease = api.release.list.useQuery(
-    { deploymentId, limit: 1 },
-    { enabled: deploymentId !== "" },
   );
 
   const [open, setOpen] = useState(false);
@@ -144,16 +139,6 @@ export const CreateReleaseDialog: React.FC<{
     control: form.control,
     name: "releaseDependencies",
   });
-
-  useEffect(() => {
-    if ((latestRelease.data?.items.length ?? 0) > 0)
-      latestRelease.data?.items[0]!.releaseDependencies.forEach((rd) => {
-        append({
-          ...rd,
-          targetMetadataGroupId: rd.targetMetadataGroupId ?? undefined,
-        });
-      });
-  }, [latestRelease.data, append, deploymentId]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -280,72 +265,30 @@ export const CreateReleaseDialog: React.FC<{
 
                     <FormField
                       control={form.control}
-                      name={`releaseDependencies.${index}.targetMetadataGroupId`}
+                      name={`releaseDependencies.${index}.releaseFilter`}
                       render={({ field: { value, onChange } }) => (
                         <FormItem className="col-span-1">
-                          <Select value={value} onValueChange={onChange}>
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Metadata Group" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {targetMetadataGroups.data?.map((group) => (
-                                  <SelectItem
-                                    key={group.targetMetadataGroup.id}
-                                    value={group.targetMetadataGroup.id}
-                                  >
-                                    {group.targetMetadataGroup.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
+                          <ReleaseConditionDialog
+                            condition={value}
+                            onChange={onChange}
+                          >
+                            <Button variant="outline">
+                              <IconFilter />
+                            </Button>
+                          </ReleaseConditionDialog>
                         </FormItem>
                       )}
                     />
                   </div>
 
-                  <div className="flex">
-                    <FormField
-                      control={form.control}
-                      name={`releaseDependencies.${index}.ruleType`}
-                      render={({ field: { value, onChange } }) => (
-                        <FormItem>
-                          <Select value={value} onValueChange={onChange}>
-                            <SelectTrigger className="h-8 w-36 rounded-r-none text-sm">
-                              <SelectValue placeholder="Validation" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup className="w-36">
-                                <SelectItem value="semver">Semver</SelectItem>
-                                <SelectItem value="regex">Regex</SelectItem>
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name={`releaseDependencies.${index}.rule`}
-                      render={({ field }) => (
-                        <Input
-                          className="h-8 w-full rounded-l-none text-sm"
-                          {...field}
-                        />
-                      )}
-                    />
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="ml-2 h-8 w-8"
-                      onClick={() => remove(index)}
-                    >
-                      <IconTrash />
-                    </Button>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="ml-2 h-8 w-8"
+                    onClick={() => remove(index)}
+                  >
+                    <IconTrash />
+                  </Button>
                 </Card>
               ))}
 
@@ -356,11 +299,11 @@ export const CreateReleaseDialog: React.FC<{
                 onClick={() =>
                   append({
                     deploymentId: "",
-                    rule: "",
-                    ruleType:
-                      valid(latestRelease.data?.items[0]?.version) != null
-                        ? "semver"
-                        : "regex",
+                    releaseFilter: {
+                      type: ReleaseFilterType.Comparison,
+                      operator: ReleaseOperator.And,
+                      conditions: [],
+                    },
                   })
                 }
               >

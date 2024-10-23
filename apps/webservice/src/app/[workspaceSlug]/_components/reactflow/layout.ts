@@ -36,10 +36,11 @@ export const getLayoutedElementsDagre = (
   edges: Edge[],
   direction = "TB",
   extraEdgeLength = 0,
+  nodesep = 50,
 ) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: direction });
+  dagreGraph.setGraph({ rankdir: direction, nodesep });
 
   nodes.forEach((node) => dagreGraph.setNode(node.id, node));
   edges.forEach((edge) => dagreGraph.setEdge(edge.source, edge.target));
