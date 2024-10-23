@@ -1,7 +1,6 @@
-import type { DeploymentVariable } from "@ctrlplane/db/schema";
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconTrash } from "@tabler/icons-react";
+import { IconPencil, IconPlus, IconTrash } from "@tabler/icons-react";
 
 import {
   AlertDialog,
@@ -23,8 +22,10 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import type { VariableData } from "./variable-data";
 import { api } from "~/trpc/react";
 import { AddVariableValueDialog } from "./AddVariableValueDialog";
+import { EditVariableDialog } from "./EditVariableDialog";
 
 const DeleteVariableDialog: React.FC<{
   variableId: string;
@@ -65,14 +66,27 @@ const DeleteVariableDialog: React.FC<{
 };
 
 export const VariableDropdown: React.FC<{
-  variable: DeploymentVariable;
+  variable: VariableData;
   children: React.ReactNode;
 }> = ({ variable, children }) => {
+  const [open, setOpen] = useState(false);
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuGroup>
+          <EditVariableDialog
+            variable={variable}
+            onClose={() => setOpen(false)}
+          >
+            <DropdownMenuItem
+              className="flex items-center gap-2"
+              onSelect={(e) => e.preventDefault()}
+            >
+              <IconPencil className="h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          </EditVariableDialog>
           <AddVariableValueDialog variable={variable}>
             <DropdownMenuItem
               className="flex items-center gap-2"
