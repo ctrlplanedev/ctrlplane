@@ -79,7 +79,10 @@ async function run() {
       setOutputAndLog("deployment_name", deployment?.name);
       setOutputAndLog("deployment_slug", deployment?.slug);
 
-      setOutputsRecursively("variable", variables ?? {});
+      for (const [key, value] of Object.entries(variables ?? {})) {
+        // do proper sanitization
+        setOutputAndLog(`variable_${key}`, value);
+      }
 
       setOutputAndLog("runbook_id", runbook?.id);
       setOutputAndLog("runbook_name", runbook?.name);
