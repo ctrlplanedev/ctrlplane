@@ -467,6 +467,16 @@ export const releaseRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const deploymentExists = await ctx.db
+        .select({ id: deployment.id })
+        .from(deployment)
+        .where(eq(deployment.id, input.deploymentId))
+        .then((rows) => rows.length > 0);
+
+      if (!deploymentExists) {
+        throw new Error(`Deployment ${input.deploymentId} not found`);
+      }
+
       const latestReleases = await ctx.db
         .select({
           id: release.id,

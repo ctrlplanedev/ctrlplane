@@ -179,9 +179,13 @@ const DeploymentTable: React.FC<{
               </td>
 
               {environments.map((env, envIdx) => {
-                const latestRelease = r.latestReleases.find(
-                  (release) => release.environmentId === env.id,
+                const releaseLookup = new Map(
+                  r.latestReleases.map((release) => [
+                    release.environmentId,
+                    release,
+                  ]),
                 );
+                const latestRelease = releaseLookup.get(env.id);
                 return (
                   <td
                     key={env.id}
