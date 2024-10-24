@@ -69,7 +69,17 @@ class DispatchBuilder {
     console.log(`Dispatching ${wfs.length} jobs to the dispatch queue`);
 
     await Promise.all(
-      wfsWithJobAgent.map((wf) => createReleaseVariables(this.db, wf.id)),
+      wfsWithJobAgent.map((wf) =>
+        createReleaseVariables(this.db, wf.id).catch(async (error) => {
+          await this.db
+            .update(schema.job)
+            .set({
+              status: JobStatus.Failure,
+              message: `Failed to create release variables for job ${wf.id}: ${error.message}`,
+            })
+            .where(eq(schema.job.id, wf.id));
+        }),
+      ),
     );
 
     await dispatchJobsQueue.addBulk(
@@ -113,7 +123,17 @@ export const dispatchRunbook = async (
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
   const job = await createTriggeredRunbookJob(db, runbook, values);
-  await Promise.all([job].map((job) => createReleaseVariables(db, job.id)));
+  await createReleaseVariables(db, job.id).catch(
+    async (error) =>
+      await db
+        .update(schema.job)
+        .set({
+          status: JobStatus.Failure,
+          message: `Failed to create release variables: ${error.message}`,
+        })
+        .where(eq(schema.job.id, job.id)),
+  );
+
   await dispatchJobsQueue.add(job.id, { jobId: job.id });
   return job;
 };
