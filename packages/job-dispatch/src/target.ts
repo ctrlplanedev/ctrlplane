@@ -82,7 +82,7 @@ const upsertTargetVariables = async (
   tx: Tx,
   targets: Array<
     Target & {
-      variables?: Record<string, { value: string; sensitive: boolean }>;
+      variables?: Array<{ key: string; value: string; sensitive: boolean }>;
     }
   >,
 ) => {
@@ -101,8 +101,8 @@ const upsertTargetVariables = async (
     });
 
   const targetVariablesValues = targets.flatMap((target) => {
-    const { id, variables = {} } = target;
-    return Object.entries(variables).map(([key, { value, sensitive }]) => ({
+    const { id, variables = [] } = target;
+    return variables.map(({ key, value, sensitive }) => ({
       targetId: id,
       key,
       value: sensitive ? variablesAES256().encrypt(value) : value,
@@ -217,7 +217,7 @@ export const upsertTargets = async (
   targetsToInsert: Array<
     InsertTarget & {
       metadata?: Record<string, string>;
-      variables?: Record<string, { value: string; sensitive: boolean }>;
+      variables?: Array<{ key: string; value: string; sensitive: boolean }>;
     }
   >,
 ) => {

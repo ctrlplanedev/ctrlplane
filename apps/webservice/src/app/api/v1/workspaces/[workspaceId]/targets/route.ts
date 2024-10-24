@@ -116,7 +116,18 @@ export const GET = async (
 const bodySchema = z.array(
   createTarget
     .omit({ lockedAt: true, providerId: true, workspaceId: true })
-    .extend({ metadata: z.record(z.string()).optional() }),
+    .extend({
+      metadata: z.record(z.string()).optional(),
+      variables: z
+        .array(
+          z.object({
+            key: z.string(),
+            value: z.string(),
+            sensitive: z.boolean(),
+          }),
+        )
+        .optional(),
+    }),
 );
 
 const canUpsertTarget = async (userId: string, workspaceId: string) =>
