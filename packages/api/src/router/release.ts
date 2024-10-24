@@ -42,7 +42,7 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 import { releaseCondition } from "@ctrlplane/validators/releases";
 
-import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "../trpc";
 
 export const releaseRouter = createTRPCRouter({
   list: protectedProcedure
@@ -458,4 +458,41 @@ export const releaseRouter = createTRPCRouter({
           .then((r) => r.map((row) => row.key)),
       ),
   }),
+
+  getLatestByDeploymentAndEnvironments: publicProcedure
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        environmentIds: z.array(z.string().uuid()),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const latestReleases = await ctx.db
+        .select({
+          id: release.id,
+          name: release.name,
+          version: release.version,
+          createdAt: release.createdAt,
+          environmentId: releaseJobTrigger.environmentId,
+        })
+        .from(release)
+        .innerJoin(
+          releaseJobTrigger,
+          and(
+            eq(release.id, releaseJobTrigger.releaseId),
+            eq(release.deploymentId, input.deploymentId),
+            inArray(releaseJobTrigger.environmentId, input.environmentIds),
+          ),
+        )
+        .groupBy(
+          releaseJobTrigger.environmentId,
+          release.id,
+          release.name,
+          release.version,
+          release.createdAt,
+        )
+        .orderBy(desc(release.createdAt));
+
+      return latestReleases;
+    }),
 });

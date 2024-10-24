@@ -67,6 +67,7 @@ const ReleaseCell: React.FC<{
     name: string;
     version: string;
     createdAt: Date;
+    environmentId: string;
   } | null;
   deployment: Deployment;
 }> = async ({
@@ -81,7 +82,6 @@ const ReleaseCell: React.FC<{
     deploymentId: deployment.id,
   });
   const hasTargets = env.targets.length > 0;
-  const hasRelease = release != null;
   const jc = releaseJobTriggers
     .filter(
       (releaseJobTrigger) =>
@@ -92,7 +92,7 @@ const ReleaseCell: React.FC<{
     .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
   return (
     <>
-      {hasRelease && hasTargets && (
+      {release && hasTargets && (
         <Release
           releaseId={release.id}
           environment={env}
@@ -106,11 +106,11 @@ const ReleaseCell: React.FC<{
         />
       )}
 
-      {!hasTargets && hasRelease && (
+      {!hasTargets && release && (
         <div className="text-center text-xs text-muted">No targets</div>
       )}
 
-      {!hasRelease && (
+      {!release && (
         <div className="text-center text-xs text-muted">No release</div>
       )}
     </>
@@ -122,12 +122,13 @@ const DeploymentTable: React.FC<{
   environments: Array<Environment & { targets: Target[] }>;
   deployments: Array<
     Deployment & {
-      latestRelease: {
+      latestReleases: Array<{
         id: string;
         name: string;
         version: string;
         createdAt: Date;
-      } | null;
+        environmentId: string;
+      }>;
     }
   >;
   workspaceSlug: string;
@@ -178,6 +179,9 @@ const DeploymentTable: React.FC<{
               </td>
 
               {environments.map((env, envIdx) => {
+                const latestRelease = r.latestReleases.find(
+                  (release) => release.environmentId === env.id,
+                );
                 return (
                   <td
                     key={env.id}
@@ -189,7 +193,7 @@ const DeploymentTable: React.FC<{
                     )}
                   >
                     <ReleaseCell
-                      release={r.latestRelease}
+                      release={latestRelease ?? null}
                       environment={env}
                       deployment={r}
                       workspaceSlug={workspaceSlug}

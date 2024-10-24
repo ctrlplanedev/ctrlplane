@@ -8,7 +8,7 @@ import DeploymentTable from "./TableDeployments";
 
 export const metadata: Metadata = { title: "Deployments - Systems" };
 
-export default async function SystemDeploymentsPage({
+export default async function DeploymentsPage({
   params,
 }: {
   params: { workspaceSlug: string; systemSlug: string };
@@ -16,6 +16,22 @@ export default async function SystemDeploymentsPage({
   const system = await api.system.bySlug(params);
   const deployments = await api.deployment.bySystemId(system.id);
   const environments = await api.environment.bySystemId(system.id);
+
+  const deploymentsWithLatestReleases = await Promise.all(
+    deployments.map(async (deployment) => {
+      const latestReleases =
+        await api.release.getLatestByDeploymentAndEnvironments({
+          deploymentId: deployment.id,
+          environmentIds: environments.map((env) => env.id),
+        });
+
+      return {
+        ...deployment,
+        latestReleases,
+      };
+    }),
+  );
+
   return (
     <>
       <TopNav>
@@ -27,9 +43,9 @@ export default async function SystemDeploymentsPage({
       ) : (
         <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 container mx-auto h-[calc(100vh-40px)] overflow-auto p-8">
           <DeploymentTable
-            deployments={deployments}
-            environments={environments}
             systemSlug={params.systemSlug}
+            deployments={deploymentsWithLatestReleases}
+            environments={environments}
             workspaceSlug={params.workspaceSlug}
           />
         </div>
