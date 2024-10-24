@@ -5,6 +5,7 @@ import type {
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, sql } from "drizzle-orm";
 import {
+  boolean,
   json,
   jsonb,
   pgEnum,
@@ -217,3 +218,24 @@ export const createTargetRelationship = createInsertSchema(
 
 export const updateTargetRelationship = createTargetRelationship.partial();
 export type TargetRelationship = InferSelectModel<typeof targetRelationship>;
+
+export const targetVariable = pgTable(
+  "target_variable",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    targetId: uuid("target_id")
+      .references(() => target.id, { onDelete: "cascade" })
+      .notNull(),
+
+    key: text("key").notNull(),
+    value: jsonb("value").notNull(),
+    sensitive: boolean("sensitive").notNull().default(false),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.targetId, t.key) }),
+);
+
+export const createTargetVariable = createInsertSchema(targetVariable).omit({
+  id: true,
+});
+
+export const updateTargetVariable = createTargetVariable.partial();

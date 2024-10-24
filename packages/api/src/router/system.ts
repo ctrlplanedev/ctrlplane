@@ -30,7 +30,7 @@ export const systemRouter = createTRPCRouter({
           .array(
             z.object({
               key: z.enum(["name", "slug"]),
-              value: z.any(),
+              value: z.string(),
             }),
           )
           .optional(),
