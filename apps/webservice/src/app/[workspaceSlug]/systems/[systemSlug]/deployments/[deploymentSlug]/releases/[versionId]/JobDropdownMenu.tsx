@@ -60,7 +60,6 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
-import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { api } from "~/trpc/react";
 
 const overrideJobStatusFormSchema = z.object({
@@ -183,7 +182,6 @@ const ForceReleaseTargetDialog: React.FC<{
   const forceRelease = api.release.deploy.toTarget.useMutation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { setJobId } = useJobDrawer();
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -217,7 +215,6 @@ const ForceReleaseTargetDialog: React.FC<{
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
-                .then((rjt) => setJobId(rjt.jobId))
                 .then(() => router.refresh())
                 .then(() => setOpen(false))
                 .then(() => onClose())
@@ -240,7 +237,6 @@ const RedeployReleaseDialog: React.FC<{
   const router = useRouter();
   const redeploy = api.release.deploy.toTarget.useMutation();
   const [isOpen, setIsOpen] = useState(false);
-  const { setJobId } = useJobDrawer();
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -268,8 +264,8 @@ const RedeployReleaseDialog: React.FC<{
                   targetId: target.id,
                   releaseId: release.id,
                 })
-                .then((rjt) => setJobId(rjt.jobId))
                 .then(() => router.refresh())
+                .then(() => setIsOpen(false))
             }
           >
             Redeploy
