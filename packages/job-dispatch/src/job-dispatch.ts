@@ -6,6 +6,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTriggeredRunbookJob } from "./job-creation.js";
+import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
 import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
@@ -67,6 +68,10 @@ class DispatchBuilder {
 
     console.log(`Dispatching ${wfs.length} jobs to the dispatch queue`);
 
+    await Promise.all(
+      wfsWithJobAgent.map((wf) => createReleaseVariables(this.db, wf.id)),
+    );
+
     await dispatchJobsQueue.addBulk(
       wfsWithJobAgent.map((wf) => ({ name: wf.id, data: { jobId: wf.id } })),
     );
@@ -108,6 +113,7 @@ export const dispatchRunbook = async (
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
   const job = await createTriggeredRunbookJob(db, runbook, values);
+  await Promise.all([job].map((job) => createReleaseVariables(db, job.id)));
   await dispatchJobsQueue.add(job.id, { jobId: job.id });
   return job;
 };
