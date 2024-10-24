@@ -44,6 +44,10 @@ class AES256EncryptionService {
 export const env = createEnv({
   server: { VARIABLES_AES_256_KEY: z.string().min(64).max(64) },
   runtimeEnv: process.env,
+  skipValidation:
+    !!process.env.CI ||
+    !!process.env.SKIP_ENV_VALIDATION ||
+    process.env.npm_lifecycle_event === "lint",
 });
 
 export const variablesAES256 = (key = env.VARIABLES_AES_256_KEY) =>
