@@ -168,7 +168,7 @@ const upsertTargetMetadata = async (
     });
 
   const targetMetadataValues = targets.flatMap((target) => {
-    const { id, metadata = [] } = target;
+    const { id, metadata = {} } = target;
 
     return Object.entries(metadata).map(([key, value]) => ({
       targetId: id,
