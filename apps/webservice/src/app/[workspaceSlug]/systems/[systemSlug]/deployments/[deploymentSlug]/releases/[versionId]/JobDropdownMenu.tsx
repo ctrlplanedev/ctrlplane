@@ -183,7 +183,6 @@ const ForceReleaseTargetDialog: React.FC<{
   const forceRelease = api.release.deploy.toTarget.useMutation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const { setJobId } = useJobDrawer();
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -217,7 +216,6 @@ const ForceReleaseTargetDialog: React.FC<{
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
-                .then((rjt) => setJobId(rjt.jobId))
                 .then(() => router.refresh())
                 .then(() => setOpen(false))
                 .then(() => onClose())
@@ -268,8 +266,8 @@ const RedeployReleaseDialog: React.FC<{
                   targetId: target.id,
                   releaseId: release.id,
                 })
-                .then((rjt) => setJobId(rjt.jobId))
                 .then(() => router.refresh())
+                .then(() => setIsOpen(false))
             }
           >
             Redeploy
