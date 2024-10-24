@@ -17,7 +17,6 @@ import ReactFlow, {
   Handle,
   MarkerType,
   Position,
-  ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
@@ -25,11 +24,16 @@ import ReactFlow, {
 import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
 
 import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
 import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
-import { api } from "~/trpc/react";
-import { useTargetDrawer } from "../TargetDrawer";
 
 const getAnimatedBorderColor = (version: string, kind?: string): string => {
   if (version.includes("kubernetes")) return "#3b82f6";
@@ -44,15 +48,15 @@ type TargetNodeProps = NodeProps<{
   id: string;
   kind: string;
   version: string;
+  targetId: string;
 }>;
 const TargetNode: React.FC<TargetNodeProps> = (node) => {
-  const { targetId } = useTargetDrawer();
   const { data } = node;
 
   const isKubernetes = data.version.includes("kubernetes");
   const isTerraform = data.version.includes("terraform");
   const isSharedCluster = data.kind.toLowerCase().includes("sharedcluster");
-  const isSelected = data.id === targetId;
+  const isSelected = data.id === data.targetId;
 
   const animatedBorderColor = getAnimatedBorderColor(data.version, data.kind);
 
@@ -224,30 +228,79 @@ const useOnLayout = () => {
   }, [getNodes, getEdges, setNodes, setEdges, fitView]);
 };
 
-const TargetDiagram: React.FC<{
+const getDFSEdges = (
+  startId: string,
+  goalId: string,
+  graph: Record<string, string[]>,
+  visited: Set<string> = new Set(),
+  path: string[] = [],
+): string[] | null => {
+  if (startId === goalId) return path;
+  visited.add(startId);
+
+  for (const neighbor of graph[startId] ?? []) {
+    if (visited.has(neighbor)) continue;
+    const result = getDFSEdges(neighbor, goalId, graph, visited, [
+      ...path,
+      neighbor,
+    ]);
+    if (result !== null) return result;
+  }
+
+  return null;
+};
+
+const getUndirectedGraph = (
+  relationships: Array<schema.TargetRelationship>,
+) => {
+  const graph: Record<string, Set<string>> = {};
+
+  for (const relationship of relationships) {
+    if (!graph[relationship.sourceId]) graph[relationship.sourceId] = new Set();
+    if (!graph[relationship.targetId]) graph[relationship.targetId] = new Set();
+    graph[relationship.sourceId]!.add(relationship.targetId);
+    graph[relationship.targetId]!.add(relationship.sourceId);
+  }
+  return Object.fromEntries(
+    Object.entries(graph).map(([key, value]) => [key, Array.from(value)]),
+  );
+};
+
+export const TargetDiagramDependencies: React.FC<{
+  targetId: string;
   relationships: Array<schema.TargetRelationship>;
   targets: Array<schema.Target>;
-}> = ({ relationships, targets }) => {
+  releaseDependencies: (schema.ReleaseDependency & {
+    target?: string;
+  })[];
+}> = ({ targetId, relationships, targets, releaseDependencies }) => {
   const [nodes, _, onNodesChange] = useNodesState(
     targets.map((t) => ({
       id: t.id,
       type: "target",
       position: { x: 100, y: 100 },
-      data: t,
+      data: { ...t, targetId },
     })),
   );
-  const [edges, __, onEdgesChange] = useEdgesState(
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
     relationships.map((t) => {
       return {
         id: `${t.sourceId}-${t.targetId}`,
         source: t.sourceId,
         target: t.targetId,
-        markerEnd: { type: MarkerType.Arrow, color: colors.neutral[700] },
-        style: { stroke: colors.neutral[700] },
+        markerEnd: {
+          type: MarkerType.Arrow,
+          color: colors.neutral[700],
+        },
+        style: {
+          stroke: colors.neutral[700],
+        },
       };
     }),
   );
   const onLayout = useOnLayout();
+
+  const graph = getUndirectedGraph(relationships);
 
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -256,32 +309,106 @@ const TargetDiagram: React.FC<{
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reactFlowInstance]);
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      fitView
-      proOptions={{ hideAttribution: true }}
-      deleteKeyCode={[]}
-      onInit={setReactFlowInstance}
-      nodesDraggable
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-    />
-  );
-};
+    <div className="relative h-full w-full">
+      <div className="absolute left-2 top-2 z-10">
+        <Select
+          onValueChange={(value) => {
+            const goalId = releaseDependencies.find(
+              (rd) => rd.id === value,
+            )?.target;
+            if (goalId == null) {
+              setEdges(
+                relationships.map((t) => ({
+                  id: `${t.sourceId}-${t.targetId}`,
+                  source: t.sourceId,
+                  target: t.targetId,
+                  markerEnd: {
+                    type: MarkerType.Arrow,
+                    color: colors.neutral[700],
+                  },
+                  style: {
+                    stroke: colors.neutral[700],
+                  },
+                })),
+              );
+              return;
+            }
 
-export const TargetHierarchyRelationshipsDiagram: React.FC<{
-  targetId: string;
-}> = ({ targetId }) => {
-  const hierarchy = api.target.relations.hierarchy.useQuery(targetId);
+            const edges = getDFSEdges(targetId, goalId, graph, new Set(), [
+              targetId,
+            ]);
+            const newHighlightedEdges: string[] = [];
+            if (edges == null) {
+              setEdges(
+                relationships.map((t) => ({
+                  id: `${t.sourceId}-${t.targetId}`,
+                  source: t.sourceId,
+                  target: t.targetId,
+                  markerEnd: {
+                    type: MarkerType.Arrow,
+                    color: colors.neutral[700],
+                  },
+                  style: {
+                    stroke: colors.neutral[700],
+                  },
+                })),
+              );
+              return;
+            }
 
-  if (hierarchy.data == null) return null;
-  const { relationships, targets } = hierarchy.data;
-  return (
-    <ReactFlowProvider>
-      <TargetDiagram relationships={relationships} targets={targets} />
-    </ReactFlowProvider>
+            for (let i = 0; i < edges.length - 1; i++) {
+              newHighlightedEdges.push(`${edges[i]}-${edges[i + 1]}`);
+              newHighlightedEdges.push(`${edges[i + 1]}-${edges[i]}`);
+            }
+
+            const newEdges = relationships.map((t) => {
+              const isHighlighted = newHighlightedEdges.includes(
+                `${t.sourceId}-${t.targetId}`,
+              );
+
+              return {
+                id: `${t.sourceId}-${t.targetId}`,
+                source: t.sourceId,
+                target: t.targetId,
+                markerEnd: {
+                  type: MarkerType.Arrow,
+                  color: isHighlighted ? colors.blue[500] : colors.neutral[700],
+                },
+                style: {
+                  stroke: isHighlighted
+                    ? colors.blue[500]
+                    : colors.neutral[700],
+                },
+              };
+            });
+            setEdges(newEdges);
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a release" />
+          </SelectTrigger>
+          <SelectContent>
+            {releaseDependencies.map((rd) => (
+              <SelectItem key={rd.id} value={rd.id}>
+                {rd.deploymentId}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        fitView
+        proOptions={{ hideAttribution: true }}
+        deleteKeyCode={[]}
+        onInit={setReactFlowInstance}
+        nodesDraggable
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+      />
+    </div>
   );
 };

@@ -76,16 +76,10 @@ const targetRelations = createTRPCRouter({
 
       const allIds = _.uniq([...sourceIds, ...targetIds]);
 
-      console.log(allIds);
-      console.log(targetIds);
-
       const targets = await ctx.db
         .select()
         .from(schema.target)
         .where(inArray(schema.target.id, allIds));
-
-      console.log(relationships);
-      console.log(targets);
 
       return {
         relationships,
@@ -467,46 +461,3 @@ export const targetRouter = createTRPCRouter({
         .then(takeFirst),
     ),
 });
-
-/*
-
-WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
-    -- Base case: start with the given ID and no relationship
-    SELECT 
-        '9bdf390b-c52a-45b1-9690-62192f676c70'::uuid AS id, 
-        ARRAY['9bdf390b-c52a-45b1-9690-62192f676c70'::uuid] AS visited,
-        NULL::uuid AS tr_id,
-        NULL::uuid AS source_id,
-        NULL::uuid AS target_id,
-        NULL::target_relationship_type AS type
-    UNION ALL
-    -- Recursive case: find all relationships connected to the current set of IDs
-    SELECT
-        CASE
-            WHEN tr.source_id = rr.id THEN tr.target_id
-            ELSE tr.source_id
-        END AS id,
-        rr.visited || CASE
-            WHEN tr.source_id = rr.id THEN tr.target_id
-            ELSE tr.source_id
-        END,
-        tr.id AS tr_id,
-        tr.source_id,
-        tr.target_id,
-        tr.type
-    FROM reachable_relationships rr
-    JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
-    WHERE
-        NOT CASE
-            WHEN tr.source_id = rr.id THEN tr.target_id
-            ELSE tr.source_id
-        END = ANY(rr.visited)
-)
-SELECT DISTINCT tr_id AS id, source_id, target_id, type
-FROM reachable_relationships
-WHERE tr_id IS NOT NULL;
-
-
-
-
-*/

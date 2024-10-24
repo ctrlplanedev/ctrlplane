@@ -8,13 +8,16 @@ import {
   IconLoader2,
   IconRocket,
 } from "@tabler/icons-react";
+import { ReactFlowProvider } from "reactflow";
 
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import { Card } from "@ctrlplane/ui/card";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
 import { api } from "~/trpc/react";
+import { TargetDiagramDependencies } from "../relationships/RelationshipsDiagramDependencies";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
 import { JobPropertiesTable } from "./JobProperties";
@@ -96,10 +99,20 @@ export const JobDrawer: React.FC = () => {
               )}
             </DrawerTitle>
             {job != null && (
-              <div className="flex w-full flex-col gap-6 p-6">
+              <div className="flex h-full w-full flex-col gap-6 p-6">
                 <JobPropertiesTable job={job} />
                 <JobMetadata job={job} />
                 <JobAgent job={job} />
+                <Card className="h-[90%]">
+                  <ReactFlowProvider>
+                    <TargetDiagramDependencies
+                      targetId={job.target.id}
+                      relationships={job.relationships}
+                      targets={job.relatedTargets}
+                      releaseDependencies={job.releaseDependencies}
+                    />
+                  </ReactFlowProvider>
+                </Card>
               </div>
             )}
           </>
