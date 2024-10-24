@@ -388,7 +388,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
       const sourceIds = relationships.map((r) => r.sourceId);
       const targetIds = relationships.map((r) => r.targetId);
 
-      const allIds = _.uniq([...sourceIds, ...targetIds]);
+      const allIds = _.uniq([...sourceIds, ...targetIds, data.target.id]);
 
       const targets = await ctx.db
         .select()

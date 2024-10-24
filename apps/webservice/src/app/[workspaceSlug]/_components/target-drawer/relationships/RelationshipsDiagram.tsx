@@ -44,6 +44,7 @@ type TargetNodeProps = NodeProps<{
   id: string;
   kind: string;
   version: string;
+  isOrphanNode: boolean;
 }>;
 const TargetNode: React.FC<TargetNodeProps> = (node) => {
   const { targetId } = useTargetDrawer();
@@ -52,7 +53,7 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
   const isKubernetes = data.version.includes("kubernetes");
   const isTerraform = data.version.includes("terraform");
   const isSharedCluster = data.kind.toLowerCase().includes("sharedcluster");
-  const isSelected = data.id === targetId;
+  const isSelected = data.id === targetId && !data.isOrphanNode;
 
   const animatedBorderColor = getAnimatedBorderColor(data.version, data.kind);
 
@@ -68,8 +69,7 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
     <>
       <div
         className={cn(
-          "flex flex-col",
-          "w-[250px] gap-2 rounded-md border bg-neutral-900 px-4 py-3",
+          "flex w-[250px] flex-col gap-2 rounded-md border bg-neutral-900 px-4 py-3",
           isKubernetes && "border-blue-500/70 bg-blue-500/20",
           isTerraform && "border-purple-500/70 bg-purple-500/20",
           isSharedCluster && "border-blue-500/70 bg-blue-500/20",
@@ -87,23 +87,21 @@ const TargetNode: React.FC<TargetNodeProps> = (node) => {
       <Handle
         type="target"
         className={cn(
-          "h-2 w-2 rounded-full border border-neutral-500",
+          "h-2 w-2 rounded-full border border-neutral-500 bg-neutral-800",
           isKubernetes && "border-blue-500/70",
           isTerraform && "border-purple-500/70",
           isSharedCluster && "border-blue-500/70",
         )}
-        style={{ background: colors.neutral[800] }}
         position={Position.Bottom}
       />
       <Handle
         type="source"
         className={cn(
-          "h-2 w-2 rounded-full border border-neutral-500",
+          "h-2 w-2 rounded-full border border-neutral-500 bg-neutral-800",
           isKubernetes && "border-blue-500/70",
           isTerraform && "border-purple-500/70",
           isSharedCluster && "border-blue-500/70",
         )}
-        style={{ background: colors.neutral[800] }}
         position={Position.Top}
       />
       <style jsx>{`
@@ -233,7 +231,12 @@ const TargetDiagram: React.FC<{
       id: t.id,
       type: "target",
       position: { x: 100, y: 100 },
-      data: t,
+      data: {
+        ...t,
+        isOrphanNode: !relationships.some(
+          (r) => r.targetId === t.id || r.sourceId === t.id,
+        ),
+      },
     })),
   );
   const [edges, __, onEdgesChange] = useEdgesState(
