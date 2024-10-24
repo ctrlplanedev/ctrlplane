@@ -68,33 +68,51 @@ class DispatchBuilder {
 
     console.log(`Dispatching ${wfs.length} jobs to the dispatch queue`);
 
-    await Promise.all(
-      wfsWithJobAgent.map((wf) =>
-        createReleaseVariables(this.db, wf.id).catch(async (error) => {
-          await this.db
-            .update(schema.job)
-            .set({
-              status: JobStatus.Failure,
-              message: `Failed to create release variables for job ${wf.id}: ${error.message}`,
-            })
-            .where(eq(schema.job.id, wf.id));
-        }),
-      ),
+    const results = await Promise.allSettled(
+      wfsWithJobAgent.map((wf) => createReleaseVariables(this.db, wf.id)),
     );
 
-    await dispatchJobsQueue.addBulk(
-      wfsWithJobAgent.map((wf) => ({ name: wf.id, data: { jobId: wf.id } })),
-    );
+    const jobsWithResolvedVariables = [];
 
-    await this.db
-      .update(schema.job)
-      .set({ status: JobStatus.InProgress })
-      .where(
-        inArray(
-          schema.job.id,
-          wfsWithJobAgent.map((j) => j.id),
-        ),
+    for (const [index, result] of results.entries()) {
+      if (result.status !== "fulfilled") {
+        const wf = wfsWithJobAgent[index];
+        if (!wf) continue;
+
+        await this.db
+          .update(schema.job)
+          .set({
+            status: JobStatus.Failure,
+            message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
+          })
+          .where(eq(schema.job.id, wf.id));
+        continue;
+      }
+      jobsWithResolvedVariables.push(wfsWithJobAgent[index]);
+    }
+
+    if (jobsWithResolvedVariables.length > 0) {
+      await dispatchJobsQueue.addBulk(
+        jobsWithResolvedVariables
+          .filter((wf): wf is schema.Job => wf !== undefined)
+          .map((wf) => ({
+            name: wf.id,
+            data: { jobId: wf.id },
+          })),
       );
+
+      await this.db
+        .update(schema.job)
+        .set({ status: JobStatus.InProgress })
+        .where(
+          inArray(
+            schema.job.id,
+            jobsWithResolvedVariables
+              .filter((j): j is schema.Job => j !== undefined)
+              .map((j) => j.id),
+          ),
+        );
+    }
 
     await this.db
       .update(schema.job)
@@ -123,17 +141,16 @@ export const dispatchRunbook = async (
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
   const job = await createTriggeredRunbookJob(db, runbook, values);
-  await createReleaseVariables(db, job.id).catch(
-    async (error) =>
-      await db
+  await createReleaseVariables(db, job.id)
+    .then(() => dispatchJobsQueue.add(job.id, { jobId: job.id }))
+    .catch((error) =>
+      db
         .update(schema.job)
         .set({
           status: JobStatus.Failure,
           message: `Failed to create release variables: ${error.message}`,
         })
         .where(eq(schema.job.id, job.id)),
-  );
-
-  await dispatchJobsQueue.add(job.id, { jobId: job.id });
+    );
   return job;
 };
