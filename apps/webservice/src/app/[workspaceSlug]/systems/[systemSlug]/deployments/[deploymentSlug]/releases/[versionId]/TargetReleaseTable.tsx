@@ -126,7 +126,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end">
                           <JobDropdownMenu
                             release={release}
