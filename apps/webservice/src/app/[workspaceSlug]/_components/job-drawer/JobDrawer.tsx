@@ -17,10 +17,10 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
 import { api } from "~/trpc/react";
-import { TargetDiagramDependencies } from "../relationships/RelationshipsDiagramDependencies";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
 import { JobPropertiesTable } from "./JobProperties";
+import { TargetDiagramDependencies } from "./RelationshipsDiagramDependencies";
 import { useJobDrawer } from "./useJobDrawer";
 
 export const JobDrawer: React.FC = () => {
@@ -46,7 +46,7 @@ export const JobDrawer: React.FC = () => {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none"
+        className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none"
       >
         {jobQ.isLoading && (
           <div className="flex h-full w-full items-center justify-center">
@@ -103,7 +103,7 @@ export const JobDrawer: React.FC = () => {
                 <JobPropertiesTable job={job} />
                 <JobMetadata job={job} />
                 <JobAgent job={job} />
-                <Card className="h-[90%]">
+                <Card className="h-[90%] min-h-[500px]">
                   <ReactFlowProvider>
                     <TargetDiagramDependencies
                       targetId={job.target.id}

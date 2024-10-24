@@ -1,5 +1,5 @@
 {
-  "id": "f75fa89a-e729-4a8e-a308-9545beb2ffaa",
+  "id": "e8680276-619b-4d5e-959e-34922de62dd6",
   "prevId": "1029e824-f8ff-4867-8740-28c5c3cfe3a5",
   "version": "7",
   "dialect": "postgresql",
@@ -3606,7 +3606,7 @@
     "public.target_relationship_type": {
       "name": "target_relationship_type",
       "schema": "public",
-      "values": ["associated_with", "depends_on", "extends"]
+      "values": ["associated_with", "depends_on"]
     },
     "public.release_job_trigger_type": {
       "name": "release_job_trigger_type",

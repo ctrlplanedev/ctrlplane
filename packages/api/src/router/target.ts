@@ -65,12 +65,16 @@ const targetRelations = createTRPCRouter({
         WHERE tr_id IS NOT NULL;
         `,
       );
+
+      // db.execute does not return the types even if the sql`` is annotated with the type
+      // so we need to cast them here
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
         sourceId: String(r.source_id),
         targetId: String(r.target_id),
         type: r.type as "associated_with" | "depends_on",
       }));
+
       const sourceIds = relationships.map((r) => r.sourceId);
       const targetIds = relationships.map((r) => r.targetId);
 
@@ -81,10 +85,7 @@ const targetRelations = createTRPCRouter({
         .from(schema.target)
         .where(inArray(schema.target.id, allIds));
 
-      return {
-        relationships,
-        targets,
-      };
+      return { relationships, targets };
     }),
 });
 

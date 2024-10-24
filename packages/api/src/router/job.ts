@@ -378,6 +378,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
         `,
       );
 
+      // db.execute does not return the types even if the sql`` is annotated with the type
+      // so we need to cast them here
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
         sourceId: String(r.source_id),
@@ -405,8 +407,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
               status: job.status,
               createdAt: job.createdAt,
               rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY release_job_trigger.target_id, release_job_trigger.release_id
-              ORDER BY job.created_at DESC
+              PARTITION BY ${releaseJobTrigger.targetId}, ${releaseJobTrigger.releaseId}
+              ORDER BY ${job.createdAt} DESC
             )`.as("rank"),
             })
             .from(job)

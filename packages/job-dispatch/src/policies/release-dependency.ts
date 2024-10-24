@@ -71,6 +71,8 @@ export const isPassingReleaseDependencyPolicy = async (
         `,
       );
 
+      // db.execute does not return the types even if the sql`` is annotated with the type
+      // so we need to cast them here
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
         sourceId: String(r.source_id),
@@ -92,8 +94,8 @@ export const isPassingReleaseDependencyPolicy = async (
             status: schema.job.status,
             createdAt: schema.job.createdAt,
             rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY release_job_trigger.target_id, release_job_trigger.release_id
-              ORDER BY job.created_at DESC
+              PARTITION BY ${schema.releaseJobTrigger.targetId}, ${schema.releaseJobTrigger.releaseId}
+              ORDER BY ${schema.job.createdAt} DESC
             )`.as("rank"),
           })
           .from(schema.job)
