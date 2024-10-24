@@ -169,7 +169,7 @@ const DeploymentNode: React.FC<
 
     const newEdges = deps.map((d) => ({
       id: d.id,
-      label: d.rule,
+      label: d.releaseFilter.type,
       target: d.deploymentId,
       source: data.id,
       animated: true,

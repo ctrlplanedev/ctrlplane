@@ -128,7 +128,7 @@ const bodySchema = z.array(
         )
         .optional()
         .refine(
-          (vars) => new Set(vars?.map((v) => v.key)).size === vars?.length,
+          (vars) => vars?.length ?? 0 === new Set(vars?.map((v) => v.key)).size,
           "Duplicate variable keys are not allowed",
         ),
     }),

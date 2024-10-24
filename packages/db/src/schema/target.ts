@@ -192,21 +192,21 @@ export function targetMatchesMetadata(
 }
 
 export const targetRelationshipType = pgEnum("target_relationship_type", [
+  "associated_with",
   "depends_on",
-  "created_by",
 ]);
 
 export const targetRelationship = pgTable(
   "target_relationship",
   {
-    id: uuid("uuid"),
+    id: uuid("id").primaryKey().defaultRandom(),
     sourceId: uuid("source_id")
       .references(() => target.id, { onDelete: "cascade" })
       .notNull(),
-    relationshipType: targetRelationshipType("relationship_type").notNull(),
     targetId: uuid("target_id")
       .references(() => target.id, { onDelete: "cascade" })
       .notNull(),
+    type: targetRelationshipType("type").notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.targetId, t.sourceId) }),
 );
@@ -216,6 +216,7 @@ export const createTargetRelationship = createInsertSchema(
 ).omit({ id: true });
 
 export const updateTargetRelationship = createTargetRelationship.partial();
+export type TargetRelationship = InferSelectModel<typeof targetRelationship>;
 
 export const targetVariable = pgTable(
   "target_variable",

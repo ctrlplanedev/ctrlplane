@@ -8,6 +8,7 @@ import type {
   JobAgent,
   JobMetadata,
   Release,
+  ReleaseDependency,
   ReleaseJobTrigger,
   Target,
   User,
@@ -21,6 +22,7 @@ import {
   asc,
   desc,
   eq,
+  inArray,
   isNull,
   notInArray,
   sql,
@@ -36,7 +38,9 @@ import {
   jobAgent,
   jobMetadata,
   release,
+  releaseDependency,
   releaseJobTrigger,
+  releaseMatchesCondition,
   system,
   target,
   updateJob,
@@ -78,6 +82,8 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
     environment_policy: EnvironmentPolicy | null;
     environment_policy_release_window: EnvironmentPolicyReleaseWindow | null;
     user?: User | null;
+    release_dependency?: ReleaseDependency | null;
+    deployment_name?: { deploymentName: string; deploymentId: string } | null;
   }>,
 ) =>
   _.chain(rows)
@@ -94,6 +100,16 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
       target: v[0]!.target,
       release: { ...v[0]!.release, deployment: v[0]!.deployment },
       environment: v[0]!.environment,
+      releaseDependencies: v
+        .map((r) =>
+          r.release_dependency != null
+            ? {
+                ...r.release_dependency,
+                deploymentName: r.deployment_name!.deploymentName,
+              }
+            : null,
+        )
+        .filter(isPresent),
       rolloutDate:
         v[0]!.environment_policy != null
           ? rolloutDateFromReleaseJobTrigger(
@@ -287,8 +303,16 @@ const releaseJobTriggerRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.JobGet).on({ type: "job", id: input }),
     })
-    .query(({ ctx, input }) =>
-      releaseJobTriggerQuery(ctx.db)
+    .query(async ({ ctx, input }) => {
+      const deploymentName = ctx.db
+        .select({
+          deploymentName: deployment.name,
+          deploymentId: deployment.id,
+        })
+        .from(deployment)
+        .as("deployment_name");
+
+      const data = await releaseJobTriggerQuery(ctx.db)
         .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
         .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
         .leftJoin(
@@ -299,10 +323,132 @@ const releaseJobTriggerRouter = createTRPCRouter({
           environmentPolicyReleaseWindow,
           eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
+        .leftJoin(
+          releaseDependency,
+          eq(releaseDependency.releaseId, release.id),
+        )
+        .leftJoin(
+          deploymentName,
+          eq(deploymentName.deploymentId, releaseDependency.deploymentId),
+        )
         .where(eq(job.id, input))
         .then(processReleaseJobTriggerWithAdditionalDataRows)
-        .then(takeFirst),
-    ),
+        .then(takeFirst);
+
+      const { releaseDependencies } = data;
+
+      const results = await ctx.db.execute(
+        sql`
+          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
+            -- Base case: start with the given ID and no relationship
+            SELECT 
+                ${data.target.id}::uuid AS id, 
+                ARRAY[${data.target.id}::uuid] AS visited,
+                NULL::uuid AS tr_id,
+                NULL::uuid AS source_id,
+                NULL::uuid AS target_id,
+                NULL::target_relationship_type AS type
+            UNION ALL
+            -- Recursive case: find all relationships connected to the current set of IDs
+            SELECT
+                CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END AS id,
+                rr.visited || CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END,
+                tr.id AS tr_id,
+                tr.source_id,
+                tr.target_id,
+                tr.type
+            FROM reachable_relationships rr
+            JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+            WHERE
+                NOT CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END = ANY(rr.visited)                
+                AND tr.target_id != ${data.target.id}
+        )
+        SELECT DISTINCT tr_id AS id, source_id, target_id, type
+        FROM reachable_relationships
+        WHERE tr_id IS NOT NULL;
+        `,
+      );
+
+      // db.execute does not return the types even if the sql`` is annotated with the type
+      // so we need to cast them here
+      const relationships = results.rows.map((r) => ({
+        id: String(r.id),
+        sourceId: String(r.source_id),
+        targetId: String(r.target_id),
+        type: r.type as "associated_with" | "depends_on",
+      }));
+
+      const sourceIds = relationships.map((r) => r.sourceId);
+      const targetIds = relationships.map((r) => r.targetId);
+
+      const allIds = _.uniq([...sourceIds, ...targetIds, data.target.id]);
+
+      const targets = await ctx.db
+        .select()
+        .from(target)
+        .where(inArray(target.id, allIds));
+
+      const releaseDependenciesWithTargetPromises = releaseDependencies.map(
+        async (rd) => {
+          const latestJobSubquery = ctx.db
+            .select({
+              id: releaseJobTrigger.id,
+              targetId: releaseJobTrigger.targetId,
+              releaseId: releaseJobTrigger.releaseId,
+              status: job.status,
+              createdAt: job.createdAt,
+              rank: sql<number>`ROW_NUMBER() OVER (
+              PARTITION BY ${releaseJobTrigger.targetId}, ${releaseJobTrigger.releaseId}
+              ORDER BY ${job.createdAt} DESC
+            )`.as("rank"),
+            })
+            .from(job)
+            .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+            .as("latest_job");
+
+          const targetFulfillingDependency = await ctx.db
+            .select()
+            .from(release)
+            .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+            .innerJoin(
+              latestJobSubquery,
+              eq(latestJobSubquery.releaseId, release.id),
+            )
+            .where(
+              and(
+                releaseMatchesCondition(ctx.db, rd.releaseFilter),
+                eq(deployment.id, rd.deploymentId),
+                inArray(latestJobSubquery.targetId, allIds),
+                eq(latestJobSubquery.rank, 1),
+                eq(latestJobSubquery.status, JobStatus.Completed),
+              ),
+            );
+
+          return {
+            ...rd,
+            target: targetFulfillingDependency.at(0)?.latest_job.targetId,
+          };
+        },
+      );
+
+      return {
+        ...data,
+        releaseDependencies: await Promise.all(
+          releaseDependenciesWithTargetPromises,
+        ),
+        relationships,
+        relatedTargets: targets,
+      };
+    }),
 });
 
 const rolloutDateFromReleaseJobTrigger = (

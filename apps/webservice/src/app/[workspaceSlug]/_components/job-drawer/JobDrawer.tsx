@@ -18,6 +18,7 @@ import { api } from "~/trpc/react";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
 import { JobPropertiesTable } from "./JobProperties";
+import { DependenciesDiagram } from "./RelationshipsDiagramDependencies";
 import { useJobDrawer } from "./useJobDrawer";
 
 export const JobDrawer: React.FC = () => {
@@ -43,7 +44,7 @@ export const JobDrawer: React.FC = () => {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none"
+        className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none focus-visible:outline-none"
       >
         {jobQ.isLoading && (
           <div className="flex h-full w-full items-center justify-center">
@@ -96,10 +97,24 @@ export const JobDrawer: React.FC = () => {
               )}
             </DrawerTitle>
             {job != null && (
-              <div className="flex w-full flex-col gap-6 p-6">
-                <JobPropertiesTable job={job} />
+              <div className="flex h-full flex-col gap-6 p-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="col-span-1">
+                    <JobPropertiesTable job={job} />
+                  </div>
+                  <div className="col-span-1">
+                    <JobAgent job={job} />
+                  </div>
+                </div>
+
                 <JobMetadata job={job} />
-                <JobAgent job={job} />
+
+                <DependenciesDiagram
+                  targetId={job.target.id}
+                  relationships={job.relationships}
+                  targets={job.relatedTargets}
+                  releaseDependencies={job.releaseDependencies}
+                />
               </div>
             )}
           </>
