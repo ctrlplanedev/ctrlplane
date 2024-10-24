@@ -17,6 +17,7 @@ export * from "./policies/gradual-rollout.js";
 export * from "./policies/manual-approval.js";
 export * from "./policies/release-sequencing.js";
 export * from "./policies/success-rate-criteria-passing.js";
+export * from "./policies/release-dependency.js";
 export * from "./policies/release-string-check.js";
 export * from "./policies/concurrency-policy.js";
 export * from "./policies/release-window.js";

@@ -237,15 +237,13 @@ const TargetDiagram: React.FC<{
     })),
   );
   const [edges, __, onEdgesChange] = useEdgesState(
-    relationships.map((t) => {
-      return {
-        id: `${t.sourceId}-${t.targetId}`,
-        source: t.sourceId,
-        target: t.targetId,
-        markerEnd: { type: MarkerType.Arrow, color: colors.neutral[700] },
-        style: { stroke: colors.neutral[700] },
-      };
-    }),
+    relationships.map((t) => ({
+      id: `${t.sourceId}-${t.targetId}`,
+      source: t.sourceId,
+      target: t.targetId,
+      markerEnd: { type: MarkerType.Arrow, color: colors.neutral[700] },
+      style: { stroke: colors.neutral[700] },
+    })),
   );
   const onLayout = useOnLayout();
 

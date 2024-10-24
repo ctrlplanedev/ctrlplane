@@ -59,7 +59,10 @@ const releaseForm = z.object({
   systemId: z.string().uuid(),
   deploymentId: z.string().uuid(),
   version: z.string().min(1).max(255),
-  releaseDependencies: z.array(releaseDependency),
+  releaseDependencies: z.array(releaseDependency).refine((deps) => {
+    const deploymentIds = deps.map((d) => d.deploymentId);
+    return new Set(deploymentIds).size === deploymentIds.length;
+  }, "Cannot reuse a deployment in multiple release dependencies"),
 });
 
 export const CreateReleaseDialog: React.FC<{
@@ -129,10 +132,7 @@ export const CreateReleaseDialog: React.FC<{
       numOfReleaseJobTriggers === 0
         ? `No targets to deploy release too.`
         : `Dispatching ${release.releaseJobTriggers.length} job configuration${release.releaseJobTriggers.length > 1 ? "s" : ""}.`,
-      {
-        dismissible: true,
-        duration: 2_000,
-      },
+      { dismissible: true, duration: 2_000 },
     );
 
     props.onClose?.();
@@ -143,6 +143,8 @@ export const CreateReleaseDialog: React.FC<{
     control: form.control,
     name: "releaseDependencies",
   });
+
+  const formErrors = form.formState.errors.releaseDependencies ?? null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -239,31 +241,36 @@ export const CreateReleaseDialog: React.FC<{
               </span>
 
               {fields.map((_, index) => (
-                <div className="flex items-center gap-2">
+                <div key={index} className="flex items-center gap-2">
                   <FormField
                     control={form.control}
                     name={`releaseDependencies.${index}.deploymentId`}
                     render={({ field: { value, onChange } }) => (
                       <FormItem>
-                        <Select value={value} onValueChange={onChange}>
-                          <SelectTrigger className="w-32 text-sm">
-                            <SelectValue placeholder="Deployment" key={value} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectGroup>
-                              {globalDeployments.data
-                                ?.filter((d) => d.id !== deploymentId)
-                                .map((deployment) => (
-                                  <SelectItem
-                                    key={deployment.id}
-                                    value={deployment.id}
-                                  >
-                                    {deployment.name}
-                                  </SelectItem>
-                                ))}
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <Select value={value} onValueChange={onChange}>
+                            <SelectTrigger className="w-32 text-sm">
+                              <SelectValue
+                                placeholder="Deployment"
+                                key={value}
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectGroup>
+                                {globalDeployments.data
+                                  ?.filter((d) => d.id !== deploymentId)
+                                  .map((deployment) => (
+                                    <SelectItem
+                                      key={deployment.id}
+                                      value={deployment.id}
+                                    >
+                                      {deployment.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectGroup>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
                       </FormItem>
                     )}
                   />
@@ -273,19 +280,21 @@ export const CreateReleaseDialog: React.FC<{
                     name={`releaseDependencies.${index}.releaseFilter`}
                     render={({ field: { value, onChange } }) => (
                       <FormItem>
-                        <ReleaseConditionDialog
-                          condition={value}
-                          onChange={onChange}
-                        >
-                          <Button variant="ghost" size="icon">
-                            {isEmptyCondition(value) && (
-                              <IconFilterExclamation className="h-4 w-4" />
-                            )}
-                            {!isEmptyCondition(value) && (
-                              <IconFilterFilled className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </ReleaseConditionDialog>
+                        <FormControl>
+                          <ReleaseConditionDialog
+                            condition={value}
+                            onChange={onChange}
+                          >
+                            <Button variant="ghost" size="icon">
+                              {isEmptyCondition(value) && (
+                                <IconFilterExclamation className="h-4 w-4" />
+                              )}
+                              {!isEmptyCondition(value) && (
+                                <IconFilterFilled className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </ReleaseConditionDialog>
+                        </FormControl>
                       </FormItem>
                     )}
                   />
@@ -318,6 +327,12 @@ export const CreateReleaseDialog: React.FC<{
                 Add
               </Button>
             </div>
+
+            {formErrors?.root?.message && (
+              <div className="text-sm text-red-500">
+                {formErrors.root.message}
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="submit">Create</Button>

@@ -83,6 +83,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
     environment_policy_release_window: EnvironmentPolicyReleaseWindow | null;
     user?: User | null;
     release_dependency?: ReleaseDependency | null;
+    deployment_name?: { deploymentName: string; deploymentId: string } | null;
   }>,
 ) =>
   _.chain(rows)
@@ -99,7 +100,16 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
       target: v[0]!.target,
       release: { ...v[0]!.release, deployment: v[0]!.deployment },
       environment: v[0]!.environment,
-      releaseDependencies: v.map((r) => r.release_dependency).filter(isPresent),
+      releaseDependencies: v
+        .map((r) =>
+          r.release_dependency != null
+            ? {
+                ...r.release_dependency,
+                deploymentName: r.deployment_name!.deploymentName,
+              }
+            : null,
+        )
+        .filter(isPresent),
       rolloutDate:
         v[0]!.environment_policy != null
           ? rolloutDateFromReleaseJobTrigger(
@@ -294,6 +304,14 @@ const releaseJobTriggerRouter = createTRPCRouter({
         canUser.perform(Permission.JobGet).on({ type: "job", id: input }),
     })
     .query(async ({ ctx, input }) => {
+      const deploymentName = ctx.db
+        .select({
+          deploymentName: deployment.name,
+          deploymentId: deployment.id,
+        })
+        .from(deployment)
+        .as("deployment_name");
+
       const data = await releaseJobTriggerQuery(ctx.db)
         .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
         .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
@@ -308,6 +326,10 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .leftJoin(
           releaseDependency,
           eq(releaseDependency.releaseId, release.id),
+        )
+        .leftJoin(
+          deploymentName,
+          eq(deploymentName.deploymentId, releaseDependency.deploymentId),
         )
         .where(eq(job.id, input))
         .then(processReleaseJobTriggerWithAdditionalDataRows)

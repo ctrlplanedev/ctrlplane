@@ -271,6 +271,7 @@ export const TargetDiagramDependencies: React.FC<{
   relationships: Array<schema.TargetRelationship>;
   targets: Array<schema.Target>;
   releaseDependencies: (schema.ReleaseDependency & {
+    deploymentName: string;
     target?: string;
   })[];
 }> = ({ targetId, relationships, targets, releaseDependencies }) => {
@@ -385,12 +386,12 @@ export const TargetDiagramDependencies: React.FC<{
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a release" />
+            <SelectValue placeholder="Select a dependency" />
           </SelectTrigger>
           <SelectContent>
             {releaseDependencies.map((rd) => (
               <SelectItem key={rd.id} value={rd.id}>
-                {rd.deploymentId}
+                {rd.deploymentName}
               </SelectItem>
             ))}
           </SelectContent>
