@@ -116,7 +116,22 @@ export const GET = async (
 const bodySchema = z.array(
   createTarget
     .omit({ lockedAt: true, providerId: true, workspaceId: true })
-    .extend({ metadata: z.record(z.string()).optional() }),
+    .extend({
+      metadata: z.record(z.string()).optional(),
+      variables: z
+        .array(
+          z.object({
+            key: z.string(),
+            value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+            sensitive: z.boolean(),
+          }),
+        )
+        .optional()
+        .refine(
+          (vars) => new Set(vars?.map((v) => v.key)).size === vars?.length,
+          "Duplicate variable keys are not allowed",
+        ),
+    }),
 );
 
 const canUpsertTarget = async (userId: string, workspaceId: string) =>
@@ -168,7 +183,14 @@ export const PATCH = async (
 
   const targets = await upsertTargets(
     db,
-    parsedTargets.map((t) => ({ ...t, workspaceId })),
+    parsedTargets.map((t) => ({
+      ...t,
+      workspaceId,
+      variables: t.variables?.map((v) => ({
+        ...v,
+        value: v.value ?? null,
+      })),
+    })),
   );
 
   return NextResponse.json({ count: targets.length });

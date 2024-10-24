@@ -16,8 +16,10 @@ import {
   target,
   targetMatchesMetadata,
   targetMetadata,
+  targetVariable,
 } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
+import { variablesAES256 } from "@ctrlplane/secrets";
 
 import { dispatchJobsForNewTargets } from "./new-target.js";
 
@@ -76,9 +78,150 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
   }
 };
 
+const upsertTargetVariables = async (
+  tx: Tx,
+  targets: Array<
+    Target & {
+      variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+    }
+  >,
+) => {
+  const existingTargetVariables = await tx
+    .select()
+    .from(targetVariable)
+    .where(
+      inArray(
+        targetVariable.targetId,
+        targets.map((t) => t.id),
+      ),
+    )
+    .catch((err) => {
+      log.error("Error fetching existing target metadata", { error: err });
+      throw err;
+    });
+
+  const targetVariablesValues = targets.flatMap((target) => {
+    const { id, variables = [] } = target;
+    return variables.map(({ key, value, sensitive }) => ({
+      targetId: id,
+      key,
+      value: sensitive
+        ? variablesAES256().encrypt(JSON.stringify(value))
+        : value,
+      sensitive,
+    }));
+  });
+
+  if (targetVariablesValues.length > 0)
+    await tx
+      .insert(targetVariable)
+      .values(targetVariablesValues)
+      .onConflictDoUpdate({
+        target: [targetVariable.key, targetVariable.targetId],
+        set: buildConflictUpdateColumns(targetVariable, ["value", "sensitive"]),
+      })
+      .catch((err) => {
+        log.error("Error inserting target variables", { error: err });
+        throw err;
+      });
+
+  const variablesToDelete = existingTargetVariables.filter(
+    (variable) =>
+      !targetVariablesValues.some(
+        (newVariable) =>
+          newVariable.targetId === variable.targetId &&
+          newVariable.key === variable.key,
+      ),
+  );
+
+  if (variablesToDelete.length > 0)
+    await tx
+      .delete(targetVariable)
+      .where(
+        inArray(
+          targetVariable.id,
+          variablesToDelete.map((m) => m.id),
+        ),
+      )
+      .catch((err) => {
+        log.error("Error deleting target variables", { error: err });
+        throw err;
+      });
+};
+
+const upsertTargetMetadata = async (
+  tx: Tx,
+  targets: Array<Target & { metadata?: Record<string, string> }>,
+) => {
+  const existingTargetMetadata = await tx
+    .select()
+    .from(targetMetadata)
+    .where(
+      inArray(
+        targetMetadata.targetId,
+        targets.map((t) => t.id),
+      ),
+    )
+    .catch((err) => {
+      log.error("Error fetching existing target metadata", { error: err });
+      throw err;
+    });
+
+  const targetMetadataValues = targets.flatMap((target) => {
+    const { id, metadata = {} } = target;
+
+    return Object.entries(metadata).map(([key, value]) => ({
+      targetId: id,
+      key,
+      value,
+    }));
+  });
+
+  if (targetMetadataValues.length > 0)
+    await tx
+      .insert(targetMetadata)
+      .values(targetMetadataValues)
+      .onConflictDoUpdate({
+        target: [targetMetadata.targetId, targetMetadata.key],
+        set: buildConflictUpdateColumns(targetMetadata, ["value"]),
+      })
+      .catch((err) => {
+        log.error("Error inserting target metadata", { error: err });
+        throw err;
+      });
+
+  const metadataToDelete = existingTargetMetadata.filter(
+    (metadata) =>
+      !targetMetadataValues.some(
+        (newMetadata) =>
+          newMetadata.targetId === metadata.targetId &&
+          newMetadata.key === metadata.key,
+      ),
+  );
+
+  if (metadataToDelete.length > 0)
+    await tx
+      .delete(targetMetadata)
+      .where(
+        inArray(
+          targetMetadata.id,
+          metadataToDelete.map((m) => m.id),
+        ),
+      )
+      .catch((err) => {
+        log.error("Error deleting target metadata", { error: err });
+        throw err;
+      });
+};
+
 export const upsertTargets = async (
   tx: Tx,
-  targetsToInsert: Array<InsertTarget & { metadata?: Record<string, string> }>,
+  targetsToInsert: Array<
+    InsertTarget & {
+      metadata?: Record<string, string>;
+      variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+    }
+  >,
 ) => {
   try {
     const targetsBeforeInsertPromises = _.chain(targetsToInsert)
@@ -92,9 +235,9 @@ export const upsertTargets = async (
       )
       .value();
 
-    const targetsBeforeInsert = (
-      await Promise.all(targetsBeforeInsertPromises)
-    ).flat();
+    const targetsBeforeInsert = await Promise.all(
+      targetsBeforeInsertPromises,
+    ).then((r) => r.flat());
 
     const targets = await tx
       .insert(target)
@@ -109,73 +252,25 @@ export const upsertTargets = async (
         ]),
       })
       .returning()
+      .then((targets) =>
+        targets.map((t) => ({
+          ...t,
+          ...targetsToInsert.find(
+            (ti) =>
+              ti.identifier === t.identifier &&
+              ti.workspaceId === t.workspaceId,
+          ),
+        })),
+      )
       .catch((err) => {
         log.error("Error inserting targets", { error: err });
         throw err;
       });
 
-    const targetMetadataValues = targetsToInsert.flatMap((targetToInsert) => {
-      const { identifier, workspaceId, metadata = [] } = targetToInsert;
-      const targetId = targets.find(
-        (t) => t.identifier === identifier && t.workspaceId === workspaceId,
-      )?.id;
-      if (targetId == null) return [];
-
-      return Object.entries(metadata).map(([key, value]) => ({
-        targetId,
-        key,
-        value,
-      }));
-    });
-
-    const existingTargetMetadata = await tx
-      .select()
-      .from(targetMetadata)
-      .where(
-        inArray(
-          targetMetadata.targetId,
-          targets.map((t) => t.id),
-        ),
-      )
-      .catch((err) => {
-        log.error("Error fetching existing target metadata", { error: err });
-        throw err;
-      });
-
-    const metadataToDelete = existingTargetMetadata.filter(
-      (metadata) =>
-        !targetMetadataValues.some(
-          (newMetadata) =>
-            newMetadata.targetId === metadata.targetId &&
-            newMetadata.key === metadata.key,
-        ),
-    );
-
-    if (targetMetadataValues.length > 0)
-      await tx
-        .insert(targetMetadata)
-        .values(targetMetadataValues)
-        .onConflictDoUpdate({
-          target: [targetMetadata.targetId, targetMetadata.key],
-          set: buildConflictUpdateColumns(targetMetadata, ["value"]),
-        })
-        .catch((err) => {
-          log.error("Error inserting target metadata", { error: err });
-          throw err;
-        });
-
-    await tx
-      .delete(targetMetadata)
-      .where(
-        inArray(
-          targetMetadata.id,
-          metadataToDelete.map((m) => m.id),
-        ),
-      )
-      .catch((err) => {
-        log.error("Error deleting target metadata", { error: err });
-        throw err;
-      });
+    await Promise.all([
+      upsertTargetMetadata(tx, targets),
+      upsertTargetVariables(tx, targets),
+    ]);
 
     const newTargets = targets.filter(
       (t) => !targetsBeforeInsert.some((et) => et.identifier === t.identifier),
@@ -194,13 +289,15 @@ export const upsertTargets = async (
 
     const newTargetCount = newTargets.length;
     const targetsToInsertCount = targetsToInsert.length;
+    const targetsToDeleteCount = targetsToDelete.length;
+    const targetsBeforeInsertCount = targetsBeforeInsert.length;
     log.info(
       `Found ${newTargetCount} new targets out of ${targetsToInsertCount} total targets`,
       {
         newTargetCount,
         targetsToInsertCount,
-        targetsToDeleteCount: targetsToDelete.length,
-        targetsBeforeInsertCount: targetsBeforeInsert.length,
+        targetsToDeleteCount,
+        targetsBeforeInsertCount,
       },
     );
 
@@ -217,6 +314,7 @@ export const upsertTargets = async (
           log.error("Error deleting targets", { error: err });
           throw err;
         });
+
       log.info(`Deleted ${targetsToDelete.length} targets`, {
         targetsToDelete,
       });
