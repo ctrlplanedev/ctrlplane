@@ -122,7 +122,7 @@ const bodySchema = z.array(
         .array(
           z.object({
             key: z.string(),
-            value: z.any(),
+            value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
             sensitive: z.boolean(),
           }),
         )
