@@ -60,7 +60,6 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
-import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { api } from "~/trpc/react";
 
 const overrideJobStatusFormSchema = z.object({
@@ -238,7 +237,6 @@ const RedeployReleaseDialog: React.FC<{
   const router = useRouter();
   const redeploy = api.release.deploy.toTarget.useMutation();
   const [isOpen, setIsOpen] = useState(false);
-  const { setJobId } = useJobDrawer();
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
