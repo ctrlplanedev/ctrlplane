@@ -5,12 +5,15 @@ import type { EdgeTypes, NodeTypes, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
 import ReactFlow, {
   MarkerType,
+  ReactFlowProvider,
   useEdgesState,
   useNodesState,
   useReactFlow,
 } from "reactflow";
 import colors from "tailwindcss/colors";
 
+import { Card } from "@ctrlplane/ui/card";
+import { Label } from "@ctrlplane/ui/label";
 import {
   Select,
   SelectContent,
@@ -80,7 +83,7 @@ const getUndirectedGraph = (
   );
 };
 
-export const TargetDiagramDependencies: React.FC<{
+type DependenciesDiagramProps = {
   targetId: string;
   relationships: Array<schema.TargetRelationship>;
   targets: Array<schema.Target>;
@@ -88,7 +91,14 @@ export const TargetDiagramDependencies: React.FC<{
     deploymentName: string;
     target?: string;
   })[];
-}> = ({ targetId, relationships, targets, releaseDependencies }) => {
+};
+
+const TargetDiagramDependencies: React.FC<DependenciesDiagramProps> = ({
+  targetId,
+  relationships,
+  targets,
+  releaseDependencies,
+}) => {
   const [nodes, _, onNodesChange] = useNodesState(
     targets.map((t) => ({
       id: t.id,
@@ -169,7 +179,7 @@ export const TargetDiagramDependencies: React.FC<{
       const color = isHighlighted ? colors.blue[500] : colors.neutral[700];
 
       return {
-        id: t.id,
+        id: `${t.sourceId}-${t.targetId}`,
         source: t.sourceId,
         target: t.targetId,
         markerEnd: { type: MarkerType.Arrow, color },
@@ -218,3 +228,16 @@ export const TargetDiagramDependencies: React.FC<{
     </div>
   );
 };
+
+export const DependenciesDiagram: React.FC<DependenciesDiagramProps> = (
+  props,
+) => (
+  <div className="h-full w-full space-y-2">
+    <Label>Release dependencies</Label>
+    <Card className="h-[90%] min-h-[500px]">
+      <ReactFlowProvider>
+        <TargetDiagramDependencies {...props} />
+      </ReactFlowProvider>
+    </Card>
+  </div>
+);
