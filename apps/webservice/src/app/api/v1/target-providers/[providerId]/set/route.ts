@@ -22,7 +22,7 @@ const bodySchema = z.object({
           .array(
             z.object({
               key: z.string(),
-              value: z.string(),
+              value: z.any(),
               sensitive: z.boolean(),
             }),
           )
@@ -67,7 +67,16 @@ export const PATCH = async (
     workspaceId: provider.workspaceId,
   }));
 
-  const targets = await upsertTargets(db, targetsToInsert);
+  const targets = await upsertTargets(
+    db,
+    targetsToInsert.map((t) => ({
+      ...t,
+      variables: t.variables?.map((v) => ({
+        ...v,
+        value: v.value ?? null,
+      })),
+    })),
+  );
 
   return NextResponse.json({ targets });
 };
