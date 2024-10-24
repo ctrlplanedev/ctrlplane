@@ -42,7 +42,13 @@ class AES256EncryptionService {
 }
 
 export const env = createEnv({
-  server: { VARIABLES_AES_256_KEY: z.string().min(64).max(64) },
+  server: {
+    VARIABLES_AES_256_KEY: z
+      .string()
+      .min(64)
+      .max(64)
+      .regex(/^[0-9a-fA-F]+$/, "Key must be hexadecimal"),
+  },
   runtimeEnv: process.env,
   skipValidation:
     !!process.env.CI ||

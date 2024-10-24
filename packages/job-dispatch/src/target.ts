@@ -134,10 +134,10 @@ const upsertTargetVariables = async (
 
   if (variablesToDelete.length > 0)
     await tx
-      .delete(targetMetadata)
+      .delete(targetVariable)
       .where(
         inArray(
-          targetMetadata.id,
+          targetVariable.id,
           variablesToDelete.map((m) => m.id),
         ),
       )
@@ -254,8 +254,9 @@ export const upsertTargets = async (
         targets.map((t) => ({
           ...t,
           ...targetsToInsert.find(
-            (t) =>
-              t.identifier === t.identifier && t.workspaceId === t.workspaceId,
+            (ti) =>
+              ti.identifier === t.identifier &&
+              ti.workspaceId === t.workspaceId,
           ),
         })),
       )
