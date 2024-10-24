@@ -26,7 +26,11 @@ const bodySchema = z.object({
               sensitive: z.boolean(),
             }),
           )
-          .optional(),
+          .optional()
+          .refine(
+            (vars) => new Set(vars?.map((v) => v.key)).size === vars?.length,
+            "Duplicate variable keys are not allowed",
+          ),
       }),
   ),
 });
