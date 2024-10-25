@@ -91,7 +91,7 @@ export const CreateReleaseDialog: React.FC<{
     workspace.data?.id ?? "",
     { enabled: workspace.data != null && workspace.data.id !== "" },
   );
-  const latestRelease = api.release.list.useQuery(
+  const latestActiveRelease = api.release.list.useQuery(
     { deploymentId, limit: 1 },
     { enabled: deploymentId !== "" },
   );
@@ -146,14 +146,14 @@ export const CreateReleaseDialog: React.FC<{
   });
 
   useEffect(() => {
-    if ((latestRelease.data?.items.length ?? 0) > 0)
-      latestRelease.data?.items[0]!.releaseDependencies.forEach((rd) => {
+    if ((latestActiveRelease.data?.items.length ?? 0) > 0)
+      latestActiveRelease.data?.items[0]!.releaseDependencies.forEach((rd) => {
         append({
           ...rd,
           targetMetadataGroupId: rd.targetMetadataGroupId ?? undefined,
         });
       });
-  }, [latestRelease.data, append, deploymentId]);
+  }, [latestActiveRelease.data, append, deploymentId]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -358,7 +358,7 @@ export const CreateReleaseDialog: React.FC<{
                     deploymentId: "",
                     rule: "",
                     ruleType:
-                      valid(latestRelease.data?.items[0]?.version) != null
+                      valid(latestActiveRelease.data?.items[0]?.version) != null
                         ? "semver"
                         : "regex",
                   })

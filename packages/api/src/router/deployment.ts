@@ -330,7 +330,7 @@ export const deploymentRouter = createTRPCRouter({
         .then((r) =>
           r.map((row) => ({
             ...row.deployment,
-            latestRelease: row.active_releases,
+            latestActiveReleases: row.active_releases,
           })),
         );
     }),

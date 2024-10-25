@@ -114,17 +114,17 @@ class ReleaseJobTriggerBuilder {
   }
 
   async _values() {
-    const latestReleaseSubQuery = this._releaseSubQuery();
+    const latestActiveReleaseSubQuery = this._releaseSubQuery();
     const releaseJobTriggers = this.releaseIds
       ? this._baseQuery().innerJoin(
           release,
           eq(release.deploymentId, deployment.id),
         )
       : this._baseQuery().innerJoin(
-          latestReleaseSubQuery,
+          latestActiveReleaseSubQuery,
           and(
-            eq(latestReleaseSubQuery.deploymentId, deployment.id),
-            eq(latestReleaseSubQuery.rank, 1),
+            eq(latestActiveReleaseSubQuery.deploymentId, deployment.id),
+            eq(latestActiveReleaseSubQuery.rank, 1),
           ),
         );
 
