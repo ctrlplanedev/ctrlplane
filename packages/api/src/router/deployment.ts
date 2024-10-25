@@ -49,7 +49,7 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
     })
     .from(release)
     .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
-    .as("active_release");
+    .as("active_releases");
 
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
@@ -224,7 +224,7 @@ export const deploymentRouter = createTRPCRouter({
             .groupBy((t) => t.deployment.id)
             .map((t) => ({
               ...t[0]!.deployment,
-              activeReleases: t.map((a) => a.active_release).filter(isPresent),
+              activeReleases: t.map((a) => a.active_releases).filter(isPresent),
             }))
             .value(),
         );
@@ -330,7 +330,7 @@ export const deploymentRouter = createTRPCRouter({
         .then((r) =>
           r.map((row) => ({
             ...row.deployment,
-            latestRelease: row.active_release,
+            latestRelease: row.active_releases,
           })),
         );
     }),
