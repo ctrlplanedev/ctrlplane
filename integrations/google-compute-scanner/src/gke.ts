@@ -8,10 +8,8 @@ import _ from "lodash";
 import { SemVer } from "semver";
 
 import { logger } from "@ctrlplane/logger";
-import {
-  kubernetesNamespaceV1,
-  ReservedMetadataKey,
-} from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { kubernetesNamespaceV1 } from "@ctrlplane/validators/targets";
 
 import { env } from "./config.js";
 import { connectToCluster } from "./gke-connect.js";

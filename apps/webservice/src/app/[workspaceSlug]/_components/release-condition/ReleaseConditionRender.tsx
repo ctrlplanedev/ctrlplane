@@ -11,7 +11,7 @@ import {
 import type { ReleaseConditionRenderProps } from "./release-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { CreatedAtConditionRender } from "./CreatedAtConditionRender";
-import { MetadataConditionRender } from "./MetadataConditionRender";
+import { ReleaseMetadataConditionRender } from "./MetadataConditionRender";
 import { VersionConditionRender } from "./VersionConditionRender";
 
 /**
@@ -34,7 +34,7 @@ export const ReleaseConditionRender: React.FC<
 
   if (isMetadataCondition(condition))
     return (
-      <MetadataConditionRender
+      <ReleaseMetadataConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}

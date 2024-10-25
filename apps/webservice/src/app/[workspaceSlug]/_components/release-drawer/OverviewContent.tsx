@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import yaml from "js-yaml";
 
 import { Input } from "@ctrlplane/ui/input";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ConfigEditor } from "../ConfigEditor";

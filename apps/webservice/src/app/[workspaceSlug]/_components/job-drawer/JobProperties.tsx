@@ -2,8 +2,8 @@ import React from "react";
 import { capitalCase } from "change-case";
 import { format } from "date-fns";
 
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatusReadable } from "@ctrlplane/validators/jobs";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
 
 import type { Job } from "./Job";
 import { JobTableStatusIcon } from "../JobTableStatusIcon";

@@ -7,7 +7,7 @@ import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { omitNullUndefined } from "../utils.js";
 
