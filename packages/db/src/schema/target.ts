@@ -1,7 +1,5 @@
-import type {
-  MetadataCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+import type { MetadataCondition } from "@ctrlplane/validators/conditions";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
 import {

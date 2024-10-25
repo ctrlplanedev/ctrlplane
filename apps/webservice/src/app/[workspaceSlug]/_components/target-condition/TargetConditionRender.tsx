@@ -12,9 +12,9 @@ import {
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { KindConditionRender } from "./KindConditionRender";
-import { MetadataConditionRender } from "./MetadataConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
 import { ProviderConditionRender } from "./ProviderConditionRender";
+import { TargetMetadataConditionRender } from "./TargetMetadataConditionRender";
 
 /**
  * The parent container should have min width of 1000px
@@ -36,7 +36,7 @@ export const TargetConditionRender: React.FC<
 
   if (isMetadataCondition(condition))
     return (
-      <MetadataConditionRender
+      <TargetMetadataConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}

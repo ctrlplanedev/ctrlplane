@@ -1,7 +1,7 @@
+import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
   KindCondition,
-  MetadataCondition,
   NameCondition,
   ProviderCondition,
   TargetCondition,

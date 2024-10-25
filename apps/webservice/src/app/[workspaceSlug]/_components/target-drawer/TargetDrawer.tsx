@@ -16,7 +16,7 @@ import {
 
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { api } from "~/trpc/react";
 import { EditTargetDialog } from "../EditTarget";
