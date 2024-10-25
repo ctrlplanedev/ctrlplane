@@ -31,6 +31,7 @@ import {
   targetMatchesMetadata,
   updateEnvironment,
   updateEnvironmentPolicy,
+  user,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -122,7 +123,7 @@ const policyRouter = createTRPCRouter({
       .input(
         z.object({
           releaseId: z.string(),
-          status: z.enum(["pending", "approved", "rejected"]),
+          status: z.enum(["pending", "approved", "rejected"]).optional(),
         }),
       )
       .query(({ ctx, input }) =>
@@ -133,16 +134,22 @@ const policyRouter = createTRPCRouter({
             environmentPolicy,
             eq(environmentPolicy.id, environmentPolicyApproval.policyId),
           )
+          .leftJoin(user, eq(user.id, environmentPolicyApproval.userId))
           .where(
             and(
-              eq(environmentPolicyApproval.releaseId, input.releaseId),
-              eq(environmentPolicyApproval.status, input.status),
+              ...[
+                eq(environmentPolicyApproval.releaseId, input.releaseId),
+                input.status
+                  ? eq(environmentPolicyApproval.status, input.status)
+                  : undefined,
+              ].filter(Boolean),
             ),
           )
           .then((p) =>
             p.map((r) => ({
               ...r.environment_policy_approval,
               policy: r.environment_policy,
+              user: r.user,
             })),
           ),
       ),
@@ -155,12 +162,16 @@ const policyRouter = createTRPCRouter({
             .on({ type: "release", id: input.releaseId }),
       })
       .input(
-        z.object({ policyId: z.string().uuid(), releaseId: z.string().uuid() }),
+        z.object({
+          policyId: z.string().uuid(),
+          releaseId: z.string().uuid(),
+          userId: z.string().uuid(),
+        }),
       )
       .mutation(async ({ ctx, input }) => {
         const envApproval = await ctx.db
           .update(environmentPolicyApproval)
-          .set({ status: "approved" })
+          .set({ status: "approved", userId: input.userId })
           .where(
             and(
               eq(environmentPolicyApproval.policyId, input.policyId),
@@ -211,13 +222,17 @@ const policyRouter = createTRPCRouter({
             .on({ type: "release", id: input.releaseId }),
       })
       .input(
-        z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
+        z.object({
+          releaseId: z.string().uuid(),
+          policyId: z.string().uuid(),
+          userId: z.string().uuid(),
+        }),
       )
       .mutation(({ ctx, input }) =>
         ctx.db.transaction(async (tx) => {
           await tx
             .update(environmentPolicyApproval)
-            .set({ status: "rejected" })
+            .set({ status: "rejected", userId: input.userId })
             .where(
               and(
                 eq(environmentPolicyApproval.policyId, input.policyId),

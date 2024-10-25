@@ -8,7 +8,6 @@ import { ScrollArea } from "@ctrlplane/ui/scroll-area";
 import { ReactFlowProvider } from "~/app/[workspaceSlug]/_components/reactflow/ReactFlowProvider";
 import { api } from "~/trpc/server";
 import { FlowDiagram } from "./FlowDiagram";
-import { PolicyApprovalRow } from "./PolicyApprovalRow";
 import { TargetReleaseTable } from "./TargetReleaseTable";
 
 export const metadata: Metadata = {
@@ -40,11 +39,6 @@ export default async function ReleasePage({
     system.id,
   );
 
-  const pendingApprovals = await api.environment.policy.approval.byReleaseId({
-    releaseId: release.id,
-    status: "pending",
-  });
-
   return (
     <div className="flex h-[calc(100vh-53px)] flex-col">
       <div className="shrink-0 border-b p-4 text-lg text-muted-foreground">
@@ -65,23 +59,6 @@ export default async function ReleasePage({
           </ReactFlowProvider>
         </div>
 
-        {pendingApprovals.length > 0 && (
-          <div className="shrink-0 space-y-4 border-b p-6">
-            <div>Pending Approvals</div>
-            <div className="space-y-2">
-              {pendingApprovals.map((approval) => (
-                <PolicyApprovalRow
-                  key={approval.id}
-                  approval={approval}
-                  environments={environments.filter(
-                    (env) => env.policyId === approval.policyId,
-                  )}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="shrink-0 border-b p-1">
           <Button variant="ghost" size="sm" className="flex gap-1">
             <IconFilter className="h-4 w-4" /> Filter
@@ -91,6 +68,7 @@ export default async function ReleasePage({
         <TargetReleaseTable
           release={release}
           deploymentName={deployment.name}
+          environments={environments}
         />
       </ScrollArea>
     </div>

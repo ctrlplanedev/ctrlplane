@@ -3,6 +3,7 @@
 import type {
   Environment,
   EnvironmentPolicyApproval,
+  User,
 } from "@ctrlplane/db/schema";
 import { useRouter } from "next/navigation";
 
@@ -12,18 +13,25 @@ import { toast } from "@ctrlplane/ui/toast";
 import { api } from "~/trpc/react";
 
 type PolicyApprovalRowProps = {
-  approval: EnvironmentPolicyApproval;
-  environments: Environment[];
+  approval: EnvironmentPolicyApproval & { user?: User };
+  environment: Environment | undefined;
 };
 
 export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   approval,
-  environments,
+  environment,
 }) => {
   const router = useRouter();
   const utils = api.useUtils();
 
-  const { releaseId, policyId } = approval;
+  if (!environment) {
+    console.error("Environment is undefined for approval:", approval);
+    return null;
+  }
+
+  const environmentName = environment.name;
+  const { releaseId, policyId, status } = approval;
+  const currentUserID = api.user.viewer.useQuery().data?.id;
 
   const rejectMutation = api.environment.policy.approval.reject.useMutation({
     onSuccess: ({ cancelledJobCount }) => {
@@ -31,7 +39,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
       utils.environment.policy.invalidate();
       utils.job.config.invalidate();
       toast.success(
-        `Rejected release to ${environmentNames} and cancelled ${cancelledJobCount} job${cancelledJobCount !== 1 ? "s" : ""}`,
+        `Rejected release to ${environmentName} and cancelled ${cancelledJobCount} job${cancelledJobCount !== 1 ? "s" : ""}`,
       );
     },
     onError: () => toast.error("Error rejecting release"),
@@ -42,28 +50,67 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
       router.refresh();
       utils.environment.policy.invalidate();
       utils.job.config.invalidate();
-      toast.success(`Approved release to ${environmentNames}`);
+      toast.success(`Approved release to ${environmentName}`);
     },
     onError: () => toast.error("Error approving release"),
   });
 
-  const environmentNames = environments.map((e) => e.name).join(", ");
-  const handleReject = () => rejectMutation.mutate({ releaseId, policyId });
-  const handleApprove = () => approveMutation.mutate(approval);
+  const handleReject = () =>
+    rejectMutation.mutate({
+      releaseId,
+      policyId,
+      userId: currentUserID!,
+    });
+  const handleApprove = () =>
+    approveMutation.mutate({
+      releaseId,
+      policyId,
+      userId: currentUserID!,
+    });
+
+  console.log("status", status);
+
+  const renderStatusContent = () => {
+    if (status === "pending") {
+      return (
+        <>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              className="h-6 px-2"
+              onClick={handleReject}
+            >
+              Reject
+            </Button>
+            <Button className="h-6 px-2" onClick={handleApprove}>
+              Approve
+            </Button>
+          </div>
+        </>
+      );
+    }
+
+    if (status === "approved")
+      return (
+        <div className="ml-2 flex-grow">
+          <span className="font-medium text-white">
+            Approved by {approval.user?.name}
+          </span>
+        </div>
+      );
+
+    return (
+      <div className="ml-2 flex-grow">
+        <span className="font-medium text-muted-foreground">
+          Rejected by {approval.user?.name}
+        </span>
+      </div>
+    );
+  };
 
   return (
-    <div className="flex items-center gap-2 rounded-md border border-blue-400/50 bg-blue-500/10 p-2 text-sm">
-      <div className="ml-2 flex-grow">
-        Approve deploying to {environmentNames}
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={handleReject}>
-          Reject
-        </Button>
-        <Button size="sm" onClick={handleApprove}>
-          Approve
-        </Button>
-      </div>
+    <div className="flex items-center gap-2 rounded-md text-sm">
+      {renderStatusContent()}
     </div>
   );
 };
