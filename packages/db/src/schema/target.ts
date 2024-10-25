@@ -3,7 +3,7 @@ import type {
   TargetCondition,
 } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
-import { exists, like, not, notExists, or, sql } from "drizzle-orm";
+import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
 import {
   boolean,
   json,
@@ -50,6 +50,15 @@ export const target = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.identifier, t.workspaceId) }),
 );
+
+export const targetRelations = relations(target, ({ one, many }) => ({
+  metadata: many(targetMetadata),
+  variables: many(targetVariable),
+  provider: one(targetProvider, {
+    fields: [target.providerId],
+    references: [targetProvider.id],
+  }),
+}));
 
 export type Target = InferSelectModel<typeof target>;
 
@@ -109,6 +118,13 @@ export const targetMetadata = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.targetId) }),
 );
+
+export const targetMetadataRelations = relations(targetMetadata, ({ one }) => ({
+  target: one(target, {
+    fields: [targetMetadata.targetId],
+    references: [target.id],
+  }),
+}));
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === "null")
@@ -227,15 +243,22 @@ export const targetVariable = pgTable(
       .notNull(),
 
     key: text("key").notNull(),
-    value: jsonb("value").notNull(),
+    value: jsonb("value").$type<string | number | boolean>().notNull(),
     sensitive: boolean("sensitive").notNull().default(false),
   },
   (t) => ({ uniq: uniqueIndex().on(t.targetId, t.key) }),
 );
 
-export const createTargetVariable = createInsertSchema(targetVariable).omit({
-  id: true,
-});
+export const targetVariableRelations = relations(targetVariable, ({ one }) => ({
+  target: one(target, {
+    fields: [targetVariable.targetId],
+    references: [target.id],
+  }),
+}));
+
+export const createTargetVariable = createInsertSchema(targetVariable, {
+  value: z.union([z.string(), z.number(), z.boolean()]),
+}).omit({ id: true });
 
 export const updateTargetVariable = createTargetVariable.partial();
 export type TargetVariable = InferSelectModel<typeof targetVariable>;
