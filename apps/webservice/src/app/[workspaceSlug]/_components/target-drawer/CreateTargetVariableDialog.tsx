@@ -66,7 +66,8 @@ export const CreateTargetVariableDialog: React.FC<
     createTargetVariable
       .mutateAsync({ targetId, ...data })
       .then(() => utils.target.byId.invalidate(targetId))
-      .then(() => form.reset()),
+      .then(() => form.reset())
+      .then(() => setOpen(false)),
   );
 
   return (

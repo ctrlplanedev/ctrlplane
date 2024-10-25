@@ -56,6 +56,7 @@ export const DeleteTargetVariableDialog: React.FC<
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
             onClick={onDelete}
+            disabled={deleteTargetVariable.isPending}
           >
             Delete
           </AlertDialogAction>
