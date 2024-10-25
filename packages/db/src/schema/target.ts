@@ -238,3 +238,4 @@ export const createTargetVariable = createInsertSchema(targetVariable).omit({
 });
 
 export const updateTargetVariable = createTargetVariable.partial();
+export type TargetVariable = InferSelectModel<typeof targetVariable>;

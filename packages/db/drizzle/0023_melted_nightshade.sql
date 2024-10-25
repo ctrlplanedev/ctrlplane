@@ -1,0 +1,1 @@
+ALTER TABLE "job_variable" ADD COLUMN "sensitive" boolean DEFAULT false NOT NULL;

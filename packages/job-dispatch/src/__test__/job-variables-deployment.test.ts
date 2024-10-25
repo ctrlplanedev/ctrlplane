@@ -14,6 +14,7 @@ vi.mock("../job-variables-deployment", async () => ({
 vi.mock("../job-variables-deployment/utils", async () => ({
   ...(await vi.importActual("../job-variables-deployment/utils")),
   getJob: vi.fn(),
+  getTargetVariableValue: vi.fn(),
   getDeploymentVariables: vi.fn(),
   getTarget: vi.fn(),
   getEnvironment: vi.fn(),
@@ -117,6 +118,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -187,6 +189,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -222,6 +225,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -288,6 +292,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -353,6 +358,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -418,6 +424,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -483,6 +490,7 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
     vi.mocked(utils.getTarget).mockResolvedValue(target);
 
@@ -549,5 +557,194 @@ describe("job-variables-deployment", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0]!.value).toEqual("test5");
+  });
+
+  it("should prioritize target variable if it exists", async () => {
+    vi.mocked(utils.getJob).mockResolvedValue(job);
+
+    const targetVariable: SCHEMA.TargetVariable = {
+      id: "0",
+      targetId: "0",
+      key: "test",
+      value: "test6",
+      sensitive: false,
+    };
+
+    const variables: variable[] = [
+      {
+        deployment_variable: {
+          id: "0",
+          config: { type: "string", inputType: "text" },
+          description: "test",
+          deploymentId: "0",
+          key: "test",
+          defaultValueId: null,
+        },
+        release,
+      },
+    ];
+
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(targetVariable);
+    vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
+    vi.mocked(utils.getTarget).mockResolvedValue(target);
+
+    vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
+    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
+            id: "0",
+            name: "testb",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test",
+                variableSetId: "0",
+              },
+            ],
+          },
+        },
+        {
+          id: "1",
+          variableSetId: "1",
+          environmentId: "0",
+          variableSet: {
+            id: "1",
+            name: "testa",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "1",
+                value: "test5",
+                key: "test",
+                variableSetId: "1",
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
+      db,
+      {
+        ...job.job,
+        releaseJobTrigger: job.release_job_trigger,
+      },
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.value).toEqual("test6");
+  });
+
+  it("should prioritize target variable if it exists and return sensitive value if it is", async () => {
+    vi.mocked(utils.getJob).mockResolvedValue(job);
+
+    const targetVariable: SCHEMA.TargetVariable = {
+      id: "0",
+      targetId: "0",
+      key: "test",
+      value: "test6",
+      sensitive: true,
+    };
+
+    const variables: variable[] = [
+      {
+        deployment_variable: {
+          id: "0",
+          config: { type: "string", inputType: "text" },
+          description: "test",
+          deploymentId: "0",
+          key: "test",
+          defaultValueId: null,
+        },
+        release,
+      },
+    ];
+
+    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(targetVariable);
+    vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
+    vi.mocked(utils.getTarget).mockResolvedValue(target);
+
+    vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
+    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+
+    vi.mocked(utils.getEnvironment).mockResolvedValue({
+      id: "0",
+      name: "test",
+      description: null,
+      systemId: "0",
+      policyId: null,
+      targetFilter: null,
+      deletedAt: null,
+      assignments: [
+        {
+          id: "0",
+          variableSetId: "0",
+          environmentId: "0",
+          variableSet: {
+            id: "0",
+            name: "testb",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "0",
+                value: "test4",
+                key: "test",
+                variableSetId: "0",
+              },
+            ],
+          },
+        },
+        {
+          id: "1",
+          variableSetId: "1",
+          environmentId: "0",
+          variableSet: {
+            id: "1",
+            name: "testa",
+            description: null,
+            systemId: "0",
+            values: [
+              {
+                id: "1",
+                value: "test5",
+                key: "test",
+                variableSetId: "1",
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
+      db,
+      {
+        ...job.job,
+        releaseJobTrigger: job.release_job_trigger,
+      },
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0]!.value).toEqual("test6");
+    expect(result[0]!.sensitive).toBe(true);
   });
 });

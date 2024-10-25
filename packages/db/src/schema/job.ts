@@ -1,5 +1,6 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
+  boolean,
   json,
   pgEnum,
   pgTable,
@@ -92,6 +93,7 @@ export const jobVariable = pgTable(
       .references(() => job.id),
     key: text("key").notNull(),
     value: json("value").notNull(),
+    sensitive: boolean("sensitive").notNull().default(false),
   },
   (t) => ({ uniq: uniqueIndex().on(t.jobId, t.key) }),
 );
