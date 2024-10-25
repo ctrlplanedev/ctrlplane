@@ -8,7 +8,7 @@ import { CoreV1Api } from "@kubernetes/client-node";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import {
   clusterToTarget,

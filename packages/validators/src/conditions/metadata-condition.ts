@@ -45,6 +45,19 @@ export const metadataCondition = z.union([
 
 export type MetadataCondition = z.infer<typeof metadataCondition>;
 
+export enum MetadataOperator {
+  Equals = "equals",
+  Like = "like",
+  Regex = "regex",
+  Null = "null",
+}
+
+export type MetadataOperatorType =
+  | MetadataOperator.Equals
+  | MetadataOperator.Like
+  | MetadataOperator.Regex
+  | MetadataOperator.Null;
+
 export enum ReservedMetadataKey {
   ExternalId = "ctrlplane/external-id",
   Links = "ctrlplane/links",
