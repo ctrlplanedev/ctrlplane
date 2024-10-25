@@ -18,6 +18,7 @@ import { api } from "~/trpc/react";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
 import { JobPropertiesTable } from "./JobProperties";
+import { JobVariables } from "./JobVariables";
 import { DependenciesDiagram } from "./RelationshipsDiagramDependencies";
 import { useJobDrawer } from "./useJobDrawer";
 
@@ -107,7 +108,14 @@ export const JobDrawer: React.FC = () => {
                   </div>
                 </div>
 
-                <JobMetadata job={job} />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="col-span-1">
+                    <JobVariables job={job} />
+                  </div>
+                  <div className="col-span-1">
+                    <JobMetadata job={job} />
+                  </div>
+                </div>
 
                 <DependenciesDiagram
                   targetId={job.target.id}

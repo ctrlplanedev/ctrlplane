@@ -7,6 +7,7 @@ import type {
   Job,
   JobAgent,
   JobMetadata,
+  JobVariable,
   Release,
   ReleaseDependency,
   ReleaseJobTrigger,
@@ -37,6 +38,7 @@ import {
   job,
   jobAgent,
   jobMetadata,
+  jobVariable,
   release,
   releaseDependency,
   releaseJobTrigger,
@@ -84,6 +86,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
     user?: User | null;
     release_dependency?: ReleaseDependency | null;
     deployment_name?: { deploymentName: string; deploymentId: string } | null;
+    job_variable?: JobVariable | null;
   }>,
 ) =>
   _.chain(rows)
@@ -95,6 +98,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
         ...v[0]!.job,
         metadata: v.map((t) => t.job_metadata).filter(isPresent),
         status: v[0]!.job.status as JobStatus,
+        variables: v.map((t) => t.job_variable).filter(isPresent),
       },
       jobAgent: v[0]!.job_agent,
       target: v[0]!.target,
@@ -315,6 +319,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
       const data = await releaseJobTriggerQuery(ctx.db)
         .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
         .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
+        .leftJoin(jobVariable, eq(jobVariable.jobId, job.id))
         .leftJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
