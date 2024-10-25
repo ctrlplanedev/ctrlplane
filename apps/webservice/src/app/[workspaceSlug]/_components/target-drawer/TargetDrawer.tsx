@@ -191,7 +191,10 @@ export const TargetDrawer: React.FC = () => {
               )}
               {activeTab === "jobs" && <JobsContent targetId={target.id} />}
               {activeTab === "variables" && (
-                <VariableContent targetId={target.id} />
+                <VariableContent
+                  targetId={target.id}
+                  targetVariables={target.variables}
+                />
               )}
             </div>
           </div>
