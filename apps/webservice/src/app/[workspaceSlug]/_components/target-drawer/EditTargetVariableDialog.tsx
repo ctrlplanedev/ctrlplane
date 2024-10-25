@@ -55,10 +55,11 @@ export const EditTargetVariableDialog: React.FC<
         message: "Variable key must be unique",
       }),
     type: z.enum(["string", "number", "boolean"]),
-    value: z.union([z.string(), z.number(), z.boolean()]).refine((v) => {
-      if (typeof v === "string") return v.length > 0;
-      return true;
-    }),
+    value: z
+      .union([z.string(), z.number(), z.boolean()])
+      .refine((v) => (typeof v === "string" ? v.length > 0 : true), {
+        message: "Value is required",
+      }),
     sensitive: z.boolean(),
   });
   const defaultValues = {
