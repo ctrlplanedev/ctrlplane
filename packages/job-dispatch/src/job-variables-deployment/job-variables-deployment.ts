@@ -46,6 +46,7 @@ export const determineVariablesForReleaseJob = async (
     variables.map((variable) =>
       determineReleaseVariableValue(
         tx,
+        variable.deployment_variable.key,
         variable.deployment_variable.id,
         variable.deployment_variable.defaultValueId,
         jobTarget,
@@ -56,6 +57,7 @@ export const determineVariablesForReleaseJob = async (
           jobId: job.id,
           key: variable.deployment_variable.key,
           value: value.value.value,
+          sensitive: value.sensitive,
         });
 
         if (value.directMatch)
@@ -106,13 +108,28 @@ export const determineVariablesForReleaseJob = async (
 
 export const determineReleaseVariableValue = async (
   tx: Tx,
+  variableKey: string,
   variableId: string,
   defaultValueId: string | null,
   jobTarget: schema.Target,
 ): Promise<{
-  value: schema.DeploymentVariableValue;
+  value: schema.DeploymentVariableValue | schema.TargetVariable;
   directMatch: boolean;
+  sensitive: boolean;
 } | null> => {
+  const targetVariableValue = await utils.getTargetVariableValue(
+    tx,
+    jobTarget.id,
+    variableKey,
+  );
+
+  if (targetVariableValue != null)
+    return {
+      value: targetVariableValue,
+      directMatch: true,
+      sensitive: targetVariableValue.sensitive,
+    };
+
   const deploymentVariableValues = await utils.getVariableValues(
     tx,
     variableId,
@@ -138,16 +155,19 @@ export const determineReleaseVariableValue = async (
     return {
       value: firstMatchedValue,
       directMatch: true,
+      sensitive: false,
     };
 
   if (defaultValue != null)
     return {
       value: defaultValue,
       directMatch: true,
+      sensitive: false,
     };
 
   return {
     value: deploymentVariableValues[0]!,
     directMatch: false,
+    sensitive: false,
   };
 };
