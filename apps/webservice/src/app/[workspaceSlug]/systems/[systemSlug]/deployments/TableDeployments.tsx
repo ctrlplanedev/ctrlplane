@@ -67,7 +67,6 @@ const ReleaseCell: React.FC<{
     name: string;
     version: string;
     createdAt: Date;
-    environmentId: string;
   } | null;
   deployment: Deployment;
 }> = async ({
@@ -82,6 +81,7 @@ const ReleaseCell: React.FC<{
     deploymentId: deployment.id,
   });
   const hasTargets = env.targets.length > 0;
+  const hasRelease = release != null;
   const jc = releaseJobTriggers
     .filter(
       (releaseJobTrigger) =>
@@ -92,7 +92,7 @@ const ReleaseCell: React.FC<{
     .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
   return (
     <>
-      {release && hasTargets && (
+      {hasRelease && hasTargets && (
         <Release
           releaseId={release.id}
           environment={env}
@@ -106,11 +106,11 @@ const ReleaseCell: React.FC<{
         />
       )}
 
-      {!hasTargets && release && (
+      {!hasTargets && hasRelease && (
         <div className="text-center text-xs text-muted">No targets</div>
       )}
 
-      {!release && (
+      {!hasRelease && (
         <div className="text-center text-xs text-muted">No release</div>
       )}
     </>
@@ -122,13 +122,12 @@ const DeploymentTable: React.FC<{
   environments: Array<Environment & { targets: Target[] }>;
   deployments: Array<
     Deployment & {
-      latestReleases: Array<{
+      latestRelease: {
         id: string;
         name: string;
         version: string;
         createdAt: Date;
-        environmentId: string;
-      }>;
+      } | null;
     }
   >;
   workspaceSlug: string;
@@ -179,13 +178,6 @@ const DeploymentTable: React.FC<{
               </td>
 
               {environments.map((env, envIdx) => {
-                const releaseLookup = new Map(
-                  r.latestReleases.map((release) => [
-                    release.environmentId,
-                    release,
-                  ]),
-                );
-                const latestRelease = releaseLookup.get(env.id);
                 return (
                   <td
                     key={env.id}
@@ -197,7 +189,7 @@ const DeploymentTable: React.FC<{
                     )}
                   >
                     <ReleaseCell
-                      release={latestRelease ?? null}
+                      release={r.latestRelease}
                       environment={env}
                       deployment={r}
                       workspaceSlug={workspaceSlug}

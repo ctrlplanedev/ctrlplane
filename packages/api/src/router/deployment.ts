@@ -30,7 +30,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
 
-const latestReleaseSubQuery = (db: Tx) =>
+const latestActiveReleaseSubQuery = (db: Tx) =>
   db
     .select({
       id: release.id,
@@ -40,12 +40,13 @@ const latestReleaseSubQuery = (db: Tx) =>
       name: release.name,
       config: release.config,
 
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY deployment_id ORDER BY created_at DESC)`.as(
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId}, ${releaseJobTrigger.environmentId} ORDER BY ${release.createdAt} DESC)`.as(
         "rank",
       ),
     })
     .from(release)
-    .as("release");
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
+    .as("active_release");
 
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
@@ -203,7 +204,7 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "system", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const latestRelease = latestReleaseSubQuery(ctx.db);
+      const latestRelease = latestActiveReleaseSubQuery(ctx.db);
       return ctx.db
         .select()
         .from(deployment)
@@ -216,7 +217,10 @@ export const deploymentRouter = createTRPCRouter({
         )
         .where(eq(deployment.systemId, input))
         .then((r) =>
-          r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
+          r.map((row) => ({
+            ...row.deployment,
+            latestRelease: row.active_release,
+          })),
         );
     }),
 
@@ -304,7 +308,7 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const latestRelease = latestReleaseSubQuery(ctx.db);
+      const latestRelease = latestActiveReleaseSubQuery(ctx.db);
       return ctx.db
         .select()
         .from(deployment)
@@ -318,7 +322,10 @@ export const deploymentRouter = createTRPCRouter({
         )
         .where(eq(system.workspaceId, input))
         .then((r) =>
-          r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
+          r.map((row) => ({
+            ...row.deployment,
+            latestRelease: row.active_release,
+          })),
         );
     }),
 });
