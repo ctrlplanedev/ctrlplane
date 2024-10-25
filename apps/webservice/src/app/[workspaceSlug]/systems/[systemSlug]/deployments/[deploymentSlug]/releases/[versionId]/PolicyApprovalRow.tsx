@@ -7,7 +7,6 @@ import type {
 } from "@ctrlplane/db/schema";
 import { useRouter } from "next/navigation";
 
-import { logger } from "@ctrlplane/logger";
 import { Button } from "@ctrlplane/ui/button";
 import { toast } from "@ctrlplane/ui/toast";
 
@@ -26,7 +25,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   const utils = api.useUtils();
 
   if (!environment) {
-    logger.error("Environment is undefined for approval:", approval);
+    console.error("Environment is undefined for approval:", approval);
     return null;
   }
 
@@ -94,16 +93,18 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
     if (status === "approved")
       return (
         <div className="ml-2 flex-grow">
-          <span className="font-medium text-white">
-            Approved by {approval.user?.name}
+          <span className="font-medium">
+            <span className="text-green-300">Approved</span> by{" "}
+            {approval.user?.name}
           </span>
         </div>
       );
 
     return (
       <div className="ml-2 flex-grow">
-        <span className="font-medium text-muted-foreground">
-          Rejected by {approval.user?.name}
+        <span className="font-medium">
+          <span className="text-red-300">Rejected</span> by{" "}
+          {approval.user?.name}
         </span>
       </div>
     );
