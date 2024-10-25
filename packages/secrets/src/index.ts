@@ -5,12 +5,7 @@ import { z } from "zod";
 class AES256EncryptionService {
   private algorithm = "aes-256-cbc";
 
-  constructor(private key: string) {
-    if (key.length !== 64 || !/^[0-9a-fA-F]+$/.test(key))
-      throw new Error(
-        "Invalid key: must be a 64-character hexadecimal string (32 bytes / 256 bits)",
-      );
-  }
+  constructor(private key: string) {}
 
   encrypt(data: string): string {
     const iv = crypto.randomBytes(16);
@@ -43,11 +38,7 @@ class AES256EncryptionService {
 
 export const env = createEnv({
   server: {
-    VARIABLES_AES_256_KEY: z
-      .string()
-      .min(64)
-      .max(64)
-      .regex(/^[0-9a-fA-F]+$/, "Key must be hexadecimal"),
+    VARIABLES_AES_256_KEY: z.string().min(64).max(64),
   },
   runtimeEnv: process.env,
   skipValidation:

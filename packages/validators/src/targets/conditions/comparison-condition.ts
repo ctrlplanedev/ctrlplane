@@ -1,11 +1,11 @@
 import { z } from "zod";
 
+import type { MetadataCondition } from "../../conditions/index.js";
 import type { KindCondition } from "./kind-condition.js";
-import type { MetadataCondition } from "./metadata-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
+import { metadataCondition } from "../../conditions/index.js";
 import { kindCondition } from "./kind-condition.js";
-import { metadataCondition } from "./metadata-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
 

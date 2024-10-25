@@ -1,7 +1,9 @@
 import type {
-  ComparisonCondition,
   CreatedAtCondition,
   MetadataCondition,
+} from "@ctrlplane/validators/conditions";
+import type {
+  ComparisonCondition,
   ReleaseCondition,
   VersionCondition,
 } from "@ctrlplane/validators/releases";

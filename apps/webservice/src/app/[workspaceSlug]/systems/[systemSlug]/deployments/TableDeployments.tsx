@@ -31,6 +31,7 @@ const EnvIcon: React.FC<{
   workspaceSlug: string;
   systemSlug: string;
 }> = ({ environment: env, isFirst, isLast, workspaceSlug, systemSlug }) => {
+  const envUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments?environment_id=${env.id}`;
   return (
     <Icon
       key={env.id}
@@ -40,9 +41,7 @@ const EnvIcon: React.FC<{
         isLast && "rounded-tr-md",
       )}
     >
-      <Link
-        href={`/${workspaceSlug}/systems/${systemSlug}/environments?selected=${env.id}`}
-      >
+      <Link href={envUrl}>
         <div className="flex justify-between">
           {env.name}
 

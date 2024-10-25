@@ -10,7 +10,7 @@ import _ from "lodash";
 import { cn } from "@ctrlplane/ui";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
@@ -126,7 +126,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                           </div>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-end">
                           <JobDropdownMenu
                             release={release}

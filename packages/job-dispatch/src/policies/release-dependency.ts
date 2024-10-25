@@ -1,11 +1,11 @@
 import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
-import { satisfies } from "semver";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray } from "@ctrlplane/db";
+import { and, eq, inArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const isPassingReleaseDependencyPolicy = async (
   db: Tx,
@@ -13,126 +13,135 @@ export const isPassingReleaseDependencyPolicy = async (
 ) => {
   if (releaseJobTriggers.length === 0) return [];
 
-  const jcs = await db
-    .select()
-    .from(schema.releaseJobTrigger)
-    .leftJoin(
-      schema.target,
-      eq(schema.releaseJobTrigger.targetId, schema.target.id),
-    )
-    .leftJoin(
-      schema.targetMetadata,
-      eq(schema.targetMetadata.targetId, schema.target.id),
-    )
-    .leftJoin(
-      schema.releaseDependency,
-      eq(
-        schema.releaseDependency.releaseId,
-        schema.releaseJobTrigger.releaseId,
-      ),
-    )
-    .leftJoin(
-      schema.targetMetadataGroup,
-      eq(
-        schema.releaseDependency.targetMetadataGroupId,
-        schema.targetMetadataGroup.id,
-      ),
-    )
-    .where(
-      inArray(
-        schema.releaseJobTrigger.id,
-        releaseJobTriggers.map((jc) => jc.id),
-      ),
-    )
-    .then((rows) =>
-      _.chain(rows)
-        .groupBy((row) => row.release_job_trigger.id)
-        .map((jc) => ({
-          releaseJobTrigger: jc[0]!.release_job_trigger,
-          target: jc[0]!.target,
-          releaseDependencies: _.chain(jc)
-            .filter(
-              (v) =>
-                v.release_dependency != null && v.target_metadata_group != null,
-            )
-            .groupBy((v) => v.release_dependency!.id)
-            .map((v) => ({
-              releaseDependency: v[0]!.release_dependency!,
-              targetMetadataGroup: v[0]!.target_metadata_group!,
-            }))
-            .value(),
-          targetMetadata: _.chain(jc)
-            .filter((v) => v.target_metadata != null)
-            .groupBy((v) => v.target_metadata!.id)
-            .map((v) => ({
-              ...v[0]!.target_metadata!,
-            }))
-            .value(),
-        }))
-        .value(),
-    );
+  const passingReleasesJobTriggersPromises = releaseJobTriggers.map(
+    async (trigger) => {
+      const release = await db
+        .select()
+        .from(schema.release)
+        .innerJoin(
+          schema.releaseDependency,
+          eq(schema.release.id, schema.releaseDependency.releaseId),
+        )
+        .where(eq(schema.release.id, trigger.releaseId));
 
-  return Promise.all(
-    jcs.map(async (jc) => {
-      if (jc.releaseDependencies.length === 0 || jc.target == null)
-        return jc.releaseJobTrigger;
+      if (release.length === 0) return trigger;
 
-      const { targetMetadata } = jc;
+      const deps = release.map((r) => r.release_dependency);
 
-      const numDepsPassing = await Promise.all(
-        jc.releaseDependencies.map(async (rd) => {
-          const { releaseDependency: releaseDep, targetMetadataGroup: tlg } =
-            rd;
+      if (deps.length === 0) return trigger;
 
-          const relevantTargetMetadata = targetMetadata.filter((tm) =>
-            tlg.keys.includes(tm.key),
+      const results = await db.execute(
+        sql`
+          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
+            -- Base case: start with the given ID and no relationship
+            SELECT 
+                ${trigger.targetId}::uuid AS id, 
+                ARRAY[${trigger.targetId}::uuid] AS visited,
+                NULL::uuid AS tr_id,
+                NULL::uuid AS source_id,
+                NULL::uuid AS target_id,
+                NULL::target_relationship_type AS type
+            UNION ALL
+            -- Recursive case: find all relationships connected to the current set of IDs
+            SELECT
+                CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END AS id,
+                rr.visited || CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END,
+                tr.id AS tr_id,
+                tr.source_id,
+                tr.target_id,
+                tr.type
+            FROM reachable_relationships rr
+            JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+            WHERE
+                NOT CASE
+                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    ELSE tr.source_id
+                END = ANY(rr.visited)                
+                AND tr.target_id != ${trigger.targetId}
+        )
+        SELECT DISTINCT tr_id AS id, source_id, target_id, type
+        FROM reachable_relationships
+        WHERE tr_id IS NOT NULL;
+        `,
+      );
+
+      // db.execute does not return the types even if the sql`` is annotated with the type
+      // so we need to cast them here
+      const relationships = results.rows.map((r) => ({
+        id: String(r.id),
+        sourceId: String(r.source_id),
+        targetId: String(r.target_id),
+        type: r.type as "associated_with" | "depends_on",
+      }));
+
+      const sourceIds = relationships.map((r) => r.sourceId);
+      const targetIds = relationships.map((r) => r.targetId);
+
+      const allIds = _.uniq([...sourceIds, ...targetIds]);
+
+      const passingDepsPromises = deps.map(async (dep) => {
+        const latestJobSubquery = db
+          .select({
+            id: schema.releaseJobTrigger.id,
+            targetId: schema.releaseJobTrigger.targetId,
+            releaseId: schema.releaseJobTrigger.releaseId,
+            status: schema.job.status,
+            createdAt: schema.job.createdAt,
+            rank: sql<number>`ROW_NUMBER() OVER (
+              PARTITION BY ${schema.releaseJobTrigger.targetId}, ${schema.releaseJobTrigger.releaseId}
+              ORDER BY ${schema.job.createdAt} DESC
+            )`.as("rank"),
+          })
+          .from(schema.job)
+          .innerJoin(
+            schema.releaseJobTrigger,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          )
+          .as("latest_job");
+
+        const targetFulfillingDependency = await db
+          .select()
+          .from(schema.release)
+          .innerJoin(
+            schema.deployment,
+            eq(schema.release.deploymentId, schema.deployment.id),
+          )
+          .innerJoin(
+            latestJobSubquery,
+            eq(latestJobSubquery.releaseId, schema.release.id),
+          )
+          .where(
+            and(
+              schema.releaseMatchesCondition(db, dep.releaseFilter),
+              eq(schema.deployment.id, dep.deploymentId),
+              inArray(latestJobSubquery.targetId, allIds),
+              eq(latestJobSubquery.rank, 1),
+              eq(latestJobSubquery.status, JobStatus.Completed),
+            ),
           );
 
-          const dependentJobs = await db
-            .select()
-            .from(schema.job)
-            .innerJoin(
-              schema.releaseJobTrigger,
-              eq(schema.job.id, schema.releaseJobTrigger.jobId),
-            )
-            .innerJoin(
-              schema.target,
-              eq(schema.releaseJobTrigger.targetId, schema.target.id),
-            )
-            .innerJoin(
-              schema.release,
-              eq(schema.releaseJobTrigger.releaseId, schema.release.id),
-            )
-            .innerJoin(
-              schema.deployment,
-              eq(schema.release.deploymentId, schema.deployment.id),
-            )
-            .where(
-              and(
-                eq(schema.job.status, "completed"),
-                eq(schema.deployment.id, releaseDep.deploymentId),
-                schema.targetMatchesMetadata(db, {
-                  type: "comparison",
-                  operator: "and",
-                  conditions: relevantTargetMetadata.map((tm) => ({
-                    ...tm,
-                    type: "metadata",
-                  })),
-                }),
-              ),
-            );
+        const isPassing = targetFulfillingDependency.length > 0;
+        return isPassing ? dep : null;
+      });
 
-          return dependentJobs.some((je) =>
-            releaseDep.ruleType === "semver"
-              ? satisfies(je.release.version, releaseDep.rule)
-              : new RegExp(releaseDep.rule).test(je.release.version),
-          );
-        }),
-      ).then((data) => data.filter(Boolean).length);
+      const passingDeps = await Promise.all(passingDepsPromises).then((deps) =>
+        deps.filter(isPresent),
+      );
 
-      const isAllDependenciesMet =
-        numDepsPassing === jc.releaseDependencies.length;
-      return isAllDependenciesMet ? jc.releaseJobTrigger : null;
-    }),
-  ).then((v) => v.filter(isPresent));
+      const isPassingAllDeps = passingDeps.length === deps.length;
+      return isPassingAllDeps ? trigger : null;
+    },
+  );
+
+  const passingTriggers = await Promise.all(
+    passingReleasesJobTriggersPromises,
+  ).then((triggers) => triggers.filter(isPresent));
+
+  return passingTriggers;
 };

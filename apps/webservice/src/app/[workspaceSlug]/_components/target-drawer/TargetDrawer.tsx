@@ -16,7 +16,7 @@ import {
 
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { api } from "~/trpc/react";
 import { EditTargetDialog } from "../EditTarget";
@@ -148,7 +148,7 @@ export const TargetDrawer: React.FC = () => {
         </div>
 
         {target != null && (
-          <div className="flex w-full gap-6 p-6">
+          <div className="flex h-full w-full gap-6 p-6">
             <div className="space-y-1">
               <TabButton
                 active={activeTab === "overview"}
@@ -181,7 +181,7 @@ export const TargetDrawer: React.FC = () => {
                 label="Relationships"
               />
             </div>
-            <div className="w-full overflow-auto">
+            <div className="h-full w-full overflow-auto">
               {activeTab === "deployments" && (
                 <DeploymentsContent targetId={target.id} />
               )}
@@ -191,7 +191,10 @@ export const TargetDrawer: React.FC = () => {
               )}
               {activeTab === "jobs" && <JobsContent targetId={target.id} />}
               {activeTab === "variables" && (
-                <VariableContent targetId={target.id} />
+                <VariableContent
+                  targetId={target.id}
+                  targetVariables={target.variables}
+                />
               )}
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { IconSparkles } from "@tabler/icons-react";
 
 import { Input } from "@ctrlplane/ui/input";
-import { ReservedMetadataKey } from "@ctrlplane/validators/targets";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import type { Job } from "./Job";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";

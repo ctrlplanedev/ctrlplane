@@ -7,6 +7,7 @@ on:
       - apps/jobs/**
       - packages/job-dispatch/**
       - packages/db/**
+      - packages/secrets/**
       - .github/workflows/apps-jobs.yaml
       - pnpm-lock.yaml
   push:
@@ -15,6 +16,7 @@ on:
       - apps/jobs/**
       - packages/job-dispatch/**
       - packages/db/**
+      - packages/secrets/**
       - .github/workflows/apps-jobs.yaml
       - pnpm-lock.yaml
 
