@@ -122,12 +122,13 @@ const DeploymentTable: React.FC<{
   environments: Array<Environment & { targets: Target[] }>;
   deployments: Array<
     Deployment & {
-      latestRelease: {
+      activeReleases: Array<{
         id: string;
         name: string;
         version: string;
         createdAt: Date;
-      } | null;
+        environmentId: string;
+      }> | null;
     }
   >;
   workspaceSlug: string;
@@ -178,6 +179,9 @@ const DeploymentTable: React.FC<{
               </td>
 
               {environments.map((env, envIdx) => {
+                const release =
+                  r.activeReleases?.find((r) => r.environmentId === env.id) ??
+                  null;
                 return (
                   <td
                     key={env.id}
@@ -189,7 +193,7 @@ const DeploymentTable: React.FC<{
                     )}
                   >
                     <ReleaseCell
-                      release={r.latestRelease}
+                      release={release}
                       environment={env}
                       deployment={r}
                       workspaceSlug={workspaceSlug}
