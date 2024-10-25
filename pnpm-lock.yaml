@@ -350,6 +350,9 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@ctrlplane/secrets':
+        specifier: workspace:*
+        version: link:../../packages/secrets
       '@ctrlplane/ui':
         specifier: workspace:*
         version: link:../../packages/ui
