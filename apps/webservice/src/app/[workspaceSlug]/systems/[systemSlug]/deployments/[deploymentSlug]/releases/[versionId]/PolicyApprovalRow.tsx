@@ -13,7 +13,7 @@ import { toast } from "@ctrlplane/ui/toast";
 import { api } from "~/trpc/react";
 
 type PolicyApprovalRowProps = {
-  approval: EnvironmentPolicyApproval & { user?: User };
+  approval: EnvironmentPolicyApproval & { user?: User | null };
   environment: Environment | undefined;
 };
 
@@ -31,7 +31,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
 
   const environmentName = environment.name;
   const { releaseId, policyId, status } = approval;
-  const currentUserID = api.user.viewer.useQuery().data?.id;
+  const currentUserId = api.user.viewer.useQuery().data?.id;
 
   const rejectMutation = api.environment.policy.approval.reject.useMutation({
     onSuccess: ({ cancelledJobCount }) => {
@@ -59,58 +59,42 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
     rejectMutation.mutate({
       releaseId,
       policyId,
-      userId: currentUserID!,
+      userId: currentUserId!,
     });
   const handleApprove = () =>
     approveMutation.mutate({
       releaseId,
       policyId,
-      userId: currentUserID!,
+      userId: currentUserId!,
     });
-
-  const renderStatusContent = () => {
-    if (status === "pending") {
-      return (
-        <>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="destructive"
-              className="h-6 px-2"
-              onClick={handleReject}
-            >
-              Reject
-            </Button>
-            <Button className="h-6 px-2" onClick={handleApprove}>
-              Approve
-            </Button>
-          </div>
-        </>
-      );
-    }
-
-    if (status === "approved")
-      return (
-        <div className="ml-2 flex-grow">
-          <span className="font-medium">
-            <span className="text-green-300">Approved</span> by{" "}
-            {approval.user?.name}
-          </span>
-        </div>
-      );
-
-    return (
-      <div className="ml-2 flex-grow">
-        <span className="font-medium">
-          <span className="text-red-300">Rejected</span> by{" "}
-          {approval.user?.name}
-        </span>
-      </div>
-    );
-  };
 
   return (
     <div className="flex items-center gap-2 rounded-md text-sm">
-      {renderStatusContent()}
+      {status === "pending" ? (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="destructive"
+            className="h-6 px-2"
+            onClick={handleReject}
+          >
+            Reject
+          </Button>
+          <Button className="h-6 px-2" onClick={handleApprove}>
+            Approve
+          </Button>
+        </div>
+      ) : (
+        <div className="ml-2 flex-grow">
+          <span className="font-medium">
+            {status === "approved" ? (
+              <span className="text-green-300">Approved</span>
+            ) : (
+              <span className="text-red-300">Rejected</span>
+            )}{" "}
+            by {approval.user?.name}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

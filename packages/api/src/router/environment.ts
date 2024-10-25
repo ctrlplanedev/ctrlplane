@@ -141,8 +141,8 @@ const policyRouter = createTRPCRouter({
                 eq(environmentPolicyApproval.releaseId, input.releaseId),
                 input.status
                   ? eq(environmentPolicyApproval.status, input.status)
-                  : undefined,
-              ].filter(Boolean),
+                  : null,
+              ].filter(isPresent),
             ),
           )
           .then((p) =>

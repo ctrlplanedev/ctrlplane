@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-  Environment,
-  EnvironmentPolicyApproval,
-  User,
-} from "@ctrlplane/db/schema";
+import type { Environment } from "@ctrlplane/db/schema";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -59,7 +55,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   });
   const environmentApprovals = approvals.data?.filter(
     (approval) => approval.policyId === environment.policyId,
-  ) as (EnvironmentPolicyApproval & { user?: User })[] | undefined;
+  );
 
   if (releaseJobTriggerQuery.isLoading)
     return (
