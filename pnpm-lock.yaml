@@ -890,6 +890,9 @@ importers:
       '@ctrlplane/logger':
         specifier: workspace:*
         version: link:../logger
+      '@ctrlplane/secrets':
+        specifier: workspace:*
+        version: link:../secrets
       '@ctrlplane/validators':
         specifier: workspace:*
         version: link:../validators

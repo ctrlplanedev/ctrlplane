@@ -15,6 +15,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
@@ -184,6 +185,79 @@ const targetViews = createTRPCRouter({
     }),
 });
 
+const targetVariables = createTRPCRouter({
+  create: protectedProcedure
+    .input(schema.createTargetVariable)
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: input.targetId }),
+    })
+    .mutation(async ({ ctx, input }) => {
+      const { sensitive } = input;
+      const value = sensitive
+        ? variablesAES256().encrypt(String(input.value))
+        : input.value;
+      const data = { ...input, value };
+      return ctx.db.insert(schema.targetVariable).values(data).returning();
+    }),
+
+  update: protectedProcedure
+    .input(
+      z.object({ id: z.string().uuid(), data: schema.updateTargetVariable }),
+    )
+    .meta({
+      authorizationCheck: async ({ ctx, canUser, input }) => {
+        const variable = await ctx.db
+          .select()
+          .from(schema.targetVariable)
+          .where(eq(schema.targetVariable.id, input.id))
+          .then(takeFirstOrNull);
+        if (!variable) return false;
+
+        return canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: variable.targetId });
+      },
+    })
+    .mutation(async ({ ctx, input }) => {
+      const { sensitive } = input.data;
+      const value = sensitive
+        ? variablesAES256().encrypt(String(input.data.value))
+        : input.data.value;
+      const data = { ...input.data, value };
+      return ctx.db
+        .update(schema.targetVariable)
+        .set(data)
+        .where(eq(schema.targetVariable.id, input.id))
+        .returning()
+        .then(takeFirst);
+    }),
+
+  delete: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: async ({ ctx, canUser, input }) => {
+        const variable = await ctx.db
+          .select()
+          .from(schema.targetVariable)
+          .where(eq(schema.targetVariable.id, input))
+          .then(takeFirstOrNull);
+        if (!variable) return false;
+
+        return canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: variable.targetId });
+      },
+    })
+    .mutation(async ({ ctx, input }) =>
+      ctx.db
+        .delete(schema.targetVariable)
+        .where(eq(schema.targetVariable.id, input)),
+    ),
+});
+
 type _StringStringRecord = Record<string, string>;
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
@@ -218,6 +292,7 @@ export const targetRouter = createTRPCRouter({
   provider: targetProviderRouter,
   relations: targetRelations,
   view: targetViews,
+  variable: targetVariables,
 
   byId: protectedProcedure
     .meta({
@@ -225,27 +300,19 @@ export const targetRouter = createTRPCRouter({
         canUser.perform(Permission.TargetGet).on({ type: "target", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const metadata = await ctx.db
-        .select()
-        .from(schema.targetMetadata)
-        .where(eq(schema.targetMetadata.targetId, input))
-        .then((lbs) => Object.fromEntries(lbs.map((lb) => [lb.key, lb.value])));
-      return ctx.db
-        .select()
-        .from(schema.target)
-        .leftJoin(
-          schema.targetProvider,
-          eq(schema.target.providerId, schema.targetProvider.id),
-        )
-        .where(eq(schema.target.id, input))
-        .then(takeFirstOrNull)
-        .then((a) =>
-          a == null
-            ? null
-            : { ...a.target, metadata, provider: a.target_provider },
-        );
-    }),
+    .query(({ ctx, input }) =>
+      ctx.db.query.target
+        .findFirst({
+          where: eq(schema.target.id, input),
+          with: { metadata: true, variables: true, provider: true },
+        })
+        .then((t) => {
+          if (t == null) return null;
+          const pairs = t.metadata.map((m) => [m.key, m.value]);
+          const metadata = Object.fromEntries(pairs);
+          return { ...t, metadata };
+        }),
+    ),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
