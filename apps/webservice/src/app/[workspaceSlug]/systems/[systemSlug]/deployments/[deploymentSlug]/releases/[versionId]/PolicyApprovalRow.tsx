@@ -7,6 +7,7 @@ import type {
 } from "@ctrlplane/db/schema";
 import { useRouter } from "next/navigation";
 
+import { logger } from "@ctrlplane/logger";
 import { Button } from "@ctrlplane/ui/button";
 import { toast } from "@ctrlplane/ui/toast";
 
@@ -25,7 +26,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   const utils = api.useUtils();
 
   if (!environment) {
-    console.error("Environment is undefined for approval:", approval);
+    logger.error("Environment is undefined for approval:", approval);
     return null;
   }
 
