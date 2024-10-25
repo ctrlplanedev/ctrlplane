@@ -494,11 +494,368 @@ paths:
                     type: string
                   metadata:
                     type: object
+  /v1/targets/{targetId}:
+    get:
+      summary: Get a target by ID
+      operationId: getTargetById
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the target
+      responses:
+        "200":
+          description: Successfully retrieved the target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Target not found
+        "500":
+          description: Internal server error
+    patch:
+      summary: Update a target
+      operationId: updateTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the target to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTargetInput"
+      responses:
+        "200":
+          description: Successfully updated the target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Target not found
+        "500":
+          description: Internal server error
+  /v1/workspaces/{workspaceId}/targets:
+    get:
+      summary: List targets for a workspace
+      operationId: listTargetsByWorkspaceId
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the workspace
+        - name: filter
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter conditions for targets
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 1000
+            default: 500
+          description: Maximum number of items to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of items to skip
+      responses:
+        "200":
+          description: Successfully retrieved the list of targets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Target"
+                  total:
+                    type: integer
+                required:
+                  - items
+                  - total
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Workspace not found
+        "500":
+          description: Internal server error
+    post:
+      summary: Create a new target
+      operationId: createTarget
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTargetInput"
+      responses:
+        "201":
+          description: Successfully created the target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Workspace not found
+        "500":
+          description: Internal server error
+  /v1/target-variables/{variableId}:
+    get:
+      summary: Get a target variable by ID
+      operationId: getTargetVariable
+      parameters:
+        - name: variableId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the target variable
+      responses:
+        "200":
+          description: Successfully retrieved the target variable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  targetId:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  value:
+                    type: string
+                    nullable: true
+                  sensitive:
+                    type: boolean
+                required:
+                  - id
+                  - targetId
+                  - name
+                  - sensitive
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Target variable not found
+        "500":
+          description: Internal server error
+
+    patch:
+      summary: Update a target variable
+      operationId: updateTargetVariable
+      parameters:
+        - name: variableId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The ID of the target variable to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                value:
+                  type: string
+                sensitive:
+                  type: boolean
+      responses:
+        "200":
+          description: Successfully updated the target variable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  targetId:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  sensitive:
+                    type: boolean
+                required:
+                  - id
+                  - targetId
+                  - name
+                  - sensitive
+        "400":
+          description: Invalid request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Target variable not found
+        "500":
+          description: Internal server error
+
 components:
+  schemas:
+    Target:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: string
+        kind:
+          type: string
+        identifier:
+          type: string
+        workspaceId:
+          type: string
+          format: uuid
+        config:
+          type: object
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        provider:
+          $ref: "#/components/schemas/TargetProvider"
+      required:
+        - id
+        - name
+        - version
+        - kind
+        - identifier
+        - workspaceId
+        - config
+        - metadata
+
+    TargetProvider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    CreateTargetInput:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        kind:
+          type: string
+        identifier:
+          type: string
+        workspaceId:
+          type: string
+          format: uuid
+        config:
+          type: object
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - name
+        - version
+        - kind
+        - identifier
+        - workspaceId
+        - config
+        - metadata
+
+    UpdateTargetInput:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        kind:
+          type: string
+        identifier:
+          type: string
+        config:
+          type: object
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+      # Note: All properties are optional for updates
+
   securitySchemes:
     apiKey:
       type: apiKey
       in: header
       name: x-api-key
+
 security:
   - apiKey: []
