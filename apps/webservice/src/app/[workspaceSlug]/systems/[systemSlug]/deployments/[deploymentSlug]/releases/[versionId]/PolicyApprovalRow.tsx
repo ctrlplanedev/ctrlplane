@@ -68,7 +68,6 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
       userId: currentUserID!,
     });
 
-  console.log("status", status);
 
   const renderStatusContent = () => {
     if (status === "pending") {
