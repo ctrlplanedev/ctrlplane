@@ -182,7 +182,7 @@ export const environmentPolicyApproval = pgTable(
       .notNull()
       .references(() => release.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
-    userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
   },
   (t) => ({ uniq: uniqueIndex().on(t.policyId, t.releaseId) }),
 );
