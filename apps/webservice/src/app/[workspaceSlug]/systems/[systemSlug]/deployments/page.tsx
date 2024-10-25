@@ -16,7 +16,6 @@ export default async function SystemDeploymentsPage({
   const system = await api.system.bySlug(params);
   const deployments = await api.deployment.bySystemId(system.id);
   const environments = await api.environment.bySystemId(system.id);
-
   return (
     <>
       <TopNav>
