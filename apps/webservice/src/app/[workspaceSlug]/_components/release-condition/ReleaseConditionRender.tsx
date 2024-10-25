@@ -11,7 +11,7 @@ import {
 import type { ReleaseConditionRenderProps } from "./release-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { CreatedAtConditionRender } from "./CreatedAtConditionRender";
-import { ReleaseMetadataConditionRender } from "./MetadataConditionRender";
+import { ReleaseMetadataConditionRender } from "./ReleaseMetadataConditionRender";
 import { VersionConditionRender } from "./VersionConditionRender";
 
 /**

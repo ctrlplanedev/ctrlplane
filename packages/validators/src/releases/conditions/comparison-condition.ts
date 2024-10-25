@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { CreatedAtCondition } from "../../conditions/date-condition.js";
-import type { MetadataCondition } from "../../conditions/metadata-condition.js";
+import type { MetadataCondition } from "../../conditions/index.js";
 import type { VersionCondition } from "./version-condition.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
 import { metadataCondition } from "../../conditions/index.js";

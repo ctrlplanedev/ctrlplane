@@ -7,9 +7,8 @@ const operator = z.union([
   z.literal("after-or-on"),
 ]);
 
-const value = z.string().refine((v) => !isNaN(new Date(v).getTime()), {
-  message: "Invalid date",
-});
+const isValidDate = (v: string) => !Number.isNaN(new Date(v).getTime());
+const value = z.string().refine(isValidDate, { message: "Invalid date" });
 
 const createdAt = z.literal("created-at");
 const updatedAt = z.literal("updated-at");

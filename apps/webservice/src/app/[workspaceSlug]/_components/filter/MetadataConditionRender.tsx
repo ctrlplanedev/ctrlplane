@@ -1,4 +1,7 @@
-import type { MetadataCondition } from "@ctrlplane/validators/conditions";
+import type {
+  MetadataCondition,
+  MetadataOperatorType,
+} from "@ctrlplane/validators/conditions";
 import { useState } from "react";
 
 import { cn } from "@ctrlplane/ui";
@@ -31,13 +34,7 @@ export const MetadataConditionRender: React.FC<
     condition.operator !== MetadataOperator.Null &&
     onChange({ ...condition, value });
 
-  const setOperator = (
-    operator:
-      | MetadataOperator.Equals
-      | MetadataOperator.Like
-      | MetadataOperator.Regex
-      | MetadataOperator.Null,
-  ) =>
+  const setOperator = (operator: MetadataOperatorType) =>
     operator === MetadataOperator.Null
       ? onChange({ ...condition, operator, value: undefined })
       : onChange({ ...condition, operator, value: condition.value ?? "" });

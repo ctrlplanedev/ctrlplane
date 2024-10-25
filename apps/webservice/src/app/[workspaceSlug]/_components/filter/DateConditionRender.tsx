@@ -1,4 +1,3 @@
-import type { DateOperator } from "@ctrlplane/validators/conditions";
 import type { DateValue } from "@internationalized/date";
 import { ZonedDateTime } from "@internationalized/date";
 import ms from "ms";
@@ -12,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { ReleaseOperator } from "@ctrlplane/validators/releases";
+import { DateOperator } from "@ctrlplane/validators/conditions";
 
 const toZonedDateTime = (date: Date): ZonedDateTime => {
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -71,14 +70,12 @@ export const DateConditionRender: React.FC<DateConditionRenderProps> = ({
             />
           </SelectTrigger>
           <SelectContent className="text-muted-foreground">
-            <SelectItem value={ReleaseOperator.Before}>before</SelectItem>
-            <SelectItem value={ReleaseOperator.After}>after</SelectItem>
-            <SelectItem value={ReleaseOperator.BeforeOrOn}>
+            <SelectItem value={DateOperator.Before}>before</SelectItem>
+            <SelectItem value={DateOperator.After}>after</SelectItem>
+            <SelectItem value={DateOperator.BeforeOrOn}>
               before or on
             </SelectItem>
-            <SelectItem value={ReleaseOperator.AfterOrOn}>
-              after or on
-            </SelectItem>
+            <SelectItem value={DateOperator.AfterOrOn}>after or on</SelectItem>
           </SelectContent>
         </Select>
       </div>

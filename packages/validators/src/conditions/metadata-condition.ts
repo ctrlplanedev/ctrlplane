@@ -52,6 +52,12 @@ export enum MetadataOperator {
   Null = "null",
 }
 
+export type MetadataOperatorType =
+  | MetadataOperator.Equals
+  | MetadataOperator.Like
+  | MetadataOperator.Regex
+  | MetadataOperator.Null;
+
 export enum ReservedMetadataKey {
   ExternalId = "ctrlplane/external-id",
   Links = "ctrlplane/links",
