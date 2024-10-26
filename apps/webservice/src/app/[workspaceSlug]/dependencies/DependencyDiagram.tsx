@@ -148,13 +148,13 @@ const ReleaseSelector: React.FC<{
 
 const DeploymentNode: React.FC<
   NodeProps<
-    Deployment & { latestRelease: { id: string; version: string } | null }
+    Deployment & { latestActiveRelease: { id: string; version: string } | null }
   >
 > = ({ data }) => {
   const { getEdges, setEdges } = useReactFlow();
 
   const [selectedRelease, setSelectedRelease] = useState(
-    data.latestRelease?.id,
+    data.latestActiveRelease?.id,
   );
   const releases = api.release.list.useQuery({ deploymentId: data.id });
   const release = releases.data?.items.find((r) => r.id === selectedRelease);
@@ -163,7 +163,7 @@ const DeploymentNode: React.FC<
   useEffect(() => {
     if (release == null) return;
     const deps = release.releaseDependencies.filter(isPresent);
-    if (data.latestRelease == null) return;
+    if (data.latestActiveRelease == null) return;
 
     const edges = getEdges().filter((e) => e.source !== data.id);
 
@@ -193,7 +193,7 @@ const DeploymentNode: React.FC<
         <div>
           {releases.data != null && (
             <ReleaseSelector
-              value={selectedRelease ?? data.latestRelease?.id ?? ""}
+              value={selectedRelease ?? data.latestActiveRelease?.id ?? ""}
               onChange={setSelectedRelease}
               releases={releases.data.items}
             />
@@ -222,7 +222,7 @@ const edgeTypes = { default: DepEdge };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const DependencyDiagram: React.FC<{
   deployments: Array<
-    Deployment & { latestRelease: { id: string; version: string } | null }
+    Deployment & { latestActiveRelease: { id: string; version: string } | null }
   >;
 }> = ({ deployments }) => {
   const [nodes, _, onNodesChange] = useNodesState(
@@ -262,7 +262,7 @@ const DependencyDiagram: React.FC<{
 
 export const Diagram: React.FC<{
   deployments: Array<
-    Deployment & { latestRelease: { id: string; version: string } | null }
+    Deployment & { latestActiveRelease: { id: string; version: string } | null }
   >;
 }> = ({ deployments }) => {
   return (

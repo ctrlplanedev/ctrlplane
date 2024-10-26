@@ -1,4 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import {
@@ -30,7 +32,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentVariableRouter } from "./deployment-variable";
 
-const latestReleaseSubQuery = (db: Tx) =>
+const latestActiveReleaseSubQuery = (db: Tx) =>
   db
     .select({
       id: release.id,
@@ -39,13 +41,15 @@ const latestReleaseSubQuery = (db: Tx) =>
       createdAt: release.createdAt,
       name: release.name,
       config: release.config,
+      environmentId: releaseJobTrigger.environmentId,
 
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY deployment_id ORDER BY created_at DESC)`.as(
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId}, ${releaseJobTrigger.environmentId} ORDER BY ${release.createdAt} DESC)`.as(
         "rank",
       ),
     })
     .from(release)
-    .as("release");
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
+    .as("active_releases");
 
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
@@ -203,20 +207,26 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "system", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const latestRelease = latestReleaseSubQuery(ctx.db);
+      const activeRelease = latestActiveReleaseSubQuery(ctx.db);
       return ctx.db
         .select()
         .from(deployment)
         .leftJoin(
-          latestRelease,
+          activeRelease,
           and(
-            eq(latestRelease.deploymentId, deployment.id),
-            eq(latestRelease.rank, 1),
+            eq(activeRelease.deploymentId, deployment.id),
+            eq(activeRelease.rank, 1),
           ),
         )
         .where(eq(deployment.systemId, input))
-        .then((r) =>
-          r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
+        .then((ts) =>
+          _.chain(ts)
+            .groupBy((t) => t.deployment.id)
+            .map((t) => ({
+              ...t[0]!.deployment,
+              activeReleases: t.map((a) => a.active_releases).filter(isPresent),
+            }))
+            .value(),
         );
     }),
 
@@ -304,21 +314,24 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const latestRelease = latestReleaseSubQuery(ctx.db);
+      const activeRelease = latestActiveReleaseSubQuery(ctx.db);
       return ctx.db
         .select()
         .from(deployment)
         .innerJoin(system, eq(system.id, deployment.systemId))
         .leftJoin(
-          latestRelease,
+          activeRelease,
           and(
-            eq(latestRelease.deploymentId, deployment.id),
-            eq(latestRelease.rank, 1),
+            eq(activeRelease.deploymentId, deployment.id),
+            eq(activeRelease.rank, 1),
           ),
         )
         .where(eq(system.workspaceId, input))
         .then((r) =>
-          r.map((row) => ({ ...row.deployment, latestRelease: row.release })),
+          r.map((row) => ({
+            ...row.deployment,
+            latestActiveReleases: row.active_releases,
+          })),
         );
     }),
 });

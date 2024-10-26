@@ -15,13 +15,21 @@ export default async function Dependencies({
 
   if (
     deployments.length === 0 ||
-    deployments.some((d) => d.latestRelease != null)
+    deployments.some((d) => d.latestActiveReleases != null)
   )
     return <DependenciesGettingStarted />;
 
+  const transformedDeployments = deployments.map((deployment) => ({
+    ...deployment,
+    latestActiveRelease: deployment.latestActiveReleases && {
+      id: deployment.latestActiveReleases.id,
+      version: deployment.latestActiveReleases.version,
+    },
+  }));
+
   return (
     <div className="h-full">
-      <Diagram deployments={deployments} />
+      <Diagram deployments={transformedDeployments} />
     </div>
   );
 }
