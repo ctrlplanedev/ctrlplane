@@ -169,6 +169,13 @@
       "when": 1729814670402,
       "tag": "0023_melted_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1729900464973,
+      "tag": "0024_slimy_scalphunter",
+      "breakpoints": true
     }
   ]
 }
