@@ -1,9 +1,11 @@
 "use client";
 
-import React, { Fragment } from "react";
+import type { Environment } from "@ctrlplane/db/schema";
+import React, { Fragment, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  IconChevronRight,
   IconDots,
   IconExternalLink,
   IconFilter,
@@ -24,23 +26,43 @@ import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJo
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "./JobDropdownMenu";
+import { PolicyApprovalRow } from "./PolicyApprovalRow";
 
-type TargetReleaseTableProps = {
-  release: { id: string; version: string; name: string };
+type CollapsibleTableRowProps = {
+  environment: Environment;
   deploymentName: string;
+  release: {
+    id: string;
+    version: string;
+    name: string;
+  };
 };
 
-export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
-  release,
+const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
+  environment,
   deploymentName,
+  release,
 }) => {
-  const { filter, setFilter } = useJobFilter();
-  const pathname = usePathname();
+  const { filter } = useJobFilter();
   const { setJobId } = useJobDrawer();
+  const pathname = usePathname();
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     { releaseId: release.id, filter },
     { refetchInterval: 5_000, placeholderData: (prev) => prev },
   );
+  const jobs = releaseJobTriggerQuery.data?.filter(
+    (job) => job.environmentId === environment.id,
+  );
+  const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
+    releaseId: release.id,
+  });
+  const approvals = approvalsQ.data ?? [];
+  const environmentApprovals = approvals.filter(
+    (approval) => approval.policyId === environment.policyId,
+  );
+
   if (releaseJobTriggerQuery.isLoading)
     return (
       <div className="flex h-full w-full items-center justify-center py-12">
@@ -49,127 +71,165 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     );
 
   return (
-    <>
-      <JobConditionDialog condition={filter} onChange={setFilter}>
-        <div className="flex shrink-0 items-center gap-2 border-b p-1">
-          <Button variant="ghost" size="icon" className="flex h-7 w-7 gap-1">
-            <IconFilter className="h-4 w-4" />
-          </Button>
-          {filter != null && <JobConditionBadge condition={filter} />}
-        </div>
-      </JobConditionDialog>
+    <Fragment>
+      <TableRow
+        className={cn("sticky cursor-pointer bg-neutral-800/40")}
+        onClick={() => setIsExpanded((t) => !t)}
+      >
+        <TableCell colSpan={6}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <IconChevronRight
+                className={cn(
+                  "h-3 w-3 text-muted-foreground transition-all",
+                  isExpanded && "rotate-90",
+                )}
+              />
+              {environment.name}
+            </div>
+            <div className="flex items-center gap-2">
+              {environmentApprovals.map((approval) => (
+                <PolicyApprovalRow
+                  key={approval.id}
+                  approval={approval}
+                  environment={environment}
+                />
+              ))}
+            </div>
+          </div>
+        </TableCell>
+      </TableRow>
+      {isExpanded && (
+        <>
+          {jobs?.map((job, idx) => {
+            const linksMetadata = job.job.metadata.find(
+              (m) => m.key === String(ReservedMetadataKey.Links),
+            )?.value;
 
+            const links =
+              linksMetadata != null
+                ? (JSON.parse(linksMetadata) as Record<string, string>)
+                : null;
+
+            return (
+              <TableRow
+                key={job.id}
+                className={cn(
+                  "cursor-pointer",
+                  idx !== jobs.length - 1 && "border-b-neutral-800/50",
+                )}
+                onClick={() => setJobId(job.job.id)}
+              >
+                <TableCell>
+                  <Link
+                    href={`${pathname}?target_id=${job.target.id}`}
+                    className="block w-full hover:text-blue-300"
+                  >
+                    {job.target.name}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <JobTableStatusIcon status={job.job.status} />
+                    {capitalCase(job.job.status)}
+                  </div>
+                </TableCell>
+                <TableCell>{job.type}</TableCell>
+                <TableCell>
+                  {job.job.externalId != null ? (
+                    <code className="font-mono text-xs">
+                      {job.job.externalId}
+                    </code>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      No external ID
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {links != null && (
+                    <div className="flex items-center gap-1">
+                      {Object.entries(links).map(([label, url]) => (
+                        <Link
+                          key={label}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={buttonVariants({
+                            variant: "secondary",
+                            size: "sm",
+                            className: "gap-1",
+                          })}
+                        >
+                          <IconExternalLink className="h-4 w-4" />
+                          {label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end">
+                    <JobDropdownMenu
+                      release={release}
+                      deploymentName={deploymentName}
+                      target={job.target}
+                      environmentId={job.environmentId}
+                      job={{
+                        id: job.job.id,
+                        status: job.job.status,
+                      }}
+                    >
+                      <Button variant="ghost" size="icon">
+                        <IconDots size={16} />
+                      </Button>
+                    </JobDropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </>
+      )}
+    </Fragment>
+  );
+};
+
+type TargetReleaseTableProps = {
+  release: { id: string; version: string; name: string };
+  deploymentName: string;
+  environments: Environment[];
+};
+
+export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
+  release,
+  deploymentName,
+  environments,
+}) => {
+  const { filter, setFilter } = useJobFilter();
+
+  return (
+    <>
+      <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
+        <JobConditionDialog condition={filter} onChange={setFilter}>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <IconFilter className="h-4 w-4" />
+            </Button>
+            {filter != null && <JobConditionBadge condition={filter} />}
+          </div>
+        </JobConditionDialog>
+      </div>
       <Table className="table-fixed">
         <TableBody>
-          {_.chain(releaseJobTriggerQuery.data)
-            .groupBy((r) => r.environmentId)
-            .entries()
-            .map(([envId, jobs]) => {
-              return (
-                <Fragment key={envId}>
-                  <TableRow className={cn("sticky bg-neutral-800/40")}>
-                    <TableCell colSpan={6}>
-                      {jobs[0]?.environment != null && (
-                        <div className="flex items-center gap-4">
-                          <div className="flex-grow">
-                            {jobs[0].environment.name}
-                          </div>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                  {jobs.map((job, idx) => {
-                    const linksMetadata = job.job.metadata.find(
-                      (m) => m.key === String(ReservedMetadataKey.Links),
-                    )?.value;
-
-                    const links =
-                      linksMetadata != null
-                        ? (JSON.parse(linksMetadata) as Record<string, string>)
-                        : null;
-
-                    return (
-                      <TableRow
-                        key={job.id}
-                        className={cn(
-                          "cursor-pointer",
-                          idx !== jobs.length - 1 && "border-b-neutral-800/50",
-                        )}
-                        onClick={() => setJobId(job.job.id)}
-                      >
-                        <TableCell className="hover:bg-neutral-800/55">
-                          <Link
-                            href={`${pathname}?target_id=${job.target.id}`}
-                            className="block w-full hover:text-blue-300"
-                          >
-                            {job.target.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <JobTableStatusIcon status={job.job.status} />
-                            {capitalCase(job.job.status)}
-                          </div>
-                        </TableCell>
-                        <TableCell>{job.type}</TableCell>
-                        <TableCell>
-                          {job.job.externalId != null ? (
-                            <code className="font-mono text-xs">
-                              {job.job.externalId}
-                            </code>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">
-                              No external ID
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {links != null && (
-                            <div className="flex items-center gap-1">
-                              {Object.entries(links).map(([label, url]) => (
-                                <Link
-                                  key={label}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={buttonVariants({
-                                    variant: "secondary",
-                                    size: "sm",
-                                    className: "gap-1",
-                                  })}
-                                >
-                                  <IconExternalLink className="h-4 w-4" />
-                                  {label}
-                                </Link>
-                              ))}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
-                          <div className="flex justify-end">
-                            <JobDropdownMenu
-                              release={release}
-                              deploymentName={deploymentName}
-                              target={job.target}
-                              environmentId={job.environmentId}
-                              job={{
-                                id: job.job.id,
-                                status: job.job.status,
-                              }}
-                            >
-                              <Button variant="ghost" size="icon">
-                                <IconDots size={16} />
-                              </Button>
-                            </JobDropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </Fragment>
-              );
-            })
-            .value()}
+          {environments.map((environment) => (
+            <CollapsibleTableRow
+              key={environment.id}
+              environment={environment}
+              deploymentName={deploymentName}
+              release={release}
+            />
+          ))}
         </TableBody>
       </Table>
     </>

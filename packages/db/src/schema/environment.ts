@@ -19,6 +19,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { releaseCondition } from "@ctrlplane/validators/releases";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
+import { user } from "./auth.js";
 import { release } from "./release.js";
 import { system } from "./system.js";
 import { variableSetAssignment } from "./variable-sets.js";
@@ -181,6 +182,7 @@ export const environmentPolicyApproval = pgTable(
       .notNull()
       .references(() => release.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
   },
   (t) => ({ uniq: uniqueIndex().on(t.policyId, t.releaseId) }),
 );
