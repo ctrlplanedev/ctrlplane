@@ -41,6 +41,18 @@ export const getEnvironment = (tx: Tx, environmentId: string) =>
     },
   });
 
+export const getTargetVariableValue = (tx: Tx, targetId: string, key: string) =>
+  tx
+    .select()
+    .from(SCHEMA.targetVariable)
+    .where(
+      and(
+        eq(SCHEMA.targetVariable.targetId, targetId),
+        eq(SCHEMA.targetVariable.key, key),
+      ),
+    )
+    .then(takeFirstOrNull);
+
 export const getVariableValues = (tx: Tx, variableId: string) =>
   tx
     .select()

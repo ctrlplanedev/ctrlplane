@@ -1,6 +1,8 @@
-import type { MetadataCondition } from "@ctrlplane/validators/targets";
+import type {
+  MetadataCondition,
+  MetadataOperatorType,
+} from "@ctrlplane/validators/conditions";
 import { useState } from "react";
-import { useParams } from "next/navigation";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -13,44 +15,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { TargetOperator } from "@ctrlplane/validators/targets";
+import { MetadataOperator } from "@ctrlplane/validators/conditions";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
-import { api } from "~/trpc/react";
 import { useMatchSorter } from "~/utils/useMatchSorter";
 
+type MetadataConditionRenderProps = {
+  condition: MetadataCondition;
+  onChange: (condition: MetadataCondition) => void;
+  metadataKeys: string[];
+  className?: string;
+};
 export const MetadataConditionRender: React.FC<
-  TargetConditionRenderProps<MetadataCondition>
-> = ({ condition, onChange, className }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-
+  MetadataConditionRenderProps
+> = ({ condition, onChange, metadataKeys, className }) => {
   const setKey = (key: string) => onChange({ ...condition, key });
 
   const setValue = (value: string) =>
-    condition.operator !== TargetOperator.Null &&
+    condition.operator !== MetadataOperator.Null &&
     onChange({ ...condition, value });
 
-  const setOperator = (
-    operator:
-      | TargetOperator.Equals
-      | TargetOperator.Like
-      | TargetOperator.Regex
-      | TargetOperator.Null,
-  ) =>
-    operator === TargetOperator.Null
+  const setOperator = (operator: MetadataOperatorType) =>
+    operator === MetadataOperator.Null
       ? onChange({ ...condition, operator, value: undefined })
       : onChange({ ...condition, operator, value: condition.value ?? "" });
 
   const [open, setOpen] = useState(false);
-  const metadataKeys = api.target.metadataKeys.useQuery(
-    workspace.data?.id ?? "",
-    { enabled: workspace.isSuccess && workspace.data != null },
-  );
-  const filteredMetadataKeys = useMatchSorter(
-    metadataKeys.data ?? [],
-    condition.key,
-  );
+
+  const filteredMetadataKeys = useMatchSorter(metadataKeys, condition.key);
 
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
@@ -92,10 +83,10 @@ export const MetadataConditionRender: React.FC<
             value={condition.operator}
             onValueChange={(
               v:
-                | TargetOperator.Equals
-                | TargetOperator.Like
-                | TargetOperator.Regex
-                | TargetOperator.Null,
+                | MetadataOperator.Equals
+                | MetadataOperator.Like
+                | MetadataOperator.Regex
+                | MetadataOperator.Null,
             ) => setOperator(v)}
           >
             <SelectTrigger className="rounded-none text-muted-foreground hover:bg-neutral-800/50">
@@ -105,21 +96,21 @@ export const MetadataConditionRender: React.FC<
               />
             </SelectTrigger>
             <SelectContent className="text-muted-foreground">
-              <SelectItem value={TargetOperator.Equals}>Equals</SelectItem>
-              <SelectItem value={TargetOperator.Regex}>Regex</SelectItem>
-              <SelectItem value={TargetOperator.Like}>Like</SelectItem>
-              <SelectItem value={TargetOperator.Null}>Is Null</SelectItem>
+              <SelectItem value={MetadataOperator.Equals}>Equals</SelectItem>
+              <SelectItem value={MetadataOperator.Regex}>Regex</SelectItem>
+              <SelectItem value={MetadataOperator.Like}>Like</SelectItem>
+              <SelectItem value={MetadataOperator.Null}>Is Null</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {condition.operator !== TargetOperator.Null ? (
+        {condition.operator !== MetadataOperator.Null ? (
           <div className="col-span-4">
             <Input
               placeholder={
-                condition.operator === TargetOperator.Regex
+                condition.operator === MetadataOperator.Regex
                   ? "^[a-zA-Z]+$"
-                  : condition.operator === TargetOperator.Like
+                  : condition.operator === MetadataOperator.Like
                     ? "%value%"
                     : "Value"
               }

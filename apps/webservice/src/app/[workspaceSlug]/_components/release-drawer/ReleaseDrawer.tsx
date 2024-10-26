@@ -11,7 +11,7 @@ import {
 
 import { buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
-import { ReservedMetadataKey } from "@ctrlplane/validators/releases";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { api } from "~/trpc/react";
 import { TabButton } from "../TabButton";

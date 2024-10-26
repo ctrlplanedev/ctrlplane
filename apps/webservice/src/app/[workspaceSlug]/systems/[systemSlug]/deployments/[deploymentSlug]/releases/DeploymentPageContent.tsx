@@ -1,7 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { IconFilter, IconGraph } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
@@ -24,7 +24,6 @@ import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
-import { useReleaseDrawer } from "../../../../../_components/release-drawer/ReleaseDrawer";
 import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
@@ -43,7 +42,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   environments,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
-  const { setReleaseId } = useReleaseDrawer();
 
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
@@ -78,6 +76,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   });
 
   const loading = releases.isLoading || releaseJobTriggersQuery.isLoading;
+  const router = useRouter();
 
   return (
     <div>
@@ -162,6 +161,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                   <TableRow
                     key={release.id}
                     className="cursor-pointer hover:bg-transparent"
+                    onClick={() =>
+                      router.push(
+                        `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/releases/${release.id}`,
+                      )
+                    }
                   >
                     <TableCell
                       className={cn(
@@ -169,7 +173,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         releaseIdx === releases.data.items.length - 1 &&
                           "border-b",
                       )}
-                      onClick={() => setReleaseId(release.id)}
                     >
                       <div className="flex items-center gap-2">
                         {release.name}{" "}
@@ -219,6 +222,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                             releaseIdx === releases.data.items.length - 1 &&
                               "border-b",
                           )}
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex h-full w-full items-center justify-center">
                             {showRelease && (

@@ -17,6 +17,7 @@ import {
   updateJob,
 } from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
+import { variablesAES256 } from "@ctrlplane/secrets";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getUser } from "~/app/api/v1/auth";
@@ -56,7 +57,11 @@ export const GET = async (
     .where(eq(jobVariable.jobId, params.jobId));
 
   const variables = Object.fromEntries(
-    jobVariableRows.map((v) => [v.key, v.value]),
+    jobVariableRows.map((v) => {
+      const strval = String(v.value);
+      const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
+      return [v.key, value];
+    }),
   );
 
   const jobTargetMetadataRows = await db
@@ -68,10 +73,7 @@ export const GET = async (
     jobTargetMetadataRows.map((m) => [m.key, m.value]),
   );
 
-  const targetWithMetadata = {
-    ...je.target,
-    metadata,
-  };
+  const targetWithMetadata = { ...je.target, metadata };
 
   return NextResponse.json({
     ...je.job,

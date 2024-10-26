@@ -30,7 +30,7 @@ export const systemRouter = createTRPCRouter({
           .array(
             z.object({
               key: z.enum(["name", "slug"]),
-              value: z.any(),
+              value: z.string(),
             }),
           )
           .optional(),
@@ -48,13 +48,17 @@ export const systemRouter = createTRPCRouter({
         .filter((f) => f.key === "slug")
         .map((f) => like(system.slug, `%${f.value}%`));
 
-      const checks = [workspaceIdCheck, or(...nameFilters), or(...slugFilters)];
+      const checks = and(
+        workspaceIdCheck,
+        or(...nameFilters),
+        or(...slugFilters),
+      );
 
       const items = ctx.db
         .select()
         .from(system)
         .leftJoin(environment, eq(environment.systemId, system.id))
-        .where(and(...checks))
+        .where(checks)
         .limit(input.limit)
         .offset(input.offset)
         .then((rows) =>
@@ -70,7 +74,7 @@ export const systemRouter = createTRPCRouter({
       const total = ctx.db
         .select({ count: count().as("total") })
         .from(system)
-        .where(and(...checks))
+        .where(checks)
         .then(takeFirst)
         .then((total) => total.count);
 

@@ -63,7 +63,7 @@ export const deploymentRouter = createTRPCRouter({
           id: job.id,
           status: job.status,
           targetId: releaseJobTrigger.targetId,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY release_job_trigger.target_id ORDER BY job.created_at DESC)`.as(
+          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${releaseJobTrigger.targetId} ORDER BY ${job.createdAt} DESC)`.as(
             "rank",
           ),
         })

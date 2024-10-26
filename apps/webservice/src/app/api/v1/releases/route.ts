@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { can } from "@ctrlplane/auth/utils";
-import { takeFirst } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createRelease } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
@@ -41,6 +41,23 @@ export const POST = async (req: NextRequest) => {
       .on({ type: "deployment", id: body.data.deploymentId });
     if (!canCreateReleases)
       return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+
+    const existingRelease = await db
+      .select()
+      .from(schema.release)
+      .where(
+        and(
+          eq(schema.release.deploymentId, releaseData.deploymentId),
+          eq(schema.release.version, releaseData.version),
+        ),
+      )
+      .then(takeFirstOrNull);
+
+    if (existingRelease)
+      return NextResponse.json(
+        { error: "Release already exists" },
+        { status: 409 },
+      );
 
     const release = await db
       .insert(schema.release)

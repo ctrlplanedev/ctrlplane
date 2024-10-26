@@ -1,4 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   pgTable,
   text,
@@ -9,6 +10,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { target } from "./target.js";
 import { workspace } from "./workspace.js";
 
 export const targetProvider = pgTable(
@@ -22,6 +24,11 @@ export const targetProvider = pgTable(
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.name) }),
+);
+
+export const targetProviderRelations = relations(
+  targetProvider,
+  ({ many }) => ({ targets: many(target) }),
 );
 
 export const createTargetProvider = createInsertSchema(targetProvider).omit({

@@ -23,6 +23,7 @@
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/secrets": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@octokit/auth-app": "^7.1.0",
     "@octokit/rest": "catalog:",

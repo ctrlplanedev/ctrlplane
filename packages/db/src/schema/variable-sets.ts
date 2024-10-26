@@ -23,7 +23,7 @@ export const createVariableSet = createInsertSchema(variableSet)
     values: z.array(
       z.object({
         key: z.string().trim().min(3),
-        value: z.any(),
+        value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
       }),
     ),
     environmentIds: z.array(z.string().uuid()),
@@ -34,7 +34,7 @@ export const updateVariableSet = createVariableSet.partial().extend({
     .array(
       z.object({
         key: z.string().trim().min(3),
-        value: z.any(),
+        value: z.union([z.string(), z.number(), z.boolean(), z.null()]),
       }),
     )
     .optional(),

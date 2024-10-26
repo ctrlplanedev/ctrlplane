@@ -414,7 +414,7 @@ export const EnvironmentDrawer: React.FC = () => {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="left-auto right-0 top-0 mt-0 h-screen w-[500px] overflow-auto rounded-none focus-visible:outline-none"
+        className="left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none focus-visible:outline-none"
       >
         <DrawerTitle className="flex items-center gap-2 border-b p-6">
           <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">

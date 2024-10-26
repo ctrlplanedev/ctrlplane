@@ -22,10 +22,10 @@ export const isPassingAllPolicies = async (
     isPassingApprovalPolicy,
     isPassingCriteriaPolicy,
     isPassingConcurrencyPolicy,
+    isPassingReleaseDependencyPolicy,
     isPassingJobRolloutPolicy,
     isPassingNoActiveJobsPolicy,
     isPassingReleaseWindowPolicy,
-    isPassingReleaseDependencyPolicy,
   ];
 
   let passingJobs = releaseJobTriggers;

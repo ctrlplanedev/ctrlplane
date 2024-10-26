@@ -39,6 +39,10 @@
     "./cac": {
       "types": "./src/cac/index.ts",
       "default": "./dist/cac/index.js"
+    },
+    "./conditions": {
+      "types": "./src/conditions/index.ts",
+      "default": "./dist/conditions/index.js"
     }
   },
   "license": "MIT",
