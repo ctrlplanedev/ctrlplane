@@ -72,33 +72,35 @@ class DispatchBuilder {
       wfsWithJobAgent.map((wf) => createReleaseVariables(this.db, wf.id)),
     );
 
-    const jobsWithResolvedVariables = [];
+    const jobsWithResolvedVariables = await Promise.all(
+      results.map(async (result, index) => {
+        if (result.status !== "fulfilled") {
+          const wf = wfsWithJobAgent[index];
+          if (!wf) return null;
 
-    for (const [index, result] of results.entries()) {
-      if (result.status !== "fulfilled") {
-        const wf = wfsWithJobAgent[index];
-        if (!wf) continue;
+          await this.db
+            .update(schema.job)
+            .set({
+              status: JobStatus.Failure,
+              message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
+            })
+            .where(eq(schema.job.id, wf.id));
+          return null;
+        }
+        return wfsWithJobAgent[index];
+      }),
+    );
 
-        await this.db
-          .update(schema.job)
-          .set({
-            status: JobStatus.Failure,
-            message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
-          })
-          .where(eq(schema.job.id, wf.id));
-        continue;
-      }
-      jobsWithResolvedVariables.push(wfsWithJobAgent[index]);
-    }
+    const validJobsWithResolvedVariables = jobsWithResolvedVariables.filter(
+      (job): job is schema.Job => job !== null,
+    );
 
-    if (jobsWithResolvedVariables.length > 0) {
+    if (validJobsWithResolvedVariables.length > 0) {
       await dispatchJobsQueue.addBulk(
-        jobsWithResolvedVariables
-          .filter((wf): wf is schema.Job => wf !== undefined)
-          .map((wf) => ({
-            name: wf.id,
-            data: { jobId: wf.id },
-          })),
+        validJobsWithResolvedVariables.map((wf) => ({
+          name: wf.id,
+          data: { jobId: wf.id },
+        })),
       );
 
       await this.db
@@ -107,9 +109,7 @@ class DispatchBuilder {
         .where(
           inArray(
             schema.job.id,
-            jobsWithResolvedVariables
-              .filter((j): j is schema.Job => j !== undefined)
-              .map((j) => j.id),
+            validJobsWithResolvedVariables.map((j) => j.id),
           ),
         );
     }
@@ -124,7 +124,7 @@ class DispatchBuilder {
         ),
       );
 
-    return wfsWithJobAgent;
+    return validJobsWithResolvedVariables;
   }
 }
 
