@@ -28,6 +28,8 @@ export const ProviderConditionRender: React.FC<
     display: provider.name,
   }));
 
+  const loading = workspace.isLoading || providers.isLoading;
+
   return (
     <ChoiceConditionRender
       type="provider"
@@ -35,6 +37,7 @@ export const ProviderConditionRender: React.FC<
       selected={selectedProvider?.name ?? null}
       options={options}
       className={className}
+      loading={loading}
     />
   );
 };

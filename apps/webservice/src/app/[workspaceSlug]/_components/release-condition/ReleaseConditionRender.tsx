@@ -10,9 +10,9 @@ import {
 
 import type { ReleaseConditionRenderProps } from "./release-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
-import { CreatedAtConditionRender } from "./CreatedAtConditionRender";
+import { CreatedAtConditionRender } from "./ReleaseCreatedAtConditionRender";
 import { ReleaseMetadataConditionRender } from "./ReleaseMetadataConditionRender";
-import { VersionConditionRender } from "./VersionConditionRender";
+import { ReleaseVersionConditionRender } from "./VersionConditionRender";
 
 /**
  * The parent container should have min width of 1000px
@@ -56,7 +56,7 @@ export const ReleaseConditionRender: React.FC<
 
   if (isVersionCondition(condition))
     return (
-      <VersionConditionRender
+      <ReleaseVersionConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}

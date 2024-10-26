@@ -164,9 +164,10 @@ const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
   release,
   policyDeployments,
 }) => {
-  const allJobs = api.job.config.byReleaseId.useQuery(release.id, {
-    refetchInterval: 10_000,
-  });
+  const allJobs = api.job.config.byReleaseId.useQuery(
+    { releaseId: release.id },
+    { refetchInterval: 10_000 },
+  );
   const envIds = policyDeployments.map((p) => p.environmentId);
   const jobs = allJobs.data?.filter((j) => envIds.includes(j.environmentId));
 

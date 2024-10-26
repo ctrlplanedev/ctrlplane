@@ -7,3 +7,11 @@ export const versionCondition = z.object({
 });
 
 export type VersionCondition = z.infer<typeof versionCondition>;
+
+export enum VersionOperator {
+  Like = "like",
+  Regex = "regex",
+  Equals = "equals",
+}
+
+export type VersionOperatorType = "like" | "regex" | "equals";

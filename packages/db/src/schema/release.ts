@@ -1,11 +1,9 @@
 import type {
   CreatedAtCondition,
   MetadataCondition,
-} from "@ctrlplane/validators/conditions";
-import type {
-  ReleaseCondition,
   VersionCondition,
-} from "@ctrlplane/validators/releases";
+} from "@ctrlplane/validators/conditions";
+import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import {
   and,
@@ -33,6 +31,10 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import {
+  DateOperator,
+  VersionOperator,
+} from "@ctrlplane/validators/conditions";
 import {
   releaseCondition,
   ReleaseFilterType,
@@ -219,19 +221,17 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 
 const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
   const date = new Date(cond.value);
-  if (cond.operator === ReleaseOperator.Before)
-    return lt(release.createdAt, date);
-  if (cond.operator === ReleaseOperator.After)
-    return gt(release.createdAt, date);
-  if (cond.operator === ReleaseOperator.BeforeOrOn)
+  if (cond.operator === DateOperator.Before) return lt(release.createdAt, date);
+  if (cond.operator === DateOperator.After) return gt(release.createdAt, date);
+  if (cond.operator === DateOperator.BeforeOrOn)
     return lte(release.createdAt, date);
   return gte(release.createdAt, date);
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === ReleaseOperator.Equals)
+  if (cond.operator === VersionOperator.Equals)
     return eq(release.version, cond.value);
-  if (cond.operator === ReleaseOperator.Like)
+  if (cond.operator === VersionOperator.Like)
     return like(release.version, cond.value);
   return sql`${release.version} ~ ${cond.value}`;
 };

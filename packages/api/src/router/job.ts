@@ -21,6 +21,7 @@ import { z } from "zod";
 import {
   and,
   asc,
+  countDistinct,
   desc,
   eq,
   inArray,
@@ -37,6 +38,7 @@ import {
   environmentPolicyReleaseWindow,
   job,
   jobAgent,
+  jobMatchesCondition,
   jobMetadata,
   jobVariable,
   release,
@@ -56,7 +58,7 @@ import {
   onJobCompletion,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { jobCondition, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -96,9 +98,17 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
       causedBy: v[0]!.user,
       job: {
         ...v[0]!.job,
-        metadata: v.map((t) => t.job_metadata).filter(isPresent),
+        metadata: _.chain(v)
+          .filter((v) => isPresent(v.job_metadata))
+          .groupBy((v) => v.job_metadata!.id)
+          .map((v) => v[0]!.job_metadata!)
+          .value(),
         status: v[0]!.job.status as JobStatus,
-        variables: v.map((t) => t.job_variable).filter(isPresent),
+        variables: _.chain(v)
+          .filter((v) => isPresent(v.job_variable))
+          .groupBy((v) => v.job_variable!.id)
+          .map((v) => v[0]!.job_variable!)
+          .value(),
       },
       jobAgent: v[0]!.job_agent,
       target: v[0]!.target,
@@ -133,21 +143,32 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
 const releaseJobTriggerRouter = createTRPCRouter({
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
-      .input(z.string().uuid())
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          filter: jobCondition.optional(),
+          limit: z.number().int().nonnegative().max(1000).default(500),
+          offset: z.number().int().nonnegative().default(0),
+        }),
+      )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.SystemList)
-            .on({ type: "workspace", id: input }),
+            .perform(Permission.JobList)
+            .on({ type: "workspace", id: input.workspaceId }),
       })
-      .query(({ ctx, input }) =>
-        releaseJobTriggerQuery(ctx.db)
+      .query(async ({ ctx, input }) => {
+        const items = await releaseJobTriggerQuery(ctx.db)
           .leftJoin(system, eq(system.id, deployment.systemId))
           .where(
-            and(eq(system.workspaceId, input), isNull(environment.deletedAt)),
+            and(
+              eq(system.workspaceId, input.workspaceId),
+              jobMatchesCondition(ctx.db, input.filter),
+            ),
           )
           .orderBy(asc(releaseJobTrigger.createdAt))
-          .limit(1_000)
+          .limit(input.limit)
+          .offset(input.offset)
           .then((data) =>
             data.map((t) => ({
               ...t.release_job_trigger,
@@ -157,8 +178,32 @@ const releaseJobTriggerRouter = createTRPCRouter({
               release: { ...t.release, deployment: t.deployment },
               environment: t.environment,
             })),
-          ),
-      ),
+          );
+
+        const total = await ctx.db
+          .select({
+            count: countDistinct(releaseJobTrigger.id),
+          })
+          .from(releaseJobTrigger)
+          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+          .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+          .innerJoin(
+            environment,
+            eq(releaseJobTrigger.environmentId, environment.id),
+          )
+          .innerJoin(system, eq(environment.systemId, system.id))
+          .where(
+            and(
+              eq(system.workspaceId, input.workspaceId),
+              jobMatchesCondition(ctx.db, input.filter),
+            ),
+          )
+          .then(takeFirst)
+          .then((t) => t.count);
+
+        return { items, total };
+      }),
     dailyCount: protectedProcedure
       .input(
         z.object({
@@ -282,9 +327,14 @@ const releaseJobTriggerRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "release", id: input }),
+          .on({ type: "release", id: input.releaseId }),
     })
-    .input(z.string().uuid())
+    .input(
+      z.object({
+        releaseId: z.string().uuid(),
+        filter: jobCondition.optional(),
+      }),
+    )
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
         .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
@@ -296,7 +346,12 @@ const releaseJobTriggerRouter = createTRPCRouter({
           environmentPolicyReleaseWindow,
           eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
-        .where(and(eq(release.id, input), isNull(environment.deletedAt)))
+        .where(
+          and(
+            eq(release.id, input.releaseId),
+            jobMatchesCondition(ctx.db, input.filter),
+          ),
+        )
         .orderBy(desc(releaseJobTrigger.createdAt))
         .then(processReleaseJobTriggerWithAdditionalDataRows),
     ),
@@ -552,6 +607,30 @@ const jobTriggerRouter = createTRPCRouter({
   }),
 });
 
+const metadataKeysRouter = createTRPCRouter({
+  byReleaseId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ReleaseGet)
+          .on({ type: "release", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .selectDistinct({ key: jobMetadata.key })
+        .from(release)
+        .innerJoin(
+          releaseJobTrigger,
+          eq(releaseJobTrigger.releaseId, release.id),
+        )
+        .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+        .innerJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
+        .where(eq(release.id, input))
+        .then((r) => r.map((row) => row.key)),
+    ),
+});
+
 export const jobRouter = createTRPCRouter({
   byTargetId: protectedProcedure
     .meta({
@@ -605,4 +684,5 @@ export const jobRouter = createTRPCRouter({
   config: releaseJobTriggerRouter,
   agent: jobAgentRouter,
   trigger: jobTriggerRouter,
+  metadataKey: metadataKeysRouter,
 });

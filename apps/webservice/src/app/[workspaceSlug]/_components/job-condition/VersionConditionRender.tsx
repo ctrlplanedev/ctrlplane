@@ -2,13 +2,12 @@ import type {
   VersionCondition,
   VersionOperatorType,
 } from "@ctrlplane/validators/conditions";
-import React from "react";
 
-import type { ReleaseConditionRenderProps } from "./release-condition-props";
+import type { JobConditionRenderProps } from "./job-condition-props";
 import { VersionConditionRender } from "../filter/VersionConditionRender";
 
-export const ReleaseVersionConditionRender: React.FC<
-  ReleaseConditionRenderProps<VersionCondition>
+export const JobReleaseVersionConditionRender: React.FC<
+  JobConditionRenderProps<VersionCondition>
 > = ({ condition, onChange, className }) => {
   const setOperator = (operator: VersionOperatorType) =>
     onChange({ ...condition, operator });
@@ -21,6 +20,7 @@ export const ReleaseVersionConditionRender: React.FC<
       setOperator={setOperator}
       setValue={setValue}
       className={className}
+      title="Release version"
     />
   );
 };
