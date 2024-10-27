@@ -6,6 +6,7 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   environment,
+  environmentPolicyApproval,
   job,
   jobVariable,
   release,
@@ -15,6 +16,7 @@ import {
   target,
   targetMetadata,
   updateJob,
+  user,
 } from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -26,8 +28,8 @@ export const GET = async (
   req: NextRequest,
   { params }: { params: { jobId: string } },
 ) => {
-  const user = await getUser(req);
-  if (!user)
+  const caller = await getUser(req);
+  if (!caller)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const je = await db
@@ -40,6 +42,7 @@ export const GET = async (
     .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
+    .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
     .where(and(eq(job.id, params.jobId), isNull(environment.deletedAt)))
     .then(takeFirst)
     .then((row) => ({
@@ -49,7 +52,47 @@ export const GET = async (
       target: row.target,
       deployment: row.deployment,
       release: row.release,
+      causedBy: row.user
+        ? {
+            id: row.user.id,
+            name: row.user.name,
+            email: row.user.email,
+          }
+        : null,
     }));
+
+  const policyId = je.environment?.policyId;
+  const approval =
+    je.release?.id && policyId
+      ? await db
+          .select()
+          .from(environmentPolicyApproval)
+          .leftJoin(user, eq(environmentPolicyApproval.userId, user.id))
+          .where(
+            and(
+              eq(environmentPolicyApproval.releaseId, je.release.id),
+              eq(environmentPolicyApproval.policyId, policyId),
+            ),
+          )
+          .then(takeFirstOrNull)
+          .then((row) =>
+            row
+              ? {
+                  id: row.environment_policy_approval.id,
+                  status: row.environment_policy_approval.status,
+                  approver:
+                    row.user &&
+                    row.environment_policy_approval.status !== "pending"
+                      ? {
+                          id: row.user.id,
+                          name: row.user.name,
+                          email: row.user.email,
+                        }
+                      : null,
+                }
+              : null,
+          )
+      : null;
 
   const jobVariableRows = await db
     .select()
@@ -80,6 +123,7 @@ export const GET = async (
     ...je,
     variables,
     target: targetWithMetadata,
+    approval,
   });
 };
 
