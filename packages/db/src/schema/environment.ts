@@ -5,6 +5,7 @@ import type { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 import {
   bigint,
+  boolean,
   integer,
   jsonb,
   pgEnum,
@@ -20,6 +21,7 @@ import { releaseCondition } from "@ctrlplane/validators/releases";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { user } from "./auth.js";
+import { deployment } from "./deployment.js";
 import { release, releaseChannel } from "./release.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
@@ -31,12 +33,10 @@ export const environment = pgTable("environment", {
     .references(() => system.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description").default(""),
-  policyId: uuid("policy_id").references(() => environmentPolicy.id, {
-    onDelete: "set null",
-  }),
   targetFilter: jsonb("target_filter")
     .$type<TargetCondition | null>()
     .default(sql`NULL`),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
 });
 
@@ -99,6 +99,10 @@ export const environmentPolicy = pgTable("environment_policy", {
   releaseSequencing: releaseSequencingType("release_sequencing")
     .notNull()
     .default("cancel"),
+
+  ephemeralDuration: bigint("ephemeral_duration", { mode: "number" }).default(
+    0,
+  ),
 });
 
 export type EnvironmentPolicy = InferSelectModel<typeof environmentPolicy>;
@@ -109,8 +113,8 @@ export const createEnvironmentPolicy = createInsertSchema(environmentPolicy, {
 
 export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
 
-export const environmentPolicyDeploymentReleaseChannel = pgTable(
-  "environment_policy_deployment_release_channel",
+export const environmentPolicyReleaseChannel = pgTable(
+  "environment_policy_release_channel",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     policyId: uuid("policy_id")
@@ -120,7 +124,13 @@ export const environmentPolicyDeploymentReleaseChannel = pgTable(
       .notNull()
       .references(() => releaseChannel.id, { onDelete: "cascade" }),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.channelId) }),
+  (t) => ({
+    uniq: uniqueIndex().on(t.policyId, t.channelId),
+    deploymentUniq: uniqueIndex().on(
+      t.policyId,
+      sql`(SELECT ${deployment.id} FROM ${releaseChannel} WHERE id = ${t.channelId})`,
+    ),
+  }),
 );
 
 export const recurrenceType = pgEnum("recurrence_type", [
@@ -167,8 +177,14 @@ export const environmentPolicyDeployment = pgTable(
     environmentId: uuid("environment_id")
       .notNull()
       .references(() => environment.id, { onDelete: "cascade" }),
+    hasCustomPolicy: boolean("has_custom_policy").notNull().default(false),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.environmentId) }),
+  (t) => ({
+    customPolicyUniq: uniqueIndex()
+      .on(t.environmentId)
+      .where(sql`is_own_policy = true`),
+    uniq: uniqueIndex().on(t.policyId, t.environmentId),
+  }),
 );
 
 export type EnvironmentPolicyDeployment = InferSelectModel<
