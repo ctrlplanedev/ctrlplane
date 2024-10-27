@@ -8,6 +8,7 @@ import type { VersionCondition } from "../../conditions/version-condition.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
+import type { JobTargetCondition } from "./job-target-condition.js";
 import type { StatusCondition } from "./status-condition.js";
 import {
   ComparisonOperator,
@@ -21,6 +22,7 @@ import { versionCondition } from "../../conditions/version-condition.js";
 import { comparisonCondition } from "./comparison-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
+import { jobTargetCondition } from "./job-target-condition.js";
 import { statusCondition } from "./status-condition.js";
 
 export type JobCondition =
@@ -30,7 +32,8 @@ export type JobCondition =
   | StatusCondition
   | DeploymentCondition
   | EnvironmentCondition
-  | VersionCondition;
+  | VersionCondition
+  | JobTargetCondition;
 
 export const jobCondition = z.union([
   comparisonCondition,
@@ -40,6 +43,7 @@ export const jobCondition = z.union([
   deploymentCondition,
   environmentCondition,
   versionCondition,
+  jobTargetCondition,
 ]);
 
 export const defaultCondition: JobCondition = {
@@ -53,6 +57,7 @@ export enum JobFilterType {
   Status = "status",
   Deployment = "deployment",
   Environment = "environment",
+  JobTarget = "target",
 }
 
 export const isEmptyCondition = (condition: JobCondition): boolean =>
@@ -87,6 +92,11 @@ export const isDeploymentCondition = (
 export const isVersionCondition = (
   condition: JobCondition,
 ): condition is VersionCondition => condition.type === FilterType.Version;
+
+export const isJobTargetCondition = (
+  condition: JobCondition,
+): condition is JobTargetCondition =>
+  condition.type === JobFilterType.JobTarget;
 
 // Check if converting to a comparison condition will exceed the max depth
 // including any nested conditions

@@ -45,7 +45,7 @@ export const EnvironmentConditionRender: React.FC<
   const options = environments.map((environment) => ({
     key: environment.id,
     value: environment.id,
-    display: environment.name,
+    display: `${environment.name} (${environment.system.name})`,
   }));
 
   const setEnvironment = (environment: string) =>
@@ -55,11 +55,15 @@ export const EnvironmentConditionRender: React.FC<
     (environment) => environment.id === condition.value,
   );
 
+  const selectedDisplay = selectedEnvironment
+    ? `${selectedEnvironment.name} (${selectedEnvironment.system.name})`
+    : null;
+
   return (
     <ChoiceConditionRender
       type="environment"
       onSelect={setEnvironment}
-      selected={selectedEnvironment?.name ?? null}
+      selected={selectedDisplay}
       options={options}
       className={className}
       loading={loading}

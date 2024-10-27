@@ -8,6 +8,7 @@ import type {
   DeploymentCondition,
   EnvironmentCondition,
   JobCondition,
+  JobTargetCondition,
   StatusCondition,
 } from "@ctrlplane/validators/jobs";
 import React from "react";
@@ -32,6 +33,7 @@ import {
   isCreatedAtCondition,
   isDeploymentCondition,
   isEnvironmentCondition,
+  isJobTargetCondition,
   isMetadataCondition,
   isStatusCondition,
   isVersionCondition,
@@ -216,6 +218,7 @@ const StringifiedEnvironmentCondition: React.FC<{
 }> = ({ condition }) => {
   const environmentQ = api.environment.byId.useQuery(condition.value);
   const environment = environmentQ.data;
+  const display = `${noCase(environment?.name ?? "")} (${noCase(environment?.system.name ?? "")})`;
 
   return (
     <ConditionBadge>
@@ -223,7 +226,7 @@ const StringifiedEnvironmentCondition: React.FC<{
       <span className="text-muted-foreground">
         {operatorVerbs[condition.operator]}
       </span>
-      <span className="text-white">{noCase(environment?.name ?? "")}</span>
+      <span className="text-white">{display}</span>
     </ConditionBadge>
   );
 };
@@ -239,6 +242,23 @@ const StringifiedVersionCondition: React.FC<{
     <span className="text-white">{condition.value}</span>
   </ConditionBadge>
 );
+
+const StringifiedJobTargetCondition: React.FC<{
+  condition: JobTargetCondition;
+}> = ({ condition }) => {
+  const targetQ = api.target.byId.useQuery(condition.value);
+  const target = targetQ.data;
+
+  return (
+    <ConditionBadge>
+      <span className="text-white">target</span>
+      <span className="text-muted-foreground">
+        {operatorVerbs[condition.operator]}
+      </span>
+      <span className="text-white">{noCase(target?.name ?? "")}</span>
+    </ConditionBadge>
+  );
+};
 
 const StringifiedJobCondition: React.FC<{
   condition: JobCondition;
@@ -277,6 +297,9 @@ const StringifiedJobCondition: React.FC<{
 
   if (isVersionCondition(condition))
     return <StringifiedVersionCondition condition={condition} />;
+
+  if (isJobTargetCondition(condition))
+    return <StringifiedJobTargetCondition condition={condition} />;
 
   return null;
 };
