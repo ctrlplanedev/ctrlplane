@@ -9,7 +9,6 @@ import {
   IconDots,
   IconExternalLink,
   IconFilter,
-  IconLoader2,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
@@ -62,13 +61,6 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   const environmentApprovals = approvals.filter(
     (approval) => approval.policyId === environment.policyId,
   );
-
-  if (releaseJobTriggerQuery.isLoading)
-    return (
-      <div className="flex h-full w-full items-center justify-center py-12">
-        <IconLoader2 className="animate-spin" size={32} />
-      </div>
-    );
 
   return (
     <Fragment>
