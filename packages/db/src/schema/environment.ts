@@ -38,6 +38,7 @@ export const environment = pgTable("environment", {
     .default(sql`NULL`),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
 });
 
 export type Environment = InferSelectModel<typeof environment>;
