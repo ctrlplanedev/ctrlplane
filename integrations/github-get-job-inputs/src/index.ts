@@ -51,8 +51,15 @@ async function run() {
     .then((response) => {
       core.info(JSON.stringify(response, null, 2));
 
-      const { variables, target, release, environment, runbook, deployment } =
-        response;
+      const {
+        variables,
+        target,
+        release,
+        environment,
+        runbook,
+        deployment,
+        causedBy,
+      } = response;
 
       setOutputAndLog("base_url", baseUrl);
 
@@ -74,6 +81,10 @@ async function run() {
       setOutputAndLog("release_version", release?.version);
       setOutputsRecursively("release_config", release?.config);
       setOutputsRecursively("release_metadata", release?.metadata);
+
+      setOutputAndLog("caused_by_id", causedBy.id);
+      setOutputAndLog("caused_by_name", causedBy.name);
+      setOutputAndLog("caused_by_email", causedBy.email);
 
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);
