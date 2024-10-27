@@ -96,7 +96,7 @@ async function run() {
       setOutputAndLog("deployment_name", deployment?.name);
       setOutputAndLog("deployment_slug", deployment?.slug);
 
-      for (const [key, value] of Object.entries(variables ?? {})) {
+      for (const [key, value] of Object.entries(variables)) {
         const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
         setOutputAndLog(`variable_${sanitizedKey}`, value);
       }
