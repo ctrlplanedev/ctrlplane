@@ -72,12 +72,12 @@ export const determineVariablesForReleaseJob = async (
   );
 
   if (!env) return jobVariables;
-  const assignments = env.assignments.sort((a, b) =>
+  const environments = env.environments.sort((a, b) =>
     a.variableSet.name.localeCompare(b.variableSet.name),
   );
 
-  for (const assignment of assignments) {
-    const { variableSet } = assignment;
+  for (const environment of environments) {
+    const { variableSet } = environment;
     for (const val of variableSet.values) {
       const existingKeys = jobVariables.map((v) => v.key);
       if (!existingKeys.includes(val.key)) {

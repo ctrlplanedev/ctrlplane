@@ -63,7 +63,7 @@ const schema = z.object({
 export const OverviewContent: React.FC<{
   variableSet: SCHEMA.VariableSet & {
     values: SCHEMA.VariableSetValue[];
-    assignments: (SCHEMA.VariableSetAssignment & {
+    environments: (SCHEMA.VariableSetEnvironment & {
       environment: SCHEMA.Environment;
     })[];
   };
@@ -72,8 +72,8 @@ export const OverviewContent: React.FC<{
   const update = api.variableSet.update.useMutation();
 
   const description = variableSet.description ?? undefined;
-  const environmentIds = variableSet.assignments.map((assignment) => ({
-    id: assignment.environmentId,
+  const environmentIds = variableSet.environments.map((env) => ({
+    id: env.environmentId,
   }));
   const form = useForm({
     schema,

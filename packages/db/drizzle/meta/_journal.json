@@ -176,6 +176,13 @@
       "when": 1729900464973,
       "tag": "0024_slimy_scalphunter",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1730060918585,
+      "tag": "0025_low_talisman",
+      "breakpoints": true
     }
   ]
 }

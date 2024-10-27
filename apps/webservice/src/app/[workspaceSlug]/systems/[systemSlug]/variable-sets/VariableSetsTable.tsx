@@ -14,13 +14,13 @@ import {
 
 import { useVariableSetDrawer } from "~/app/[workspaceSlug]/_components/variable-set-drawer/useVariableSetDrawer";
 
-type Assignment = SCHEMA.VariableSetAssignment & {
+type Environment = SCHEMA.VariableSetEnvironment & {
   environment: SCHEMA.Environment;
 };
 
 type VariableSet = SCHEMA.VariableSet & {
   values: SCHEMA.VariableSetValue[];
-  assignments: Assignment[];
+  environments: Environment[];
 };
 
 type VariableSetsTableProps = {
@@ -52,13 +52,13 @@ export const VariableSetsTable: React.FC<VariableSetsTableProps> = ({
             <TableCell>{variableSet.values.length}</TableCell>
             <TableCell>
               <div className="flex gap-1 overflow-x-auto">
-                {variableSet.assignments.map((assignment) => (
+                {variableSet.environments.map((env) => (
                   <Badge
-                    key={assignment.id}
+                    key={env.id}
                     className="flex-shrink-0"
                     variant="secondary"
                   >
-                    {assignment.environment.name}
+                    {env.environment.name}
                   </Badge>
                 ))}
               </div>

@@ -8,7 +8,7 @@ import {
   createVariableSet,
   updateVariableSet,
   variableSet,
-  variableSetAssignment,
+  variableSetEnvironment,
   variableSetValue,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -25,7 +25,7 @@ export const variableSetRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db.query.variableSet.findMany({
         where: eq(variableSet.systemId, input),
-        with: { values: true, assignments: { with: { environment: true } } },
+        with: { values: true, environments: { with: { environment: true } } },
         orderBy: [asc(variableSet.name)],
       }),
     ),
@@ -41,7 +41,7 @@ export const variableSetRouter = createTRPCRouter({
     .query(async ({ ctx, input }) =>
       ctx.db.query.variableSet.findFirst({
         where: eq(variableSet.id, input),
-        with: { values: true, assignments: { with: { environment: true } } },
+        with: { values: true, environments: { with: { environment: true } } },
       }),
     ),
 
@@ -68,7 +68,7 @@ export const variableSetRouter = createTRPCRouter({
           })),
         );
         if (input.environmentIds.length > 0)
-          await tx.insert(variableSetAssignment).values(
+          await tx.insert(variableSetEnvironment).values(
             input.environmentIds.map((environmentId) => ({
               variableSetId: vs.id,
               environmentId,
@@ -76,7 +76,7 @@ export const variableSetRouter = createTRPCRouter({
           );
         return tx.query.variableSet.findFirst({
           where: eq(variableSet.id, vs.id),
-          with: { values: true, assignments: { with: { environment: true } } },
+          with: { values: true, environments: { with: { environment: true } } },
         });
       }),
     ),
@@ -118,9 +118,9 @@ export const variableSetRouter = createTRPCRouter({
 
         if (input.data.environmentIds != null) {
           await tx
-            .delete(variableSetAssignment)
-            .where(eq(variableSetAssignment.variableSetId, input.id));
-          await tx.insert(variableSetAssignment).values(
+            .delete(variableSetEnvironment)
+            .where(eq(variableSetEnvironment.variableSetId, input.id));
+          await tx.insert(variableSetEnvironment).values(
             input.data.environmentIds.map((environmentId) => ({
               variableSetId: input.id,
               environmentId,

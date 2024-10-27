@@ -37,7 +37,7 @@ export const getEnvironment = (tx: Tx, environmentId: string) =>
   tx.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, environmentId),
     with: {
-      assignments: { with: { variableSet: { with: { values: true } } } },
+      environments: { with: { variableSet: { with: { values: true } } } },
     },
   });
 

@@ -42,7 +42,7 @@ export const updateVariableSet = createVariableSet.partial().extend({
 
 export const variableSetRelations = relations(variableSet, ({ many }) => ({
   values: many(variableSetValue),
-  assignments: many(variableSetAssignment),
+  environments: many(variableSetEnvironment),
 }));
 
 export const variableSetValue = pgTable(
@@ -71,7 +71,7 @@ export const variableSetValueRelations = relations(
   }),
 );
 
-export const variableSetAssignment = pgTable("variable_set_assignment", {
+export const variableSetEnvironment = pgTable("variable_set_environment", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   variableSetId: uuid("variable_set_id")
     .notNull()
@@ -81,19 +81,19 @@ export const variableSetAssignment = pgTable("variable_set_assignment", {
     .references(() => environment.id, { onDelete: "cascade" }),
 });
 
-export type VariableSetAssignment = InferSelectModel<
-  typeof variableSetAssignment
+export type VariableSetEnvironment = InferSelectModel<
+  typeof variableSetEnvironment
 >;
 
-export const variableSetAssignmentRelations = relations(
-  variableSetAssignment,
+export const variableSetEnvironmentRelations = relations(
+  variableSetEnvironment,
   ({ one }) => ({
     variableSet: one(variableSet, {
-      fields: [variableSetAssignment.variableSetId],
+      fields: [variableSetEnvironment.variableSetId],
       references: [variableSet.id],
     }),
     environment: one(environment, {
-      fields: [variableSetAssignment.environmentId],
+      fields: [variableSetEnvironment.environmentId],
       references: [environment.id],
     }),
   }),

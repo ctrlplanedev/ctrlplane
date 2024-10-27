@@ -22,7 +22,7 @@ import { targetCondition } from "@ctrlplane/validators/targets";
 import { user } from "./auth.js";
 import { release } from "./release.js";
 import { system } from "./system.js";
-import { variableSetAssignment } from "./variable-sets.js";
+import { variableSetEnvironment } from "./variable-sets.js";
 
 export const environment = pgTable("environment", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -50,7 +50,7 @@ export const updateEnvironment = createEnvironment.partial();
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
 export const environmentRelations = relations(environment, ({ many }) => ({
-  assignments: many(variableSetAssignment),
+  environments: many(variableSetEnvironment),
 }));
 
 export const approvalRequirement = pgEnum(
