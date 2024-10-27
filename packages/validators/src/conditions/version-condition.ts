@@ -14,4 +14,4 @@ export enum VersionOperator {
   Equals = "equals",
 }
 
-export type VersionOperatorType = "like" | "regex" | "equals";
+export type VersionOperatorType = z.infer<typeof versionCondition>["operator"];

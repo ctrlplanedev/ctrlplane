@@ -17,17 +17,7 @@ export enum JobStatus {
   ExternalRunNotFound = "external_run_not_found",
 }
 
-export type JobStatusType =
-  | "completed"
-  | "cancelled"
-  | "skipped"
-  | "in_progress"
-  | "action_required"
-  | "pending"
-  | "failure"
-  | "invalid_job_agent"
-  | "invalid_integration"
-  | "external_run_not_found";
+export type JobStatusType = `${JobStatus}`;
 
 export const JobStatusReadable = {
   [JobStatus.Completed]: "Completed",

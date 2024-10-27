@@ -36,7 +36,7 @@ export const ChoiceConditionRender: React.FC<ChoiceConditionRenderProps> = ({
     <div className={cn("flex w-full items-center gap-2", className)}>
       <div className="grid w-full grid-cols-12">
         <div className="col-span-2 flex items-center rounded-l-md border bg-transparent px-3 text-sm text-muted-foreground">
-          {capitalCase(type)} is
+          <span className="truncate">{capitalCase(type)} is</span>
         </div>
         <div className="col-span-10">
           <Popover open={open} onOpenChange={setOpen}>

@@ -3,6 +3,7 @@ import type { TargetCondition } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { IconLoader2, IconSelector } from "@tabler/icons-react";
+import { useDebounce } from "react-use";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
@@ -31,6 +32,8 @@ export const JobTargetConditionRender: React.FC<
   JobConditionRenderProps<JobTargetCondition>
 > = ({ condition, onChange, className }) => {
   const [search, setSearch] = useState("");
+  const [searchDebounced, setSearchDebounced] = useState("");
+  useDebounce(() => setSearchDebounced(search), 300, [search]);
   const [open, setOpen] = useState(false);
 
   const targetQ = api.target.byId.useQuery(condition.value);
@@ -47,7 +50,7 @@ export const JobTargetConditionRender: React.FC<
   const searchFilter: TargetCondition = {
     type: TargetFilterType.Name,
     operator: TargetOperator.Like,
-    value: `%${search}%`,
+    value: `%${searchDebounced}%`,
   };
 
   // const workspaceTargetsFilter: TargetCondition | undefined =

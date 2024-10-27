@@ -28,13 +28,12 @@ import { JobReleaseVersionConditionRender } from "./VersionConditionRender";
  */
 export const JobConditionRender: React.FC<
   JobConditionRenderProps<JobCondition>
-> = ({ condition, onChange, onRemove, depth = 0, className }) => {
+> = ({ condition, onChange, depth = 0, className }) => {
   if (isComparisonCondition(condition))
     return (
       <JobComparisonConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
         depth={depth}
         className={className}
       />
@@ -45,7 +44,6 @@ export const JobConditionRender: React.FC<
       <JobCreatedAtConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
         depth={depth}
         className={className}
       />
@@ -56,7 +54,6 @@ export const JobConditionRender: React.FC<
       <JobMetadataConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
         depth={depth}
         className={className}
       />

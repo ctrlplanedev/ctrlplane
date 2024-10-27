@@ -79,6 +79,8 @@ export const JobComparisonConditionRender: React.FC<
     const cond = condition.conditions[index];
     if (!cond) return;
 
+    if (!doesConvertingToComparisonRespectMaxDepth(depth + 1, cond)) return;
+
     const newComparisonCondition: ComparisonCondition = {
       type: FilterType.Comparison,
       operator: ComparisonOperator.And,
@@ -187,7 +189,6 @@ export const JobComparisonConditionRender: React.FC<
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}
-                onRemove={() => removeCondition(index)}
                 depth={depth + 1}
                 className={cn(depth === 0 ? "col-span-11" : "col-span-10")}
               />

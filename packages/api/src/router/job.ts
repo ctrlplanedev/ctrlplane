@@ -99,15 +99,15 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
       job: {
         ...v[0]!.job,
         metadata: _.chain(v)
-          .filter((v) => isPresent(v.job_metadata))
-          .groupBy((v) => v.job_metadata!.id)
-          .map((v) => v[0]!.job_metadata!)
+          .map((v) => v.job_metadata)
+          .filter(isPresent)
+          .uniqBy((v) => v.id)
           .value(),
         status: v[0]!.job.status as JobStatus,
         variables: _.chain(v)
-          .filter((v) => isPresent(v.job_variable))
-          .groupBy((v) => v.job_variable!.id)
-          .map((v) => v[0]!.job_variable!)
+          .map((v) => v.job_variable)
+          .filter(isPresent)
+          .uniqBy((v) => v.id)
           .value(),
       },
       jobAgent: v[0]!.job_agent,

@@ -59,7 +59,7 @@ export const DateConditionRender: React.FC<DateConditionRenderProps> = ({
   <div className={cn("flex w-full items-center gap-2", className)}>
     <div className="grid w-full grid-cols-12">
       <div className="col-span-2 flex items-center rounded-l-md border bg-transparent px-3 text-sm text-muted-foreground">
-        {type}
+        <span className="truncate">{type}</span>
       </div>
       <div className="col-span-3">
         <Select value={operator} onValueChange={setOperator}>

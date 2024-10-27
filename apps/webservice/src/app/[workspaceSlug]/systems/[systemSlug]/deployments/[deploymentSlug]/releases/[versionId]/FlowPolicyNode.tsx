@@ -159,7 +159,7 @@ const EvaluateFilterCheck: React.FC<{
   </div>
 );
 
-const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
+const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
   successMinimum,
   successType,
   release,
@@ -299,7 +299,7 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
         {hasFilterCheck && (
           <EvaluateFilterCheck passing={isFilterCheckPassing} />
         )}
-        {!noMinSuccess && <MinSucessCheck {...data} />}
+        {!noMinSuccess && <MinSuccessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && <ApprovalCheck {...data} />}
 

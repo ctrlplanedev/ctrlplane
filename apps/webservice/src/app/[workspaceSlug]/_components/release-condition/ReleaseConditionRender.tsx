@@ -12,7 +12,7 @@ import type { ReleaseConditionRenderProps } from "./release-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { CreatedAtConditionRender } from "./ReleaseCreatedAtConditionRender";
 import { ReleaseMetadataConditionRender } from "./ReleaseMetadataConditionRender";
-import { ReleaseVersionConditionRender } from "./VersionConditionRender";
+import { ReleaseVersionConditionRender } from "./ReleaseVersionConditionRender";
 
 /**
  * The parent container should have min width of 1000px

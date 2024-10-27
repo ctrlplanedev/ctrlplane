@@ -64,7 +64,7 @@ const ConditionBadge: React.FC<{
 }> = ({ children }) => (
   <Badge
     variant="outline"
-    className="text-sx h-7 gap-1.5 bg-neutral-900 px-2 font-normal"
+    className="h-7 gap-1.5 bg-neutral-900 px-2 text-xs font-normal"
   >
     {children}
   </Badge>
