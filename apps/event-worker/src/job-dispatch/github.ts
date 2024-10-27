@@ -1,5 +1,4 @@
 import type { Job } from "@ctrlplane/db/schema";
-import pRetry from "p-retry";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -15,7 +14,7 @@ import { logger } from "@ctrlplane/logger";
 import { configSchema } from "@ctrlplane/validators/github";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import { convertStatus, getInstallationOctokit } from "../github-utils.js";
+import { getInstallationOctokit } from "../github-utils.js";
 
 export const dispatchGithubJob = async (je: Job) => {
   logger.info(`Dispatching github job ${je.id}...`);
@@ -100,54 +99,4 @@ export const dispatchGithubJob = async (je: Job) => {
       authorization: `Bearer ${installationToken.token}`,
     },
   });
-
-  let runId: number | null = null;
-  let status: string | null = null;
-
-  try {
-    const { runId: runId_, status: status_ } = await pRetry(
-      async () => {
-        const runs = await octokit.actions.listWorkflowRuns({
-          owner: parsed.data.owner,
-          repo: parsed.data.repo,
-          workflow_id: parsed.data.workflowId,
-          branch: ghOrg.branch,
-        });
-
-        const run = runs.data.workflow_runs.find((run) =>
-          run.name?.includes(je.id),
-        );
-
-        if (run == null) throw new Error("Run not found");
-
-        logger.info(`Run found for job ${je.id}`, { run });
-
-        return { runId: run.id, status: run.status, url: run.html_url };
-      },
-      { retries: 15, minTimeout: 1000 },
-    );
-
-    runId = runId_;
-    status = status_;
-  } catch (error) {
-    logger.error(`Job ${je.id} dispatch to GitHub failed`, { error });
-    await db.update(job).set({
-      status: JobStatus.ExternalRunNotFound,
-      message: `Run ID not found for job ${je.id}`,
-    });
-    return;
-  }
-
-  logger.info(`Job ${je.id} dispatched to GitHub`, {
-    runId,
-    status,
-  });
-
-  await db
-    .update(job)
-    .set({
-      externalId: runId.toString(),
-      status: convertStatus(status ?? JobStatus.InProgress),
-    })
-    .where(eq(job.id, je.id));
 };

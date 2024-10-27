@@ -243,9 +243,6 @@ importers:
       ms:
         specifier: ^2.1.3
         version: 2.1.3
-      p-retry:
-        specifier: ^6.2.0
-        version: 6.2.0
       semver:
         specifier: ^7.6.2
         version: 7.6.3
