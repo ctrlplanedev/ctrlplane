@@ -53,9 +53,6 @@ export const JobTargetConditionRender: React.FC<
     value: `%${searchDebounced}%`,
   };
 
-  // const workspaceTargetsFilter: TargetCondition | undefined =
-  //   search != "" ? searchFilter : undefined;
-
   const systemQ = api.system.bySlug.useQuery(
     { workspaceSlug, systemSlug: systemSlug ?? "" },
     { enabled: systemSlug != null },
