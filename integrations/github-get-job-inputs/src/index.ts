@@ -88,12 +88,9 @@ async function run() {
       setOutputAndLog("caused_by_email", causedBy.email);
 
       setOutputAndLog("approval_status", approval.status);
-      setOutputAndLog("approval_approver_id", approval.approver?.id ?? "");
-      setOutputAndLog("approval_approver_name", approval.approver?.name ?? "");
-      setOutputAndLog(
-        "approval_approver_email",
-        approval.approver?.email ?? "",
-      );
+      setOutputAndLog("approval_approver_id", approval.approver?.id);
+      setOutputAndLog("approval_approver_name", approval.approver?.name);
+      setOutputAndLog("approval_approver_email", approval.approver?.email);
 
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);
