@@ -1,11 +1,11 @@
 import type {
   CreatedAtCondition,
   MetadataCondition,
+  VersionCondition,
 } from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
   ReleaseCondition,
-  VersionCondition,
 } from "@ctrlplane/validators/releases";
 import React from "react";
 import { format } from "date-fns";
@@ -18,6 +18,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+import { DateOperator } from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
   isCreatedAtCondition,
@@ -37,10 +38,10 @@ const operatorVerbs = {
   ),
   [ReleaseOperator.Regex]: "matches",
   [ReleaseOperator.Like]: "contains",
-  [ReleaseOperator.After]: "after",
-  [ReleaseOperator.Before]: "before",
-  [ReleaseOperator.AfterOrOn]: "after or on",
-  [ReleaseOperator.BeforeOrOn]: "before or on",
+  [DateOperator.After]: "after",
+  [DateOperator.Before]: "before",
+  [DateOperator.AfterOrOn]: "after or on",
+  [DateOperator.BeforeOrOn]: "before or on",
 };
 
 const ConditionBadge: React.FC<{

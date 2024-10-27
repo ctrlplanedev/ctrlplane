@@ -17,7 +17,7 @@ type EnvironmentNodeProps = NodeProps<
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const { data } = node;
   const releaseJobTriggers = api.job.config.byReleaseId.useQuery(
-    data.release.id,
+    { releaseId: data.release.id },
     { refetchInterval: 10_000 },
   );
   const environmentJobs = releaseJobTriggers.data?.filter(

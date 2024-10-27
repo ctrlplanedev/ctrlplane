@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { IconFilter } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
 import { ScrollArea } from "@ctrlplane/ui/scroll-area";
 
 import { ReactFlowProvider } from "~/app/[workspaceSlug]/_components/reactflow/ReactFlowProvider";
@@ -57,12 +55,6 @@ export default async function ReleasePage({
               policyDeployments={policyDeployments}
             />
           </ReactFlowProvider>
-        </div>
-
-        <div className="shrink-0 border-b p-1">
-          <Button variant="ghost" size="sm" className="flex gap-1">
-            <IconFilter className="h-4 w-4" /> Filter
-          </Button>
         </div>
 
         <TargetReleaseTable

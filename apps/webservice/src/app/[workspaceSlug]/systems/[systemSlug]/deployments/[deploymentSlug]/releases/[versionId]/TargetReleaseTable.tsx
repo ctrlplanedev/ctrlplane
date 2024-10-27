@@ -8,6 +8,7 @@ import {
   IconChevronRight,
   IconDots,
   IconExternalLink,
+  IconFilter,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import _ from "lodash";
@@ -17,6 +18,9 @@ import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
+import { JobConditionBadge } from "~/app/[workspaceSlug]/_components/job-condition/JobConditionBadge";
+import { JobConditionDialog } from "~/app/[workspaceSlug]/_components/job-condition/JobConditionDialog";
+import { useJobFilter } from "~/app/[workspaceSlug]/_components/job-condition/useJobFilter";
 import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
@@ -38,21 +42,23 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   deploymentName,
   release,
 }) => {
+  const { filter } = useJobFilter();
   const { setJobId } = useJobDrawer();
   const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
-    release.id,
-    { refetchInterval: 5_000 },
+    { releaseId: release.id, filter },
+    { refetchInterval: 5_000, placeholderData: (prev) => prev },
   );
   const jobs = releaseJobTriggerQuery.data?.filter(
     (job) => job.environmentId === environment.id,
   );
-  const approvals = api.environment.policy.approval.byReleaseId.useQuery({
+  const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
     releaseId: release.id,
   });
-  const environmentApprovals = approvals.data?.filter(
+  const approvals = approvalsQ.data ?? [];
+  const environmentApprovals = approvals.filter(
     (approval) => approval.policyId === environment.policyId,
   );
 
@@ -74,7 +80,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
               {environment.name}
             </div>
             <div className="flex items-center gap-2">
-              {environmentApprovals?.map((approval) => (
+              {environmentApprovals.map((approval) => (
                 <PolicyApprovalRow
                   key={approval.id}
                   approval={approval}
@@ -192,18 +198,32 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   deploymentName,
   environments,
 }) => {
+  const { filter, setFilter } = useJobFilter();
+
   return (
-    <Table className="table-fixed">
-      <TableBody>
-        {environments.map((environment) => (
-          <CollapsibleTableRow
-            key={environment.id}
-            environment={environment}
-            deploymentName={deploymentName}
-            release={release}
-          />
-        ))}
-      </TableBody>
-    </Table>
+    <>
+      <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
+        <JobConditionDialog condition={filter} onChange={setFilter}>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-7 w-7">
+              <IconFilter className="h-4 w-4" />
+            </Button>
+            {filter != null && <JobConditionBadge condition={filter} />}
+          </div>
+        </JobConditionDialog>
+      </div>
+      <Table className="table-fixed">
+        <TableBody>
+          {environments.map((environment) => (
+            <CollapsibleTableRow
+              key={environment.id}
+              environment={environment}
+              deploymentName={deploymentName}
+              release={release}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </>
   );
 };

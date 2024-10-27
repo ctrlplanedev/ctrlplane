@@ -2,12 +2,12 @@ import { z } from "zod";
 
 import type { CreatedAtCondition } from "../../conditions/date-condition.js";
 import type { MetadataCondition } from "../../conditions/index.js";
+import type { VersionCondition } from "../../conditions/version-condition.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
-import type { VersionCondition } from "./version-condition.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
 import { metadataCondition } from "../../conditions/index.js";
+import { versionCondition } from "../../conditions/version-condition.js";
 import { comparisonCondition } from "./comparison-condition.js";
-import { versionCondition } from "./version-condition.js";
 
 export type ReleaseCondition =
   | ComparisonCondition

@@ -159,15 +159,16 @@ const EvaluateFilterCheck: React.FC<{
   </div>
 );
 
-const MinSucessCheck: React.FC<PolicyNodeProps["data"]> = ({
+const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
   successMinimum,
   successType,
   release,
   policyDeployments,
 }) => {
-  const allJobs = api.job.config.byReleaseId.useQuery(release.id, {
-    refetchInterval: 10_000,
-  });
+  const allJobs = api.job.config.byReleaseId.useQuery(
+    { releaseId: release.id },
+    { refetchInterval: 10_000 },
+  );
   const envIds = policyDeployments.map((p) => p.environmentId);
   const jobs = allJobs.data?.filter((j) => envIds.includes(j.environmentId));
 
@@ -298,7 +299,7 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
         {hasFilterCheck && (
           <EvaluateFilterCheck passing={isFilterCheckPassing} />
         )}
-        {!noMinSuccess && <MinSucessCheck {...data} />}
+        {!noMinSuccess && <MinSuccessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && <ApprovalCheck {...data} />}
 

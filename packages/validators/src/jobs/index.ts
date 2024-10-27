@@ -1,3 +1,5 @@
+export * from "./conditions/index.js";
+
 export enum JobAgentType {
   GithubApp = "github-app",
 }
@@ -14,6 +16,8 @@ export enum JobStatus {
   InvalidIntegration = "invalid_integration",
   ExternalRunNotFound = "external_run_not_found",
 }
+
+export type JobStatusType = `${JobStatus}`;
 
 export const JobStatusReadable = {
   [JobStatus.Completed]: "Completed",
