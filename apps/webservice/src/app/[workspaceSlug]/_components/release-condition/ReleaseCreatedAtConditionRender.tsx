@@ -1,6 +1,6 @@
 import type {
   CreatedAtCondition,
-  DateOperator,
+  DateOperatorType,
 } from "@ctrlplane/validators/conditions";
 import type { DateValue } from "@internationalized/date";
 
@@ -18,13 +18,8 @@ export const CreatedAtConditionRender: React.FC<
         .toISOString(),
     });
 
-  const setOperator = (
-    operator:
-      | DateOperator.Before
-      | DateOperator.After
-      | DateOperator.BeforeOrOn
-      | DateOperator.AfterOrOn,
-  ) => onChange({ ...condition, operator });
+  const setOperator = (operator: DateOperatorType) =>
+    onChange({ ...condition, operator });
 
   return (
     <DateConditionRender

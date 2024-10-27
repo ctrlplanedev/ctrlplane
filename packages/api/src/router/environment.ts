@@ -455,12 +455,17 @@ export const environmentRouter = createTRPCRouter({
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
         )
+        .innerJoin(system, eq(environment.systemId, system.id))
         .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
         .then(takeFirstOrNull)
         .then((env) =>
           env == null
             ? null
-            : { ...env.environment, policy: env.environment_policy },
+            : {
+                ...env.environment,
+                policy: env.environment_policy,
+                system: env.system,
+              },
         ),
     ),
 
@@ -496,6 +501,26 @@ export const environmentRouter = createTRPCRouter({
         })),
       );
     }),
+
+  byWorkspaceId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "workspace", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(environment)
+        .innerJoin(system, eq(environment.systemId, system.id))
+        .where(eq(system.workspaceId, input))
+        .orderBy(environment.name)
+        .then((envs) =>
+          envs.map((e) => ({ ...e.environment, system: e.system })),
+        ),
+    ),
 
   create: protectedProcedure
     .meta({

@@ -22,6 +22,8 @@ export const KindConditionRender: React.FC<
     display: kind,
   }));
 
+  const loading = workspace.isLoading || kinds.isLoading;
+
   return (
     <ChoiceConditionRender
       type="kind"
@@ -29,6 +31,7 @@ export const KindConditionRender: React.FC<
       selected={condition.value}
       options={options}
       className={className}
+      loading={loading}
     />
   );
 };

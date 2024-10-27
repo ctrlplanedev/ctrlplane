@@ -5,9 +5,14 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
-  ReleaseCondition,
-} from "@ctrlplane/validators/releases";
+  DeploymentCondition,
+  EnvironmentCondition,
+  JobCondition,
+  JobTargetCondition,
+  StatusCondition,
+} from "@ctrlplane/validators/jobs";
 import React from "react";
+import { noCase } from "change-case";
 import { format } from "date-fns";
 import _ from "lodash";
 
@@ -18,26 +23,36 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
-import { DateOperator } from "@ctrlplane/validators/conditions";
+import {
+  ComparisonOperator,
+  DateOperator,
+  MetadataOperator,
+} from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
   isCreatedAtCondition,
+  isDeploymentCondition,
+  isEnvironmentCondition,
+  isJobTargetCondition,
   isMetadataCondition,
+  isStatusCondition,
   isVersionCondition,
-  ReleaseOperator,
-} from "@ctrlplane/validators/releases";
+  JobStatusReadable,
+} from "@ctrlplane/validators/jobs";
+
+import { api } from "~/trpc/react";
 
 const operatorVerbs = {
-  [ReleaseOperator.And]: "and",
-  [ReleaseOperator.Or]: "or",
-  [ReleaseOperator.Equals]: "is",
-  [ReleaseOperator.Null]: (
+  [ComparisonOperator.And]: "and",
+  [ComparisonOperator.Or]: "or",
+  [MetadataOperator.Equals]: "is",
+  [MetadataOperator.Null]: (
     <span>
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [ReleaseOperator.Regex]: "matches",
-  [ReleaseOperator.Like]: "contains",
+  [MetadataOperator.Regex]: "matches",
+  [MetadataOperator.Like]: "contains",
   [DateOperator.After]: "after",
   [DateOperator.Before]: "before",
   [DateOperator.AfterOrOn]: "after or on",
@@ -49,7 +64,7 @@ const ConditionBadge: React.FC<{
 }> = ({ children }) => (
   <Badge
     variant="outline"
-    className="text-sx h-7 gap-1.5 bg-neutral-900 px-2 font-normal"
+    className="h-7 gap-1.5 bg-neutral-900 px-2 text-xs font-normal"
   >
     {children}
   </Badge>
@@ -81,7 +96,7 @@ const StringifiedComparisonCondition: React.FC<{
               {operatorVerbs[condition.operator]}
             </span>
           )}
-          <StringifiedReleaseCondition
+          <StringifiedJobCondition
             condition={subCondition}
             depth={depth + 1}
             truncate={truncate}
@@ -128,7 +143,7 @@ const StringifiedTabbedComparisonCondition: React.FC<{
               {operatorVerbs[condition.operator]}
             </div>
           )}
-          <StringifiedReleaseCondition
+          <StringifiedJobCondition
             condition={subCondition}
             depth={depth + 1}
             tabbed
@@ -167,6 +182,55 @@ const StringifiedCreatedAtCondition: React.FC<{
   </ConditionBadge>
 );
 
+const StringifiedStatusCondition: React.FC<{
+  condition: StatusCondition;
+}> = ({ condition }) => (
+  <ConditionBadge>
+    <span className="text-white">status</span>
+    <span className="text-muted-foreground">
+      {operatorVerbs[condition.operator]}
+    </span>
+    <span className="text-white">
+      {noCase(JobStatusReadable[condition.value])}
+    </span>
+  </ConditionBadge>
+);
+
+const StringifiedDeploymentCondition: React.FC<{
+  condition: DeploymentCondition;
+}> = ({ condition }) => {
+  const deploymentQ = api.deployment.byId.useQuery(condition.value);
+  const deployment = deploymentQ.data;
+
+  return (
+    <ConditionBadge>
+      <span className="text-white">deployment</span>
+      <span className="text-muted-foreground">
+        {operatorVerbs[condition.operator]}
+      </span>
+      <span className="text-white">{noCase(deployment?.name ?? "")}</span>
+    </ConditionBadge>
+  );
+};
+
+const StringifiedEnvironmentCondition: React.FC<{
+  condition: EnvironmentCondition;
+}> = ({ condition }) => {
+  const environmentQ = api.environment.byId.useQuery(condition.value);
+  const environment = environmentQ.data;
+  const display = `${noCase(environment?.name ?? "")} (${noCase(environment?.system.name ?? "")})`;
+
+  return (
+    <ConditionBadge>
+      <span className="text-white">environment</span>
+      <span className="text-muted-foreground">
+        {operatorVerbs[condition.operator]}
+      </span>
+      <span className="text-white">{display}</span>
+    </ConditionBadge>
+  );
+};
+
 const StringifiedVersionCondition: React.FC<{
   condition: VersionCondition;
 }> = ({ condition }) => (
@@ -179,8 +243,25 @@ const StringifiedVersionCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedReleaseCondition: React.FC<{
-  condition: ReleaseCondition;
+const StringifiedJobTargetCondition: React.FC<{
+  condition: JobTargetCondition;
+}> = ({ condition }) => {
+  const targetQ = api.target.byId.useQuery(condition.value);
+  const target = targetQ.data;
+
+  return (
+    <ConditionBadge>
+      <span className="text-white">target</span>
+      <span className="text-muted-foreground">
+        {operatorVerbs[condition.operator]}
+      </span>
+      <span className="text-white">{noCase(target?.name ?? "")}</span>
+    </ConditionBadge>
+  );
+};
+
+const StringifiedJobCondition: React.FC<{
+  condition: JobCondition;
   depth?: number;
   truncate?: boolean;
   tabbed?: boolean;
@@ -205,23 +286,37 @@ const StringifiedReleaseCondition: React.FC<{
   if (isCreatedAtCondition(condition))
     return <StringifiedCreatedAtCondition condition={condition} />;
 
+  if (isStatusCondition(condition))
+    return <StringifiedStatusCondition condition={condition} />;
+
+  if (isDeploymentCondition(condition))
+    return <StringifiedDeploymentCondition condition={condition} />;
+
+  if (isEnvironmentCondition(condition))
+    return <StringifiedEnvironmentCondition condition={condition} />;
+
   if (isVersionCondition(condition))
     return <StringifiedVersionCondition condition={condition} />;
+
+  if (isJobTargetCondition(condition))
+    return <StringifiedJobTargetCondition condition={condition} />;
+
+  return null;
 };
 
-export const ReleaseConditionBadge: React.FC<{
-  condition: ReleaseCondition;
+export const JobConditionBadge: React.FC<{
+  condition: JobCondition;
   tabbed?: boolean;
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
       <div className="cursor-pointer rounded-lg bg-inherit text-xs text-muted-foreground">
-        <StringifiedReleaseCondition condition={condition} truncate />
+        <StringifiedJobCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>
     <HoverCardContent align="start" className="w-full">
       <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
-        <StringifiedReleaseCondition condition={condition} tabbed={tabbed} />
+        <StringifiedJobCondition condition={condition} tabbed={tabbed} />
       </div>
     </HoverCardContent>
   </HoverCard>

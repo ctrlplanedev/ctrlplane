@@ -14,9 +14,10 @@ import {
 import { api } from "~/trpc/react";
 
 export const JobsTable: React.FC<{ releaseId: string }> = ({ releaseId }) => {
-  const releaseJobTriggers = api.job.config.byReleaseId.useQuery(releaseId, {
-    refetchInterval: 10_000,
-  });
+  const releaseJobTriggers = api.job.config.byReleaseId.useQuery(
+    { releaseId },
+    { refetchInterval: 10_000 },
+  );
   return (
     <Table>
       <TableHeader></TableHeader>
