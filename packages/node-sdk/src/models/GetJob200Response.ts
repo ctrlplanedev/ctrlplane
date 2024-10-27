@@ -12,6 +12,7 @@
  * Do not edit the class manually.
  */
 
+import type { GetJob200ResponseApproval } from "./GetJob200ResponseApproval";
 import type { GetJob200ResponseCausedBy } from "./GetJob200ResponseCausedBy";
 import type { GetJob200ResponseDeployment } from "./GetJob200ResponseDeployment";
 import type { GetJob200ResponseEnvironment } from "./GetJob200ResponseEnvironment";
@@ -19,6 +20,11 @@ import type { GetJob200ResponseRelease } from "./GetJob200ResponseRelease";
 import type { GetJob200ResponseRunbook } from "./GetJob200ResponseRunbook";
 import type { GetJob200ResponseTarget } from "./GetJob200ResponseTarget";
 import { mapValues } from "../runtime";
+import {
+  GetJob200ResponseApprovalFromJSON,
+  GetJob200ResponseApprovalFromJSONTyped,
+  GetJob200ResponseApprovalToJSON,
+} from "./GetJob200ResponseApproval";
 import {
   GetJob200ResponseCausedByFromJSON,
   GetJob200ResponseCausedByFromJSONTyped,
@@ -103,13 +109,19 @@ export interface GetJob200Response {
    * @type {object}
    * @memberof GetJob200Response
    */
-  variables?: object;
+  variables: object;
   /**
    *
    * @type {GetJob200ResponseCausedBy}
    * @memberof GetJob200Response
    */
   causedBy: GetJob200ResponseCausedBy;
+  /**
+   *
+   * @type {GetJob200ResponseApproval}
+   * @memberof GetJob200Response
+   */
+  approval: GetJob200ResponseApproval;
 }
 
 /**
@@ -138,7 +150,9 @@ export function instanceOfGetJob200Response(
 ): value is GetJob200Response {
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("status" in value) || value["status"] === undefined) return false;
+  if (!("variables" in value) || value["variables"] === undefined) return false;
   if (!("causedBy" in value) || value["causedBy"] === undefined) return false;
+  if (!("approval" in value) || value["approval"] === undefined) return false;
   return true;
 }
 
@@ -176,8 +190,9 @@ export function GetJob200ResponseFromJSONTyped(
       json["environment"] == null
         ? undefined
         : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
-    variables: json["variables"] == null ? undefined : json["variables"],
+    variables: json["variables"],
     causedBy: GetJob200ResponseCausedByFromJSON(json["causedBy"]),
+    approval: GetJob200ResponseApprovalFromJSON(json["approval"]),
   };
 }
 
@@ -195,5 +210,6 @@ export function GetJob200ResponseToJSON(value?: GetJob200Response | null): any {
     environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
     variables: value["variables"],
     causedBy: GetJob200ResponseCausedByToJSON(value["causedBy"]),
+    approval: GetJob200ResponseApprovalToJSON(value["approval"]),
   };
 }

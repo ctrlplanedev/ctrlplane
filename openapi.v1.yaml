@@ -402,13 +402,41 @@ paths:
                       - id
                       - name
                       - email
+                  approval:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                      status:
+                        type: string
+                        enum: [pending, approved, rejected]
+                      approver:
+                        type: object
+                        nullable: true
+                        description: Null when status is pending, contains approver details when approved or rejected
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          email:
+                            type: string
+                        required:
+                          - id
+                          - name
+                          - email
+                    required:
+                      - id
+                      - status
                 required:
                   - id
                   - status
                   - createdAt
                   - updatedAt
-                  - variable
+                  - variables
                   - causedBy
+                  - approval
     patch:
       summary: Update a job
       operationId: updateJob

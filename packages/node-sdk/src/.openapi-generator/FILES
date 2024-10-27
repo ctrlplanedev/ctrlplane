@@ -6,6 +6,8 @@ models/CreateRelease200Response.ts
 models/CreateReleaseRequest.ts
 models/GetAgentRunningJob200ResponseInner.ts
 models/GetJob200Response.ts
+models/GetJob200ResponseApproval.ts
+models/GetJob200ResponseApprovalApprover.ts
 models/GetJob200ResponseCausedBy.ts
 models/GetJob200ResponseDeployment.ts
 models/GetJob200ResponseEnvironment.ts
