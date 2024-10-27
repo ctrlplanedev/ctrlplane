@@ -20,7 +20,7 @@ import { releaseCondition } from "@ctrlplane/validators/releases";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { user } from "./auth.js";
-import { release } from "./release.js";
+import { release, releaseChannel } from "./release.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
 
@@ -108,6 +108,20 @@ export const createEnvironmentPolicy = createInsertSchema(environmentPolicy, {
 }).omit({ id: true });
 
 export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
+
+export const environmentPolicyDeploymentReleaseChannel = pgTable(
+  "environment_policy_deployment_release_channel",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => environmentPolicy.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => releaseChannel.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.channelId) }),
+);
 
 export const recurrenceType = pgEnum("recurrence_type", [
   "hourly",
