@@ -238,3 +238,16 @@ export const environmentReleaseChannel = pgTable(
     ),
   }),
 );
+
+export const environmentMetadata = pgTable(
+  "environment_metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    environmentId: uuid("environment_id")
+      .references(() => environment.id, { onDelete: "cascade" })
+      .notNull(),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
+);
