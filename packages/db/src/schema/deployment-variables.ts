@@ -29,7 +29,11 @@ export const deploymentVariable = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id),
-    defaultValueId: uuid("default_value_id").default(sql`NULL`),
+    defaultValueId: uuid("default_value_id")
+      .references((): any => deploymentVariableValue.id, {
+        onDelete: "set null",
+      })
+      .default(sql`NULL`),
     config: jsonb("schema").$type<VariableConfigType>(),
   },
   (t) => ({
