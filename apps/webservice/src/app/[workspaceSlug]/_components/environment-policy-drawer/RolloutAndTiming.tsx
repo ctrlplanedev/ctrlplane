@@ -68,7 +68,7 @@ const schema = z.object({
       endTime: z.date(),
     }),
   ),
-  duration: z.string().refine(isValidDuration, {
+  rolloutDuration: z.string().refine(isValidDuration, {
     message: "Invalid duration pattern",
   }),
 });
@@ -78,10 +78,10 @@ export const RolloutAndTiming: React.FC<{
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
   };
 }> = ({ environmentPolicy }) => {
-  const duration = prettyMilliseconds(environmentPolicy.duration);
+  const rolloutDuration = prettyMilliseconds(environmentPolicy.rolloutDuration);
   const form = useForm({
     schema,
-    defaultValues: { ...environmentPolicy, duration },
+    defaultValues: { ...environmentPolicy, rolloutDuration },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -95,10 +95,10 @@ export const RolloutAndTiming: React.FC<{
 
   const { id: policyId, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit(async (data) => {
-    const { releaseWindows, duration: durationString } = data;
-    const duration = ms(durationString);
+    const { releaseWindows, rolloutDuration: durationString } = data;
+    const rolloutDuration = ms(durationString);
     await setPolicyWindows.mutateAsync({ policyId, releaseWindows });
-    await updatePolicy.mutateAsync({ id: policyId, data: { duration } });
+    await updatePolicy.mutateAsync({ id: policyId, data: { rolloutDuration } });
 
     form.reset(data);
     await utils.environment.policy.byId.invalidate(policyId);
@@ -235,7 +235,7 @@ export const RolloutAndTiming: React.FC<{
 
         <FormField
           control={form.control}
-          name="duration"
+          name="rolloutDuration"
           render={({ field }) => (
             <FormItem className="space-y-4">
               <div className="flex flex-col gap-1">

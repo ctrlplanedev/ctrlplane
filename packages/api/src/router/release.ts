@@ -10,7 +10,6 @@ import {
   desc,
   eq,
   inArray,
-  isNotNull,
   notInArray,
   takeFirst,
   takeFirstOrNull,
@@ -21,8 +20,11 @@ import {
   deployment,
   environment,
   environmentPolicy,
+  environmentPolicyReleaseChannel,
+  environmentReleaseChannel,
   job,
   release,
+  releaseChannel,
   releaseDependency,
   releaseJobTrigger,
   releaseMatchesCondition,
@@ -325,12 +327,16 @@ export const releaseRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
+        console.log(">>> rel", rel);
+
         const releaseDeps = input.releaseDependencies.map((rd) => ({
           ...rd,
           releaseId: rel.id,
         }));
         if (releaseDeps.length > 0)
           await db.insert(releaseDependency).values(releaseDeps);
+
+        console.log(">>> releaseDeps", releaseDeps);
 
         const releaseJobTriggers = await createReleaseJobTriggers(
           db,
@@ -342,11 +348,15 @@ export const releaseRouter = createTRPCRouter({
           .then(createJobApprovals)
           .insert();
 
+        console.log(">>> releaseJobTriggers", releaseJobTriggers);
+
         await dispatchReleaseJobTriggers(db)
           .releaseTriggers(releaseJobTriggers)
           .filter(isPassingAllPolicies)
           .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
+
+        console.log(">>> releaseJobTriggers dispatched");
 
         return { ...rel, releaseJobTriggers };
       }),
@@ -364,50 +374,110 @@ export const releaseRouter = createTRPCRouter({
     })
     .input(z.array(z.string().uuid()))
     .query(async ({ input }) => {
-      const policies = await db
+      const envRCSubquery = db
+        .select({
+          releaseChannelEnvId: environmentReleaseChannel.environmentId,
+          releaseChannelDeploymentId: releaseChannel.deploymentId,
+          releaseChannelFilter: releaseChannel.releaseFilter,
+        })
+        .from(environmentReleaseChannel)
+        .innerJoin(
+          releaseChannel,
+          eq(environmentReleaseChannel.channelId, releaseChannel.id),
+        )
+        .as("envRCSubquery");
+
+      const policyRCSubquery = db
+        .select({
+          releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
+          releaseChannelDeploymentId: releaseChannel.deploymentId,
+          releaseChannelFilter: releaseChannel.releaseFilter,
+        })
+        .from(environmentPolicyReleaseChannel)
+        .innerJoin(
+          releaseChannel,
+          eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+        )
+        .as("policyRCSubquery");
+
+      const envs = await db
         .select()
         .from(release)
         .innerJoin(deployment, eq(release.deploymentId, deployment.id))
         .innerJoin(environment, eq(deployment.systemId, environment.systemId))
-        .innerJoin(
+        .leftJoin(
+          envRCSubquery,
+          eq(environment.id, envRCSubquery.releaseChannelEnvId),
+        )
+        .leftJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
         )
-        .where(
-          and(
-            inArray(release.id, input),
-            isNotNull(environmentPolicy.releaseFilter),
-          ),
+        .leftJoin(
+          policyRCSubquery,
+          eq(environment.id, policyRCSubquery.releaseChannelPolicyId),
+        )
+        .where(inArray(release.id, input))
+        .then((rows) =>
+          _.chain(rows)
+            .groupBy((e) => e.environment.id)
+            .map((v) => ({
+              release: v[0]!.release,
+              environment: {
+                ...v[0]!.environment,
+                releaseChannels: v
+                  .map((e) => e.envRCSubquery)
+                  .filter(isPresent),
+              },
+              environmentPolicy: v[0]!.environment_policy
+                ? {
+                    ...v[0]!.environment_policy,
+                    releaseChannels: v
+                      .map((e) => e.policyRCSubquery)
+                      .filter(isPresent),
+                  }
+                : null,
+            }))
+            .value(),
         );
 
-      const blockedEnvironments = await Promise.all(
-        policies.map(
-          async ({ release: rel, environment, environment_policy }) => {
-            const { releaseFilter } = environment_policy;
-            if (releaseFilter == null) return null;
+      const blockedEnvsPromises = envs.map(async (env) => {
+        const { release: rel, environment, environmentPolicy } = env;
 
-            const r = await db
-              .select()
-              .from(release)
-              .where(
-                and(
-                  eq(release.id, rel.id),
-                  releaseMatchesCondition(db, releaseFilter),
-                ),
-              )
-              .then(takeFirstOrNull);
+        const envReleaseChannel = environment.releaseChannels.find(
+          (rc) => rc.releaseChannelDeploymentId === rel.deploymentId,
+        );
 
-            return r != null
-              ? null
-              : {
-                  releaseId: rel.id,
-                  environmentId: environment.id,
-                };
-          },
-        ),
-      ).then((r) => r.filter(isPresent));
+        const policyReleaseChannel = environmentPolicy?.releaseChannels.find(
+          (rc) => rc.releaseChannelDeploymentId === rel.deploymentId,
+        );
 
-      return blockedEnvironments.reduce(
+        const releaseFilter =
+          envReleaseChannel?.releaseChannelFilter ??
+          policyReleaseChannel?.releaseChannelFilter;
+        if (releaseFilter == null) return null;
+
+        const matchingRelease = await db
+          .select()
+          .from(release)
+          .where(
+            and(
+              eq(release.id, rel.id),
+              releaseMatchesCondition(db, releaseFilter),
+            ),
+          )
+          .then(takeFirstOrNull);
+
+        return matchingRelease == null
+          ? { releaseId: rel.id, environmentId: environment.id }
+          : null;
+      });
+
+      const blockedEnvs = await Promise.all(blockedEnvsPromises).then((r) =>
+        r.filter(isPresent),
+      );
+
+      return blockedEnvs.reduce(
         (acc, { releaseId, environmentId }) => {
           if (!acc[releaseId]) acc[releaseId] = [];
           acc[releaseId].push(environmentId);

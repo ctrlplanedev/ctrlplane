@@ -60,6 +60,7 @@ export const releaseChannel = pgTable("release_channel", {
     .default(sql`NULL`),
 });
 
+export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
 export const releaseDependency = pgTable(
   "release_dependency",
   {

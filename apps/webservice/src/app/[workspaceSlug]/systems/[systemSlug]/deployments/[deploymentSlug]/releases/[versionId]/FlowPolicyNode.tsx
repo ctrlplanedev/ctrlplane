@@ -3,10 +3,9 @@ import type {
   EnvironmentPolicyDeployment,
   Release,
 } from "@ctrlplane/db/schema";
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
 import { addMilliseconds, isBefore } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
@@ -27,10 +26,6 @@ import {
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
 import { JobStatus } from "@ctrlplane/validators/jobs";
-import {
-  ReleaseFilterType,
-  ReleaseOperator,
-} from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 
@@ -108,57 +103,6 @@ type PolicyNodeProps = NodeProps<
   }
 >;
 
-const useEvaluateReleaseFilterCheck = (
-  check: ReleaseCondition | null,
-  release: Release,
-) => {
-  const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-    deploymentSlug: string;
-  }>();
-  const deploymentQ = api.deployment.bySlug.useQuery({
-    workspaceSlug,
-    systemSlug,
-    deploymentSlug,
-  });
-  const deployment = deploymentQ.data;
-  const filter: ReleaseCondition = {
-    type: ReleaseFilterType.Comparison,
-    operator: ReleaseOperator.And,
-    conditions:
-      check != null
-        ? [
-            {
-              type: ReleaseFilterType.Version,
-              operator: ReleaseOperator.Equals,
-              value: release.version,
-            },
-            check,
-          ]
-        : [],
-  };
-
-  const targetsQ = api.release.list.useQuery(
-    { deploymentId: deployment?.id ?? "", filter },
-    { enabled: deployment?.id != null && check != null },
-  );
-
-  return {
-    loading: targetsQ.isLoading,
-    passing: (targetsQ.data?.total ?? 0) > 0,
-  };
-};
-
-const EvaluateFilterCheck: React.FC<{
-  passing: boolean;
-}> = ({ passing }) => (
-  <div className="flex items-center gap-2">
-    {passing ? <Passing /> : <Blocked />}
-    Release version satisfies filter
-  </div>
-);
-
 const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
   successMinimum,
   successType,
@@ -206,7 +150,10 @@ const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
 };
 
 const GradualRolloutCheck: React.FC<PolicyNodeProps["data"]> = (data) => {
-  const completeDate = addMilliseconds(data.release.createdAt, data.duration);
+  const completeDate = addMilliseconds(
+    data.release.createdAt,
+    data.rolloutDuration,
+  );
   const [now, setNow] = useState(new Date());
   useTimeoutFn(() => setNow(new Date()), 1000);
   const completesInMs = completeDate.getTime() - now.getTime();
@@ -272,22 +219,9 @@ const ApprovalCheck: React.FC<PolicyNodeProps["data"]> = ({ id, release }) => {
 };
 
 export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
-  const hasFilterCheck = data.releaseFilter != null;
-  const { loading: isFilterCheckLoading, passing: isFilterCheckPassing } =
-    useEvaluateReleaseFilterCheck(data.releaseFilter, data.release);
-
   const noMinSuccess = data.successType === "optional";
-  const noRollout = data.duration === 0;
+  const noRollout = data.rolloutDuration === 0;
   const noApproval = data.approvalRequirement === "automatic";
-
-  if (hasFilterCheck && isFilterCheckLoading)
-    return (
-      <div
-        className={cn(
-          "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
-        )}
-      />
-    );
 
   return (
     <>
@@ -296,14 +230,11 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
           "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
         )}
       >
-        {hasFilterCheck && (
-          <EvaluateFilterCheck passing={isFilterCheckPassing} />
-        )}
         {!noMinSuccess && <MinSuccessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && <ApprovalCheck {...data} />}
 
-        {!hasFilterCheck && noMinSuccess && noRollout && noApproval && (
+        {!noMinSuccess && !noRollout && !noApproval && (
           <div className="text-muted-foreground">No policy checks.</div>
         )}
       </div>

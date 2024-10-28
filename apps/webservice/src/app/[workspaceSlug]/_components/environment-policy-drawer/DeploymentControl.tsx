@@ -1,6 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
-import _ from "lodash";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -11,24 +10,16 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
-import {
-  defaultCondition,
-  isEmptyCondition,
-  releaseCondition,
-} from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
-import { ReleaseConditionRender } from "../release-condition/ReleaseConditionRender";
 
 const schema = z.object({
   concurrencyType: z.enum(["all", "some"]),
   concurrencyLimit: z.number().min(1, "Must be a positive number"),
-  releaseFilter: releaseCondition.nullable(),
 });
 
 export const DeploymentControl: React.FC<{
@@ -41,12 +32,8 @@ export const DeploymentControl: React.FC<{
 
   const { id, systemId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) => {
-    const releaseFilter =
-      data.releaseFilter != null && isEmptyCondition(data.releaseFilter)
-        ? null
-        : data.releaseFilter;
     updatePolicy
-      .mutateAsync({ id, data: { ...data, releaseFilter } })
+      .mutateAsync({ id, data })
       .then(() => form.reset(data))
       .then(() => utils.environment.policy.byId.invalidate(id))
       .then(() => utils.environment.policy.bySystemId.invalidate(systemId));
@@ -114,28 +101,6 @@ export const DeploymentControl: React.FC<{
                   </RadioGroup>
                 </FormControl>
               </div>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="releaseFilter"
-          render={({ field: { onChange, value } }) => (
-            <FormItem>
-              <FormLabel>Filter</FormLabel>
-              <FormControl>
-                <ReleaseConditionRender
-                  condition={value ?? defaultCondition}
-                  onChange={onChange}
-                />
-              </FormControl>
-              <FormMessage />
-              {form.formState.isDirty && (
-                <span className="text-xs text-muted-foreground">
-                  Save to apply
-                </span>
-              )}
             </FormItem>
           )}
         />

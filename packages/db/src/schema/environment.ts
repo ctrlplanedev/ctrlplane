@@ -209,15 +209,19 @@ export const environmentPolicyReleaseChannel = pgTable(
     channelId: uuid("channel_id")
       .notNull()
       .references(() => releaseChannel.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.policyId, t.channelId),
-    deploymentUniq: uniqueIndex().on(
-      t.policyId,
-      sql`(SELECT ${deployment.id} FROM ${releaseChannel} WHERE id = ${t.channelId})`,
-    ),
+    deploymentUniq: uniqueIndex().on(t.policyId, t.deploymentId),
   }),
 );
+
+export type EnvironmentPolicyReleaseChannel = InferSelectModel<
+  typeof environmentPolicyReleaseChannel
+>;
 
 export const environmentReleaseChannel = pgTable(
   "environment_release_channel",
@@ -229,15 +233,19 @@ export const environmentReleaseChannel = pgTable(
     channelId: uuid("channel_id")
       .notNull()
       .references(() => releaseChannel.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
   },
   (t) => ({
     uniq: uniqueIndex().on(t.environmentId, t.channelId),
-    deploymentUniq: uniqueIndex().on(
-      t.environmentId,
-      sql`(SELECT ${deployment.id} FROM ${releaseChannel} WHERE id = ${t.channelId})`,
-    ),
+    deploymentUniq: uniqueIndex().on(t.environmentId, t.deploymentId),
   }),
 );
+
+export type EnvironmentReleaseChannel = InferSelectModel<
+  typeof environmentReleaseChannel
+>;
 
 export const environmentMetadata = pgTable(
   "environment_metadata",

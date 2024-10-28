@@ -1,11 +1,9 @@
 import type { InferSelectModel } from "drizzle-orm";
-import { sql } from "drizzle-orm";
 import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { jobAgent } from "./job-agent.js";
-import { releaseChannel } from "./release.js";
 import { system } from "./system.js";
 
 export const deploymentSchema = z.object({
@@ -35,10 +33,6 @@ export const deployment = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
-
-    defaultReleaseChannelId: uuid("default_release_channel_id")
-      .references((): any => releaseChannel.id, { onDelete: "set null" })
-      .default(sql`NULL`),
 
     description: text("description").notNull(),
     systemId: uuid("system_id")
