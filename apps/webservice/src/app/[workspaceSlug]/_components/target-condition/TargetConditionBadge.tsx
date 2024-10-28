@@ -1,6 +1,7 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
+  IdentifierCondition,
   KindCondition,
   NameCondition,
   ProviderCondition,
@@ -18,6 +19,7 @@ import {
 } from "@ctrlplane/ui/hover-card";
 import {
   isComparisonCondition,
+  isIdentifierCondition,
   isKindCondition,
   isMetadataCondition,
   isNameCondition,
@@ -174,6 +176,18 @@ const StringifiedNameCondition: React.FC<{
   </ConditionBadge>
 );
 
+const StringifiedIdentifierCondition: React.FC<{
+  condition: IdentifierCondition;
+}> = ({ condition }) => (
+  <ConditionBadge>
+    <span className="text-white">Identifier</span>
+    <span className="text-muted-foreground">
+      {operatorVerbs[condition.operator]}
+    </span>
+    <span className="text-white">{condition.value.replace(/%/g, "")}</span>
+  </ConditionBadge>
+);
+
 const StringifiedProviderCondition: React.FC<{
   condition: ProviderCondition;
 }> = ({ condition }) => {
@@ -218,6 +232,9 @@ const StringifiedTargetCondition: React.FC<{
 
   if (isNameCondition(condition))
     return <StringifiedNameCondition condition={condition} />;
+
+  if (isIdentifierCondition(condition))
+    return <StringifiedIdentifierCondition condition={condition} />;
 
   if (isProviderCondition(condition))
     return <StringifiedProviderCondition condition={condition} />;

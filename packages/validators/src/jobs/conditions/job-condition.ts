@@ -3,8 +3,8 @@ import { z } from "zod";
 import type {
   CreatedAtCondition,
   MetadataCondition,
+  VersionCondition,
 } from "../../conditions/index.js";
-import type { VersionCondition } from "../../conditions/version-condition.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
@@ -17,8 +17,8 @@ import {
   MAX_DEPTH_ALLOWED,
   metadataCondition,
   MetadataOperator,
+  versionCondition,
 } from "../../conditions/index.js";
-import { versionCondition } from "../../conditions/version-condition.js";
 import { comparisonCondition } from "./comparison-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";

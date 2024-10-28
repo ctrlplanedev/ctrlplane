@@ -36,7 +36,6 @@ import {
   DateOperator,
   FilterType,
   MetadataOperator,
-  VersionOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
@@ -344,7 +343,7 @@ export const JobComparisonConditionRender: React.FC<
                 onClick={() =>
                   addCondition({
                     type: FilterType.Version,
-                    operator: VersionOperator.Equals,
+                    operator: ColumnOperator.Equals,
                     value: "",
                   })
                 }

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
@@ -291,6 +292,17 @@ export const ComparisonConditionRender: React.FC<
               }
             >
               Name
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                addCondition({
+                  type: TargetFilterType.Identifier,
+                  operator: ColumnOperator.Like,
+                  value: "",
+                })
+              }
+            >
+              Identifier
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>

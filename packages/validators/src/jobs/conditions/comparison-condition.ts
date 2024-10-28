@@ -3,8 +3,8 @@ import { z } from "zod";
 import type {
   CreatedAtCondition,
   MetadataCondition,
+  VersionCondition,
 } from "../../conditions/index.js";
-import type { VersionCondition } from "../../conditions/version-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
 import type { JobTargetCondition } from "./job-target-condition.js";
@@ -12,8 +12,8 @@ import type { StatusCondition } from "./status-condition.js";
 import {
   createdAtCondition,
   metadataCondition,
+  versionCondition,
 } from "../../conditions/index.js";
-import { versionCondition } from "../../conditions/version-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
 import { jobTargetCondition } from "./job-target-condition.js";

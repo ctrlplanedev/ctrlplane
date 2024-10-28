@@ -32,8 +32,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
+  ColumnOperator,
   DateOperator,
-  VersionOperator,
+  MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   releaseCondition,
@@ -164,7 +165,7 @@ export type ReleaseJobTriggerInsert = InferInsertModel<
 >;
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
-  if (cond.operator === "null")
+  if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
         .select()
@@ -177,7 +178,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "regex")
+  if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
         .select()
@@ -191,7 +192,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "like")
+  if (cond.operator === MetadataOperator.Like)
     return exists(
       tx
         .select()
@@ -229,9 +230,9 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === VersionOperator.Equals)
+  if (cond.operator === ColumnOperator.Equals)
     return eq(release.version, cond.value);
-  if (cond.operator === VersionOperator.Like)
+  if (cond.operator === ColumnOperator.Like)
     return like(release.version, cond.value);
   return sql`${release.version} ~ ${cond.value}`;
 };

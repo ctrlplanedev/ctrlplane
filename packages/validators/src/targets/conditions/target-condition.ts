@@ -2,11 +2,13 @@ import { z } from "zod";
 
 import type { MetadataCondition } from "../../conditions/index.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
+import type { IdentifierCondition } from "./identifier-condition.js";
 import type { KindCondition } from "./kind-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
 import { metadataCondition } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
+import { identifierCondition } from "./identifier-condition.js";
 import { kindCondition } from "./kind-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
@@ -16,7 +18,8 @@ export type TargetCondition =
   | MetadataCondition
   | KindCondition
   | NameCondition
-  | ProviderCondition;
+  | ProviderCondition
+  | IdentifierCondition;
 
 export const targetCondition = z.union([
   comparisonCondition,
@@ -24,6 +27,7 @@ export const targetCondition = z.union([
   kindCondition,
   nameCondition,
   providerCondition,
+  identifierCondition,
 ]);
 
 export enum TargetOperator {
@@ -39,6 +43,7 @@ export enum TargetFilterType {
   Metadata = "metadata",
   Kind = "kind",
   Name = "name",
+  Identifier = "identifier",
   Provider = "provider",
   Comparison = "comparison",
 }
@@ -94,16 +99,18 @@ export const isProviderCondition = (
 ): condition is ProviderCondition =>
   condition.type === TargetFilterType.Provider;
 
+export const isIdentifierCondition = (
+  condition: TargetCondition,
+): condition is IdentifierCondition =>
+  condition.type === TargetFilterType.Identifier;
+
 export const isValidTargetCondition = (condition: TargetCondition): boolean => {
   if (isComparisonCondition(condition))
     return condition.conditions.every((c) => isValidTargetCondition(c));
-  if (isKindCondition(condition)) return condition.value.length > 0;
-  if (isNameCondition(condition)) return condition.value.length > 0;
-  if (isProviderCondition(condition)) return condition.value.length > 0;
   if (isMetadataCondition(condition)) {
     if (condition.operator === TargetOperator.Null)
       return condition.value == null && condition.key.length > 0;
     return condition.value.length > 0 && condition.key.length > 0;
   }
-  return false;
+  return condition.value.length > 0;
 };
