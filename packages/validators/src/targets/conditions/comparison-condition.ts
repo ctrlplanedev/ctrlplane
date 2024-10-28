@@ -1,10 +1,12 @@
 import { z } from "zod";
 
 import type { MetadataCondition } from "../../conditions/index.js";
+import type { IdentifierCondition } from "./identifier-condition.js";
 import type { KindCondition } from "./kind-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
 import { metadataCondition } from "../../conditions/index.js";
+import { identifierCondition } from "./identifier-condition.js";
 import { kindCondition } from "./kind-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
@@ -21,6 +23,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         kindCondition,
         nameCondition,
         providerCondition,
+        identifierCondition,
       ]),
     ),
   }),
@@ -36,5 +39,6 @@ export type ComparisonCondition = {
     | KindCondition
     | NameCondition
     | ProviderCondition
+    | IdentifierCondition
   >;
 };

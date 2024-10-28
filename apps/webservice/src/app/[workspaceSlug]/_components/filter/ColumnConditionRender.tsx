@@ -1,4 +1,4 @@
-import type { VersionOperatorType } from "@ctrlplane/validators/conditions";
+import type { ColumnOperatorType } from "@ctrlplane/validators/conditions";
 
 import { cn } from "@ctrlplane/ui";
 import { Input } from "@ctrlplane/ui/input";
@@ -9,24 +9,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { VersionOperator } from "@ctrlplane/validators/conditions";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
-type VersionConditionRenderProps = {
-  operator: VersionOperatorType;
+type ColumnConditionRenderProps = {
+  operator: ColumnOperatorType;
   value: string;
-  setOperator: (operator: VersionOperatorType) => void;
+  setOperator: (operator: ColumnOperatorType) => void;
   setValue: (value: string) => void;
+  title: string;
   className?: string;
-  title?: string;
 };
 
-export const VersionConditionRender: React.FC<VersionConditionRenderProps> = ({
+export const ColumnConditionRender: React.FC<ColumnConditionRenderProps> = ({
   operator,
   value,
   setOperator,
   setValue,
   className,
-  title = "Version",
+  title,
 }) => (
   <div className={cn("flex w-full items-center gap-2", className)}>
     <div className="grid w-full grid-cols-12">
@@ -39,18 +39,18 @@ export const VersionConditionRender: React.FC<VersionConditionRenderProps> = ({
             <SelectValue placeholder="Operator" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={VersionOperator.Equals}>Equals</SelectItem>
-            <SelectItem value={VersionOperator.Like}>Like</SelectItem>
-            <SelectItem value={VersionOperator.Regex}>Regex</SelectItem>
+            <SelectItem value={ColumnOperator.Equals}>Equals</SelectItem>
+            <SelectItem value={ColumnOperator.Like}>Like</SelectItem>
+            <SelectItem value={ColumnOperator.Regex}>Regex</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="col-span-7">
         <Input
           placeholder={
-            operator === VersionOperator.Regex
+            operator === ColumnOperator.Regex
               ? "^[a-zA-Z]+$"
-              : operator === VersionOperator.Like
+              : operator === ColumnOperator.Like
                 ? "%value%"
                 : "Value"
           }

@@ -175,7 +175,7 @@ const StringifiedVersionCondition: React.FC<{
     <span className="text-muted-foreground">
       {operatorVerbs[condition.operator]}
     </span>
-    <span className="text-white">{condition.value}</span>
+    <span className="text-white">{condition.value.replace(/%/g, "")}</span>
   </ConditionBadge>
 );
 

@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import {
   ReleaseFilterType,
@@ -131,7 +132,7 @@ const useEvaluateReleaseFilterCheck = (
         ? [
             {
               type: ReleaseFilterType.Version,
-              operator: ReleaseOperator.Equals,
+              operator: ColumnOperator.Equals,
               value: release.version,
             },
             check,
