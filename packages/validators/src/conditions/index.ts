@@ -30,6 +30,9 @@ export enum FilterType {
 
 export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 
+// importing issue - if this is in another file, since it references
+// columnOperator it throws an error saying that columnOperator is not initialized yet
+// so we need to keep it here
 export const versionCondition = z.object({
   type: z.literal("version"),
   operator: columnOperator,
