@@ -81,7 +81,7 @@ export const environmentPolicy = pgTable("environment_policy", {
     .references(() => system.id),
   approvalRequirement: approvalRequirement("approval_required")
     .notNull()
-    .default("manual"),
+    .default("automatic"),
 
   successType: environmentPolicyDeploymentSuccessType("success_status")
     .notNull()
@@ -92,10 +92,6 @@ export const environmentPolicy = pgTable("environment_policy", {
   concurrencyLimit: integer("concurrency_limit").notNull().default(1),
 
   duration: bigint("duration", { mode: "number" }).notNull().default(0),
-
-  releaseFilter: jsonb("release_filter")
-    .$type<ReleaseCondition | null>()
-    .default(sql`NULL`),
 
   releaseSequencing: releaseSequencingType("release_sequencing")
     .notNull()
