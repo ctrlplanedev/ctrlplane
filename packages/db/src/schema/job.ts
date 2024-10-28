@@ -32,10 +32,11 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 
 import {
+  ColumnOperator,
   ComparisonOperator,
   DateOperator,
   FilterType,
-  VersionOperator,
+  MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
@@ -138,7 +139,7 @@ export const createJobVariable = createInsertSchema(jobVariable).omit({
 export const updateJobVariable = createJobVariable.partial();
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
-  if (cond.operator === "null")
+  if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
         .select()
@@ -148,7 +149,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "regex")
+  if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
         .select()
@@ -162,7 +163,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "like")
+  if (cond.operator === MetadataOperator.Like)
     return exists(
       tx
         .select()
@@ -200,9 +201,9 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === VersionOperator.Like)
+  if (cond.operator === ColumnOperator.Like)
     return like(release.version, cond.value);
-  if (cond.operator === VersionOperator.Regex)
+  if (cond.operator === ColumnOperator.Regex)
     return sql`${release.version} ~ ${cond.value}`;
   return eq(release.version, cond.value);
 };

@@ -1,13 +1,11 @@
-import type {
-  ColumnOperatorType,
-  VersionCondition,
-} from "@ctrlplane/validators/conditions";
+import type { ColumnOperatorType } from "@ctrlplane/validators/conditions";
+import type { IdentifierCondition } from "@ctrlplane/validators/targets";
 
-import type { JobConditionRenderProps } from "./job-condition-props";
+import type { TargetConditionRenderProps } from "./target-condition-props";
 import { ColumnConditionRender } from "../filter/ColumnConditionRender";
 
-export const JobReleaseVersionConditionRender: React.FC<
-  JobConditionRenderProps<VersionCondition>
+export const IdentifierConditionRender: React.FC<
+  TargetConditionRenderProps<IdentifierCondition>
 > = ({ condition, onChange, className }) => {
   const setOperator = (operator: ColumnOperatorType) =>
     onChange({ ...condition, operator });
@@ -20,7 +18,7 @@ export const JobReleaseVersionConditionRender: React.FC<
       setOperator={setOperator}
       setValue={setValue}
       className={className}
-      title="Release version"
+      title="Identifier"
     />
   );
 };
