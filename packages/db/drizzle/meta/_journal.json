@@ -183,6 +183,13 @@
       "when": 1730060918585,
       "tag": "0025_low_talisman",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1730150152505,
+      "tag": "0026_blushing_kang",
+      "breakpoints": true
     }
   ]
 }

@@ -131,7 +131,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
               v[0]!.release.id,
               v[0]!.environment.id,
               v[0]!.release.createdAt,
-              v[0]!.environment_policy.duration,
+              v[0]!.environment_policy.rolloutDuration,
               v
                 .map((r) => r.environment_policy_release_window)
                 .filter(isPresent),

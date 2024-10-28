@@ -55,7 +55,7 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
           ":",
         ),
         p.release.createdAt,
-        p.environment_policy.duration,
+        p.environment_policy.rolloutDuration,
       );
     })
     .map((p) => p.release_job_trigger);
