@@ -33,7 +33,6 @@ export const deployment = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
     slug: text("slug").notNull(),
-
     description: text("description").notNull(),
     systemId: uuid("system_id")
       .notNull()

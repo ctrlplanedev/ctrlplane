@@ -234,7 +234,7 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && <ApprovalCheck {...data} />}
 
-        {!noMinSuccess && !noRollout && !noApproval && (
+        {noMinSuccess && noRollout && noApproval && (
           <div className="text-muted-foreground">No policy checks.</div>
         )}
       </div>

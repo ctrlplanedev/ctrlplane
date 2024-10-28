@@ -7,21 +7,6 @@ import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleasePolicyChecker } from "./utils.js";
 
-/**
- * 
- * 
- *     envRCSubquery: {
-        releaseChannelEnvId: string;
-        releaseChannelDeploymentId: string;
-        releaseChannelFilter: ReleaseCondition | null;
-    } | null;
-    policyRCSubquery: {
-        releaseChannelDeploymentId: string;
-        releaseChannelFilter: ReleaseCondition | null;
-        releaseChannelPolicyId: string;
-    } | null;
- */
-
 type EnvReleaseChannel = {
   releaseChannelEnvId: string;
   releaseChannelDeploymentId: string;

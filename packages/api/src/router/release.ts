@@ -327,16 +327,12 @@ export const releaseRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        console.log(">>> rel", rel);
-
         const releaseDeps = input.releaseDependencies.map((rd) => ({
           ...rd,
           releaseId: rel.id,
         }));
         if (releaseDeps.length > 0)
           await db.insert(releaseDependency).values(releaseDeps);
-
-        console.log(">>> releaseDeps", releaseDeps);
 
         const releaseJobTriggers = await createReleaseJobTriggers(
           db,
@@ -348,15 +344,11 @@ export const releaseRouter = createTRPCRouter({
           .then(createJobApprovals)
           .insert();
 
-        console.log(">>> releaseJobTriggers", releaseJobTriggers);
-
         await dispatchReleaseJobTriggers(db)
           .releaseTriggers(releaseJobTriggers)
           .filter(isPassingAllPolicies)
           .then(cancelOldReleaseJobTriggersOnJobDispatch)
           .dispatch();
-
-        console.log(">>> releaseJobTriggers dispatched");
 
         return { ...rel, releaseJobTriggers };
       }),
