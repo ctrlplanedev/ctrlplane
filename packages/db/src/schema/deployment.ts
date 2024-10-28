@@ -52,9 +52,7 @@ export const deployment = pgTable(
       .$type<Record<string, any>>()
       .notNull(),
   },
-  (t) => ({
-    uniq: uniqueIndex().on(t.systemId, t.slug),
-  }),
+  (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );
 
 const deploymentInsert = createInsertSchema(deployment, {
