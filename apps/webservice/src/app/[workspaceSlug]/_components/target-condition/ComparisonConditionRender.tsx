@@ -175,7 +175,6 @@ export const ComparisonConditionRender: React.FC<
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}
-                onRemove={() => removeCondition(index)}
                 depth={depth + 1}
                 className={cn(depth === 0 ? "col-span-11" : "col-span-10")}
               />

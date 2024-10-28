@@ -24,14 +24,13 @@ import { TargetMetadataConditionRender } from "./TargetMetadataConditionRender";
  */
 export const TargetConditionRender: React.FC<
   TargetConditionRenderProps<TargetCondition>
-> = ({ condition, onChange, onRemove, depth = 0, className }) => {
+> = ({ condition, onChange, depth = 0, className }) => {
   if (isComparisonCondition(condition))
     return (
       <ComparisonConditionRender
         condition={condition}
         onChange={onChange}
         depth={depth}
-        onRemove={onRemove}
         className={className}
       />
     );
@@ -41,8 +40,6 @@ export const TargetConditionRender: React.FC<
       <TargetMetadataConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
-        depth={depth}
         className={className}
       />
     );
@@ -52,8 +49,6 @@ export const TargetConditionRender: React.FC<
       <KindConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
-        depth={depth}
         className={className}
       />
     );
@@ -63,8 +58,6 @@ export const TargetConditionRender: React.FC<
       <NameConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
-        depth={depth}
         className={className}
       />
     );
@@ -74,8 +67,6 @@ export const TargetConditionRender: React.FC<
       <ProviderConditionRender
         condition={condition}
         onChange={onChange}
-        onRemove={onRemove}
-        depth={depth}
         className={className}
       />
     );

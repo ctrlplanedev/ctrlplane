@@ -22,6 +22,7 @@ import { z } from "zod";
 
 import {
   ColumnOperator,
+  ComparisonOperator,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
@@ -214,7 +215,8 @@ const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
   if (cond.conditions.length === 0) return sql`FALSE`;
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
-  const con = cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
+  const con =
+    cond.operator === ComparisonOperator.And ? and(...subCon)! : or(...subCon)!;
   return cond.not ? not(con) : con;
 };
 
