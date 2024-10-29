@@ -37,13 +37,6 @@ paths:
     patch:
       summary: Upserts the agent
       operationId: updateJobAgent
-      parameters:
-        - name: workspace
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name of the workspace
       requestBody:
         required: true
         content:

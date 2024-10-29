@@ -87,7 +87,6 @@ export interface UpdateJobOperationRequest {
 }
 
 export interface UpdateJobAgentOperationRequest {
-  workspace: string;
   updateJobAgentRequest: UpdateJobAgentRequest;
 }
 
@@ -563,13 +562,6 @@ export class DefaultApi extends runtime.BaseAPI {
     requestParameters: UpdateJobAgentOperationRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<runtime.ApiResponse<UpdateJobAgent200Response>> {
-    if (requestParameters["workspace"] == null) {
-      throw new runtime.RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling updateJobAgent().',
-      );
-    }
-
     if (requestParameters["updateJobAgentRequest"] == null) {
       throw new runtime.RequiredError(
         "updateJobAgentRequest",
@@ -590,10 +582,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/job-agents/name`.replace(
-          `{${"workspace"}}`,
-          encodeURIComponent(String(requestParameters["workspace"])),
-        ),
+        path: `/v1/job-agents/name`,
         method: "PATCH",
         headers: headerParameters,
         query: queryParameters,
