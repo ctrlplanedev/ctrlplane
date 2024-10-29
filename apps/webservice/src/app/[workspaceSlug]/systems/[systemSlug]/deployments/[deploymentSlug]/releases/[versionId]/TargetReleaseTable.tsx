@@ -1,6 +1,6 @@
 "use client";
 
-import type { Environment } from "@ctrlplane/db/schema";
+import type { Environment, Target } from "@ctrlplane/db/schema";
 import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
@@ -46,11 +46,7 @@ type CollapsibleTableRowProps = {
       metadata: Array<{ key: string; value: string }>;
       externalId: string | null;
     };
-    target: {
-      id: string;
-      name: string;
-      lockedAt: Date | null;
-    };
+    target: Target;
     type: string;
   }>;
 };
