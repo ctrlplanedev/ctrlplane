@@ -28119,7 +28119,6 @@ function instanceOfGetJob200Response(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("status" in value) || value["status"] === void 0) return false;
   if (!("variables" in value) || value["variables"] === void 0) return false;
-  if (!("approval" in value) || value["approval"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseFromJSON(json) {
@@ -28138,7 +28137,7 @@ function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
     environment: json["environment"] == null ? void 0 : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
     variables: json["variables"],
-    approval: GetJob200ResponseApprovalFromJSON(json["approval"])
+    approval: json["approval"] == null ? void 0 : GetJob200ResponseApprovalFromJSON(json["approval"])
   };
 }
 function GetJob200ResponseToJSON(value) {
@@ -28358,6 +28357,8 @@ function UpdateJobAgent200ResponseToJSON(value) {
 
 // src/models/UpdateJobAgentRequest.ts
 function instanceOfUpdateJobAgentRequest(value) {
+  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
+    return false;
   if (!("name" in value) || value["name"] === void 0) return false;
   if (!("type" in value) || value["type"] === void 0) return false;
   return true;
@@ -28370,6 +28371,7 @@ function UpdateJobAgentRequestFromJSONTyped(json, ignoreDiscriminator) {
     return json;
   }
   return {
+    workspaceId: json["workspaceId"],
     name: json["name"],
     type: json["type"]
   };
@@ -28379,6 +28381,7 @@ function UpdateJobAgentRequestToJSON(value) {
     return value;
   }
   return {
+    workspaceId: value["workspaceId"],
     name: value["name"],
     type: value["type"]
   };
@@ -28781,7 +28784,7 @@ var DefaultApi = class extends BaseAPI {
     }
     const response = await this.request(
       {
-        path: `/v1/workspaces/{workspace}/job-agents/name`.replace(
+        path: `/v1/job-agents/name`.replace(
           `{${"workspace"}}`,
           encodeURIComponent(String(requestParameters["workspace"]))
         ),
@@ -28923,9 +28926,13 @@ async function run() {
         setOutputAndLog("release_version", release?.version);
         setOutputsRecursively("release_config", release?.config);
         setOutputsRecursively("release_metadata", release?.metadata);
-        setOutputAndLog("approval_status", approval.status);
-        setOutputAndLog("approval_approver_id", approval.approver?.id);
-        setOutputAndLog("approval_approver_name", approval.approver?.name);
+        if (approval != null) {
+            setOutputAndLog("approval_status", approval.status);
+            if (approval.approver != null) {
+                setOutputAndLog("approval_approver_id", approval.approver.id);
+                setOutputAndLog("approval_approver_name", approval.approver.name);
+            }
+        }
         setOutputAndLog("deployment_id", deployment?.id);
         setOutputAndLog("deployment_name", deployment?.name);
         setOutputAndLog("deployment_slug", deployment?.slug);

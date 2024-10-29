@@ -109,7 +109,7 @@ export interface GetJob200Response {
    * @type {GetJob200ResponseApproval}
    * @memberof GetJob200Response
    */
-  approval: GetJob200ResponseApproval;
+  approval?: GetJob200ResponseApproval;
 }
 
 /**
@@ -139,7 +139,6 @@ export function instanceOfGetJob200Response(
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("status" in value) || value["status"] === undefined) return false;
   if (!("variables" in value) || value["variables"] === undefined) return false;
-  if (!("approval" in value) || value["approval"] === undefined) return false;
   return true;
 }
 
@@ -178,7 +177,10 @@ export function GetJob200ResponseFromJSONTyped(
         ? undefined
         : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
     variables: json["variables"],
-    approval: GetJob200ResponseApprovalFromJSON(json["approval"]),
+    approval:
+      json["approval"] == null
+        ? undefined
+        : GetJob200ResponseApprovalFromJSON(json["approval"]),
   };
 }
 

@@ -421,7 +421,6 @@ paths:
                   - createdAt
                   - updatedAt
                   - variables
-                  - approval
     patch:
       summary: Update a job
       operationId: updateJob
