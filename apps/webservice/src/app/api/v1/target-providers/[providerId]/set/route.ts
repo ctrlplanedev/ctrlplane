@@ -61,7 +61,7 @@ export const PATCH = request()
       .then(takeFirstOrNull);
 
     const provider = query?.target_provider;
-    if (!provider)
+    if (provider == null)
       return NextResponse.json(
         { error: "Provider not found" },
         { status: 404 },

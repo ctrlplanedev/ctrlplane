@@ -516,11 +516,255 @@ paths:
                     type: string
                   metadata:
                     type: object
+  /v1/targets/{targetId}:
+    get:
+      summary: Get a target by ID
+      operationId: getTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The target ID
+      responses:
+        "200":
+          description: Successfully retrieved target
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  kind:
+                    type: string
+                  identifier:
+                    type: string
+                  workspaceId:
+                    type: string
+                    format: uuid
+                  config:
+                    type: object
+                  metadata:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  variables:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        key:
+                          type: string
+                        value:
+                          oneOf:
+                            - type: string
+                            - type: number
+                            - type: boolean
+                            - type: "null"
+                        sensitive:
+                          type: boolean
+                  provider:
+                    type: object
+                    nullable: true
+        "404":
+          description: Target not found
+    patch:
+      summary: Update a target
+      operationId: updateTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The target ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    version:
+                      type: string
+                    kind:
+                      type: string
+                    identifier:
+                      type: string
+                    config:
+                      type: object
+                    metadata:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    variables:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          value:
+                            oneOf:
+                              - type: string
+                              - type: number
+                              - type: boolean
+                              - type: "null"
+                          sensitive:
+                            type: boolean
+                        required:
+                          - key
+                          - sensitive
+      responses:
+        "200":
+          description: Successfully updated target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "404":
+          description: Target not found
+
+  /v1/targets/{targetId}/{workspaceId}/set:
+    post:
+      summary: Create or update a target with a specific ID and workspace
+      operationId: setTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The target ID
+        - name: workspaceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The workspace ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                target:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    version:
+                      type: string
+                    kind:
+                      type: string
+                    identifier:
+                      type: string
+                    config:
+                      type: object
+                    metadata:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    variables:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          value:
+                            oneOf:
+                              - type: string
+                              - type: number
+                              - type: boolean
+                              - type: "null"
+                          sensitive:
+                            type: boolean
+                        required:
+                          - key
+                          - sensitive
+      responses:
+        "200":
+          description: Successfully created or updated target
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+
 components:
   securitySchemes:
     apiKey:
       type: apiKey
       in: header
       name: x-api-key
+  schemas:
+    Target:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: string
+        kind:
+          type: string
+        identifier:
+          type: string
+        workspaceId:
+          type: string
+          format: uuid
+        config:
+          type: object
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        variables:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                oneOf:
+                  - type: string
+                  - type: number
+                  - type: boolean
+                  - type: "null"
+              sensitive:
+                type: boolean
+        provider:
+          type: object
+          nullable: true
+      required:
+        - id
+        - name
+        - version
+        - kind
+        - identifier
+        - workspaceId
+        - config
+        - metadata
+
 security:
   - apiKey: []
