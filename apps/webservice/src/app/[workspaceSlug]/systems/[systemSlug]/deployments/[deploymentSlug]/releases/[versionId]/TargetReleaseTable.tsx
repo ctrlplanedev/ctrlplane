@@ -31,6 +31,7 @@ import { PolicyApprovalRow } from "./PolicyApprovalRow";
 
 type CollapsibleTableRowProps = {
   environment: Environment;
+  environmentCount: number;
   deploymentName: string;
   release: {
     id: string;
@@ -53,12 +54,15 @@ type CollapsibleTableRowProps = {
 
 const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   environment,
+  environmentCount,
   deploymentName,
   release,
   releaseJobTriggerData,
 }) => {
   const { setJobId } = useJobDrawer();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const jobs = releaseJobTriggerData.filter(
+    (job) => job.environmentId === environment.id,
+  );
 
   const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
     releaseId: release.id,
@@ -69,13 +73,10 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
     (approval) => approval.policyId === environment.policyId,
   );
 
-  const jobs = releaseJobTriggerData.filter(
-    (job) => job.environmentId === environment.id,
-  );
+  const isOpen = jobs.length < 10 && environmentCount < 3;
+  const [isExpanded, setIsExpanded] = useState(isOpen);
 
-  const isOpen = jobs.length < 10 && approvals.length < 3;
-
-  if (jobs.length === 0) return;
+  if (jobs.length === 0) return null;
 
   return (
     <Fragment>
@@ -127,92 +128,91 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
           </div>
         </TableCell>
       </TableRow>
-      {isExpanded ||
-        (isOpen && (
-          <>
-            {jobs.map((job, idx) => {
-              const linksMetadata = job.job.metadata.find(
-                (m) => m.key === String(ReservedMetadataKey.Links),
-              )?.value;
+      {isExpanded && (
+        <>
+          {jobs.map((job, idx) => {
+            const linksMetadata = job.job.metadata.find(
+              (m) => m.key === String(ReservedMetadataKey.Links),
+            )?.value;
 
-              const links =
-                linksMetadata != null
-                  ? (JSON.parse(linksMetadata) as Record<string, string>)
-                  : null;
+            const links =
+              linksMetadata != null
+                ? (JSON.parse(linksMetadata) as Record<string, string>)
+                : null;
 
-              return (
-                <TableRow
-                  key={job.id}
-                  className={cn(
-                    "cursor-pointer",
-                    idx !== jobs.length - 1 && "border-b-neutral-800/50",
+            return (
+              <TableRow
+                key={job.id}
+                className={cn(
+                  "cursor-pointer",
+                  idx !== jobs.length - 1 && "border-b-neutral-800/50",
+                )}
+                onClick={() => setJobId(job.job.id)}
+              >
+                <TableCell>{job.target.name}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <JobTableStatusIcon status={job.job.status} />
+                    {capitalCase(job.job.status)}
+                  </div>
+                </TableCell>
+                <TableCell>{job.type}</TableCell>
+                <TableCell>
+                  {job.job.externalId != null ? (
+                    <code className="font-mono text-xs">
+                      {job.job.externalId}
+                    </code>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      No external ID
+                    </span>
                   )}
-                  onClick={() => setJobId(job.job.id)}
-                >
-                  <TableCell>{job.target.name}</TableCell>
-                  <TableCell>
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {links != null && (
                     <div className="flex items-center gap-1">
-                      <JobTableStatusIcon status={job.job.status} />
-                      {capitalCase(job.job.status)}
+                      {Object.entries(links).map(([label, url]) => (
+                        <Link
+                          key={label}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={buttonVariants({
+                            variant: "secondary",
+                            size: "sm",
+                            className: "gap-1",
+                          })}
+                        >
+                          <IconExternalLink className="h-4 w-4" />
+                          {label}
+                        </Link>
+                      ))}
                     </div>
-                  </TableCell>
-                  <TableCell>{job.type}</TableCell>
-                  <TableCell>
-                    {job.job.externalId != null ? (
-                      <code className="font-mono text-xs">
-                        {job.job.externalId}
-                      </code>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        No external ID
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {links != null && (
-                      <div className="flex items-center gap-1">
-                        {Object.entries(links).map(([label, url]) => (
-                          <Link
-                            key={label}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={buttonVariants({
-                              variant: "secondary",
-                              size: "sm",
-                              className: "gap-1",
-                            })}
-                          >
-                            <IconExternalLink className="h-4 w-4" />
-                            {label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex justify-end">
-                      <JobDropdownMenu
-                        release={release}
-                        deploymentName={deploymentName}
-                        target={job.target}
-                        environmentId={job.environmentId}
-                        job={{
-                          id: job.job.id,
-                          status: job.job.status,
-                        }}
-                      >
-                        <Button variant="ghost" size="icon">
-                          <IconDots size={16} />
-                        </Button>
-                      </JobDropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </>
-        ))}
+                  )}
+                </TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end">
+                    <JobDropdownMenu
+                      release={release}
+                      deploymentName={deploymentName}
+                      target={job.target}
+                      environmentId={job.environmentId}
+                      job={{
+                        id: job.job.id,
+                        status: job.job.status,
+                      }}
+                    >
+                      <Button variant="ghost" size="icon">
+                        <IconDots size={16} />
+                      </Button>
+                    </JobDropdownMenu>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </>
+      )}
     </Fragment>
   );
 };
@@ -270,6 +270,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
               <CollapsibleTableRow
                 key={environment.id}
                 environment={environment}
+                environmentCount={environments.length}
                 deploymentName={deploymentName}
                 release={release}
                 releaseJobTriggerData={releaseJobTriggerQuery.data}
