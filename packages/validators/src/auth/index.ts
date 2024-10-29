@@ -78,6 +78,12 @@ export enum Permission {
   ReleaseGet = "release.get",
   ReleaseList = "release.list",
 
+  ReleaseChannelGet = "releaseChannel.get",
+  ReleaseChannelList = "releaseChannel.list",
+  ReleaseChannelCreate = "releaseChannel.create",
+  ReleaseChannelUpdate = "releaseChannel.update",
+  ReleaseChannelDelete = "releaseChannel.delete",
+
   RunbookTrigger = "runbook.trigger",
   RunbookDelete = "runbook.delete",
   RunbookCreate = "runbook.create",

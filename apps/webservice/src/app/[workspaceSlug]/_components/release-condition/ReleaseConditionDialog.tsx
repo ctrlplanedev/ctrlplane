@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import React, { useState } from "react";
 
@@ -17,16 +19,20 @@ import {
   MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/releases";
 
+import { api } from "~/trpc/react";
+import { ReleaseBadgeList } from "../ReleaseBadgeList";
 import { ReleaseConditionRender } from "./ReleaseConditionRender";
 
 type ReleaseConditionDialogProps = {
   condition?: ReleaseCondition;
+  deploymentId?: string;
   onChange: (condition: ReleaseCondition | undefined) => void;
   children: React.ReactNode;
 };
 
 export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   condition,
+  deploymentId,
   onChange,
   children,
 }) => {
@@ -35,6 +41,12 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   const [localCondition, setLocalCondition] = useState(
     condition ?? defaultCondition,
   );
+  const isLocalConditionValid = isValidReleaseCondition(localCondition);
+  const releasesQ = api.release.list.useQuery(
+    { deploymentId: deploymentId ?? "", filter: localCondition, limit: 5 },
+    { enabled: deploymentId != null && isLocalConditionValid },
+  );
+  const releases = releasesQ.data;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -53,6 +65,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
           condition={localCondition}
           onChange={setLocalCondition}
         />
+        {releases != null && <ReleaseBadgeList releases={releases} />}
         {error && <span className="text-sm text-red-600">{error}</span>}
         <DialogFooter>
           <Button
