@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import {
   and,
+  count,
   eq,
   inArray,
   isNotNull,
@@ -14,16 +15,20 @@ import {
 } from "@ctrlplane/db";
 import {
   createDeployment,
+  createReleaseChannel,
   deployment,
   environment,
   job,
   jobAgent,
   release,
+  releaseChannel,
   releaseJobTrigger,
+  releaseMatchesCondition,
   system,
   target,
   targetMatchesMetadata,
   updateDeployment,
+  updateReleaseChannel,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -51,8 +56,103 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
     .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
     .as("active_releases");
 
+const releaseChannelRouter = createTRPCRouter({
+  create: protectedProcedure
+    .input(createReleaseChannel)
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser.perform(Permission.ReleaseChannelCreate).on({
+          type: "deployment",
+          id: input.deploymentId,
+        }),
+    })
+    .mutation(({ ctx, input }) =>
+      ctx.db.insert(releaseChannel).values(input).returning(),
+    ),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string().uuid(), data: updateReleaseChannel }))
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ReleaseChannelUpdate)
+          .on({ type: "releaseChannel", id: input.id }),
+    })
+    .mutation(({ ctx, input }) =>
+      ctx.db
+        .update(releaseChannel)
+        .set(input.data)
+        .where(eq(releaseChannel.id, input.id))
+        .returning(),
+    ),
+
+  delete: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ReleaseChannelDelete)
+          .on({ type: "releaseChannel", id: input }),
+    })
+    .mutation(({ ctx, input }) =>
+      ctx.db.delete(releaseChannel).where(eq(releaseChannel.id, input)),
+    ),
+
+  list: createTRPCRouter({
+    byDeploymentId: protectedProcedure
+      .input(z.string().uuid())
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.ReleaseChannelList)
+            .on({ type: "deployment", id: input }),
+      })
+      .query(async ({ ctx, input }) => {
+        const channels = await ctx.db
+          .select()
+          .from(releaseChannel)
+          .where(eq(releaseChannel.deploymentId, input));
+
+        const promises = channels.map(async (channel) => {
+          const filter = channel.releaseFilter ?? undefined;
+          const total = await ctx.db
+            .select({ count: count() })
+            .from(release)
+            .where(
+              and(
+                eq(release.deploymentId, channel.deploymentId),
+                releaseMatchesCondition(ctx.db, filter),
+              ),
+            )
+            .then(takeFirst)
+            .then((r) => r.count);
+          return { ...channel, total };
+        });
+        return Promise.all(promises);
+      }),
+  }),
+
+  byId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ReleaseChannelGet)
+          .on({ type: "releaseChannel", id: input }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(releaseChannel)
+        .where(eq(releaseChannel.id, input))
+        .orderBy(releaseChannel.name)
+        .then(takeFirst),
+    ),
+});
+
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
+  releaseChannel: releaseChannelRouter,
   distributionById: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
