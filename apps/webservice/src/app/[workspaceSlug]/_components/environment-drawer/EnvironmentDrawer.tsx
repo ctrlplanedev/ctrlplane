@@ -31,10 +31,11 @@ export const useEnvironmentDrawer = () => {
     const url = new URL(window.location.href);
     if (id === null) {
       url.searchParams.delete(param);
-    } else {
-      url.searchParams.set(param, id);
+      router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+      return;
     }
-    router.replace(url.toString());
+    url.searchParams.set(param, id);
+    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
   const removeEnvironmentId = () => setEnvironmentId(null);
