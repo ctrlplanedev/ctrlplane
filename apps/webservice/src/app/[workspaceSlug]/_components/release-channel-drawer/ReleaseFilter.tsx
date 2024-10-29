@@ -23,7 +23,7 @@ type ReleaseFilterProps = {
 };
 
 const getFinalFilter = (filter?: ReleaseCondition) =>
-  filter != null ? (isEmptyCondition(filter) ? undefined : filter) : undefined;
+  filter && !isEmptyCondition(filter) ? filter : undefined;
 
 const getReleaseFilterUrl = (
   workspaceSlug: string,

@@ -16,7 +16,7 @@ import { useReleaseChannelDrawer } from "./useReleaseChannelDrawer";
 export const ReleaseChannelDrawer: React.FC = () => {
   const { releaseChannelId, removeReleaseChannelId } =
     useReleaseChannelDrawer();
-  const isOpen = releaseChannelId != null && releaseChannelId != "";
+  const isOpen = Boolean(releaseChannelId);
   const setIsOpen = removeReleaseChannelId;
 
   const releaseChannelQ = api.deployment.releaseChannel.byId.useQuery(
@@ -29,7 +29,7 @@ export const ReleaseChannelDrawer: React.FC = () => {
   const deploymentId = releaseChannel?.deploymentId ?? "";
   const releasesQ = api.release.list.useQuery(
     { deploymentId, filter },
-    { enabled: isOpen && releaseChannel != null },
+    { enabled: isOpen && releaseChannel != null && deploymentId != "" },
   );
 
   const loading = releaseChannelQ.isLoading || releasesQ.isLoading;

@@ -46,15 +46,15 @@ type CreateReleaseChannelDialogProps = {
 };
 
 const schema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
+  name: z.string().min(1).max(50),
+  description: z.string().max(1000).optional(),
   releaseFilter: releaseCondition
     .optional()
     .refine((cond) => cond == null || isValidReleaseCondition(cond)),
 });
 
 const getFinalFilter = (filter?: ReleaseCondition) =>
-  filter != null ? (isEmptyCondition(filter) ? undefined : filter) : undefined;
+  filter && !isEmptyCondition(filter) ? filter : undefined;
 
 export const CreateReleaseChannelDialog: React.FC<
   CreateReleaseChannelDialogProps

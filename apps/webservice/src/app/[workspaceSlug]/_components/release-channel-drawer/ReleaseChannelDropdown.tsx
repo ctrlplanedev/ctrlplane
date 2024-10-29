@@ -70,6 +70,7 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
           <div className="flex-grow" />
           <AlertDialogAction
             onClick={onDelete}
+            disabled={deleteReleaseChannel.isPending}
             className={buttonVariants({ variant: "destructive" })}
           >
             Delete

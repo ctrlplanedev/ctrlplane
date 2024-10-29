@@ -10,6 +10,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -22,8 +23,8 @@ type OverviewProps = {
 };
 
 const schema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
+  name: z.string().min(1).max(50),
+  description: z.string().max(1000).optional(),
 });
 
 export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
@@ -59,6 +60,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
               <FormControl>
                 <Input {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
@@ -72,11 +74,17 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
               <FormControl>
                 <Textarea {...field} />
               </FormControl>
+              <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button type="submit">Save</Button>
+        <Button
+          type="submit"
+          disabled={updateReleaseChannel.isPending || !form.formState.isDirty}
+        >
+          Save
+        </Button>
       </form>
     </Form>
   );
