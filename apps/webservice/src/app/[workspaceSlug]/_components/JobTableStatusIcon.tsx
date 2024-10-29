@@ -3,6 +3,7 @@ import {
   IconCircleCheck,
   IconCircleX,
   IconClock,
+  IconExclamationCircle,
   IconLoader2,
 } from "@tabler/icons-react";
 
@@ -30,6 +31,12 @@ export const JobTableStatusIcon: React.FC<{
   if (status === JobStatus.Cancelled)
     return (
       <IconCircleX className={cn("h-4 w-4 text-neutral-400", className)} />
+    );
+  if (status === JobStatus.ActionRequired)
+    return (
+      <IconExclamationCircle
+        className={cn("h-4 w-4 text-yellow-400", className)}
+      />
     );
 
   return <IconClock className={cn("h-4 w-4 text-neutral-400", className)} />;

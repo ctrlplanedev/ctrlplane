@@ -1,9 +1,9 @@
 "use client";
 
 import type { Environment } from "@ctrlplane/db/schema";
+import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   IconChevronRight,
   IconDots,
@@ -14,7 +14,9 @@ import { capitalCase } from "change-case";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
+import { Badge } from "@ctrlplane/ui/badge";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
@@ -35,32 +37,49 @@ type CollapsibleTableRowProps = {
     version: string;
     name: string;
   };
+  releaseJobTriggerData: Array<{
+    id: string;
+    environmentId: string;
+    job: {
+      id: string;
+      status: JobStatus;
+      metadata: Array<{ key: string; value: string }>;
+      externalId: string | null;
+    };
+    target: {
+      id: string;
+      name: string;
+      lockedAt: Date | null;
+    };
+    type: string;
+  }>;
 };
 
 const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   environment,
   deploymentName,
   release,
+  releaseJobTriggerData,
 }) => {
-  const { filter } = useJobFilter();
   const { setJobId } = useJobDrawer();
-  const pathname = usePathname();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
-    { releaseId: release.id, filter },
-    { refetchInterval: 5_000, placeholderData: (prev) => prev },
-  );
-  const jobs = releaseJobTriggerQuery.data?.filter(
-    (job) => job.environmentId === environment.id,
-  );
   const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
     releaseId: release.id,
   });
+
   const approvals = approvalsQ.data ?? [];
   const environmentApprovals = approvals.filter(
     (approval) => approval.policyId === environment.policyId,
   );
+
+  const jobs = releaseJobTriggerData.filter(
+    (job) => job.environmentId === environment.id,
+  );
+
+  const isOpen = jobs.length < 10 && approvals.length < 3;
+
+  if (jobs.length === 0) return;
 
   return (
     <Fragment>
@@ -78,6 +97,27 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 )}
               />
               {environment.name}
+              <div className="flex items-center gap-1.5">
+                {Object.entries(
+                  jobs.reduce(
+                    (acc, { job }) => {
+                      acc[job.status] = (acc[job.status] || 0) + 1;
+                      return acc;
+                    },
+                    {} as Record<JobStatus, number>,
+                  ),
+                ).map(([status, count]) => (
+                  <Badge
+                    key={status}
+                    variant="outline"
+                    className="rounded-full px-1.5 py-0.5"
+                    title={capitalCase(status).replace("_", " ")}
+                  >
+                    <JobTableStatusIcon status={status as JobStatus} />
+                    <span className="pl-1">{count}</span>
+                  </Badge>
+                ))}
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {environmentApprovals.map((approval) => (
@@ -91,98 +131,92 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
           </div>
         </TableCell>
       </TableRow>
-      {isExpanded && (
-        <>
-          {jobs?.map((job, idx) => {
-            const linksMetadata = job.job.metadata.find(
-              (m) => m.key === String(ReservedMetadataKey.Links),
-            )?.value;
+      {isExpanded ||
+        (isOpen && (
+          <>
+            {jobs.map((job, idx) => {
+              const linksMetadata = job.job.metadata.find(
+                (m) => m.key === String(ReservedMetadataKey.Links),
+              )?.value;
 
-            const links =
-              linksMetadata != null
-                ? (JSON.parse(linksMetadata) as Record<string, string>)
-                : null;
+              const links =
+                linksMetadata != null
+                  ? (JSON.parse(linksMetadata) as Record<string, string>)
+                  : null;
 
-            return (
-              <TableRow
-                key={job.id}
-                className={cn(
-                  "cursor-pointer",
-                  idx !== jobs.length - 1 && "border-b-neutral-800/50",
-                )}
-                onClick={() => setJobId(job.job.id)}
-              >
-                <TableCell>
-                  <Link
-                    href={`${pathname}?target_id=${job.target.id}`}
-                    className="block w-full hover:text-blue-300"
-                  >
-                    {job.target.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <JobTableStatusIcon status={job.job.status} />
-                    {capitalCase(job.job.status)}
-                  </div>
-                </TableCell>
-                <TableCell>{job.type}</TableCell>
-                <TableCell>
-                  {job.job.externalId != null ? (
-                    <code className="font-mono text-xs">
-                      {job.job.externalId}
-                    </code>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      No external ID
-                    </span>
+              return (
+                <TableRow
+                  key={job.id}
+                  className={cn(
+                    "cursor-pointer",
+                    idx !== jobs.length - 1 && "border-b-neutral-800/50",
                   )}
-                </TableCell>
-                <TableCell>
-                  {links != null && (
+                  onClick={() => setJobId(job.job.id)}
+                >
+                  <TableCell>{job.target.name}</TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-1">
-                      {Object.entries(links).map(([label, url]) => (
-                        <Link
-                          key={label}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={buttonVariants({
-                            variant: "secondary",
-                            size: "sm",
-                            className: "gap-1",
-                          })}
-                        >
-                          <IconExternalLink className="h-4 w-4" />
-                          {label}
-                        </Link>
-                      ))}
+                      <JobTableStatusIcon status={job.job.status} />
+                      {capitalCase(job.job.status)}
                     </div>
-                  )}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end">
-                    <JobDropdownMenu
-                      release={release}
-                      deploymentName={deploymentName}
-                      target={job.target}
-                      environmentId={job.environmentId}
-                      job={{
-                        id: job.job.id,
-                        status: job.job.status,
-                      }}
-                    >
-                      <Button variant="ghost" size="icon">
-                        <IconDots size={16} />
-                      </Button>
-                    </JobDropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </>
-      )}
+                  </TableCell>
+                  <TableCell>{job.type}</TableCell>
+                  <TableCell>
+                    {job.job.externalId != null ? (
+                      <code className="font-mono text-xs">
+                        {job.job.externalId}
+                      </code>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">
+                        No external ID
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    {links != null && (
+                      <div className="flex items-center gap-1">
+                        {Object.entries(links).map(([label, url]) => (
+                          <Link
+                            key={label}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={buttonVariants({
+                              variant: "secondary",
+                              size: "sm",
+                              className: "gap-1",
+                            })}
+                          >
+                            <IconExternalLink className="h-4 w-4" />
+                            {label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="flex justify-end">
+                      <JobDropdownMenu
+                        release={release}
+                        deploymentName={deploymentName}
+                        target={job.target}
+                        environmentId={job.environmentId}
+                        job={{
+                          id: job.job.id,
+                          status: job.job.status,
+                        }}
+                      >
+                        <Button variant="ghost" size="icon">
+                          <IconDots size={16} />
+                        </Button>
+                      </JobDropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </>
+        ))}
     </Fragment>
   );
 };
@@ -199,6 +233,14 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   environments,
 }) => {
   const { filter, setFilter } = useJobFilter();
+  const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
+    { releaseId: release.id, filter },
+    {
+      refetchInterval: 5_000,
+      placeholderData: (prev) => prev,
+      initialData: [],
+    },
+  );
 
   return (
     <>
@@ -212,18 +254,34 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
           </div>
         </JobConditionDialog>
       </div>
-      <Table className="table-fixed">
-        <TableBody>
-          {environments.map((environment) => (
-            <CollapsibleTableRow
-              key={environment.id}
-              environment={environment}
-              deploymentName={deploymentName}
-              release={release}
+
+      {releaseJobTriggerQuery.data.length == 0 && (
+        <div className="space-y-2 p-4">
+          {_.range(30).map((i) => (
+            <Skeleton
+              key={i}
+              className="h-9 w-full"
+              style={{ opacity: 1 * (1 - i / 10) }}
             />
           ))}
-        </TableBody>
-      </Table>
+        </div>
+      )}
+
+      {releaseJobTriggerQuery.data.length > 0 && (
+        <Table className="table-fixed">
+          <TableBody>
+            {environments.map((environment) => (
+              <CollapsibleTableRow
+                key={environment.id}
+                environment={environment}
+                deploymentName={deploymentName}
+                release={release}
+                releaseJobTriggerData={releaseJobTriggerQuery.data}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      )}
     </>
   );
 };

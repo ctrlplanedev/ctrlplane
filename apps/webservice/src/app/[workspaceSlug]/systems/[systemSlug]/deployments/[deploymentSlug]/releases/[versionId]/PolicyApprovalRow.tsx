@@ -73,7 +73,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
       {status === "pending" ? (
         <div className="flex items-center gap-2">
           <Button
-            variant="destructive"
+            variant="secondary"
             className="h-6 px-2"
             onClick={handleReject}
           >
