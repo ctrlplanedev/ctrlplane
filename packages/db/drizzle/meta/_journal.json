@@ -190,6 +190,13 @@
       "when": 1730150152505,
       "tag": "0026_blushing_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1730166662759,
+      "tag": "0027_abandoned_living_mummy",
+      "breakpoints": true
     }
   ]
 }

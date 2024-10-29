@@ -62,6 +62,11 @@ export const releaseChannel = pgTable("release_channel", {
 });
 
 export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
+export const createReleaseChannel = createInsertSchema(releaseChannel, {
+  releaseFilter: releaseCondition,
+}).omit({ id: true });
+export const updateReleaseChannel = createReleaseChannel.partial();
+
 export const releaseDependency = pgTable(
   "release_dependency",
   {

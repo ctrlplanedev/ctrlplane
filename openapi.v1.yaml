@@ -310,7 +310,6 @@ paths:
                         invalid_integration,
                         external_run_not_found,
                       ]
-
                   release:
                     type: object
                     properties:
@@ -323,7 +322,6 @@ paths:
                       config:
                         type: object
                     required: [id, version, metadata, config]
-
                   deployment:
                     type: object
                     properties:
@@ -338,7 +336,6 @@ paths:
                       jobAgentId:
                         type: string
                     required: [id, version, slug, systemId, jobAgentId]
-
                   runbook:
                     type: object
                     properties:
@@ -351,7 +348,6 @@ paths:
                       jobAgentId:
                         type: string
                     required: [id, name, systemId, jobAgentId]
-
                   target:
                     type: object
                     properties:
@@ -380,7 +376,6 @@ paths:
                       - workspaceId
                       - config
                       - metadata
-
                   environment:
                     type: object
                     properties:
@@ -391,15 +386,39 @@ paths:
                       systemId:
                         type: string
                     required: [id, name, systemId]
-
                   variables:
                     type: object
+                  approval:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                      status:
+                        type: string
+                        enum: [pending, approved, rejected]
+                      approver:
+                        type: object
+                        nullable: true
+                        description: Null when status is pending, contains approver details when approved or rejected
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        required:
+                          - id
+                          - name
+                    required:
+                      - id
+                      - status
                 required:
                   - id
                   - status
                   - createdAt
                   - updatedAt
-                  - variable
+                  - variables
+                  - approval
     patch:
       summary: Update a job
       operationId: updateJob

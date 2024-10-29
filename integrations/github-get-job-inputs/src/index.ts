@@ -51,8 +51,15 @@ async function run() {
     .then((response) => {
       core.info(JSON.stringify(response, null, 2));
 
-      const { variables, target, release, environment, runbook, deployment } =
-        response;
+      const {
+        variables,
+        target,
+        release,
+        environment,
+        runbook,
+        deployment,
+        approval,
+      } = response;
 
       setOutputAndLog("base_url", baseUrl);
 
@@ -75,11 +82,15 @@ async function run() {
       setOutputsRecursively("release_config", release?.config);
       setOutputsRecursively("release_metadata", release?.metadata);
 
+      setOutputAndLog("approval_status", approval.status);
+      setOutputAndLog("approval_approver_id", approval.approver?.id);
+      setOutputAndLog("approval_approver_name", approval.approver?.name);
+
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);
       setOutputAndLog("deployment_slug", deployment?.slug);
 
-      for (const [key, value] of Object.entries(variables ?? {})) {
+      for (const [key, value] of Object.entries(variables)) {
         const sanitizedKey = key.replace(/[.\-/\s\t]+/g, "_");
         setOutputAndLog(`variable_${sanitizedKey}`, value);
       }

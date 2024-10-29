@@ -11,6 +11,7 @@ import {
   job,
   jobAgent,
   release,
+  releaseChannel,
   releaseJobTrigger,
   role,
   rolePermission,
@@ -92,6 +93,24 @@ const getReleaseScopes = async (id: string) => {
 
   return [
     { type: "release" as const, id: result.release.id },
+    { type: "deployment" as const, id: result.deployment.id },
+    { type: "system" as const, id: result.system.id },
+    { type: "workspace" as const, id: result.workspace.id },
+  ];
+};
+
+const getReleaseChannelScopes = async (id: string) => {
+  const result = await db
+    .select()
+    .from(workspace)
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(deployment, eq(deployment.systemId, system.id))
+    .innerJoin(releaseChannel, eq(releaseChannel.deploymentId, deployment.id))
+    .where(eq(releaseChannel.id, id))
+    .then(takeFirst);
+
+  return [
+    { type: "releaseChannel" as const, id: result.release_channel.id },
     { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
@@ -361,6 +380,7 @@ export const scopeHandlers: Record<
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
   release: getReleaseScopes,
+  releaseChannel: getReleaseChannelScopes,
   targetMetadataGroup: getTargetMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,

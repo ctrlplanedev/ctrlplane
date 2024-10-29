@@ -5,6 +5,8 @@ export * from "./CreateRelease200Response";
 export * from "./CreateReleaseRequest";
 export * from "./GetAgentRunningJob200ResponseInner";
 export * from "./GetJob200Response";
+export * from "./GetJob200ResponseApproval";
+export * from "./GetJob200ResponseApprovalApprover";
 export * from "./GetJob200ResponseDeployment";
 export * from "./GetJob200ResponseEnvironment";
 export * from "./GetJob200ResponseRelease";
