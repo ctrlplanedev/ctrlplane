@@ -1,8 +1,6 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { can } from "@ctrlplane/auth/utils";
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createRelease } from "@ctrlplane/db/schema";
@@ -18,91 +16,92 @@ import {
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { getUser } from "~/app/api/v1/auth";
+import { authn, authz } from "../auth";
+import { parseBody } from "../body-parser";
+import { request } from "../middleware";
 
 const bodySchema = createRelease.and(
   z.object({ metadata: z.record(z.string()).optional() }),
 );
 
-export const POST = async (req: NextRequest) => {
-  const user = await getUser(req);
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = request()
+  .use(authn)
+  .use(parseBody(bodySchema))
+  .use(
+    authz(({ ctx, can }) =>
+      can
+        .perform(Permission.ReleaseCreate)
+        .on({ type: "deployment", id: ctx.body.deploymentId }),
+    ),
+  )
+  .handle<{ user: schema.User; body: z.infer<typeof bodySchema> }>(
+    async (ctx) => {
+      const { req, body } = ctx;
+      const { metadata = {} } = body;
 
-  try {
-    const response = await req.json();
-    const body = bodySchema.safeParse(response);
-    if (!body.success) return NextResponse.json(body.error, { status: 400 });
+      try {
+        const existingRelease = await db
+          .select()
+          .from(schema.release)
+          .where(
+            and(
+              eq(schema.release.deploymentId, body.deploymentId),
+              eq(schema.release.version, body.version),
+            ),
+          )
+          .then(takeFirstOrNull);
 
-    const { metadata = {}, ...releaseData } = body.data;
-    const canCreateReleases = await can()
-      .user(user.id)
-      .perform(Permission.ReleaseCreate)
-      .on({ type: "deployment", id: body.data.deploymentId });
-    if (!canCreateReleases)
-      return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+        if (existingRelease)
+          return NextResponse.json(
+            { error: "Release already exists" },
+            { status: 409 },
+          );
 
-    const existingRelease = await db
-      .select()
-      .from(schema.release)
-      .where(
-        and(
-          eq(schema.release.deploymentId, releaseData.deploymentId),
-          eq(schema.release.version, releaseData.version),
-        ),
-      )
-      .then(takeFirstOrNull);
+        const release = await db
+          .insert(schema.release)
+          .values(body)
+          .returning()
+          .then(takeFirst);
 
-    if (existingRelease)
-      return NextResponse.json(
-        { error: "Release already exists" },
-        { status: 409 },
-      );
+        if (Object.keys(metadata).length > 0)
+          await db.insert(schema.releaseMetadata).values(
+            Object.entries(metadata).map(([key, value]) => ({
+              releaseId: release.id,
+              key,
+              value,
+            })),
+          );
 
-    const release = await db
-      .insert(schema.release)
-      .values(releaseData)
-      .returning()
-      .then(takeFirst);
+        createReleaseJobTriggers(db, "new_release")
+          .causedById(ctx.user.id)
+          .filter(isPassingReleaseStringCheckPolicy)
+          .releases([release.id])
+          .then(createJobApprovals)
+          .insert()
+          .then((releaseJobTriggers) => {
+            dispatchReleaseJobTriggers(db)
+              .releaseTriggers(releaseJobTriggers)
+              .filter(isPassingAllPolicies)
+              .then(cancelOldReleaseJobTriggersOnJobDispatch)
+              .dispatch();
+          })
+          .then(() => {
+            logger.info(
+              `Release for ${release.id} job triggers created and dispatched.`,
+              req,
+            );
+          });
 
-    if (Object.keys(metadata).length > 0)
-      await db.insert(schema.releaseMetadata).values(
-        Object.entries(metadata).map(([key, value]) => ({
-          releaseId: release.id,
-          key,
-          value,
-        })),
-      );
+        return NextResponse.json({ ...release, metadata }, { status: 201 });
+      } catch (error) {
+        if (error instanceof z.ZodError)
+          return NextResponse.json({ error: error.errors }, { status: 400 });
 
-    createReleaseJobTriggers(db, "new_release")
-      .causedById(user.id)
-      .filter(isPassingReleaseStringCheckPolicy)
-      .releases([release.id])
-      .then(createJobApprovals)
-      .insert()
-      .then((releaseJobTriggers) => {
-        dispatchReleaseJobTriggers(db)
-          .releaseTriggers(releaseJobTriggers)
-          .filter(isPassingAllPolicies)
-          .then(cancelOldReleaseJobTriggersOnJobDispatch)
-          .dispatch();
-      })
-      .then(() => {
-        logger.info(
-          `Release for ${release.id} job triggers created and dispatched.`,
-          req,
+        logger.error("Error creating release:", error);
+        return NextResponse.json(
+          { error: "Internal Server Error" },
+          { status: 500 },
         );
-      });
-
-    return NextResponse.json({ ...release, metadata }, { status: 201 });
-  } catch (error) {
-    if (error instanceof z.ZodError)
-      return NextResponse.json({ error: error.errors }, { status: 400 });
-
-    logger.error("Error creating release:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
-  }
-};
+      }
+    },
+  );
