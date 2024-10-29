@@ -3,7 +3,6 @@ import type {
   Deployment,
   Environment,
   EnvironmentPolicy,
-  EnvironmentPolicyApproval,
   EnvironmentPolicyReleaseWindow,
   Job,
   JobAgent,
@@ -20,14 +19,12 @@ import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import {
-  alias,
   and,
   asc,
   countDistinct,
   desc,
   eq,
   inArray,
-  isNotNull,
   isNull,
   notInArray,
   sql,
@@ -38,7 +35,6 @@ import {
   deployment,
   environment,
   environmentPolicy,
-  environmentPolicyApproval,
   environmentPolicyReleaseWindow,
   job,
   jobAgent,
@@ -66,10 +62,8 @@ import { jobCondition, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const releaseJobTriggerQuery = (tx: Tx) => {
-  const approver = alias(user, "approver");
-
-  return tx
+const releaseJobTriggerQuery = (tx: Tx) =>
+  tx
     .select()
     .from(releaseJobTrigger)
     .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
@@ -77,19 +71,7 @@ const releaseJobTriggerQuery = (tx: Tx) => {
     .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .innerJoin(deployment, eq(release.deploymentId, deployment.id))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
-    .leftJoin(
-      environmentPolicyApproval,
-      eq(environmentPolicyApproval.releaseId, release.id),
-    )
-    .leftJoin(
-      approver,
-      and(
-        isNotNull(environmentPolicyApproval.userId),
-        eq(environmentPolicyApproval.userId, approver.id),
-      ),
-    );
-};
+    .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId));
 
 const processReleaseJobTriggerWithAdditionalDataRows = (
   rows: Array<{
@@ -107,8 +89,6 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
     release_dependency?: ReleaseDependency | null;
     deployment_name?: { deploymentName: string; deploymentId: string } | null;
     job_variable?: JobVariable | null;
-    environment_policy_approval: EnvironmentPolicyApproval | null;
-    approver?: User | null;
   }>,
 ) =>
   _.chain(rows)
@@ -157,12 +137,6 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
                 .filter(isPresent),
             )
           : null,
-      approval: v[0]!.environment_policy_approval
-        ? {
-            ...v[0]!.environment_policy_approval,
-            approver: v[0]!.approver,
-          }
-        : null,
     }))
     .value();
 

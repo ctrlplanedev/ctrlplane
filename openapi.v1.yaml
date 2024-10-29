@@ -388,20 +388,6 @@ paths:
                     required: [id, name, systemId]
                   variables:
                     type: object
-                  causedBy:
-                    type: object
-                    nullable: true
-                    properties:
-                      id:
-                        type: string
-                      name:
-                        type: string
-                      email:
-                        type: string
-                    required:
-                      - id
-                      - name
-                      - email
                   approval:
                     type: object
                     nullable: true
@@ -420,12 +406,9 @@ paths:
                             type: string
                           name:
                             type: string
-                          email:
-                            type: string
                         required:
                           - id
                           - name
-                          - email
                     required:
                       - id
                       - status
@@ -435,7 +418,6 @@ paths:
                   - createdAt
                   - updatedAt
                   - variables
-                  - causedBy
                   - approval
     patch:
       summary: Update a job

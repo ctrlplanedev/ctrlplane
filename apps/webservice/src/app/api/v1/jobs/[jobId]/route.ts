@@ -24,6 +24,40 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getUser } from "~/app/api/v1/auth";
 
+type ApprovalJoinResult = {
+  environment_policy_approval: typeof environmentPolicyApproval.$inferSelect;
+  user: typeof user.$inferSelect | null;
+};
+
+const getApprovalDetails = async (releaseId: string, policyId: string) =>
+  db
+    .select()
+    .from(environmentPolicyApproval)
+    .leftJoin(user, eq(environmentPolicyApproval.userId, user.id))
+    .where(
+      and(
+        eq(environmentPolicyApproval.releaseId, releaseId),
+        eq(environmentPolicyApproval.policyId, policyId),
+      ),
+    )
+    .then(takeFirstOrNull)
+    .then(mapApprovalResponse);
+
+const mapApprovalResponse = (row: ApprovalJoinResult | null) =>
+  !row
+    ? null
+    : {
+        id: row.environment_policy_approval.id,
+        status: row.environment_policy_approval.status,
+        approver:
+          row.user && row.environment_policy_approval.status !== "pending"
+            ? {
+                id: row.user.id,
+                name: row.user.name,
+              }
+            : null,
+      };
+
 export const GET = async (
   req: NextRequest,
   { params }: { params: { jobId: string } },
@@ -42,7 +76,6 @@ export const GET = async (
     .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
     .where(and(eq(job.id, params.jobId), isNull(environment.deletedAt)))
     .then(takeFirst)
     .then((row) => ({
@@ -52,46 +85,13 @@ export const GET = async (
       target: row.target,
       deployment: row.deployment,
       release: row.release,
-      causedBy: row.user
-        ? {
-            id: row.user.id,
-            name: row.user.name,
-            email: row.user.email,
-          }
-        : null,
     }));
 
   const policyId = je.environment?.policyId;
+
   const approval =
     je.release?.id && policyId
-      ? await db
-          .select()
-          .from(environmentPolicyApproval)
-          .leftJoin(user, eq(environmentPolicyApproval.userId, user.id))
-          .where(
-            and(
-              eq(environmentPolicyApproval.releaseId, je.release.id),
-              eq(environmentPolicyApproval.policyId, policyId),
-            ),
-          )
-          .then(takeFirstOrNull)
-          .then((row) =>
-            row
-              ? {
-                  id: row.environment_policy_approval.id,
-                  status: row.environment_policy_approval.status,
-                  approver:
-                    row.user &&
-                    row.environment_policy_approval.status !== "pending"
-                      ? {
-                          id: row.user.id,
-                          name: row.user.name,
-                          email: row.user.email,
-                        }
-                      : null,
-                }
-              : null,
-          )
+      ? await getApprovalDetails(je.release.id, policyId)
       : null;
 
   const jobVariableRows = await db

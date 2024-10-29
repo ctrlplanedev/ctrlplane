@@ -58,7 +58,6 @@ async function run() {
         environment,
         runbook,
         deployment,
-        causedBy,
         approval,
       } = response;
 
@@ -83,14 +82,9 @@ async function run() {
       setOutputsRecursively("release_config", release?.config);
       setOutputsRecursively("release_metadata", release?.metadata);
 
-      setOutputAndLog("caused_by_id", causedBy.id);
-      setOutputAndLog("caused_by_name", causedBy.name);
-      setOutputAndLog("caused_by_email", causedBy.email);
-
       setOutputAndLog("approval_status", approval.status);
       setOutputAndLog("approval_approver_id", approval.approver?.id);
       setOutputAndLog("approval_approver_name", approval.approver?.name);
-      setOutputAndLog("approval_approver_email", approval.approver?.email);
 
       setOutputAndLog("deployment_id", deployment?.id);
       setOutputAndLog("deployment_name", deployment?.name);
