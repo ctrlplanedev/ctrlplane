@@ -28926,12 +28926,9 @@ async function run() {
         setOutputAndLog("release_version", release?.version);
         setOutputsRecursively("release_config", release?.config);
         setOutputsRecursively("release_metadata", release?.metadata);
-        if (approval != null) {
-            setOutputAndLog("approval_status", approval.status);
-            if (approval.approver != null) {
-                setOutputAndLog("approval_approver_id", approval.approver.id);
-                setOutputAndLog("approval_approver_name", approval.approver.name);
-            }
+        if (approval?.approver != null) {
+            setOutputAndLog("approval_approver_id", approval.approver.id);
+            setOutputAndLog("approval_approver_name", approval.approver.name);
         }
         setOutputAndLog("deployment_id", deployment?.id);
         setOutputAndLog("deployment_name", deployment?.name);
