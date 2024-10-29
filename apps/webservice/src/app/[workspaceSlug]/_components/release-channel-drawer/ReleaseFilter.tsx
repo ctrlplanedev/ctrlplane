@@ -54,9 +54,8 @@ export const ReleaseFilter: React.FC<ReleaseFilterProps> = ({
     api.deployment.releaseChannel.update.useMutation();
   const router = useRouter();
   const utils = api.useUtils();
-  const { releaseFilter } = releaseChannel;
+  const { releaseFilter, deploymentId } = releaseChannel;
   const filter = getFinalFilter(releaseFilter ?? undefined);
-  const { deploymentId } = releaseChannel;
 
   const releasesQ = api.release.list.useQuery({ deploymentId, filter });
   const releases = releasesQ.data;
