@@ -6,6 +6,7 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   environment,
+  environmentPolicyApproval,
   job,
   jobVariable,
   release,
@@ -15,6 +16,7 @@ import {
   target,
   targetMetadata,
   updateJob,
+  user,
 } from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -22,12 +24,46 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getUser } from "~/app/api/v1/auth";
 
+type ApprovalJoinResult = {
+  environment_policy_approval: typeof environmentPolicyApproval.$inferSelect;
+  user: typeof user.$inferSelect | null;
+};
+
+const getApprovalDetails = async (releaseId: string, policyId: string) =>
+  db
+    .select()
+    .from(environmentPolicyApproval)
+    .leftJoin(user, eq(environmentPolicyApproval.userId, user.id))
+    .where(
+      and(
+        eq(environmentPolicyApproval.releaseId, releaseId),
+        eq(environmentPolicyApproval.policyId, policyId),
+      ),
+    )
+    .then(takeFirstOrNull)
+    .then(mapApprovalResponse);
+
+const mapApprovalResponse = (row: ApprovalJoinResult | null) =>
+  !row
+    ? null
+    : {
+        id: row.environment_policy_approval.id,
+        status: row.environment_policy_approval.status,
+        approver:
+          row.user && row.environment_policy_approval.status !== "pending"
+            ? {
+                id: row.user.id,
+                name: row.user.name,
+              }
+            : null,
+      };
+
 export const GET = async (
   req: NextRequest,
   { params }: { params: { jobId: string } },
 ) => {
-  const user = await getUser(req);
-  if (!user)
+  const caller = await getUser(req);
+  if (!caller)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const je = await db
@@ -50,6 +86,13 @@ export const GET = async (
       deployment: row.deployment,
       release: row.release,
     }));
+
+  const policyId = je.environment?.policyId;
+
+  const approval =
+    je.release?.id && policyId
+      ? await getApprovalDetails(je.release.id, policyId)
+      : null;
 
   const jobVariableRows = await db
     .select()
@@ -80,6 +123,7 @@ export const GET = async (
     ...je,
     variables,
     target: targetWithMetadata,
+    approval,
   });
 };
 
