@@ -4,6 +4,7 @@ import type { Environment, Target } from "@ctrlplane/db/schema";
 import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   IconChevronRight,
   IconDots,
@@ -59,6 +60,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   release,
   releaseJobTriggerData,
 }) => {
+  const pathname = usePathname();
   const { setJobId } = useJobDrawer();
   const jobs = releaseJobTriggerData.filter(
     (job) => job.environmentId === environment.id,
@@ -95,25 +97,19 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
               />
               {environment.name}
               <div className="flex items-center gap-1.5">
-                {Object.entries(
-                  jobs.reduce(
-                    (acc, { job }) => {
-                      acc[job.status] = (acc[job.status] || 0) + 1;
-                      return acc;
-                    },
-                    {} as Record<JobStatus, number>,
+                {Object.entries(_.groupBy(jobs, (job) => job.job.status)).map(
+                  ([status, groupedJobs]) => (
+                    <Badge
+                      key={status}
+                      variant="outline"
+                      className="rounded-full px-1.5 py-0.5"
+                      title={capitalCase(status).replace("_", " ")}
+                    >
+                      <JobTableStatusIcon status={status as JobStatus} />
+                      <span className="pl-1">{groupedJobs.length}</span>
+                    </Badge>
                   ),
-                ).map(([status, count]) => (
-                  <Badge
-                    key={status}
-                    variant="outline"
-                    className="rounded-full px-1.5 py-0.5"
-                    title={capitalCase(status).replace("_", " ")}
-                  >
-                    <JobTableStatusIcon status={status as JobStatus} />
-                    <span className="pl-1">{count}</span>
-                  </Badge>
-                ))}
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -149,7 +145,14 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 )}
                 onClick={() => setJobId(job.job.id)}
               >
-                <TableCell>{job.target.name}</TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <Link
+                    href={`${pathname}?target_id=${job.target.id}`}
+                    className="block w-full hover:text-blue-300"
+                  >
+                    {job.target.name}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <JobTableStatusIcon status={job.job.status} />
