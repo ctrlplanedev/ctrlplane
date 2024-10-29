@@ -1,4 +1,3 @@
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
 import type { z } from "zod";
@@ -16,13 +15,13 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { releaseCondition } from "@ctrlplane/validators/releases";
 import { targetCondition } from "@ctrlplane/validators/targets";
 
 import { user } from "./auth.js";
-import { release } from "./release.js";
+import { deployment } from "./deployment.js";
+import { release, releaseChannel } from "./release.js";
 import { system } from "./system.js";
-import { variableSetAssignment } from "./variable-sets.js";
+import { variableSetEnvironment } from "./variable-sets.js";
 
 export const environment = pgTable("environment", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -37,7 +36,11 @@ export const environment = pgTable("environment", {
   targetFilter: jsonb("target_filter")
     .$type<TargetCondition | null>()
     .default(sql`NULL`),
+
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type Environment = InferSelectModel<typeof environment>;
@@ -50,7 +53,7 @@ export const updateEnvironment = createEnvironment.partial();
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
 export const environmentRelations = relations(environment, ({ many }) => ({
-  assignments: many(variableSetAssignment),
+  environments: many(variableSetEnvironment),
 }));
 
 export const approvalRequirement = pgEnum(
@@ -90,11 +93,16 @@ export const environmentPolicy = pgTable("environment_policy", {
   concurrencyType: concurrencyType("concurrency_type").notNull().default("all"),
   concurrencyLimit: integer("concurrency_limit").notNull().default(1),
 
-  duration: bigint("duration", { mode: "number" }).notNull().default(0),
+  // Duration in milliseconds over which to gradually roll out releases to this
+  // environment
+  rolloutDuration: bigint("rollout_duration", { mode: "number" })
+    .notNull()
+    .default(0),
 
-  releaseFilter: jsonb("release_filter")
-    .$type<ReleaseCondition | null>()
-    .default(sql`NULL`),
+  // Duration in milliseconds after which deployment delete hooks will be called
+  ephemeralDuration: bigint("ephemeral_duration", { mode: "number" })
+    .notNull()
+    .default(0),
 
   releaseSequencing: releaseSequencingType("release_sequencing")
     .notNull()
@@ -103,9 +111,9 @@ export const environmentPolicy = pgTable("environment_policy", {
 
 export type EnvironmentPolicy = InferSelectModel<typeof environmentPolicy>;
 
-export const createEnvironmentPolicy = createInsertSchema(environmentPolicy, {
-  releaseFilter: releaseCondition.nullable(),
-}).omit({ id: true });
+export const createEnvironmentPolicy = createInsertSchema(
+  environmentPolicy,
+).omit({ id: true });
 
 export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
 
@@ -190,3 +198,64 @@ export const environmentPolicyApproval = pgTable(
 export type EnvironmentPolicyApproval = InferSelectModel<
   typeof environmentPolicyApproval
 >;
+
+export const environmentPolicyReleaseChannel = pgTable(
+  "environment_policy_release_channel",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    policyId: uuid("policy_id")
+      .notNull()
+      .references(() => environmentPolicy.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => releaseChannel.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(t.policyId, t.channelId),
+    deploymentUniq: uniqueIndex().on(t.policyId, t.deploymentId),
+  }),
+);
+
+export type EnvironmentPolicyReleaseChannel = InferSelectModel<
+  typeof environmentPolicyReleaseChannel
+>;
+
+export const environmentReleaseChannel = pgTable(
+  "environment_release_channel",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    environmentId: uuid("environment_id")
+      .notNull()
+      .references(() => environment.id, { onDelete: "cascade" }),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => releaseChannel.id, { onDelete: "cascade" }),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    uniq: uniqueIndex().on(t.environmentId, t.channelId),
+    deploymentUniq: uniqueIndex().on(t.environmentId, t.deploymentId),
+  }),
+);
+
+export type EnvironmentReleaseChannel = InferSelectModel<
+  typeof environmentReleaseChannel
+>;
+
+export const environmentMetadata = pgTable(
+  "environment_metadata",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    environmentId: uuid("environment_id")
+      .references(() => environment.id, { onDelete: "cascade" })
+      .notNull(),
+    key: text("key").notNull(),
+    value: text("value").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
+);

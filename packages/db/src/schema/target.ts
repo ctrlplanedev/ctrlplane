@@ -1,5 +1,8 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type {
+  IdentifierCondition,
+  TargetCondition,
+} from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
 import {
@@ -17,7 +20,15 @@ import { and, eq } from "drizzle-orm/sql";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { targetCondition } from "@ctrlplane/validators/targets";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  MetadataOperator,
+} from "@ctrlplane/validators/conditions";
+import {
+  targetCondition,
+  TargetFilterType,
+} from "@ctrlplane/validators/targets";
 
 import type { Tx } from "../common.js";
 import { targetProvider } from "./target-provider.js";
@@ -125,7 +136,7 @@ export const targetMetadataRelations = relations(targetMetadata, ({ one }) => ({
 }));
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
-  if (cond.operator === "null")
+  if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
         .select()
@@ -138,7 +149,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "regex")
+  if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
         .select()
@@ -152,7 +163,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "like")
+  if (cond.operator === MetadataOperator.Like)
     return exists(
       tx
         .select()
@@ -183,16 +194,29 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   throw Error("invalid metadata conditions");
 };
 
+const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
+  if (cond.operator === ColumnOperator.Like)
+    return like(target.identifier, cond.value);
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(target.identifier, cond.value);
+  return sql`${target.identifier} ~ ${cond.value}`;
+};
+
 const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
-  if (cond.type === "metadata") return buildMetadataCondition(tx, cond);
-  if (cond.type === "kind") return eq(target.kind, cond.value);
-  if (cond.type === "name") return like(target.name, cond.value);
-  if (cond.type === "provider") return eq(target.providerId, cond.value);
+  if (cond.type === TargetFilterType.Metadata)
+    return buildMetadataCondition(tx, cond);
+  if (cond.type === TargetFilterType.Kind) return eq(target.kind, cond.value);
+  if (cond.type === TargetFilterType.Name) return like(target.name, cond.value);
+  if (cond.type === TargetFilterType.Provider)
+    return eq(target.providerId, cond.value);
+  if (cond.type === TargetFilterType.Identifier)
+    return buildIdentifierCondition(tx, cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
-  const con = cond.operator === "and" ? and(...subCon)! : or(...subCon)!;
+  const con =
+    cond.operator === ComparisonOperator.And ? and(...subCon)! : or(...subCon)!;
   return cond.not ? not(con) : con;
 };
 

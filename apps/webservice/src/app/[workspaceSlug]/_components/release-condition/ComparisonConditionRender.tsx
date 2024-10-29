@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
+import { ColumnOperator, DateOperator } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
@@ -277,7 +278,7 @@ export const ComparisonConditionRender: React.FC<
                 onClick={() =>
                   addCondition({
                     type: ReleaseFilterType.CreatedAt,
-                    operator: ReleaseOperator.Before,
+                    operator: DateOperator.Before,
                     value: new Date().toISOString(),
                   })
                 }
@@ -288,7 +289,7 @@ export const ComparisonConditionRender: React.FC<
                 onClick={() =>
                   addCondition({
                     type: ReleaseFilterType.Version,
-                    operator: ReleaseOperator.Equals,
+                    operator: ColumnOperator.Equals,
                     value: "",
                   })
                 }

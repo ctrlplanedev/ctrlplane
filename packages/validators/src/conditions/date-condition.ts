@@ -20,6 +20,12 @@ export enum DateOperator {
   AfterOrOn = "after-or-on",
 }
 
+export type DateOperatorType =
+  | DateOperator.Before
+  | DateOperator.After
+  | DateOperator.BeforeOrOn
+  | DateOperator.AfterOrOn;
+
 export const createdAtCondition = z.object({
   type: createdAt,
   operator,

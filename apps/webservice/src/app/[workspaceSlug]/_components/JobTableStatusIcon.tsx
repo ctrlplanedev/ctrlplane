@@ -27,6 +27,10 @@ export const JobTableStatusIcon: React.FC<{
         <IconLoader2 className={cn("h-4 w-4", className)} />
       </div>
     );
+  if (status === JobStatus.Cancelled)
+    return (
+      <IconCircleX className={cn("h-4 w-4 text-neutral-400", className)} />
+    );
 
   return <IconClock className={cn("h-4 w-4 text-neutral-400", className)} />;
 };

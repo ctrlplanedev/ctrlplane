@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 import type { CreatedAtCondition } from "../../conditions/date-condition.js";
-import type { MetadataCondition } from "../../conditions/index.js";
-import type { VersionCondition } from "./version-condition.js";
+import type {
+  MetadataCondition,
+  VersionCondition,
+} from "../../conditions/index.js";
 import { createdAtCondition } from "../../conditions/date-condition.js";
-import { metadataCondition } from "../../conditions/index.js";
-import { versionCondition } from "./version-condition.js";
+import { metadataCondition, versionCondition } from "../../conditions/index.js";
 
 export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
   z.object({

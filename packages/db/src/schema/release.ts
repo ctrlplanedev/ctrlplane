@@ -1,11 +1,9 @@
 import type {
   CreatedAtCondition,
   MetadataCondition,
-} from "@ctrlplane/validators/conditions";
-import type {
-  ReleaseCondition,
   VersionCondition,
-} from "@ctrlplane/validators/releases";
+} from "@ctrlplane/validators/conditions";
+import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import {
   and,
@@ -34,6 +32,11 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
+  ColumnOperator,
+  DateOperator,
+  MetadataOperator,
+} from "@ctrlplane/validators/conditions";
+import {
   releaseCondition,
   ReleaseFilterType,
   ReleaseOperator,
@@ -45,6 +48,24 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { target } from "./target.js";
+
+export const releaseChannel = pgTable("release_channel", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  description: text("description").default(""),
+  deploymentId: uuid("deployment_id")
+    .notNull()
+    .references(() => deployment.id, { onDelete: "cascade" }),
+  releaseFilter: jsonb("release_filter")
+    .$type<ReleaseCondition | null>()
+    .default(sql`NULL`),
+});
+
+export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
+export const createReleaseChannel = createInsertSchema(releaseChannel, {
+  releaseFilter: releaseCondition,
+}).omit({ id: true });
+export const updateReleaseChannel = createReleaseChannel.partial();
 
 export const releaseDependency = pgTable(
   "release_dependency",
@@ -162,7 +183,7 @@ export type ReleaseJobTriggerInsert = InferInsertModel<
 >;
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
-  if (cond.operator === "null")
+  if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
         .select()
@@ -175,7 +196,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "regex")
+  if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
         .select()
@@ -189,7 +210,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         ),
     );
 
-  if (cond.operator === "like")
+  if (cond.operator === MetadataOperator.Like)
     return exists(
       tx
         .select()
@@ -219,19 +240,17 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 
 const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
   const date = new Date(cond.value);
-  if (cond.operator === ReleaseOperator.Before)
-    return lt(release.createdAt, date);
-  if (cond.operator === ReleaseOperator.After)
-    return gt(release.createdAt, date);
-  if (cond.operator === ReleaseOperator.BeforeOrOn)
+  if (cond.operator === DateOperator.Before) return lt(release.createdAt, date);
+  if (cond.operator === DateOperator.After) return gt(release.createdAt, date);
+  if (cond.operator === DateOperator.BeforeOrOn)
     return lte(release.createdAt, date);
   return gte(release.createdAt, date);
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === ReleaseOperator.Equals)
+  if (cond.operator === ColumnOperator.Equals)
     return eq(release.version, cond.value);
-  if (cond.operator === ReleaseOperator.Like)
+  if (cond.operator === ColumnOperator.Like)
     return like(release.version, cond.value);
   return sql`${release.version} ~ ${cond.value}`;
 };

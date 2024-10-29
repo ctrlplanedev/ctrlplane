@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
@@ -174,7 +175,6 @@ export const ComparisonConditionRender: React.FC<
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}
-                onRemove={() => removeCondition(index)}
                 depth={depth + 1}
                 className={cn(depth === 0 ? "col-span-11" : "col-span-10")}
               />
@@ -291,6 +291,17 @@ export const ComparisonConditionRender: React.FC<
               }
             >
               Name
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                addCondition({
+                  type: TargetFilterType.Identifier,
+                  operator: ColumnOperator.Like,
+                  value: "",
+                })
+              }
+            >
+              Identifier
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() =>

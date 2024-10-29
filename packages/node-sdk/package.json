@@ -29,7 +29,7 @@
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsup": "^8.2.4",
-    "typescript": "^5.6.2"
+    "typescript": "catalog:"
   },
   "publishConfig": {
     "access": "public"

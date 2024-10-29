@@ -25,6 +25,7 @@ export enum Permission {
 
   JobUpdate = "job.update",
   JobGet = "job.get",
+  JobList = "job.list",
 
   JobAgentList = "jobAgent.list",
   JobAgentCreate = "jobAgent.create",
@@ -76,6 +77,12 @@ export enum Permission {
   ReleaseCreate = "release.create",
   ReleaseGet = "release.get",
   ReleaseList = "release.list",
+
+  ReleaseChannelGet = "releaseChannel.get",
+  ReleaseChannelList = "releaseChannel.list",
+  ReleaseChannelCreate = "releaseChannel.create",
+  ReleaseChannelUpdate = "releaseChannel.update",
+  ReleaseChannelDelete = "releaseChannel.delete",
 
   RunbookTrigger = "runbook.trigger",
   RunbookDelete = "runbook.delete",

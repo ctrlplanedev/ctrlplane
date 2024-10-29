@@ -240,7 +240,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",
@@ -307,7 +308,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",
@@ -373,7 +375,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",
@@ -439,7 +442,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",
@@ -505,7 +509,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",
@@ -599,7 +604,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",
@@ -693,7 +699,8 @@ describe("job-variables-deployment", () => {
       policyId: null,
       targetFilter: null,
       deletedAt: null,
-      assignments: [
+      createdAt: new Date(),
+      environments: [
         {
           id: "0",
           variableSetId: "0",

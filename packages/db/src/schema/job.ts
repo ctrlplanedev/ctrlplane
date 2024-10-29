@@ -1,4 +1,24 @@
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type {
+  CreatedAtCondition,
+  MetadataCondition,
+  VersionCondition,
+} from "@ctrlplane/validators/conditions";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
+import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  gt,
+  gte,
+  like,
+  lt,
+  lte,
+  not,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
 import {
   boolean,
   json,
@@ -11,7 +31,21 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  DateOperator,
+  FilterType,
+  MetadataOperator,
+} from "@ctrlplane/validators/conditions";
+import { JobFilterType } from "@ctrlplane/validators/jobs";
+
+import type { Tx } from "../common.js";
+import { deployment } from "./deployment.js";
+import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
+import { release } from "./release.js";
+import { target } from "./target.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -103,3 +137,100 @@ export const createJobVariable = createInsertSchema(jobVariable).omit({
   id: true,
 });
 export const updateJobVariable = createJobVariable.partial();
+
+const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
+  if (cond.operator === MetadataOperator.Null)
+    return notExists(
+      tx
+        .select()
+        .from(jobMetadata)
+        .where(
+          and(eq(jobMetadata.jobId, job.id), eq(jobMetadata.key, cond.key)),
+        ),
+    );
+
+  if (cond.operator === MetadataOperator.Regex)
+    return exists(
+      tx
+        .select()
+        .from(jobMetadata)
+        .where(
+          and(
+            eq(jobMetadata.jobId, job.id),
+            eq(jobMetadata.key, cond.key),
+            sql`${jobMetadata.value} ~ ${cond.value}`,
+          ),
+        ),
+    );
+
+  if (cond.operator === MetadataOperator.Like)
+    return exists(
+      tx
+        .select()
+        .from(jobMetadata)
+        .where(
+          and(
+            eq(jobMetadata.jobId, job.id),
+            eq(jobMetadata.key, cond.key),
+            like(jobMetadata.value, cond.value),
+          ),
+        ),
+    );
+
+  return exists(
+    tx
+      .select()
+      .from(jobMetadata)
+      .where(
+        and(
+          eq(jobMetadata.jobId, job.id),
+          eq(jobMetadata.key, cond.key),
+          eq(jobMetadata.value, cond.value),
+        ),
+      ),
+  );
+};
+
+const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
+  const date = new Date(cond.value);
+  if (cond.operator === DateOperator.Before) return lt(job.createdAt, date);
+  if (cond.operator === DateOperator.After) return gt(job.createdAt, date);
+  if (cond.operator === DateOperator.BeforeOrOn)
+    return lte(job.createdAt, date);
+  return gte(job.createdAt, date);
+};
+
+const buildVersionCondition = (cond: VersionCondition): SQL => {
+  if (cond.operator === ColumnOperator.Like)
+    return like(release.version, cond.value);
+  if (cond.operator === ColumnOperator.Regex)
+    return sql`${release.version} ~ ${cond.value}`;
+  return eq(release.version, cond.value);
+};
+
+const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
+  if (cond.type === FilterType.Metadata)
+    return buildMetadataCondition(tx, cond);
+  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
+  if (cond.type === JobFilterType.Deployment)
+    return eq(deployment.id, cond.value);
+  if (cond.type === JobFilterType.Environment)
+    return eq(environment.id, cond.value);
+  if (cond.type === FilterType.Version) return buildVersionCondition(cond);
+  if (cond.type === JobFilterType.JobTarget) return eq(target.id, cond.value);
+
+  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
+  const con =
+    cond.operator === ComparisonOperator.And ? and(...subCon)! : or(...subCon)!;
+  return cond.not ? not(con) : con;
+};
+
+export function jobMatchesCondition(
+  tx: Tx,
+  condition?: JobCondition,
+): SQL<unknown> | undefined {
+  return condition == null || Object.keys(condition).length === 0
+    ? undefined
+    : buildCondition(tx, condition);
+}

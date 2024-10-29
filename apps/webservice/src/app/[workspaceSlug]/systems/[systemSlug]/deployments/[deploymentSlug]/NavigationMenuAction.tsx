@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
+import { CreateReleaseChannelDialog } from "./release-channels/CreateReleaseChannelDialog";
 import { CreateVariableDialog } from "./releases/CreateVariableDialog";
 
 export const NavigationMenuAction: React.FC<{
@@ -14,6 +15,7 @@ export const NavigationMenuAction: React.FC<{
 }> = ({ deploymentId, systemId }) => {
   const pathname = usePathname();
   const isVariablesActive = pathname.includes("variables");
+  const isReleaseChannelsActive = pathname.includes("release-channels");
 
   return (
     <div>
@@ -25,7 +27,15 @@ export const NavigationMenuAction: React.FC<{
         </CreateVariableDialog>
       )}
 
-      {!isVariablesActive && (
+      {isReleaseChannelsActive && (
+        <CreateReleaseChannelDialog deploymentId={deploymentId}>
+          <Button size="sm" variant="secondary">
+            New Release Channel
+          </Button>
+        </CreateReleaseChannelDialog>
+      )}
+
+      {!isVariablesActive && !isReleaseChannelsActive && (
         <CreateReleaseDialog deploymentId={deploymentId} systemId={systemId}>
           <Button size="sm" variant="secondary">
             New Release
