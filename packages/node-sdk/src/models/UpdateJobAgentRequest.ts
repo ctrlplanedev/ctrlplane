@@ -25,6 +25,12 @@ export interface UpdateJobAgentRequest {
    * @type {string}
    * @memberof UpdateJobAgentRequest
    */
+  workspaceId: string;
+  /**
+   *
+   * @type {string}
+   * @memberof UpdateJobAgentRequest
+   */
   name: string;
   /**
    *
@@ -40,6 +46,8 @@ export interface UpdateJobAgentRequest {
 export function instanceOfUpdateJobAgentRequest(
   value: object,
 ): value is UpdateJobAgentRequest {
+  if (!("workspaceId" in value) || value["workspaceId"] === undefined)
+    return false;
   if (!("name" in value) || value["name"] === undefined) return false;
   if (!("type" in value) || value["type"] === undefined) return false;
   return true;
@@ -59,6 +67,7 @@ export function UpdateJobAgentRequestFromJSONTyped(
     return json;
   }
   return {
+    workspaceId: json["workspaceId"],
     name: json["name"],
     type: json["type"],
   };
@@ -71,6 +80,7 @@ export function UpdateJobAgentRequestToJSON(
     return value;
   }
   return {
+    workspaceId: value["workspaceId"],
     name: value["name"],
     type: value["type"],
   };

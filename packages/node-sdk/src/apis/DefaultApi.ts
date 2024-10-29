@@ -590,7 +590,7 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/workspaces/{workspace}/job-agents/name`.replace(
+        path: `/v1/job-agents/name`.replace(
           `{${"workspace"}}`,
           encodeURIComponent(String(requestParameters["workspace"])),
         ),
