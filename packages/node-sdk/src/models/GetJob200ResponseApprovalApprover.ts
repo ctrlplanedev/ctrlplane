@@ -32,12 +32,6 @@ export interface GetJob200ResponseApprovalApprover {
    * @memberof GetJob200ResponseApprovalApprover
    */
   name: string;
-  /**
-   *
-   * @type {string}
-   * @memberof GetJob200ResponseApprovalApprover
-   */
-  email: string;
 }
 
 /**
@@ -48,7 +42,6 @@ export function instanceOfGetJob200ResponseApprovalApprover(
 ): value is GetJob200ResponseApprovalApprover {
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("name" in value) || value["name"] === undefined) return false;
-  if (!("email" in value) || value["email"] === undefined) return false;
   return true;
 }
 
@@ -68,7 +61,6 @@ export function GetJob200ResponseApprovalApproverFromJSONTyped(
   return {
     id: json["id"],
     name: json["name"],
-    email: json["email"],
   };
 }
 
@@ -81,6 +73,5 @@ export function GetJob200ResponseApprovalApproverToJSON(
   return {
     id: value["id"],
     name: value["name"],
-    email: value["email"],
   };
 }

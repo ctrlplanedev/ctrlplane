@@ -485,6 +485,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.prepareKeyValueMessage = exports.issueFileCommand = void 0;
 // We use any as a valid input type
 /* eslint-disable @typescript-eslint/no-explicit-any */
+const crypto = __importStar(__nccwpck_require__(6982));
 const fs = __importStar(__nccwpck_require__(9896));
 const os = __importStar(__nccwpck_require__(857));
 const utils_1 = __nccwpck_require__(274);
@@ -27857,7 +27858,6 @@ function GetAgentRunningJob200ResponseInnerToJSON(value) {
 function instanceOfGetJob200ResponseApprovalApprover(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("email" in value) || value["email"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseApprovalApproverFromJSON(json) {
@@ -27869,8 +27869,7 @@ function GetJob200ResponseApprovalApproverFromJSONTyped(json, ignoreDiscriminato
   }
   return {
     id: json["id"],
-    name: json["name"],
-    email: json["email"]
+    name: json["name"]
   };
 }
 function GetJob200ResponseApprovalApproverToJSON(value) {
@@ -27879,8 +27878,7 @@ function GetJob200ResponseApprovalApproverToJSON(value) {
   }
   return {
     id: value["id"],
-    name: value["name"],
-    email: value["email"]
+    name: value["name"]
   };
 }
 
@@ -27916,37 +27914,6 @@ function GetJob200ResponseApprovalToJSON(value) {
     id: value["id"],
     status: value["status"],
     approver: GetJob200ResponseApprovalApproverToJSON(value["approver"])
-  };
-}
-
-// src/models/GetJob200ResponseCausedBy.ts
-function instanceOfGetJob200ResponseCausedBy(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("email" in value) || value["email"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseCausedByFromJSON(json) {
-  return GetJob200ResponseCausedByFromJSONTyped(json, false);
-}
-function GetJob200ResponseCausedByFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"],
-    email: json["email"]
-  };
-}
-function GetJob200ResponseCausedByToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"],
-    email: value["email"]
   };
 }
 
@@ -28152,7 +28119,6 @@ function instanceOfGetJob200Response(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("status" in value) || value["status"] === void 0) return false;
   if (!("variables" in value) || value["variables"] === void 0) return false;
-  if (!("causedBy" in value) || value["causedBy"] === void 0) return false;
   if (!("approval" in value) || value["approval"] === void 0) return false;
   return true;
 }
@@ -28172,7 +28138,6 @@ function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
     environment: json["environment"] == null ? void 0 : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
     variables: json["variables"],
-    causedBy: GetJob200ResponseCausedByFromJSON(json["causedBy"]),
     approval: GetJob200ResponseApprovalFromJSON(json["approval"])
   };
 }
@@ -28189,7 +28154,6 @@ function GetJob200ResponseToJSON(value) {
     target: GetJob200ResponseTargetToJSON(value["target"]),
     environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
     variables: value["variables"],
-    causedBy: GetJob200ResponseCausedByToJSON(value["causedBy"]),
     approval: GetJob200ResponseApprovalToJSON(value["approval"])
   };
 }
@@ -28942,7 +28906,7 @@ async function run() {
         .getJob({ jobId })
         .then((response) => {
         core.info(JSON.stringify(response, null, 2));
-        const { variables, target, release, environment, runbook, deployment, causedBy, approval, } = response;
+        const { variables, target, release, environment, runbook, deployment, approval, } = response;
         setOutputAndLog("base_url", baseUrl);
         setOutputAndLog("target", target);
         setOutputAndLog("target_id", target?.id);
@@ -28959,13 +28923,9 @@ async function run() {
         setOutputAndLog("release_version", release?.version);
         setOutputsRecursively("release_config", release?.config);
         setOutputsRecursively("release_metadata", release?.metadata);
-        setOutputAndLog("caused_by_id", causedBy.id);
-        setOutputAndLog("caused_by_name", causedBy.name);
-        setOutputAndLog("caused_by_email", causedBy.email);
         setOutputAndLog("approval_status", approval.status);
         setOutputAndLog("approval_approver_id", approval.approver?.id);
         setOutputAndLog("approval_approver_name", approval.approver?.name);
-        setOutputAndLog("approval_approver_email", approval.approver?.email);
         setOutputAndLog("deployment_id", deployment?.id);
         setOutputAndLog("deployment_name", deployment?.name);
         setOutputAndLog("deployment_slug", deployment?.slug);
