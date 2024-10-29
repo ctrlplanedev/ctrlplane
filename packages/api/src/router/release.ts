@@ -412,7 +412,7 @@ export const releaseRouter = createTRPCRouter({
         .where(inArray(release.id, input))
         .then((rows) =>
           _.chain(rows)
-            .groupBy((e) => e.environment.id)
+            .groupBy((e) => [e.environment.id, e.release.id])
             .map((v) => ({
               release: v[0]!.release,
               environment: {

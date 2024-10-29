@@ -204,7 +204,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       const hasRelease =
                         environmentReleaseReleaseJobTriggers.length > 0;
                       const hasJobAgent = deployment.jobAgentId != null;
-                      const isBlockedByPolicyEvaluation = (
+                      const isBlockedByReleaseChannel = (
                         blockedEnvByRelease.data?.[release.id] ?? []
                       ).includes(env.id);
 
@@ -213,7 +213,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         !hasRelease &&
                         hasJobAgent &&
                         hasTargets &&
-                        !isBlockedByPolicyEvaluation;
+                        !isBlockedByReleaseChannel;
 
                       return (
                         <TableCell
@@ -253,9 +253,9 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                             )}
 
                             {!canDeploy && !hasRelease && (
-                              <div className="text-center text-xs text-muted">
-                                {isBlockedByPolicyEvaluation
-                                  ? "Blocked by policy"
+                              <div className="text-center text-xs text-muted-foreground/70">
+                                {isBlockedByReleaseChannel
+                                  ? "Blocked by release channel"
                                   : hasJobAgent
                                     ? "No targets"
                                     : "No job agent"}

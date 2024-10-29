@@ -30,6 +30,7 @@ import { ApprovalAndGovernance } from "./ApprovalAndGovernance";
 import { DeploymentControl } from "./DeploymentControl";
 import { Overview } from "./Overview";
 import { DeleteEnvironmentPolicyDialog } from "./PolicyDeleteDialog";
+import { ReleaseChannels } from "./ReleaseChannels";
 import { ReleaseManagement } from "./ReleaseManagement";
 import { RolloutAndTiming } from "./RolloutAndTiming";
 
@@ -58,18 +59,27 @@ export const useEnvironmentPolicyDrawer = () => {
   };
 };
 
+type Deployment = SCHEMA.Deployment & {
+  releaseChannels: SCHEMA.ReleaseChannel[];
+};
+
 const View: React.FC<{
   activeTab: string;
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
+    releaseChannels: SCHEMA.ReleaseChannel[];
   };
-}> = ({ activeTab, environmentPolicy }) => {
+  deployments?: Deployment[];
+}> = ({ activeTab, environmentPolicy, deployments }) => {
   return {
     overview: <Overview environmentPolicy={environmentPolicy} />,
     approval: <ApprovalAndGovernance environmentPolicy={environmentPolicy} />,
     concurrency: <DeploymentControl environmentPolicy={environmentPolicy} />,
     management: <ReleaseManagement environmentPolicy={environmentPolicy} />,
     rollout: <RolloutAndTiming environmentPolicy={environmentPolicy} />,
+    "release-channels": deployments != null && (
+      <ReleaseChannels policy={environmentPolicy} deployments={deployments} />
+    ),
   }[activeTab];
 };
 
@@ -96,13 +106,19 @@ const PolicyDropdownMenu: React.FC<{
 export const EnvironmentPolicyDrawer: React.FC = () => {
   const { environmentPolicyId, removeEnvironmentPolicyId } =
     useEnvironmentPolicyDrawer();
-  const isOpen = environmentPolicyId != null && environmentPolicyId != "";
+  const isOpen = Boolean(environmentPolicyId);
   const setIsOpen = removeEnvironmentPolicyId;
   const environmentPolicyQ = api.environment.policy.byId.useQuery(
     environmentPolicyId ?? "",
     { enabled: isOpen },
   );
   const environmentPolicy = environmentPolicyQ.data;
+
+  const deploymentsQ = api.deployment.bySystemId.useQuery(
+    environmentPolicy?.systemId ?? "",
+    { enabled: isOpen && environmentPolicy != null },
+  );
+  const deployments = deploymentsQ.data;
 
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -157,6 +173,12 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
               label="Release Management"
             />
             <TabButton
+              active={activeTab === "release-channels"}
+              onClick={() => setActiveTab("release-channels")}
+              icon={<IconFilter className="h-4 w-4" />}
+              label="Release Channels"
+            />
+            <TabButton
               active={activeTab === "rollout"}
               onClick={() => setActiveTab("rollout")}
               icon={<IconCalendar className="h-4 w-4" />}
@@ -169,6 +191,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
               <View
                 activeTab={activeTab}
                 environmentPolicy={environmentPolicy}
+                deployments={deployments}
               />
             </div>
           )}
