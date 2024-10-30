@@ -12,13 +12,7 @@
  * Do not edit the class manually.
  */
 
-import type { SetTargetRequestTargetVariablesInner } from "./SetTargetRequestTargetVariablesInner";
 import { mapValues } from "../runtime";
-import {
-  SetTargetRequestTargetVariablesInnerFromJSON,
-  SetTargetRequestTargetVariablesInnerFromJSONTyped,
-  SetTargetRequestTargetVariablesInnerToJSON,
-} from "./SetTargetRequestTargetVariablesInner";
 
 /**
  *
@@ -64,10 +58,10 @@ export interface SetTargetRequestTarget {
   metadata?: { [key: string]: string };
   /**
    *
-   * @type {Array<SetTargetRequestTargetVariablesInner>}
+   * @type {object}
    * @memberof SetTargetRequestTarget
    */
-  variables?: Array<SetTargetRequestTargetVariablesInner>;
+  variables?: object;
 }
 
 /**
@@ -99,12 +93,7 @@ export function SetTargetRequestTargetFromJSONTyped(
     identifier: json["identifier"] == null ? undefined : json["identifier"],
     config: json["config"] == null ? undefined : json["config"],
     metadata: json["metadata"] == null ? undefined : json["metadata"],
-    variables:
-      json["variables"] == null
-        ? undefined
-        : (json["variables"] as Array<any>).map(
-            SetTargetRequestTargetVariablesInnerFromJSON,
-          ),
+    variables: json["variables"] == null ? undefined : json["variables"],
   };
 }
 
@@ -121,11 +110,6 @@ export function SetTargetRequestTargetToJSON(
     identifier: value["identifier"],
     config: value["config"],
     metadata: value["metadata"],
-    variables:
-      value["variables"] == null
-        ? undefined
-        : (value["variables"] as Array<any>).map(
-            SetTargetRequestTargetVariablesInnerToJSON,
-          ),
+    variables: value["variables"],
   };
 }

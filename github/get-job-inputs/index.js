@@ -28298,50 +28298,6 @@ function SetTargetProvidersTargetsRequestToJSON(value) {
   };
 }
 
-// src/models/SetTargetRequestTargetVariablesInnerValue.ts
-function instanceOfSetTargetRequestTargetVariablesInnerValue(value) {
-  return true;
-}
-function SetTargetRequestTargetVariablesInnerValueFromJSON(json) {
-  return SetTargetRequestTargetVariablesInnerValueFromJSONTyped(json, false);
-}
-function SetTargetRequestTargetVariablesInnerValueFromJSONTyped(json, ignoreDiscriminator) {
-  return json;
-}
-function SetTargetRequestTargetVariablesInnerValueToJSON(value) {
-  return value;
-}
-
-// src/models/SetTargetRequestTargetVariablesInner.ts
-function instanceOfSetTargetRequestTargetVariablesInner(value) {
-  if (!("key" in value) || value["key"] === void 0) return false;
-  if (!("sensitive" in value) || value["sensitive"] === void 0) return false;
-  return true;
-}
-function SetTargetRequestTargetVariablesInnerFromJSON(json) {
-  return SetTargetRequestTargetVariablesInnerFromJSONTyped(json, false);
-}
-function SetTargetRequestTargetVariablesInnerFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    key: json["key"],
-    value: json["value"] == null ? void 0 : SetTargetRequestTargetVariablesInnerValueFromJSON(json["value"]),
-    sensitive: json["sensitive"]
-  };
-}
-function SetTargetRequestTargetVariablesInnerToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    key: value["key"],
-    value: SetTargetRequestTargetVariablesInnerValueToJSON(value["value"]),
-    sensitive: value["sensitive"]
-  };
-}
-
 // src/models/SetTargetRequestTarget.ts
 function instanceOfSetTargetRequestTarget(value) {
   return true;
@@ -28360,9 +28316,7 @@ function SetTargetRequestTargetFromJSONTyped(json, ignoreDiscriminator) {
     identifier: json["identifier"] == null ? void 0 : json["identifier"],
     config: json["config"] == null ? void 0 : json["config"],
     metadata: json["metadata"] == null ? void 0 : json["metadata"],
-    variables: json["variables"] == null ? void 0 : json["variables"].map(
-      SetTargetRequestTargetVariablesInnerFromJSON
-    )
+    variables: json["variables"] == null ? void 0 : json["variables"]
   };
 }
 function SetTargetRequestTargetToJSON(value) {
@@ -28376,9 +28330,7 @@ function SetTargetRequestTargetToJSON(value) {
     identifier: value["identifier"],
     config: value["config"],
     metadata: value["metadata"],
-    variables: value["variables"] == null ? void 0 : value["variables"].map(
-      SetTargetRequestTargetVariablesInnerToJSON
-    )
+    variables: value["variables"]
   };
 }
 
@@ -28437,9 +28389,7 @@ function TargetFromJSONTyped(json, ignoreDiscriminator) {
     workspaceId: json["workspaceId"],
     config: json["config"],
     metadata: json["metadata"],
-    variables: json["variables"] == null ? void 0 : json["variables"].map(
-      SetTargetRequestTargetVariablesInnerFromJSON
-    ),
+    variables: json["variables"] == null ? void 0 : json["variables"],
     provider: json["provider"] == null ? void 0 : json["provider"]
   };
 }
@@ -28456,9 +28406,7 @@ function TargetToJSON(value) {
     workspaceId: value["workspaceId"],
     config: value["config"],
     metadata: value["metadata"],
-    variables: value["variables"] == null ? void 0 : value["variables"].map(
-      SetTargetRequestTargetVariablesInnerToJSON
-    ),
+    variables: value["variables"],
     provider: value["provider"]
   };
 }

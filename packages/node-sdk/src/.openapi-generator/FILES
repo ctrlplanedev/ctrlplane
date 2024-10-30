@@ -19,8 +19,6 @@ models/SetTargetProvidersTargetsRequest.ts
 models/SetTargetProvidersTargetsRequestTargetsInner.ts
 models/SetTargetRequest.ts
 models/SetTargetRequestTarget.ts
-models/SetTargetRequestTargetVariablesInner.ts
-models/SetTargetRequestTargetVariablesInnerValue.ts
 models/Target.ts
 models/UpdateJob200Response.ts
 models/UpdateJobAgent200Response.ts

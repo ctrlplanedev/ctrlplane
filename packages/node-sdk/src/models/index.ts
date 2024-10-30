@@ -18,8 +18,6 @@ export * from "./SetTargetProvidersTargetsRequest";
 export * from "./SetTargetProvidersTargetsRequestTargetsInner";
 export * from "./SetTargetRequest";
 export * from "./SetTargetRequestTarget";
-export * from "./SetTargetRequestTargetVariablesInner";
-export * from "./SetTargetRequestTargetVariablesInnerValue";
 export * from "./Target";
 export * from "./UpdateJob200Response";
 export * from "./UpdateJobAgent200Response";

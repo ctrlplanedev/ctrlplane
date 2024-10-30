@@ -12,13 +12,7 @@
  * Do not edit the class manually.
  */
 
-import type { SetTargetRequestTargetVariablesInner } from "./SetTargetRequestTargetVariablesInner";
 import { mapValues } from "../runtime";
-import {
-  SetTargetRequestTargetVariablesInnerFromJSON,
-  SetTargetRequestTargetVariablesInnerFromJSONTyped,
-  SetTargetRequestTargetVariablesInnerToJSON,
-} from "./SetTargetRequestTargetVariablesInner";
 
 /**
  *
@@ -76,10 +70,10 @@ export interface Target {
   metadata: { [key: string]: string };
   /**
    *
-   * @type {Array<SetTargetRequestTargetVariablesInner>}
+   * @type {object}
    * @memberof Target
    */
-  variables?: Array<SetTargetRequestTargetVariablesInner>;
+  variables?: object;
   /**
    *
    * @type {object}
@@ -125,12 +119,7 @@ export function TargetFromJSONTyped(
     workspaceId: json["workspaceId"],
     config: json["config"],
     metadata: json["metadata"],
-    variables:
-      json["variables"] == null
-        ? undefined
-        : (json["variables"] as Array<any>).map(
-            SetTargetRequestTargetVariablesInnerFromJSON,
-          ),
+    variables: json["variables"] == null ? undefined : json["variables"],
     provider: json["provider"] == null ? undefined : json["provider"],
   };
 }
@@ -148,12 +137,7 @@ export function TargetToJSON(value?: Target | null): any {
     workspaceId: value["workspaceId"],
     config: value["config"],
     metadata: value["metadata"],
-    variables:
-      value["variables"] == null
-        ? undefined
-        : (value["variables"] as Array<any>).map(
-            SetTargetRequestTargetVariablesInnerToJSON,
-          ),
+    variables: value["variables"],
     provider: value["provider"],
   };
 }

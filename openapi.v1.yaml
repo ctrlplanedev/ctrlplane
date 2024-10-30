@@ -571,24 +571,7 @@ paths:
                       additionalProperties:
                         type: string
                     variables:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          key:
-                            type: string
-                          value:
-                            anyOf:
-                              - type: string
-                              - type: number
-                              - type: boolean
-                              - type: "null"
-                            description: Can be a string, number, boolean, or null
-                          sensitive:
-                            type: boolean
-                        required:
-                          - key
-                          - sensitive
+                      type: object
               required:
                 - target
       responses:
@@ -642,24 +625,7 @@ paths:
                       additionalProperties:
                         type: string
                     variables:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          key:
-                            type: string
-                          value:
-                            anyOf:
-                              - type: string
-                              - type: number
-                              - type: boolean
-                              - type: "null"
-                            description: Can be a string, number, boolean, or null
-                          sensitive:
-                            type: boolean
-                        required:
-                          - key
-                          - sensitive
+                      type: object
               required:
                 - target
       responses:
@@ -707,24 +673,7 @@ components:
           additionalProperties:
             type: string
         variables:
-          type: array
-          items:
-            type: object
-            properties:
-              key:
-                type: string
-              value:
-                anyOf:
-                  - type: string
-                  - type: number
-                  - type: boolean
-                  - type: "null"
-                description: Can be a string, number, boolean, or null
-              sensitive:
-                type: boolean
-            required:
-              - key
-              - sensitive
+          type: object
         provider:
           type: object
           nullable: true
