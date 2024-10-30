@@ -32,9 +32,8 @@ import { api } from "~/trpc/react";
 const ApprovalDialog: React.FC<{
   releaseId: string;
   policyId: string;
-  userId: string;
   children: React.ReactNode;
-}> = ({ releaseId, policyId, userId, children }) => {
+}> = ({ releaseId, policyId, children }) => {
   const approve = api.environment.policy.approval.approve.useMutation();
   const rejected = api.environment.policy.approval.reject.useMutation();
   const router = useRouter();
@@ -52,7 +51,7 @@ const ApprovalDialog: React.FC<{
         <AlertDialogFooter>
           <AlertDialogCancel
             onClick={async () => {
-              await rejected.mutateAsync({ releaseId, policyId, userId });
+              await rejected.mutateAsync({ releaseId, policyId });
               router.refresh();
             }}
           >
@@ -60,7 +59,7 @@ const ApprovalDialog: React.FC<{
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={async () => {
-              await approve.mutateAsync({ releaseId, policyId, userId });
+              await approve.mutateAsync({ releaseId, policyId });
               router.refresh();
             }}
           >
@@ -191,11 +190,7 @@ const ApprovalCheck: React.FC<PolicyNodeProps["data"]> = ({ id, release }) => {
   }
   const status = approval.data?.status;
   return (
-    <ApprovalDialog
-      policyId={id}
-      releaseId={release.id}
-      userId={approval.data?.userId ?? ""}
-    >
+    <ApprovalDialog policyId={id} releaseId={release.id}>
       <button
         disabled={status === "approved" || status === "rejected"}
         className="flex w-full items-center gap-2 rounded-md hover:bg-neutral-800/50"

@@ -1,16 +1,16 @@
-import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { can } from "@ctrlplane/auth/utils";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { createTarget, targetProvider, workspace } from "@ctrlplane/db/schema";
 import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { getUser } from "~/app/api/v1/auth";
+import { authn, authz } from "~/app/api/v1/auth";
+import { parseBody } from "../../../body-parser";
+import { request } from "../../../middleware";
 
 const bodySchema = z.object({
   targets: z.array(
@@ -37,52 +37,52 @@ const bodySchema = z.object({
   ),
 });
 
-const canAccessTargetProvider = async (userId: string, providerId: string) =>
-  can()
-    .user(userId)
-    .perform(Permission.TargetUpdate)
-    .on({ type: "targetProvider", id: providerId });
+export const PATCH = request()
+  .use(authn)
+  .use(parseBody(bodySchema))
+  .use(
+    authz(({ can, extra }) =>
+      can
+        .perform(Permission.TargetUpdate)
+        .on({ type: "targetProvider", id: extra.params.providerId }),
+    ),
+  )
+  .handle<
+    { body: z.infer<typeof bodySchema> },
+    { params: { providerId: string } }
+  >(async (ctx, { params }) => {
+    const { body } = ctx;
 
-export const PATCH = async (
-  req: NextRequest,
-  { params }: { params: { providerId: string } },
-) => {
-  const user = await getUser(req);
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const query = await db
+      .select()
+      .from(targetProvider)
+      .innerJoin(workspace, eq(workspace.id, targetProvider.workspaceId))
+      .where(eq(targetProvider.id, params.providerId))
+      .then(takeFirstOrNull);
 
-  const canAccess = await canAccessTargetProvider(user.id, params.providerId);
-  if (!canAccess)
-    return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+    const provider = query?.target_provider;
+    if (!provider)
+      return NextResponse.json(
+        { error: "Provider not found" },
+        { status: 404 },
+      );
 
-  const query = await db
-    .select()
-    .from(targetProvider)
-    .innerJoin(workspace, eq(workspace.id, targetProvider.workspaceId))
-    .where(eq(targetProvider.id, params.providerId))
-    .then(takeFirstOrNull);
-
-  const provider = query?.target_provider;
-  if (!provider)
-    return NextResponse.json({ error: "Provider not found" }, { status: 404 });
-
-  const body = await bodySchema.parseAsync(await req.json());
-  const targetsToInsert = body.targets.map((t) => ({
-    ...t,
-    providerId: provider.id,
-    workspaceId: provider.workspaceId,
-  }));
-
-  const targets = await upsertTargets(
-    db,
-    targetsToInsert.map((t) => ({
+    const targetsToInsert = body.targets.map((t) => ({
       ...t,
-      variables: t.variables?.map((v) => ({
-        ...v,
-        value: v.value ?? null,
-      })),
-    })),
-  );
+      providerId: provider.id,
+      workspaceId: provider.workspaceId,
+    }));
 
-  return NextResponse.json({ targets });
-};
+    const targets = await upsertTargets(
+      db,
+      targetsToInsert.map((t) => ({
+        ...t,
+        variables: t.variables?.map((v) => ({
+          ...v,
+          value: v.value ?? null,
+        })),
+      })),
+    );
+
+    return NextResponse.json({ targets });
+  });

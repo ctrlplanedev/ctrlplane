@@ -33,17 +33,10 @@ paths:
           description: Workspace not found
         "500":
           description: Internal server error
-  /v1/workspaces/{workspace}/job-agents/name:
+  /v1/job-agents/name:
     patch:
       summary: Upserts the agent
       operationId: updateJobAgent
-      parameters:
-        - name: workspace
-          in: path
-          required: true
-          schema:
-            type: string
-          description: Name of the workspace
       requestBody:
         required: true
         content:
@@ -51,6 +44,8 @@ paths:
             schema:
               type: object
               properties:
+                workspaceId:
+                  type: string
                 name:
                   type: string
                 type:
@@ -58,6 +53,7 @@ paths:
               required:
                 - type
                 - name
+                - workspaceId
       responses:
         "200":
           description: Successfully retrieved or created the agent
@@ -418,7 +414,6 @@ paths:
                   - createdAt
                   - updatedAt
                   - variables
-                  - approval
     patch:
       summary: Update a job
       operationId: updateJob
