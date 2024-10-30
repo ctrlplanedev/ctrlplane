@@ -25,20 +25,8 @@ import { dispatchJobsForNewTargets } from "./new-target.js";
 
 const log = logger.child({ label: "upsert-targets" });
 
-const getExistingTargets = (
-  db: Tx,
-  workspaceId: string,
-  identifiers: string[],
-) =>
-  db
-    .select()
-    .from(target)
-    .where(
-      and(
-        eq(target.workspaceId, workspaceId),
-        inArray(target.identifier, identifiers),
-      ),
-    );
+const getExistingTargetsForProvider = (db: Tx, providerId: string) =>
+  db.select().from(target).where(eq(target.providerId, providerId));
 
 const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
   const [firstTarget] = newTargets;
@@ -225,14 +213,14 @@ export const upsertTargets = async (
 ) => {
   try {
     const targetsBeforeInsertPromises = _.chain(targetsToInsert)
-      .groupBy((t) => t.workspaceId)
-      .map(async (t) =>
-        getExistingTargets(
-          tx,
-          t[0]!.workspaceId,
-          t.map((t) => t.identifier),
-        ),
-      )
+      .groupBy((t) => t.providerId)
+      .filter((t) => t[0]?.providerId != null)
+      .map(async (targets) => {
+        const providerId = targets[0]?.providerId;
+        return providerId == null
+          ? []
+          : getExistingTargetsForProvider(tx, providerId);
+      })
       .value();
 
     const targetsBeforeInsert = await Promise.all(
