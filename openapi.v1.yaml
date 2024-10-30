@@ -578,11 +578,12 @@ paths:
                           key:
                             type: string
                           value:
-                            oneOf:
+                            anyOf:
                               - type: string
                               - type: number
                               - type: boolean
                               - type: "null"
+                            description: Can be a string, number, boolean, or null
                           sensitive:
                             type: boolean
                         required:
@@ -604,7 +605,7 @@ paths:
         "404":
           description: Target not found
 
-  /v1/workspaces/{workspaceId}/targets:
+  /v1/targets/workspaces/{workspaceId}:
     post:
       summary: Create or update a target in a workspace
       operationId: setWorkspaceTarget
@@ -648,11 +649,12 @@ paths:
                           key:
                             type: string
                           value:
-                            oneOf:
+                            anyOf:
                               - type: string
                               - type: number
                               - type: boolean
                               - type: "null"
+                            description: Can be a string, number, boolean, or null
                           sensitive:
                             type: boolean
                         required:
@@ -712,15 +714,17 @@ components:
               key:
                 type: string
               value:
-                oneOf:
+                anyOf:
                   - type: string
                   - type: number
                   - type: boolean
                   - type: "null"
+                description: Can be a string, number, boolean, or null
               sensitive:
                 type: boolean
             required:
               - key
+              - sensitive
         provider:
           type: object
           nullable: true

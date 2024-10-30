@@ -28298,6 +28298,171 @@ function SetTargetProvidersTargetsRequestToJSON(value) {
   };
 }
 
+// src/models/SetTargetRequestTargetVariablesInnerValue.ts
+function instanceOfSetTargetRequestTargetVariablesInnerValue(value) {
+  return true;
+}
+function SetTargetRequestTargetVariablesInnerValueFromJSON(json) {
+  return SetTargetRequestTargetVariablesInnerValueFromJSONTyped(json, false);
+}
+function SetTargetRequestTargetVariablesInnerValueFromJSONTyped(json, ignoreDiscriminator) {
+  return json;
+}
+function SetTargetRequestTargetVariablesInnerValueToJSON(value) {
+  return value;
+}
+
+// src/models/SetTargetRequestTargetVariablesInner.ts
+function instanceOfSetTargetRequestTargetVariablesInner(value) {
+  if (!("key" in value) || value["key"] === void 0) return false;
+  if (!("sensitive" in value) || value["sensitive"] === void 0) return false;
+  return true;
+}
+function SetTargetRequestTargetVariablesInnerFromJSON(json) {
+  return SetTargetRequestTargetVariablesInnerFromJSONTyped(json, false);
+}
+function SetTargetRequestTargetVariablesInnerFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    key: json["key"],
+    value: json["value"] == null ? void 0 : SetTargetRequestTargetVariablesInnerValueFromJSON(json["value"]),
+    sensitive: json["sensitive"]
+  };
+}
+function SetTargetRequestTargetVariablesInnerToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    key: value["key"],
+    value: SetTargetRequestTargetVariablesInnerValueToJSON(value["value"]),
+    sensitive: value["sensitive"]
+  };
+}
+
+// src/models/SetTargetRequestTarget.ts
+function instanceOfSetTargetRequestTarget(value) {
+  return true;
+}
+function SetTargetRequestTargetFromJSON(json) {
+  return SetTargetRequestTargetFromJSONTyped(json, false);
+}
+function SetTargetRequestTargetFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    name: json["name"] == null ? void 0 : json["name"],
+    version: json["version"] == null ? void 0 : json["version"],
+    kind: json["kind"] == null ? void 0 : json["kind"],
+    identifier: json["identifier"] == null ? void 0 : json["identifier"],
+    config: json["config"] == null ? void 0 : json["config"],
+    metadata: json["metadata"] == null ? void 0 : json["metadata"],
+    variables: json["variables"] == null ? void 0 : json["variables"].map(
+      SetTargetRequestTargetVariablesInnerFromJSON
+    )
+  };
+}
+function SetTargetRequestTargetToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    name: value["name"],
+    version: value["version"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    config: value["config"],
+    metadata: value["metadata"],
+    variables: value["variables"] == null ? void 0 : value["variables"].map(
+      SetTargetRequestTargetVariablesInnerToJSON
+    )
+  };
+}
+
+// src/models/SetTargetRequest.ts
+function instanceOfSetTargetRequest(value) {
+  if (!("target" in value) || value["target"] === void 0) return false;
+  return true;
+}
+function SetTargetRequestFromJSON(json) {
+  return SetTargetRequestFromJSONTyped(json, false);
+}
+function SetTargetRequestFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    target: SetTargetRequestTargetFromJSON(json["target"])
+  };
+}
+function SetTargetRequestToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    target: SetTargetRequestTargetToJSON(value["target"])
+  };
+}
+
+// src/models/Target.ts
+function instanceOfTarget(value) {
+  if (!("id" in value) || value["id"] === void 0) return false;
+  if (!("name" in value) || value["name"] === void 0) return false;
+  if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("kind" in value) || value["kind"] === void 0) return false;
+  if (!("identifier" in value) || value["identifier"] === void 0)
+    return false;
+  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
+    return false;
+  if (!("config" in value) || value["config"] === void 0) return false;
+  if (!("metadata" in value) || value["metadata"] === void 0) return false;
+  return true;
+}
+function TargetFromJSON(json) {
+  return TargetFromJSONTyped(json, false);
+}
+function TargetFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    id: json["id"],
+    name: json["name"],
+    version: json["version"],
+    kind: json["kind"],
+    identifier: json["identifier"],
+    workspaceId: json["workspaceId"],
+    config: json["config"],
+    metadata: json["metadata"],
+    variables: json["variables"] == null ? void 0 : json["variables"].map(
+      SetTargetRequestTargetVariablesInnerFromJSON
+    ),
+    provider: json["provider"] == null ? void 0 : json["provider"]
+  };
+}
+function TargetToJSON(value) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    id: value["id"],
+    name: value["name"],
+    version: value["version"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    workspaceId: value["workspaceId"],
+    config: value["config"],
+    metadata: value["metadata"],
+    variables: value["variables"] == null ? void 0 : value["variables"].map(
+      SetTargetRequestTargetVariablesInnerToJSON
+    ),
+    provider: value["provider"]
+  };
+}
+
 // src/models/UpdateJob200Response.ts
 function instanceOfUpdateJob200Response(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
@@ -28626,6 +28791,92 @@ var DefaultApi = class extends BaseAPI {
     return await response.value();
   }
   /**
+   * Get a target by ID
+   */
+  async getTargetRaw(requestParameters, initOverrides) {
+    if (requestParameters["targetId"] == null) {
+      throw new RequiredError(
+        "targetId",
+        'Required parameter "targetId" was null or undefined when calling getTarget().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets/{targetId}`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"]))
+        ),
+        method: "GET",
+        headers: headerParameters,
+        query: queryParameters
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => TargetFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Get a target by ID
+   */
+  async getTarget(requestParameters, initOverrides) {
+    const response = await this.getTargetRaw(requestParameters, initOverrides);
+    return await response.value();
+  }
+  /**
+   * Update a target
+   */
+  async setTargetRaw(requestParameters, initOverrides) {
+    if (requestParameters["targetId"] == null) {
+      throw new RequiredError(
+        "targetId",
+        'Required parameter "targetId" was null or undefined when calling setTarget().'
+      );
+    }
+    if (requestParameters["setTargetRequest"] == null) {
+      throw new RequiredError(
+        "setTargetRequest",
+        'Required parameter "setTargetRequest" was null or undefined when calling setTarget().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    headerParameters["Content-Type"] = "application/json";
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets/{targetId}/set`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"]))
+        ),
+        method: "PATCH",
+        headers: headerParameters,
+        query: queryParameters,
+        body: SetTargetRequestToJSON(requestParameters["setTargetRequest"])
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => TargetFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Update a target
+   */
+  async setTarget(requestParameters, initOverrides) {
+    const response = await this.setTargetRaw(requestParameters, initOverrides);
+    return await response.value();
+  }
+  /**
    * Sets the target for a provider.
    */
   async setTargetProvidersTargetsRaw(requestParameters, initOverrides) {
@@ -28669,6 +28920,56 @@ var DefaultApi = class extends BaseAPI {
    */
   async setTargetProvidersTargets(requestParameters, initOverrides) {
     await this.setTargetProvidersTargetsRaw(requestParameters, initOverrides);
+  }
+  /**
+   * Create or update a target in a workspace
+   */
+  async setWorkspaceTargetRaw(requestParameters, initOverrides) {
+    if (requestParameters["workspaceId"] == null) {
+      throw new RequiredError(
+        "workspaceId",
+        'Required parameter "workspaceId" was null or undefined when calling setWorkspaceTarget().'
+      );
+    }
+    if (requestParameters["setTargetRequest"] == null) {
+      throw new RequiredError(
+        "setTargetRequest",
+        'Required parameter "setTargetRequest" was null or undefined when calling setWorkspaceTarget().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    headerParameters["Content-Type"] = "application/json";
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets/workspaces/{workspaceId}`.replace(
+          `{${"workspaceId"}}`,
+          encodeURIComponent(String(requestParameters["workspaceId"]))
+        ),
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: SetTargetRequestToJSON(requestParameters["setTargetRequest"])
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => TargetFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Create or update a target in a workspace
+   */
+  async setWorkspaceTarget(requestParameters, initOverrides) {
+    const response = await this.setWorkspaceTargetRaw(
+      requestParameters,
+      initOverrides
+    );
+    return await response.value();
   }
   /**
    * Create resources from a config file
@@ -28764,12 +29065,6 @@ var DefaultApi = class extends BaseAPI {
    * Upserts the agent
    */
   async updateJobAgentRaw(requestParameters, initOverrides) {
-    if (requestParameters["workspace"] == null) {
-      throw new RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling updateJobAgent().'
-      );
-    }
     if (requestParameters["updateJobAgentRequest"] == null) {
       throw new RequiredError(
         "updateJobAgentRequest",
@@ -28784,10 +29079,7 @@ var DefaultApi = class extends BaseAPI {
     }
     const response = await this.request(
       {
-        path: `/v1/job-agents/name`.replace(
-          `{${"workspace"}}`,
-          encodeURIComponent(String(requestParameters["workspace"]))
-        ),
+        path: `/v1/job-agents/name`,
         method: "PATCH",
         headers: headerParameters,
         query: queryParameters,

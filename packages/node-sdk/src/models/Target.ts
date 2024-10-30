@@ -12,13 +12,13 @@
  * Do not edit the class manually.
  */
 
-import type { GetTarget200ResponseVariablesInner } from "./GetTarget200ResponseVariablesInner";
+import type { SetTargetRequestTargetVariablesInner } from "./SetTargetRequestTargetVariablesInner";
 import { mapValues } from "../runtime";
 import {
-  GetTarget200ResponseVariablesInnerFromJSON,
-  GetTarget200ResponseVariablesInnerFromJSONTyped,
-  GetTarget200ResponseVariablesInnerToJSON,
-} from "./GetTarget200ResponseVariablesInner";
+  SetTargetRequestTargetVariablesInnerFromJSON,
+  SetTargetRequestTargetVariablesInnerFromJSONTyped,
+  SetTargetRequestTargetVariablesInnerToJSON,
+} from "./SetTargetRequestTargetVariablesInner";
 
 /**
  *
@@ -76,10 +76,10 @@ export interface Target {
   metadata: { [key: string]: string };
   /**
    *
-   * @type {Array<GetTarget200ResponseVariablesInner>}
+   * @type {Array<SetTargetRequestTargetVariablesInner>}
    * @memberof Target
    */
-  variables?: Array<GetTarget200ResponseVariablesInner>;
+  variables?: Array<SetTargetRequestTargetVariablesInner>;
   /**
    *
    * @type {object}
@@ -129,7 +129,7 @@ export function TargetFromJSONTyped(
       json["variables"] == null
         ? undefined
         : (json["variables"] as Array<any>).map(
-            GetTarget200ResponseVariablesInnerFromJSON,
+            SetTargetRequestTargetVariablesInnerFromJSON,
           ),
     provider: json["provider"] == null ? undefined : json["provider"],
   };
@@ -152,7 +152,7 @@ export function TargetToJSON(value?: Target | null): any {
       value["variables"] == null
         ? undefined
         : (value["variables"] as Array<any>).map(
-            GetTarget200ResponseVariablesInnerToJSON,
+            SetTargetRequestTargetVariablesInnerToJSON,
           ),
     provider: value["provider"],
   };

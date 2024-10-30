@@ -10,7 +10,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "~/app/api/v1/auth";
 import { parseBody } from "~/app/api/v1/body-parser";
 import { request } from "~/app/api/v1/middleware";
-import { bodySchema } from "~/app/api/v1/targets/[workspaceId]/route";
+import { bodySchema } from "~/app/api/v1/targets/workspaces/[workspaceId]/route";
 
 export const PATCH = request()
   .use(authn)

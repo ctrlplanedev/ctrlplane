@@ -19,14 +19,13 @@ import type {
   GetAgentRunningJob200ResponseInner,
   GetJob200Response,
   GetNextJobs200Response,
-  GetTarget200Response,
   SetTargetProvidersTargetsRequest,
+  SetTargetRequest,
   Target,
   UpdateJob200Response,
   UpdateJobAgent200Response,
   UpdateJobAgentRequest,
   UpdateJobRequest,
-  UpdateTargetRequest,
 } from "../models/index";
 import {
   AcknowledgeJob200ResponseFromJSON,
@@ -41,10 +40,10 @@ import {
   GetJob200ResponseToJSON,
   GetNextJobs200ResponseFromJSON,
   GetNextJobs200ResponseToJSON,
-  GetTarget200ResponseFromJSON,
-  GetTarget200ResponseToJSON,
   SetTargetProvidersTargetsRequestFromJSON,
   SetTargetProvidersTargetsRequestToJSON,
+  SetTargetRequestFromJSON,
+  SetTargetRequestToJSON,
   TargetFromJSON,
   TargetToJSON,
   UpdateJob200ResponseFromJSON,
@@ -55,8 +54,6 @@ import {
   UpdateJobAgentRequestToJSON,
   UpdateJobRequestFromJSON,
   UpdateJobRequestToJSON,
-  UpdateTargetRequestFromJSON,
-  UpdateTargetRequestToJSON,
 } from "../models/index";
 import * as runtime from "../runtime";
 
@@ -84,15 +81,19 @@ export interface GetTargetRequest {
   targetId: string;
 }
 
-export interface SetTargetRequest {
+export interface SetTargetOperationRequest {
   targetId: string;
-  workspaceId: string;
-  updateTargetRequest: UpdateTargetRequest;
+  setTargetRequest: SetTargetRequest;
 }
 
 export interface SetTargetProvidersTargetsOperationRequest {
   providerId: string;
   setTargetProvidersTargetsRequest: SetTargetProvidersTargetsRequest;
+}
+
+export interface SetWorkspaceTargetRequest {
+  workspaceId: string;
+  setTargetRequest: SetTargetRequest;
 }
 
 export interface UpdateConfigRequest {
@@ -107,11 +108,6 @@ export interface UpdateJobOperationRequest {
 
 export interface UpdateJobAgentOperationRequest {
   updateJobAgentRequest: UpdateJobAgentRequest;
-}
-
-export interface UpdateTargetOperationRequest {
-  targetId: string;
-  updateTargetRequest: UpdateTargetRequest;
 }
 
 export interface UpsertTargetProviderRequest {
@@ -403,7 +399,7 @@ export class DefaultApi extends runtime.BaseAPI {
   async getTargetRaw(
     requestParameters: GetTargetRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<runtime.ApiResponse<GetTarget200Response>> {
+  ): Promise<runtime.ApiResponse<Target>> {
     if (requestParameters["targetId"] == null) {
       throw new runtime.RequiredError(
         "targetId",
@@ -434,7 +430,7 @@ export class DefaultApi extends runtime.BaseAPI {
     );
 
     return new runtime.JSONApiResponse(response, (jsonValue) =>
-      GetTarget200ResponseFromJSON(jsonValue),
+      TargetFromJSON(jsonValue),
     );
   }
 
@@ -444,16 +440,16 @@ export class DefaultApi extends runtime.BaseAPI {
   async getTarget(
     requestParameters: GetTargetRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<GetTarget200Response> {
+  ): Promise<Target> {
     const response = await this.getTargetRaw(requestParameters, initOverrides);
     return await response.value();
   }
 
   /**
-   * Create or update a target with a specific ID and workspace
+   * Update a target
    */
   async setTargetRaw(
-    requestParameters: SetTargetRequest,
+    requestParameters: SetTargetOperationRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<runtime.ApiResponse<Target>> {
     if (requestParameters["targetId"] == null) {
@@ -463,17 +459,10 @@ export class DefaultApi extends runtime.BaseAPI {
       );
     }
 
-    if (requestParameters["workspaceId"] == null) {
+    if (requestParameters["setTargetRequest"] == null) {
       throw new runtime.RequiredError(
-        "workspaceId",
-        'Required parameter "workspaceId" was null or undefined when calling setTarget().',
-      );
-    }
-
-    if (requestParameters["updateTargetRequest"] == null) {
-      throw new runtime.RequiredError(
-        "updateTargetRequest",
-        'Required parameter "updateTargetRequest" was null or undefined when calling setTarget().',
+        "setTargetRequest",
+        'Required parameter "setTargetRequest" was null or undefined when calling setTarget().',
       );
     }
 
@@ -490,21 +479,14 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/targets/{targetId}/{workspaceId}/set`
-          .replace(
-            `{${"targetId"}}`,
-            encodeURIComponent(String(requestParameters["targetId"])),
-          )
-          .replace(
-            `{${"workspaceId"}}`,
-            encodeURIComponent(String(requestParameters["workspaceId"])),
-          ),
-        method: "POST",
+        path: `/v1/targets/{targetId}/set`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"])),
+        ),
+        method: "PATCH",
         headers: headerParameters,
         query: queryParameters,
-        body: UpdateTargetRequestToJSON(
-          requestParameters["updateTargetRequest"],
-        ),
+        body: SetTargetRequestToJSON(requestParameters["setTargetRequest"]),
       },
       initOverrides,
     );
@@ -515,10 +497,10 @@ export class DefaultApi extends runtime.BaseAPI {
   }
 
   /**
-   * Create or update a target with a specific ID and workspace
+   * Update a target
    */
   async setTarget(
-    requestParameters: SetTargetRequest,
+    requestParameters: SetTargetOperationRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<Target> {
     const response = await this.setTargetRaw(requestParameters, initOverrides);
@@ -584,6 +566,71 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<void> {
     await this.setTargetProvidersTargetsRaw(requestParameters, initOverrides);
+  }
+
+  /**
+   * Create or update a target in a workspace
+   */
+  async setWorkspaceTargetRaw(
+    requestParameters: SetWorkspaceTargetRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<Target>> {
+    if (requestParameters["workspaceId"] == null) {
+      throw new runtime.RequiredError(
+        "workspaceId",
+        'Required parameter "workspaceId" was null or undefined when calling setWorkspaceTarget().',
+      );
+    }
+
+    if (requestParameters["setTargetRequest"] == null) {
+      throw new runtime.RequiredError(
+        "setTargetRequest",
+        'Required parameter "setTargetRequest" was null or undefined when calling setWorkspaceTarget().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/targets/workspaces/{workspaceId}`.replace(
+          `{${"workspaceId"}}`,
+          encodeURIComponent(String(requestParameters["workspaceId"])),
+        ),
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: SetTargetRequestToJSON(requestParameters["setTargetRequest"]),
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse(response, (jsonValue) =>
+      TargetFromJSON(jsonValue),
+    );
+  }
+
+  /**
+   * Create or update a target in a workspace
+   */
+  async setWorkspaceTarget(
+    requestParameters: SetWorkspaceTargetRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<Target> {
+    const response = await this.setWorkspaceTargetRaw(
+      requestParameters,
+      initOverrides,
+    );
+    return await response.value();
   }
 
   /**
@@ -758,73 +805,6 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<UpdateJobAgent200Response> {
     const response = await this.updateJobAgentRaw(
-      requestParameters,
-      initOverrides,
-    );
-    return await response.value();
-  }
-
-  /**
-   * Update a target
-   */
-  async updateTargetRaw(
-    requestParameters: UpdateTargetOperationRequest,
-    initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<runtime.ApiResponse<Target>> {
-    if (requestParameters["targetId"] == null) {
-      throw new runtime.RequiredError(
-        "targetId",
-        'Required parameter "targetId" was null or undefined when calling updateTarget().',
-      );
-    }
-
-    if (requestParameters["updateTargetRequest"] == null) {
-      throw new runtime.RequiredError(
-        "updateTargetRequest",
-        'Required parameter "updateTargetRequest" was null or undefined when calling updateTarget().',
-      );
-    }
-
-    const queryParameters: any = {};
-
-    const headerParameters: runtime.HTTPHeaders = {};
-
-    headerParameters["Content-Type"] = "application/json";
-
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] =
-        await this.configuration.apiKey("x-api-key"); // apiKey authentication
-    }
-
-    const response = await this.request(
-      {
-        path: `/v1/targets/{targetId}`.replace(
-          `{${"targetId"}}`,
-          encodeURIComponent(String(requestParameters["targetId"])),
-        ),
-        method: "PATCH",
-        headers: headerParameters,
-        query: queryParameters,
-        body: UpdateTargetRequestToJSON(
-          requestParameters["updateTargetRequest"],
-        ),
-      },
-      initOverrides,
-    );
-
-    return new runtime.JSONApiResponse(response, (jsonValue) =>
-      TargetFromJSON(jsonValue),
-    );
-  }
-
-  /**
-   * Update a target
-   */
-  async updateTarget(
-    requestParameters: UpdateTargetOperationRequest,
-    initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<Target> {
-    const response = await this.updateTargetRaw(
       requestParameters,
       initOverrides,
     );
