@@ -31,7 +31,6 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
 
   const environmentName = environment.name;
   const { releaseId, policyId, status } = approval;
-  const currentUserId = api.user.viewer.useQuery().data?.id;
 
   const rejectMutation = api.environment.policy.approval.reject.useMutation({
     onSuccess: ({ cancelledJobCount }) => {
@@ -59,13 +58,11 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
     rejectMutation.mutate({
       releaseId,
       policyId,
-      userId: currentUserId!,
     });
   const handleApprove = () =>
     approveMutation.mutate({
       releaseId,
       policyId,
-      userId: currentUserId!,
     });
 
   return (
