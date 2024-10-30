@@ -20,7 +20,6 @@ import { ConfigEditor } from "../ConfigEditor";
 const TargetConfigInfo: React.FC<{ config: Record<string, any> }> = ({
   config,
 }) => {
-  yaml.dump(config);
   return <ConfigEditor value={yaml.dump(config)} readOnly />;
 };
 
