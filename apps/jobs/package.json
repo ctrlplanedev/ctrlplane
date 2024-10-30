@@ -26,6 +26,7 @@
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
     "@ctrlplane/tsconfig": "workspace:*",
+    "@types/lodash": "^4.17.5",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsx": "catalog:",

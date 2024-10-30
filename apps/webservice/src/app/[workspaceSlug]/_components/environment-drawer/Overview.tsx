@@ -100,7 +100,7 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
           getExpiresAt(currExpiresAt, durationNumber, durationUnit),
           "MMM d, yyyy h:mm a",
         )
-      : null;
+      : "no change";
 
   return (
     <Form {...form}>
@@ -138,7 +138,7 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
           <Label>Environment expiration</Label>
           <div className="flex flex-col gap-1 text-sm text-muted-foreground">
             <span>Current expiration: {currentExpiration}</span>
-            <span>New expiration: {newExpiration ?? "No change"}</span>
+            <span>New expiration: {newExpiration}</span>
           </div>
 
           <div className="flex items-center gap-2 text-sm">

@@ -13,7 +13,10 @@ import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
-  expiresAt: z.coerce.date().optional(),
+  expiresAt: z.coerce
+    .date()
+    .min(new Date(), "Expires at must be in the future")
+    .optional(),
 });
 
 export const POST = request()
@@ -39,5 +42,11 @@ export const POST = request()
         .returning()
         .then(takeFirst)
         .then((environment) => NextResponse.json({ environment }))
-        .catch((error) => NextResponse.json({ error }, { status: 500 })),
+        .catch((error) => {
+          console.error(error);
+          return NextResponse.json(
+            { error: "Failed to create environment" },
+            { status: 500 },
+          );
+        }),
   );
