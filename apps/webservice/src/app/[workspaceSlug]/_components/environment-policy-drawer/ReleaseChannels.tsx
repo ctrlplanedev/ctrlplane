@@ -23,6 +23,57 @@ type Deployment = SCHEMA.Deployment & {
 
 type ReleaseChannelProps = { policy: Policy; deployments: Deployment[] };
 
+type DeploymentSelectProps = {
+  deployment: Deployment;
+  releaseChannels: Record<string, string | null>;
+  updateReleaseChannel: (
+    deploymentId: string,
+    channelId: string | null,
+  ) => void;
+};
+
+const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
+  deployment,
+  releaseChannels,
+  updateReleaseChannel,
+}) => {
+  const releaseChannelId = releaseChannels[deployment.id];
+  const releaseChannel = deployment.releaseChannels.find(
+    (rc) => rc.id === releaseChannelId,
+  );
+  const value = releaseChannel?.id;
+
+  const onChange = (channelId: string) =>
+    updateReleaseChannel(
+      deployment.id,
+      channelId === "null" ? null : channelId,
+    );
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-40 truncate">{deployment.name}</span>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-72">
+          <SelectValue
+            placeholder="Select release channel"
+            className="truncate"
+          />
+        </SelectTrigger>
+        <SelectContent className="overflow-y-auto">
+          <SelectItem value="null" className="w-72">
+            No release channel
+          </SelectItem>
+          {deployment.releaseChannels.map((rc) => (
+            <SelectItem key={rc.id} value={rc.id} className="w-72">
+              <span className="truncate">{rc.name}</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+};
+
 export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
   policy,
   deployments,
@@ -66,40 +117,14 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
           <span className="w-40">Deployment</span>
           <span className="w-72">Release Channel</span>
         </div>
-        {deploymentsWithReleaseChannels.map((d) => {
-          const releaseChannelId = releaseChannels[d.id];
-          const releaseChannel = d.releaseChannels.find(
-            (rc) => rc.id === releaseChannelId,
-          );
-          const value = releaseChannel?.id;
-
-          const onChange = (channelId: string) =>
-            updateReleaseChannel(d.id, channelId === "null" ? null : channelId);
-
-          return (
-            <div key={d.id} className="flex items-center gap-2">
-              <span className="w-40 truncate">{d.name}</span>
-              <Select value={value} onValueChange={onChange}>
-                <SelectTrigger className="w-72">
-                  <SelectValue
-                    placeholder="Select release channel"
-                    className="truncate"
-                  />
-                </SelectTrigger>
-                <SelectContent className="overflow-y-auto">
-                  <SelectItem value="null" className="w-72">
-                    No release channel
-                  </SelectItem>
-                  {d.releaseChannels.map((rc) => (
-                    <SelectItem key={rc.id} value={rc.id} className="w-72">
-                      <span className="truncate">{rc.name}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          );
-        })}
+        {deploymentsWithReleaseChannels.map((d) => (
+          <DeploymentSelect
+            key={d.id}
+            deployment={d}
+            releaseChannels={releaseChannels}
+            updateReleaseChannel={updateReleaseChannel}
+          />
+        ))}
       </div>
       <Button onClick={onSubmit} disabled={updateReleaseChannels.isPending}>
         Save
