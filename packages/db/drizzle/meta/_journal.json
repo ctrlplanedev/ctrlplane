@@ -197,13 +197,6 @@
       "when": 1730166662759,
       "tag": "0027_abandoned_living_mummy",
       "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "7",
-      "when": 1730313248889,
-      "tag": "0028_peaceful_otto_octavius",
-      "breakpoints": true
     }
   ]
 }
