@@ -1,6 +1,7 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   pgTable,
   text,
   timestamp,
@@ -41,12 +42,20 @@ export const targetProviderGoogle = pgTable("target_provider_google", {
   targetProviderId: uuid("target_provider_id")
     .notNull()
     .references(() => targetProvider.id, { onDelete: "cascade" }),
+
   projectIds: text("project_ids").array().notNull(),
+
+  importGke: boolean("import_gke").notNull().default(false),
+  importNamespaces: boolean("import_namespaces").notNull().default(false),
+  importVCluster: boolean("import_vcluster").notNull().default(false),
 });
+
 export const createTargetProviderGoogle = createInsertSchema(
   targetProviderGoogle,
   { projectIds: z.array(z.string().min(1)).min(1) },
 ).omit({ id: true });
+
+export const updateTargetProviderGoogle = createTargetProviderGoogle.partial();
 
 export type TargetProviderGoogle = InferSelectModel<
   typeof targetProviderGoogle

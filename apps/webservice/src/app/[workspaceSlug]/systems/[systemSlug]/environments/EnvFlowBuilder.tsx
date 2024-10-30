@@ -22,7 +22,7 @@ import ReactFlow, {
 import colors from "tailwindcss/colors";
 import { isPresent } from "ts-is-present";
 
-import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/_components/EnvironmentDrawer";
+import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/_components/environment-drawer/EnvironmentDrawer";
 import { ArrowEdge } from "~/app/[workspaceSlug]/_components/reactflow/ArrowEdge";
 import {
   createEdgesFromPolicyDeployment,

@@ -334,13 +334,21 @@ export const deploymentRouter = createTRPCRouter({
             eq(activeRelease.rank, 1),
           ),
         )
+        .leftJoin(
+          releaseChannel,
+          eq(releaseChannel.deploymentId, deployment.id),
+        )
         .where(eq(deployment.systemId, input))
+        .orderBy(deployment.name)
         .then((ts) =>
           _.chain(ts)
             .groupBy((t) => t.deployment.id)
             .map((t) => ({
               ...t[0]!.deployment,
               activeReleases: t.map((a) => a.active_releases).filter(isPresent),
+              releaseChannels: t
+                .map((a) => a.release_channel)
+                .filter(isPresent),
             }))
             .value(),
         );

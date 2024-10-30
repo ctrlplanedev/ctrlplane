@@ -1,31 +1,17 @@
-"use client";
-
-import type * as schema from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { TargetCondition } from "@ctrlplane/validators/targets";
-import React, { useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   IconExternalLink,
   IconLoader2,
-  IconPlant,
   IconSelector,
 } from "@tabler/icons-react";
 import * as LZString from "lz-string";
 import { z } from "zod";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@ctrlplane/ui/alert-dialog";
-import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import { Button } from "@ctrlplane/ui/button";
 import {
   Command,
   CommandGroup,
@@ -33,7 +19,6 @@ import {
   CommandItem,
   CommandList,
 } from "@ctrlplane/ui/command";
-import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import {
   Form,
   FormControl,
@@ -43,142 +28,16 @@ import {
   FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
-import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-import { Separator } from "@ctrlplane/ui/separator";
-import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   defaultCondition,
   targetCondition,
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
-import { TargetConditionRender } from "./target-condition/TargetConditionRender";
-import { TargetIcon } from "./TargetIcon";
-
-const DeleteEnvironmentDialog: React.FC<{
-  environment: schema.Environment;
-  children: React.ReactNode;
-}> = ({ environment, children }) => {
-  const deleteEnvironment = api.environment.delete.useMutation();
-  const utils = api.useUtils();
-  const { removeEnvironmentId } = useEnvironmentDrawer();
-
-  const onDelete = () =>
-    deleteEnvironment
-      .mutateAsync(environment.id)
-      .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
-      .then(removeEnvironmentId);
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Environment</AlertDialogTitle>
-        </AlertDialogHeader>
-        <AlertDialogDescription>
-          Are you sure you want to delete this environment? You will have to
-          recreate it from scratch.
-        </AlertDialogDescription>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onDelete}
-            className={buttonVariants({ variant: "destructive" })}
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-};
-const environmentForm = z.object({
-  name: z.string(),
-  description: z.string().default(""),
-});
-
-const EnvironmentForm: React.FC<{
-  environment: schema.Environment;
-}> = ({ environment }) => {
-  const form = useForm({
-    schema: environmentForm,
-    defaultValues: {
-      name: environment.name,
-      description: environment.description ?? "",
-    },
-  });
-  const update = api.environment.update.useMutation();
-  const envOverride = api.job.trigger.create.byEnvId.useMutation();
-
-  const utils = api.useUtils();
-
-  const { id, systemId } = environment;
-  const onSubmit = form.handleSubmit((data) =>
-    update
-      .mutateAsync({ id, data })
-      .then(() => form.reset(data))
-      .then(() => utils.environment.bySystemId.invalidate(systemId))
-      .then(() => utils.environment.byId.invalidate(id)),
-  );
-
-  return (
-    <Form {...form}>
-      <form onSubmit={onSubmit} className="m-6 space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Staging, Production, QA..." {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea placeholder="Add a description..." {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <div className="flex gap-2">
-          <Button
-            type="submit"
-            disabled={update.isPending || !form.formState.isDirty}
-          >
-            Save
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() =>
-              envOverride
-                .mutateAsync(id)
-                .then(() => utils.environment.bySystemId.invalidate(systemId))
-                .then(() => utils.environment.byId.invalidate(id))
-            }
-          >
-            Override
-          </Button>
-          <div className="flex-grow" />
-          <DeleteEnvironmentDialog environment={environment}>
-            <Button variant="destructive">Delete</Button>
-          </DeleteEnvironmentDialog>
-        </div>
-      </form>
-    </Form>
-  );
-};
+import { TargetConditionRender } from "../target-condition/TargetConditionRender";
+import { TargetIcon } from "../TargetIcon";
 
 const TargetViewsCombobox: React.FC<{
   workspaceId: string;
@@ -238,13 +97,11 @@ const filterForm = z.object({
   targetFilter: targetCondition.optional(),
 });
 
-const EditFilterForm: React.FC<{
-  environment: schema.Environment;
-}> = ({ environment }) => {
+export const EditFilterForm: React.FC<{
+  environment: SCHEMA.Environment;
+  workspaceId: string;
+}> = ({ environment, workspaceId }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
-  const workspace = workspaceQ.data;
-
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
@@ -253,7 +110,6 @@ const EditFilterForm: React.FC<{
 
   const { targetFilter } = form.watch();
 
-  const workspaceId = workspace?.id ?? "";
   const filter = targetFilter ?? undefined;
   const targets = api.target.byWorkspaceId.list.useQuery(
     { workspaceId, filter, limit: 10 },
@@ -373,66 +229,5 @@ const EditFilterForm: React.FC<{
           )}
       </form>
     </Form>
-  );
-};
-
-const param = "environment_id";
-export const useEnvironmentDrawer = () => {
-  const router = useRouter();
-  const params = useSearchParams();
-  const environmentId = params.get(param);
-
-  const setEnvironmentId = (id: string | null) => {
-    const url = new URL(window.location.href);
-    if (id === null) {
-      url.searchParams.delete(param);
-    } else {
-      url.searchParams.set(param, id);
-    }
-    router.replace(url.toString());
-  };
-
-  const removeEnvironmentId = () => setEnvironmentId(null);
-
-  return { environmentId, setEnvironmentId, removeEnvironmentId };
-};
-
-export const EnvironmentDrawer: React.FC = () => {
-  const { environmentId, removeEnvironmentId } = useEnvironmentDrawer();
-  const isOpen = environmentId != null && environmentId != "";
-  const setIsOpen = removeEnvironmentId;
-  const environmentQ = api.environment.byId.useQuery(environmentId ?? "", {
-    enabled: isOpen,
-  });
-  const environment = environmentQ.data;
-
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
-  const workspace = workspaceQ.data;
-
-  return (
-    <Drawer open={isOpen} onOpenChange={setIsOpen}>
-      <DrawerContent
-        showBar={false}
-        className="left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none focus-visible:outline-none"
-      >
-        <DrawerTitle className="flex items-center gap-2 border-b p-6">
-          <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
-            <IconPlant className="h-4 w-4" />
-          </div>
-          {environment?.name}
-        </DrawerTitle>
-
-        <div className="flex w-full gap-6">
-          {environment != null && workspace != null && (
-            <div className="w-full space-y-12 overflow-auto">
-              <EnvironmentForm environment={environment} />
-              <Separator />
-              <EditFilterForm environment={environment} />
-            </div>
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
   );
 };
