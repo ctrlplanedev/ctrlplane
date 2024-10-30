@@ -14,7 +14,6 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { api } from "~/trpc/react";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ConfigEditor } from "../ConfigEditor";
 
@@ -78,8 +77,6 @@ export const OverviewContent: React.FC<{
           string
         >)
       : null;
-
-  const deployments = api.deployment.byTargetId.useQuery(target.id);
 
   return (
     <div className="space-y-4">
@@ -214,18 +211,6 @@ export const OverviewContent: React.FC<{
         </div>
         <div className="text-xs">
           <TargetMetadataInfo metadata={target.metadata} />
-        </div>
-      </div>
-
-      <div>
-        <div className="mb-2 text-sm">Deployments</div>
-        <div className="text-xs">
-          {deployments.data?.length === 0 && (
-            <span className="text-muted-foreground">
-              Target is not part of any deployments.
-            </span>
-          )}
-          {deployments.data?.map((t) => <div key={t.id}>{t.name}</div>)}
         </div>
       </div>
     </div>
