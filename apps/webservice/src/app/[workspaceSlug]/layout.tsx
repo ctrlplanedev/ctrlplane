@@ -3,8 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@ctrlplane/auth";
 
 import { api } from "~/trpc/server";
+import { EnvironmentDrawer } from "./_components/environment-drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer/EnvironmentPolicyDrawer";
-import { EnvironmentDrawer } from "./_components/EnvironmentDrawer";
 import { JobDrawer } from "./_components/job-drawer/JobDrawer";
 import { ReleaseChannelDrawer } from "./_components/release-channel-drawer/ReleaseChannelDrawer";
 import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
