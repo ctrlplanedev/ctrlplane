@@ -7,6 +7,8 @@ const clusterConfig = z.object({
     certificateAuthorityData: z.string().nullish(),
     endpoint: z.string().url(),
   }),
+  vcluster: z.string().optional(),
+  namespace: z.string().optional(),
   auth: z.discriminatedUnion("method", [
     z.object({
       method: z.literal("token"),

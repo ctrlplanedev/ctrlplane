@@ -26,9 +26,7 @@ export default async function ReleasePage({
   const release = await api.release.byId(params.versionId);
   const deployment = await api.deployment.bySlug(params);
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
-  if (workspace == null) return notFound();
-
-  if (release == null || deployment == null) notFound();
+  if (workspace == null || release == null || deployment == null) notFound();
 
   const system = await api.system.bySlug(params);
   const environments = await api.environment.bySystemId(system.id);

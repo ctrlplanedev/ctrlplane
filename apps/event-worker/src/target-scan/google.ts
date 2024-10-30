@@ -7,9 +7,12 @@ import { KubeConfig } from "@kubernetes/client-node";
 import { GoogleAuth, Impersonated } from "google-auth-library";
 import { SemVer } from "semver";
 
+import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { omitNullUndefined } from "../utils.js";
+
+const log = logger.child({ label: "target-scan/gke/google" });
 
 const sourceCredentials = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
@@ -150,4 +153,17 @@ export const clusterToTarget = (
       ...(cluster.resourceLabels ?? {}),
     }),
   };
+};
+
+export const getClient = async (googleServiceAccountEmail?: string | null) => {
+  try {
+    const [googleClusterClient, impersonatedAuthClient] =
+      await getGoogleClusterClient(googleServiceAccountEmail);
+    return { googleClusterClient, impersonatedAuthClient };
+  } catch (error: any) {
+    log.error(`Failed to get Google Cluster Client: ${error.message}`, {
+      error,
+    });
+    throw error;
+  }
 };
