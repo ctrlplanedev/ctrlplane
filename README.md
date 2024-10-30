@@ -1,10 +1,9 @@
 <p align="center">
   <a href="https://ctrlplane.dev">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://ctrlplane.dev/android-chrome-512x512.png">
-      <img src="https://ctrlplane.dev/android-chrome-512x512.png" height="128">
+      <source media="(prefers-color-scheme: dark)" srcset="https://ctrlplane.dev/logo-sm.png">
+      <img src="https://ctrlplane.dev/logo-sm.png" height="60">
     </picture>
-    <h1 align="center">Ctrlplane</h1>
   </a>
 </p>
 
