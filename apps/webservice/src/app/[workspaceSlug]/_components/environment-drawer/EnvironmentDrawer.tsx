@@ -53,12 +53,14 @@ export const EnvironmentDrawer: React.FC = () => {
   const environment = environmentQ.data;
 
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
+  const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug, {
+    enabled: isOpen,
+  });
   const workspace = workspaceQ.data;
 
   const deploymentsQ = api.deployment.bySystemId.useQuery(
     environment?.systemId ?? "",
-    { enabled: isOpen },
+    { enabled: isOpen && environment != null },
   );
   const deployments = deploymentsQ.data;
 

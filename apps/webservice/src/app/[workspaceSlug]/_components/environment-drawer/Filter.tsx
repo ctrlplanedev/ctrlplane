@@ -9,7 +9,6 @@ import {
   IconSelector,
 } from "@tabler/icons-react";
 import * as LZString from "lz-string";
-import { Label } from "recharts";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -29,6 +28,7 @@ import {
   FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
+import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   defaultCondition,

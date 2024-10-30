@@ -329,18 +329,21 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.id, input))
         .then((rows) => {
           const policy = rows.at(0)!;
-          const releaseChannels = rows
+          const releaseChannels = _.chain(rows)
             .map((r) => r.release_channel)
-            .filter(isPresent);
+            .filter(isPresent)
+            .uniqBy((r) => r.id)
+            .value();
 
-          const releaseWindows = rows
+          const releaseWindows = _.chain(rows)
             .map((r) => r.environment_policy_release_window)
             .filter(isPresent)
             .map((r) => ({
               ...r,
               startTime: new Date(r.startTime),
               endTime: new Date(r.endTime),
-            }));
+            }))
+            .value();
 
           return {
             ...policy.environment_policy,

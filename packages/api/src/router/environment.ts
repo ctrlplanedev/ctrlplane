@@ -95,7 +95,7 @@ export const environmentRouter = createTRPCRouter({
           policyRCSubquery,
           eq(environmentPolicy.id, policyRCSubquery.releaseChannelPolicyId),
         )
-        .where(and(eq(environment.id, input), isNull(environment.deletedAt)))
+        .where(eq(environment.id, input))
         .then((rows) => {
           const env = rows.at(0);
           if (env == null) return null;
@@ -104,27 +104,30 @@ export const environmentRouter = createTRPCRouter({
               ? null
               : {
                   ...env.environment_policy,
-                  releaseChannels: rows
+                  releaseChannels: _.chain(rows)
                     .map((r) => r.policyRCSubquery)
                     .filter(isPresent)
+                    .uniqBy((r) => r.releaseChannelId)
                     .map((r) => ({
                       deploymentId: r.releaseChannelDeploymentId,
                       filter: r.releaseChannelFilter,
                       id: r.releaseChannelId,
                       name: r.releaseChannelName,
                     }))
-                    .filter(isPresent),
+                    .value(),
                 };
 
-          const releaseChannels = rows
+          const releaseChannels = _.chain(rows)
             .map((r) => r.envRCSubquery)
             .filter(isPresent)
+            .uniqBy((r) => r.releaseChannelId)
             .map((r) => ({
               deploymentId: r.releaseChannelDeploymentId,
               filter: r.releaseChannelFilter,
               id: r.releaseChannelId,
               name: r.releaseChannelName,
-            }));
+            }))
+            .value();
 
           return {
             ...env.environment,

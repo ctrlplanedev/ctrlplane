@@ -49,25 +49,21 @@ export const ReleaseChannels: React.FC<ReleaseChannelsProps> = ({
     (d) => d.releaseChannels.length > 0,
   );
 
-  const policyReleaseChannels = deploymentsWithReleaseChannels.reduce(
-    (acc, d) => {
-      acc[d.id] =
-        environment.policy?.releaseChannels.find(
-          (rc) => rc.deploymentId === d.id,
-        )?.id ?? null;
-      return acc;
-    },
-    {} as Record<string, string | null>,
+  const { fromEntries } = Object;
+  const policyReleaseChannels = fromEntries(
+    deploymentsWithReleaseChannels.map((d) => [
+      d.id,
+      environment.policy?.releaseChannels.find((rc) => rc.deploymentId === d.id)
+        ?.id ?? null,
+    ]),
   );
 
-  const currEnvReleaseChannels = deploymentsWithReleaseChannels.reduce(
-    (acc, d) => {
-      acc[d.id] =
-        environment.releaseChannels.find((rc) => rc.deploymentId === d.id)
-          ?.id ?? null;
-      return acc;
-    },
-    {} as Record<string, string | null>,
+  const currEnvReleaseChannels = fromEntries(
+    deploymentsWithReleaseChannels.map((d) => [
+      d.id,
+      environment.releaseChannels.find((rc) => rc.deploymentId === d.id)?.id ??
+        null,
+    ]),
   );
 
   const [releaseChannels, setReleaseChannels] = useState<
