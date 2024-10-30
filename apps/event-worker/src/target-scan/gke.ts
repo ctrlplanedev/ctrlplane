@@ -159,7 +159,15 @@ const getVClustersForCluster = async (
       Status: string;
       Created: string;
       Version: string;
-    }>;
+    }> | null;
+
+    if (vclusters == null) {
+      log.info(
+        `No vclusters found for cluster: ${cluster.name}/${cluster.id}`,
+        { project, clusterName: cluster.name, workspaceId },
+      );
+      return [];
+    }
 
     const clusterTarget = clusterToTarget(
       workspaceId,
