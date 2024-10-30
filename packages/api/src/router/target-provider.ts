@@ -8,6 +8,7 @@ import {
   target,
   targetProvider,
   targetProviderGoogle,
+  updateTargetProviderGoogle,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -96,12 +97,24 @@ export const targetProviderRouter = createTRPCRouter({
     ),
 
   managed: createTRPCRouter({
+    sync: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.TargetProviderUpdate)
+            .on({ type: "targetProvider", id: input }),
+      })
+      .input(z.string().uuid())
+      .mutation(async ({ input }) =>
+        targetScanQueue.add(input, { targetProviderId: input }),
+      ),
+
     google: createTRPCRouter({
       create: protectedProcedure
         .meta({
           authorizationCheck: ({ canUser, input }) =>
             canUser
-              .perform(Permission.TargetUpdate)
+              .perform(Permission.TargetCreate, Permission.TargetProviderUpdate)
               .on({ type: "workspace", id: input.workspaceId }),
         })
         .input(
@@ -141,34 +154,41 @@ export const targetProviderRouter = createTRPCRouter({
         .input(
           z.object({
             targetProviderId: z.string().uuid(),
-            name: z.string(),
-            config: createTargetProviderGoogle.omit({
+            name: z.string().optional(),
+            config: updateTargetProviderGoogle.omit({
               targetProviderId: true,
             }),
           }),
         )
-        .mutation(({ ctx, input }) =>
-          ctx.db.transaction(async (db) =>
-            db
-              .update(targetProvider)
-              .set(input)
-              .where(eq(targetProvider.id, input.targetProviderId))
-              .then(() =>
-                db
-                  .update(targetProviderGoogle)
-                  .set(input.config)
-                  .where(
-                    eq(
-                      targetProviderGoogle.targetProviderId,
-                      input.targetProviderId,
-                    ),
-                  ),
-              ),
-          ),
-        ),
+        .mutation(({ ctx, input }) => {
+          return ctx.db.transaction(async (db) => {
+            if (input.name != null)
+              await db
+                .update(targetProvider)
+                .set({ name: input.name })
+                .where(eq(targetProvider.id, input.targetProviderId))
+                .returning()
+                .then(takeFirst);
+
+            await db
+              .update(targetProviderGoogle)
+              .set(input.config)
+              .where(
+                eq(
+                  targetProviderGoogle.targetProviderId,
+                  input.targetProviderId,
+                ),
+              )
+              .returning()
+              .then(takeFirst);
+
+            await targetScanQueue.add(input.targetProviderId, {
+              targetProviderId: input.targetProviderId,
+            });
+          });
+        }),
     }),
   }),
-
   delete: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

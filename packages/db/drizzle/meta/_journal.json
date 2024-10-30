@@ -197,6 +197,13 @@
       "when": 1730166662759,
       "tag": "0027_abandoned_living_mummy",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1730263854109,
+      "tag": "0028_peaceful_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

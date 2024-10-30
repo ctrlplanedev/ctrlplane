@@ -1,5 +1,6 @@
 "use client";
 
+import type { TargetProviderGoogle } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -21,6 +22,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -30,6 +32,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
+import { Switch } from "@ctrlplane/ui/switch";
 
 import { api } from "~/trpc/react";
 import { createGoogleSchema } from "./GoogleDialog";
@@ -37,15 +40,19 @@ import { createGoogleSchema } from "./GoogleDialog";
 export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
-  projectIds: string[];
+  googleConfig: TargetProviderGoogle | null;
   onClose?: () => void;
   children: React.ReactNode;
-}> = ({ providerId, name, projectIds, onClose, children }) => {
+}> = ({ providerId, googleConfig, name, onClose, children }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const form = useForm({
     schema: createGoogleSchema,
-    defaultValues: { name, projectIds: projectIds.map((p) => ({ value: p })) },
+    defaultValues: {
+      name,
+      ...googleConfig,
+      projectIds: googleConfig?.projectIds.map((p) => ({ value: p })) ?? [],
+    },
     mode: "onChange",
   });
 
@@ -56,7 +63,12 @@ export const UpdateGoogleProviderDialog: React.FC<{
     await update.mutateAsync({
       ...data,
       targetProviderId: providerId,
-      config: { projectIds: data.projectIds.map((p) => p.value) },
+      config: {
+        projectIds: data.projectIds.map((p) => p.value),
+        importGke: data.importGke,
+        importVCluster: data.importVCluster,
+        importNamespaces: data.importNamespaces,
+      },
     });
     await utils.target.provider.byWorkspaceId.invalidate();
     setOpen(false);
@@ -92,7 +104,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent className={"max-h-screen overflow-y-scroll"}>
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-3">
             <DialogHeader>
@@ -202,6 +214,70 @@ export const UpdateGoogleProviderDialog: React.FC<{
                 Add Project
               </Button>
             </div>
+
+            <FormField
+              control={form.control}
+              name="importGke"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import GKE Clusters</FormLabel>
+                    <FormDescription>
+                      Enable importing of Google Kubernetes Engine (GKE)
+                      clusters
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="importNamespaces"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import Namespaces</FormLabel>
+                    <FormDescription>
+                      Enable importing of Kubernetes namespaces clusters
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="importVCluster"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import vClusters</FormLabel>
+                    <FormDescription>
+                      Enable importing of vClusters
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button
