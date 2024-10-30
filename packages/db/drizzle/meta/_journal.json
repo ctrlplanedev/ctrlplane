@@ -204,6 +204,13 @@
       "when": 1730263854109,
       "tag": "0028_peaceful_ghost_rider",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1730328775436,
+      "tag": "0029_boring_frank_castle",
+      "breakpoints": true
     }
   ]
 }
