@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconAlertTriangle } from "@tabler/icons-react";
@@ -14,13 +15,27 @@ import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
 import { DeploymentNavBar } from "./DeploymentNavBar";
 
+type PageProps = {
+  params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
+};
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const deployment = await api.deployment.bySlug(params);
+  if (deployment == null) return notFound();
+
+  return {
+    title: `${deployment.name} | Deployments`,
+  };
+}
+
 export default async function DeploymentLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: any;
-}) {
+} & PageProps) {
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
   const deployment = await api.deployment.bySlug(params);
