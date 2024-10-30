@@ -35,7 +35,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Separator } from "@ctrlplane/ui/separator";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
-import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/_components/EnvironmentDrawer";
+import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/_components/environment-drawer/EnvironmentDrawer";
 import { api } from "~/trpc/react";
 import { DeleteNodeDialog, useDeleteNodeDialog } from "./DeleteNodeDialog";
 import { useHandleEdgeDelete } from "./edges";
