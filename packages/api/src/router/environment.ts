@@ -165,13 +165,12 @@ const policyRouter = createTRPCRouter({
         z.object({
           policyId: z.string().uuid(),
           releaseId: z.string().uuid(),
-          userId: z.string().uuid(),
         }),
       )
       .mutation(async ({ ctx, input }) => {
         const envApproval = await ctx.db
           .update(environmentPolicyApproval)
-          .set({ status: "approved", userId: input.userId })
+          .set({ status: "approved", userId: ctx.session.user.id })
           .where(
             and(
               eq(environmentPolicyApproval.policyId, input.policyId),
@@ -225,14 +224,13 @@ const policyRouter = createTRPCRouter({
         z.object({
           releaseId: z.string().uuid(),
           policyId: z.string().uuid(),
-          userId: z.string().uuid(),
         }),
       )
       .mutation(({ ctx, input }) =>
         ctx.db.transaction(async (tx) => {
           await tx
             .update(environmentPolicyApproval)
-            .set({ status: "rejected", userId: input.userId })
+            .set({ status: "rejected", userId: ctx.session.user.id })
             .where(
               and(
                 eq(environmentPolicyApproval.policyId, input.policyId),
