@@ -7,6 +7,10 @@ RUN apk add --no-cache libc6-compat python3 make g++ bash nano
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
+RUN curl -L -o vcluster "https://github.com/loft-sh/vcluster/releases/latest/download/vcluster-linux-amd64" && \
+    chmod +x vcluster && \
+    mv vcluster /usr/local/bin
+
 RUN npm install -g turbo
 RUN corepack enable pnpm
 

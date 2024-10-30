@@ -39,9 +39,11 @@ export const ProviderActionsDropdown: React.FC<{
 }> = ({ provider }) => {
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
+
   const deleteProvider = api.target.provider.delete.useMutation({
     onSuccess: () => utils.target.provider.byWorkspaceId.invalidate(),
   });
+  const sync = api.target.provider.managed.sync.useMutation();
   const router = useRouter();
 
   const handleDelete = async (deleteTargets: boolean) => {
@@ -65,13 +67,23 @@ export const ProviderActionsDropdown: React.FC<{
           <UpdateGoogleProviderDialog
             providerId={provider.id}
             name={provider.name}
-            projectIds={provider.googleConfig.projectIds}
+            googleConfig={provider.googleConfig}
             onClose={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Edit
             </DropdownMenuItem>
           </UpdateGoogleProviderDialog>
+        )}
+        {provider.googleConfig != null && (
+          <DropdownMenuItem
+            onSelect={async () => {
+              await sync.mutateAsync(provider.id);
+              router.refresh();
+            }}
+          >
+            Sync
+          </DropdownMenuItem>
         )}
         <AlertDialog onOpenChange={setOpen}>
           <AlertDialogTrigger asChild>
