@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, sql } from "@ctrlplane/db";
+import { and, eq, inArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -78,12 +78,9 @@ export const isPassingCriteriaPolicy: ReleaseIdPolicyChecker = async (
       eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .where(
-      and(
-        inArray(
-          schema.releaseJobTrigger.id,
-          releaseJobTriggers.map((t) => t.id),
-        ),
-        isNull(schema.environment.deletedAt),
+      inArray(
+        schema.releaseJobTrigger.id,
+        releaseJobTriggers.map((t) => t.id),
       ),
     );
 

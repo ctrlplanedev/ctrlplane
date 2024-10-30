@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { and, eq, isNull, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -76,7 +76,7 @@ export const GET = async (
     .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .where(and(eq(job.id, params.jobId), isNull(environment.deletedAt)))
+    .where(eq(job.id, params.jobId))
     .then(takeFirst)
     .then((row) => ({
       job: row.job,

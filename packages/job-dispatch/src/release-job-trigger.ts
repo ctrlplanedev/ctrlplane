@@ -84,7 +84,6 @@ class ReleaseJobTriggerBuilder {
         this.releaseIds && inArray(release.id, this.releaseIds),
         this.environmentIds && inArray(environment.id, this.environmentIds),
       ].filter(isPresent),
-      isNull(environment.deletedAt),
       isNotNull(environment.targetFilter),
     );
   }

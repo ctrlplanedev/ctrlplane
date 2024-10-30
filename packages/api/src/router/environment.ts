@@ -8,7 +8,6 @@ import {
   buildConflictUpdateColumns,
   eq,
   inArray,
-  isNull,
   not,
   takeFirst,
 } from "@ctrlplane/db";
@@ -150,9 +149,7 @@ export const environmentRouter = createTRPCRouter({
         .from(environment)
         .innerJoin(system, eq(system.id, environment.systemId))
         .orderBy(environment.name)
-        .where(
-          and(eq(environment.systemId, input), isNull(environment.deletedAt)),
-        );
+        .where(eq(environment.systemId, input));
 
       return await Promise.all(
         envs.map(async (e) => ({

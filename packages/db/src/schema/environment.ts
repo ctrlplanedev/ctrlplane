@@ -36,8 +36,9 @@ export const environment = pgTable("environment", {
   targetFilter: jsonb("target_filter")
     .$type<TargetCondition | null>()
     .default(sql`NULL`),
-
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  ephemeralDuration: bigint("ephemeral_duration", { mode: "number" })
+    .notNull()
+    .default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -96,11 +97,6 @@ export const environmentPolicy = pgTable("environment_policy", {
   // Duration in milliseconds over which to gradually roll out releases to this
   // environment
   rolloutDuration: bigint("rollout_duration", { mode: "number" })
-    .notNull()
-    .default(0),
-
-  // Duration in milliseconds after which deployment delete hooks will be called
-  ephemeralDuration: bigint("ephemeral_duration", { mode: "number" })
     .notNull()
     .default(0),
 

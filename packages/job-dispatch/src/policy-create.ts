@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import {
   environment,
   environmentPolicy,
@@ -23,7 +23,6 @@ export const createJobApprovals = async (
     .innerJoin(
       environmentPolicy,
       and(
-        isNull(environment.deletedAt),
         eq(environment.policyId, environmentPolicy.id),
         eq(environmentPolicy.approvalRequirement, "manual"),
       ),

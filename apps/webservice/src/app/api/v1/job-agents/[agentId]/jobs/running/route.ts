@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { and, eq, isNull, notInArray } from "@ctrlplane/db";
+import { and, eq, notInArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -40,7 +40,6 @@ export const GET = async (
           "completed",
           "invalid_job_agent",
         ]),
-        isNull(environment.deletedAt),
       ),
     )
     .then((rows) =>

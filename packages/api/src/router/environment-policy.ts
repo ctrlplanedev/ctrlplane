@@ -7,7 +7,6 @@ import {
   buildConflictUpdateColumns,
   eq,
   inArray,
-  isNull,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -192,7 +191,6 @@ export const policyRouter = createTRPCRouter({
           .where(
             and(
               eq(environmentPolicyApproval.id, envApproval.id),
-              isNull(environment.deletedAt),
               eq(release.id, input.releaseId),
               eq(job.status, JobStatus.Pending),
             ),
