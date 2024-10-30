@@ -7,8 +7,8 @@ import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
+import { parseBody } from "~/app/api/v1/body-parser";
 import { request } from "~/app/api/v1/middleware";
-import { parseBody } from "../../../../body-parser";
 
 export const bodySchema = z.object({
   target: schema.createTarget.extend({
@@ -37,12 +37,12 @@ export const POST = request()
     authz(({ can, extra }) => {
       return can
         .perform(Permission.TargetCreate)
-        .on({ type: "target", id: extra.params.targetId });
+        .on({ type: "workspace", id: extra.params.workspaceId });
     }),
   )
   .handle<
     { body: z.infer<typeof bodySchema> },
-    { params: { targetId: string; workspaceId: string } }
+    { params: { workspaceId: string } }
   >(async (ctx, { params }) => {
     const { body } = ctx;
 

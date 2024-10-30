@@ -526,51 +526,18 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uuid
-                  name:
-                    type: string
-                  version:
-                    type: string
-                  kind:
-                    type: string
-                  identifier:
-                    type: string
-                  workspaceId:
-                    type: string
-                    format: uuid
-                  config:
-                    type: object
-                  metadata:
-                    type: object
-                    additionalProperties:
-                      type: string
-                  variables:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        key:
-                          type: string
-                        value:
-                          oneOf:
-                            - type: string
-                            - type: number
-                            - type: boolean
-                            - type: "null"
-                        sensitive:
-                          type: boolean
-                  provider:
-                    type: object
-                    nullable: true
+                $ref: "#/components/schemas/Target"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
         "404":
           description: Target not found
+
+  /v1/targets/{targetId}/set:
     patch:
       summary: Update a target
-      operationId: updateTarget
+      operationId: setTarget
       parameters:
         - name: targetId
           in: path
@@ -621,6 +588,8 @@ paths:
                         required:
                           - key
                           - sensitive
+              required:
+                - target
       responses:
         "200":
           description: Successfully updated target
@@ -628,21 +597,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Target"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
         "404":
           description: Target not found
 
-  /v1/targets/{targetId}/{workspaceId}/set:
+  /v1/workspaces/{workspaceId}/targets:
     post:
-      summary: Create or update a target with a specific ID and workspace
-      operationId: setTarget
+      summary: Create or update a target in a workspace
+      operationId: setWorkspaceTarget
       parameters:
-        - name: targetId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: The target ID
         - name: workspaceId
           in: path
           required: true
@@ -692,6 +658,8 @@ paths:
                         required:
                           - key
                           - sensitive
+              required:
+                - target
       responses:
         "200":
           description: Successfully created or updated target
@@ -699,6 +667,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Target"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Workspace not found
 
 components:
   securitySchemes:
@@ -745,6 +719,8 @@ components:
                   - type: "null"
               sensitive:
                 type: boolean
+            required:
+              - key
         provider:
           type: object
           nullable: true
