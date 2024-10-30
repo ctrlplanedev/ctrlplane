@@ -301,6 +301,12 @@ importers:
       cron:
         specifier: ^3.1.7
         version: 3.1.7
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      ts-is-present:
+        specifier: ^1.2.2
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.23.8

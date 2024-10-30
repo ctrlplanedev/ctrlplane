@@ -18,6 +18,8 @@
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "cron": "^3.1.7",
+    "lodash": "^4.17.21",
+    "ts-is-present": "^1.2.2",
     "zod": "catalog:"
   },
   "devDependencies": {

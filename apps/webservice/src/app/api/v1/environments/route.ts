@@ -1,8 +1,10 @@
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import type { User } from "@ctrlplane/db/schema";
-import type { z } from "zod";
 import { NextResponse } from "next/server";
+import { isPresent } from "ts-is-present";
+import { z } from "zod";
 
+import { takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -10,7 +12,9 @@ import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const body = schema.createEnvironment;
+const body = schema.createEnvironment.extend({
+  expiresAt: z.coerce.date().optional(),
+});
 
 export const POST = request()
   .use(authn)
@@ -23,12 +27,17 @@ export const POST = request()
     ),
   )
   .handle<{ user: User; can: PermissionChecker; body: z.infer<typeof body> }>(
-    async (ctx) => {
-      const environment = await ctx.db
+    async (ctx) =>
+      ctx.db
         .insert(schema.environment)
-        .values(ctx.body)
-        .returning();
-
-      return NextResponse.json({ environment });
-    },
+        .values({
+          ...ctx.body,
+          expiresAt: isPresent(ctx.body.expiresAt)
+            ? new Date(ctx.body.expiresAt)
+            : undefined,
+        })
+        .returning()
+        .then(takeFirst)
+        .then((environment) => NextResponse.json({ environment }))
+        .catch((error) => NextResponse.json({ error }, { status: 500 })),
   );
