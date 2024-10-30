@@ -399,7 +399,7 @@ export const releaseRouter = createTRPCRouter({
         .innerJoin(environment, eq(deployment.systemId, environment.systemId))
         .leftJoin(
           envRCSubquery,
-          eq(environment.id, envRCSubquery.releaseChannelEnvId),
+          eq(envRCSubquery.releaseChannelEnvId, environment.id),
         )
         .leftJoin(
           environmentPolicy,
@@ -407,7 +407,7 @@ export const releaseRouter = createTRPCRouter({
         )
         .leftJoin(
           policyRCSubquery,
-          eq(environment.id, policyRCSubquery.releaseChannelPolicyId),
+          eq(policyRCSubquery.releaseChannelPolicyId, environmentPolicy.id),
         )
         .where(inArray(release.id, input))
         .then((rows) =>
