@@ -3,6 +3,81 @@ info:
   title: Ctrlplane API
   version: 1.0.0
 paths:
+  /v1/targets/{targetId}:
+    get:
+      summary: Get a target
+      operationId: getTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The target ID
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  workspaceId:
+                    type: string
+                  kind:
+                    type: string
+                  identifier:
+                    type: string
+                  version:
+                    type: string
+                  config:
+                    type: object
+                    additionalProperties: true
+                  lockedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  updatedAt:
+                    type: string
+                    format: date-time
+                  provider:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                  metadata:
+                    type: object
+                    additionalProperties:
+                      type: string
+                required:
+                  - id
+                  - name
+                  - kind
+                  - identifier
+                  - version
+                  - config
+                  - workspaceId
+                  - updatedAt
+                  - metadata
+        "404":
+          description: Target not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Target not found"
+                required:
+                  - error
   /v1/workspaces/{workspace}/config:
     post:
       summary: Create resources from a config file
