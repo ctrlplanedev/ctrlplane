@@ -328,6 +328,7 @@ export const policyRouter = createTRPCRouter({
           const releaseWindows = _.chain(rows)
             .map((r) => r.environment_policy_release_window)
             .filter(isPresent)
+            .uniqBy((r) => r.id)
             .map((r) => ({
               ...r,
               startTime: new Date(r.startTime),

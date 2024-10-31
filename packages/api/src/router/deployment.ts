@@ -345,10 +345,19 @@ export const deploymentRouter = createTRPCRouter({
             .groupBy((t) => t.deployment.id)
             .map((t) => ({
               ...t[0]!.deployment,
-              activeReleases: t.map((a) => a.active_releases).filter(isPresent),
-              releaseChannels: t
+              // latest active release subquery can return multiple active releases
+              // and multiple release channels, which means we need to dedupe them
+              // since there will be a row per combination of active release and release channel
+              activeReleases: _.chain(t)
+                .map((a) => a.active_releases)
+                .filter(isPresent)
+                .uniqBy((a) => a.id)
+                .value(),
+              releaseChannels: _.chain(t)
                 .map((a) => a.release_channel)
-                .filter(isPresent),
+                .filter(isPresent)
+                .uniqBy((a) => a.id)
+                .value(),
             }))
             .value(),
         );
