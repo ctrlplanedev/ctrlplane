@@ -42,11 +42,10 @@ export const POST = request()
         .returning()
         .then(takeFirst)
         .then((environment) => NextResponse.json({ environment }))
-        .catch((error) => {
-          console.error(error);
-          return NextResponse.json(
+        .catch(() =>
+          NextResponse.json(
             { error: "Failed to create environment" },
             { status: 500 },
-          );
-        }),
+          ),
+        ),
   );

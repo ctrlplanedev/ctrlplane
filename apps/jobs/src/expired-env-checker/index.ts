@@ -1,9 +1,10 @@
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNotNull, lte } from "@ctrlplane/db";
+import { eq, inArray, lte } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 type QueryRow = {
   environment: SCHEMA.Environment;
@@ -20,23 +21,18 @@ const groupByEnvironment = (rows: QueryRow[]) =>
     .value();
 
 export const run = async () => {
-  const ephemeralEnvironments = await db
+  const expiredEnvironments = await db
     .select()
     .from(SCHEMA.environment)
     .innerJoin(
       SCHEMA.deployment,
       eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
     )
-    .where(
-      and(
-        isNotNull(SCHEMA.environment.expiresAt),
-        lte(SCHEMA.environment.expiresAt, new Date()),
-      ),
-    )
+    .where(lte(SCHEMA.environment.expiresAt, new Date()))
     .then(groupByEnvironment);
-  if (ephemeralEnvironments.length === 0) return;
+  if (expiredEnvironments.length === 0) return;
 
-  const targetPromises = ephemeralEnvironments
+  const targetPromises = expiredEnvironments
     .filter((env) => isPresent(env.targetFilter))
     .map(async (env) => {
       const targets = await db
@@ -49,11 +45,11 @@ export const run = async () => {
   const associatedTargets = await Promise.all(targetPromises);
 
   for (const { environmentId, targets } of associatedTargets)
-    console.log(
-      `[${targets.length}] targets are associated with ephemeral environment [${environmentId}]`,
+    logger.info(
+      `[${targets.length}] targets are associated with expired environment [${environmentId}]`,
     );
 
-  const envIds = ephemeralEnvironments.map((env) => env.id);
+  const envIds = expiredEnvironments.map((env) => env.id);
   await db
     .delete(SCHEMA.environment)
     .where(inArray(SCHEMA.environment.id, envIds));

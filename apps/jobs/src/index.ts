@@ -15,7 +15,7 @@ import { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
 
-import { run as ephemeralEnvChecker } from "./ephemeral-env-checker/index.js";
+import { run as expiredEnvChecker } from "./expired-env-checker/index.js";
 import { run as jobPolicyChecker } from "./policy-checker/index.js";
 
 const jobs: Record<string, { run: () => Promise<void>; schedule: string }> = {
@@ -23,8 +23,8 @@ const jobs: Record<string, { run: () => Promise<void>; schedule: string }> = {
     run: jobPolicyChecker,
     schedule: "* * * * *", // Default: Every minute
   },
-  "ephemeral-env-checker": {
-    run: ephemeralEnvChecker,
+  "expired-env-checker": {
+    run: expiredEnvChecker,
     schedule: "* * * * *", // Default: Every minute
   },
 };

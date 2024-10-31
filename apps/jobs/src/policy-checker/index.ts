@@ -6,6 +6,7 @@ import {
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const run = async () => {
@@ -44,7 +45,7 @@ export const run = async () => {
     .then((rows) => rows.map((row) => row.release_job_trigger));
 
   if (releaseJobTriggers.length === 0) return;
-  console.log(
+  logger.info(
     `Found [${releaseJobTriggers.length}] release job triggers to dispatch`,
   );
 

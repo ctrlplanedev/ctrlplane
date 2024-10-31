@@ -32,9 +32,7 @@ import { policyRouter } from "./environment-policy";
 export const createEnv = async (
   db: Tx,
   input: z.infer<typeof createEnvironment>,
-) => {
-  return db.insert(environment).values(input).returning().then(takeFirst);
-};
+) => db.insert(environment).values(input).returning().then(takeFirst);
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
