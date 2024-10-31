@@ -11,6 +11,7 @@ import type { KubeConfig } from "@kubernetes/client-node";
 import { CoreV1Api } from "@kubernetes/client-node";
 import _ from "lodash";
 import { SemVer } from "semver";
+import { v4 as uuidv4 } from "uuid";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
@@ -144,9 +145,8 @@ const getVClustersForCluster = async (
     return [];
   }
 
+  const kubeconfigPath = `/tmp/kubeconfig-${uuidv4()}`;
   try {
-    // Write kubeconfig to temp file and execute vcluster list command
-    const kubeconfigPath = `/tmp/kubeconfig-${Date.now()}`;
     await fs.promises.writeFile(kubeconfigPath, kubeConfig.exportConfig());
     const { stdout } = await exec(
       `KUBECONFIG=${kubeconfigPath} vcluster list --output=json`,
