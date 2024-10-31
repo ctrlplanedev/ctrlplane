@@ -67,10 +67,18 @@ export function UpdateJobRequestFromJSONTyped(
   };
 }
 
-export function UpdateJobRequestToJSON(value?: UpdateJobRequest | null): any {
+export function UpdateJobRequestToJSON(json: any): UpdateJobRequest {
+  return UpdateJobRequestToJSONTyped(json, false);
+}
+
+export function UpdateJobRequestToJSONTyped(
+  value?: UpdateJobRequest | null,
+  ignoreDiscriminator: boolean = false,
+): any {
   if (value == null) {
     return value;
   }
+
   return {
     status: value["status"],
     message: value["message"],

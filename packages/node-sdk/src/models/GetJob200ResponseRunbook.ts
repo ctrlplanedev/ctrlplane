@@ -82,11 +82,19 @@ export function GetJob200ResponseRunbookFromJSONTyped(
 }
 
 export function GetJob200ResponseRunbookToJSON(
+  json: any,
+): GetJob200ResponseRunbook {
+  return GetJob200ResponseRunbookToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseRunbookToJSONTyped(
   value?: GetJob200ResponseRunbook | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

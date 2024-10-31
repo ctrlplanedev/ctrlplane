@@ -73,11 +73,19 @@ export function GetJob200ResponseEnvironmentFromJSONTyped(
 }
 
 export function GetJob200ResponseEnvironmentToJSON(
+  json: any,
+): GetJob200ResponseEnvironment {
+  return GetJob200ResponseEnvironmentToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseEnvironmentToJSONTyped(
   value?: GetJob200ResponseEnvironment | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

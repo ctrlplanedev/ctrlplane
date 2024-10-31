@@ -73,12 +73,18 @@ export function UpdateJobAgentRequestFromJSONTyped(
   };
 }
 
-export function UpdateJobAgentRequestToJSON(
+export function UpdateJobAgentRequestToJSON(json: any): UpdateJobAgentRequest {
+  return UpdateJobAgentRequestToJSONTyped(json, false);
+}
+
+export function UpdateJobAgentRequestToJSONTyped(
   value?: UpdateJobAgentRequest | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     workspaceId: value["workspaceId"],
     name: value["name"],

@@ -103,11 +103,19 @@ export function GetNextJobs200ResponseJobsInnerFromJSONTyped(
 }
 
 export function GetNextJobs200ResponseJobsInnerToJSON(
+  json: any,
+): GetNextJobs200ResponseJobsInner {
+  return GetNextJobs200ResponseJobsInnerToJSONTyped(json, false);
+}
+
+export function GetNextJobs200ResponseJobsInnerToJSONTyped(
   value?: GetNextJobs200ResponseJobsInner | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     status: value["status"],

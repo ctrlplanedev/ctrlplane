@@ -98,11 +98,19 @@ export function SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped(
 }
 
 export function SetTargetProvidersTargetsRequestTargetsInnerToJSON(
+  json: any,
+): SetTargetProvidersTargetsRequestTargetsInner {
+  return SetTargetProvidersTargetsRequestTargetsInnerToJSONTyped(json, false);
+}
+
+export function SetTargetProvidersTargetsRequestTargetsInnerToJSONTyped(
   value?: SetTargetProvidersTargetsRequestTargetsInner | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     identifier: value["identifier"],
     name: value["name"],

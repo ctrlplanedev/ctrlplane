@@ -18,6 +18,7 @@ import {
   UpdateTargetRequestVariablesInnerFromJSON,
   UpdateTargetRequestVariablesInnerFromJSONTyped,
   UpdateTargetRequestVariablesInnerToJSON,
+  UpdateTargetRequestVariablesInnerToJSONTyped,
 } from "./UpdateTargetRequestVariablesInner";
 
 /**
@@ -106,12 +107,18 @@ export function UpdateTargetRequestFromJSONTyped(
   };
 }
 
-export function UpdateTargetRequestToJSON(
+export function UpdateTargetRequestToJSON(json: any): UpdateTargetRequest {
+  return UpdateTargetRequestToJSONTyped(json, false);
+}
+
+export function UpdateTargetRequestToJSONTyped(
   value?: UpdateTargetRequest | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     name: value["name"],
     version: value["version"],

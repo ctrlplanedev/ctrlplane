@@ -63,11 +63,19 @@ export function GetTarget200ResponseProviderFromJSONTyped(
 }
 
 export function GetTarget200ResponseProviderToJSON(
+  json: any,
+): GetTarget200ResponseProvider {
+  return GetTarget200ResponseProviderToJSONTyped(json, false);
+}
+
+export function GetTarget200ResponseProviderToJSONTyped(
   value?: GetTarget200ResponseProvider | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

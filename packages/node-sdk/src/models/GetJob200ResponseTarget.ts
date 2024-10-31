@@ -115,11 +115,19 @@ export function GetJob200ResponseTargetFromJSONTyped(
 }
 
 export function GetJob200ResponseTargetToJSON(
+  json: any,
+): GetJob200ResponseTarget {
+  return GetJob200ResponseTargetToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseTargetToJSONTyped(
   value?: GetJob200ResponseTarget | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

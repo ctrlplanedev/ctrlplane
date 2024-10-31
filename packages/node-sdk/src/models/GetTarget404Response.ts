@@ -54,12 +54,18 @@ export function GetTarget404ResponseFromJSONTyped(
   };
 }
 
-export function GetTarget404ResponseToJSON(
+export function GetTarget404ResponseToJSON(json: any): GetTarget404Response {
+  return GetTarget404ResponseToJSONTyped(json, false);
+}
+
+export function GetTarget404ResponseToJSONTyped(
   value?: GetTarget404Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     error: value["error"],
   };

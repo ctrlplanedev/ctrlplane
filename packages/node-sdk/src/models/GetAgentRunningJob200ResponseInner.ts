@@ -143,11 +143,19 @@ export function GetAgentRunningJob200ResponseInnerFromJSONTyped(
 }
 
 export function GetAgentRunningJob200ResponseInnerToJSON(
+  json: any,
+): GetAgentRunningJob200ResponseInner {
+  return GetAgentRunningJob200ResponseInnerToJSONTyped(json, false);
+}
+
+export function GetAgentRunningJob200ResponseInnerToJSONTyped(
   value?: GetAgentRunningJob200ResponseInner | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     status: value["status"],

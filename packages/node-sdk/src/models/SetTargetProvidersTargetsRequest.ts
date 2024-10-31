@@ -18,6 +18,7 @@ import {
   SetTargetProvidersTargetsRequestTargetsInnerFromJSON,
   SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped,
   SetTargetProvidersTargetsRequestTargetsInnerToJSON,
+  SetTargetProvidersTargetsRequestTargetsInnerToJSONTyped,
 } from "./SetTargetProvidersTargetsRequestTargetsInner";
 
 /**
@@ -65,11 +66,19 @@ export function SetTargetProvidersTargetsRequestFromJSONTyped(
 }
 
 export function SetTargetProvidersTargetsRequestToJSON(
+  json: any,
+): SetTargetProvidersTargetsRequest {
+  return SetTargetProvidersTargetsRequestToJSONTyped(json, false);
+}
+
+export function SetTargetProvidersTargetsRequestToJSONTyped(
   value?: SetTargetProvidersTargetsRequest | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     targets: (value["targets"] as Array<any>).map(
       SetTargetProvidersTargetsRequestTargetsInnerToJSON,

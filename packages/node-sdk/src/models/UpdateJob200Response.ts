@@ -54,12 +54,18 @@ export function UpdateJob200ResponseFromJSONTyped(
   };
 }
 
-export function UpdateJob200ResponseToJSON(
+export function UpdateJob200ResponseToJSON(json: any): UpdateJob200Response {
+  return UpdateJob200ResponseToJSONTyped(json, false);
+}
+
+export function UpdateJob200ResponseToJSONTyped(
   value?: UpdateJob200Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
   };

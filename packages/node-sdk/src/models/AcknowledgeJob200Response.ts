@@ -57,11 +57,19 @@ export function AcknowledgeJob200ResponseFromJSONTyped(
 }
 
 export function AcknowledgeJob200ResponseToJSON(
+  json: any,
+): AcknowledgeJob200Response {
+  return AcknowledgeJob200ResponseToJSONTyped(json, false);
+}
+
+export function AcknowledgeJob200ResponseToJSONTyped(
   value?: AcknowledgeJob200Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     success: value["success"],
   };

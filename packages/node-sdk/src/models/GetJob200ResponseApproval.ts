@@ -18,6 +18,7 @@ import {
   GetJob200ResponseApprovalApproverFromJSON,
   GetJob200ResponseApprovalApproverFromJSONTyped,
   GetJob200ResponseApprovalApproverToJSON,
+  GetJob200ResponseApprovalApproverToJSONTyped,
 } from "./GetJob200ResponseApprovalApprover";
 
 /**
@@ -92,11 +93,19 @@ export function GetJob200ResponseApprovalFromJSONTyped(
 }
 
 export function GetJob200ResponseApprovalToJSON(
+  json: any,
+): GetJob200ResponseApproval {
+  return GetJob200ResponseApprovalToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseApprovalToJSONTyped(
   value?: GetJob200ResponseApproval | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     status: value["status"],

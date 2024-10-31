@@ -44,7 +44,14 @@ export function UpdateTargetRequestVariablesInnerValueFromJSONTyped(
 }
 
 export function UpdateTargetRequestVariablesInnerValueToJSON(
+  json: any,
+): UpdateTargetRequestVariablesInnerValue {
+  return UpdateTargetRequestVariablesInnerValueToJSONTyped(json, false);
+}
+
+export function UpdateTargetRequestVariablesInnerValueToJSONTyped(
   value?: UpdateTargetRequestVariablesInnerValue | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   return value;
 }

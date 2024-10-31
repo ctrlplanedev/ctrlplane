@@ -70,12 +70,18 @@ export function CreateReleaseRequestFromJSONTyped(
   };
 }
 
-export function CreateReleaseRequestToJSON(
+export function CreateReleaseRequestToJSON(json: any): CreateReleaseRequest {
+  return CreateReleaseRequestToJSONTyped(json, false);
+}
+
+export function CreateReleaseRequestToJSONTyped(
   value?: CreateReleaseRequest | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     version: value["version"],
     deploymentId: value["deploymentId"],

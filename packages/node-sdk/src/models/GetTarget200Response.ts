@@ -18,6 +18,7 @@ import {
   GetTarget200ResponseProviderFromJSON,
   GetTarget200ResponseProviderFromJSONTyped,
   GetTarget200ResponseProviderToJSON,
+  GetTarget200ResponseProviderToJSONTyped,
 } from "./GetTarget200ResponseProvider";
 
 /**
@@ -143,12 +144,18 @@ export function GetTarget200ResponseFromJSONTyped(
   };
 }
 
-export function GetTarget200ResponseToJSON(
+export function GetTarget200ResponseToJSON(json: any): GetTarget200Response {
+  return GetTarget200ResponseToJSONTyped(json, false);
+}
+
+export function GetTarget200ResponseToJSONTyped(
   value?: GetTarget200Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

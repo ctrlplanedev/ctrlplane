@@ -70,11 +70,19 @@ export function CreateRelease200ResponseFromJSONTyped(
 }
 
 export function CreateRelease200ResponseToJSON(
+  json: any,
+): CreateRelease200Response {
+  return CreateRelease200ResponseToJSONTyped(json, false);
+}
+
+export function CreateRelease200ResponseToJSONTyped(
   value?: CreateRelease200Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     version: value["version"],

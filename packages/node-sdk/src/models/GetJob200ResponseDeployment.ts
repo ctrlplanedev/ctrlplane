@@ -89,11 +89,19 @@ export function GetJob200ResponseDeploymentFromJSONTyped(
 }
 
 export function GetJob200ResponseDeploymentToJSON(
+  json: any,
+): GetJob200ResponseDeployment {
+  return GetJob200ResponseDeploymentToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseDeploymentToJSONTyped(
   value?: GetJob200ResponseDeployment | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

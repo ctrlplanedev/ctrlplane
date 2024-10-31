@@ -81,11 +81,19 @@ export function GetJob200ResponseReleaseFromJSONTyped(
 }
 
 export function GetJob200ResponseReleaseToJSON(
+  json: any,
+): GetJob200ResponseRelease {
+  return GetJob200ResponseReleaseToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseReleaseToJSONTyped(
   value?: GetJob200ResponseRelease | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     version: value["version"],

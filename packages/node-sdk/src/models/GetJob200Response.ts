@@ -23,31 +23,37 @@ import {
   GetJob200ResponseApprovalFromJSON,
   GetJob200ResponseApprovalFromJSONTyped,
   GetJob200ResponseApprovalToJSON,
+  GetJob200ResponseApprovalToJSONTyped,
 } from "./GetJob200ResponseApproval";
 import {
   GetJob200ResponseDeploymentFromJSON,
   GetJob200ResponseDeploymentFromJSONTyped,
   GetJob200ResponseDeploymentToJSON,
+  GetJob200ResponseDeploymentToJSONTyped,
 } from "./GetJob200ResponseDeployment";
 import {
   GetJob200ResponseEnvironmentFromJSON,
   GetJob200ResponseEnvironmentFromJSONTyped,
   GetJob200ResponseEnvironmentToJSON,
+  GetJob200ResponseEnvironmentToJSONTyped,
 } from "./GetJob200ResponseEnvironment";
 import {
   GetJob200ResponseReleaseFromJSON,
   GetJob200ResponseReleaseFromJSONTyped,
   GetJob200ResponseReleaseToJSON,
+  GetJob200ResponseReleaseToJSONTyped,
 } from "./GetJob200ResponseRelease";
 import {
   GetJob200ResponseRunbookFromJSON,
   GetJob200ResponseRunbookFromJSONTyped,
   GetJob200ResponseRunbookToJSON,
+  GetJob200ResponseRunbookToJSONTyped,
 } from "./GetJob200ResponseRunbook";
 import {
   GetJob200ResponseTargetFromJSON,
   GetJob200ResponseTargetFromJSONTyped,
   GetJob200ResponseTargetToJSON,
+  GetJob200ResponseTargetToJSONTyped,
 } from "./GetJob200ResponseTarget";
 
 /**
@@ -184,10 +190,18 @@ export function GetJob200ResponseFromJSONTyped(
   };
 }
 
-export function GetJob200ResponseToJSON(value?: GetJob200Response | null): any {
+export function GetJob200ResponseToJSON(json: any): GetJob200Response {
+  return GetJob200ResponseToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseToJSONTyped(
+  value?: GetJob200Response | null,
+  ignoreDiscriminator: boolean = false,
+): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     status: value["status"],

@@ -18,6 +18,7 @@ import {
   GetNextJobs200ResponseJobsInnerFromJSON,
   GetNextJobs200ResponseJobsInnerFromJSONTyped,
   GetNextJobs200ResponseJobsInnerToJSON,
+  GetNextJobs200ResponseJobsInnerToJSONTyped,
 } from "./GetNextJobs200ResponseJobsInner";
 
 /**
@@ -67,11 +68,19 @@ export function GetNextJobs200ResponseFromJSONTyped(
 }
 
 export function GetNextJobs200ResponseToJSON(
+  json: any,
+): GetNextJobs200Response {
+  return GetNextJobs200ResponseToJSONTyped(json, false);
+}
+
+export function GetNextJobs200ResponseToJSONTyped(
   value?: GetNextJobs200Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     jobs:
       value["jobs"] == null

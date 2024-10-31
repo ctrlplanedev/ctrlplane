@@ -65,11 +65,19 @@ export function GetJob200ResponseApprovalApproverFromJSONTyped(
 }
 
 export function GetJob200ResponseApprovalApproverToJSON(
+  json: any,
+): GetJob200ResponseApprovalApprover {
+  return GetJob200ResponseApprovalApproverToJSONTyped(json, false);
+}
+
+export function GetJob200ResponseApprovalApproverToJSONTyped(
   value?: GetJob200ResponseApprovalApprover | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],

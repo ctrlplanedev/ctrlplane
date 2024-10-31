@@ -74,11 +74,19 @@ export function UpdateJobAgent200ResponseFromJSONTyped(
 }
 
 export function UpdateJobAgent200ResponseToJSON(
+  json: any,
+): UpdateJobAgent200Response {
+  return UpdateJobAgent200ResponseToJSONTyped(json, false);
+}
+
+export function UpdateJobAgent200ResponseToJSONTyped(
   value?: UpdateJobAgent200Response | null,
+  ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
     return value;
   }
+
   return {
     id: value["id"],
     name: value["name"],
