@@ -15,7 +15,7 @@ export const ReleaseBadgeList: React.FC<ReleaseBadgeListProps> = ({
   <div className="flex gap-1">
     {releases.items.map((release) => (
       <Badge key={release.id} variant="outline">
-        <span className="truncate text-xs text-muted-foreground">
+        <span className="max-w-32 truncate text-xs text-muted-foreground">
           {release.name}
         </span>
       </Badge>

@@ -57,7 +57,11 @@ export const ReleaseFilter: React.FC<ReleaseFilterProps> = ({
   const { releaseFilter, deploymentId } = releaseChannel;
   const filter = getFinalFilter(releaseFilter ?? undefined);
 
-  const releasesQ = api.release.list.useQuery({ deploymentId, filter });
+  const releasesQ = api.release.list.useQuery({
+    deploymentId,
+    filter,
+    limit: 5,
+  });
   const releases = releasesQ.data;
 
   const onUpdate = (filter?: ReleaseCondition) => {
