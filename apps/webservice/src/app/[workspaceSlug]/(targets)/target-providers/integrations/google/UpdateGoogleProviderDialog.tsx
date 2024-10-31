@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconBulb, IconCheck, IconCopy, IconX } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
+import { z } from "zod";
 
 import { cn } from "@ctrlplane/ui";
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
@@ -37,6 +38,12 @@ import { Switch } from "@ctrlplane/ui/switch";
 import { api } from "~/trpc/react";
 import { createGoogleSchema } from "./GoogleDialog";
 
+const formSchema = createGoogleSchema.and(
+  z.object({
+    repeatSeconds: z.number(),
+  }),
+);
+
 export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
@@ -47,11 +54,12 @@ export const UpdateGoogleProviderDialog: React.FC<{
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
   const form = useForm({
-    schema: createGoogleSchema,
+    schema: formSchema,
     defaultValues: {
       name,
       ...googleConfig,
       projectIds: googleConfig?.projectIds.map((p) => ({ value: p })) ?? [],
+      repeatSeconds: 0,
     },
     mode: "onChange",
   });
@@ -69,6 +77,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
         importVCluster: data.importVCluster,
         importNamespaces: data.importNamespaces,
       },
+      repeatSeconds: data.repeatSeconds === 0 ? null : data.repeatSeconds,
     });
     await utils.target.provider.byWorkspaceId.invalidate();
     setOpen(false);
@@ -273,6 +282,25 @@ export const UpdateGoogleProviderDialog: React.FC<{
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="repeatSeconds"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Scan Frequency (seconds)</FormLabel>
+
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.valueAsNumber)}
                     />
                   </FormControl>
                 </FormItem>

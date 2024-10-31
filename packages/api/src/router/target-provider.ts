@@ -139,7 +139,6 @@ export const targetProviderRouter = createTRPCRouter({
               .returning()
               .then(takeFirst);
 
-            console.log("queueing target scan");
             await targetScanQueue.add(
               tg.id,
               { targetProviderId: tg.id },
@@ -158,6 +157,7 @@ export const targetProviderRouter = createTRPCRouter({
             config: updateTargetProviderGoogle.omit({
               targetProviderId: true,
             }),
+            repeatSeconds: z.number().min(1).nullable(),
           }),
         )
         .mutation(({ ctx, input }) => {
@@ -181,6 +181,21 @@ export const targetProviderRouter = createTRPCRouter({
               )
               .returning()
               .then(takeFirst);
+
+            if (input.repeatSeconds != null) {
+              await targetScanQueue.remove(input.targetProviderId);
+              await targetScanQueue.add(
+                input.targetProviderId,
+                { targetProviderId: input.targetProviderId },
+                {
+                  repeat: {
+                    every: input.repeatSeconds * 1000,
+                    immediately: true,
+                  },
+                },
+              );
+              return;
+            }
 
             await targetScanQueue.add(input.targetProviderId, {
               targetProviderId: input.targetProviderId,
