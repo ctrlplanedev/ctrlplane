@@ -78,6 +78,67 @@ paths:
                     example: "Target not found"
                 required:
                   - error
+    patch:
+      summary: Update a target
+      operationId: updateTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                version:
+                  type: string
+                kind:
+                  type: string
+                identifier:
+                  type: string
+                workspaceId:
+                  type: string
+                metadata:
+                  type: object
+                  additionalProperties:
+                    type: string
+                variables:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      key:
+                        type: string
+                      value:
+                        oneOf:
+                          - type: string
+                          - type: number
+                          - type: boolean
+                      sensitive:
+                        type: boolean
+                        default: false
+                    required:
+                      - key
+                      - value
+      responses:
+        "200":
+          description: Target updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Target"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Target not found
   /v1/workspaces/{workspace}/config:
     post:
       summary: Create resources from a config file
