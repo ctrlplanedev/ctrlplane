@@ -43,8 +43,8 @@ export const createDispatchExecutionJobWorker = () =>
         }),
     {
       connection: redis,
-      removeOnComplete: { age: 0, count: 0 },
-      removeOnFail: { age: 0, count: 0 },
+      removeOnComplete: { age: 1 * 60 * 60, count: 100 },
+      removeOnFail: { age: 12 * 60 * 60, count: 100 },
       concurrency: 10,
     },
   );
