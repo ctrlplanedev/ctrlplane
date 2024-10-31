@@ -1,5 +1,8 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Label } from "@ctrlplane/ui/label";
@@ -49,9 +52,14 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
       channelId === "null" ? null : channelId,
     );
 
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug?: string;
+    systemSlug?: string;
+  }>();
+
   return (
     <div className="flex items-center gap-2">
-      <span className="w-40 truncate">{deployment.name}</span>
+      <span className="w-40 truncate text-sm">{deployment.name}</span>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger className="w-72">
           <SelectValue
@@ -60,9 +68,16 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
           />
         </SelectTrigger>
         <SelectContent className="overflow-y-auto">
-          <SelectItem value="null" className="w-72">
-            No release channel
-          </SelectItem>
+          {deployment.releaseChannels.length === 0 && (
+            <Link
+              href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/release-channels`}
+              className="w-72 hover:text-blue-300"
+            >
+              <div className="flex items-center gap-2 p-1 text-sm">
+                <IconPlus className="h-4 w-4" /> Create release channel
+              </div>
+            </Link>
+          )}
           {deployment.releaseChannels.map((rc) => (
             <SelectItem key={rc.id} value={rc.id} className="w-72">
               <span className="truncate">{rc.name}</span>
@@ -111,13 +126,13 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
 
   return (
     <div className="space-y-4">
-      <Label>Channels</Label>
+      <Label>Release Channels</Label>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="w-40">Deployment</span>
           <span className="w-72">Release Channel</span>
         </div>
-        {deploymentsWithReleaseChannels.map((d) => (
+        {deployments.map((d) => (
           <DeploymentSelect
             key={d.id}
             deployment={d}
