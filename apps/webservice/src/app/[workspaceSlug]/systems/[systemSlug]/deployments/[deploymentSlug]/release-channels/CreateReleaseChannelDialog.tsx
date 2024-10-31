@@ -37,7 +37,6 @@ import {
 
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
-import { ReleaseBadgeList } from "~/app/[workspaceSlug]/_components/ReleaseBadgeList";
 import { api } from "~/trpc/react";
 
 type CreateReleaseChannelDialogProps = {
@@ -177,7 +176,6 @@ export const CreateReleaseChannelDialog: React.FC<
                     </div>
                   </FormControl>
                   <FormMessage />
-                  {releases != null && <ReleaseBadgeList releases={releases} />}
                 </FormItem>
               )}
             />
