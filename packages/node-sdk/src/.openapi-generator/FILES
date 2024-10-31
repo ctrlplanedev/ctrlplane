@@ -15,11 +15,17 @@ models/GetJob200ResponseRunbook.ts
 models/GetJob200ResponseTarget.ts
 models/GetNextJobs200Response.ts
 models/GetNextJobs200ResponseJobsInner.ts
+models/GetTarget200Response.ts
+models/GetTarget200ResponseProvider.ts
+models/GetTarget404Response.ts
 models/SetTargetProvidersTargetsRequest.ts
 models/SetTargetProvidersTargetsRequestTargetsInner.ts
 models/UpdateJob200Response.ts
 models/UpdateJobAgent200Response.ts
 models/UpdateJobAgentRequest.ts
 models/UpdateJobRequest.ts
+models/UpdateTargetRequest.ts
+models/UpdateTargetRequestVariablesInner.ts
+models/UpdateTargetRequestVariablesInnerValue.ts
 models/index.ts
 runtime.ts
