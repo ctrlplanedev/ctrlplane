@@ -87,8 +87,8 @@ export const createTargetScanWorker = () =>
     },
     {
       connection: redis,
-      removeOnComplete: { age: 1 * 60 * 60, count: 100 },
-      removeOnFail: { age: 12 * 60 * 60, count: 100 },
+      removeOnComplete: { age: 1 * 60 * 60, count: 5000 },
+      removeOnFail: { age: 12 * 60 * 60, count: 5000 },
       concurrency: 10,
     },
   );

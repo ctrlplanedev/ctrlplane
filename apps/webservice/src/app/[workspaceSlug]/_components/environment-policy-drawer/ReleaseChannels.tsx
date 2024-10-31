@@ -111,7 +111,7 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
 
   return (
     <div className="space-y-4">
-      <Label>Release Channels</Label>
+      <Label>Channels</Label>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="w-40">Deployment</span>
