@@ -8,7 +8,6 @@ import {
   buildConflictUpdateColumns,
   eq,
   inArray,
-  isNull,
   not,
   takeFirst,
 } from "@ctrlplane/db";
@@ -33,9 +32,7 @@ import { policyRouter } from "./environment-policy";
 export const createEnv = async (
   db: Tx,
   input: z.infer<typeof createEnvironment>,
-) => {
-  return db.insert(environment).values(input).returning().then(takeFirst);
-};
+) => db.insert(environment).values(input).returning().then(takeFirst);
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
@@ -150,9 +147,7 @@ export const environmentRouter = createTRPCRouter({
         .from(environment)
         .innerJoin(system, eq(system.id, environment.systemId))
         .orderBy(environment.name)
-        .where(
-          and(eq(environment.systemId, input), isNull(environment.deletedAt)),
-        );
+        .where(eq(environment.systemId, input));
 
       return await Promise.all(
         envs.map(async (e) => ({

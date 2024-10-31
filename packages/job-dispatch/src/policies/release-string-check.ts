@@ -2,7 +2,7 @@ import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleasePolicyChecker } from "./utils.js";
@@ -101,12 +101,7 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
       policyRCSubquery,
       eq(policyRCSubquery.releaseChannelPolicyId, schema.environmentPolicy.id),
     )
-    .where(
-      and(
-        inArray(schema.environment.id, envIds),
-        isNull(schema.environment.deletedAt),
-      ),
-    )
+    .where(inArray(schema.environment.id, envIds))
     .then(cleanPolicyRows);
 
   const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);

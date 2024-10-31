@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { eq, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
@@ -37,12 +37,9 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
       eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
     )
     .where(
-      and(
-        inArray(
-          schema.releaseJobTrigger.id,
-          releaseJobTriggers.map((t) => t.id),
-        ),
-        isNull(schema.environment.deletedAt),
+      inArray(
+        schema.releaseJobTrigger.id,
+        releaseJobTriggers.map((t) => t.id),
       ),
     );
 

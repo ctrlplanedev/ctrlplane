@@ -50,6 +50,7 @@ export const EnvironmentDrawer: React.FC = () => {
   const environmentQ = api.environment.byId.useQuery(environmentId ?? "", {
     enabled: isOpen,
   });
+  const environmentQError = environmentQ.error;
   const environment = environmentQ.data;
 
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
@@ -75,17 +76,24 @@ export const EnvironmentDrawer: React.FC = () => {
         showBar={false}
         className="left-auto right-0 top-0 mt-0 h-screen w-2/3 max-w-6xl overflow-auto rounded-none focus-visible:outline-none"
       >
-        <DrawerTitle className="flex items-center gap-2 border-b p-6">
-          <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
-            <IconPlant className="h-4 w-4" />
+        <DrawerTitle className="flex flex-col gap-2 border-b p-6">
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
+              <IconPlant className="h-4 w-4" />
+            </div>
+            {environment?.name}
+            {environment != null && (
+              <EnvironmentDropdownMenu environment={environment}>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <IconDotsVertical className="h-4 w-4" />
+                </Button>
+              </EnvironmentDropdownMenu>
+            )}
           </div>
-          {environment?.name}
-          {environment != null && (
-            <EnvironmentDropdownMenu environment={environment}>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <IconDotsVertical className="h-4 w-4" />
-              </Button>
-            </EnvironmentDropdownMenu>
+          {environmentQError != null && (
+            <div className="text-xs text-red-500">
+              {environmentQError.message}
+            </div>
           )}
         </DrawerTitle>
 

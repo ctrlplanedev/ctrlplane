@@ -15,11 +15,16 @@ import { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
 
+import { run as expiredEnvChecker } from "./expired-env-checker/index.js";
 import { run as jobPolicyChecker } from "./policy-checker/index.js";
 
 const jobs: Record<string, { run: () => Promise<void>; schedule: string }> = {
   "policy-checker": {
     run: jobPolicyChecker,
+    schedule: "* * * * *", // Default: Every minute
+  },
+  "expired-env-checker": {
+    run: expiredEnvChecker,
     schedule: "* * * * *", // Default: Every minute
   },
 };

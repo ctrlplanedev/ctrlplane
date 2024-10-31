@@ -25,7 +25,6 @@ import {
   desc,
   eq,
   inArray,
-  isNull,
   notInArray,
   sql,
   takeFirst,
@@ -285,7 +284,6 @@ const releaseJobTriggerRouter = createTRPCRouter({
           and(
             eq(deployment.id, input.deploymentId),
             eq(environment.id, input.environmentId),
-            isNull(environment.deletedAt),
           ),
         )
         .then((data) =>
@@ -310,7 +308,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
     })
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
-        .where(and(eq(deployment.id, input), isNull(environment.deletedAt)))
+        .where(eq(deployment.id, input))
         .then((data) =>
           data.map((t) => ({
             ...t.release_job_trigger,
@@ -643,7 +641,7 @@ export const jobRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
-        .where(and(eq(target.id, input), isNull(environment.deletedAt)))
+        .where(eq(target.id, input))
         .limit(1_000)
         .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
         .then((data) =>

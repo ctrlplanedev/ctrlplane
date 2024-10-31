@@ -15,7 +15,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 
-import { targetCondition } from "@ctrlplane/validators/targets";
+import {
+  isValidTargetCondition,
+  targetCondition,
+} from "@ctrlplane/validators/targets";
 
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
@@ -36,17 +39,18 @@ export const environment = pgTable("environment", {
   targetFilter: jsonb("target_filter")
     .$type<TargetCondition | null>()
     .default(sql`NULL`),
-
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).default(sql`NULL`),
 });
 
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  targetFilter: targetCondition,
+  targetFilter: targetCondition
+    .optional()
+    .refine((filter) => filter == null || isValidTargetCondition(filter)),
 }).omit({ id: true });
 
 export const updateEnvironment = createEnvironment.partial();
@@ -96,11 +100,6 @@ export const environmentPolicy = pgTable("environment_policy", {
   // Duration in milliseconds over which to gradually roll out releases to this
   // environment
   rolloutDuration: bigint("rollout_duration", { mode: "number" })
-    .notNull()
-    .default(0),
-
-  // Duration in milliseconds after which deployment delete hooks will be called
-  ephemeralDuration: bigint("ephemeral_duration", { mode: "number" })
     .notNull()
     .default(0),
 

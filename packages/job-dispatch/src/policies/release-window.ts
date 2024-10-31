@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull } from "@ctrlplane/db";
+import { eq, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
@@ -39,12 +39,9 @@ export const isPassingReleaseWindowPolicy: ReleaseIdPolicyChecker = async (
           ),
         )
         .where(
-          and(
-            inArray(
-              schema.releaseJobTrigger.id,
-              releaseJobTriggers.map((t) => t.id).filter(isPresent),
-            ),
-            isNull(schema.environment.deletedAt),
+          inArray(
+            schema.releaseJobTrigger.id,
+            releaseJobTriggers.map((t) => t.id).filter(isPresent),
           ),
         )
         .then((policies) =>
