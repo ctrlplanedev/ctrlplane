@@ -1,16 +1,22 @@
 "use client";
 
 import type React from "react";
-import { IconDotsVertical, IconLoader2 } from "@tabler/icons-react";
+import { useState } from "react";
+import {
+  IconDotsVertical,
+  IconInfoCircle,
+  IconLoader2,
+  IconPlugConnected,
+} from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
-import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/react";
+import { TabButton } from "../TabButton";
 import { Overview } from "./Overview";
 import { ReleaseChannelDropdown } from "./ReleaseChannelDropdown";
-import { ReleaseFilter } from "./ReleaseFilter";
+import { Usage } from "./Usage";
 import { useReleaseChannelDrawer } from "./useReleaseChannelDrawer";
 
 export const ReleaseChannelDrawer: React.FC = () => {
@@ -25,20 +31,15 @@ export const ReleaseChannelDrawer: React.FC = () => {
   );
   const releaseChannel = releaseChannelQ.data;
 
-  const filter = releaseChannel?.releaseFilter ?? undefined;
-  const deploymentId = releaseChannel?.deploymentId ?? "";
-  const releasesQ = api.release.list.useQuery(
-    { deploymentId, filter },
-    { enabled: isOpen && releaseChannel != null && deploymentId != "" },
-  );
+  const loading = releaseChannelQ.isLoading;
 
-  const loading = releaseChannelQ.isLoading || releasesQ.isLoading;
+  const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 left-auto right-0 top-0 mt-0 h-screen w-1/3 overflow-auto rounded-none focus-visible:outline-none"
+        className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 left-auto right-0 top-0 mt-0 h-screen w-2/3 max-w-6xl overflow-auto rounded-none focus-visible:outline-none"
       >
         {loading && (
           <div className="flex h-full w-full items-center justify-center">
@@ -56,10 +57,30 @@ export const ReleaseChannelDrawer: React.FC = () => {
               </ReleaseChannelDropdown>
             </DrawerTitle>
 
-            <div className="flex flex-col">
-              <Overview releaseChannel={releaseChannel} />
-              <Separator />
-              <ReleaseFilter releaseChannel={releaseChannel} />
+            <div className="flex w-full gap-6 p-6">
+              <div className="space-y-1">
+                <TabButton
+                  active={activeTab === "overview"}
+                  onClick={() => setActiveTab("overview")}
+                  icon={<IconInfoCircle className="h-4 w-4" />}
+                  label="Overview"
+                />
+                <TabButton
+                  active={activeTab === "usage"}
+                  onClick={() => setActiveTab("usage")}
+                  icon={<IconPlugConnected className="h-4 w-4" />}
+                  label="Usage"
+                />
+              </div>
+
+              <div className="w-full overflow-auto p-6">
+                {activeTab === "overview" && (
+                  <Overview releaseChannel={releaseChannel} />
+                )}
+                {activeTab === "usage" && (
+                  <Usage usage={releaseChannel.usage} />
+                )}
+              </div>
             </div>
           </>
         )}

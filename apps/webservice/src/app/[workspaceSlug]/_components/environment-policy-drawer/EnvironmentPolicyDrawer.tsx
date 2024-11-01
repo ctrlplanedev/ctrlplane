@@ -2,7 +2,6 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
-import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconCalendar,
@@ -34,11 +33,41 @@ import { ReleaseChannels } from "./ReleaseChannels";
 import { ReleaseManagement } from "./ReleaseManagement";
 import { RolloutAndTiming } from "./RolloutAndTiming";
 
+export enum EnvironmentPolicyDrawerTab {
+  Overview = "overview",
+  Approval = "approval",
+  Concurrency = "concurrency",
+  Management = "management",
+  ReleaseChannels = "release-channels",
+  Rollout = "rollout",
+}
+
+const tabParam = "tab";
+const useEnvironmentPolicyDrawerTab = () => {
+  const router = useRouter();
+  const params = useSearchParams();
+  const tab = params.get(tabParam) as EnvironmentPolicyDrawerTab | null;
+
+  const setTab = (tab: EnvironmentPolicyDrawerTab | null) => {
+    const url = new URL(window.location.href);
+    if (tab === null) {
+      url.searchParams.delete(tabParam);
+      router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+      return;
+    }
+    url.searchParams.set(tabParam, tab);
+    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+  };
+
+  return { tab, setTab };
+};
+
 const param = "environment_policy_id";
 export const useEnvironmentPolicyDrawer = () => {
   const router = useRouter();
   const params = useSearchParams();
   const environmentPolicyId = params.get(param);
+  const { tab, setTab } = useEnvironmentPolicyDrawerTab();
 
   const setEnvironmentPolicyId = (id: string | null) => {
     const url = new URL(window.location.href);
@@ -57,6 +86,8 @@ export const useEnvironmentPolicyDrawer = () => {
     environmentPolicyId,
     setEnvironmentPolicyId,
     removeEnvironmentPolicyId,
+    tab,
+    setTab,
   };
 };
 
@@ -65,7 +96,7 @@ type Deployment = SCHEMA.Deployment & {
 };
 
 const View: React.FC<{
-  activeTab: string;
+  activeTab: EnvironmentPolicyDrawerTab;
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
     releaseChannels: SCHEMA.ReleaseChannel[];
@@ -73,12 +104,22 @@ const View: React.FC<{
   deployments?: Deployment[];
 }> = ({ activeTab, environmentPolicy, deployments }) => {
   return {
-    overview: <Overview environmentPolicy={environmentPolicy} />,
-    approval: <ApprovalAndGovernance environmentPolicy={environmentPolicy} />,
-    concurrency: <DeploymentControl environmentPolicy={environmentPolicy} />,
-    management: <ReleaseManagement environmentPolicy={environmentPolicy} />,
-    rollout: <RolloutAndTiming environmentPolicy={environmentPolicy} />,
-    "release-channels": deployments != null && (
+    [EnvironmentPolicyDrawerTab.Overview]: (
+      <Overview environmentPolicy={environmentPolicy} />
+    ),
+    [EnvironmentPolicyDrawerTab.Approval]: (
+      <ApprovalAndGovernance environmentPolicy={environmentPolicy} />
+    ),
+    [EnvironmentPolicyDrawerTab.Concurrency]: (
+      <DeploymentControl environmentPolicy={environmentPolicy} />
+    ),
+    [EnvironmentPolicyDrawerTab.Management]: (
+      <ReleaseManagement environmentPolicy={environmentPolicy} />
+    ),
+    [EnvironmentPolicyDrawerTab.Rollout]: (
+      <RolloutAndTiming environmentPolicy={environmentPolicy} />
+    ),
+    [EnvironmentPolicyDrawerTab.ReleaseChannels]: deployments != null && (
       <ReleaseChannels policy={environmentPolicy} deployments={deployments} />
     ),
   }[activeTab];
@@ -105,7 +146,7 @@ const PolicyDropdownMenu: React.FC<{
 );
 
 export const EnvironmentPolicyDrawer: React.FC = () => {
-  const { environmentPolicyId, removeEnvironmentPolicyId } =
+  const { environmentPolicyId, removeEnvironmentPolicyId, tab, setTab } =
     useEnvironmentPolicyDrawer();
   const isOpen = Boolean(environmentPolicyId);
   const setIsOpen = removeEnvironmentPolicyId;
@@ -120,8 +161,6 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
     { enabled: isOpen && environmentPolicy != null },
   );
   const deployments = deploymentsQ.data;
-
-  const [activeTab, setActiveTab] = useState("overview");
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -150,38 +189,40 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
         <div className="flex w-full gap-6 p-6">
           <div className="space-y-1">
             <TabButton
-              active={activeTab === "overview"}
-              onClick={() => setActiveTab("overview")}
+              active={
+                tab === EnvironmentPolicyDrawerTab.Overview || tab == null
+              }
+              onClick={() => setTab(EnvironmentPolicyDrawerTab.Overview)}
               icon={<IconInfoCircle className="h-4 w-4" />}
               label="Overview"
             />
             <TabButton
-              active={activeTab === "approval"}
-              onClick={() => setActiveTab("approval")}
+              active={tab === EnvironmentPolicyDrawerTab.Approval}
+              onClick={() => setTab(EnvironmentPolicyDrawerTab.Approval)}
               icon={<IconEye className="h-4 w-4" />}
               label="Approval & Governance"
             />
             <TabButton
-              active={activeTab === "concurrency"}
-              onClick={() => setActiveTab("concurrency")}
+              active={tab === EnvironmentPolicyDrawerTab.Concurrency}
+              onClick={() => setTab(EnvironmentPolicyDrawerTab.Concurrency)}
               icon={<IconCircuitDiode className="h-4 w-4" />}
               label="Deployment Control"
             />
             <TabButton
-              active={activeTab === "management"}
-              onClick={() => setActiveTab("management")}
+              active={tab === EnvironmentPolicyDrawerTab.Management}
+              onClick={() => setTab(EnvironmentPolicyDrawerTab.Management)}
               icon={<IconRocket className="h-4 w-4" />}
               label="Release Management"
             />
             <TabButton
-              active={activeTab === "release-channels"}
-              onClick={() => setActiveTab("release-channels")}
+              active={tab === EnvironmentPolicyDrawerTab.ReleaseChannels}
+              onClick={() => setTab(EnvironmentPolicyDrawerTab.ReleaseChannels)}
               icon={<IconFilter className="h-4 w-4" />}
               label="Release Channels"
             />
             <TabButton
-              active={activeTab === "rollout"}
-              onClick={() => setActiveTab("rollout")}
+              active={tab === EnvironmentPolicyDrawerTab.Rollout}
+              onClick={() => setTab(EnvironmentPolicyDrawerTab.Rollout)}
               icon={<IconCalendar className="h-4 w-4" />}
               label="Rollout and Timing"
             />
@@ -190,7 +231,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
           {environmentPolicy != null && (
             <div className="w-full overflow-auto">
               <View
-                activeTab={activeTab}
+                activeTab={tab ?? EnvironmentPolicyDrawerTab.Overview}
                 environmentPolicy={environmentPolicy}
                 deployments={deployments}
               />

@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
@@ -42,6 +43,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   environments,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
+  const { setReleaseChannelId } = useReleaseChannelDrawer();
 
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
@@ -204,9 +206,12 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       const hasRelease =
                         environmentReleaseReleaseJobTriggers.length > 0;
                       const hasJobAgent = deployment.jobAgentId != null;
-                      const isBlockedByReleaseChannel = (
-                        blockedEnvByRelease.data?.[release.id] ?? []
-                      ).includes(env.id);
+                      const blockedEnv = blockedEnvByRelease.data?.find(
+                        (be) =>
+                          be.releaseId === release.id &&
+                          be.environmentId === env.id,
+                      );
+                      const isBlockedByReleaseChannel = blockedEnv != null;
 
                       const showRelease = hasRelease;
                       const canDeploy =
@@ -254,11 +259,25 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
                             {!canDeploy && !hasRelease && (
                               <div className="text-center text-xs text-muted-foreground/70">
-                                {isBlockedByReleaseChannel
-                                  ? "Blocked by release channel"
-                                  : hasJobAgent
-                                    ? "No targets"
-                                    : "No job agent"}
+                                {isBlockedByReleaseChannel ? (
+                                  <span>
+                                    Blocked by{" "}
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      onClick={() =>
+                                        setReleaseChannelId(
+                                          blockedEnv.releaseChannelId ?? null,
+                                        )
+                                      }
+                                      className="px-0 text-muted-foreground/70"
+                                    >
+                                      release channel
+                                    </Button>
+                                  </span>
+                                ) : (
+                                  "No job agent"
+                                )}
                               </div>
                             )}
                           </div>
