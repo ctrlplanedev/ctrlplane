@@ -5,11 +5,8 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   AlwaysOnSampler,
   BatchSpanProcessor,
-  TraceIdRatioBasedSampler,
 } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-
-import { env } from "~/env";
 
 const sdk = new NodeSDK({
   resource: new Resource({
@@ -43,10 +40,11 @@ const sdk = new NodeSDK({
       },
     }),
   ],
-  sampler:
-    env.NODE_ENV === "development"
-      ? new AlwaysOnSampler()
-      : new TraceIdRatioBasedSampler(env.OTEL_SAMPLER_RATIO),
+  sampler: new AlwaysOnSampler(),
+  // sampler:
+  //   env.NODE_ENV === "development"
+  //     ? new AlwaysOnSampler()
+  //     : new TraceIdRatioBasedSampler(env.OTEL_SAMPLER_RATIO),
 });
 
 try {
