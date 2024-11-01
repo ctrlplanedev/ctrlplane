@@ -1,6 +1,8 @@
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { Resource } from "@opentelemetry/resources";
+import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   AlwaysOnSampler,
@@ -13,6 +15,7 @@ const sdk = new NodeSDK({
     [ATTR_SERVICE_NAME]: "ctrlplane/webservice",
   }),
   spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
+  logRecordProcessors: [new BatchLogRecordProcessor(new OTLPLogExporter())],
   instrumentations: [
     getNodeAutoInstrumentations({
       "@opentelemetry/instrumentation-fs": {
