@@ -60,6 +60,7 @@ export const JobHistoryChart: React.FC<{
 
   const targets = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
+    limit: 0,
   });
   const deployments = api.deployment.byWorkspaceId.useQuery(workspace.id, {});
 
