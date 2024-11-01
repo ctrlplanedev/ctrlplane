@@ -35,14 +35,14 @@ export default async function ReleasePage({
   );
 
   return (
-    <div className="flex h-[calc(100vh-53px)] flex-col">
+    <div className="flex h-[calc(100vh-103px)] flex-col">
       <div className="shrink-0 border-b p-4 text-lg text-muted-foreground">
         Release{" "}
         <span className="font-semibold text-white">{release.version}</span>
       </div>
 
       <ScrollArea>
-        <div className="h-[250px] shrink-0 border-b">
+        <div className="h-[350px] shrink-0 border-b">
           <ReactFlowProvider>
             <FlowDiagram
               workspace={system.workspace}
