@@ -368,6 +368,7 @@ export const releaseRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const envRCSubquery = db
         .select({
+          releaseChannelId: releaseChannel.id,
           releaseChannelEnvId: environmentReleaseChannel.environmentId,
           releaseChannelDeploymentId: releaseChannel.deploymentId,
           releaseChannelFilter: releaseChannel.releaseFilter,
@@ -381,6 +382,7 @@ export const releaseRouter = createTRPCRouter({
 
       const policyRCSubquery = db
         .select({
+          releaseChannelId: releaseChannel.id,
           releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
           releaseChannelDeploymentId: releaseChannel.deploymentId,
           releaseChannelFilter: releaseChannel.releaseFilter,
@@ -449,6 +451,10 @@ export const releaseRouter = createTRPCRouter({
           policyReleaseChannel?.releaseChannelFilter;
         if (releaseFilter == null) return null;
 
+        const releaseChannelId =
+          envReleaseChannel?.releaseChannelId ??
+          policyReleaseChannel?.releaseChannelId;
+
         const matchingRelease = await db
           .select()
           .from(release)
@@ -461,22 +467,15 @@ export const releaseRouter = createTRPCRouter({
           .then(takeFirstOrNull);
 
         return matchingRelease == null
-          ? { releaseId: rel.id, environmentId: environment.id }
+          ? {
+              releaseId: rel.id,
+              environmentId: environment.id,
+              releaseChannelId,
+            }
           : null;
       });
 
-      const blockedEnvs = await Promise.all(blockedEnvsPromises).then((r) =>
-        r.filter(isPresent),
-      );
-
-      return blockedEnvs.reduce(
-        (acc, { releaseId, environmentId }) => {
-          if (!acc[releaseId]) acc[releaseId] = [];
-          acc[releaseId].push(environmentId);
-          return acc;
-        },
-        {} as Record<string, string[]>,
-      );
+      return Promise.all(blockedEnvsPromises).then((r) => r.filter(isPresent));
     }),
 
   metadataKeys: createTRPCRouter({

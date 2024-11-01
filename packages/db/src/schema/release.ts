@@ -17,6 +17,7 @@ import {
   not,
   notExists,
   or,
+  relations,
   sql,
 } from "drizzle-orm";
 import {
@@ -45,7 +46,11 @@ import {
 import type { Tx } from "../common.js";
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
-import { environment } from "./environment.js";
+import {
+  environment,
+  environmentPolicyReleaseChannel,
+  environmentReleaseChannel,
+} from "./environment.js";
 import { job } from "./job.js";
 import { target } from "./target.js";
 
@@ -66,6 +71,14 @@ export const createReleaseChannel = createInsertSchema(releaseChannel, {
   releaseFilter: releaseCondition,
 }).omit({ id: true });
 export const updateReleaseChannel = createReleaseChannel.partial();
+
+export const releaseChannelRelations = relations(
+  releaseChannel,
+  ({ many }) => ({
+    environmentReleaseChannels: many(environmentReleaseChannel),
+    environmentPolicyReleaseChannels: many(environmentPolicyReleaseChannel),
+  }),
+);
 
 export const releaseDependency = pgTable(
   "release_dependency",

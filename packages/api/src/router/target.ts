@@ -326,7 +326,7 @@ export const targetRouter = createTRPCRouter({
         z.object({
           workspaceId: z.string().uuid(),
           filter: targetCondition.optional(),
-          limit: z.number().int().nonnegative().max(1000).default(500),
+          limit: z.number().int().nonnegative().max(1000).default(200),
           offset: z.number().int().nonnegative().default(0),
         }),
       )

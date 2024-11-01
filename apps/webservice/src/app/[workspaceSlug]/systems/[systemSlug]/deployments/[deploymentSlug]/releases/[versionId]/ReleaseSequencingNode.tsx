@@ -35,12 +35,13 @@ const Loading: React.FC = () => (
 
 const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   releaseId,
-  deploymentId,
   environmentId,
 }) => {
-  const allJobs = api.job.config.byDeploymentId.useQuery(deploymentId, {
-    refetchInterval: 10_000,
-  });
+  const allJobs = api.job.config.byReleaseId.useQuery(
+    { releaseId },
+    { refetchInterval: 10_000 },
+  );
+
   const isReleasePending = allJobs.data?.some(
     (j) =>
       j.job.status === JobStatus.Pending &&

@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
@@ -42,6 +43,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   environments,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
+  const { setReleaseChannelId } = useReleaseChannelDrawer();
 
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
@@ -67,9 +69,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     )
     .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
 
-  const distribution = api.deployment.distributionById.useQuery(deployment.id, {
-    refetchInterval: 2_000,
-  });
   const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blocked.useQuery(releaseIds, {
     enabled: releaseIds.length > 0,
@@ -175,10 +174,10 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        {release.name}{" "}
+                        <span className="truncate">{release.name}</span>{" "}
                         <Badge
                           variant="secondary"
-                          className="text-xs hover:bg-secondary"
+                          className="flex-shrink-0 text-xs hover:bg-secondary"
                         >
                           {formatDistanceToNowStrict(release.createdAt, {
                             addSuffix: true,
@@ -194,19 +193,16 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                             t.environmentId === env.id,
                         );
 
-                      const activeDeploymentCount =
-                        distribution.data?.filter(
-                          (d) =>
-                            d.release.id === release.id &&
-                            d.releaseJobTrigger.environmentId === env.id,
-                        ).length ?? 0;
                       const hasTargets = env.targets.length > 0;
                       const hasRelease =
                         environmentReleaseReleaseJobTriggers.length > 0;
                       const hasJobAgent = deployment.jobAgentId != null;
-                      const isBlockedByReleaseChannel = (
-                        blockedEnvByRelease.data?.[release.id] ?? []
-                      ).includes(env.id);
+                      const blockedEnv = blockedEnvByRelease.data?.find(
+                        (be) =>
+                          be.releaseId === release.id &&
+                          be.environmentId === env.id,
+                      );
+                      const isBlockedByReleaseChannel = blockedEnv != null;
 
                       const showRelease = hasRelease;
                       const canDeploy =
@@ -233,7 +229,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                                 releaseId={release.id}
                                 version={release.version}
                                 environment={env}
-                                activeDeploymentCount={activeDeploymentCount}
                                 name={release.version}
                                 deployedAt={
                                   environmentReleaseReleaseJobTriggers[0]!
@@ -254,11 +249,25 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
                             {!canDeploy && !hasRelease && (
                               <div className="text-center text-xs text-muted-foreground/70">
-                                {isBlockedByReleaseChannel
-                                  ? "Blocked by release channel"
-                                  : hasJobAgent
-                                    ? "No targets"
-                                    : "No job agent"}
+                                {isBlockedByReleaseChannel ? (
+                                  <span>
+                                    Blocked by{" "}
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      onClick={() =>
+                                        setReleaseChannelId(
+                                          blockedEnv.releaseChannelId ?? null,
+                                        )
+                                      }
+                                      className="px-0 text-muted-foreground/70"
+                                    >
+                                      release channel
+                                    </Button>
+                                  </span>
+                                ) : (
+                                  "No job agent"
+                                )}
                               </div>
                             )}
                           </div>

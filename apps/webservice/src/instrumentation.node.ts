@@ -1,27 +1,21 @@
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { Resource } from "@opentelemetry/resources";
+import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   AlwaysOnSampler,
   BatchSpanProcessor,
-  TraceIdRatioBasedSampler,
 } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-
-import { env } from "~/env";
 
 const sdk = new NodeSDK({
   resource: new Resource({
     [ATTR_SERVICE_NAME]: "ctrlplane/webservice",
   }),
-  spanProcessors: [
-    new BatchSpanProcessor(
-      new OTLPTraceExporter({
-        url: env.OTEL_EXPORTER_OTLP_ENDPOINT,
-      }),
-    ),
-  ],
+  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
+  logRecordProcessors: [new BatchLogRecordProcessor(new OTLPLogExporter())],
   instrumentations: [
     getNodeAutoInstrumentations({
       "@opentelemetry/instrumentation-fs": {
@@ -49,10 +43,11 @@ const sdk = new NodeSDK({
       },
     }),
   ],
-  sampler:
-    env.NODE_ENV === "development"
-      ? new AlwaysOnSampler()
-      : new TraceIdRatioBasedSampler(env.OTEL_SAMPLER_RATIO),
+  sampler: new AlwaysOnSampler(),
+  // sampler:
+  //   env.NODE_ENV === "development"
+  //     ? new AlwaysOnSampler()
+  //     : new TraceIdRatioBasedSampler(env.OTEL_SAMPLER_RATIO),
 });
 
 try {
