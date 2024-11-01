@@ -80,7 +80,10 @@ export const useEnvironmentPolicyDrawer = () => {
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
-  const removeEnvironmentPolicyId = () => setEnvironmentPolicyId(null);
+  const removeEnvironmentPolicyId = () => {
+    setTab(null);
+    setEnvironmentPolicyId(null);
+  };
 
   return {
     environmentPolicyId,
