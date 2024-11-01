@@ -1,10 +1,22 @@
-import type { Deployment, Environment, Target } from "@ctrlplane/db/schema";
+import type {
+  Deployment,
+  Environment,
+  Target,
+  Workspace,
+} from "@ctrlplane/db/schema";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import Link from "next/link";
 import { IconCircleFilled } from "@tabler/icons-react";
 import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/server";
@@ -58,7 +70,7 @@ const EnvIcon: React.FC<{
 };
 
 const ReleaseCell: React.FC<{
-  workspaceSlug: string;
+  workspace: Workspace;
   systemSlug: string;
   environment: Environment & { targets: Target[] };
   release: {
@@ -72,13 +84,41 @@ const ReleaseCell: React.FC<{
   release,
   environment: env,
   deployment,
-  workspaceSlug,
+  workspace,
   systemSlug,
 }) => {
-  const releaseJobTriggers = await api.job.config.byDeploymentAndEnvironment({
-    environmentId: env.id,
-    deploymentId: deployment.id,
-  });
+  const isSameDeployment: JobCondition = {
+    type: JobFilterType.Deployment,
+    operator: ColumnOperator.Equals,
+    value: deployment.id,
+  };
+
+  const isSameEnvironment: JobCondition = {
+    type: JobFilterType.Environment,
+    operator: ColumnOperator.Equals,
+    value: env.id,
+  };
+
+  const isSameRelease: JobCondition = {
+    type: JobFilterType.Release,
+    operator: ColumnOperator.Equals,
+    value: release?.id ?? "",
+  };
+
+  const filter: JobCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [isSameDeployment, isSameEnvironment, isSameRelease],
+  };
+
+  const { items } =
+    release != null
+      ? await api.job.config.byWorkspaceId.list({
+          workspaceId: workspace.id,
+          filter,
+        })
+      : { items: null };
+  const releaseJobTriggers = items ?? [];
   const hasTargets = env.targets.length > 0;
   const hasRelease = release != null;
   const jc = releaseJobTriggers
@@ -99,7 +139,7 @@ const ReleaseCell: React.FC<{
           version={release.version}
           deployedAt={release.createdAt}
           releaseJobTriggers={jc}
-          workspaceSlug={workspaceSlug}
+          workspaceSlug={workspace.slug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
         />
@@ -117,6 +157,7 @@ const ReleaseCell: React.FC<{
 };
 
 const DeploymentTable: React.FC<{
+  workspace: Workspace;
   systemSlug: string;
   environments: Array<Environment & { targets: Target[] }>;
   deployments: Array<
@@ -130,8 +171,7 @@ const DeploymentTable: React.FC<{
       }> | null;
     }
   >;
-  workspaceSlug: string;
-}> = ({ systemSlug, deployments, environments, workspaceSlug }) => {
+}> = ({ systemSlug, deployments, environments, workspace }) => {
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-max border-separate border-spacing-0">
@@ -144,7 +184,7 @@ const DeploymentTable: React.FC<{
                 environment={env}
                 isFirst={idx === 0}
                 isLast={idx === environments.length - 1}
-                workspaceSlug={workspaceSlug}
+                workspaceSlug={workspace.slug}
                 systemSlug={systemSlug}
               />
             ))}
@@ -168,7 +208,7 @@ const DeploymentTable: React.FC<{
                     <IconCircleFilled className="absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-green-300" />
                   </div>
                   <Link
-                    href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
+                    href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
                     className="flex-grow hover:text-blue-300"
                   >
                     {r.name}
@@ -195,7 +235,7 @@ const DeploymentTable: React.FC<{
                       release={release}
                       environment={env}
                       deployment={r}
-                      workspaceSlug={workspaceSlug}
+                      workspace={workspace}
                       systemSlug={systemSlug}
                     />
                   </td>
