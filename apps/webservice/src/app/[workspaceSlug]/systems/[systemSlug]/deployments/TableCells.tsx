@@ -21,7 +21,6 @@ import { format } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { Badge } from "@ctrlplane/ui/badge";
 import { Card } from "@ctrlplane/ui/card";
 import {
   HoverCard,
@@ -120,7 +119,6 @@ export const Release: React.FC<{
   version: string;
   releaseId: string;
   environment: { id: string; name: string };
-  activeDeploymentCount?: number;
   deployedAt: Date;
   releaseJobTriggers: Array<
     ReleaseJobTrigger & {
@@ -137,7 +135,6 @@ export const Release: React.FC<{
     name,
     deployedAt,
     releaseJobTriggers,
-    activeDeploymentCount,
     releaseId,
     version,
     environment,
@@ -197,14 +194,6 @@ export const Release: React.FC<{
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                {activeDeploymentCount != null && activeDeploymentCount > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="rounded-full px-1.5 font-light text-muted-foreground"
-                  >
-                    {activeDeploymentCount}
-                  </Badge>
-                )}
               </div>
               <div className="text-left text-muted-foreground">
                 {format(deployedAt, "MMM d, hh:mm aa")}

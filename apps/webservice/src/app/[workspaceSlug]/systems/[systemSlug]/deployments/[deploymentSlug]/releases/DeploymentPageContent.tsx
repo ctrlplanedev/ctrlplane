@@ -69,9 +69,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     )
     .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
 
-  const distribution = api.deployment.distributionById.useQuery(deployment.id, {
-    refetchInterval: 2_000,
-  });
   const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blocked.useQuery(releaseIds, {
     enabled: releaseIds.length > 0,
@@ -196,12 +193,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                             t.environmentId === env.id,
                         );
 
-                      const activeDeploymentCount =
-                        distribution.data?.filter(
-                          (d) =>
-                            d.release.id === release.id &&
-                            d.releaseJobTrigger.environmentId === env.id,
-                        ).length ?? 0;
                       const hasTargets = env.targets.length > 0;
                       const hasRelease =
                         environmentReleaseReleaseJobTriggers.length > 0;
@@ -238,7 +229,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                                 releaseId={release.id}
                                 version={release.version}
                                 environment={env}
-                                activeDeploymentCount={activeDeploymentCount}
                                 name={release.version}
                                 deployedAt={
                                   environmentReleaseReleaseJobTriggers[0]!
