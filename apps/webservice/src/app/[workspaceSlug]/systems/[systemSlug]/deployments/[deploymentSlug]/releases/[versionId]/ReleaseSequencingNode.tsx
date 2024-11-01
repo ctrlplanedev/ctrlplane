@@ -1,28 +1,34 @@
 import type {
   EnvironmentCondition,
   JobCondition,
-  ReleaseCondition,
+  ReleaseCondition as JobReleaseCondition,
   StatusCondition,
 } from "@ctrlplane/validators/jobs";
+import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
-import { IconCheck, IconLoader2 } from "@tabler/icons-react";
+import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
+import _ from "lodash";
 import { Handle, Position } from "reactflow";
 import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
+import { Button } from "@ctrlplane/ui/button";
 import {
   ColumnOperator,
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
+import { ReleaseFilterType } from "@ctrlplane/validators/releases";
 
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { api } from "~/trpc/react";
 
 type ReleaseSequencingNodeProps = NodeProps<{
   workspaceId: string;
   policyType?: "cancel" | "wait";
   releaseId: string;
+  releaseVersion: string;
   deploymentId: string;
   environmentId: string;
 }>;
@@ -30,6 +36,12 @@ type ReleaseSequencingNodeProps = NodeProps<{
 const Passing: React.FC = () => (
   <div className="rounded-full bg-green-400 p-0.5 dark:text-black">
     <IconCheck strokeWidth={3} className="h-3 w-3" />
+  </div>
+);
+
+const Failing: React.FC = () => (
+  <div className="rounded-full bg-red-400 p-0.5 dark:text-black">
+    <IconX strokeWidth={3} className="h-3 w-3" />
   </div>
 );
 
@@ -42,6 +54,12 @@ const Waiting: React.FC = () => (
 const Loading: React.FC = () => (
   <div className="animate-spin rounded-full bg-muted-foreground p-0.5 dark:text-black">
     <IconLoader2 strokeWidth={3} className="h-3 w-3" />
+  </div>
+);
+
+const Cancelled: React.FC = () => (
+  <div className="rounded-full bg-neutral-400 p-0.5 dark:text-black">
+    <IconMinus strokeWidth={3} className="h-3 w-3" />
   </div>
 );
 
@@ -68,7 +86,7 @@ const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
     value: JobStatus.InProgress,
   };
 
-  const isSameRelease: ReleaseCondition = {
+  const isSameRelease: JobReleaseCondition = {
     type: JobFilterType.Release,
     operator: ColumnOperator.Equals,
     value: releaseId,
@@ -138,6 +156,93 @@ const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   );
 };
 
+const ReleaseChannelCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+  deploymentId,
+  environmentId,
+  releaseVersion,
+}) => {
+  const { setReleaseChannelId } = useReleaseChannelDrawer();
+  const environment = api.environment.byId.useQuery(environmentId);
+
+  const envReleaseChannel = environment.data?.releaseChannels.find(
+    (rc) => rc.deploymentId === deploymentId,
+  );
+
+  const policyReleaseChannel = environment.data?.policy?.releaseChannels.find(
+    (prc) => prc.deploymentId === deploymentId,
+  );
+
+  const rcId = envReleaseChannel?.id ?? policyReleaseChannel?.id ?? null;
+
+  const { filter } = envReleaseChannel ??
+    policyReleaseChannel ?? { filter: null };
+
+  const versionFilter: ReleaseCondition = {
+    type: ReleaseFilterType.Version,
+    operator: ColumnOperator.Equals,
+    value: releaseVersion,
+  };
+
+  const releaseFilter: ReleaseCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: _.compact([versionFilter, filter]),
+  };
+
+  const releasesQ = api.release.list.useQuery(
+    { deploymentId, filter: releaseFilter, limit: 0 },
+    { enabled: filter != null },
+  );
+
+  const hasReleaseChannel = rcId != null;
+  const isPassingReleaseChannel =
+    filter == null ||
+    (releasesQ.data?.total != null && releasesQ.data.total > 0);
+
+  const loading = environment.isLoading || releasesQ.isLoading;
+
+  return (
+    <div className="flex items-center gap-2">
+      {loading && <Loading />}
+      {!loading && !hasReleaseChannel && (
+        <>
+          <Cancelled /> No release channel
+        </>
+      )}
+      {!loading && hasReleaseChannel && !isPassingReleaseChannel && (
+        <>
+          <Failing />
+          <span className="flex items-center gap-1">
+            Blocked by{" "}
+            <Button
+              variant="link"
+              onClick={() => setReleaseChannelId(rcId)}
+              className="h-fit px-0 py-0 text-inherit underline-offset-2"
+            >
+              release channel
+            </Button>
+          </span>
+        </>
+      )}
+      {!loading && hasReleaseChannel && isPassingReleaseChannel && (
+        <>
+          <Passing />
+          <span className="flex items-center gap-1">
+            Passing{" "}
+            <Button
+              variant="link"
+              onClick={() => setReleaseChannelId(rcId)}
+              className="h-fit px-0 py-0 text-inherit underline-offset-2"
+            >
+              release channel
+            </Button>
+          </span>
+        </>
+      )}
+    </div>
+  );
+};
+
 export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
   data,
 }) => {
@@ -149,6 +254,7 @@ export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
         )}
       >
         <WaitingOnActiveCheck {...data} />
+        <ReleaseChannelCheck {...data} />
       </div>
       <Handle
         type="target"
