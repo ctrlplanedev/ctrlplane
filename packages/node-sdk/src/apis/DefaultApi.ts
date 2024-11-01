@@ -16,6 +16,9 @@ import type {
   AcknowledgeJob200Response,
   CreateRelease200Response,
   CreateReleaseRequest,
+  CreateTargets200Response,
+  CreateTargets400Response,
+  CreateTargetsRequest,
   GetAgentRunningJob200ResponseInner,
   GetJob200Response,
   GetNextJobs200Response,
@@ -35,6 +38,12 @@ import {
   CreateRelease200ResponseToJSON,
   CreateReleaseRequestFromJSON,
   CreateReleaseRequestToJSON,
+  CreateTargets200ResponseFromJSON,
+  CreateTargets200ResponseToJSON,
+  CreateTargets400ResponseFromJSON,
+  CreateTargets400ResponseToJSON,
+  CreateTargetsRequestFromJSON,
+  CreateTargetsRequestToJSON,
   GetAgentRunningJob200ResponseInnerFromJSON,
   GetAgentRunningJob200ResponseInnerToJSON,
   GetJob200ResponseFromJSON,
@@ -66,6 +75,10 @@ export interface AcknowledgeJobRequest {
 
 export interface CreateReleaseOperationRequest {
   createReleaseRequest: CreateReleaseRequest;
+}
+
+export interface CreateTargetsOperationRequest {
+  createTargetsRequest: CreateTargetsRequest;
 }
 
 export interface GetAgentRunningJobRequest {
@@ -223,6 +236,63 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<CreateRelease200Response> {
     const response = await this.createReleaseRaw(
+      requestParameters,
+      initOverrides,
+    );
+    return await response.value();
+  }
+
+  /**
+   * Create or update multiple targets
+   */
+  async createTargetsRaw(
+    requestParameters: CreateTargetsOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<CreateTargets200Response>> {
+    if (requestParameters["createTargetsRequest"] == null) {
+      throw new runtime.RequiredError(
+        "createTargetsRequest",
+        'Required parameter "createTargetsRequest" was null or undefined when calling createTargets().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/targets`,
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: CreateTargetsRequestToJSON(
+          requestParameters["createTargetsRequest"],
+        ),
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse(response, (jsonValue) =>
+      CreateTargets200ResponseFromJSON(jsonValue),
+    );
+  }
+
+  /**
+   * Create or update multiple targets
+   */
+  async createTargets(
+    requestParameters: CreateTargetsOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<CreateTargets200Response> {
+    const response = await this.createTargetsRaw(
       requestParameters,
       initOverrides,
     );

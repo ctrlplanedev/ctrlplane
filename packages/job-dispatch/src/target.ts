@@ -246,7 +246,8 @@ export const upsertTargets = async (
           ...targetsToInsert.find(
             (ti) =>
               ti.identifier === t.identifier &&
-              ti.workspaceId === t.workspaceId,
+              ti.workspaceId === t.workspaceId &&
+              ti.id === t.id,
           ),
         })),
       )

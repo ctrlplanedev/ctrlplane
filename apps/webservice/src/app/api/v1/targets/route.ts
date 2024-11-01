@@ -37,7 +37,7 @@ const patchBodySchema = z.object({
   ),
 });
 
-export const PATCH = request()
+export const POST = request()
   .use(authn)
   .use(parseBody(patchBodySchema))
   .use(
