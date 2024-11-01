@@ -73,6 +73,7 @@ export const useEnvironmentPolicyDrawer = () => {
     const url = new URL(window.location.href);
     if (id === null) {
       url.searchParams.delete(param);
+      url.searchParams.delete(tabParam);
       router.replace(`${url.pathname}?${url.searchParams.toString()}`);
       return;
     }
