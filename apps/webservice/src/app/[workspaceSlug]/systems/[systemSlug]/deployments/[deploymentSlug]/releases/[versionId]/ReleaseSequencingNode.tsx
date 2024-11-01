@@ -99,7 +99,7 @@ const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
       filter: pendingJobsForCurrentReleaseAndEnvFilter,
       limit: 1,
     },
-    { refetchInterval: 2_000 },
+    { refetchInterval: 5_000 },
   );
 
   const inProgressJobsQ = api.job.config.byWorkspaceId.list.useQuery(
@@ -108,7 +108,7 @@ const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
       filter: inProgressJobsForDifferentReleaseAndCurrentEnvFilter,
       limit: 1,
     },
-    { refetchInterval: 2_000 },
+    { refetchInterval: 5_000 },
   );
 
   const loading = pendingJobsQ.isLoading || inProgressJobsQ.isLoading;
