@@ -24,10 +24,7 @@ export const env = createEnv({
     GITHUB_BOT_PRIVATE_KEY: z.string().optional(),
     GITHUB_WEBHOOK_SECRET: z.string().optional(),
     BASE_URL: z.string(),
-    OTEL_SAMPLER_RATIO: z.coerce.number().min(0).max(1).default(1),
-    OTEL_EXPORTER_OTLP_ENDPOINT: z
-      .string()
-      .default("http://localhost:4318/v1/traces"),
+    OTEL_SAMPLER_RATIO: z.number().optional().default(1),
   },
 
   /**
