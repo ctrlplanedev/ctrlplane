@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { IconFilter, IconGraph } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -50,31 +49,17 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     systemSlug: string;
   }>();
 
-  const releaseJobTriggersQuery = api.job.config.byDeploymentId.useQuery(
-    deployment.id,
-    { refetchInterval: 2_000 },
-  );
-
   const releases = api.release.list.useQuery(
     { deploymentId: deployment.id, filter, limit: 30 },
-    { refetchInterval: 10_000 },
+    { refetchInterval: 2_000 },
   );
-
-  const releaseJobTriggers = (releaseJobTriggersQuery.data ?? [])
-    .filter(
-      (releaseJobTrigger) =>
-        isPresent(releaseJobTrigger.environmentId) &&
-        isPresent(releaseJobTrigger.releaseId) &&
-        isPresent(releaseJobTrigger.targetId),
-    )
-    .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
 
   const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
   const blockedEnvByRelease = api.release.blocked.useQuery(releaseIds, {
     enabled: releaseIds.length > 0,
   });
 
-  const loading = releases.isLoading || releaseJobTriggersQuery.isLoading;
+  const loading = releases.isLoading;
   const router = useRouter();
 
   return (
@@ -187,10 +172,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     </TableCell>
                     {environments.map((env) => {
                       const environmentReleaseReleaseJobTriggers =
-                        releaseJobTriggers.filter(
-                          (t) =>
-                            t.releaseId === release.id &&
-                            t.environmentId === env.id,
+                        release.releaseJobTriggers.filter(
+                          (t) => t.environmentId === env.id,
                         );
 
                       const hasTargets = env.targets.length > 0;

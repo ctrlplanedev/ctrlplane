@@ -58,8 +58,8 @@ export const releaseRouter = createTRPCRouter({
       z.object({
         deploymentId: z.string(),
         filter: releaseCondition.optional(),
-        limit: z.number().optional(),
-        offset: z.number().optional(),
+        limit: z.number().nonnegative().default(100),
+        offset: z.number().nonnegative().default(0),
       }),
     )
     .query(({ ctx, input }) => {
@@ -72,35 +72,60 @@ export const releaseRouter = createTRPCRouter({
         isPresent,
       );
 
-      const items = ctx.db
-        .select()
-        .from(release)
-        .leftJoin(
-          releaseDependency,
-          eq(release.id, releaseDependency.releaseId),
-        )
-        .where(
-          and(
-            ...[
-              eq(release.deploymentId, input.deploymentId),
-              releaseMatchesCondition(ctx.db, input.filter),
-            ].filter(isPresent),
-          ),
-        )
-        .orderBy(desc(release.createdAt), desc(release.version))
-        .limit(input.limit ?? 1000)
-        .offset(input.offset ?? 0)
-        .then((data) =>
-          _.chain(data)
-            .groupBy("release.id")
-            .map((r) => ({
-              ...r[0]!.release,
-              releaseDependencies: r
-                .map((rd) => rd.release_dependency)
-                .filter(isPresent),
-            }))
-            .value(),
-        );
+      const getItems = async () => {
+        const items = await ctx.db
+          .select()
+          .from(release)
+          .leftJoin(
+            releaseDependency,
+            eq(release.id, releaseDependency.releaseId),
+          )
+          .where(
+            and(
+              ...[
+                eq(release.deploymentId, input.deploymentId),
+                releaseMatchesCondition(ctx.db, input.filter),
+              ].filter(isPresent),
+            ),
+          )
+          .orderBy(desc(release.createdAt), desc(release.version))
+          .limit(input.limit)
+          .offset(input.offset)
+          .then((data) =>
+            _.chain(data)
+              .groupBy((r) => r.release.id)
+              .map((r) => ({
+                ...r[0]!.release,
+                releaseDependencies: r
+                  .map((rd) => rd.release_dependency)
+                  .filter(isPresent),
+              }))
+              .value(),
+          );
+
+        const jobTriggers = await ctx.db
+          .select()
+          .from(releaseJobTrigger)
+          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+          .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+          .where(
+            inArray(
+              releaseJobTrigger.id,
+              items.map((r) => r.id),
+            ),
+          );
+
+        return items.map((r) => ({
+          ...r,
+          releaseJobTriggers: jobTriggers
+            .filter((j) => j.release_job_trigger.releaseId === r.id)
+            .map((j) => ({
+              ...j.release_job_trigger,
+              job: j.job,
+              target: j.target,
+            })),
+        }));
+      };
 
       const total = ctx.db
         .select({
@@ -111,7 +136,7 @@ export const releaseRouter = createTRPCRouter({
         .then(takeFirst)
         .then((t) => t.count);
 
-      return Promise.all([items, total]).then(([items, total]) => ({
+      return Promise.all([getItems(), total]).then(([items, total]) => ({
         items,
         total,
       }));

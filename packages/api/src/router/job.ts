@@ -298,29 +298,6 @@ const releaseJobTriggerRouter = createTRPCRouter({
         ),
     ),
 
-  byDeploymentId: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentGet)
-          .on({ type: "deployment", id: input }),
-    })
-    .query(({ ctx, input }) =>
-      releaseJobTriggerQuery(ctx.db)
-        .where(eq(deployment.id, input))
-        .then((data) =>
-          data.map((t) => ({
-            ...t.release_job_trigger,
-            job: t.job,
-            jobAgent: t.job_agent,
-            target: t.target,
-            release: { ...t.release, deployment: t.deployment },
-            environment: t.environment,
-          })),
-        ),
-    ),
-
   byReleaseId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
