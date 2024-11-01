@@ -4,3 +4,4 @@ export * from "./status-condition.js";
 export * from "./deployment-condition.js";
 export * from "./environment-condition.js";
 export * from "./job-target-condition.js";
+export * from "./release-condition.js";
