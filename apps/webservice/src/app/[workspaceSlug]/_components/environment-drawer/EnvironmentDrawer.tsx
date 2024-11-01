@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   IconDotsVertical,
@@ -21,11 +21,38 @@ import { EditFilterForm } from "./Filter";
 import { Overview } from "./Overview";
 import { ReleaseChannels } from "./ReleaseChannels";
 
+export enum EnvironmentDrawerTab {
+  Overview = "overview",
+  Targets = "targets",
+  ReleaseChannels = "release-channels",
+}
+
+const tabParam = "tab";
+const useEnvironmentDrawerTab = () => {
+  const router = useRouter();
+  const params = useSearchParams();
+  const tab = params.get(tabParam);
+
+  const setTab = (tab: EnvironmentDrawerTab | null) => {
+    const url = new URL(window.location.href);
+    if (tab === null) {
+      url.searchParams.delete(tabParam);
+      router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+      return;
+    }
+    url.searchParams.set(tabParam, tab);
+    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+  };
+
+  return { tab, setTab };
+};
+
 const param = "environment_id";
 export const useEnvironmentDrawer = () => {
   const router = useRouter();
   const params = useSearchParams();
   const environmentId = params.get(param);
+  const { tab, setTab } = useEnvironmentDrawerTab();
 
   const setEnvironmentId = (id: string | null) => {
     const url = new URL(window.location.href);
@@ -38,13 +65,17 @@ export const useEnvironmentDrawer = () => {
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
-  const removeEnvironmentId = () => setEnvironmentId(null);
+  const removeEnvironmentId = () => {
+    setTab(null);
+    setEnvironmentId(null);
+  };
 
-  return { environmentId, setEnvironmentId, removeEnvironmentId };
+  return { environmentId, setEnvironmentId, removeEnvironmentId, tab, setTab };
 };
 
 export const EnvironmentDrawer: React.FC = () => {
-  const { environmentId, removeEnvironmentId } = useEnvironmentDrawer();
+  const { environmentId, removeEnvironmentId, tab, setTab } =
+    useEnvironmentDrawer();
   const isOpen = Boolean(environmentId);
   const setIsOpen = removeEnvironmentId;
   const environmentQ = api.environment.byId.useQuery(environmentId ?? "", {
@@ -64,8 +95,6 @@ export const EnvironmentDrawer: React.FC = () => {
     { enabled: isOpen && environment != null },
   );
   const deployments = deploymentsQ.data;
-
-  const [activeTab, setActiveTab] = useState("overview");
 
   const loading =
     environmentQ.isLoading || workspaceQ.isLoading || deploymentsQ.isLoading;
@@ -107,20 +136,20 @@ export const EnvironmentDrawer: React.FC = () => {
           <div className="flex w-full gap-6 p-6">
             <div className="space-y-1">
               <TabButton
-                active={activeTab === "overview"}
-                onClick={() => setActiveTab("overview")}
+                active={tab === EnvironmentDrawerTab.Overview || tab == null}
+                onClick={() => setTab(EnvironmentDrawerTab.Overview)}
                 icon={<IconInfoCircle className="h-4 w-4" />}
                 label="Overview"
               />
               <TabButton
-                active={activeTab === "targets"}
-                onClick={() => setActiveTab("targets")}
+                active={tab === EnvironmentDrawerTab.Targets}
+                onClick={() => setTab(EnvironmentDrawerTab.Targets)}
                 icon={<IconTarget className="h-4 w-4" />}
                 label="Targets"
               />
               <TabButton
-                active={activeTab === "release-channels"}
-                onClick={() => setActiveTab("release-channels")}
+                active={tab === EnvironmentDrawerTab.ReleaseChannels}
+                onClick={() => setTab(EnvironmentDrawerTab.ReleaseChannels)}
                 icon={<IconFilter className="h-4 w-4" />}
                 label="Release Channels"
               />
@@ -128,21 +157,22 @@ export const EnvironmentDrawer: React.FC = () => {
 
             {environment != null && (
               <div className="w-full overflow-auto">
-                {activeTab === "overview" && (
+                {(tab === EnvironmentDrawerTab.Overview || tab == null) && (
                   <Overview environment={environment} />
                 )}
-                {activeTab === "targets" && workspace != null && (
+                {tab === EnvironmentDrawerTab.Targets && workspace != null && (
                   <EditFilterForm
                     environment={environment}
                     workspaceId={workspace.id}
                   />
                 )}
-                {activeTab === "release-channels" && deployments != null && (
-                  <ReleaseChannels
-                    environment={environment}
-                    deployments={deployments}
-                  />
-                )}
+                {tab === EnvironmentDrawerTab.ReleaseChannels &&
+                  deployments != null && (
+                    <ReleaseChannels
+                      environment={environment}
+                      deployments={deployments}
+                    />
+                  )}
               </div>
             )}
           </div>

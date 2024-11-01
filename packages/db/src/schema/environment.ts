@@ -56,7 +56,12 @@ export const createEnvironment = createInsertSchema(environment, {
 export const updateEnvironment = createEnvironment.partial();
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
-export const environmentRelations = relations(environment, ({ many }) => ({
+export const environmentRelations = relations(environment, ({ many, one }) => ({
+  policy: one(environmentPolicy, {
+    fields: [environment.policyId],
+    references: [environmentPolicy.id],
+  }),
+  releaseChannels: many(environmentReleaseChannel),
   environments: many(variableSetEnvironment),
 }));
 
@@ -115,6 +120,14 @@ export const createEnvironmentPolicy = createInsertSchema(
 ).omit({ id: true });
 
 export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
+
+export const environmentPolicyRelations = relations(
+  environmentPolicy,
+  ({ many }) => ({
+    environmentPolicyReleaseChannels: many(environmentPolicyReleaseChannel),
+    environments: many(environment),
+  }),
+);
 
 export const recurrenceType = pgEnum("recurrence_type", [
   "hourly",
@@ -222,6 +235,20 @@ export type EnvironmentPolicyReleaseChannel = InferSelectModel<
   typeof environmentPolicyReleaseChannel
 >;
 
+export const environmentPolicyReleaseChannelRelations = relations(
+  environmentPolicyReleaseChannel,
+  ({ one }) => ({
+    environmentPolicy: one(environmentPolicy, {
+      fields: [environmentPolicyReleaseChannel.policyId],
+      references: [environmentPolicy.id],
+    }),
+    releaseChannel: one(releaseChannel, {
+      fields: [environmentPolicyReleaseChannel.channelId],
+      references: [releaseChannel.id],
+    }),
+  }),
+);
+
 export const environmentReleaseChannel = pgTable(
   "environment_release_channel",
   {
@@ -245,6 +272,20 @@ export const environmentReleaseChannel = pgTable(
 export type EnvironmentReleaseChannel = InferSelectModel<
   typeof environmentReleaseChannel
 >;
+
+export const environmentReleaseChannelRelations = relations(
+  environmentReleaseChannel,
+  ({ one }) => ({
+    environment: one(environment, {
+      fields: [environmentReleaseChannel.environmentId],
+      references: [environment.id],
+    }),
+    releaseChannel: one(releaseChannel, {
+      fields: [environmentReleaseChannel.channelId],
+      references: [releaseChannel.id],
+    }),
+  }),
+);
 
 export const environmentMetadata = pgTable(
   "environment_metadata",

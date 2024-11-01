@@ -140,14 +140,41 @@ const releaseChannelRouter = createTRPCRouter({
           .perform(Permission.ReleaseChannelGet)
           .on({ type: "releaseChannel", id: input }),
     })
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(async ({ ctx, input }) => {
+      const rc = await ctx.db.query.releaseChannel.findFirst({
+        where: eq(releaseChannel.id, input),
+        with: {
+          environmentReleaseChannels: { with: { environment: true } },
+          environmentPolicyReleaseChannels: {
+            with: { environmentPolicy: true },
+          },
+        },
+      });
+      if (rc == null) return null;
+      const policyIds = rc.environmentPolicyReleaseChannels.map(
+        (eprc) => eprc.environmentPolicy.id,
+      );
+
+      const envs = await ctx.db
         .select()
-        .from(releaseChannel)
-        .where(eq(releaseChannel.id, input))
-        .orderBy(releaseChannel.name)
-        .then(takeFirst),
-    ),
+        .from(environment)
+        .where(inArray(environment.policyId, policyIds));
+
+      return {
+        ...rc,
+        usage: {
+          environments: rc.environmentReleaseChannels.map(
+            (erc) => erc.environment,
+          ),
+          policies: rc.environmentPolicyReleaseChannels.map((eprc) => ({
+            ...eprc.environmentPolicy,
+            environments: envs.filter(
+              (e) => e.policyId === eprc.environmentPolicy.id,
+            ),
+          })),
+        },
+      };
+    }),
 });
 
 export const deploymentRouter = createTRPCRouter({
