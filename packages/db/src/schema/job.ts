@@ -219,6 +219,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
     return eq(environment.id, cond.value);
   if (cond.type === FilterType.Version) return buildVersionCondition(cond);
   if (cond.type === JobFilterType.JobTarget) return eq(target.id, cond.value);
+  if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

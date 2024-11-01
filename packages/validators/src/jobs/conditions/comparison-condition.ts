@@ -8,6 +8,7 @@ import type {
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
 import type { JobTargetCondition } from "./job-target-condition.js";
+import type { ReleaseCondition } from "./release-condition.js";
 import type { StatusCondition } from "./status-condition.js";
 import {
   createdAtCondition,
@@ -17,6 +18,7 @@ import {
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
 import { jobTargetCondition } from "./job-target-condition.js";
+import { releaseCondition } from "./release-condition.js";
 import { statusCondition } from "./status-condition.js";
 
 export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
@@ -34,6 +36,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         environmentCondition,
         versionCondition,
         jobTargetCondition,
+        releaseCondition,
       ]),
     ),
   }),
@@ -52,5 +55,6 @@ export type ComparisonCondition = {
     | EnvironmentCondition
     | VersionCondition
     | JobTargetCondition
+    | ReleaseCondition
   >;
 };

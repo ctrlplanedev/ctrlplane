@@ -5,6 +5,7 @@ import type {
   EnvironmentPolicy,
   EnvironmentPolicyDeployment,
   Release,
+  Workspace,
 } from "@ctrlplane/db/schema";
 import type { NodeTypes, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
@@ -30,12 +31,13 @@ const nodeTypes: NodeTypes = {
   trigger: TriggerNode,
 };
 export const FlowDiagram: React.FC<{
+  workspace: Workspace;
   systemId: string;
   release: Release;
   envs: Array<Environment>;
   policies: Array<EnvironmentPolicy>;
   policyDeployments: Array<EnvironmentPolicyDeployment>;
-}> = ({ release, envs, policies, policyDeployments }) => {
+}> = ({ workspace, release, envs, policies, policyDeployments }) => {
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
 
@@ -72,6 +74,7 @@ export const FlowDiagram: React.FC<{
         type: "release-sequencing",
         position: { x: 0, y: 0 },
         data: {
+          workspaceId: workspace.id,
           releaseId: release.id,
           deploymentId: release.deploymentId,
           environmentId: env.id,
