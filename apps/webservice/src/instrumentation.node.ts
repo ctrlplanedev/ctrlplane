@@ -15,7 +15,14 @@ const sdk = new NodeSDK({
   resource: new Resource({
     [ATTR_SERVICE_NAME]: "ctrlplane/webservice",
   }),
-  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
+  spanProcessors: [
+    new BatchSpanProcessor(
+      new OTLPTraceExporter({
+        url:
+          env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4318/v1/traces",
+      }),
+    ),
+  ],
   instrumentations: [
     getNodeAutoInstrumentations({
       "@opentelemetry/instrumentation-fs": {
