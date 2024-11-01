@@ -18,8 +18,7 @@ const sdk = new NodeSDK({
   spanProcessors: [
     new BatchSpanProcessor(
       new OTLPTraceExporter({
-        url:
-          env.OTEL_EXPORTER_OTLP_ENDPOINT || "http://localhost:4318/v1/traces",
+        url: env.OTEL_EXPORTER_OTLP_ENDPOINT,
       }),
     ),
   ],
