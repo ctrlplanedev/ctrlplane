@@ -234,11 +234,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   const { filter, setFilter } = useJobFilter();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
     { releaseId: release.id, filter },
-    {
-      refetchInterval: 5_000,
-      placeholderData: (prev) => prev,
-      initialData: [],
-    },
+    { refetchInterval: 5_000 },
   );
 
   return (
@@ -254,7 +250,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
         </JobConditionDialog>
       </div>
 
-      {releaseJobTriggerQuery.data.length == 0 && (
+      {(releaseJobTriggerQuery.data ?? []).length === 0 && (
         <div className="space-y-2 p-4">
           {_.range(30).map((i) => (
             <Skeleton
@@ -266,7 +262,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
         </div>
       )}
 
-      {releaseJobTriggerQuery.data.length > 0 && (
+      {(releaseJobTriggerQuery.data ?? []).length > 0 && (
         <Table className="table-fixed">
           <TableBody>
             {environments.map((environment) => (
@@ -276,7 +272,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                 environmentCount={environments.length}
                 deploymentName={deploymentName}
                 release={release}
-                releaseJobTriggerData={releaseJobTriggerQuery.data}
+                releaseJobTriggerData={releaseJobTriggerQuery.data ?? []}
               />
             ))}
           </TableBody>

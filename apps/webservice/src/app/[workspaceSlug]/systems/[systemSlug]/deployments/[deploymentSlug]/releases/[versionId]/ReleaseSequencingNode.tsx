@@ -1,14 +1,26 @@
+import type {
+  EnvironmentCondition,
+  JobCondition,
+  ReleaseCondition,
+  StatusCondition,
+} from "@ctrlplane/validators/jobs";
 import type { NodeProps } from "reactflow";
 import { IconCheck, IconLoader2 } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
 import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
 type ReleaseSequencingNodeProps = NodeProps<{
+  workspaceId: string;
   policyType?: "cancel" | "wait";
   releaseId: string;
   deploymentId: string;
@@ -34,38 +46,90 @@ const Loading: React.FC = () => (
 );
 
 const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+  workspaceId,
   releaseId,
   environmentId,
 }) => {
-  const allJobs = api.job.config.byReleaseId.useQuery(
-    { releaseId },
-    { refetchInterval: 10_000 },
+  const isSameEnvironment: EnvironmentCondition = {
+    type: JobFilterType.Environment,
+    operator: ColumnOperator.Equals,
+    value: environmentId,
+  };
+
+  const isPending: StatusCondition = {
+    type: JobFilterType.Status,
+    operator: ColumnOperator.Equals,
+    value: JobStatus.Pending,
+  };
+
+  const isInProgress: StatusCondition = {
+    type: JobFilterType.Status,
+    operator: ColumnOperator.Equals,
+    value: JobStatus.InProgress,
+  };
+
+  const isSameRelease: ReleaseCondition = {
+    type: JobFilterType.Release,
+    operator: ColumnOperator.Equals,
+    value: releaseId,
+  };
+
+  const isDifferentRelease: JobCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    not: true,
+    conditions: [isSameRelease],
+  };
+
+  const pendingJobsForCurrentReleaseAndEnvFilter: JobCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [isSameEnvironment, isPending, isSameRelease],
+  };
+
+  const inProgressJobsForDifferentReleaseAndCurrentEnvFilter: JobCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [isSameEnvironment, isInProgress, isDifferentRelease],
+  };
+
+  const pendingJobsQ = api.job.config.byWorkspaceId.list.useQuery(
+    {
+      workspaceId,
+      filter: pendingJobsForCurrentReleaseAndEnvFilter,
+      limit: 1,
+    },
+    { refetchInterval: 5_000 },
   );
 
-  const isReleasePending = allJobs.data?.some(
-    (j) =>
-      j.job.status === JobStatus.Pending &&
-      j.release.id === releaseId &&
-      j.environmentId === environmentId,
+  const inProgressJobsQ = api.job.config.byWorkspaceId.list.useQuery(
+    {
+      workspaceId,
+      filter: inProgressJobsForDifferentReleaseAndCurrentEnvFilter,
+      limit: 1,
+    },
+    { refetchInterval: 5_000 },
   );
+
+  const loading = pendingJobsQ.isLoading || inProgressJobsQ.isLoading;
+
+  const isCurrentReleasePending =
+    pendingJobsQ.data != null && pendingJobsQ.data.total > 0;
+  const isSeparateReleaseInProgress =
+    inProgressJobsQ.data != null && inProgressJobsQ.data.total > 0;
+
   const isWaitingOnActive =
-    isReleasePending &&
-    allJobs.data?.some(
-      (j) =>
-        j.job.status === JobStatus.InProgress &&
-        j.release.id !== releaseId &&
-        j.environmentId === environmentId,
-    );
+    isCurrentReleasePending && isSeparateReleaseInProgress;
 
   return (
     <div className="flex items-center gap-2">
-      {allJobs.isLoading && <Loading />}
-      {isWaitingOnActive && (
+      {loading && <Loading />}
+      {!loading && isWaitingOnActive && (
         <>
           <Waiting /> Another release is in progress
         </>
       )}
-      {!isWaitingOnActive && !allJobs.isLoading && (
+      {!loading && !isWaitingOnActive && (
         <>
           <Passing /> All other releases finished
         </>

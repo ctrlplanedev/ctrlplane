@@ -9,6 +9,7 @@ import type { ComparisonCondition } from "./comparison-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
 import type { JobTargetCondition } from "./job-target-condition.js";
+import type { ReleaseCondition } from "./release-condition.js";
 import type { StatusCondition } from "./status-condition.js";
 import {
   ComparisonOperator,
@@ -23,6 +24,7 @@ import { comparisonCondition } from "./comparison-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
 import { jobTargetCondition } from "./job-target-condition.js";
+import { releaseCondition } from "./release-condition.js";
 import { statusCondition } from "./status-condition.js";
 
 export type JobCondition =
@@ -33,7 +35,8 @@ export type JobCondition =
   | DeploymentCondition
   | EnvironmentCondition
   | VersionCondition
-  | JobTargetCondition;
+  | JobTargetCondition
+  | ReleaseCondition;
 
 export const jobCondition = z.union([
   comparisonCondition,
@@ -44,6 +47,7 @@ export const jobCondition = z.union([
   environmentCondition,
   versionCondition,
   jobTargetCondition,
+  releaseCondition,
 ]);
 
 export const defaultCondition: JobCondition = {
@@ -57,6 +61,7 @@ export enum JobFilterType {
   Status = "status",
   Deployment = "deployment",
   Environment = "environment",
+  Release = "release",
   JobTarget = "target",
 }
 

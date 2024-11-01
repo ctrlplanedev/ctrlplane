@@ -13,36 +13,42 @@ import { dispatchGithubJob } from "./github.js";
 export const createDispatchExecutionJobWorker = () =>
   new Worker<DispatchJobEvent>(
     Channel.DispatchJob,
-    (job) =>
-      db
+    async (job) => {
+      const { jobId } = job.data;
+      const je = await db
         .select()
         .from(schema.job)
         .innerJoin(
           schema.jobAgent,
           eq(schema.job.jobAgentId, schema.jobAgent.id),
         )
-        .where(eq(schema.job.id, job.data.jobId))
-        .then(takeFirstOrNull)
-        .then(async (je) => {
-          if (je == null) return;
+        .where(eq(schema.job.id, jobId))
+        .then(takeFirstOrNull);
 
-          try {
-            job.log(
-              `Dispatching job ${je.job.id} --- ${je.job_agent.type}/${je.job_agent.name}`,
-            );
-            if (je.job_agent.type === String(JobAgentType.GithubApp)) {
-              job.log(`Dispatching to GitHub app`);
-              await dispatchGithubJob(je.job);
-            }
-          } catch (error: unknown) {
-            db.update(schema.job)
-              .set({
-                status: JobStatus.Failure,
-                message: (error as Error).message,
-              })
-              .where(eq(schema.job.id, je.job.id));
-          }
-        }),
+      if (je == null) {
+        job.log(`Job ${jobId} not found`);
+        return null;
+      }
+
+      try {
+        job.log(
+          `Dispatching job ${je.job.id} --- ${je.job_agent.type}/${je.job_agent.name}`,
+        );
+        if (je.job_agent.type === String(JobAgentType.GithubApp)) {
+          job.log(`Dispatching to GitHub app`);
+          await dispatchGithubJob(je.job);
+        }
+      } catch (error: unknown) {
+        db.update(schema.job)
+          .set({
+            status: JobStatus.Failure,
+            message: (error as Error).message,
+          })
+          .where(eq(schema.job.id, je.job.id));
+      }
+
+      return je;
+    },
     {
       connection: redis,
       removeOnComplete: { age: 1 * 60 * 60, count: 100 },
