@@ -309,6 +309,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
       z.object({
         releaseId: z.string().uuid(),
         filter: jobCondition.optional(),
+        limit: z.number().int().nonnegative().max(1000).default(500),
+        offset: z.number().int().nonnegative().default(0),
       }),
     )
     .query(({ ctx, input }) =>
@@ -329,6 +331,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
           ),
         )
         .orderBy(desc(releaseJobTrigger.createdAt))
+        .limit(input.limit)
+        .offset(input.offset)
         .then(processReleaseJobTriggerWithAdditionalDataRows),
     ),
 

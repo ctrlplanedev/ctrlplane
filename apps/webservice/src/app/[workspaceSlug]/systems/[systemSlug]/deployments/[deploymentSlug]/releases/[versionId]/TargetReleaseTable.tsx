@@ -236,7 +236,6 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     { releaseId: release.id, filter },
     {
       refetchInterval: 5_000,
-      placeholderData: (prev) => prev,
       initialData: [],
     },
   );
@@ -254,7 +253,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
         </JobConditionDialog>
       </div>
 
-      {releaseJobTriggerQuery.data.length == 0 && (
+      {releaseJobTriggerQuery.data.length === 0 && (
         <div className="space-y-2 p-4">
           {_.range(30).map((i) => (
             <Skeleton
