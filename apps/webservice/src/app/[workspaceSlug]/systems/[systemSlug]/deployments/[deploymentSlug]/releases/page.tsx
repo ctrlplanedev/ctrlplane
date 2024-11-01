@@ -10,13 +10,10 @@ export default async function DeploymentPage({
 }: {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
 }) {
-  const workspace = await api.workspace.bySlug(params.workspaceSlug);
-  if (workspace == null) return notFound();
-  const system = await api.system.bySlug(params);
-  const environments = await api.environment.bySystemId(system.id);
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
-
+  const { system } = deployment;
+  const environments = await api.environment.bySystemId(system.id);
   return (
     <DeploymentPageContent
       deployment={deployment}
