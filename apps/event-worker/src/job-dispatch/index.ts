@@ -4,7 +4,6 @@ import { Worker } from "bullmq";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -27,12 +26,15 @@ export const createDispatchExecutionJobWorker = () =>
         .then(async (je) => {
           if (je == null) return;
 
-          logger.info(`Dispatching job ${je.job.id}...`);
-
           try {
-            if (je.job_agent.type === String(JobAgentType.GithubApp))
+            job.log(
+              `Dispatching job ${je.job.id} --- ${je.job_agent.type}/${je.job_agent.name}`,
+            );
+            if (je.job_agent.type === String(JobAgentType.GithubApp)) {
+              job.log(`Dispatching to GitHub app`);
               await dispatchGithubJob(je.job);
-          } catch (error) {
+            }
+          } catch (error: unknown) {
             db.update(schema.job)
               .set({
                 status: JobStatus.Failure,
