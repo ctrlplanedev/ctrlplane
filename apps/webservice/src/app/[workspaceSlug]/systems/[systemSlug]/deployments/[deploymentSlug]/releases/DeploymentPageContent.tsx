@@ -177,10 +177,10 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       )}
                     >
                       <div className="flex items-center gap-2">
-                        {release.name}{" "}
+                        <span className="truncate">{release.name}</span>{" "}
                         <Badge
                           variant="secondary"
-                          className="text-xs hover:bg-secondary"
+                          className="flex-shrink-0 text-xs hover:bg-secondary"
                         >
                           {formatDistanceToNowStrict(release.createdAt, {
                             addSuffix: true,
