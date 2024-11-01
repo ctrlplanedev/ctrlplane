@@ -45,7 +45,7 @@ export default async function ReleasePage({
         <div className="h-[250px] shrink-0 border-b">
           <ReactFlowProvider>
             <FlowDiagram
-              workspace={workspace}
+              workspace={system.workspace}
               release={release}
               envs={environments}
               systemId={system.id}
