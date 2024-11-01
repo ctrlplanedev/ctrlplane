@@ -1,4 +1,5 @@
 import colors from "@colors/colors/safe.js";
+import { OpenTelemetryTransportV3 } from "@opentelemetry/winston-transport";
 import * as winston from "winston";
 
 const { LOG_LEVEL, NODE_ENV } = process.env;
@@ -26,7 +27,10 @@ function createLogger(level: string) {
   return winston.createLogger({
     level,
     format: winston.format.combine(...format),
-    transports: [new winston.transports.Console()],
+    transports: [
+      new winston.transports.Console(),
+      new OpenTelemetryTransportV3(),
+    ],
   });
 }
 

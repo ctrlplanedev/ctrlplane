@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.9"
 
 services:
   postgres:
@@ -26,17 +26,21 @@ services:
 
   migrations:
     platform: linux/amd64
-    image: ctrlplane/migrations:c656deb
+    image: ctrlplane/migrations:eccfca2
     container_name: ctrlplane-migrations
     restart: "no"
     environment:
-      DATABASE_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
     depends_on:
       - postgres
 
   webservice:
     platform: linux/amd64
-    image: ctrlplane/webservice:c656deb
+    image: ctrlplane/webservice:6593512
+    # build:
+    #   context: .
+    #   dockerfile: ./apps/webservice/Dockerfile
+
     container_name: ctrlplane-webservice
     environment:
       BASE_URL: "http://127.0.0.1" # <set your instance url>
@@ -46,31 +50,52 @@ services:
       # AUTH_OIDC_CLIENT_SECRET: "<oidc-client-secret>"
 
       NEXTAUTH_URL: ${BASE_URL}
-      DATABASE_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
+      # NODE_OPTIONS: "--require /app/apps/webservice/.next/serverinstrumentation.js"
     depends_on:
       - postgres
       - migrations
     ports:
-      - "8080:8080"
+      - "3000:3000"
 
   jobs:
     platform: linux/amd64
-    image: ctrlplane/jobs:c656deb
+    image: ctrlplane/jobs:eccfca2
     container_name: ctrlplane-jobs
     environment:
-      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
+      REDIS_URL: "redis://redis:6379"
+      VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
     depends_on:
       - postgres
 
   event-worker:
     platform: linux/amd64
-    image: ctrlplane/event-worker:c656deb
+    image: ctrlplane/event-worker:eccfca2
     container_name: ctrlplane-event-worker
     environment:
-      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
+      REDIS_URL: "redis://redis:6379"
+      VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
     depends_on:
       - postgres
       - redis
+
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   container_name: ctrlplane-otel-collector
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4317:4317" # OTLP gRPC
+  #     - "4318:4318" # OTLP HTTP
+  #     - "8125:8125" # StatsD
+  #     - "8888:8888" # Telemetry
+  #     - "9109:9109" # Prometheus endpoint
 
 volumes:
   postgres_data:

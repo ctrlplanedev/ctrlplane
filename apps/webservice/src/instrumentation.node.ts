@@ -39,7 +39,7 @@ const sdk = new NodeSDK({
         enabled: true,
       },
       "@opentelemetry/instrumentation-winston": {
-        enabled: true,
+        enabled: false,
       },
     }),
   ],

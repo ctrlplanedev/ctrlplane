@@ -1,0 +1,80 @@
+connectors:
+  datadog/connector: {}
+exporters:
+  datadog/exporter:
+    api:
+      key: #<Fill me in>
+      site: #<Fill me in>
+  debug: {}
+  debug/detailed:
+    verbosity: detailed
+  prometheus:
+    endpoint: 0.0.0.0:9109
+extensions:
+  health_check: {}
+processors:
+  batch: {}
+  memory_limiter:
+    check_interval: 5s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        include_metadata: true
+      http:
+        endpoint: 0.0.0.0:4318
+        include_metadata: true
+  statsd:
+    endpoint: 0.0.0.0:8125
+service:
+  extensions:
+    - health_check
+  pipelines:
+    logs/datadog:
+      exporters:
+        - datadog/exporter
+      processors:
+        - batch
+        - memory_limiter
+      receivers:
+        - otlp
+    metrics/datadog:
+      exporters:
+        - datadog/exporter
+      processors:
+        - batch
+        - memory_limiter
+      receivers:
+        - otlp
+        - datadog/connector
+    traces:
+      exporters:
+        - debug
+      processors:
+        - batch
+        - memory_limiter
+      receivers:
+        - otlp
+    traces/datadog:
+      exporters:
+        - datadog/connector
+        - datadog/exporter
+      processors:
+        - batch
+        - memory_limiter
+      receivers:
+        - otlp
+    logs:
+      exporters:
+        - debug
+      processors:
+        - batch
+        - memory_limiter
+      receivers:
+        - otlp
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
