@@ -37,15 +37,15 @@ const patchBodySchema = z.object({
   ),
 });
 
-export const PATCH = request()
+export const POST = request()
   .use(authn)
   .use(parseBody(patchBodySchema))
   .use(
-    authz(({ can, ctx }) =>
-      can
+    authz(({ can, ctx }) => {
+      return can
         .perform(Permission.TargetUpdate)
-        .on({ type: "workspace", id: ctx.body.workspaceId }),
-    ),
+        .on({ type: "workspace", id: ctx.body.workspaceId });
+    }),
   )
   .handle<{ user: schema.User; body: z.infer<typeof patchBodySchema> }>(
     async (ctx) => {
@@ -54,6 +54,8 @@ export const PATCH = request()
           { error: "No targets provided" },
           { status: 400 },
         );
+
+      console.log("ctx.body.targets", ctx.body.targets);
 
       const targets = await upsertTargets(
         db,
