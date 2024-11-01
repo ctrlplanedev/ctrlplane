@@ -61,4 +61,6 @@ ENV AUTH_TRUST_HOST=true
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 
+ENV NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register"
+
 CMD ["node", "apps/webservice/server.js"]
