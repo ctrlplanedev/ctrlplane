@@ -1,15 +1,89 @@
 import * as fs from "fs";
 import localVarRequest from "request";
 
+import { AcknowledgeJob200Response } from "./acknowledgeJob200Response";
+import { CreateEnvironment200Response } from "./createEnvironment200Response";
+import { CreateEnvironment200ResponseEnvironment } from "./createEnvironment200ResponseEnvironment";
+import { CreateEnvironment500Response } from "./createEnvironment500Response";
+import { CreateEnvironmentRequest } from "./createEnvironmentRequest";
+import { CreateRelease200Response } from "./createRelease200Response";
+import { CreateReleaseRequest } from "./createReleaseRequest";
+import { DeleteTarget200Response } from "./deleteTarget200Response";
+import { GetAgentRunningJob200ResponseInner } from "./getAgentRunningJob200ResponseInner";
+import { GetJob200Response } from "./getJob200Response";
+import { GetJob200ResponseApproval } from "./getJob200ResponseApproval";
+import { GetJob200ResponseApprovalApprover } from "./getJob200ResponseApprovalApprover";
+import { GetJob200ResponseDeployment } from "./getJob200ResponseDeployment";
+import { GetJob200ResponseEnvironment } from "./getJob200ResponseEnvironment";
+import { GetJob200ResponseRelease } from "./getJob200ResponseRelease";
+import { GetJob200ResponseRunbook } from "./getJob200ResponseRunbook";
+import { GetJob200ResponseTarget } from "./getJob200ResponseTarget";
+import { GetNextJobs200Response } from "./getNextJobs200Response";
+import { GetNextJobs200ResponseJobsInner } from "./getNextJobs200ResponseJobsInner";
+import { GetTarget200Response } from "./getTarget200Response";
+import { GetTarget200ResponseProvider } from "./getTarget200ResponseProvider";
+import { GetTarget200ResponseVariablesInner } from "./getTarget200ResponseVariablesInner";
+import { GetTarget404Response } from "./getTarget404Response";
+import { GetTargetByIdentifier200Response } from "./getTargetByIdentifier200Response";
+import { GetTargetByIdentifier200ResponseProvider } from "./getTargetByIdentifier200ResponseProvider";
+import { GetTargetByIdentifier200ResponseVariablesInner } from "./getTargetByIdentifier200ResponseVariablesInner";
+import { GetTargetByIdentifier404Response } from "./getTargetByIdentifier404Response";
+import { SetTargetProvidersTargetsRequest } from "./setTargetProvidersTargetsRequest";
+import { SetTargetProvidersTargetsRequestTargetsInner } from "./setTargetProvidersTargetsRequestTargetsInner";
+import { UpdateJob200Response } from "./updateJob200Response";
+import { UpdateJobAgent200Response } from "./updateJobAgent200Response";
+import { UpdateJobAgentRequest } from "./updateJobAgentRequest";
+import { UpdateJobRequest } from "./updateJobRequest";
+import { UpdateTarget200Response } from "./updateTarget200Response";
+import { UpdateTargetRequest } from "./updateTargetRequest";
 import { UpsertTargetsRequest } from "./upsertTargetsRequest";
 import { UpsertTargetsRequestTargetsInner } from "./upsertTargetsRequestTargetsInner";
 import { UpsertTargetsRequestTargetsInnerVariablesInner } from "./upsertTargetsRequestTargetsInnerVariablesInner";
 import { UpsertTargetsRequestTargetsInnerVariablesInnerValue } from "./upsertTargetsRequestTargetsInnerVariablesInnerValue";
+import { V1JobAgentsAgentIdQueueAcknowledgePost200Response } from "./v1JobAgentsAgentIdQueueAcknowledgePost200Response";
+import { V1JobAgentsAgentIdQueueAcknowledgePost401Response } from "./v1JobAgentsAgentIdQueueAcknowledgePost401Response";
 
+export * from "./acknowledgeJob200Response";
+export * from "./createEnvironment200Response";
+export * from "./createEnvironment200ResponseEnvironment";
+export * from "./createEnvironment500Response";
+export * from "./createEnvironmentRequest";
+export * from "./createRelease200Response";
+export * from "./createReleaseRequest";
+export * from "./deleteTarget200Response";
+export * from "./getAgentRunningJob200ResponseInner";
+export * from "./getJob200Response";
+export * from "./getJob200ResponseApproval";
+export * from "./getJob200ResponseApprovalApprover";
+export * from "./getJob200ResponseDeployment";
+export * from "./getJob200ResponseEnvironment";
+export * from "./getJob200ResponseRelease";
+export * from "./getJob200ResponseRunbook";
+export * from "./getJob200ResponseTarget";
+export * from "./getNextJobs200Response";
+export * from "./getNextJobs200ResponseJobsInner";
+export * from "./getTarget200Response";
+export * from "./getTarget200ResponseProvider";
+export * from "./getTarget200ResponseVariablesInner";
+export * from "./getTarget404Response";
+export * from "./getTargetByIdentifier200Response";
+export * from "./getTargetByIdentifier200ResponseProvider";
+export * from "./getTargetByIdentifier200ResponseVariablesInner";
+export * from "./getTargetByIdentifier404Response";
+export * from "./setTargetProvidersTargetsRequest";
+export * from "./setTargetProvidersTargetsRequestTargetsInner";
+export * from "./updateJob200Response";
+export * from "./updateJobAgent200Response";
+export * from "./updateJobAgentRequest";
+export * from "./updateJobRequest";
+export * from "./updateTarget200Response";
+export * from "./updateTargetRequest";
 export * from "./upsertTargetsRequest";
 export * from "./upsertTargetsRequestTargetsInner";
 export * from "./upsertTargetsRequestTargetsInnerVariablesInner";
 export * from "./upsertTargetsRequestTargetsInnerVariablesInnerValue";
+export * from "./v1JobAgentsAgentIdQueueAcknowledgePost200Response";
+export * from "./v1JobAgentsAgentIdQueueAcknowledgePost401Response";
 
 export interface RequestDetailedFile {
   value: Buffer;
@@ -33,15 +107,61 @@ let primitives = [
   "any",
 ];
 
-let enumsMap: { [index: string]: any } = {};
+let enumsMap: { [index: string]: any } = {
+  "GetJob200Response.StatusEnum": GetJob200Response.StatusEnum,
+  "GetJob200ResponseApproval.StatusEnum": GetJob200ResponseApproval.StatusEnum,
+};
 
 let typeMap: { [index: string]: any } = {
+  AcknowledgeJob200Response: AcknowledgeJob200Response,
+  CreateEnvironment200Response: CreateEnvironment200Response,
+  CreateEnvironment200ResponseEnvironment:
+    CreateEnvironment200ResponseEnvironment,
+  CreateEnvironment500Response: CreateEnvironment500Response,
+  CreateEnvironmentRequest: CreateEnvironmentRequest,
+  CreateRelease200Response: CreateRelease200Response,
+  CreateReleaseRequest: CreateReleaseRequest,
+  DeleteTarget200Response: DeleteTarget200Response,
+  GetAgentRunningJob200ResponseInner: GetAgentRunningJob200ResponseInner,
+  GetJob200Response: GetJob200Response,
+  GetJob200ResponseApproval: GetJob200ResponseApproval,
+  GetJob200ResponseApprovalApprover: GetJob200ResponseApprovalApprover,
+  GetJob200ResponseDeployment: GetJob200ResponseDeployment,
+  GetJob200ResponseEnvironment: GetJob200ResponseEnvironment,
+  GetJob200ResponseRelease: GetJob200ResponseRelease,
+  GetJob200ResponseRunbook: GetJob200ResponseRunbook,
+  GetJob200ResponseTarget: GetJob200ResponseTarget,
+  GetNextJobs200Response: GetNextJobs200Response,
+  GetNextJobs200ResponseJobsInner: GetNextJobs200ResponseJobsInner,
+  GetTarget200Response: GetTarget200Response,
+  GetTarget200ResponseProvider: GetTarget200ResponseProvider,
+  GetTarget200ResponseVariablesInner: GetTarget200ResponseVariablesInner,
+  GetTarget404Response: GetTarget404Response,
+  GetTargetByIdentifier200Response: GetTargetByIdentifier200Response,
+  GetTargetByIdentifier200ResponseProvider:
+    GetTargetByIdentifier200ResponseProvider,
+  GetTargetByIdentifier200ResponseVariablesInner:
+    GetTargetByIdentifier200ResponseVariablesInner,
+  GetTargetByIdentifier404Response: GetTargetByIdentifier404Response,
+  SetTargetProvidersTargetsRequest: SetTargetProvidersTargetsRequest,
+  SetTargetProvidersTargetsRequestTargetsInner:
+    SetTargetProvidersTargetsRequestTargetsInner,
+  UpdateJob200Response: UpdateJob200Response,
+  UpdateJobAgent200Response: UpdateJobAgent200Response,
+  UpdateJobAgentRequest: UpdateJobAgentRequest,
+  UpdateJobRequest: UpdateJobRequest,
+  UpdateTarget200Response: UpdateTarget200Response,
+  UpdateTargetRequest: UpdateTargetRequest,
   UpsertTargetsRequest: UpsertTargetsRequest,
   UpsertTargetsRequestTargetsInner: UpsertTargetsRequestTargetsInner,
   UpsertTargetsRequestTargetsInnerVariablesInner:
     UpsertTargetsRequestTargetsInnerVariablesInner,
   UpsertTargetsRequestTargetsInnerVariablesInnerValue:
     UpsertTargetsRequestTargetsInnerVariablesInnerValue,
+  V1JobAgentsAgentIdQueueAcknowledgePost200Response:
+    V1JobAgentsAgentIdQueueAcknowledgePost200Response,
+  V1JobAgentsAgentIdQueueAcknowledgePost401Response:
+    V1JobAgentsAgentIdQueueAcknowledgePost401Response,
 };
 
 // Check if a string starts with another string without using es6 features

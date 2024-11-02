@@ -85,7 +85,7 @@ const spinUpNewJobs = async (agentId: string) => {
         try {
           const je = await api.getJob({ jobId: job.id });
           const manifest = renderManifest(
-            (job.jobAgentConfig as any).manifest,
+            (job.jobAgentConfig).manifest,
             je,
           );
 
