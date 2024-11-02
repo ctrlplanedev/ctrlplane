@@ -1,10 +1,9 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 
 import { eq, inArray, lte } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
+import { handleTargetsFromEnvironmentToBeDeleted } from "@ctrlplane/job-dispatch";
 
 type QueryRow = {
   environment: SCHEMA.Environment;
@@ -32,22 +31,11 @@ export const run = async () => {
     .then(groupByEnvironment);
   if (expiredEnvironments.length === 0) return;
 
-  const targetPromises = expiredEnvironments
-    .filter((env) => isPresent(env.targetFilter))
-    .map(async (env) => {
-      const targets = await db
-        .select()
-        .from(SCHEMA.target)
-        .where(SCHEMA.targetMatchesMetadata(db, env.targetFilter));
-
-      return { environmentId: env.id, targets };
-    });
-  const associatedTargets = await Promise.all(targetPromises);
-
-  for (const { environmentId, targets } of associatedTargets)
-    logger.info(
-      `[${targets.length}] targets are associated with expired environment [${environmentId}]`,
-    );
+  await Promise.all(
+    expiredEnvironments.map((env) =>
+      handleTargetsFromEnvironmentToBeDeleted(db, env),
+    ),
+  );
 
   const envIds = expiredEnvironments.map((env) => env.id);
   await db

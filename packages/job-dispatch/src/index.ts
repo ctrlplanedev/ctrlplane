@@ -21,3 +21,4 @@ export * from "./policies/release-dependency.js";
 export * from "./policies/release-string-check.js";
 export * from "./policies/concurrency-policy.js";
 export * from "./policies/release-window.js";
+export * from "./lifecycle-hooks.js";

@@ -4,6 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { jobAgent } from "./job-agent.js";
+import { runbook } from "./runbook.js";
 import { system } from "./system.js";
 
 export const deploymentSchema = z.object({
@@ -66,3 +67,13 @@ export const deploymentDependency = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.dependsOnId, t.deploymentId) }),
 );
+
+export const deploymentLifecycleHook = pgTable("deployment_lifecycle_hook", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  deploymentId: uuid("deployment_id").references(() => deployment.id, {
+    onDelete: "cascade",
+  }),
+  runbookId: uuid("runbook_id").references(() => runbook.id, {
+    onDelete: "cascade",
+  }),
+});
