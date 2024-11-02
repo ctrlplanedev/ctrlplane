@@ -253,12 +253,15 @@ export const upsertTargets = async (
       .values(targetsToInsert)
       .onConflictDoUpdate({
         target: [target.identifier, target.workspaceId],
-        set: buildConflictUpdateColumns(target, [
-          "name",
-          "version",
-          "kind",
-          "config",
-        ]),
+        set: {
+          ...buildConflictUpdateColumns(target, [
+            "name",
+            "version",
+            "kind",
+            "config",
+          ]),
+          updatedAt: new Date(),
+        },
       })
       .returning()
       .then((targets) =>
