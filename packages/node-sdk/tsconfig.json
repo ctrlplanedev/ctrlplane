@@ -10,7 +10,9 @@
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
     "noEmit": false,
     "isolatedModules": false,
-    "noImplicitAny": false
+    "noUncheckedIndexedAccess": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
   },
   "include": ["*.ts", "src"],
   "exclude": ["node_modules", "./dist", "tsup.config.ts"]

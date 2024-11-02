@@ -49,6 +49,7 @@ export const openapi: Swagger.SwaggerV3 = {
                         },
                         config: {
                           type: "object",
+                          additionalProperties: true,
                         },
                         metadata: {
                           type: "object",

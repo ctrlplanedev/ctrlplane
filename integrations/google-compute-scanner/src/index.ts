@@ -1,4 +1,4 @@
-import type { SetTargetProvidersTargetsRequestTargetsInner } from "@ctrlplane/node-sdk";
+import type { Operations } from "@ctrlplane/node-sdk";
 import { CronJob } from "cron";
 import _ from "lodash";
 
@@ -14,11 +14,19 @@ import { api } from "./sdk.js";
 
 const getScannerId = async () => {
   try {
-    const { id } = await api.upsertTargetProvider({
-      workspaceId: env.CTRLPLANE_WORKSPACE_ID,
-      name: env.CTRLPLANE_SCANNER_NAME,
-    });
-    return id;
+    const { data } = await api.GET(
+      "/v1/workspaces/{workspaceId}/target-providers/name/{name}",
+      {
+        params: {
+          path: {
+            workspaceId: env.CTRLPLANE_WORKSPACE_ID,
+            name: "google-compute",
+          },
+        },
+      },
+    );
+    if (data == null) throw new Error("Could not find or create scanner");
+    return data.id;
   } catch (error) {
     console.error(error);
     logger.error(error);
@@ -49,14 +57,18 @@ const scan = async () => {
     count: namespaces.length,
   });
 
-  const targets: SetTargetProvidersTargetsRequestTargetsInner[] = [
+  type UpsertTarges =
+    Operations["setTargetProvidersTargets"]["requestBody"]["content"]["application/json"]["targets"];
+  const targets: UpsertTarges = [
     ...clusters.map((t) => t.target),
     ...namespaces,
   ];
 
-  await api.setTargetProvidersTargets({
-    providerId: id,
-    setTargetProvidersTargetsRequest: {
+  await api.PATCH("/v1/target-providers/{providerId}/set", {
+    params: {
+      path: { providerId: id },
+    },
+    body: {
       targets: _.uniqBy(targets, (t) => t.identifier),
     },
   });
