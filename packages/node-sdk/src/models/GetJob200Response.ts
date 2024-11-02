@@ -116,6 +116,18 @@ export interface GetJob200Response {
    * @memberof GetJob200Response
    */
   approval?: GetJob200ResponseApproval;
+  /**
+   *
+   * @type {Date}
+   * @memberof GetJob200Response
+   */
+  createdAt: Date;
+  /**
+   *
+   * @type {Date}
+   * @memberof GetJob200Response
+   */
+  updatedAt: Date;
 }
 
 /**
@@ -145,6 +157,8 @@ export function instanceOfGetJob200Response(
   if (!("id" in value) || value["id"] === undefined) return false;
   if (!("status" in value) || value["status"] === undefined) return false;
   if (!("variables" in value) || value["variables"] === undefined) return false;
+  if (!("createdAt" in value) || value["createdAt"] === undefined) return false;
+  if (!("updatedAt" in value) || value["updatedAt"] === undefined) return false;
   return true;
 }
 
@@ -187,6 +201,8 @@ export function GetJob200ResponseFromJSONTyped(
       json["approval"] == null
         ? undefined
         : GetJob200ResponseApprovalFromJSON(json["approval"]),
+    createdAt: new Date(json["createdAt"]),
+    updatedAt: new Date(json["updatedAt"]),
   };
 }
 
@@ -212,5 +228,7 @@ export function GetJob200ResponseToJSONTyped(
     environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
     variables: value["variables"],
     approval: GetJob200ResponseApprovalToJSON(value["approval"]),
+    createdAt: value["createdAt"].toISOString(),
+    updatedAt: value["updatedAt"].toISOString(),
   };
 }
