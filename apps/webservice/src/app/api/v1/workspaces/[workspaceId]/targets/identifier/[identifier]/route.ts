@@ -61,11 +61,12 @@ export const DELETE = request()
   .use(
     authz(async ({ can, extra }) => {
       const { workspaceId, identifier } = extra;
+      const decodedIdentifier = decodeURIComponent(identifier);
 
       const target = await db.query.target.findFirst({
         where: and(
           eq(schema.target.workspaceId, workspaceId),
-          eq(schema.target.identifier, identifier),
+          eq(schema.target.identifier, decodedIdentifier),
         ),
       });
 
@@ -77,16 +78,17 @@ export const DELETE = request()
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
     async (_, { params }) => {
+      const decodedIdentifier = decodeURIComponent(params.identifier);
       const target = await db.query.target.findFirst({
         where: and(
           eq(schema.target.workspaceId, params.workspaceId),
-          eq(schema.target.identifier, params.identifier),
+          eq(schema.target.identifier, decodedIdentifier),
         ),
       });
 
       if (target == null) {
         return NextResponse.json(
-          { error: `Target not found for identifier: ${params.identifier}` },
+          { error: `Target not found for identifier: ${decodedIdentifier}` },
           { status: 404 },
         );
       }
