@@ -70,10 +70,14 @@ export const deploymentDependency = pgTable(
 
 export const deploymentLifecycleHook = pgTable("deployment_lifecycle_hook", {
   id: uuid("id").primaryKey().defaultRandom(),
-  deploymentId: uuid("deployment_id").references(() => deployment.id, {
-    onDelete: "cascade",
-  }),
-  runbookId: uuid("runbook_id").references(() => runbook.id, {
-    onDelete: "cascade",
-  }),
+  deploymentId: uuid("deployment_id")
+    .notNull()
+    .references(() => deployment.id, {
+      onDelete: "cascade",
+    }),
+  runbookId: uuid("runbook_id")
+    .notNull()
+    .references(() => runbook.id, {
+      onDelete: "cascade",
+    }),
 });

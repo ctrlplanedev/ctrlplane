@@ -23,32 +23,12 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
 
   if (targets.length === 0) return;
 
-  const deploymentLifecycleHooksSubquery = db
-    .select()
-    .from(SCHEMA.deployment)
-    .innerJoin(
-      SCHEMA.deploymentLifecycleHook,
-      eq(SCHEMA.deployment.id, SCHEMA.deploymentLifecycleHook.deploymentId),
-    )
-    .innerJoin(
-      SCHEMA.runbook,
-      eq(SCHEMA.deploymentLifecycleHook.runbookId, SCHEMA.runbook.id),
-    )
-    .as("deploymentLifecycleHooksSubquery");
-
   const system = await db
     .select()
     .from(SCHEMA.system)
     .leftJoin(
       SCHEMA.environment,
       eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-    )
-    .leftJoin(
-      deploymentLifecycleHooksSubquery,
-      eq(
-        SCHEMA.environment.systemId,
-        deploymentLifecycleHooksSubquery.deployment.systemId,
-      ),
     )
     .where(
       and(
@@ -60,12 +40,19 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
     .then((rows) => ({
       ...rows[0]!,
       environments: rows.map((r) => r.environment).filter(isPresent),
-      deploymentLifecycleHooks: rows
-        .map((r) => r.deploymentLifecycleHooksSubquery)
-        .filter(isPresent),
     }));
 
-  if (system.deploymentLifecycleHooks.length === 0) return;
+  const deploymentLifecycleHooks = await db
+    .select()
+    .from(SCHEMA.deploymentLifecycleHook)
+    .innerJoin(
+      SCHEMA.deployment,
+      eq(SCHEMA.deploymentLifecycleHook.deploymentId, SCHEMA.deployment.id),
+    )
+    .where(eq(SCHEMA.deployment.systemId, system.system.id))
+    .then((rows) => rows.map((r) => r.deployment_lifecycle_hook));
+
+  if (deploymentLifecycleHooks.length === 0) return;
 
   const envFilters = system.environments
     .map((e) => e.targetFilter)
@@ -94,21 +81,22 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
           )
       : targets;
 
+  console.log("removedFromSystemTargets", removedFromSystemTargets);
+  console.log("deploymentLifecycleHooks", deploymentLifecycleHooks);
+
   if (removedFromSystemTargets.length === 0) return;
 
-  const handleLifecycleHooksForTargets = removedFromSystemTargets.flatMap(
-    (t) => {
-      return system.deploymentLifecycleHooks.map((dlh) => {
-        const values: Record<string, string> = {
-          targetId: t.id,
-          deploymentId: dlh.deployment.id,
-          environmentId: env.id,
-          systemId: system.system.id,
-        };
+  const handleLifecycleHooksForTargets = removedFromSystemTargets.flatMap((t) =>
+    deploymentLifecycleHooks.map((dlh) => {
+      const values: Record<string, string> = {
+        targetId: t.id,
+        deploymentId: dlh.deploymentId,
+        environmentId: env.id,
+        systemId: system.system.id,
+      };
 
-        return dispatchRunbook(db, dlh.runbook.id, values);
-      });
-    },
+      return dispatchRunbook(db, dlh.runbookId, values);
+    }),
   );
 
   await Promise.all(handleLifecycleHooksForTargets);
