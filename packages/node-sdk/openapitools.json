@@ -5,9 +5,9 @@
     "version": "7.9.0",
     "generators": {
       "v1": {
-        "generatorName": "typescript-fetch",
+        "generatorName": "typescript-node",
         "output": "#{cwd}/src",
-        "glob": "../../openapi.v1.yaml"
+        "glob": "../../openapi.v1.json"
       }
     }
   }
