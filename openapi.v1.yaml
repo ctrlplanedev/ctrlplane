@@ -218,6 +218,43 @@ paths:
           description: Permission denied
         "404":
           description: Target not found
+    delete:
+      summary: Delete a target
+      operationId: deleteTarget
+      parameters:
+        - name: targetId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The target ID
+      responses:
+        "200":
+          description: Target deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                properties:
+                  success:
+                    type: boolean
+        "401":
+          description: Unauthorized
+        "403":
+          description: Permission denied
+        "404":
+          description: Target not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                  - error
   /v1/workspaces/{workspace}/config:
     post:
       summary: Create resources from a config file

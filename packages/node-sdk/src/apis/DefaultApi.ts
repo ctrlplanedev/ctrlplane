@@ -13,12 +13,10 @@
  */
 
 import type {
-  AcknowledgeJob200Response,
   CreateRelease200Response,
   CreateReleaseRequest,
-  CreateTargets200Response,
-  CreateTargets400Response,
-  CreateTargetsRequest,
+  DeleteTarget200Response,
+  DeleteTarget404Response,
   GetAgentRunningJob200ResponseInner,
   GetJob200Response,
   GetNextJobs200Response,
@@ -30,20 +28,19 @@ import type {
   UpdateJobAgentRequest,
   UpdateJobRequest,
   UpdateTargetRequest,
+  UpsertTargets200Response,
+  UpsertTargets400Response,
+  UpsertTargetsRequest,
 } from "../models/index";
 import {
-  AcknowledgeJob200ResponseFromJSON,
-  AcknowledgeJob200ResponseToJSON,
   CreateRelease200ResponseFromJSON,
   CreateRelease200ResponseToJSON,
   CreateReleaseRequestFromJSON,
   CreateReleaseRequestToJSON,
-  CreateTargets200ResponseFromJSON,
-  CreateTargets200ResponseToJSON,
-  CreateTargets400ResponseFromJSON,
-  CreateTargets400ResponseToJSON,
-  CreateTargetsRequestFromJSON,
-  CreateTargetsRequestToJSON,
+  DeleteTarget200ResponseFromJSON,
+  DeleteTarget200ResponseToJSON,
+  DeleteTarget404ResponseFromJSON,
+  DeleteTarget404ResponseToJSON,
   GetAgentRunningJob200ResponseInnerFromJSON,
   GetAgentRunningJob200ResponseInnerToJSON,
   GetJob200ResponseFromJSON,
@@ -66,6 +63,12 @@ import {
   UpdateJobRequestToJSON,
   UpdateTargetRequestFromJSON,
   UpdateTargetRequestToJSON,
+  UpsertTargets200ResponseFromJSON,
+  UpsertTargets200ResponseToJSON,
+  UpsertTargets400ResponseFromJSON,
+  UpsertTargets400ResponseToJSON,
+  UpsertTargetsRequestFromJSON,
+  UpsertTargetsRequestToJSON,
 } from "../models/index";
 import * as runtime from "../runtime";
 
@@ -77,8 +80,8 @@ export interface CreateReleaseOperationRequest {
   createReleaseRequest: CreateReleaseRequest;
 }
 
-export interface CreateTargetsOperationRequest {
-  createTargetsRequest: CreateTargetsRequest;
+export interface DeleteTargetRequest {
+  targetId: string;
 }
 
 export interface GetAgentRunningJobRequest {
@@ -126,6 +129,10 @@ export interface UpsertTargetProviderRequest {
   name: string;
 }
 
+export interface UpsertTargetsOperationRequest {
+  upsertTargetsRequest: UpsertTargetsRequest;
+}
+
 /**
  *
  */
@@ -136,7 +143,7 @@ export class DefaultApi extends runtime.BaseAPI {
   async acknowledgeJobRaw(
     requestParameters: AcknowledgeJobRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<runtime.ApiResponse<AcknowledgeJob200Response>> {
+  ): Promise<runtime.ApiResponse<DeleteTarget200Response>> {
     if (requestParameters["jobId"] == null) {
       throw new runtime.RequiredError(
         "jobId",
@@ -167,7 +174,7 @@ export class DefaultApi extends runtime.BaseAPI {
     );
 
     return new runtime.JSONApiResponse(response, (jsonValue) =>
-      AcknowledgeJob200ResponseFromJSON(jsonValue),
+      DeleteTarget200ResponseFromJSON(jsonValue),
     );
   }
 
@@ -177,7 +184,7 @@ export class DefaultApi extends runtime.BaseAPI {
   async acknowledgeJob(
     requestParameters: AcknowledgeJobRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<AcknowledgeJob200Response> {
+  ): Promise<DeleteTarget200Response> {
     const response = await this.acknowledgeJobRaw(
       requestParameters,
       initOverrides,
@@ -243,24 +250,22 @@ export class DefaultApi extends runtime.BaseAPI {
   }
 
   /**
-   * Create or update multiple targets
+   * Delete a target
    */
-  async createTargetsRaw(
-    requestParameters: CreateTargetsOperationRequest,
+  async deleteTargetRaw(
+    requestParameters: DeleteTargetRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<runtime.ApiResponse<CreateTargets200Response>> {
-    if (requestParameters["createTargetsRequest"] == null) {
+  ): Promise<runtime.ApiResponse<DeleteTarget200Response>> {
+    if (requestParameters["targetId"] == null) {
       throw new runtime.RequiredError(
-        "createTargetsRequest",
-        'Required parameter "createTargetsRequest" was null or undefined when calling createTargets().',
+        "targetId",
+        'Required parameter "targetId" was null or undefined when calling deleteTarget().',
       );
     }
 
     const queryParameters: any = {};
 
     const headerParameters: runtime.HTTPHeaders = {};
-
-    headerParameters["Content-Type"] = "application/json";
 
     if (this.configuration && this.configuration.apiKey) {
       headerParameters["x-api-key"] =
@@ -269,30 +274,30 @@ export class DefaultApi extends runtime.BaseAPI {
 
     const response = await this.request(
       {
-        path: `/v1/targets`,
-        method: "POST",
+        path: `/v1/targets/{targetId}`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"])),
+        ),
+        method: "DELETE",
         headers: headerParameters,
         query: queryParameters,
-        body: CreateTargetsRequestToJSON(
-          requestParameters["createTargetsRequest"],
-        ),
       },
       initOverrides,
     );
 
     return new runtime.JSONApiResponse(response, (jsonValue) =>
-      CreateTargets200ResponseFromJSON(jsonValue),
+      DeleteTarget200ResponseFromJSON(jsonValue),
     );
   }
 
   /**
-   * Create or update multiple targets
+   * Delete a target
    */
-  async createTargets(
-    requestParameters: CreateTargetsOperationRequest,
+  async deleteTarget(
+    requestParameters: DeleteTargetRequest,
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
-  ): Promise<CreateTargets200Response> {
-    const response = await this.createTargetsRaw(
+  ): Promise<DeleteTarget200Response> {
+    const response = await this.deleteTargetRaw(
       requestParameters,
       initOverrides,
     );
@@ -878,6 +883,63 @@ export class DefaultApi extends runtime.BaseAPI {
     initOverrides?: RequestInit | runtime.InitOverrideFunction,
   ): Promise<UpdateJobAgent200Response> {
     const response = await this.upsertTargetProviderRaw(
+      requestParameters,
+      initOverrides,
+    );
+    return await response.value();
+  }
+
+  /**
+   * Create or update multiple targets
+   */
+  async upsertTargetsRaw(
+    requestParameters: UpsertTargetsOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<runtime.ApiResponse<UpsertTargets200Response>> {
+    if (requestParameters["upsertTargetsRequest"] == null) {
+      throw new runtime.RequiredError(
+        "upsertTargetsRequest",
+        'Required parameter "upsertTargetsRequest" was null or undefined when calling upsertTargets().',
+      );
+    }
+
+    const queryParameters: any = {};
+
+    const headerParameters: runtime.HTTPHeaders = {};
+
+    headerParameters["Content-Type"] = "application/json";
+
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] =
+        await this.configuration.apiKey("x-api-key"); // apiKey authentication
+    }
+
+    const response = await this.request(
+      {
+        path: `/v1/targets`,
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: UpsertTargetsRequestToJSON(
+          requestParameters["upsertTargetsRequest"],
+        ),
+      },
+      initOverrides,
+    );
+
+    return new runtime.JSONApiResponse(response, (jsonValue) =>
+      UpsertTargets200ResponseFromJSON(jsonValue),
+    );
+  }
+
+  /**
+   * Create or update multiple targets
+   */
+  async upsertTargets(
+    requestParameters: UpsertTargetsOperationRequest,
+    initOverrides?: RequestInit | runtime.InitOverrideFunction,
+  ): Promise<UpsertTargets200Response> {
+    const response = await this.upsertTargetsRaw(
       requestParameters,
       initOverrides,
     );

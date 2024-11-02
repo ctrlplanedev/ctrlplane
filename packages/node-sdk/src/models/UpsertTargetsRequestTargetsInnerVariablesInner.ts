@@ -24,50 +24,53 @@ import {
 /**
  *
  * @export
- * @interface UpdateTargetRequestVariablesInner
+ * @interface UpsertTargetsRequestTargetsInnerVariablesInner
  */
-export interface UpdateTargetRequestVariablesInner {
+export interface UpsertTargetsRequestTargetsInnerVariablesInner {
   /**
    *
    * @type {string}
-   * @memberof UpdateTargetRequestVariablesInner
+   * @memberof UpsertTargetsRequestTargetsInnerVariablesInner
    */
   key: string;
   /**
    *
    * @type {UpsertTargetsRequestTargetsInnerVariablesInnerValue}
-   * @memberof UpdateTargetRequestVariablesInner
+   * @memberof UpsertTargetsRequestTargetsInnerVariablesInner
    */
   value: UpsertTargetsRequestTargetsInnerVariablesInnerValue;
   /**
    *
    * @type {boolean}
-   * @memberof UpdateTargetRequestVariablesInner
+   * @memberof UpsertTargetsRequestTargetsInnerVariablesInner
    */
   sensitive?: boolean;
 }
 
 /**
- * Check if a given object implements the UpdateTargetRequestVariablesInner interface.
+ * Check if a given object implements the UpsertTargetsRequestTargetsInnerVariablesInner interface.
  */
-export function instanceOfUpdateTargetRequestVariablesInner(
+export function instanceOfUpsertTargetsRequestTargetsInnerVariablesInner(
   value: object,
-): value is UpdateTargetRequestVariablesInner {
+): value is UpsertTargetsRequestTargetsInnerVariablesInner {
   if (!("key" in value) || value["key"] === undefined) return false;
   if (!("value" in value) || value["value"] === undefined) return false;
   return true;
 }
 
-export function UpdateTargetRequestVariablesInnerFromJSON(
+export function UpsertTargetsRequestTargetsInnerVariablesInnerFromJSON(
   json: any,
-): UpdateTargetRequestVariablesInner {
-  return UpdateTargetRequestVariablesInnerFromJSONTyped(json, false);
+): UpsertTargetsRequestTargetsInnerVariablesInner {
+  return UpsertTargetsRequestTargetsInnerVariablesInnerFromJSONTyped(
+    json,
+    false,
+  );
 }
 
-export function UpdateTargetRequestVariablesInnerFromJSONTyped(
+export function UpsertTargetsRequestTargetsInnerVariablesInnerFromJSONTyped(
   json: any,
   ignoreDiscriminator: boolean,
-): UpdateTargetRequestVariablesInner {
+): UpsertTargetsRequestTargetsInnerVariablesInner {
   if (json == null) {
     return json;
   }
@@ -80,14 +83,14 @@ export function UpdateTargetRequestVariablesInnerFromJSONTyped(
   };
 }
 
-export function UpdateTargetRequestVariablesInnerToJSON(
+export function UpsertTargetsRequestTargetsInnerVariablesInnerToJSON(
   json: any,
-): UpdateTargetRequestVariablesInner {
-  return UpdateTargetRequestVariablesInnerToJSONTyped(json, false);
+): UpsertTargetsRequestTargetsInnerVariablesInner {
+  return UpsertTargetsRequestTargetsInnerVariablesInnerToJSONTyped(json, false);
 }
 
-export function UpdateTargetRequestVariablesInnerToJSONTyped(
-  value?: UpdateTargetRequestVariablesInner | null,
+export function UpsertTargetsRequestTargetsInnerVariablesInnerToJSONTyped(
+  value?: UpsertTargetsRequestTargetsInnerVariablesInner | null,
   ignoreDiscriminator: boolean = false,
 ): any {
   if (value == null) {
