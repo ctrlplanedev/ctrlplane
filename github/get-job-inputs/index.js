@@ -28109,11 +28109,15 @@ function uniqBy(arr, iteratee) {
 
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./src/sdk.ts
+// import * as core from "@actions/core";
 
-
+// export const api = createClient({
+//   baseUrl: core.getInput("base_url", { required: true }),
+//   apiKey: core.getInput("api_key", { required: true }),
+// });
 const api = dist_createClient({
-    baseUrl: core.getInput("base_url", { required: true }),
-    apiKey: core.getInput("api_key", { required: true }),
+    baseUrl: "http://localhost:3000",
+    apiKey: "c737763455958fa1.2e93c261348663845a07cb6c1cd5887fa13c6baa5ca16b9b9ff65f53221c3d45",
 });
 
 ;// CONCATENATED MODULE: ./src/index.ts
@@ -28156,7 +28160,7 @@ async function run() {
     })
         .then(({ data }) => {
         if (data == undefined) {
-            core.error("Invalid job id");
+            core.error(`Invalid Job data ${data}`);
             return;
         }
         const { variables, target, release, environment, runbook, deployment, approval, } = data;
