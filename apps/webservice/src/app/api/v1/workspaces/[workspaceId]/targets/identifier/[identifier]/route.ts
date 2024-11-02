@@ -63,6 +63,10 @@ export const DELETE = request()
       const { workspaceId, identifier } = extra;
       const decodedIdentifier = decodeURIComponent(identifier);
 
+      console.log("workspaceId", workspaceId);
+      console.log("identifier", identifier);
+      console.log("decodedIdentifier", decodedIdentifier);
+
       const target = await db.query.target.findFirst({
         where: and(
           eq(schema.target.workspaceId, workspaceId),
