@@ -180,8 +180,8 @@ const getVClustersForCluster = async (
       const version = new SemVer(vcluster.Version);
       return {
         ...clusterTarget,
-        name: `${cluster.name}-${vcluster.Name}`,
-        identifier: `${project}/${cluster.name}/${vcluster.Name}`,
+        name: `${cluster.name}/${vcluster.Namespace}/${vcluster.Name}`,
+        identifier: `${project}/${cluster.name}/${vcluster.Namespace}/${vcluster.Name}`,
         kind: "ClusterAPI",
         config: {
           ...clusterTarget.config,
