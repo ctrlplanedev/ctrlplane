@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
 import { TargetPageContent } from "./TargetPageContent";
+
+export const metadata: Metadata = {
+  title: "Targets | Ctrlplane",
+};
 
 export default async function TargetsPage({
   params,

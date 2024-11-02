@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import LZString from "lz-string";
 
 import { api } from "~/trpc/server";
 import { TargetViewsTable } from "./TargetViewsTable";
+
+export const metadata: Metadata = {
+  title: "Target Views | Ctrlplane",
+};
 
 export default async function TargetViewsPage({
   params,

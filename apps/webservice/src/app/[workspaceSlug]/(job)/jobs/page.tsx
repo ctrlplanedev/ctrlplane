@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
 import { JobsGettingStarted } from "./JobsGettingStarted";
 import { JobTable } from "./JobTable";
+
+export const metadata: Metadata = {
+  title: "Jobs | Ctrlplane",
+};
 
 export default async function JobsPage({
   params,
