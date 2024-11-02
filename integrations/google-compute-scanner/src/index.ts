@@ -14,7 +14,7 @@ import { api } from "./sdk.js";
 
 const getScannerId = async () => {
   try {
-    const response = await api.GET(
+    const { data } = await api.GET(
       "/v1/workspaces/{workspaceId}/target-providers/name/{name}",
       {
         params: {
@@ -25,9 +25,9 @@ const getScannerId = async () => {
         },
       },
     );
-    console.log(JSON.stringify(response, null, 2));
-    const data = response.data;
+
     if (data == null) throw new Error("Could not find or create scanner");
+
     return data.id;
   } catch (error) {
     console.error(error);
