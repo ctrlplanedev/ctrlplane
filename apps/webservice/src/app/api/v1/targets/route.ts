@@ -69,7 +69,7 @@ export const POST = request()
   );
 
 export const openapi: Swagger.SwaggerV3 = {
-  openapi: "3.0.0",
+  openapi: "3.1.0",
   info: {
     title: "Ctrlplane API",
     version: "1.0.0",
@@ -134,11 +134,8 @@ export const openapi: Swagger.SwaggerV3 = {
                                 type: "string",
                               },
                               value: {
-                                oneOf: [
-                                  { type: "string" },
-                                  { type: "number" },
-                                  { type: "boolean" },
-                                ],
+                                type: "string",
+                                enum: ["string", "number", "boolean"],
                               },
                               sensitive: {
                                 type: "boolean",

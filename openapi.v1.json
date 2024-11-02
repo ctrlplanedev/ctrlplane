@@ -15,10 +15,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "workspaceId",
-                  "targets"
-                ],
+                "required": ["workspaceId", "targets"],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -61,26 +58,14 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": [
-                              "key",
-                              "value"
-                            ],
+                            "required": ["key", "value"],
                             "properties": {
                               "key": {
                                 "type": "string"
                               },
                               "value": {
-                                "oneOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "boolean"
-                                  }
-                                ]
+                                "type": "string",
+                                "enum": ["string", "number", "boolean"]
                               },
                               "sensitive": {
                                 "type": "boolean"

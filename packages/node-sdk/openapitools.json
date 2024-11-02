@@ -7,7 +7,7 @@
       "v1": {
         "generatorName": "typescript-fetch",
         "output": "#{cwd}/src",
-        "glob": "../../openapi.v1.yaml"
+        "glob": "../../openapi.v1.{json,yaml}"
       }
     }
   }

@@ -27714,31 +27714,6 @@ var TextApiResponse = class {
   }
 };
 
-// src/models/AcknowledgeJob200Response.ts
-function instanceOfAcknowledgeJob200Response(value) {
-  if (!("success" in value) || value["success"] === void 0) return false;
-  return true;
-}
-function AcknowledgeJob200ResponseFromJSON(json) {
-  return AcknowledgeJob200ResponseFromJSONTyped(json, false);
-}
-function AcknowledgeJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    success: json["success"]
-  };
-}
-function AcknowledgeJob200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    success: value["success"]
-  };
-}
-
 // src/models/CreateRelease200Response.ts
 function instanceOfCreateRelease200Response(value) {
   return true;
@@ -27756,7 +27731,10 @@ function CreateRelease200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     metadata: json["metadata"] == null ? void 0 : json["metadata"]
   };
 }
-function CreateRelease200ResponseToJSON(value) {
+function CreateRelease200ResponseToJSON(json) {
+  return CreateRelease200ResponseToJSONTyped(json, false);
+}
+function CreateRelease200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -27787,7 +27765,10 @@ function CreateReleaseRequestFromJSONTyped(json, ignoreDiscriminator) {
     metadata: json["metadata"] == null ? void 0 : json["metadata"]
   };
 }
-function CreateReleaseRequestToJSON(value) {
+function CreateReleaseRequestToJSON(json) {
+  return CreateReleaseRequestToJSONTyped(json, false);
+}
+function CreateReleaseRequestToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -27795,6 +27776,62 @@ function CreateReleaseRequestToJSON(value) {
     version: value["version"],
     deploymentId: value["deploymentId"],
     metadata: value["metadata"]
+  };
+}
+
+// src/models/DeleteTarget200Response.ts
+function instanceOfDeleteTarget200Response(value) {
+  if (!("success" in value) || value["success"] === void 0) return false;
+  return true;
+}
+function DeleteTarget200ResponseFromJSON(json) {
+  return DeleteTarget200ResponseFromJSONTyped(json, false);
+}
+function DeleteTarget200ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    success: json["success"]
+  };
+}
+function DeleteTarget200ResponseToJSON(json) {
+  return DeleteTarget200ResponseToJSONTyped(json, false);
+}
+function DeleteTarget200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    success: value["success"]
+  };
+}
+
+// src/models/DeleteTarget404Response.ts
+function instanceOfDeleteTarget404Response(value) {
+  if (!("error" in value) || value["error"] === void 0) return false;
+  return true;
+}
+function DeleteTarget404ResponseFromJSON(json) {
+  return DeleteTarget404ResponseFromJSONTyped(json, false);
+}
+function DeleteTarget404ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    error: json["error"]
+  };
+}
+function DeleteTarget404ResponseToJSON(json) {
+  return DeleteTarget404ResponseToJSONTyped(json, false);
+}
+function DeleteTarget404ResponseToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    error: value["error"]
   };
 }
 
@@ -27834,7 +27871,10 @@ function GetAgentRunningJob200ResponseInnerFromJSONTyped(json, ignoreDiscriminat
     environment: json["environment"] == null ? void 0 : json["environment"]
   };
 }
-function GetAgentRunningJob200ResponseInnerToJSON(value) {
+function GetAgentRunningJob200ResponseInnerToJSON(json) {
+  return GetAgentRunningJob200ResponseInnerToJSONTyped(json, false);
+}
+function GetAgentRunningJob200ResponseInnerToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -27872,7 +27912,10 @@ function GetJob200ResponseApprovalApproverFromJSONTyped(json, ignoreDiscriminato
     name: json["name"]
   };
 }
-function GetJob200ResponseApprovalApproverToJSON(value) {
+function GetJob200ResponseApprovalApproverToJSON(json) {
+  return GetJob200ResponseApprovalApproverToJSONTyped(json, false);
+}
+function GetJob200ResponseApprovalApproverToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -27906,7 +27949,10 @@ function GetJob200ResponseApprovalFromJSONTyped(json, ignoreDiscriminator) {
     approver: json["approver"] == null ? void 0 : GetJob200ResponseApprovalApproverFromJSON(json["approver"])
   };
 }
-function GetJob200ResponseApprovalToJSON(value) {
+function GetJob200ResponseApprovalToJSON(json) {
+  return GetJob200ResponseApprovalToJSONTyped(json, false);
+}
+function GetJob200ResponseApprovalToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -27941,7 +27987,10 @@ function GetJob200ResponseDeploymentFromJSONTyped(json, ignoreDiscriminator) {
     jobAgentId: json["jobAgentId"]
   };
 }
-function GetJob200ResponseDeploymentToJSON(value) {
+function GetJob200ResponseDeploymentToJSON(json) {
+  return GetJob200ResponseDeploymentToJSONTyped(json, false);
+}
+function GetJob200ResponseDeploymentToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -27974,7 +28023,10 @@ function GetJob200ResponseEnvironmentFromJSONTyped(json, ignoreDiscriminator) {
     systemId: json["systemId"]
   };
 }
-function GetJob200ResponseEnvironmentToJSON(value) {
+function GetJob200ResponseEnvironmentToJSON(json) {
+  return GetJob200ResponseEnvironmentToJSONTyped(json, false);
+}
+function GetJob200ResponseEnvironmentToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28007,7 +28059,10 @@ function GetJob200ResponseReleaseFromJSONTyped(json, ignoreDiscriminator) {
     config: json["config"]
   };
 }
-function GetJob200ResponseReleaseToJSON(value) {
+function GetJob200ResponseReleaseToJSON(json) {
+  return GetJob200ResponseReleaseToJSONTyped(json, false);
+}
+function GetJob200ResponseReleaseToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28042,7 +28097,10 @@ function GetJob200ResponseRunbookFromJSONTyped(json, ignoreDiscriminator) {
     jobAgentId: json["jobAgentId"]
   };
 }
-function GetJob200ResponseRunbookToJSON(value) {
+function GetJob200ResponseRunbookToJSON(json) {
+  return GetJob200ResponseRunbookToJSONTyped(json, false);
+}
+function GetJob200ResponseRunbookToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28086,7 +28144,10 @@ function GetJob200ResponseTargetFromJSONTyped(json, ignoreDiscriminator) {
     metadata: json["metadata"]
   };
 }
-function GetJob200ResponseTargetToJSON(value) {
+function GetJob200ResponseTargetToJSON(json) {
+  return GetJob200ResponseTargetToJSONTyped(json, false);
+}
+function GetJob200ResponseTargetToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28119,6 +28180,8 @@ function instanceOfGetJob200Response(value) {
   if (!("id" in value) || value["id"] === void 0) return false;
   if (!("status" in value) || value["status"] === void 0) return false;
   if (!("variables" in value) || value["variables"] === void 0) return false;
+  if (!("createdAt" in value) || value["createdAt"] === void 0) return false;
+  if (!("updatedAt" in value) || value["updatedAt"] === void 0) return false;
   return true;
 }
 function GetJob200ResponseFromJSON(json) {
@@ -28137,10 +28200,15 @@ function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
     environment: json["environment"] == null ? void 0 : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
     variables: json["variables"],
-    approval: json["approval"] == null ? void 0 : GetJob200ResponseApprovalFromJSON(json["approval"])
+    approval: json["approval"] == null ? void 0 : GetJob200ResponseApprovalFromJSON(json["approval"]),
+    createdAt: new Date(json["createdAt"]),
+    updatedAt: new Date(json["updatedAt"])
   };
 }
-function GetJob200ResponseToJSON(value) {
+function GetJob200ResponseToJSON(json) {
+  return GetJob200ResponseToJSONTyped(json, false);
+}
+function GetJob200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28153,7 +28221,9 @@ function GetJob200ResponseToJSON(value) {
     target: GetJob200ResponseTargetToJSON(value["target"]),
     environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
     variables: value["variables"],
-    approval: GetJob200ResponseApprovalToJSON(value["approval"])
+    approval: GetJob200ResponseApprovalToJSON(value["approval"]),
+    createdAt: value["createdAt"].toISOString(),
+    updatedAt: value["updatedAt"].toISOString()
   };
 }
 
@@ -28186,7 +28256,10 @@ function GetNextJobs200ResponseJobsInnerFromJSONTyped(json, ignoreDiscriminator)
     releaseJobTriggerId: json["releaseJobTriggerId"]
   };
 }
-function GetNextJobs200ResponseJobsInnerToJSON(value) {
+function GetNextJobs200ResponseJobsInnerToJSON(json) {
+  return GetNextJobs200ResponseJobsInnerToJSONTyped(json, false);
+}
+function GetNextJobs200ResponseJobsInnerToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28217,7 +28290,10 @@ function GetNextJobs200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     )
   };
 }
-function GetNextJobs200ResponseToJSON(value) {
+function GetNextJobs200ResponseToJSON(json) {
+  return GetNextJobs200ResponseToJSONTyped(json, false);
+}
+function GetNextJobs200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28225,6 +28301,121 @@ function GetNextJobs200ResponseToJSON(value) {
     jobs: value["jobs"] == null ? void 0 : value["jobs"].map(
       GetNextJobs200ResponseJobsInnerToJSON
     )
+  };
+}
+
+// src/models/GetTarget200ResponseProvider.ts
+function instanceOfGetTarget200ResponseProvider(value) {
+  return true;
+}
+function GetTarget200ResponseProviderFromJSON(json) {
+  return GetTarget200ResponseProviderFromJSONTyped(json, false);
+}
+function GetTarget200ResponseProviderFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    id: json["id"] == null ? void 0 : json["id"],
+    name: json["name"] == null ? void 0 : json["name"]
+  };
+}
+function GetTarget200ResponseProviderToJSON(json) {
+  return GetTarget200ResponseProviderToJSONTyped(json, false);
+}
+function GetTarget200ResponseProviderToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    id: value["id"],
+    name: value["name"]
+  };
+}
+
+// src/models/GetTarget200Response.ts
+function instanceOfGetTarget200Response(value) {
+  if (!("id" in value) || value["id"] === void 0) return false;
+  if (!("name" in value) || value["name"] === void 0) return false;
+  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
+    return false;
+  if (!("kind" in value) || value["kind"] === void 0) return false;
+  if (!("identifier" in value) || value["identifier"] === void 0)
+    return false;
+  if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("config" in value) || value["config"] === void 0) return false;
+  if (!("updatedAt" in value) || value["updatedAt"] === void 0) return false;
+  if (!("metadata" in value) || value["metadata"] === void 0) return false;
+  return true;
+}
+function GetTarget200ResponseFromJSON(json) {
+  return GetTarget200ResponseFromJSONTyped(json, false);
+}
+function GetTarget200ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    id: json["id"],
+    name: json["name"],
+    workspaceId: json["workspaceId"],
+    kind: json["kind"],
+    identifier: json["identifier"],
+    version: json["version"],
+    config: json["config"],
+    lockedAt: json["lockedAt"] == null ? void 0 : new Date(json["lockedAt"]),
+    updatedAt: new Date(json["updatedAt"]),
+    provider: json["provider"] == null ? void 0 : GetTarget200ResponseProviderFromJSON(json["provider"]),
+    metadata: json["metadata"]
+  };
+}
+function GetTarget200ResponseToJSON(json) {
+  return GetTarget200ResponseToJSONTyped(json, false);
+}
+function GetTarget200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    id: value["id"],
+    name: value["name"],
+    workspaceId: value["workspaceId"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    version: value["version"],
+    config: value["config"],
+    lockedAt: value["lockedAt"] == null ? void 0 : value["lockedAt"].toISOString(),
+    updatedAt: value["updatedAt"].toISOString(),
+    provider: GetTarget200ResponseProviderToJSON(value["provider"]),
+    metadata: value["metadata"]
+  };
+}
+
+// src/models/GetTarget404Response.ts
+function instanceOfGetTarget404Response(value) {
+  if (!("error" in value) || value["error"] === void 0) return false;
+  return true;
+}
+function GetTarget404ResponseFromJSON(json) {
+  return GetTarget404ResponseFromJSONTyped(json, false);
+}
+function GetTarget404ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    error: json["error"]
+  };
+}
+function GetTarget404ResponseToJSON(json) {
+  return GetTarget404ResponseToJSONTyped(json, false);
+}
+function GetTarget404ResponseToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    error: value["error"]
   };
 }
 
@@ -28255,7 +28446,10 @@ function SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped(json, ignoreD
     metadata: json["metadata"]
   };
 }
-function SetTargetProvidersTargetsRequestTargetsInnerToJSON(value) {
+function SetTargetProvidersTargetsRequestTargetsInnerToJSON(json) {
+  return SetTargetProvidersTargetsRequestTargetsInnerToJSONTyped(json, false);
+}
+function SetTargetProvidersTargetsRequestTargetsInnerToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28287,7 +28481,10 @@ function SetTargetProvidersTargetsRequestFromJSONTyped(json, ignoreDiscriminator
     )
   };
 }
-function SetTargetProvidersTargetsRequestToJSON(value) {
+function SetTargetProvidersTargetsRequestToJSON(json) {
+  return SetTargetProvidersTargetsRequestToJSONTyped(json, false);
+}
+function SetTargetProvidersTargetsRequestToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28314,7 +28511,10 @@ function UpdateJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     id: json["id"]
   };
 }
-function UpdateJob200ResponseToJSON(value) {
+function UpdateJob200ResponseToJSON(json) {
+  return UpdateJob200ResponseToJSONTyped(json, false);
+}
+function UpdateJob200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28344,7 +28544,10 @@ function UpdateJobAgent200ResponseFromJSONTyped(json, ignoreDiscriminator) {
     workspaceId: json["workspaceId"]
   };
 }
-function UpdateJobAgent200ResponseToJSON(value) {
+function UpdateJobAgent200ResponseToJSON(json) {
+  return UpdateJobAgent200ResponseToJSONTyped(json, false);
+}
+function UpdateJobAgent200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28376,7 +28579,10 @@ function UpdateJobAgentRequestFromJSONTyped(json, ignoreDiscriminator) {
     type: json["type"]
   };
 }
-function UpdateJobAgentRequestToJSON(value) {
+function UpdateJobAgentRequestToJSON(json) {
+  return UpdateJobAgentRequestToJSONTyped(json, false);
+}
+function UpdateJobAgentRequestToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28404,7 +28610,10 @@ function UpdateJobRequestFromJSONTyped(json, ignoreDiscriminator) {
     externalId: json["externalId"] == null ? void 0 : json["externalId"]
   };
 }
-function UpdateJobRequestToJSON(value) {
+function UpdateJobRequestToJSON(json) {
+  return UpdateJobRequestToJSONTyped(json, false);
+}
+function UpdateJobRequestToJSONTyped(value, ignoreDiscriminator = false) {
   if (value == null) {
     return value;
   }
@@ -28412,6 +28621,289 @@ function UpdateJobRequestToJSON(value) {
     status: value["status"],
     message: value["message"],
     externalId: value["externalId"]
+  };
+}
+
+// src/models/UpsertTargetsRequestTargetsInnerVariablesInnerValue.ts
+function instanceOfUpsertTargetsRequestTargetsInnerVariablesInnerValue(value) {
+  return true;
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerValueFromJSON(json) {
+  return UpsertTargetsRequestTargetsInnerVariablesInnerValueFromJSONTyped(
+    json,
+    false
+  );
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerValueFromJSONTyped(json, ignoreDiscriminator) {
+  return json;
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerValueToJSON(json) {
+  return UpsertTargetsRequestTargetsInnerVariablesInnerValueToJSONTyped(
+    json,
+    false
+  );
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerValueToJSONTyped(value, ignoreDiscriminator = false) {
+  return value;
+}
+
+// src/models/UpdateTargetRequestVariablesInner.ts
+function instanceOfUpdateTargetRequestVariablesInner(value) {
+  if (!("key" in value) || value["key"] === void 0) return false;
+  if (!("value" in value) || value["value"] === void 0) return false;
+  return true;
+}
+function UpdateTargetRequestVariablesInnerFromJSON(json) {
+  return UpdateTargetRequestVariablesInnerFromJSONTyped(json, false);
+}
+function UpdateTargetRequestVariablesInnerFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    key: json["key"],
+    value: UpsertTargetsRequestTargetsInnerVariablesInnerValueFromJSON(
+      json["value"]
+    ),
+    sensitive: json["sensitive"] == null ? void 0 : json["sensitive"]
+  };
+}
+function UpdateTargetRequestVariablesInnerToJSON(json) {
+  return UpdateTargetRequestVariablesInnerToJSONTyped(json, false);
+}
+function UpdateTargetRequestVariablesInnerToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    key: value["key"],
+    value: UpsertTargetsRequestTargetsInnerVariablesInnerValueToJSON(
+      value["value"]
+    ),
+    sensitive: value["sensitive"]
+  };
+}
+
+// src/models/UpdateTargetRequest.ts
+function instanceOfUpdateTargetRequest(value) {
+  return true;
+}
+function UpdateTargetRequestFromJSON(json) {
+  return UpdateTargetRequestFromJSONTyped(json, false);
+}
+function UpdateTargetRequestFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    name: json["name"] == null ? void 0 : json["name"],
+    version: json["version"] == null ? void 0 : json["version"],
+    kind: json["kind"] == null ? void 0 : json["kind"],
+    identifier: json["identifier"] == null ? void 0 : json["identifier"],
+    workspaceId: json["workspaceId"] == null ? void 0 : json["workspaceId"],
+    metadata: json["metadata"] == null ? void 0 : json["metadata"],
+    variables: json["variables"] == null ? void 0 : json["variables"].map(
+      UpdateTargetRequestVariablesInnerFromJSON
+    )
+  };
+}
+function UpdateTargetRequestToJSON(json) {
+  return UpdateTargetRequestToJSONTyped(json, false);
+}
+function UpdateTargetRequestToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    name: value["name"],
+    version: value["version"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    workspaceId: value["workspaceId"],
+    metadata: value["metadata"],
+    variables: value["variables"] == null ? void 0 : value["variables"].map(
+      UpdateTargetRequestVariablesInnerToJSON
+    )
+  };
+}
+
+// src/models/UpsertTargets200Response.ts
+function instanceOfUpsertTargets200Response(value) {
+  if (!("count" in value) || value["count"] === void 0) return false;
+  return true;
+}
+function UpsertTargets200ResponseFromJSON(json) {
+  return UpsertTargets200ResponseFromJSONTyped(json, false);
+}
+function UpsertTargets200ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    count: json["count"]
+  };
+}
+function UpsertTargets200ResponseToJSON(json) {
+  return UpsertTargets200ResponseToJSONTyped(json, false);
+}
+function UpsertTargets200ResponseToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    count: value["count"]
+  };
+}
+
+// src/models/UpsertTargets400Response.ts
+function instanceOfUpsertTargets400Response(value) {
+  return true;
+}
+function UpsertTargets400ResponseFromJSON(json) {
+  return UpsertTargets400ResponseFromJSONTyped(json, false);
+}
+function UpsertTargets400ResponseFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    error: json["error"] == null ? void 0 : json["error"]
+  };
+}
+function UpsertTargets400ResponseToJSON(json) {
+  return UpsertTargets400ResponseToJSONTyped(json, false);
+}
+function UpsertTargets400ResponseToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    error: value["error"]
+  };
+}
+
+// src/models/UpsertTargetsRequestTargetsInnerVariablesInner.ts
+function instanceOfUpsertTargetsRequestTargetsInnerVariablesInner(value) {
+  if (!("key" in value) || value["key"] === void 0) return false;
+  if (!("value" in value) || value["value"] === void 0) return false;
+  return true;
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerFromJSON(json) {
+  return UpsertTargetsRequestTargetsInnerVariablesInnerFromJSONTyped(
+    json,
+    false
+  );
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    key: json["key"],
+    value: UpsertTargetsRequestTargetsInnerVariablesInnerValueFromJSON(
+      json["value"]
+    ),
+    sensitive: json["sensitive"] == null ? void 0 : json["sensitive"]
+  };
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerToJSON(json) {
+  return UpsertTargetsRequestTargetsInnerVariablesInnerToJSONTyped(json, false);
+}
+function UpsertTargetsRequestTargetsInnerVariablesInnerToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    key: value["key"],
+    value: UpsertTargetsRequestTargetsInnerVariablesInnerValueToJSON(
+      value["value"]
+    ),
+    sensitive: value["sensitive"]
+  };
+}
+
+// src/models/UpsertTargetsRequestTargetsInner.ts
+function instanceOfUpsertTargetsRequestTargetsInner(value) {
+  if (!("name" in value) || value["name"] === void 0) return false;
+  if (!("kind" in value) || value["kind"] === void 0) return false;
+  if (!("identifier" in value) || value["identifier"] === void 0)
+    return false;
+  if (!("version" in value) || value["version"] === void 0) return false;
+  if (!("config" in value) || value["config"] === void 0) return false;
+  return true;
+}
+function UpsertTargetsRequestTargetsInnerFromJSON(json) {
+  return UpsertTargetsRequestTargetsInnerFromJSONTyped(json, false);
+}
+function UpsertTargetsRequestTargetsInnerFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    name: json["name"],
+    kind: json["kind"],
+    identifier: json["identifier"],
+    version: json["version"],
+    config: json["config"],
+    metadata: json["metadata"] == null ? void 0 : json["metadata"],
+    variables: json["variables"] == null ? void 0 : json["variables"].map(
+      UpsertTargetsRequestTargetsInnerVariablesInnerFromJSON
+    )
+  };
+}
+function UpsertTargetsRequestTargetsInnerToJSON(json) {
+  return UpsertTargetsRequestTargetsInnerToJSONTyped(json, false);
+}
+function UpsertTargetsRequestTargetsInnerToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    name: value["name"],
+    kind: value["kind"],
+    identifier: value["identifier"],
+    version: value["version"],
+    config: value["config"],
+    metadata: value["metadata"],
+    variables: value["variables"] == null ? void 0 : value["variables"].map(
+      UpsertTargetsRequestTargetsInnerVariablesInnerToJSON
+    )
+  };
+}
+
+// src/models/UpsertTargetsRequest.ts
+function instanceOfUpsertTargetsRequest(value) {
+  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
+    return false;
+  if (!("targets" in value) || value["targets"] === void 0) return false;
+  return true;
+}
+function UpsertTargetsRequestFromJSON(json) {
+  return UpsertTargetsRequestFromJSONTyped(json, false);
+}
+function UpsertTargetsRequestFromJSONTyped(json, ignoreDiscriminator) {
+  if (json == null) {
+    return json;
+  }
+  return {
+    workspaceId: json["workspaceId"],
+    targets: json["targets"].map(
+      UpsertTargetsRequestTargetsInnerFromJSON
+    )
+  };
+}
+function UpsertTargetsRequestToJSON(json) {
+  return UpsertTargetsRequestToJSONTyped(json, false);
+}
+function UpsertTargetsRequestToJSONTyped(value, ignoreDiscriminator = false) {
+  if (value == null) {
+    return value;
+  }
+  return {
+    workspaceId: value["workspaceId"],
+    targets: value["targets"].map(
+      UpsertTargetsRequestTargetsInnerToJSON
+    )
   };
 }
 
@@ -28446,7 +28938,7 @@ var DefaultApi = class extends BaseAPI {
     );
     return new JSONApiResponse(
       response,
-      (jsonValue) => AcknowledgeJob200ResponseFromJSON(jsonValue)
+      (jsonValue) => DeleteTarget200ResponseFromJSON(jsonValue)
     );
   }
   /**
@@ -28497,6 +28989,48 @@ var DefaultApi = class extends BaseAPI {
    */
   async createRelease(requestParameters, initOverrides) {
     const response = await this.createReleaseRaw(
+      requestParameters,
+      initOverrides
+    );
+    return await response.value();
+  }
+  /**
+   * Delete a target
+   */
+  async deleteTargetRaw(requestParameters, initOverrides) {
+    if (requestParameters["targetId"] == null) {
+      throw new RequiredError(
+        "targetId",
+        'Required parameter "targetId" was null or undefined when calling deleteTarget().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets/{targetId}`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"]))
+        ),
+        method: "DELETE",
+        headers: headerParameters,
+        query: queryParameters
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => DeleteTarget200ResponseFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Delete a target
+   */
+  async deleteTarget(requestParameters, initOverrides) {
+    const response = await this.deleteTargetRaw(
       requestParameters,
       initOverrides
     );
@@ -28623,6 +29157,45 @@ var DefaultApi = class extends BaseAPI {
       requestParameters,
       initOverrides
     );
+    return await response.value();
+  }
+  /**
+   * Get a target
+   */
+  async getTargetRaw(requestParameters, initOverrides) {
+    if (requestParameters["targetId"] == null) {
+      throw new RequiredError(
+        "targetId",
+        'Required parameter "targetId" was null or undefined when calling getTarget().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets/{targetId}`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"]))
+        ),
+        method: "GET",
+        headers: headerParameters,
+        query: queryParameters
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => GetTarget200ResponseFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Get a target
+   */
+  async getTarget(requestParameters, initOverrides) {
+    const response = await this.getTargetRaw(requestParameters, initOverrides);
     return await response.value();
   }
   /**
@@ -28764,12 +29337,6 @@ var DefaultApi = class extends BaseAPI {
    * Upserts the agent
    */
   async updateJobAgentRaw(requestParameters, initOverrides) {
-    if (requestParameters["workspace"] == null) {
-      throw new RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling updateJobAgent().'
-      );
-    }
     if (requestParameters["updateJobAgentRequest"] == null) {
       throw new RequiredError(
         "updateJobAgentRequest",
@@ -28784,10 +29351,7 @@ var DefaultApi = class extends BaseAPI {
     }
     const response = await this.request(
       {
-        path: `/v1/job-agents/name`.replace(
-          `{${"workspace"}}`,
-          encodeURIComponent(String(requestParameters["workspace"]))
-        ),
+        path: `/v1/job-agents/name`,
         method: "PATCH",
         headers: headerParameters,
         query: queryParameters,
@@ -28807,6 +29371,55 @@ var DefaultApi = class extends BaseAPI {
    */
   async updateJobAgent(requestParameters, initOverrides) {
     const response = await this.updateJobAgentRaw(
+      requestParameters,
+      initOverrides
+    );
+    return await response.value();
+  }
+  /**
+   * Update a target
+   */
+  async updateTargetRaw(requestParameters, initOverrides) {
+    if (requestParameters["targetId"] == null) {
+      throw new RequiredError(
+        "targetId",
+        'Required parameter "targetId" was null or undefined when calling updateTarget().'
+      );
+    }
+    if (requestParameters["updateTargetRequest"] == null) {
+      throw new RequiredError(
+        "updateTargetRequest",
+        'Required parameter "updateTargetRequest" was null or undefined when calling updateTarget().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    headerParameters["Content-Type"] = "application/json";
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets/{targetId}`.replace(
+          `{${"targetId"}}`,
+          encodeURIComponent(String(requestParameters["targetId"]))
+        ),
+        method: "PATCH",
+        headers: headerParameters,
+        query: queryParameters,
+        body: UpdateTargetRequestToJSON(
+          requestParameters["updateTargetRequest"]
+        )
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(response);
+  }
+  /**
+   * Update a target
+   */
+  async updateTarget(requestParameters, initOverrides) {
+    const response = await this.updateTargetRaw(
       requestParameters,
       initOverrides
     );
@@ -28858,6 +29471,49 @@ var DefaultApi = class extends BaseAPI {
    */
   async upsertTargetProvider(requestParameters, initOverrides) {
     const response = await this.upsertTargetProviderRaw(
+      requestParameters,
+      initOverrides
+    );
+    return await response.value();
+  }
+  /**
+   * Create or update multiple targets
+   */
+  async upsertTargetsRaw(requestParameters, initOverrides) {
+    if (requestParameters["upsertTargetsRequest"] == null) {
+      throw new RequiredError(
+        "upsertTargetsRequest",
+        'Required parameter "upsertTargetsRequest" was null or undefined when calling upsertTargets().'
+      );
+    }
+    const queryParameters = {};
+    const headerParameters = {};
+    headerParameters["Content-Type"] = "application/json";
+    if (this.configuration && this.configuration.apiKey) {
+      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
+    }
+    const response = await this.request(
+      {
+        path: `/v1/targets`,
+        method: "POST",
+        headers: headerParameters,
+        query: queryParameters,
+        body: UpsertTargetsRequestToJSON(
+          requestParameters["upsertTargetsRequest"]
+        )
+      },
+      initOverrides
+    );
+    return new JSONApiResponse(
+      response,
+      (jsonValue) => UpsertTargets200ResponseFromJSON(jsonValue)
+    );
+  }
+  /**
+   * Create or update multiple targets
+   */
+  async upsertTargets(requestParameters, initOverrides) {
+    const response = await this.upsertTargetsRaw(
       requestParameters,
       initOverrides
     );
