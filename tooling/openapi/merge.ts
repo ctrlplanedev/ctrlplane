@@ -38,6 +38,7 @@ async function findOpenAPIFiles() {
 
         try {
           const modulePath = path.resolve(file);
+
           const module = await import(modulePath);
           const openapiSpec = module.openapi;
 

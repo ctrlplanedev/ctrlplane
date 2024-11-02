@@ -11,7 +11,8 @@
     "lint": "eslint",
     "start": "pnpm with-env next start",
     "typecheck": "tsc --noEmit",
-    "with-env": "dotenv -e ../../.env --"
+    "with-env": "dotenv -e ../../.env --",
+    "openapi": "ts-node tooling/openapi/merge.ts"
   },
   "dependencies": {
     "@appsignal/opentelemetry-instrumentation-bullmq": "^0.7.1",
