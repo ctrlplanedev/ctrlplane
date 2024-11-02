@@ -80,11 +80,9 @@ export async function scan() {
       targets.push(target);
     }
 
-    const uniqueTargets = _.uniqBy(targets, (t) => t.identifier);
+    logger.info(`Registering ${targets.length} unique targets`);
 
-    logger.info(`Registering ${uniqueTargets.length} unique targets`);
-
-    await scanner.set(uniqueTargets);
+    await scanner.set(targets);
 
     logger.info("Successfully registered targets");
   } catch (error) {
