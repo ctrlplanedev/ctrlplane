@@ -84,10 +84,7 @@ const spinUpNewJobs = async (agentId: string) => {
         logger.debug(`Job details:`, { job });
         try {
           const je = await api.getJob({ jobId: job.id });
-          const manifest = renderManifest(
-            (job.jobAgentConfig).manifest,
-            je,
-          );
+          const manifest = renderManifest(job.jobAgentConfig.manifest, je);
 
           const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
           await api.acknowledgeJob({ jobId: job.id });

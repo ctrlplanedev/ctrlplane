@@ -18,7 +18,7 @@
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc",
-    "generate": "openapi-generator-cli generate && pnpm format:fix"
+    "generate": "openapi-generator-cli generate && pnpm format --fix"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",

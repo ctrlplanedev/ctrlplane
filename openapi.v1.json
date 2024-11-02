@@ -15,7 +15,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "targets"],
+                "required": [
+                  "workspaceId",
+                  "targets"
+                ],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -58,7 +61,10 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": ["key", "value"],
+                            "required": [
+                              "key",
+                              "value"
+                            ],
                             "properties": {
                               "key": {
                                 "type": "string"
@@ -118,7 +124,10 @@
                     "type": "object"
                   }
                 },
-                "required": ["version", "deploymentId"]
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
               }
             }
           }
@@ -161,7 +170,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["systemId"],
+                "required": [
+                  "systemId"
+                ],
                 "properties": {
                   "systemId": {
                     "type": "string"
@@ -195,7 +206,9 @@
                           "nullable": true
                         }
                       },
-                      "required": ["systemId"]
+                      "required": [
+                        "systemId"
+                      ]
                     }
                   }
                 }
@@ -213,7 +226,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -319,7 +334,10 @@
                             "default": false
                           }
                         },
-                        "required": ["key", "value"]
+                        "required": [
+                          "key",
+                          "value"
+                        ]
                       }
                     }
                   },
@@ -356,7 +374,9 @@
                       "example": "Target not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -430,7 +450,10 @@
                           "default": false
                         }
                       },
-                      "required": ["key", "value"]
+                      "required": [
+                        "key",
+                        "value"
+                      ]
                     }
                   }
                 }
@@ -506,7 +529,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -534,7 +559,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["success"],
+                  "required": [
+                    "success"
+                  ],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -561,7 +588,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -626,7 +655,12 @@
                           "type": "object"
                         }
                       },
-                      "required": ["id", "version", "metadata", "config"]
+                      "required": [
+                        "id",
+                        "version",
+                        "metadata",
+                        "config"
+                      ]
                     },
                     "deployment": {
                       "type": "object",
@@ -671,7 +705,12 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId", "jobAgentId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId",
+                        "jobAgentId"
+                      ]
                     },
                     "target": {
                       "type": "object",
@@ -725,7 +764,11 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId"
+                      ]
                     },
                     "variables": {
                       "type": "object"
@@ -739,7 +782,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "approved", "rejected"]
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected"
+                          ]
                         },
                         "approver": {
                           "type": "object",
@@ -753,10 +800,16 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "name"]
+                          "required": [
+                            "id",
+                            "name"
+                          ]
                         }
                       },
-                      "required": ["id", "status"]
+                      "required": [
+                        "id",
+                        "status"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -829,7 +882,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 }
               }
             }
@@ -858,7 +913,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["type", "name", "workspaceId"]
+                "required": [
+                  "type",
+                  "name",
+                  "workspaceId"
+                ]
               }
             }
           }
@@ -881,7 +940,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -913,7 +976,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["targets"],
+                "required": [
+                  "targets"
+                ],
                 "properties": {
                   "targets": {
                     "type": "array",
@@ -1000,7 +1065,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["sucess"]
+                  "required": [
+                    "sucess"
+                  ]
                 }
               }
             }
@@ -1016,7 +1083,74 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/job-agents/{agentId}/queue/acknowledge": {
+      "post": {
+        "summary": "Acknowledge a job for an agent",
+        "operationId": "acknowledgeAgentJob",
+        "description": "Marks a job as acknowledged by the agent",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the job agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully acknowledged job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "job": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
                 }
               }
             }
@@ -1081,67 +1215,6 @@
                           "jobAgentConfig"
                         ]
                       }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/job-agents/{agentId}/queue/acknowledge": {
-      "post": {
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully acknowledged job",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "job": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Workspace not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
                     }
                   }
                 }
@@ -1313,7 +1386,79 @@
                       }
                     }
                   },
-                  "required": ["id", "identifier", "workspaceId", "providerId"]
+                  "required": [
+                    "id",
+                    "identifier",
+                    "workspaceId",
+                    "providerId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Target not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Target not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a target by identifier",
+        "operationId": "deleteTargetByIdentifier",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the workspace"
+          },
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Identifier of the target"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted the target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
                 }
               }
             }
@@ -1388,7 +1533,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
