@@ -1,4 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
+import type { Swagger } from "atlassian-openapi";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -41,11 +42,11 @@ export const POST = request()
   .use(authn)
   .use(parseBody(patchBodySchema))
   .use(
-    authz(({ can, ctx }) => {
-      return can
+    authz(({ can, ctx }) =>
+      can
         .perform(Permission.TargetUpdate)
-        .on({ type: "workspace", id: ctx.body.workspaceId });
-    }),
+        .on({ type: "workspace", id: ctx.body.workspaceId }),
+    ),
   )
   .handle<{ user: schema.User; body: z.infer<typeof patchBodySchema> }>(
     async (ctx) => {
@@ -66,3 +67,99 @@ export const POST = request()
       return NextResponse.json({ count: targets.length });
     },
   );
+
+export const openapi: Swagger.SwaggerV3 = {
+  openapi: "3.0.0",
+  info: {
+    title: "Ctrlplane API",
+    version: "1.0.0",
+  },
+  paths: {
+    "/v1/targets": {
+      post: {
+        summary: "Create or update multiple targets",
+        operationId: "upsertTargets",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["workspaceId", "targets"],
+                properties: {
+                  workspaceId: {
+                    type: "string",
+                    format: "uuid",
+                  },
+                  targets: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: [
+                        "name",
+                        "kind",
+                        "identifier",
+                        "version",
+                        "config",
+                      ],
+                      properties: {
+                        name: {
+                          type: "string",
+                        },
+                        kind: {
+                          type: "string",
+                        },
+                        identifier: {
+                          type: "string",
+                        },
+                        version: {
+                          type: "string",
+                        },
+                        config: {
+                          type: "object",
+                        },
+                        metadata: {
+                          type: "object",
+                          additionalProperties: {
+                            type: "string",
+                          },
+                        },
+                        variables: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            required: ["key", "value"],
+                            properties: {
+                              key: {
+                                type: "string",
+                              },
+                              value: {
+                                oneOf: [
+                                  { type: "string" },
+                                  { type: "number" },
+                                  { type: "boolean" },
+                                ],
+                              },
+                              sensitive: {
+                                type: "boolean",
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "All of the cats",
+          },
+        },
+      },
+    },
+  },
+};
