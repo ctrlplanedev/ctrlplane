@@ -38,7 +38,6 @@ const deployManifest = async (
         updateJobRequest: {
           status: "invalid_job_agent",
           message: "Job name not found in manifest.",
-        },
       });
       return;
     }
@@ -51,7 +50,6 @@ const deployManifest = async (
         status: "in_progress",
         externalId: `${namespace}/${name}`,
         message: "Job created successfully.",
-      },
     });
     logger.info(`Job created successfully`, {
       jobId,
