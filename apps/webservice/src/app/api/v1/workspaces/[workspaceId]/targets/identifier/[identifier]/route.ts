@@ -60,7 +60,7 @@ export const DELETE = request()
   .use(authn)
   .use(
     authz(async ({ can, extra }) => {
-      const { workspaceId, identifier } = extra;
+      const { workspaceId, identifier } = extra.params;
       const decodedIdentifier = decodeURIComponent(identifier);
 
       console.log("workspaceId", workspaceId);
