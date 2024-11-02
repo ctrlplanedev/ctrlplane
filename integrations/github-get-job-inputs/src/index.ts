@@ -1,6 +1,15 @@
 import * as core from "@actions/core";
 
-import { api } from "./sdk.js";
+import { Configuration, DefaultApi } from "@ctrlplane/node-sdk";
+
+const baseUrl = core.getInput("base_url", { required: true });
+
+const config = new Configuration({
+  basePath: baseUrl + "/api",
+  apiKey: core.getInput("api_key", { required: true }),
+});
+
+const api = new DefaultApi(config);
 
 const requiredOutputs = core
   .getInput("required_outputs", { required: false })
@@ -35,70 +44,12 @@ const setOutputsRecursively = (prefix: string, obj: any) => {
 };
 
 async function run() {
-  const jobId: string = core.getInput("job_id", { required: true });
-  const baseUrl = core.getInput("base_url", { required: true });
+  const jobId = core.getInput("job_id", { required: true });
 
   await api
-    .GET("/v1/jobs/{jobId}", {
-      params: { path: { jobId } },
-    })
-    .then(
-      (response) =>
-        response.data as {
-          id: string;
-          status:
-            | "completed"
-            | "cancelled"
-            | "skipped"
-            | "in_progress"
-            | "action_required"
-            | "pending"
-            | "failure"
-            | "invalid_job_agent"
-            | "invalid_integration"
-            | "external_run_not_found";
-          release?: {
-            id: string;
-            version: string;
-            metadata: Record<string, unknown>;
-            config: Record<string, unknown>;
-          };
-          deployment?: {
-            id: string;
-            name?: string;
-            slug: string;
-            systemId: string;
-            jobAgentId: string;
-          };
-          runbook?: {
-            id: string;
-            name: string;
-            systemId: string;
-            jobAgentId: string;
-          };
-          target?: {
-            id: string;
-            name: string;
-            version: string;
-            kind: string;
-            identifier: string;
-            workspaceId: string;
-            config: Record<string, unknown>;
-            metadata: Record<string, unknown>;
-          };
-          environment?: { id: string; name: string; systemId: string };
-          variables: Record<string, unknown>;
-          approval?: {
-            id: string;
-            status: "pending" | "approved" | "rejected";
-            approver?: { id: string; name: string } | null;
-          };
-          createdAt: string;
-          updatedAt: string;
-        },
-    )
-    .then((data) => {
-      core.info(JSON.stringify(data, null, 2));
+    .getJob({ jobId })
+    .then((response) => {
+      core.info(JSON.stringify(response, null, 2));
 
       const {
         variables,
@@ -108,7 +59,7 @@ async function run() {
         runbook,
         deployment,
         approval,
-      } = data;
+      } = response;
 
       setOutputAndLog("base_url", baseUrl);
 
