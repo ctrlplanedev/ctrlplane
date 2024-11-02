@@ -55,8 +55,6 @@ export const POST = request()
           { status: 400 },
         );
 
-      console.log("ctx.body.targets", ctx.body.targets);
-
       const targets = await upsertTargets(
         db,
         ctx.body.targets.map((t) => ({

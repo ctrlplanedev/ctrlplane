@@ -84,3 +84,25 @@ export const PATCH = request()
 
     return NextResponse.json(t[0]);
   });
+
+export const DELETE = request()
+  .use(authn)
+  .use(
+    authz(({ can, extra }) =>
+      can
+        .perform(Permission.TargetDelete)
+        .on({ type: "target", id: extra.params.targetId }),
+    ),
+  )
+  .handle(async ({ db }, { params }: { params: { targetId: string } }) => {
+    const target = await db.query.target.findFirst({
+      where: eq(schema.target.id, params.targetId),
+    });
+
+    if (target == null)
+      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+
+    await db.delete(schema.target).where(eq(schema.target.id, params.targetId));
+
+    return NextResponse.json({ success: true });
+  });

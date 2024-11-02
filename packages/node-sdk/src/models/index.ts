@@ -1,8 +1,9 @@
 /* tslint:disable */
 /* eslint-disable */
-export * from "./AcknowledgeJob200Response";
 export * from "./CreateRelease200Response";
 export * from "./CreateReleaseRequest";
+export * from "./DeleteTarget200Response";
+export * from "./DeleteTarget404Response";
 export * from "./GetAgentRunningJob200ResponseInner";
 export * from "./GetJob200Response";
 export * from "./GetJob200ResponseApproval";
@@ -25,4 +26,9 @@ export * from "./UpdateJobAgentRequest";
 export * from "./UpdateJobRequest";
 export * from "./UpdateTargetRequest";
 export * from "./UpdateTargetRequestVariablesInner";
-export * from "./UpdateTargetRequestVariablesInnerValue";
+export * from "./UpsertTargets200Response";
+export * from "./UpsertTargets400Response";
+export * from "./UpsertTargetsRequest";
+export * from "./UpsertTargetsRequestTargetsInner";
+export * from "./UpsertTargetsRequestTargetsInnerVariablesInner";
+export * from "./UpsertTargetsRequestTargetsInnerVariablesInnerValue";
