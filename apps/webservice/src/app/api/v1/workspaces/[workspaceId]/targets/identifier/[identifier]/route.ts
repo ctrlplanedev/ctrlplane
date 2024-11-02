@@ -86,7 +86,7 @@ export const DELETE = request()
 
       if (target == null) {
         return NextResponse.json(
-          { error: "Target not found" },
+          { error: `Target not found for identifier: ${params.identifier}` },
           { status: 404 },
         );
       }
