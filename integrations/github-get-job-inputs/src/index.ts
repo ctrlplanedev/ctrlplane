@@ -42,63 +42,11 @@ async function run() {
     .GET("/v1/jobs/{jobId}", {
       params: { path: { jobId } },
     })
-    .then(
-      (response) =>
-        response.data as {
-          id: string;
-          status:
-            | "completed"
-            | "cancelled"
-            | "skipped"
-            | "in_progress"
-            | "action_required"
-            | "pending"
-            | "failure"
-            | "invalid_job_agent"
-            | "invalid_integration"
-            | "external_run_not_found";
-          release?: {
-            id: string;
-            version: string;
-            metadata: Record<string, unknown>;
-            config: Record<string, unknown>;
-          };
-          deployment?: {
-            id: string;
-            name?: string;
-            slug: string;
-            systemId: string;
-            jobAgentId: string;
-          };
-          runbook?: {
-            id: string;
-            name: string;
-            systemId: string;
-            jobAgentId: string;
-          };
-          target?: {
-            id: string;
-            name: string;
-            version: string;
-            kind: string;
-            identifier: string;
-            workspaceId: string;
-            config: Record<string, unknown>;
-            metadata: Record<string, unknown>;
-          };
-          environment?: { id: string; name: string; systemId: string };
-          variables: Record<string, unknown>;
-          approval?: {
-            id: string;
-            status: "pending" | "approved" | "rejected";
-            approver?: { id: string; name: string } | null;
-          };
-          createdAt: string;
-          updatedAt: string;
-        },
-    )
-    .then((data) => {
-      core.info(JSON.stringify(data, null, 2));
+    .then(({ data }) => {
+      if (data == undefined) {
+        core.error("Invalid job id");
+        return;
+      }
 
       const {
         variables,
