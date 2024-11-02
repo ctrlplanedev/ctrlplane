@@ -72,6 +72,67 @@ export class TargetProvider {
   }
 }
 
+export class JobAgent {
+  constructor(
+    private options: { type: string; workspaceId: string; name: string },
+    private client: ReturnType<typeof createClient>,
+  ) {}
+
+  private agent:
+    | operations["updateJobAgent"]["responses"]["200"]["content"]["application/json"]
+    | null = null;
+
+  async get() {
+    if (this.agent != null) {
+      return this.agent;
+    }
+
+    const { data } = await this.client.PATCH("/v1/job-agents/name", {
+      body: this.options,
+    });
+    this.agent = data;
+    return this.agent;
+  }
+
+  async next() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/queue/next",
+      { params: { path: { agentId: this.agent.id } } },
+    );
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+  }
+}
+
+class Job {
+  constructor(
+    private job: { id: string },
+    private client: ReturnType<typeof createClient>,
+  ) {}
+
+  acknowledge() {
+    return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
+      params: { path: { jobId: this.job.id } },
+    });
+  }
+
+  get() {
+    return this.client
+      .GET("/v1/jobs/{jobId}", {
+        params: { path: { jobId: this.job.id } },
+      })
+      .then(({ data }) => data);
+  }
+
+  update(
+    update: operations["updateJob"]["requestBody"]["content"]["application/json"],
+  ) {
+    return this.client.PATCH("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } },
+      body: update,
+    });
+  }
+}
+
 function uniqBy<T>(arr: T[], iteratee: (item: T) => any): T[] {
   const seen = new Map<any, boolean>();
   return arr.filter((item) => {
