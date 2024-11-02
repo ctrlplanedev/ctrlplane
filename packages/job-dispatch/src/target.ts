@@ -8,6 +8,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  or,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
@@ -212,13 +213,33 @@ export const upsertTargets = async (
   >,
 ) => {
   try {
+    // Get existing targets from the database, grouped by providerId.
+    // - For targets without a providerId, look them up by workspaceId and
+    //   identifier.
+    // - For targets with a providerId, get all targets for that provider.
+    log.info("Upserting targets", {
+      targetsToInsertCount: targetsToInsert.length,
+    });
     const targetsBeforeInsertPromises = _.chain(targetsToInsert)
       .groupBy((t) => t.providerId)
       .filter((t) => t[0]?.providerId != null)
       .map(async (targets) => {
         const providerId = targets[0]?.providerId;
+
         return providerId == null
-          ? []
+          ? db
+              .select()
+              .from(target)
+              .where(
+                or(
+                  ...targets.map((t) =>
+                    and(
+                      eq(target.workspaceId, t.workspaceId),
+                      eq(target.identifier, t.identifier),
+                    ),
+                  ),
+                ),
+              )
           : getExistingTargetsForProvider(tx, providerId);
       })
       .value();
