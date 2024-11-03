@@ -1,8 +1,11 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { deployment } from "./deployment.js";
+import { environment } from "./environment.js";
 import { workspace } from "./workspace.js";
 
 export const systemSchema = z.object({
@@ -44,3 +47,8 @@ export const createSystem = createInsertSchema(system, systemSchema.shape).omit(
 export const updateSystem = createSystem.partial();
 
 export type System = InferSelectModel<typeof system>;
+
+export const systemRelations = relations(system, ({ many }) => ({
+  environments: many(environment),
+  deployments: many(deployment),
+}));

@@ -1,0 +1,1 @@
+ALTER TYPE "release_job_trigger_type" ADD VALUE 'new_environment';
