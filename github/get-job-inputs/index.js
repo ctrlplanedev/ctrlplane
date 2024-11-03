@@ -28109,15 +28109,11 @@ function uniqBy(arr, iteratee) {
 
 //# sourceMappingURL=index.js.map
 ;// CONCATENATED MODULE: ./src/sdk.ts
-// import * as core from "@actions/core";
 
-// export const api = createClient({
-//   baseUrl: core.getInput("base_url", { required: true }),
-//   apiKey: core.getInput("api_key", { required: true }),
-// });
+
 const api = dist_createClient({
-    baseUrl: "http://localhost:3000",
-    apiKey: "c737763455958fa1.2e93c261348663845a07cb6c1cd5887fa13c6baa5ca16b9b9ff65f53221c3d45",
+    baseUrl: core.getInput("base_url", { required: true }),
+    apiKey: core.getInput("api_key", { required: true }),
 });
 
 ;// CONCATENATED MODULE: ./src/index.ts
