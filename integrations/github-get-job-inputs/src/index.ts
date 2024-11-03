@@ -44,7 +44,7 @@ async function run() {
     })
     .then(({ data }) => {
       if (data == undefined) {
-        core.error(`Invalid Job data ${data}`);
+        core.error(`Invalid Job data`);
         return;
       }
 
