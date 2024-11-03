@@ -48,6 +48,12 @@ export const openapi: Swagger.SwaggerV3 = {
                         "external_run_not_found",
                       ],
                     },
+                    externalId: {
+                      type: "string",
+                      nullable: true,
+                      description:
+                        "External job identifier (e.g. GitHub workflow run ID)",
+                    },
                     release: {
                       type: "object",
                       properties: {

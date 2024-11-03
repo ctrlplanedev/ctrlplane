@@ -160,20 +160,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/job-agents/{agentId}/queue/acknowledge": {
+    "/v1/job-agents/{agentId}/jobs/running": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get a agents running jobs */
+        get: operations["getAgentRunningJob"];
         put?: never;
-        /**
-         * Acknowledge a job for an agent
-         * @description Marks a job as acknowledged by the agent
-         */
-        post: operations["acknowledgeAgentJob"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -198,17 +195,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/job-agents/{agentId}/jobs/running": {
+    "/v1/job-agents/{agentId}/queue/acknowledge": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get a agents running jobs */
-        get: operations["getAgentRunningJob"];
+        get?: never;
         put?: never;
-        post?: never;
+        /**
+         * Acknowledge a job for an agent
+         * @description Marks a job as acknowledged by the agent
+         */
+        post: operations["acknowledgeAgentJob"];
         delete?: never;
         options?: never;
         head?: never;
@@ -593,6 +593,8 @@ export interface operations {
                         id: string;
                         /** @enum {string} */
                         status: "completed" | "cancelled" | "skipped" | "in_progress" | "action_required" | "pending" | "failure" | "invalid_job_agent" | "invalid_integration" | "external_run_not_found";
+                        /** @description External job identifier (e.g. GitHub workflow run ID) */
+                        externalId?: string | null;
                         release?: {
                             id: string;
                             version: string;
@@ -852,49 +854,38 @@ export interface operations {
             };
         };
     };
-    acknowledgeAgentJob: {
+    getAgentRunningJob: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description The ID of the job agent */
+                /** @description The execution ID */
                 agentId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Successfully acknowledged job */
+            /** @description OK */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        job?: Record<string, never>;
-                    };
-                };
-            };
-            /** @description Unauthorized */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
-                };
-            };
-            /** @description Workspace not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error?: string;
-                    };
+                        id: string;
+                        status: string;
+                        message: string;
+                        jobAgentId: string;
+                        jobAgentConfig: Record<string, never>;
+                        externalId: string | null;
+                        release?: Record<string, never>;
+                        deployment?: Record<string, never>;
+                        config: Record<string, never>;
+                        runbook?: Record<string, never>;
+                        target?: Record<string, never>;
+                        environment?: Record<string, never>;
+                    }[];
                 };
             };
         };
@@ -1036,38 +1027,49 @@ export interface operations {
             };
         };
     };
-    getAgentRunningJob: {
+    acknowledgeAgentJob: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description The execution ID */
+                /** @description The ID of the job agent */
                 agentId: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Successfully acknowledged job */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        id: string;
-                        status: string;
-                        message: string;
-                        jobAgentId: string;
-                        jobAgentConfig: Record<string, never>;
-                        externalId: string | null;
-                        release?: Record<string, never>;
-                        deployment?: Record<string, never>;
-                        config: Record<string, never>;
-                        runbook?: Record<string, never>;
-                        target?: Record<string, never>;
-                        environment?: Record<string, never>;
-                    }[];
+                        job?: Record<string, never>;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error?: string;
+                    };
+                };
+            };
+            /** @description Workspace not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error?: string;
+                    };
                 };
             };
         };
