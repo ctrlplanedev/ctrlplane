@@ -20,9 +20,11 @@ import {
 } from "@ctrlplane/db/schema";
 import { onJobCompletion } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
+import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import { getUser } from "~/app/api/v1/auth";
+import { authn, authz } from "~/app/api/v1/auth";
+import { request } from "~/app/api/v1/middleware";
 
 type ApprovalJoinResult = {
   environment_policy_approval: typeof environmentPolicyApproval.$inferSelect;
@@ -58,74 +60,79 @@ const mapApprovalResponse = (row: ApprovalJoinResult | null) =>
             : null,
       };
 
-export const GET = async (
-  req: NextRequest,
-  { params }: { params: { jobId: string } },
-) => {
-  const caller = await getUser(req);
-  if (!caller)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const je = await db
-    .select()
-    .from(job)
-    .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
-    .leftJoin(runbook, eq(runbookJobTrigger.runbookId, runbook.id))
-    .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-    .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
-    .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
-    .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
-    .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-    .where(eq(job.id, params.jobId))
-    .then(takeFirst)
-    .then((row) => ({
-      job: row.job,
-      runbook: row.runbook,
-      environment: row.environment,
-      target: row.target,
-      deployment: row.deployment,
-      release: row.release,
-    }));
-
-  const policyId = je.environment?.policyId;
-
-  const approval =
-    je.release?.id && policyId
-      ? await getApprovalDetails(je.release.id, policyId)
-      : null;
-
-  const jobVariableRows = await db
-    .select()
-    .from(jobVariable)
-    .where(eq(jobVariable.jobId, params.jobId));
-
-  const variables = Object.fromEntries(
-    jobVariableRows.map((v) => {
-      const strval = String(v.value);
-      const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
-      return [v.key, value];
+export const GET = request()
+  .use(authn)
+  .use(
+    authz(({ can, extra }) => {
+      return can
+        .perform(Permission.JobGet)
+        .on({ type: "job", id: extra.params.jobId });
     }),
-  );
+  )
+  .handle(async ({ db }, { params }: { params: { jobId: string } }) => {
+    const je = await db
+      .select()
+      .from(job)
+      .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
+      .leftJoin(runbook, eq(runbookJobTrigger.runbookId, runbook.id))
+      .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+      .leftJoin(
+        environment,
+        eq(environment.id, releaseJobTrigger.environmentId),
+      )
+      .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
+      .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
+      .leftJoin(deployment, eq(deployment.id, release.deploymentId))
+      .where(eq(job.id, params.jobId))
+      .then(takeFirst)
+      .then((row) => ({
+        job: row.job,
+        runbook: row.runbook,
+        environment: row.environment,
+        target: row.target,
+        deployment: row.deployment,
+        release: row.release,
+      }));
 
-  const jobTargetMetadataRows = await db
-    .select()
-    .from(targetMetadata)
-    .where(eq(targetMetadata.targetId, je.target?.id ?? ""));
+    const policyId = je.environment?.policyId;
 
-  const metadata = Object.fromEntries(
-    jobTargetMetadataRows.map((m) => [m.key, m.value]),
-  );
+    const approval =
+      je.release?.id && policyId
+        ? await getApprovalDetails(je.release.id, policyId)
+        : null;
 
-  const targetWithMetadata = { ...je.target, metadata };
+    const jobVariableRows = await db
+      .select()
+      .from(jobVariable)
+      .where(eq(jobVariable.jobId, params.jobId));
 
-  return NextResponse.json({
-    ...je.job,
-    ...je,
-    variables,
-    target: targetWithMetadata,
-    approval,
+    const variables = Object.fromEntries(
+      jobVariableRows.map((v) => {
+        const strval = String(v.value);
+        const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
+        return [v.key, value];
+      }),
+    );
+
+    const jobTargetMetadataRows = await db
+      .select()
+      .from(targetMetadata)
+      .where(eq(targetMetadata.targetId, je.target?.id ?? ""));
+
+    const metadata = Object.fromEntries(
+      jobTargetMetadataRows.map((m) => [m.key, m.value]),
+    );
+
+    const targetWithMetadata = { ...je.target, metadata };
+
+    return NextResponse.json({
+      ...je.job,
+      ...je,
+      variables,
+      target: targetWithMetadata,
+      approval,
+    });
   });
-};
 
 const bodySchema = updateJob;
 

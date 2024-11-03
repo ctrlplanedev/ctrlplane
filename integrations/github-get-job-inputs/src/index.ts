@@ -1,15 +1,6 @@
 import * as core from "@actions/core";
 
-import { Configuration, DefaultApi } from "@ctrlplane/node-sdk";
-
-const baseUrl = core.getInput("base_url", { required: true });
-
-const config = new Configuration({
-  basePath: baseUrl + "/api",
-  apiKey: core.getInput("api_key", { required: true }),
-});
-
-const api = new DefaultApi(config);
+import { api } from "./sdk.js";
 
 const requiredOutputs = core
   .getInput("required_outputs", { required: false })
@@ -44,12 +35,18 @@ const setOutputsRecursively = (prefix: string, obj: any) => {
 };
 
 async function run() {
-  const jobId = core.getInput("job_id", { required: true });
+  const jobId: string = core.getInput("job_id", { required: true });
+  const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
 
   await api
-    .getJob({ jobId })
-    .then((response) => {
-      core.info(JSON.stringify(response, null, 2));
+    .GET("/v1/jobs/{jobId}", {
+      params: { path: { jobId } },
+    })
+    .then(({ data }) => {
+      if (data == undefined) {
+        core.error(`Invalid Job data`);
+        return;
+      }
 
       const {
         variables,
@@ -59,7 +56,7 @@ async function run() {
         runbook,
         deployment,
         approval,
-      } = response;
+      } = data;
 
       setOutputAndLog("base_url", baseUrl);
 

@@ -6,7 +6,7 @@ import "swagger-ui-react/swagger-ui.css";
 import { SwaggerUI } from "./SwagerUI";
 
 export default function OpenApiPage() {
-  const openApiPath = path.join(process.cwd(), "../../openapi.v1.yaml");
+  const openApiPath = path.join(process.cwd(), "../../openapi.v1.json");
   const openApiSpec = fs.readFileSync(openApiPath, "utf8");
 
   return (
