@@ -3,6 +3,7 @@ import handlebars from "handlebars";
 import yaml from "js-yaml";
 
 import { logger } from "@ctrlplane/logger";
+import { JobAgent } from "@ctrlplane/node-sdk";
 
 import { env } from "./config.js";
 import { getBatchClient, getJobStatus } from "./k8s.js";
@@ -33,23 +34,29 @@ const deployManifest = async (
         namespace,
         manifest,
       });
-      await api.updateJob({
-        jobId,
-        updateJobRequest: {
+      await api.PATCH("/v1/jobs/{jobId}", {
+        params: {
+          path: { jobId },
+        },
+        body: {
           status: "invalid_job_agent",
           message: "Job name not found in manifest.",
+        },
       });
       return;
     }
 
     logger.info(`Creating job - ${namespace}/${name}`);
     await getBatchClient().createNamespacedJob(namespace, manifest);
-    await api.updateJob({
-      jobId,
-      updateJobRequest: {
+    await api.PATCH("/v1/jobs/{jobId}", {
+      params: {
+        path: { jobId },
+      },
+      body: {
         status: "in_progress",
         externalId: `${namespace}/${name}`,
         message: "Job created successfully.",
+      },
     });
     logger.info(`Job created successfully`, {
       jobId,
@@ -62,9 +69,11 @@ const deployManifest = async (
       namespace,
       error,
     });
-    await api.updateJob({
-      jobId,
-      updateJobRequest: {
+    await api.PATCH("/v1/jobs/{jobId}", {
+      params: {
+        path: { jobId },
+      },
+      body: {
         status: "invalid_job_agent",
         message: error.body?.message || error.message,
       },
@@ -74,18 +83,42 @@ const deployManifest = async (
 
 const spinUpNewJobs = async (agentId: string) => {
   try {
-    const { jobs = [] } = await api.getNextJobs({ agentId });
+    const response = await api.GET("/v1/job-agents/{agentId}/queue/next", {
+      params: {
+        path: { agentId },
+      },
+    });
+    if (response.data == undefined) return;
+    const { jobs = [] } = response.data;
+
     logger.info(`Found ${jobs.length} job(s) to run.`);
     await Promise.allSettled(
       jobs.map(async (job) => {
         logger.info(`Running job ${job.id}`);
         logger.debug(`Job details:`, { job });
         try {
-          const je = await api.getJob({ jobId: job.id });
-          const manifest = renderManifest(job.jobAgentConfig.manifest, je);
+          const je = await api.GET("/v1/jobs/{jobId}", {
+            params: {
+              path: { jobId: job.id },
+            },
+          });
+          if (je.data == null)
+            throw new Error(`Failed to fetch job details for job ${job.id}`);
+
+          if (
+            typeof job.jobAgentConfig !== "object" ||
+            !("manifest" in job.jobAgentConfig)
+          )
+            throw new Error("Job manifest is required");
+
+          const manifest = renderManifest(job.jobAgentConfig.manifest, je.data);
 
           const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
-          await api.acknowledgeJob({ jobId: job.id });
+          await api.POST("/v1/jobs/{jobId}/acknowledge", {
+            params: {
+              path: { jobId: job.id },
+            },
+          });
           await deployManifest(job.id, namespace, manifest);
         } catch (error: any) {
           logger.error(`Error processing job ${job.id}`, {
@@ -107,7 +140,13 @@ const spinUpNewJobs = async (agentId: string) => {
 
 const updateExecutionStatus = async (agentId: string) => {
   try {
-    const jobs = await api.getAgentRunningJob({ agentId });
+    const response = await api.GET("/v1/job-agents/{agentId}/jobs/running", {
+      params: {
+        path: { agentId },
+      },
+    });
+    if (response.data == undefined) return;
+    const jobs = response.data;
     logger.info(`Found ${jobs.length} running execution(s)`);
     await Promise.allSettled(
       jobs.map(async (job) => {
@@ -123,9 +162,11 @@ const updateExecutionStatus = async (agentId: string) => {
         logger.debug(`Checking status of ${namespace}/${name}`);
         try {
           const { status, message } = await getJobStatus(namespace, name);
-          await api.updateJob({
-            jobId: job.id,
-            updateJobRequest: { status, message },
+          await api.PATCH(`/v1/jobs/{jobId}`, {
+            params: {
+              path: { jobId: job.id },
+            },
+            body: { status, message },
           });
           logger.info(`Updated status for ${namespace}/${name}`, {
             status,
@@ -148,13 +189,15 @@ const updateExecutionStatus = async (agentId: string) => {
 
 const scan = async () => {
   try {
-    const { id } = await api.updateJobAgent({
-      updateJobAgentRequest: {
+    const agent = new JobAgent(
+      {
+        type: "kubernetes-job" as const,
         name: env.CTRLPLANE_AGENT_NAME,
         workspaceId: env.CTRLPLANE_WORKSPACE_ID,
-        type: "kubernetes-job",
       },
-    });
+      api,
+    );
+    const { id } = await agent.get();
 
     logger.info(`Agent ID: ${id}`);
     await spinUpNewJobs(id);
