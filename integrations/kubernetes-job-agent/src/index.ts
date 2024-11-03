@@ -97,7 +97,7 @@ const spinUpNewJobs = async (agent: JobAgent, agentId: string) => {
     );
   } catch (error: any) {
     logger.error("Error spinning up new jobs", {
-      agentId: agentId,
+      agentId,
       error: error.message,
     });
     throw error;
