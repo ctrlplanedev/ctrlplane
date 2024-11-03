@@ -28112,7 +28112,7 @@ function uniqBy(arr, iteratee) {
 
 
 const api = dist_createClient({
-    baseUrl: core.getInput("base_url", { required: true }),
+    baseUrl: core.getInput("base_url") || "https://app.ctrlplane.dev",
     apiKey: core.getInput("api_key", { required: true }),
 });
 
@@ -28149,7 +28149,7 @@ const setOutputsRecursively = (prefix, obj) => {
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
-    const baseUrl = core.getInput("base_url", { required: true });
+    const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
     await api
         .GET("/v1/jobs/{jobId}", {
         params: { path: { jobId } },

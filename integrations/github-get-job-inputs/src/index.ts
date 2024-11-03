@@ -36,7 +36,7 @@ const setOutputsRecursively = (prefix: string, obj: any) => {
 
 async function run() {
   const jobId: string = core.getInput("job_id", { required: true });
-  const baseUrl = core.getInput("base_url", { required: true });
+  const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
 
   await api
     .GET("/v1/jobs/{jobId}", {
