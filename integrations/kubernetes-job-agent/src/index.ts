@@ -191,9 +191,9 @@ const scan = async () => {
   try {
     const agent = new JobAgent(
       {
-        type: "kubernetes-job" as const,
         name: env.CTRLPLANE_AGENT_NAME,
         workspaceId: env.CTRLPLANE_WORKSPACE_ID,
+        type: "kubernetes-job",
       },
       api,
     );
