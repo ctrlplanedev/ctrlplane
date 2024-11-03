@@ -64,12 +64,12 @@ const deployManifest = async (
     logger.error("Error deploying manifest", {
       jobId,
       namespace,
-      error: error instanceof Error ? error.message : String(error),
+      error,
     });
 
     await job.update({
       status: "invalid_job_agent" as const,
-      message: error instanceof Error ? error.message : String(error),
+      message: error.body?.message || error.message,
     });
   }
 };
