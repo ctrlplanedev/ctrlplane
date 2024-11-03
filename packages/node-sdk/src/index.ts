@@ -101,6 +101,14 @@ export class JobAgent {
     );
     return data.jobs.map((job) => new Job(job, this.client)) ?? [];
   }
+
+  async running() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/jobs/running",
+      { params: { path: { agentId: this.agent.id } } },
+    );
+    return data.map((job) => new Job(job, this.client)) ?? [];
+  }
 }
 
 export class Job {

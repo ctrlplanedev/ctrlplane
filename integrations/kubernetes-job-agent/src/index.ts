@@ -4,11 +4,10 @@ import handlebars from "handlebars";
 import yaml from "js-yaml";
 
 import { logger } from "@ctrlplane/logger";
-import { JobAgent } from "@ctrlplane/node-sdk";
 
+import { agent } from "./agent.js";
 import { env } from "./config.js";
 import { getBatchClient, getJobStatus } from "./k8s.js";
-import { api } from "./sdk.js";
 
 const renderManifest = (manifestTemplate: string, variables: object) => {
   try {
@@ -74,7 +73,7 @@ const deployManifest = async (
   }
 };
 
-const spinUpNewJobs = async (agent: JobAgent, agentId: string) => {
+const spinUpNewJobs = async () => {
   try {
     const jobs = await agent.next();
     logger.info(`Found ${jobs.length} job(s) to run.`);
@@ -97,17 +96,16 @@ const spinUpNewJobs = async (agent: JobAgent, agentId: string) => {
     );
   } catch (error: any) {
     logger.error("Error spinning up new jobs", {
-      agentId,
       error: error.message,
     });
     throw error;
   }
 };
 
-const updateExecutionStatus = async (agent: JobAgent, agentId: string) => {
+const updateExecutionStatus = async () => {
   try {
-    const jobs = await agent.next();
-    logger.info(`Found ${jobs.length} running execution(s)`);
+    const jobs = await agent.running();
+    logger.info(`Found ${jobs.length} running job(s)`);
     await Promise.allSettled(
       jobs.map(async (job: Job) => {
         const jobDetails = await job.get();
@@ -137,7 +135,6 @@ const updateExecutionStatus = async (agent: JobAgent, agentId: string) => {
     );
   } catch (error: any) {
     logger.error("Error updating execution statuses", {
-      agentId,
       error: error.message,
     });
   }
@@ -145,19 +142,11 @@ const updateExecutionStatus = async (agent: JobAgent, agentId: string) => {
 
 const scan = async () => {
   try {
-    const agent = new JobAgent(
-      {
-        name: env.CTRLPLANE_AGENT_NAME,
-        workspaceId: env.CTRLPLANE_WORKSPACE_ID,
-        type: "kubernetes-job",
-      },
-      api,
-    );
     const { id } = await agent.get();
 
     logger.info(`Agent ID: ${id}`);
-    await spinUpNewJobs(agent, id);
-    await updateExecutionStatus(agent, id);
+    await spinUpNewJobs();
+    await updateExecutionStatus();
   } catch (error: any) {
     logger.error("Error during scan operation", { error: error.message });
     throw error;
