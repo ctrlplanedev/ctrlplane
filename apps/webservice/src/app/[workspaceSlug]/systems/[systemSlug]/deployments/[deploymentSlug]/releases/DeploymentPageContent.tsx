@@ -121,7 +121,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
-                    <div className="flex items-center pl-2 backdrop-blur-sm">
+                    <div className="flex h-[40px] items-center pl-2 backdrop-blur-sm">
                       Version
                     </div>
                   </TableHead>
@@ -153,12 +153,12 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                   >
                     <TableCell
                       className={cn(
-                        "sticky left-0 z-10 min-w-[500px] pl-4 text-base",
+                        "sticky left-0 z-10 min-w-[500px] p-0 text-base",
                         releaseIdx === releases.data.items.length - 1 &&
                           "border-b",
                       )}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex h-[60px] w-full items-center gap-2 px-4 backdrop-blur-sm">
                         <span className="truncate">{release.name}</span>{" "}
                         <Badge
                           variant="secondary"

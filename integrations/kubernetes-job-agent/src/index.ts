@@ -38,7 +38,6 @@ const deployManifest = async (
         updateJobRequest: {
           status: "invalid_job_agent",
           message: "Job name not found in manifest.",
-        },
       });
       return;
     }
@@ -51,7 +50,6 @@ const deployManifest = async (
         status: "in_progress",
         externalId: `${namespace}/${name}`,
         message: "Job created successfully.",
-      },
     });
     logger.info(`Job created successfully`, {
       jobId,
@@ -84,10 +82,7 @@ const spinUpNewJobs = async (agentId: string) => {
         logger.debug(`Job details:`, { job });
         try {
           const je = await api.getJob({ jobId: job.id });
-          const manifest = renderManifest(
-            (job.jobAgentConfig as any).manifest,
-            je,
-          );
+          const manifest = renderManifest(job.jobAgentConfig.manifest, je);
 
           const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
           await api.acknowledgeJob({ jobId: job.id });

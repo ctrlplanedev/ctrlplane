@@ -22816,7 +22816,7 @@ const {
   kByteParser,
   kReceivedClose
 } = __nccwpck_require__(3025)
-const { fireEvent, failWebsocketConnection } = __nccwpck_require__(6797)
+const { fireEvent, failWebsocketConnection } = __nccwpck_require__(9178)
 const { CloseEvent } = __nccwpck_require__(3507)
 const { makeRequest } = __nccwpck_require__(8542)
 const { fetching } = __nccwpck_require__(1063)
@@ -23558,7 +23558,7 @@ const { Writable } = __nccwpck_require__(2203)
 const diagnosticsChannel = __nccwpck_require__(1637)
 const { parserStates, opcodes, states, emptyBuffer } = __nccwpck_require__(2597)
 const { kReadyState, kSentClose, kResponse, kReceivedClose } = __nccwpck_require__(3025)
-const { isValidStatusCode, failWebsocketConnection, websocketMessageReceived } = __nccwpck_require__(6797)
+const { isValidStatusCode, failWebsocketConnection, websocketMessageReceived } = __nccwpck_require__(9178)
 const { WebsocketFrameSend } = __nccwpck_require__(561)
 
 // This code was influenced by ws released under the MIT license.
@@ -23919,7 +23919,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 6797:
+/***/ 9178:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -24145,7 +24145,7 @@ const {
   kSentClose,
   kByteParser
 } = __nccwpck_require__(3025)
-const { isEstablished, isClosing, isValidSubprotocol, failWebsocketConnection, fireEvent } = __nccwpck_require__(6797)
+const { isEstablished, isClosing, isValidSubprotocol, failWebsocketConnection, fireEvent } = __nccwpck_require__(9178)
 const { establishWebSocketConnection } = __nccwpck_require__(5642)
 const { WebsocketFrameSend } = __nccwpck_require__(561)
 const { ByteParser } = __nccwpck_require__(5071)
@@ -27412,1469 +27412,713 @@ var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ../../node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(7184);
+;// CONCATENATED MODULE: ../../node_modules/openapi-fetch/dist/index.js
+// settings & const
+const PATH_PARAM_RE = /\{[^{}]+\}/g;
+
+/**
+ * Returns a cheap, non-cryptographically-secure random ID
+ * Courtesy of @imranbarbhuiya (https://github.com/imranbarbhuiya)
+ */
+function randomID() {
+  return Math.random().toString(36).slice(2, 11);
+}
+
+/**
+ * Create an openapi-fetch client.
+ * @type {import("./index.js").default}
+ */
+function createClient(clientOptions) {
+  let {
+    baseUrl = "",
+    Request: CustomRequest = globalThis.Request,
+    fetch: baseFetch = globalThis.fetch,
+    querySerializer: globalQuerySerializer,
+    bodySerializer: globalBodySerializer,
+    headers: baseHeaders,
+    ...baseOptions
+  } = { ...clientOptions };
+  baseUrl = removeTrailingSlash(baseUrl);
+  const middlewares = [];
+
+  /**
+   * Per-request fetch (keeps settings created in createClient()
+   * @param {T} url
+   * @param {import('./index.js').FetchOptions<T>} fetchOptions
+   */
+  async function coreFetch(schemaPath, fetchOptions) {
+    const {
+      baseUrl: localBaseUrl,
+      fetch = baseFetch,
+      Request = CustomRequest,
+      headers,
+      params = {},
+      parseAs = "json",
+      querySerializer: requestQuerySerializer,
+      bodySerializer = globalBodySerializer ?? defaultBodySerializer,
+      body,
+      ...init
+    } = fetchOptions || {};
+    if (localBaseUrl) {
+      baseUrl = removeTrailingSlash(localBaseUrl);
+    }
+
+    let querySerializer =
+      typeof globalQuerySerializer === "function"
+        ? globalQuerySerializer
+        : createQuerySerializer(globalQuerySerializer);
+    if (requestQuerySerializer) {
+      querySerializer =
+        typeof requestQuerySerializer === "function"
+          ? requestQuerySerializer
+          : createQuerySerializer({
+              ...(typeof globalQuerySerializer === "object" ? globalQuerySerializer : {}),
+              ...requestQuerySerializer,
+            });
+    }
+
+    const serializedBody = body === undefined ? undefined : bodySerializer(body);
+
+    const defaultHeaders =
+      // with no body, we should not to set Content-Type
+      serializedBody === undefined ||
+      // if serialized body is FormData; browser will correctly set Content-Type & boundary expression
+      serializedBody instanceof FormData
+        ? {}
+        : {
+            "Content-Type": "application/json",
+          };
+
+    const requestInit = {
+      redirect: "follow",
+      ...baseOptions,
+      ...init,
+      body: serializedBody,
+      headers: mergeHeaders(defaultHeaders, baseHeaders, headers, params.header),
+    };
+
+    let id;
+    let options;
+    let request = new CustomRequest(createFinalURL(schemaPath, { baseUrl, params, querySerializer }), requestInit);
+
+    /** Add custom parameters to Request object */
+    for (const key in init) {
+      if (!(key in request)) {
+        request[key] = init[key];
+      }
+    }
+
+    if (middlewares.length) {
+      id = randomID();
+
+      // middleware (request)
+      options = Object.freeze({
+        baseUrl,
+        fetch,
+        parseAs,
+        querySerializer,
+        bodySerializer,
+      });
+      for (const m of middlewares) {
+        if (m && typeof m === "object" && typeof m.onRequest === "function") {
+          const result = await m.onRequest({
+            request,
+            schemaPath,
+            params,
+            options,
+            id,
+          });
+          if (result) {
+            if (!(result instanceof CustomRequest)) {
+              throw new Error("onRequest: must return new Request() when modifying the request");
+            }
+            request = result;
+          }
+        }
+      }
+    }
+
+    // fetch!
+    let response = await fetch(request);
+
+    // middleware (response)
+    // execute in reverse-array order (first priority gets last transform)
+    if (middlewares.length) {
+      for (let i = middlewares.length - 1; i >= 0; i--) {
+        const m = middlewares[i];
+        if (m && typeof m === "object" && typeof m.onResponse === "function") {
+          const result = await m.onResponse({
+            request,
+            response,
+            schemaPath,
+            params,
+            options,
+            id,
+          });
+          if (result) {
+            if (!(result instanceof Response)) {
+              throw new Error("onResponse: must return new Response() when modifying the response");
+            }
+            response = result;
+          }
+        }
+      }
+    }
+
+    // handle empty content
+    if (response.status === 204 || response.headers.get("Content-Length") === "0") {
+      return response.ok ? { data: undefined, response } : { error: undefined, response };
+    }
+
+    // parse response (falling back to .text() when necessary)
+    if (response.ok) {
+      // if "stream", skip parsing entirely
+      if (parseAs === "stream") {
+        return { data: response.body, response };
+      }
+      return { data: await response[parseAs](), response };
+    }
+
+    // handle errors
+    let error = await response.text();
+    try {
+      error = JSON.parse(error); // attempt to parse as JSON
+    } catch {
+      // noop
+    }
+    return { error, response };
+  }
+
+  return {
+    /** Call a GET endpoint */
+    GET(url, init) {
+      return coreFetch(url, { ...init, method: "GET" });
+    },
+    /** Call a PUT endpoint */
+    PUT(url, init) {
+      return coreFetch(url, { ...init, method: "PUT" });
+    },
+    /** Call a POST endpoint */
+    POST(url, init) {
+      return coreFetch(url, { ...init, method: "POST" });
+    },
+    /** Call a DELETE endpoint */
+    DELETE(url, init) {
+      return coreFetch(url, { ...init, method: "DELETE" });
+    },
+    /** Call a OPTIONS endpoint */
+    OPTIONS(url, init) {
+      return coreFetch(url, { ...init, method: "OPTIONS" });
+    },
+    /** Call a HEAD endpoint */
+    HEAD(url, init) {
+      return coreFetch(url, { ...init, method: "HEAD" });
+    },
+    /** Call a PATCH endpoint */
+    PATCH(url, init) {
+      return coreFetch(url, { ...init, method: "PATCH" });
+    },
+    /** Call a TRACE endpoint */
+    TRACE(url, init) {
+      return coreFetch(url, { ...init, method: "TRACE" });
+    },
+    /** Register middleware */
+    use(...middleware) {
+      for (const m of middleware) {
+        if (!m) {
+          continue;
+        }
+        if (typeof m !== "object" || !("onRequest" in m || "onResponse" in m)) {
+          throw new Error("Middleware must be an object with one of `onRequest()` or `onResponse()`");
+        }
+        middlewares.push(m);
+      }
+    },
+    /** Unregister middleware */
+    eject(...middleware) {
+      for (const m of middleware) {
+        const i = middlewares.indexOf(m);
+        if (i !== -1) {
+          middlewares.splice(i, 1);
+        }
+      }
+    },
+  };
+}
+
+class PathCallForwarder {
+  constructor(client, url) {
+    this.client = client;
+    this.url = url;
+  }
+
+  GET(init) {
+    return this.client.GET(this.url, init);
+  }
+  PUT(init) {
+    return this.client.PUT(this.url, init);
+  }
+  POST(init) {
+    return this.client.POST(this.url, init);
+  }
+  DELETE(init) {
+    return this.client.DELETE(this.url, init);
+  }
+  OPTIONS(init) {
+    return this.client.OPTIONS(this.url, init);
+  }
+  HEAD(init) {
+    return this.client.HEAD(this.url, init);
+  }
+  PATCH(init) {
+    return this.client.PATCH(this.url, init);
+  }
+  TRACE(init) {
+    return this.client.TRACE(this.url, init);
+  }
+}
+
+class PathClientProxyHandler {
+  constructor() {
+    this.client = null;
+  }
+
+  // Assume the property is an URL.
+  get(coreClient, url) {
+    const forwarder = new PathCallForwarder(coreClient, url);
+    this.client[url] = forwarder;
+    return forwarder;
+  }
+}
+
+/**
+ * Wrap openapi-fetch client to support a path based API.
+ * @type {import("./index.js").wrapAsPathBasedClient}
+ */
+function wrapAsPathBasedClient(coreClient) {
+  const handler = new PathClientProxyHandler();
+  const proxy = new Proxy(coreClient, handler);
+
+  // Put the proxy on the prototype chain of the actual client.
+  // This means if we do not have a memoized PathCallForwarder,
+  // we fall back to the proxy to synthesize it.
+  // However, the proxy itself is not on the hot-path (if we fetch the same
+  // endpoint multiple times, only the first call will hit the proxy).
+  function Client() {}
+  Client.prototype = proxy;
+
+  const client = new Client();
+
+  // Feed the client back to the proxy handler so it can store the generated
+  // PathCallForwarder.
+  handler.client = client;
+
+  return client;
+}
+
+/**
+ * Convenience method to an openapi-fetch path based client.
+ * Strictly equivalent to `wrapAsPathBasedClient(createClient(...))`.
+ * @type {import("./index.js").createPathBasedClient}
+ */
+function createPathBasedClient(clientOptions) {
+  return wrapAsPathBasedClient(createClient(clientOptions));
+}
+
+// utils
+
+/**
+ * Serialize primitive param values
+ * @type {import("./index.js").serializePrimitiveParam}
+ */
+function serializePrimitiveParam(name, value, options) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  if (typeof value === "object") {
+    throw new Error(
+      "Deeply-nested arrays/objects aren’t supported. Provide your own `querySerializer()` to handle these.",
+    );
+  }
+  return `${name}=${options?.allowReserved === true ? value : encodeURIComponent(value)}`;
+}
+
+/**
+ * Serialize object param (shallow only)
+ * @type {import("./index.js").serializeObjectParam}
+ */
+function serializeObjectParam(name, value, options) {
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+  const values = [];
+  const joiner =
+    {
+      simple: ",",
+      label: ".",
+      matrix: ";",
+    }[options.style] || "&";
+
+  // explode: false
+  if (options.style !== "deepObject" && options.explode === false) {
+    for (const k in value) {
+      values.push(k, options.allowReserved === true ? value[k] : encodeURIComponent(value[k]));
+    }
+    const final = values.join(","); // note: values are always joined by comma in explode: false (but joiner can prefix)
+    switch (options.style) {
+      case "form": {
+        return `${name}=${final}`;
+      }
+      case "label": {
+        return `.${final}`;
+      }
+      case "matrix": {
+        return `;${name}=${final}`;
+      }
+      default: {
+        return final;
+      }
+    }
+  }
+
+  // explode: true
+  for (const k in value) {
+    const finalName = options.style === "deepObject" ? `${name}[${k}]` : k;
+    values.push(serializePrimitiveParam(finalName, value[k], options));
+  }
+  const final = values.join(joiner);
+  return options.style === "label" || options.style === "matrix" ? `${joiner}${final}` : final;
+}
+
+/**
+ * Serialize array param (shallow only)
+ * @type {import("./index.js").serializeArrayParam}
+ */
+function serializeArrayParam(name, value, options) {
+  if (!Array.isArray(value)) {
+    return "";
+  }
+
+  // explode: false
+  if (options.explode === false) {
+    const joiner = { form: ",", spaceDelimited: "%20", pipeDelimited: "|" }[options.style] || ","; // note: for arrays, joiners vary wildly based on style + explode behavior
+    const final = (options.allowReserved === true ? value : value.map((v) => encodeURIComponent(v))).join(joiner);
+    switch (options.style) {
+      case "simple": {
+        return final;
+      }
+      case "label": {
+        return `.${final}`;
+      }
+      case "matrix": {
+        return `;${name}=${final}`;
+      }
+      // case "spaceDelimited":
+      // case "pipeDelimited":
+      default: {
+        return `${name}=${final}`;
+      }
+    }
+  }
+
+  // explode: true
+  const joiner = { simple: ",", label: ".", matrix: ";" }[options.style] || "&";
+  const values = [];
+  for (const v of value) {
+    if (options.style === "simple" || options.style === "label") {
+      values.push(options.allowReserved === true ? v : encodeURIComponent(v));
+    } else {
+      values.push(serializePrimitiveParam(name, v, options));
+    }
+  }
+  return options.style === "label" || options.style === "matrix"
+    ? `${joiner}${values.join(joiner)}`
+    : values.join(joiner);
+}
+
+/**
+ * Serialize query params to string
+ * @type {import("./index.js").createQuerySerializer}
+ */
+function createQuerySerializer(options) {
+  return function querySerializer(queryParams) {
+    const search = [];
+    if (queryParams && typeof queryParams === "object") {
+      for (const name in queryParams) {
+        const value = queryParams[name];
+        if (value === undefined || value === null) {
+          continue;
+        }
+        if (Array.isArray(value)) {
+          if (value.length === 0) {
+            continue;
+          }
+          search.push(
+            serializeArrayParam(name, value, {
+              style: "form",
+              explode: true,
+              ...options?.array,
+              allowReserved: options?.allowReserved || false,
+            }),
+          );
+          continue;
+        }
+        if (typeof value === "object") {
+          search.push(
+            serializeObjectParam(name, value, {
+              style: "deepObject",
+              explode: true,
+              ...options?.object,
+              allowReserved: options?.allowReserved || false,
+            }),
+          );
+          continue;
+        }
+        search.push(serializePrimitiveParam(name, value, options));
+      }
+    }
+    return search.join("&");
+  };
+}
+
+/**
+ * Handle different OpenAPI 3.x serialization styles
+ * @type {import("./index.js").defaultPathSerializer}
+ * @see https://swagger.io/docs/specification/serialization/#path
+ */
+function defaultPathSerializer(pathname, pathParams) {
+  let nextURL = pathname;
+  for (const match of pathname.match(PATH_PARAM_RE) ?? []) {
+    let name = match.substring(1, match.length - 1);
+    let explode = false;
+    let style = "simple";
+    if (name.endsWith("*")) {
+      explode = true;
+      name = name.substring(0, name.length - 1);
+    }
+    if (name.startsWith(".")) {
+      style = "label";
+      name = name.substring(1);
+    } else if (name.startsWith(";")) {
+      style = "matrix";
+      name = name.substring(1);
+    }
+    if (!pathParams || pathParams[name] === undefined || pathParams[name] === null) {
+      continue;
+    }
+    const value = pathParams[name];
+    if (Array.isArray(value)) {
+      nextURL = nextURL.replace(match, serializeArrayParam(name, value, { style, explode }));
+      continue;
+    }
+    if (typeof value === "object") {
+      nextURL = nextURL.replace(match, serializeObjectParam(name, value, { style, explode }));
+      continue;
+    }
+    if (style === "matrix") {
+      nextURL = nextURL.replace(match, `;${serializePrimitiveParam(name, value)}`);
+      continue;
+    }
+    nextURL = nextURL.replace(match, style === "label" ? `.${encodeURIComponent(value)}` : encodeURIComponent(value));
+  }
+  return nextURL;
+}
+
+/**
+ * Serialize body object to string
+ * @type {import("./index.js").defaultBodySerializer}
+ */
+function defaultBodySerializer(body) {
+  if (body instanceof FormData) {
+    return body;
+  }
+  return JSON.stringify(body);
+}
+
+/**
+ * Construct URL string from baseUrl and handle path and query params
+ * @type {import("./index.js").createFinalURL}
+ */
+function createFinalURL(pathname, options) {
+  let finalURL = `${options.baseUrl}${pathname}`;
+  if (options.params?.path) {
+    finalURL = defaultPathSerializer(finalURL, options.params.path);
+  }
+  let search = options.querySerializer(options.params.query ?? {});
+  if (search.startsWith("?")) {
+    search = search.substring(1);
+  }
+  if (search) {
+    finalURL += `?${search}`;
+  }
+  return finalURL;
+}
+
+/**
+ * Merge headers a and b, with b taking priority
+ * @type {import("./index.js").mergeHeaders}
+ */
+function mergeHeaders(...allHeaders) {
+  const finalHeaders = new Headers();
+  for (const h of allHeaders) {
+    if (!h || typeof h !== "object") {
+      continue;
+    }
+    const iterator = h instanceof Headers ? h.entries() : Object.entries(h);
+    for (const [k, v] of iterator) {
+      if (v === null) {
+        finalHeaders.delete(k);
+      } else if (Array.isArray(v)) {
+        for (const v2 of v) {
+          finalHeaders.append(k, v2);
+        }
+      } else if (v !== undefined) {
+        finalHeaders.set(k, v);
+      }
+    }
+  }
+  return finalHeaders;
+}
+
+/**
+ * Remove trailing slash from url
+ * @type {import("./index.js").removeTrailingSlash}
+ */
+function removeTrailingSlash(url) {
+  if (url.endsWith("/")) {
+    return url.substring(0, url.length - 1);
+  }
+  return url;
+}
+
 ;// CONCATENATED MODULE: ../../packages/node-sdk/dist/index.js
-// src/runtime.ts
-var BASE_PATH = "http://localhost".replace(/\/+$/, "");
-var Configuration = class {
-  constructor(configuration = {}) {
-    this.configuration = configuration;
+// src/index.ts
+
+function dist_createClient(options) {
+  return createClient({
+    baseUrl: options.baseUrl ?? "https://app.ctrlplane.com",
+    ...options,
+    fetch: (input) => {
+      const url = new URL(input.url);
+      url.pathname = `/api${url.pathname}`;
+      return fetch(new Request(url.toString(), input));
+    },
+    headers: { "x-api-key": options?.apiKey }
+  });
+}
+var TargetProvider = class {
+  /**
+   * Creates a new TargetProvider instance
+   * @param options - Configuration options
+   * @param options.workspaceId - ID of the workspace
+   * @param options.name - Name of the target provider
+   * @param client - API client instance
+   */
+  constructor(options, client) {
+    this.options = options;
+    this.client = client;
   }
-  set config(configuration) {
-    this.configuration = configuration;
-  }
-  get basePath() {
-    return this.configuration.basePath != null ? this.configuration.basePath : BASE_PATH;
-  }
-  get fetchApi() {
-    return this.configuration.fetchApi;
-  }
-  get middleware() {
-    return this.configuration.middleware || [];
-  }
-  get queryParamsStringify() {
-    return this.configuration.queryParamsStringify || querystring;
-  }
-  get username() {
-    return this.configuration.username;
-  }
-  get password() {
-    return this.configuration.password;
-  }
-  get apiKey() {
-    const apiKey = this.configuration.apiKey;
-    if (apiKey) {
-      return typeof apiKey === "function" ? apiKey : () => apiKey;
+  provider = null;
+  /**
+   * Gets the target provider details, caching the result
+   * @returns The target provider details
+   */
+  async get() {
+    if (this.provider != null) {
+      return this.provider;
     }
-    return void 0;
-  }
-  get accessToken() {
-    const accessToken = this.configuration.accessToken;
-    if (accessToken) {
-      return typeof accessToken === "function" ? accessToken : async () => accessToken;
-    }
-    return void 0;
-  }
-  get headers() {
-    return this.configuration.headers;
-  }
-  get credentials() {
-    return this.configuration.credentials;
-  }
-};
-var DefaultConfig = new Configuration();
-var BaseAPI = class _BaseAPI {
-  constructor(configuration = DefaultConfig) {
-    this.configuration = configuration;
-    this.middleware = configuration.middleware;
-  }
-  static jsonRegex = new RegExp(
-    "^(:?application/json|[^;/ 	]+/[^;/ 	]+[+]json)[ 	]*(:?;.*)?$",
-    "i"
-  );
-  middleware;
-  withMiddleware(...middlewares) {
-    const next = this.clone();
-    next.middleware = next.middleware.concat(...middlewares);
-    return next;
-  }
-  withPreMiddleware(...preMiddlewares) {
-    const middlewares = preMiddlewares.map((pre) => ({ pre }));
-    return this.withMiddleware(...middlewares);
-  }
-  withPostMiddleware(...postMiddlewares) {
-    const middlewares = postMiddlewares.map((post) => ({ post }));
-    return this.withMiddleware(...middlewares);
+    const { data } = await this.client.GET(
+      "/v1/workspaces/{workspaceId}/target-providers/name/{name}",
+      { params: { path: this.options } }
+    );
+    this.provider = data;
+    return this.provider;
   }
   /**
-   * Check if the given MIME is a JSON MIME.
-   * JSON MIME examples:
-   *   application/json
-   *   application/json; charset=UTF8
-   *   APPLICATION/JSON
-   *   application/vnd.company+json
-   * @param mime - MIME (Multipurpose Internet Mail Extensions)
-   * @return True if the given MIME is JSON, false otherwise.
+   * Sets the targets for this provider
+   * @param targets - Array of targets to set
+   * @returns The API response
+   * @throws Error if the scanner is not found
    */
-  isJsonMime(mime) {
-    if (!mime) {
+  async set(targets) {
+    const scanner = await this.get();
+    if (scanner == null) throw new Error("Scanner not found");
+    return this.client.PATCH("/v1/target-providers/{providerId}/set", {
+      params: { path: { providerId: scanner.id } },
+      body: { targets: uniqBy(targets, (t) => t.identifier) }
+    });
+  }
+};
+var JobAgent = class {
+  constructor(options, client) {
+    this.options = options;
+    this.client = client;
+  }
+  agent = null;
+  async get() {
+    if (this.agent != null) {
+      return this.agent;
+    }
+    const { data } = await this.client.PATCH("/v1/job-agents/name", {
+      body: this.options
+    });
+    this.agent = data;
+    return this.agent;
+  }
+  async next() {
+    const { data } = await this.client.GET(
+      "/v1/job-agents/{agentId}/queue/next",
+      { params: { path: { agentId: this.agent.id } } }
+    );
+    return data.jobs.map((job) => new Job(job, this.client)) ?? [];
+  }
+};
+var Job = class {
+  constructor(job, client) {
+    this.job = job;
+    this.client = client;
+  }
+  acknowledge() {
+    return this.client.POST("/v1/jobs/{jobId}/acknowledge", {
+      params: { path: { jobId: this.job.id } }
+    });
+  }
+  get() {
+    return this.client.GET("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } }
+    }).then(({ data }) => data);
+  }
+  update(update) {
+    return this.client.PATCH("/v1/jobs/{jobId}", {
+      params: { path: { jobId: this.job.id } },
+      body: update
+    });
+  }
+};
+function uniqBy(arr, iteratee) {
+  const seen = /* @__PURE__ */ new Map();
+  return arr.filter((item) => {
+    const key = iteratee(item);
+    if (seen.has(key)) {
       return false;
     }
-    return _BaseAPI.jsonRegex.test(mime);
-  }
-  async request(context, initOverrides) {
-    const { url, init } = await this.createFetchParams(context, initOverrides);
-    const response = await this.fetchApi(url, init);
-    if (response && response.status >= 200 && response.status < 300) {
-      return response;
-    }
-    throw new ResponseError(response, "Response returned an error code");
-  }
-  async createFetchParams(context, initOverrides) {
-    let url = this.configuration.basePath + context.path;
-    if (context.query !== void 0 && Object.keys(context.query).length !== 0) {
-      url += "?" + this.configuration.queryParamsStringify(context.query);
-    }
-    const headers = Object.assign(
-      {},
-      this.configuration.headers,
-      context.headers
-    );
-    Object.keys(headers).forEach(
-      (key) => headers[key] === void 0 ? delete headers[key] : {}
-    );
-    const initOverrideFn = typeof initOverrides === "function" ? initOverrides : async () => initOverrides;
-    const initParams = {
-      method: context.method,
-      headers,
-      body: context.body,
-      credentials: this.configuration.credentials
-    };
-    const overriddenInit = {
-      ...initParams,
-      ...await initOverrideFn({
-        init: initParams,
-        context
-      })
-    };
-    let body;
-    if (isFormData(overriddenInit.body) || overriddenInit.body instanceof URLSearchParams || isBlob(overriddenInit.body)) {
-      body = overriddenInit.body;
-    } else if (this.isJsonMime(headers["Content-Type"])) {
-      body = JSON.stringify(overriddenInit.body);
-    } else {
-      body = overriddenInit.body;
-    }
-    const init = {
-      ...overriddenInit,
-      body
-    };
-    return { url, init };
-  }
-  fetchApi = async (url, init) => {
-    let fetchParams = { url, init };
-    for (const middleware of this.middleware) {
-      if (middleware.pre) {
-        fetchParams = await middleware.pre({
-          fetch: this.fetchApi,
-          ...fetchParams
-        }) || fetchParams;
-      }
-    }
-    let response = void 0;
-    try {
-      response = await (this.configuration.fetchApi || fetch)(
-        fetchParams.url,
-        fetchParams.init
-      );
-    } catch (e) {
-      for (const middleware of this.middleware) {
-        if (middleware.onError) {
-          response = await middleware.onError({
-            fetch: this.fetchApi,
-            url: fetchParams.url,
-            init: fetchParams.init,
-            error: e,
-            response: response ? response.clone() : void 0
-          }) || response;
-        }
-      }
-      if (response === void 0) {
-        if (e instanceof Error) {
-          throw new FetchError(
-            e,
-            "The request failed and the interceptors did not return an alternative response"
-          );
-        } else {
-          throw e;
-        }
-      }
-    }
-    for (const middleware of this.middleware) {
-      if (middleware.post) {
-        response = await middleware.post({
-          fetch: this.fetchApi,
-          url: fetchParams.url,
-          init: fetchParams.init,
-          response: response.clone()
-        }) || response;
-      }
-    }
-    return response;
-  };
-  /**
-   * Create a shallow clone of `this` by constructing a new instance
-   * and then shallow cloning data members.
-   */
-  clone() {
-    const constructor = this.constructor;
-    const next = new constructor(this.configuration);
-    next.middleware = this.middleware.slice();
-    return next;
-  }
-};
-function isBlob(value) {
-  return typeof Blob !== "undefined" && value instanceof Blob;
+    seen.set(key, true);
+    return true;
+  });
 }
-function isFormData(value) {
-  return typeof FormData !== "undefined" && value instanceof FormData;
-}
-var ResponseError = class extends Error {
-  constructor(response, msg) {
-    super(msg);
-    this.response = response;
-  }
-  name = "ResponseError";
-};
-var FetchError = class extends Error {
-  constructor(cause, msg) {
-    super(msg);
-    this.cause = cause;
-  }
-  name = "FetchError";
-};
-var RequiredError = class extends Error {
-  constructor(field, msg) {
-    super(msg);
-    this.field = field;
-  }
-  name = "RequiredError";
-};
-var COLLECTION_FORMATS = {
-  csv: ",",
-  ssv: " ",
-  tsv: "	",
-  pipes: "|"
-};
-function querystring(params, prefix = "") {
-  return Object.keys(params).map((key) => querystringSingleKey(key, params[key], prefix)).filter((part) => part.length > 0).join("&");
-}
-function querystringSingleKey(key, value, keyPrefix = "") {
-  const fullKey = keyPrefix + (keyPrefix.length ? `[${key}]` : key);
-  if (value instanceof Array) {
-    const multiValue = value.map((singleValue) => encodeURIComponent(String(singleValue))).join(`&${encodeURIComponent(fullKey)}=`);
-    return `${encodeURIComponent(fullKey)}=${multiValue}`;
-  }
-  if (value instanceof Set) {
-    const valueAsArray = Array.from(value);
-    return querystringSingleKey(key, valueAsArray, keyPrefix);
-  }
-  if (value instanceof Date) {
-    return `${encodeURIComponent(fullKey)}=${encodeURIComponent(value.toISOString())}`;
-  }
-  if (value instanceof Object) {
-    return querystring(value, fullKey);
-  }
-  return `${encodeURIComponent(fullKey)}=${encodeURIComponent(String(value))}`;
-}
-function mapValues(data, fn) {
-  return Object.keys(data).reduce(
-    (acc, key) => ({ ...acc, [key]: fn(data[key]) }),
-    {}
-  );
-}
-function canConsumeForm(consumes) {
-  for (const consume of consumes) {
-    if ("multipart/form-data" === consume.contentType) {
-      return true;
-    }
-  }
-  return false;
-}
-var JSONApiResponse = class {
-  constructor(raw, transformer = (jsonValue) => jsonValue) {
-    this.raw = raw;
-    this.transformer = transformer;
-  }
-  async value() {
-    return this.transformer(await this.raw.json());
-  }
-};
-var VoidApiResponse = class {
-  constructor(raw) {
-    this.raw = raw;
-  }
-  async value() {
-    return void 0;
-  }
-};
-var BlobApiResponse = class {
-  constructor(raw) {
-    this.raw = raw;
-  }
-  async value() {
-    return await this.raw.blob();
-  }
-};
-var TextApiResponse = class {
-  constructor(raw) {
-    this.raw = raw;
-  }
-  async value() {
-    return await this.raw.text();
-  }
-};
-
-// src/models/AcknowledgeJob200Response.ts
-function instanceOfAcknowledgeJob200Response(value) {
-  if (!("success" in value) || value["success"] === void 0) return false;
-  return true;
-}
-function AcknowledgeJob200ResponseFromJSON(json) {
-  return AcknowledgeJob200ResponseFromJSONTyped(json, false);
-}
-function AcknowledgeJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    success: json["success"]
-  };
-}
-function AcknowledgeJob200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    success: value["success"]
-  };
-}
-
-// src/models/CreateRelease200Response.ts
-function instanceOfCreateRelease200Response(value) {
-  return true;
-}
-function CreateRelease200ResponseFromJSON(json) {
-  return CreateRelease200ResponseFromJSONTyped(json, false);
-}
-function CreateRelease200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"] == null ? void 0 : json["id"],
-    version: json["version"] == null ? void 0 : json["version"],
-    metadata: json["metadata"] == null ? void 0 : json["metadata"]
-  };
-}
-function CreateRelease200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    version: value["version"],
-    metadata: value["metadata"]
-  };
-}
-
-// src/models/CreateReleaseRequest.ts
-function instanceOfCreateReleaseRequest(value) {
-  if (!("version" in value) || value["version"] === void 0) return false;
-  if (!("deploymentId" in value) || value["deploymentId"] === void 0)
-    return false;
-  return true;
-}
-function CreateReleaseRequestFromJSON(json) {
-  return CreateReleaseRequestFromJSONTyped(json, false);
-}
-function CreateReleaseRequestFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    version: json["version"],
-    deploymentId: json["deploymentId"],
-    metadata: json["metadata"] == null ? void 0 : json["metadata"]
-  };
-}
-function CreateReleaseRequestToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    version: value["version"],
-    deploymentId: value["deploymentId"],
-    metadata: value["metadata"]
-  };
-}
-
-// src/models/GetAgentRunningJob200ResponseInner.ts
-function instanceOfGetAgentRunningJob200ResponseInner(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("status" in value) || value["status"] === void 0) return false;
-  if (!("message" in value) || value["message"] === void 0) return false;
-  if (!("jobAgentId" in value) || value["jobAgentId"] === void 0)
-    return false;
-  if (!("jobAgentConfig" in value) || value["jobAgentConfig"] === void 0)
-    return false;
-  if (!("externalId" in value) || value["externalId"] === void 0)
-    return false;
-  if (!("config" in value) || value["config"] === void 0) return false;
-  return true;
-}
-function GetAgentRunningJob200ResponseInnerFromJSON(json) {
-  return GetAgentRunningJob200ResponseInnerFromJSONTyped(json, false);
-}
-function GetAgentRunningJob200ResponseInnerFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    status: json["status"],
-    message: json["message"],
-    jobAgentId: json["jobAgentId"],
-    jobAgentConfig: json["jobAgentConfig"],
-    externalId: json["externalId"],
-    release: json["release"] == null ? void 0 : json["release"],
-    deployment: json["deployment"] == null ? void 0 : json["deployment"],
-    config: json["config"],
-    runbook: json["runbook"] == null ? void 0 : json["runbook"],
-    target: json["target"] == null ? void 0 : json["target"],
-    environment: json["environment"] == null ? void 0 : json["environment"]
-  };
-}
-function GetAgentRunningJob200ResponseInnerToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    status: value["status"],
-    message: value["message"],
-    jobAgentId: value["jobAgentId"],
-    jobAgentConfig: value["jobAgentConfig"],
-    externalId: value["externalId"],
-    release: value["release"],
-    deployment: value["deployment"],
-    config: value["config"],
-    runbook: value["runbook"],
-    target: value["target"],
-    environment: value["environment"]
-  };
-}
-
-// src/models/GetJob200ResponseApprovalApprover.ts
-function instanceOfGetJob200ResponseApprovalApprover(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseApprovalApproverFromJSON(json) {
-  return GetJob200ResponseApprovalApproverFromJSONTyped(json, false);
-}
-function GetJob200ResponseApprovalApproverFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"]
-  };
-}
-function GetJob200ResponseApprovalApproverToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"]
-  };
-}
-
-// src/models/GetJob200ResponseApproval.ts
-var GetJob200ResponseApprovalStatusEnum = {
-  Pending: "pending",
-  Approved: "approved",
-  Rejected: "rejected"
-};
-function instanceOfGetJob200ResponseApproval(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("status" in value) || value["status"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseApprovalFromJSON(json) {
-  return GetJob200ResponseApprovalFromJSONTyped(json, false);
-}
-function GetJob200ResponseApprovalFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    status: json["status"],
-    approver: json["approver"] == null ? void 0 : GetJob200ResponseApprovalApproverFromJSON(json["approver"])
-  };
-}
-function GetJob200ResponseApprovalToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    status: value["status"],
-    approver: GetJob200ResponseApprovalApproverToJSON(value["approver"])
-  };
-}
-
-// src/models/GetJob200ResponseDeployment.ts
-function instanceOfGetJob200ResponseDeployment(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("slug" in value) || value["slug"] === void 0) return false;
-  if (!("systemId" in value) || value["systemId"] === void 0) return false;
-  if (!("jobAgentId" in value) || value["jobAgentId"] === void 0)
-    return false;
-  return true;
-}
-function GetJob200ResponseDeploymentFromJSON(json) {
-  return GetJob200ResponseDeploymentFromJSONTyped(json, false);
-}
-function GetJob200ResponseDeploymentFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"] == null ? void 0 : json["name"],
-    slug: json["slug"],
-    systemId: json["systemId"],
-    jobAgentId: json["jobAgentId"]
-  };
-}
-function GetJob200ResponseDeploymentToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"],
-    slug: value["slug"],
-    systemId: value["systemId"],
-    jobAgentId: value["jobAgentId"]
-  };
-}
-
-// src/models/GetJob200ResponseEnvironment.ts
-function instanceOfGetJob200ResponseEnvironment(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("systemId" in value) || value["systemId"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseEnvironmentFromJSON(json) {
-  return GetJob200ResponseEnvironmentFromJSONTyped(json, false);
-}
-function GetJob200ResponseEnvironmentFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"],
-    systemId: json["systemId"]
-  };
-}
-function GetJob200ResponseEnvironmentToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"],
-    systemId: value["systemId"]
-  };
-}
-
-// src/models/GetJob200ResponseRelease.ts
-function instanceOfGetJob200ResponseRelease(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("version" in value) || value["version"] === void 0) return false;
-  if (!("metadata" in value) || value["metadata"] === void 0) return false;
-  if (!("config" in value) || value["config"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseReleaseFromJSON(json) {
-  return GetJob200ResponseReleaseFromJSONTyped(json, false);
-}
-function GetJob200ResponseReleaseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    version: json["version"],
-    metadata: json["metadata"],
-    config: json["config"]
-  };
-}
-function GetJob200ResponseReleaseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    version: value["version"],
-    metadata: value["metadata"],
-    config: value["config"]
-  };
-}
-
-// src/models/GetJob200ResponseRunbook.ts
-function instanceOfGetJob200ResponseRunbook(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("systemId" in value) || value["systemId"] === void 0) return false;
-  if (!("jobAgentId" in value) || value["jobAgentId"] === void 0)
-    return false;
-  return true;
-}
-function GetJob200ResponseRunbookFromJSON(json) {
-  return GetJob200ResponseRunbookFromJSONTyped(json, false);
-}
-function GetJob200ResponseRunbookFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"],
-    systemId: json["systemId"],
-    jobAgentId: json["jobAgentId"]
-  };
-}
-function GetJob200ResponseRunbookToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"],
-    systemId: value["systemId"],
-    jobAgentId: value["jobAgentId"]
-  };
-}
-
-// src/models/GetJob200ResponseTarget.ts
-function instanceOfGetJob200ResponseTarget(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("version" in value) || value["version"] === void 0) return false;
-  if (!("kind" in value) || value["kind"] === void 0) return false;
-  if (!("identifier" in value) || value["identifier"] === void 0)
-    return false;
-  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
-    return false;
-  if (!("config" in value) || value["config"] === void 0) return false;
-  if (!("metadata" in value) || value["metadata"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseTargetFromJSON(json) {
-  return GetJob200ResponseTargetFromJSONTyped(json, false);
-}
-function GetJob200ResponseTargetFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"],
-    version: json["version"],
-    kind: json["kind"],
-    identifier: json["identifier"],
-    workspaceId: json["workspaceId"],
-    config: json["config"],
-    metadata: json["metadata"]
-  };
-}
-function GetJob200ResponseTargetToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"],
-    version: value["version"],
-    kind: value["kind"],
-    identifier: value["identifier"],
-    workspaceId: value["workspaceId"],
-    config: value["config"],
-    metadata: value["metadata"]
-  };
-}
-
-// src/models/GetJob200Response.ts
-var GetJob200ResponseStatusEnum = {
-  Completed: "completed",
-  Cancelled: "cancelled",
-  Skipped: "skipped",
-  InProgress: "in_progress",
-  ActionRequired: "action_required",
-  Pending: "pending",
-  Failure: "failure",
-  InvalidJobAgent: "invalid_job_agent",
-  InvalidIntegration: "invalid_integration",
-  ExternalRunNotFound: "external_run_not_found"
-};
-function instanceOfGetJob200Response(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("status" in value) || value["status"] === void 0) return false;
-  if (!("variables" in value) || value["variables"] === void 0) return false;
-  return true;
-}
-function GetJob200ResponseFromJSON(json) {
-  return GetJob200ResponseFromJSONTyped(json, false);
-}
-function GetJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    status: json["status"],
-    release: json["release"] == null ? void 0 : GetJob200ResponseReleaseFromJSON(json["release"]),
-    deployment: json["deployment"] == null ? void 0 : GetJob200ResponseDeploymentFromJSON(json["deployment"]),
-    runbook: json["runbook"] == null ? void 0 : GetJob200ResponseRunbookFromJSON(json["runbook"]),
-    target: json["target"] == null ? void 0 : GetJob200ResponseTargetFromJSON(json["target"]),
-    environment: json["environment"] == null ? void 0 : GetJob200ResponseEnvironmentFromJSON(json["environment"]),
-    variables: json["variables"],
-    approval: json["approval"] == null ? void 0 : GetJob200ResponseApprovalFromJSON(json["approval"])
-  };
-}
-function GetJob200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    status: value["status"],
-    release: GetJob200ResponseReleaseToJSON(value["release"]),
-    deployment: GetJob200ResponseDeploymentToJSON(value["deployment"]),
-    runbook: GetJob200ResponseRunbookToJSON(value["runbook"]),
-    target: GetJob200ResponseTargetToJSON(value["target"]),
-    environment: GetJob200ResponseEnvironmentToJSON(value["environment"]),
-    variables: value["variables"],
-    approval: GetJob200ResponseApprovalToJSON(value["approval"])
-  };
-}
-
-// src/models/GetNextJobs200ResponseJobsInner.ts
-function instanceOfGetNextJobs200ResponseJobsInner(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("status" in value) || value["status"] === void 0) return false;
-  if (!("jobAgentId" in value) || value["jobAgentId"] === void 0)
-    return false;
-  if (!("jobAgentConfig" in value) || value["jobAgentConfig"] === void 0)
-    return false;
-  if (!("message" in value) || value["message"] === void 0) return false;
-  if (!("releaseJobTriggerId" in value) || value["releaseJobTriggerId"] === void 0)
-    return false;
-  return true;
-}
-function GetNextJobs200ResponseJobsInnerFromJSON(json) {
-  return GetNextJobs200ResponseJobsInnerFromJSONTyped(json, false);
-}
-function GetNextJobs200ResponseJobsInnerFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    status: json["status"],
-    jobAgentId: json["jobAgentId"],
-    jobAgentConfig: json["jobAgentConfig"],
-    message: json["message"],
-    releaseJobTriggerId: json["releaseJobTriggerId"]
-  };
-}
-function GetNextJobs200ResponseJobsInnerToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    status: value["status"],
-    jobAgentId: value["jobAgentId"],
-    jobAgentConfig: value["jobAgentConfig"],
-    message: value["message"],
-    releaseJobTriggerId: value["releaseJobTriggerId"]
-  };
-}
-
-// src/models/GetNextJobs200Response.ts
-function instanceOfGetNextJobs200Response(value) {
-  return true;
-}
-function GetNextJobs200ResponseFromJSON(json) {
-  return GetNextJobs200ResponseFromJSONTyped(json, false);
-}
-function GetNextJobs200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    jobs: json["jobs"] == null ? void 0 : json["jobs"].map(
-      GetNextJobs200ResponseJobsInnerFromJSON
-    )
-  };
-}
-function GetNextJobs200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    jobs: value["jobs"] == null ? void 0 : value["jobs"].map(
-      GetNextJobs200ResponseJobsInnerToJSON
-    )
-  };
-}
-
-// src/models/SetTargetProvidersTargetsRequestTargetsInner.ts
-function instanceOfSetTargetProvidersTargetsRequestTargetsInner(value) {
-  if (!("identifier" in value) || value["identifier"] === void 0)
-    return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("version" in value) || value["version"] === void 0) return false;
-  if (!("kind" in value) || value["kind"] === void 0) return false;
-  if (!("config" in value) || value["config"] === void 0) return false;
-  if (!("metadata" in value) || value["metadata"] === void 0) return false;
-  return true;
-}
-function SetTargetProvidersTargetsRequestTargetsInnerFromJSON(json) {
-  return SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped(json, false);
-}
-function SetTargetProvidersTargetsRequestTargetsInnerFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    identifier: json["identifier"],
-    name: json["name"],
-    version: json["version"],
-    kind: json["kind"],
-    config: json["config"],
-    metadata: json["metadata"]
-  };
-}
-function SetTargetProvidersTargetsRequestTargetsInnerToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    identifier: value["identifier"],
-    name: value["name"],
-    version: value["version"],
-    kind: value["kind"],
-    config: value["config"],
-    metadata: value["metadata"]
-  };
-}
-
-// src/models/SetTargetProvidersTargetsRequest.ts
-function instanceOfSetTargetProvidersTargetsRequest(value) {
-  if (!("targets" in value) || value["targets"] === void 0) return false;
-  return true;
-}
-function SetTargetProvidersTargetsRequestFromJSON(json) {
-  return SetTargetProvidersTargetsRequestFromJSONTyped(json, false);
-}
-function SetTargetProvidersTargetsRequestFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    targets: json["targets"].map(
-      SetTargetProvidersTargetsRequestTargetsInnerFromJSON
-    )
-  };
-}
-function SetTargetProvidersTargetsRequestToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    targets: value["targets"].map(
-      SetTargetProvidersTargetsRequestTargetsInnerToJSON
-    )
-  };
-}
-
-// src/models/UpdateJob200Response.ts
-function instanceOfUpdateJob200Response(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  return true;
-}
-function UpdateJob200ResponseFromJSON(json) {
-  return UpdateJob200ResponseFromJSONTyped(json, false);
-}
-function UpdateJob200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"]
-  };
-}
-function UpdateJob200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"]
-  };
-}
-
-// src/models/UpdateJobAgent200Response.ts
-function instanceOfUpdateJobAgent200Response(value) {
-  if (!("id" in value) || value["id"] === void 0) return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
-    return false;
-  return true;
-}
-function UpdateJobAgent200ResponseFromJSON(json) {
-  return UpdateJobAgent200ResponseFromJSONTyped(json, false);
-}
-function UpdateJobAgent200ResponseFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    id: json["id"],
-    name: json["name"],
-    workspaceId: json["workspaceId"]
-  };
-}
-function UpdateJobAgent200ResponseToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    id: value["id"],
-    name: value["name"],
-    workspaceId: value["workspaceId"]
-  };
-}
-
-// src/models/UpdateJobAgentRequest.ts
-function instanceOfUpdateJobAgentRequest(value) {
-  if (!("workspaceId" in value) || value["workspaceId"] === void 0)
-    return false;
-  if (!("name" in value) || value["name"] === void 0) return false;
-  if (!("type" in value) || value["type"] === void 0) return false;
-  return true;
-}
-function UpdateJobAgentRequestFromJSON(json) {
-  return UpdateJobAgentRequestFromJSONTyped(json, false);
-}
-function UpdateJobAgentRequestFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    workspaceId: json["workspaceId"],
-    name: json["name"],
-    type: json["type"]
-  };
-}
-function UpdateJobAgentRequestToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    workspaceId: value["workspaceId"],
-    name: value["name"],
-    type: value["type"]
-  };
-}
-
-// src/models/UpdateJobRequest.ts
-function instanceOfUpdateJobRequest(value) {
-  return true;
-}
-function UpdateJobRequestFromJSON(json) {
-  return UpdateJobRequestFromJSONTyped(json, false);
-}
-function UpdateJobRequestFromJSONTyped(json, ignoreDiscriminator) {
-  if (json == null) {
-    return json;
-  }
-  return {
-    status: json["status"] == null ? void 0 : json["status"],
-    message: json["message"] == null ? void 0 : json["message"],
-    externalId: json["externalId"] == null ? void 0 : json["externalId"]
-  };
-}
-function UpdateJobRequestToJSON(value) {
-  if (value == null) {
-    return value;
-  }
-  return {
-    status: value["status"],
-    message: value["message"],
-    externalId: value["externalId"]
-  };
-}
-
-// src/apis/DefaultApi.ts
-var DefaultApi = class extends BaseAPI {
-  /**
-   * Acknowledge a job
-   */
-  async acknowledgeJobRaw(requestParameters, initOverrides) {
-    if (requestParameters["jobId"] == null) {
-      throw new RequiredError(
-        "jobId",
-        'Required parameter "jobId" was null or undefined when calling acknowledgeJob().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/jobs/{jobId}/acknowledge`.replace(
-          `{${"jobId"}}`,
-          encodeURIComponent(String(requestParameters["jobId"]))
-        ),
-        method: "POST",
-        headers: headerParameters,
-        query: queryParameters
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => AcknowledgeJob200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Acknowledge a job
-   */
-  async acknowledgeJob(requestParameters, initOverrides) {
-    const response = await this.acknowledgeJobRaw(
-      requestParameters,
-      initOverrides
-    );
-    return await response.value();
-  }
-  /**
-   * Creates a release
-   */
-  async createReleaseRaw(requestParameters, initOverrides) {
-    if (requestParameters["createReleaseRequest"] == null) {
-      throw new RequiredError(
-        "createReleaseRequest",
-        'Required parameter "createReleaseRequest" was null or undefined when calling createRelease().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    headerParameters["Content-Type"] = "application/json";
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/releases`,
-        method: "POST",
-        headers: headerParameters,
-        query: queryParameters,
-        body: CreateReleaseRequestToJSON(
-          requestParameters["createReleaseRequest"]
-        )
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => CreateRelease200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Creates a release
-   */
-  async createRelease(requestParameters, initOverrides) {
-    const response = await this.createReleaseRaw(
-      requestParameters,
-      initOverrides
-    );
-    return await response.value();
-  }
-  /**
-   * Get a agents running jobs
-   */
-  async getAgentRunningJobRaw(requestParameters, initOverrides) {
-    if (requestParameters["agentId"] == null) {
-      throw new RequiredError(
-        "agentId",
-        'Required parameter "agentId" was null or undefined when calling getAgentRunningJob().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/job-agents/{agentId}/jobs/running`.replace(
-          `{${"agentId"}}`,
-          encodeURIComponent(String(requestParameters["agentId"]))
-        ),
-        method: "GET",
-        headers: headerParameters,
-        query: queryParameters
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => jsonValue.map(GetAgentRunningJob200ResponseInnerFromJSON)
-    );
-  }
-  /**
-   * Get a agents running jobs
-   */
-  async getAgentRunningJob(requestParameters, initOverrides) {
-    const response = await this.getAgentRunningJobRaw(
-      requestParameters,
-      initOverrides
-    );
-    return await response.value();
-  }
-  /**
-   * Get a job
-   */
-  async getJobRaw(requestParameters, initOverrides) {
-    if (requestParameters["jobId"] == null) {
-      throw new RequiredError(
-        "jobId",
-        'Required parameter "jobId" was null or undefined when calling getJob().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/jobs/{jobId}`.replace(
-          `{${"jobId"}}`,
-          encodeURIComponent(String(requestParameters["jobId"]))
-        ),
-        method: "GET",
-        headers: headerParameters,
-        query: queryParameters
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => GetJob200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Get a job
-   */
-  async getJob(requestParameters, initOverrides) {
-    const response = await this.getJobRaw(requestParameters, initOverrides);
-    return await response.value();
-  }
-  /**
-   * Get the next jobs
-   */
-  async getNextJobsRaw(requestParameters, initOverrides) {
-    if (requestParameters["agentId"] == null) {
-      throw new RequiredError(
-        "agentId",
-        'Required parameter "agentId" was null or undefined when calling getNextJobs().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/job-agents/{agentId}/queue/next`.replace(
-          `{${"agentId"}}`,
-          encodeURIComponent(String(requestParameters["agentId"]))
-        ),
-        method: "GET",
-        headers: headerParameters,
-        query: queryParameters
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => GetNextJobs200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Get the next jobs
-   */
-  async getNextJobs(requestParameters, initOverrides) {
-    const response = await this.getNextJobsRaw(
-      requestParameters,
-      initOverrides
-    );
-    return await response.value();
-  }
-  /**
-   * Sets the target for a provider.
-   */
-  async setTargetProvidersTargetsRaw(requestParameters, initOverrides) {
-    if (requestParameters["providerId"] == null) {
-      throw new RequiredError(
-        "providerId",
-        'Required parameter "providerId" was null or undefined when calling setTargetProvidersTargets().'
-      );
-    }
-    if (requestParameters["setTargetProvidersTargetsRequest"] == null) {
-      throw new RequiredError(
-        "setTargetProvidersTargetsRequest",
-        'Required parameter "setTargetProvidersTargetsRequest" was null or undefined when calling setTargetProvidersTargets().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    headerParameters["Content-Type"] = "application/json";
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/target-providers/{providerId}/set`.replace(
-          `{${"providerId"}}`,
-          encodeURIComponent(String(requestParameters["providerId"]))
-        ),
-        method: "PATCH",
-        headers: headerParameters,
-        query: queryParameters,
-        body: SetTargetProvidersTargetsRequestToJSON(
-          requestParameters["setTargetProvidersTargetsRequest"]
-        )
-      },
-      initOverrides
-    );
-    return new VoidApiResponse(response);
-  }
-  /**
-   * Sets the target for a provider.
-   */
-  async setTargetProvidersTargets(requestParameters, initOverrides) {
-    await this.setTargetProvidersTargetsRaw(requestParameters, initOverrides);
-  }
-  /**
-   * Create resources from a config file
-   */
-  async updateConfigRaw(requestParameters, initOverrides) {
-    if (requestParameters["workspace"] == null) {
-      throw new RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling updateConfig().'
-      );
-    }
-    if (requestParameters["body"] == null) {
-      throw new RequiredError(
-        "body",
-        'Required parameter "body" was null or undefined when calling updateConfig().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    headerParameters["Content-Type"] = "application/yaml";
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/workspaces/{workspace}/config`.replace(
-          `{${"workspace"}}`,
-          encodeURIComponent(String(requestParameters["workspace"]))
-        ),
-        method: "POST",
-        headers: headerParameters,
-        query: queryParameters,
-        body: requestParameters["body"]
-      },
-      initOverrides
-    );
-    return new VoidApiResponse(response);
-  }
-  /**
-   * Create resources from a config file
-   */
-  async updateConfig(requestParameters, initOverrides) {
-    await this.updateConfigRaw(requestParameters, initOverrides);
-  }
-  /**
-   * Update a job
-   */
-  async updateJobRaw(requestParameters, initOverrides) {
-    if (requestParameters["jobId"] == null) {
-      throw new RequiredError(
-        "jobId",
-        'Required parameter "jobId" was null or undefined when calling updateJob().'
-      );
-    }
-    if (requestParameters["updateJobRequest"] == null) {
-      throw new RequiredError(
-        "updateJobRequest",
-        'Required parameter "updateJobRequest" was null or undefined when calling updateJob().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    headerParameters["Content-Type"] = "application/json";
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/jobs/{jobId}`.replace(
-          `{${"jobId"}}`,
-          encodeURIComponent(String(requestParameters["jobId"]))
-        ),
-        method: "PATCH",
-        headers: headerParameters,
-        query: queryParameters,
-        body: UpdateJobRequestToJSON(requestParameters["updateJobRequest"])
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => UpdateJob200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Update a job
-   */
-  async updateJob(requestParameters, initOverrides) {
-    const response = await this.updateJobRaw(requestParameters, initOverrides);
-    return await response.value();
-  }
-  /**
-   * Upserts the agent
-   */
-  async updateJobAgentRaw(requestParameters, initOverrides) {
-    if (requestParameters["workspace"] == null) {
-      throw new RequiredError(
-        "workspace",
-        'Required parameter "workspace" was null or undefined when calling updateJobAgent().'
-      );
-    }
-    if (requestParameters["updateJobAgentRequest"] == null) {
-      throw new RequiredError(
-        "updateJobAgentRequest",
-        'Required parameter "updateJobAgentRequest" was null or undefined when calling updateJobAgent().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    headerParameters["Content-Type"] = "application/json";
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/job-agents/name`.replace(
-          `{${"workspace"}}`,
-          encodeURIComponent(String(requestParameters["workspace"]))
-        ),
-        method: "PATCH",
-        headers: headerParameters,
-        query: queryParameters,
-        body: UpdateJobAgentRequestToJSON(
-          requestParameters["updateJobAgentRequest"]
-        )
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => UpdateJobAgent200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Upserts the agent
-   */
-  async updateJobAgent(requestParameters, initOverrides) {
-    const response = await this.updateJobAgentRaw(
-      requestParameters,
-      initOverrides
-    );
-    return await response.value();
-  }
-  /**
-   * Upserts a target provider.
-   */
-  async upsertTargetProviderRaw(requestParameters, initOverrides) {
-    if (requestParameters["workspaceId"] == null) {
-      throw new RequiredError(
-        "workspaceId",
-        'Required parameter "workspaceId" was null or undefined when calling upsertTargetProvider().'
-      );
-    }
-    if (requestParameters["name"] == null) {
-      throw new RequiredError(
-        "name",
-        'Required parameter "name" was null or undefined when calling upsertTargetProvider().'
-      );
-    }
-    const queryParameters = {};
-    const headerParameters = {};
-    if (this.configuration && this.configuration.apiKey) {
-      headerParameters["x-api-key"] = await this.configuration.apiKey("x-api-key");
-    }
-    const response = await this.request(
-      {
-        path: `/v1/workspaces/{workspaceId}/target-providers/name/{name}`.replace(
-          `{${"workspaceId"}}`,
-          encodeURIComponent(String(requestParameters["workspaceId"]))
-        ).replace(
-          `{${"name"}}`,
-          encodeURIComponent(String(requestParameters["name"]))
-        ),
-        method: "GET",
-        headers: headerParameters,
-        query: queryParameters
-      },
-      initOverrides
-    );
-    return new JSONApiResponse(
-      response,
-      (jsonValue) => UpdateJobAgent200ResponseFromJSON(jsonValue)
-    );
-  }
-  /**
-   * Upserts a target provider.
-   */
-  async upsertTargetProvider(requestParameters, initOverrides) {
-    const response = await this.upsertTargetProviderRaw(
-      requestParameters,
-      initOverrides
-    );
-    return await response.value();
-  }
-};
 
 //# sourceMappingURL=index.js.map
+;// CONCATENATED MODULE: ./src/sdk.ts
+
+
+const api = dist_createClient({
+    baseUrl: core.getInput("base_url") || "https://app.ctrlplane.dev",
+    apiKey: core.getInput("api_key", { required: true }),
+});
+
 ;// CONCATENATED MODULE: ./src/index.ts
 
 
-const baseUrl = core.getInput("base_url", { required: true });
-const config = new Configuration({
-    basePath: baseUrl + "/api",
-    apiKey: core.getInput("api_key", { required: true }),
-});
-const api = new DefaultApi(config);
 const requiredOutputs = core.getInput("required_outputs", { required: false })
     .split("\n")
     .filter((output) => output.trim() !== "")
@@ -28905,11 +28149,17 @@ const setOutputsRecursively = (prefix, obj) => {
 };
 async function run() {
     const jobId = core.getInput("job_id", { required: true });
+    const baseUrl = core.getInput("base_url") || "https://app.ctrlplane.dev";
     await api
-        .getJob({ jobId })
-        .then((response) => {
-        core.info(JSON.stringify(response, null, 2));
-        const { variables, target, release, environment, runbook, deployment, approval, } = response;
+        .GET("/v1/jobs/{jobId}", {
+        params: { path: { jobId } },
+    })
+        .then(({ data }) => {
+        if (data == undefined) {
+            core.error(`Invalid Job data`);
+            return;
+        }
+        const { variables, target, release, environment, runbook, deployment, approval, } = data;
         setOutputAndLog("base_url", baseUrl);
         setOutputAndLog("target", target);
         setOutputAndLog("target_id", target?.id);

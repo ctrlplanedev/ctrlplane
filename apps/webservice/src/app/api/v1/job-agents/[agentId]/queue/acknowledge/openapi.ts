@@ -9,6 +9,9 @@ export const openapi: Swagger.SwaggerV3 = {
   paths: {
     "/v1/job-agents/{agentId}/queue/acknowledge": {
       post: {
+        summary: "Acknowledge a job for an agent",
+        operationId: "acknowledgeAgentJob",
+        description: "Marks a job as acknowledged by the agent",
         parameters: [
           {
             name: "agentId",
@@ -17,6 +20,7 @@ export const openapi: Swagger.SwaggerV3 = {
             schema: {
               type: "string",
             },
+            description: "The ID of the job agent",
           },
         ],
         responses: {

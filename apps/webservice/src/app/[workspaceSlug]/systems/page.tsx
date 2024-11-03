@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import _ from "lodash";
 
@@ -9,6 +10,10 @@ import { SystemGettingStarted } from "./SystemGettingStarted";
 import { SystemBreadcrumbNavbar } from "./SystemsBreadcrumb";
 import { SystemsList } from "./SystemsList";
 import { TopNav } from "./TopNav";
+
+export const metadata: Metadata = {
+  title: "Systems | Ctrlplane",
+};
 
 export default async function SystemsPage({
   params,

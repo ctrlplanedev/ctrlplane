@@ -18,7 +18,7 @@
     "format:fix": "prettier --write . --ignore-path ../../.gitignore",
     "lint": "eslint",
     "typecheck": "tsc",
-    "generate": "openapi-generator-cli generate && pnpm format:fix"
+    "generate": "pnpm dlx openapi-typescript ../../openapi.v1.json -o src/schema.ts"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:*",
@@ -34,5 +34,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "prettier": "@ctrlplane/prettier-config"
+  "prettier": "@ctrlplane/prettier-config",
+  "dependencies": {
+    "openapi-fetch": "^0.13.0"
+  }
 }

@@ -1,6 +1,5 @@
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
-import type { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 import {
   bigint,
@@ -14,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import {
   isValidTargetCondition,
@@ -51,7 +51,23 @@ export const createEnvironment = createInsertSchema(environment, {
   targetFilter: targetCondition
     .optional()
     .refine((filter) => filter == null || isValidTargetCondition(filter)),
-}).omit({ id: true });
+})
+  .omit({ id: true })
+  .extend({
+    releaseChannels: z
+      .array(
+        z.object({
+          channelId: z.string().uuid(),
+          deploymentId: z.string().uuid(),
+        }),
+      )
+      .optional()
+      .refine((channels) => {
+        if (channels == null) return true;
+        const deploymentIds = new Set(channels.map((c) => c.deploymentId));
+        return deploymentIds.size === channels.length;
+      }),
+  });
 
 export const updateEnvironment = createEnvironment.partial();
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
@@ -63,6 +79,10 @@ export const environmentRelations = relations(environment, ({ many, one }) => ({
   }),
   releaseChannels: many(environmentReleaseChannel),
   environments: many(variableSetEnvironment),
+  system: one(system, {
+    fields: [environment.systemId],
+    references: [system.id],
+  }),
 }));
 
 export const approvalRequirement = pgEnum(

@@ -50,6 +50,10 @@ export const openapi: Swagger.SwaggerV3 = {
                           format: "date-time",
                           nullable: true,
                         },
+                        targetFilter: {
+                          type: "object",
+                          additionalProperties: true,
+                        },
                       },
                       required: ["systemId"],
                     },

@@ -8,13 +8,7 @@ import { api } from "~/trpc/server";
 import { FlowDiagram } from "./FlowDiagram";
 import { TargetReleaseTable } from "./TargetReleaseTable";
 
-export const metadata: Metadata = {
-  title: "Release",
-};
-
-export default async function ReleasePage({
-  params,
-}: {
+type PageProps = {
   params: {
     release: { id: string; version: string };
     workspaceSlug: string;
@@ -22,7 +16,23 @@ export default async function ReleasePage({
     deploymentSlug: string;
     versionId: string;
   };
-}) {
+};
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const deployment = await api.deployment.bySlug(params);
+  if (deployment == null) return notFound();
+
+  const release = await api.release.byId(params.versionId);
+  if (release == null) return notFound();
+
+  return {
+    title: `${release.version} | ${deployment.name} | ${deployment.system.name} | ${deployment.system.workspace.name}`,
+  };
+}
+
+export default async function ReleasePage({ params }: PageProps) {
   const release = await api.release.byId(params.versionId);
   const deployment = await api.deployment.bySlug(params);
   if (release == null || deployment == null) notFound();

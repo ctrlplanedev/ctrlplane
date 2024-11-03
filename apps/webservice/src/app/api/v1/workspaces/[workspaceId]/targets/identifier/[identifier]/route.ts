@@ -55,3 +55,44 @@ export const GET = request()
       });
     },
   );
+
+export const DELETE = request()
+  .use(authn)
+  .use(
+    authz(async ({ can, extra }) => {
+      const { workspaceId, identifier } = extra.params;
+
+      const target = await db.query.target.findFirst({
+        where: and(
+          eq(schema.target.workspaceId, workspaceId),
+          eq(schema.target.identifier, identifier),
+        ),
+      });
+
+      if (target == null) return false;
+      return can
+        .perform(Permission.TargetDelete)
+        .on({ type: "target", id: target.id });
+    }),
+  )
+  .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
+    async (_, { params }) => {
+      const target = await db.query.target.findFirst({
+        where: and(
+          eq(schema.target.workspaceId, params.workspaceId),
+          eq(schema.target.identifier, params.identifier),
+        ),
+      });
+
+      if (target == null) {
+        return NextResponse.json(
+          { error: `Target not found for identifier: ${params.identifier}` },
+          { status: 404 },
+        );
+      }
+
+      await db.delete(schema.target).where(eq(schema.target.id, target.id));
+
+      return NextResponse.json({ success: true });
+    },
+  );
