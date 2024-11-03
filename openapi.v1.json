@@ -204,6 +204,10 @@
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
+                        },
+                        "targetFilter": {
+                          "type": "object",
+                          "additionalProperties": true
                         }
                       },
                       "required": [
@@ -818,6 +822,19 @@
                     "updatedAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "jobAgentConfig": {
+                      "type": "object",
+                      "properties": {
+                        "manifest": {
+                          "type": "string",
+                          "description": "The manifest template for the job"
+                        }
+                      },
+                      "required": [
+                        "manifest"
+                      ],
+                      "description": "Configuration for the Job Agent"
                     }
                   },
                   "required": [
@@ -825,7 +842,8 @@
                     "status",
                     "createdAt",
                     "updatedAt",
-                    "variables"
+                    "variables",
+                    "jobAgentConfig"
                   ]
                 }
               }
@@ -1225,86 +1243,6 @@
         }
       }
     },
-    "/v1/job-agents/{agentId}/jobs/running": {
-      "get": {
-        "summary": "Get a agents running jobs",
-        "operationId": "getAgentRunningJob",
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The execution ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "jobAgentId": {
-                        "type": "string"
-                      },
-                      "jobAgentConfig": {
-                        "type": "object"
-                      },
-                      "externalId": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "release": {
-                        "type": "object"
-                      },
-                      "deployment": {
-                        "type": "object"
-                      },
-                      "config": {
-                        "type": "object"
-                      },
-                      "runbook": {
-                        "type": "object"
-                      },
-                      "target": {
-                        "type": "object"
-                      },
-                      "environment": {
-                        "type": "object"
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "status",
-                      "message",
-                      "jobAgentId",
-                      "jobAgentConfig",
-                      "externalId",
-                      "config"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/workspaces/{workspaceId}/targets/identifier/{identifier}": {
       "get": {
         "summary": "Get a target by identifier",
@@ -1488,6 +1426,86 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/v1/job-agents/{agentId}/jobs/running": {
+      "get": {
+        "summary": "Get a agents running jobs",
+        "operationId": "getAgentRunningJob",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The execution ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "jobAgentId": {
+                        "type": "string"
+                      },
+                      "jobAgentConfig": {
+                        "type": "object"
+                      },
+                      "externalId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "release": {
+                        "type": "object"
+                      },
+                      "deployment": {
+                        "type": "object"
+                      },
+                      "config": {
+                        "type": "object"
+                      },
+                      "runbook": {
+                        "type": "object"
+                      },
+                      "target": {
+                        "type": "object"
+                      },
+                      "environment": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status",
+                      "message",
+                      "jobAgentId",
+                      "jobAgentConfig",
+                      "externalId",
+                      "config"
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }

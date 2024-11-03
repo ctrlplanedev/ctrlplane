@@ -1,3 +1,4 @@
+import type { Job } from "@ctrlplane/node-sdk";
 import { CronJob } from "cron";
 import handlebars from "handlebars";
 import yaml from "js-yaml";
@@ -21,6 +22,7 @@ const renderManifest = (manifestTemplate: string, variables: object) => {
 };
 
 const deployManifest = async (
+  job: Job,
   jobId: string,
   namespace: string,
   manifest: any,
@@ -28,36 +30,31 @@ const deployManifest = async (
   try {
     const name = manifest?.metadata?.name;
     logger.info(`Deploying manifest: ${namespace}/${name}`);
+
     if (name == null) {
       logger.error("Job name not found in manifest", {
         jobId,
         namespace,
         manifest,
       });
-      await api.PATCH("/v1/jobs/{jobId}", {
-        params: {
-          path: { jobId },
-        },
-        body: {
-          status: "invalid_job_agent",
-          message: "Job name not found in manifest.",
-        },
+      await job.update({
+        externalId: "",
+        status: "invalid_job_agent",
+        message: "Job name not found in manifest.",
       });
       return;
     }
 
     logger.info(`Creating job - ${namespace}/${name}`);
+
     await getBatchClient().createNamespacedJob(namespace, manifest);
-    await api.PATCH("/v1/jobs/{jobId}", {
-      params: {
-        path: { jobId },
-      },
-      body: {
-        status: "in_progress",
-        externalId: `${namespace}/${name}`,
-        message: "Job created successfully.",
-      },
+
+    await job.update({
+      status: "in_progress",
+      externalId: `${namespace}/${name}`,
+      message: "Job created successfully.",
     });
+
     logger.info(`Job created successfully`, {
       jobId,
       namespace,
@@ -67,94 +64,58 @@ const deployManifest = async (
     logger.error("Error deploying manifest", {
       jobId,
       namespace,
-      error,
+      error: error instanceof Error ? error.message : String(error),
     });
-    await api.PATCH("/v1/jobs/{jobId}", {
-      params: {
-        path: { jobId },
-      },
-      body: {
-        status: "invalid_job_agent",
-        message: error.body?.message || error.message,
-      },
+
+    await job.update({
+      status: "invalid_job_agent" as const,
+      message: error instanceof Error ? error.message : String(error),
     });
   }
 };
 
-const spinUpNewJobs = async (agentId: string) => {
+const spinUpNewJobs = async (agent: JobAgent, agentId: string) => {
   try {
-    const response = await api.GET("/v1/job-agents/{agentId}/queue/next", {
-      params: {
-        path: { agentId },
-      },
-    });
-    if (response.data == undefined) return;
-    const { jobs = [] } = response.data;
-
+    const jobs = await agent.next();
     logger.info(`Found ${jobs.length} job(s) to run.`);
+
     await Promise.allSettled(
-      jobs.map(async (job) => {
-        logger.info(`Running job ${job.id}`);
-        logger.debug(`Job details:`, { job });
-        try {
-          const je = await api.GET("/v1/jobs/{jobId}", {
-            params: {
-              path: { jobId: job.id },
-            },
-          });
-          if (je.data == null)
-            throw new Error(`Failed to fetch job details for job ${job.id}`);
+      jobs.map(async (job: Job) => {
+        const jobDetails = await job.get();
+        logger.info(`Running job ${jobDetails.id}`);
+        logger.debug(`Job details:`, { job: jobDetails });
 
-          if (
-            typeof job.jobAgentConfig !== "object" ||
-            !("manifest" in job.jobAgentConfig)
-          )
-            throw new Error("Job manifest is required");
+        const manifest = renderManifest(
+          jobDetails.jobAgentConfig.manifest,
+          jobDetails,
+        );
+        const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
 
-          const manifest = renderManifest(job.jobAgentConfig.manifest, je.data);
-
-          const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
-          await api.POST("/v1/jobs/{jobId}/acknowledge", {
-            params: {
-              path: { jobId: job.id },
-            },
-          });
-          await deployManifest(job.id, namespace, manifest);
-        } catch (error: any) {
-          logger.error(`Error processing job ${job.id}`, {
-            error: error.message,
-            stack: error.stack,
-          });
-          throw error;
-        }
+        await job.acknowledge();
+        await deployManifest(job, jobDetails.id, namespace, manifest);
       }),
     );
   } catch (error: any) {
     logger.error("Error spinning up new jobs", {
-      agentId,
+      agentId: agentId,
       error: error.message,
     });
     throw error;
   }
 };
 
-const updateExecutionStatus = async (agentId: string) => {
+const updateExecutionStatus = async (agent: JobAgent, agentId: string) => {
   try {
-    const response = await api.GET("/v1/job-agents/{agentId}/jobs/running", {
-      params: {
-        path: { agentId },
-      },
-    });
-    if (response.data == undefined) return;
-    const jobs = response.data;
+    const jobs = await agent.next();
     logger.info(`Found ${jobs.length} running execution(s)`);
     await Promise.allSettled(
-      jobs.map(async (job) => {
-        const [namespace, name] = job.externalId?.split("/") ?? [];
+      jobs.map(async (job: Job) => {
+        const jobDetails = await job.get();
+        const [namespace, name] = jobDetails.externalId?.split("/") ?? [];
         if (namespace == null || name == null) {
           logger.error("Invalid external run ID", {
-            jobId: job.id,
-            externalId: job.externalId,
+            jobId: jobDetails.id,
+            externalId: jobDetails.externalId,
           });
           return;
         }
@@ -162,12 +123,7 @@ const updateExecutionStatus = async (agentId: string) => {
         logger.debug(`Checking status of ${namespace}/${name}`);
         try {
           const { status, message } = await getJobStatus(namespace, name);
-          await api.PATCH(`/v1/jobs/{jobId}`, {
-            params: {
-              path: { jobId: job.id },
-            },
-            body: { status, message },
-          });
+          await job.update({ status, message });
           logger.info(`Updated status for ${namespace}/${name}`, {
             status,
             message,
@@ -200,8 +156,8 @@ const scan = async () => {
     const { id } = await agent.get();
 
     logger.info(`Agent ID: ${id}`);
-    await spinUpNewJobs(id);
-    await updateExecutionStatus(id);
+    await spinUpNewJobs(agent, id);
+    await updateExecutionStatus(agent, id);
   } catch (error: any) {
     logger.error("Error during scan operation", { error: error.message });
     throw error;

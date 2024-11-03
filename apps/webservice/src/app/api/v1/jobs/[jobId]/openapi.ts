@@ -205,6 +205,17 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "string",
                       format: "date-time",
                     },
+                    jobAgentConfig: {
+                      type: "object",
+                      properties: {
+                        manifest: {
+                          type: "string",
+                          description: "The manifest template for the job",
+                        },
+                      },
+                      required: ["manifest"],
+                      description: "Configuration for the Job Agent",
+                    },
                   },
                   required: [
                     "id",
@@ -212,6 +223,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     "createdAt",
                     "updatedAt",
                     "variables",
+                    "jobAgentConfig",
                   ],
                 },
               },

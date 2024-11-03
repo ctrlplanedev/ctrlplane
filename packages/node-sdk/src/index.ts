@@ -103,7 +103,7 @@ export class JobAgent {
   }
 }
 
-class Job {
+export class Job {
   constructor(
     private job: { id: string },
     private client: ReturnType<typeof createClient>,
