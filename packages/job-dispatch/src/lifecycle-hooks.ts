@@ -20,27 +20,20 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
     .select()
     .from(SCHEMA.target)
     .where(SCHEMA.targetMatchesMetadata(db, env.targetFilter));
-
   if (targets.length === 0) return;
 
-  const system = await db
-    .select()
-    .from(SCHEMA.system)
-    .leftJoin(
-      SCHEMA.environment,
-      eq(SCHEMA.environment.systemId, SCHEMA.system.id),
-    )
-    .where(
-      and(
-        eq(SCHEMA.system.id, env.systemId),
-        isNotNull(SCHEMA.environment.targetFilter),
-        ne(SCHEMA.environment.id, env.id),
-      ),
-    )
-    .then((rows) => ({
-      ...rows[0]!,
-      environments: rows.map((r) => r.environment).filter(isPresent),
-    }));
+  const system = await db.query.system.findFirst({
+    where: eq(SCHEMA.system.id, env.systemId),
+    with: {
+      environments: {
+        where: and(
+          isNotNull(SCHEMA.environment.targetFilter),
+          ne(SCHEMA.environment.id, env.id),
+        ),
+      },
+    },
+  });
+  if (system == null) return;
 
   const deploymentLifecycleHooks = await db
     .select()
@@ -49,9 +42,8 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
       SCHEMA.deployment,
       eq(SCHEMA.deploymentLifecycleHook.deploymentId, SCHEMA.deployment.id),
     )
-    .where(eq(SCHEMA.deployment.systemId, system.system.id))
+    .where(eq(SCHEMA.deployment.systemId, system.id))
     .then((rows) => rows.map((r) => r.deployment_lifecycle_hook));
-
   if (deploymentLifecycleHooks.length === 0) return;
 
   const envFilters = system.environments
@@ -80,10 +72,6 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
             ),
           )
       : targets;
-
-  console.log("removedFromSystemTargets", removedFromSystemTargets);
-  console.log("deploymentLifecycleHooks", deploymentLifecycleHooks);
-
   if (removedFromSystemTargets.length === 0) return;
 
   const handleLifecycleHooksForTargets = removedFromSystemTargets.flatMap((t) =>
@@ -92,7 +80,7 @@ export const handleTargetsFromEnvironmentToBeDeleted = async (
         targetId: t.id,
         deploymentId: dlh.deploymentId,
         environmentId: env.id,
-        systemId: system.system.id,
+        systemId: system.id,
       };
 
       return dispatchRunbook(db, dlh.runbookId, values);

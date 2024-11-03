@@ -1,12 +1,14 @@
 import type { Job } from "@ctrlplane/db/schema";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, or, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   environment,
   githubOrganization,
   job,
   releaseJobTrigger,
+  runbook,
+  runbookJobTrigger,
   system,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -37,16 +39,21 @@ export const dispatchGithubJob = async (je: Job) => {
     .from(githubOrganization)
     .innerJoin(workspace, eq(githubOrganization.workspaceId, workspace.id))
     .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(environment, eq(environment.systemId, system.id))
-    .innerJoin(
+    .leftJoin(environment, eq(environment.systemId, system.id))
+    .leftJoin(
       releaseJobTrigger,
       eq(releaseJobTrigger.environmentId, environment.id),
     )
+    .leftJoin(runbook, eq(runbook.systemId, system.id))
+    .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.runbookId, runbook.id))
     .where(
       and(
         eq(githubOrganization.installationId, parsed.data.installationId),
         eq(githubOrganization.organizationName, parsed.data.owner),
-        eq(releaseJobTrigger.jobId, je.id),
+        or(
+          eq(releaseJobTrigger.jobId, je.id),
+          eq(runbookJobTrigger.jobId, je.id),
+        ),
       ),
     )
     .then(takeFirstOrNull);
