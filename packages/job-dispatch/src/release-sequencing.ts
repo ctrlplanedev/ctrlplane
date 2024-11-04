@@ -1,6 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { inArray, sql } from "@ctrlplane/db";
+import { inArray, isNull, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -40,7 +40,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
     inner join ${schema.release} on ${schema.releaseJobTrigger.releaseId} = ${schema.release.id}
     inner join ${schema.deployment} on ${schema.release.deploymentId} = ${schema.deployment.id}
     inner join ${schema.environment} on ${schema.releaseJobTrigger.environmentId} = ${schema.environment.id}
-    inner join ${schema.environmentPolicy} on ${schema.environment.policyId} = ${schema.environmentPolicy.id}
+    left join ${schema.environmentPolicy} on ${schema.environment.policyId} = ${schema.environmentPolicy.id}
     inner join (${triggersSubquery}) as triggers on 
       ${schema.deployment.id} = triggers.cancelDeploymentId
       and ${schema.releaseJobTrigger.environmentId} = triggers.cancelEnvironmentId
@@ -49,7 +49,10 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
       schema.releaseJobTrigger.id,
       releaseJobTriggers.map((t) => t.id),
     )}
-    and ${schema.environmentPolicy.releaseSequencing} = ${schema.releaseSequencingType.enumValues.at(1)}
+    and (
+      ${schema.environmentPolicy.releaseSequencing} = ${schema.releaseSequencingType.enumValues.at(1)} 
+      or ${isNull(schema.environmentPolicy.releaseSequencing)}
+    )
   `;
 
   const jobsToCancel = await db
