@@ -85,7 +85,9 @@ export const CreateLifecycleHookDialog: React.FC<
               )}
             />
             <DialogFooter>
-              <Button type="submit">Create</Button>
+              <Button type="submit" disabled={createLifecycleHook.isPending}>
+                Create
+              </Button>
             </DialogFooter>
           </form>
         </Form>

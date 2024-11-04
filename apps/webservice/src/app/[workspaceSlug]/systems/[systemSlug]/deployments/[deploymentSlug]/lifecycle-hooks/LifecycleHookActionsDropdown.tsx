@@ -67,6 +67,7 @@ const DeleteLifecycleHookDialog: React.FC<DeleteLifecycleHookDialogProps> = ({
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
             onClick={onDelete}
+            disabled={deleteLifecycleHook.isPending}
           >
             Delete
           </AlertDialogAction>

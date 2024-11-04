@@ -12,7 +12,7 @@ export default async function LifecycleHooksPage({
   const runbooks = await api.runbook.bySystemId(system.id);
   const deployment = await api.deployment.bySlug(params);
   if (!deployment) notFound();
-  const lifecycleHooks = await api.deployment.lifecycleHook.list.byDeploymentId(
+  const lifecycleHooks = await api.deployment.lifecycleHook.byDeploymentId(
     deployment.id,
   );
 

@@ -7,32 +7,30 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const deploymentLifecycleHookRouter = createTRPCRouter({
-  list: createTRPCRouter({
-    byDeploymentId: protectedProcedure
-      .input(z.string().uuid())
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.DeploymentGet)
-            .on({ type: "deployment", id: input }),
-      })
-      .query(async ({ ctx, input }) =>
-        ctx.db
-          .select()
-          .from(SCHEMA.deploymentLifecycleHook)
-          .innerJoin(
-            SCHEMA.runbook,
-            eq(SCHEMA.deploymentLifecycleHook.runbookId, SCHEMA.runbook.id),
-          )
-          .where(eq(SCHEMA.deploymentLifecycleHook.deploymentId, input))
-          .then((rows) =>
-            rows.map((r) => ({
-              ...r.deployment_lifecycle_hook,
-              runbook: r.runbook,
-            })),
-          ),
-      ),
-  }),
+  byDeploymentId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: input }),
+    })
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(SCHEMA.deploymentLifecycleHook)
+        .innerJoin(
+          SCHEMA.runbook,
+          eq(SCHEMA.deploymentLifecycleHook.runbookId, SCHEMA.runbook.id),
+        )
+        .where(eq(SCHEMA.deploymentLifecycleHook.deploymentId, input))
+        .then((rows) =>
+          rows.map((r) => ({
+            ...r.deployment_lifecycle_hook,
+            runbook: r.runbook,
+          })),
+        ),
+    ),
 
   create: protectedProcedure
     .input(SCHEMA.createDeploymentLifecycleHook)
