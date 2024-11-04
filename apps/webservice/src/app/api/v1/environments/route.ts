@@ -45,7 +45,7 @@ export const POST = request()
     ),
   )
   .handle<{ user: User; can: PermissionChecker; body: z.infer<typeof body> }>(
-    async (ctx) =>
+    (ctx) =>
       ctx.db
         .insert(schema.environment)
         .values({
@@ -69,10 +69,22 @@ export const POST = request()
           await createJobsForNewEnvironment(ctx.db, environment);
           return NextResponse.json({ environment });
         })
-        .catch(() =>
-          NextResponse.json(
+        .catch((error) => {
+          if (
+            error.code === "23505" &&
+            error.constraint === "environment_system_id_name_key"
+          ) {
+            return NextResponse.json(
+              {
+                error:
+                  "An environment with this name already exists in this system.",
+              },
+              { status: 409 },
+            );
+          }
+          return NextResponse.json(
             { error: "Failed to create environment" },
             { status: 500 },
-          ),
-        ),
+          );
+        }),
   );
