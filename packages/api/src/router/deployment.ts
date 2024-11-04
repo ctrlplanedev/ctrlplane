@@ -35,6 +35,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { deploymentLifecycleHookRouter } from "./deployment-lifecycle-hook";
 import { deploymentVariableRouter } from "./deployment-variable";
 
 const latestActiveReleaseSubQuery = (db: Tx) =>
@@ -180,6 +181,7 @@ const releaseChannelRouter = createTRPCRouter({
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   releaseChannel: releaseChannelRouter,
+  lifecycleHook: deploymentLifecycleHookRouter,
   distributionById: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

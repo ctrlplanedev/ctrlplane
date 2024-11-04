@@ -36,7 +36,7 @@ export const runbookRouter = createTRPCRouter({
           .on({ type: "system", id: input }),
     })
     .input(z.string().uuid())
-    .mutation(({ ctx, input }) =>
+    .query(({ ctx, input }) =>
       ctx.db
         .select()
         .from(SCHEMA.runbook)

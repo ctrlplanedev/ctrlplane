@@ -4,15 +4,11 @@ import { api } from "~/trpc/server";
 import { ReleaseChannelsTable } from "./ReleaseChannelsTable";
 
 export default async function ReleaseChannelsPage({
-  params: { workspaceSlug, systemSlug, deploymentSlug },
+  params,
 }: {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
 }) {
-  const deployment = await api.deployment.bySlug({
-    workspaceSlug,
-    systemSlug,
-    deploymentSlug,
-  });
+  const deployment = await api.deployment.bySlug(params);
   if (!deployment) notFound();
 
   const releaseChannels =

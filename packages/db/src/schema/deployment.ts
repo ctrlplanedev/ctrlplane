@@ -89,3 +89,11 @@ export const deploymentLifecycleHook = pgTable("deployment_lifecycle_hook", {
       onDelete: "cascade",
     }),
 });
+
+export const createDeploymentLifecycleHook = createInsertSchema(
+  deploymentLifecycleHook,
+).omit({ id: true });
+
+export type DeploymentLifecycleHook = InferSelectModel<
+  typeof deploymentLifecycleHook
+>;

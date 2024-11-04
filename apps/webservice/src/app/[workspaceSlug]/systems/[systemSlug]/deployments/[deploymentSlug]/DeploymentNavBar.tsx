@@ -53,17 +53,21 @@ export const DeploymentNavBar: React.FC<DeploymentNavBarProps> = ({
   const releasesUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/releases`;
   const variablesUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/variables`;
   const releaseChannelsUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/release-channels`;
+  const lifecycleHooksUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/lifecycle-hooks`;
   const overviewUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`;
 
-  const isReleasesActive = pathname.includes("/releases");
-  const isVariablesActive = pathname.includes("/variables");
-  const isJobsActive = pathname.includes("/jobs");
-  const isReleaseChannelsActive = pathname.includes("/release-channels");
+  const isReleasesActive = pathname.endsWith("/releases");
+  const isVariablesActive = pathname.endsWith("/variables");
+  const isJobsActive = pathname.endsWith("/jobs");
+  const isReleaseChannelsActive = pathname.endsWith("/release-channels");
+  const isLifecycleHooksActive = pathname.endsWith("/lifecycle-hooks");
+
   const isSettingsActive =
     !isReleasesActive &&
     !isVariablesActive &&
     !isJobsActive &&
-    !isReleaseChannelsActive;
+    !isReleaseChannelsActive &&
+    !isLifecycleHooksActive;
 
   return (
     <div className="flex items-center justify-between border-b p-2">
@@ -113,6 +117,16 @@ export const DeploymentNavBar: React.FC<DeploymentNavBarProps> = ({
                   active={isJobsActive}
                 >
                   Jobs
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link href={lifecycleHooksUrl} legacyBehavior passHref>
+                <NavigationMenuLink
+                  className="group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/50 hover:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
+                  active={isLifecycleHooksActive}
+                >
+                  Lifecycle Hooks
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
