@@ -90,7 +90,9 @@ export const releaseDependency = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    releaseFilter: jsonb("release_filter").notNull().$type<ReleaseCondition>(),
+    releaseFilter: jsonb("release_filter")
+      .$type<ReleaseCondition | null>()
+      .default(sql`NULL`),
   },
   (t) => ({ unq: uniqueIndex().on(t.releaseId, t.deploymentId) }),
 );
@@ -287,7 +289,7 @@ const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
 
 export function releaseMatchesCondition(
   tx: Tx,
-  condition?: ReleaseCondition,
+  condition?: ReleaseCondition | null,
 ): SQL<unknown> | undefined {
   return condition == null || Object.keys(condition).length === 0
     ? undefined

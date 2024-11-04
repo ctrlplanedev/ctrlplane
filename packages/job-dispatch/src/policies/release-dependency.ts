@@ -83,7 +83,7 @@ export const isPassingReleaseDependencyPolicy = async (
       const sourceIds = relationships.map((r) => r.sourceId);
       const targetIds = relationships.map((r) => r.targetId);
 
-      const allIds = _.uniq([...sourceIds, ...targetIds]);
+      const allIds = _.uniq([...sourceIds, ...targetIds, trigger.targetId]);
 
       const passingDepsPromises = deps.map(async (dep) => {
         const latestJobSubquery = db
