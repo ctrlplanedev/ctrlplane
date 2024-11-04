@@ -215,7 +215,7 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "object",
                       properties: {
                         manifest: {
-                          type: "string",
+                          type: "object",
                           description: "The manifest template for the job",
                         },
                       },

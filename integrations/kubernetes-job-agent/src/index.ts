@@ -9,7 +9,7 @@ import { agent } from "./agent.js";
 import { env } from "./config.js";
 import { getBatchClient, getJobStatus } from "./k8s.js";
 
-const renderManifest = (manifestTemplate: string, variables: object) => {
+const renderManifest = (manifestTemplate: object, variables: object) => {
   try {
     const template = handlebars.compile(manifestTemplate);
     const manifestYaml = template(variables);

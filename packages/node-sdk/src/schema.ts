@@ -194,24 +194,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/targets/identifier/{identifier}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get a target by identifier */
-    get: operations["getTargetByIdentifier"];
-    put?: never;
-    post?: never;
-    /** Delete a target by identifier */
-    delete: operations["deleteTargetByIdentifier"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/job-agents/{agentId}/queue/acknowledge": {
     parameters: {
       query?: never;
@@ -227,6 +209,24 @@ export interface paths {
      */
     post: operations["acknowledgeAgentJob"];
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/targets/identifier/{identifier}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a target by identifier */
+    get: operations["getTargetByIdentifier"];
+    put?: never;
+    post?: never;
+    /** Delete a target by identifier */
+    delete: operations["deleteTargetByIdentifier"];
     options?: never;
     head?: never;
     patch?: never;
@@ -674,7 +674,7 @@ export interface operations {
             /** @description Configuration for the Job Agent */
             jobAgentConfig: {
               /** @description The manifest template for the job */
-              manifest: string;
+              manifest: Record<string, never>;
             };
           };
         };
@@ -980,6 +980,53 @@ export interface operations {
       };
     };
   };
+  acknowledgeAgentJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the job agent */
+        agentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully acknowledged job */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            job?: Record<string, never>;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   getTargetByIdentifier: {
     parameters: {
       query?: never;
@@ -1114,53 +1161,6 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
-      };
-    };
-  };
-  acknowledgeAgentJob: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The ID of the job agent */
-        agentId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successfully acknowledged job */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            job?: Record<string, never>;
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error?: string;
-          };
-        };
-      };
-      /** @description Workspace not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error?: string;
-          };
-        };
       };
     };
   };
