@@ -26,24 +26,30 @@ import { release, releaseChannel } from "./release.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
 
-export const environment = pgTable("environment", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  systemId: uuid("system_id")
-    .notNull()
-    .references(() => system.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  description: text("description").default(""),
-  policyId: uuid("policy_id").references(() => environmentPolicy.id, {
-    onDelete: "set null",
-  }),
-  targetFilter: jsonb("target_filter")
-    .$type<TargetCondition | null>()
-    .default(sql`NULL`),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).default(sql`NULL`),
-});
+export const environment = pgTable(
+  "environment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    systemId: uuid("system_id")
+      .notNull()
+      .references(() => system.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").default(""),
+    policyId: uuid("policy_id").references(() => environmentPolicy.id, {
+      onDelete: "set null",
+    }),
+    targetFilter: jsonb("target_filter")
+      .$type<TargetCondition | null>()
+      .default(sql`NULL`),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).default(
+      sql`NULL`,
+    ),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.systemId, t.name) }),
+);
 
 export type Environment = InferSelectModel<typeof environment>;
 

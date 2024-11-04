@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "environment_system_id_name_index" ON "environment" USING btree ("system_id","name");
