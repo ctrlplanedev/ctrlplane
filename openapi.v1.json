@@ -15,7 +15,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "targets"],
+                "required": [
+                  "workspaceId",
+                  "targets"
+                ],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -58,7 +61,10 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": ["key", "value"],
+                            "required": [
+                              "key",
+                              "value"
+                            ],
                             "properties": {
                               "key": {
                                 "type": "string"
@@ -118,7 +124,10 @@
                     "type": "object"
                   }
                 },
-                "required": ["version", "deploymentId"]
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
               }
             }
           }
@@ -161,7 +170,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["systemId"],
+                "required": [
+                  "systemId"
+                ],
                 "properties": {
                   "systemId": {
                     "type": "string"
@@ -199,7 +210,9 @@
                           "additionalProperties": true
                         }
                       },
-                      "required": ["systemId"]
+                      "required": [
+                        "systemId"
+                      ]
                     }
                   }
                 }
@@ -217,7 +230,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -323,7 +338,10 @@
                             "default": false
                           }
                         },
-                        "required": ["key", "value"]
+                        "required": [
+                          "key",
+                          "value"
+                        ]
                       }
                     }
                   },
@@ -360,7 +378,9 @@
                       "example": "Target not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -434,7 +454,10 @@
                           "default": false
                         }
                       },
-                      "required": ["key", "value"]
+                      "required": [
+                        "key",
+                        "value"
+                      ]
                     }
                   }
                 }
@@ -510,7 +533,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -538,7 +563,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["success"],
+                  "required": [
+                    "success"
+                  ],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -565,7 +592,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -614,6 +643,11 @@
                         "external_run_not_found"
                       ]
                     },
+                    "externalId": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "External job identifier (e.g. GitHub workflow run ID)"
+                    },
                     "release": {
                       "type": "object",
                       "properties": {
@@ -630,7 +664,12 @@
                           "type": "object"
                         }
                       },
-                      "required": ["id", "version", "metadata", "config"]
+                      "required": [
+                        "id",
+                        "version",
+                        "metadata",
+                        "config"
+                      ]
                     },
                     "deployment": {
                       "type": "object",
@@ -675,7 +714,12 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId", "jobAgentId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId",
+                        "jobAgentId"
+                      ]
                     },
                     "target": {
                       "type": "object",
@@ -729,7 +773,11 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId"
+                      ]
                     },
                     "variables": {
                       "type": "object"
@@ -743,7 +791,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "approved", "rejected"]
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected"
+                          ]
                         },
                         "approver": {
                           "type": "object",
@@ -757,10 +809,16 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "name"]
+                          "required": [
+                            "id",
+                            "name"
+                          ]
                         }
                       },
-                      "required": ["id", "status"]
+                      "required": [
+                        "id",
+                        "status"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -769,6 +827,11 @@
                     "updatedAt": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "jobAgentConfig": {
+                      "type": "object",
+                      "description": "Configuration for the Job Agent",
+                      "additionalProperties": true
                     }
                   },
                   "required": [
@@ -776,7 +839,8 @@
                     "status",
                     "createdAt",
                     "updatedAt",
-                    "variables"
+                    "variables",
+                    "jobAgentConfig"
                   ]
                 }
               }
@@ -833,7 +897,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 }
               }
             }
@@ -862,7 +928,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["type", "name", "workspaceId"]
+                "required": [
+                  "type",
+                  "name",
+                  "workspaceId"
+                ]
               }
             }
           }
@@ -885,7 +955,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -917,7 +991,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["targets"],
+                "required": [
+                  "targets"
+                ],
                 "properties": {
                   "targets": {
                     "type": "array",
@@ -1005,7 +1081,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["sucess"]
+                  "required": [
+                    "sucess"
+                  ]
                 }
               }
             }
@@ -1021,7 +1099,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1049,7 +1129,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name"],
+                "required": [
+                  "name"
+                ],
                 "properties": {
                   "name": {
                     "type": "string"
@@ -1118,7 +1200,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1134,7 +1218,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1435,7 +1521,12 @@
                       }
                     }
                   },
-                  "required": ["id", "identifier", "workspaceId", "providerId"]
+                  "required": [
+                    "id",
+                    "identifier",
+                    "workspaceId",
+                    "providerId"
+                  ]
                 }
               }
             }
@@ -1577,7 +1668,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }

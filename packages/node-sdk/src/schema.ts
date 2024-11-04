@@ -143,6 +143,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/deployments/{deploymentId}/release-channels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a release channel */
+    post: operations["createReleaseChannel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/job-agents/{agentId}/queue/next": {
     parameters: {
       query?: never;
@@ -346,6 +363,9 @@ export interface operations {
               systemId: string;
               /** Format: date-time */
               expiresAt?: string | null;
+              targetFilter?: {
+                [key: string]: unknown;
+              };
             };
           };
         };
@@ -600,6 +620,8 @@ export interface operations {
               | "invalid_job_agent"
               | "invalid_integration"
               | "external_run_not_found";
+            /** @description External job identifier (e.g. GitHub workflow run ID) */
+            externalId?: string | null;
             release?: {
               id: string;
               version: string;
@@ -649,6 +671,10 @@ export interface operations {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            /** @description Configuration for the Job Agent */
+            jobAgentConfig: {
+              [key: string]: unknown;
+            };
           };
         };
       };
@@ -810,6 +836,69 @@ export interface operations {
       };
       /** @description Unauthorized */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  createReleaseChannel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name: string;
+          description?: string;
+          releaseFilter?: {
+            [key: string]: unknown;
+          };
+        };
+      };
+    };
+    responses: {
+      /** @description Release channel created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            name: string;
+            description?: string | null;
+            deploymentId: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Forbidden */
+      403: {
         headers: {
           [name: string]: unknown;
         };
