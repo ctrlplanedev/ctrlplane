@@ -177,23 +177,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/job-agents/{agentId}/jobs/running": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get a agents running jobs */
-    get: operations["getAgentRunningJob"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/job-agents/{agentId}/queue/acknowledge": {
     parameters: {
       query?: never;
@@ -208,6 +191,23 @@ export interface paths {
      * @description Marks a job as acknowledged by the agent
      */
     post: operations["acknowledgeAgentJob"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/job-agents/{agentId}/jobs/running": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a agents running jobs */
+    get: operations["getAgentRunningJob"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -944,42 +944,6 @@ export interface operations {
       };
     };
   };
-  getAgentRunningJob: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The execution ID */
-        agentId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            id: string;
-            status: string;
-            message: string;
-            jobAgentId: string;
-            jobAgentConfig: Record<string, never>;
-            externalId: string | null;
-            release?: Record<string, never>;
-            deployment?: Record<string, never>;
-            config: Record<string, never>;
-            runbook?: Record<string, never>;
-            target?: Record<string, never>;
-            environment?: Record<string, never>;
-          }[];
-        };
-      };
-    };
-  };
   acknowledgeAgentJob: {
     parameters: {
       query?: never;
@@ -1023,6 +987,42 @@ export interface operations {
           "application/json": {
             error?: string;
           };
+        };
+      };
+    };
+  };
+  getAgentRunningJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The execution ID */
+        agentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            status: string;
+            message: string;
+            jobAgentId: string;
+            jobAgentConfig: Record<string, never>;
+            externalId: string | null;
+            release?: Record<string, never>;
+            deployment?: Record<string, never>;
+            config: Record<string, never>;
+            runbook?: Record<string, never>;
+            target?: Record<string, never>;
+            environment?: Record<string, never>;
+          }[];
         };
       };
     };
