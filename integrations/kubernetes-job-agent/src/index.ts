@@ -2,6 +2,7 @@ import type { Job } from "@ctrlplane/node-sdk";
 import { CronJob } from "cron";
 import handlebars from "handlebars";
 import yaml from "js-yaml";
+import { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
 
@@ -73,6 +74,10 @@ const deployManifest = async (
   }
 };
 
+const jobAgentConfigSchema = z.object({
+  manifest: z.string(),
+});
+
 const spinUpNewJobs = async () => {
   try {
     const jobs = await agent.next();
@@ -84,10 +89,19 @@ const spinUpNewJobs = async () => {
         logger.info(`Running job ${jobDetails.id}`);
         logger.debug(`Job details:`, { job: jobDetails });
 
-        const manifest = renderManifest(
-          jobDetails.jobAgentConfig.manifest as string,
-          jobDetails,
+        const parseResult = jobAgentConfigSchema.safeParse(
+          jobDetails.jobAgentConfig,
         );
+        if (!parseResult.success) {
+          await job.update({
+            status: "failed",
+            message:
+              "Invalid job agent configuration: " + parseResult.error.message,
+          });
+          return;
+        }
+
+        const manifest = renderManifest(parseResult.data.manifest, jobDetails);
         const namespace = manifest?.metadata?.namespace ?? env.KUBE_NAMESPACE;
 
         await job.acknowledge();
