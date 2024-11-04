@@ -213,14 +213,8 @@ export const openapi: Swagger.SwaggerV3 = {
                     },
                     jobAgentConfig: {
                       type: "object",
-                      properties: {
-                        manifest: {
-                          type: "object",
-                          description: "The manifest template for the job",
-                        },
-                      },
-                      required: ["manifest"],
                       description: "Configuration for the Job Agent",
+                      additionalProperties: true,
                     },
                   },
                   required: [

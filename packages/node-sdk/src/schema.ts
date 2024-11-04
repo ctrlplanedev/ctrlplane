@@ -673,8 +673,7 @@ export interface operations {
             updatedAt: string;
             /** @description Configuration for the Job Agent */
             jobAgentConfig: {
-              /** @description The manifest template for the job */
-              manifest: Record<string, never>;
+              [key: string]: unknown;
             };
           };
         };
