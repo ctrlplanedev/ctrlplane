@@ -91,7 +91,7 @@ export const releaseDependency = pgTable(
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
     releaseFilter: jsonb("release_filter")
-      .$type<ReleaseCondition>()
+      .$type<ReleaseCondition | null>()
       .default(sql`NULL`),
   },
   (t) => ({ unq: uniqueIndex().on(t.releaseId, t.deploymentId) }),
