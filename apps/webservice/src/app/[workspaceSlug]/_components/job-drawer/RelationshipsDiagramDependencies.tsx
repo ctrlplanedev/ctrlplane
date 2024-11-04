@@ -99,6 +99,8 @@ const TargetDiagramDependencies: React.FC<DependenciesDiagramProps> = ({
   targets,
   releaseDependencies,
 }) => {
+  console.log(releaseDependencies);
+
   const [nodes, _, onNodesChange] = useNodesState(
     targets.map((t) => ({
       id: t.id,

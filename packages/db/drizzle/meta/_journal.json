@@ -225,6 +225,13 @@
       "when": 1730738876031,
       "tag": "0031_absurd_young_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1730747697087,
+      "tag": "0032_past_firestar",
+      "breakpoints": true
     }
   ]
 }
