@@ -13,19 +13,12 @@ type LifecycleHooksPageContentProps = {
 
 export const LifecycleHooksPageContent: React.FC<
   LifecycleHooksPageContentProps
-> = ({ deployment, lifecycleHooks, runbooks }) => {
-  if (lifecycleHooks.length === 0)
-    return (
-      <LifecycleHooksGettingStarted
-        deployment={deployment}
-        runbooks={runbooks}
-      />
-    );
-
-  return (
+> = ({ deployment, lifecycleHooks, runbooks }) =>
+  lifecycleHooks.length === 0 ? (
+    <LifecycleHooksGettingStarted deployment={deployment} runbooks={runbooks} />
+  ) : (
     <LifecycleHooksTable
       deploymentId={deployment.id}
       lifecycleHooks={lifecycleHooks}
     />
   );
-};
