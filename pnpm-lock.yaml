@@ -96,6 +96,94 @@ importers:
         specifier: ^5.6.3
         version: 5.6.3
 
+  apps/ctrlshell:
+    dependencies:
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@t3-oss/env-core':
+        specifier: 'catalog:'
+        version: 0.11.1(typescript@5.6.3)(zod@3.23.8)
+      cookie-parser:
+        specifier: ^1.4.6
+        version: 1.4.7
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.5
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
+      express:
+        specifier: ^4.19.2
+        version: 4.21.1
+      express-rate-limit:
+        specifier: ^7.3.0
+        version: 7.4.1(express@4.21.1)
+      helmet:
+        specifier: ^7.1.0
+        version: 7.2.0
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
+      next-auth:
+        specifier: 'catalog:'
+        version: 5.0.0-beta.22(next@15.0.1(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
+      uuid:
+        specifier: ^10.0.0
+        version: 10.0.0
+      ws:
+        specifier: ^8.17.0
+        version: 8.18.0
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:^
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:^
+        version: link:../../tooling/prettier
+      '@ctrlplane/tailwind-config':
+        specifier: workspace:*
+        version: link:../../tooling/tailwind
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/cookie-parser':
+        specifier: ^1.4.7
+        version: 1.4.7
+      '@types/cors':
+        specifier: ^2.8.17
+        version: 2.8.17
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.21
+      '@types/ms':
+        specifier: ^0.7.34
+        version: 0.7.34
+      '@types/node':
+        specifier: catalog:node20
+        version: 20.16.10
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
+      '@types/ws':
+        specifier: ^8.5.10
+        version: 8.5.12
+      eslint:
+        specifier: 'catalog:'
+        version: 9.11.1(jiti@2.3.3)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      tsx:
+        specifier: 'catalog:'
+        version: 4.19.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
   apps/docs:
     dependencies:
       '@ctrlplane/ui':
@@ -588,88 +676,6 @@ importers:
       web-worker:
         specifier: ^1.3.0
         version: 1.3.0
-
-  apps/webshell-router:
-    dependencies:
-      '@ctrlplane/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@t3-oss/env-core':
-        specifier: 'catalog:'
-        version: 0.11.1(typescript@5.6.3)(zod@3.23.8)
-      cookie-parser:
-        specifier: ^1.4.6
-        version: 1.4.7
-      cors:
-        specifier: ^2.8.5
-        version: 2.8.5
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.4.5
-      express:
-        specifier: ^4.19.2
-        version: 4.21.1
-      express-rate-limit:
-        specifier: ^7.3.0
-        version: 7.4.1(express@4.21.1)
-      helmet:
-        specifier: ^7.1.0
-        version: 7.2.0
-      ms:
-        specifier: ^2.1.3
-        version: 2.1.3
-      next-auth:
-        specifier: 'catalog:'
-        version: 5.0.0-beta.22(next@15.0.1(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)
-      ws:
-        specifier: ^8.17.0
-        version: 8.18.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.23.8
-    devDependencies:
-      '@ctrlplane/eslint-config':
-        specifier: workspace:^
-        version: link:../../tooling/eslint
-      '@ctrlplane/prettier-config':
-        specifier: workspace:^
-        version: link:../../tooling/prettier
-      '@ctrlplane/tailwind-config':
-        specifier: workspace:*
-        version: link:../../tooling/tailwind
-      '@ctrlplane/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/cookie-parser':
-        specifier: ^1.4.7
-        version: 1.4.7
-      '@types/cors':
-        specifier: ^2.8.17
-        version: 2.8.17
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.21
-      '@types/ms':
-        specifier: ^0.7.34
-        version: 0.7.34
-      '@types/node':
-        specifier: catalog:node20
-        version: 20.16.10
-      '@types/ws':
-        specifier: ^8.5.10
-        version: 8.5.12
-      eslint:
-        specifier: 'catalog:'
-        version: 9.11.1(jiti@2.3.3)
-      prettier:
-        specifier: 'catalog:'
-        version: 3.3.3
-      tsx:
-        specifier: 'catalog:'
-        version: 4.19.1
-      typescript:
-        specifier: 'catalog:'
-        version: 5.6.3
 
   integrations/github-get-job-inputs:
     dependencies:
@@ -1532,7 +1538,7 @@ importers:
         version: 1.13.4(eslint@9.11.1(jiti@2.3.3))
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.31.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3))(eslint@9.11.1(jiti@2.3.3))
+        version: 2.31.0(eslint@9.11.1(jiti@2.3.3))
       eslint-plugin-jsx-a11y:
         specifier: ^6.9.0
         version: 6.10.2(eslint@9.11.1(jiti@2.3.3))
@@ -8783,9 +8789,6 @@ packages:
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
 
-  jose@5.9.3:
-    resolution: {integrity: sha512-egLIoYSpcd+QUF+UHgobt5YzI2Pkw/H39ou9suW687MY6PmCwPmkNV/4TNjn1p2tX5xO3j0d0sq5hiYE24bSlg==}
-
   jose@5.9.6:
     resolution: {integrity: sha512-AMlnetc9+CV9asI19zHmrgS/WYsWUwCn2R7RzlbJWD7F9eWYUTGyBmU9o6PxngtLGOiDGPRu+Uc4fhKzbpteZQ==}
 
@@ -12744,7 +12747,7 @@ snapshots:
       '@panva/hkdf': 1.2.1
       '@types/cookie': 0.6.0
       cookie: 0.6.0
-      jose: 5.9.3
+      jose: 5.9.6
       oauth4webapi: 2.17.0
       preact: 10.11.3
       preact-render-to-string: 5.2.3(preact@10.11.3)
@@ -13631,7 +13634,7 @@ snapshots:
   '@kubernetes/client-node@0.22.1':
     dependencies:
       '@types/js-yaml': 4.0.9
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
       '@types/request': 2.48.12
       '@types/ws': 8.5.12
       byline: 5.0.0
@@ -17123,7 +17126,7 @@ snapshots:
 
   '@types/cors@2.8.17':
     dependencies:
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
 
   '@types/d3-array@3.2.1': {}
 
@@ -17256,7 +17259,7 @@ snapshots:
 
   '@types/etag@1.8.3':
     dependencies:
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
 
   '@types/express-serve-static-core@4.19.6':
     dependencies:
@@ -17358,7 +17361,7 @@ snapshots:
 
   '@types/pg@8.11.10':
     dependencies:
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
       pg-protocol: 1.7.0
       pg-types: 4.0.2
 
@@ -17406,7 +17409,7 @@ snapshots:
   '@types/request@2.48.12':
     dependencies:
       '@types/caseless': 0.12.5
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
       '@types/tough-cookie': 4.0.5
       form-data: 2.5.1
 
@@ -17459,7 +17462,7 @@ snapshots:
 
   '@types/ws@8.5.12':
     dependencies:
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
 
   '@typescript-eslint/eslint-plugin@8.7.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3))(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3)':
     dependencies:
@@ -19435,17 +19438,16 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.3.3)):
+  eslint-module-utils@2.12.0(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.3.3)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
-      '@typescript-eslint/parser': 8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3)
       eslint: 9.11.1(jiti@2.3.3)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3))(eslint@9.11.1(jiti@2.3.3)):
+  eslint-plugin-import@2.31.0(eslint@9.11.1(jiti@2.3.3)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -19456,7 +19458,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.11.1(jiti@2.3.3)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.3.3))
+      eslint-module-utils: 2.12.0(eslint-import-resolver-node@0.3.9)(eslint@9.11.1(jiti@2.3.3))
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -19467,8 +19469,6 @@ snapshots:
       semver: 6.3.1
       string.prototype.trimend: 1.0.8
       tsconfig-paths: 3.15.0
-    optionalDependencies:
-      '@typescript-eslint/parser': 8.7.0(eslint@9.11.1(jiti@2.3.3))(typescript@5.6.3)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -21112,7 +21112,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
@@ -21123,8 +21123,6 @@ snapshots:
 
   jose@4.15.9:
     optional: true
-
-  jose@5.9.3: {}
 
   jose@5.9.6: {}
 
@@ -23088,7 +23086,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 22.7.4
+      '@types/node': 22.8.1
       long: 5.2.3
 
   proxy-addr@2.0.7:
