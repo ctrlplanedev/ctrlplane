@@ -5,10 +5,13 @@ import type WebSocket from "ws";
 import { WebSocketServer } from "ws";
 
 import { AgentSocket } from "./agent-socket";
+import { auditSessions } from "./session-auditor";
 import { agents, users } from "./sockets";
 import { UserSocket } from "./user-socket";
 
 const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
+  auditSessions(ws);
+
   const agent = AgentSocket.from(ws, request);
   if (agent != null) {
     agents.set(agent.id, agent);
