@@ -19,3 +19,4 @@ export * from "./runbook-variables.js";
 export * from "./rbac.js";
 export * from "./runbook.js";
 export * from "./job-agent.js";
+export * from "./hook.js";
