@@ -165,9 +165,5 @@ export const determineReleaseVariableValue = async (
       sensitive: false,
     };
 
-  return {
-    value: deploymentVariableValues[0]!,
-    directMatch: false,
-    sensitive: false,
-  };
+  return null;
 };
