@@ -54,17 +54,21 @@ import {
 import { job } from "./job.js";
 import { target } from "./target.js";
 
-export const releaseChannel = pgTable("release_channel", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description").default(""),
-  deploymentId: uuid("deployment_id")
-    .notNull()
-    .references(() => deployment.id, { onDelete: "cascade" }),
-  releaseFilter: jsonb("release_filter")
-    .$type<ReleaseCondition | null>()
-    .default(sql`NULL`),
-});
+export const releaseChannel = pgTable(
+  "release_channel",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").default(""),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+    releaseFilter: jsonb("release_filter")
+      .$type<ReleaseCondition | null>()
+      .default(sql`NULL`),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.name) }),
+);
 
 export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
 export const createReleaseChannel = createInsertSchema(releaseChannel, {
