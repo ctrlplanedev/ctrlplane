@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
+  IconDotsVertical,
   IconExternalLink,
   IconHistory,
   IconInfoCircle,
@@ -25,28 +26,9 @@ import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
 import { RelationshipsContent } from "./relationships/RelationshipContent";
+import { TargetActionsDropdown } from "./TargetActionsDropdown";
+import { useTargetDrawer } from "./useTargetDrawer";
 import { VariableContent } from "./VariablesContent";
-
-const param = "target_id";
-export const useTargetDrawer = () => {
-  const router = useRouter();
-  const params = useSearchParams();
-  const targetId = params.get(param);
-
-  const setTargetId = (id: string | null) => {
-    const url = new URL(window.location.href);
-    if (id === null) {
-      url.searchParams.delete(param);
-    } else {
-      url.searchParams.set(param, id);
-    }
-    router.replace(url.toString());
-  };
-
-  const removeTargetId = () => setTargetId(null);
-
-  return { targetId, setTargetId, removeTargetId };
-};
 
 export const TargetDrawer: React.FC = () => {
   const { targetId, removeTargetId } = useTargetDrawer();
@@ -83,7 +65,16 @@ export const TargetDrawer: React.FC = () => {
       >
         <div className="border-b p-6">
           <div className="flex items-center">
-            <DrawerTitle className="flex-grow">{target?.name}</DrawerTitle>
+            <DrawerTitle className="flex items-center gap-2">
+              {target?.name}
+              {target != null && (
+                <TargetActionsDropdown target={target}>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <IconDotsVertical className="h-4 w-4" />
+                  </Button>
+                </TargetActionsDropdown>
+              )}
+            </DrawerTitle>
           </div>
           {target != null && (
             <div className="mt-3 flex flex-wrap gap-2">

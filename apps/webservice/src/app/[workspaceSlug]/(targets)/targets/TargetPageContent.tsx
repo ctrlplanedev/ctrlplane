@@ -22,7 +22,7 @@ import {
 } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
 import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/_components/target-condition/TargetViewActionsDropdown";
 import { useTargetFilter } from "~/app/[workspaceSlug]/_components/target-condition/useTargetFilter";
-import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/TargetDrawer";
+import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/useTargetDrawer";
 import { api } from "~/trpc/react";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
