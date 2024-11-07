@@ -2,6 +2,7 @@ import type { User } from "@ctrlplane/db/schema";
 import type { z } from "zod";
 import { NextResponse } from "next/server";
 
+import { buildConflictUpdateColumns } from "@ctrlplane/db";
 import { createReleaseChannel } from "@ctrlplane/db/schema";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -29,6 +30,15 @@ export const POST = request()
     const releaseChannel = await ctx.db
       .insert(schema.releaseChannel)
       .values({ ...ctx.body, deploymentId: extra.params.deploymentId })
+      .onConflictDoUpdate({
+        target: [
+          schema.releaseChannel.deploymentId,
+          schema.releaseChannel.name,
+        ],
+        set: buildConflictUpdateColumns(schema.releaseChannel, [
+          "releaseFilter",
+        ]),
+      })
       .returning();
     return NextResponse.json(releaseChannel);
   });
