@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { NextResponse } from "next/server";
 
-import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
+import { takeFirst } from "@ctrlplane/db";
 import { createReleaseChannel } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -25,15 +25,7 @@ export const POST = request()
       db
         .insert(SCHEMA.releaseChannel)
         .values(body)
-        .onConflictDoUpdate({
-          target: [
-            SCHEMA.releaseChannel.deploymentId,
-            SCHEMA.releaseChannel.name,
-          ],
-          set: buildConflictUpdateColumns(SCHEMA.releaseChannel, [
-            "releaseFilter",
-          ]),
-        })
+        .onConflictDoNothing()
         .returning()
         .then(takeFirst)
         .then((releaseChannel) => NextResponse.json(releaseChannel))
