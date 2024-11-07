@@ -2,7 +2,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, count, eq, like, or, takeFirst } from "@ctrlplane/db";
+import { and, asc, count, eq, like, or, takeFirst } from "@ctrlplane/db";
 import {
   createSystem,
   environment,
@@ -61,6 +61,7 @@ export const systemRouter = createTRPCRouter({
         .where(checks)
         .limit(input.limit)
         .offset(input.offset)
+        .orderBy(asc(system.name))
         .then((rows) =>
           _.chain(rows)
             .groupBy((r) => r.system.id)

@@ -1,5 +1,6 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import { useState } from "react";
 import Link from "next/link";
@@ -41,23 +42,33 @@ import { api } from "~/trpc/react";
 
 type CreateReleaseChannelDialogProps = {
   deploymentId: string;
+  releaseChannels: SCHEMA.ReleaseChannel[];
   children: React.ReactNode;
 };
-
-const schema = z.object({
-  name: z.string().min(1).max(50),
-  description: z.string().max(1000).optional(),
-  releaseFilter: releaseCondition
-    .optional()
-    .refine((cond) => cond == null || isValidReleaseCondition(cond)),
-});
 
 const getFinalFilter = (filter?: ReleaseCondition) =>
   filter && !isEmptyCondition(filter) ? filter : undefined;
 
 export const CreateReleaseChannelDialog: React.FC<
   CreateReleaseChannelDialogProps
-> = ({ deploymentId, children }) => {
+> = ({ deploymentId, children, releaseChannels }) => {
+  // schema needs to be in the component scope to use the releaseChannels
+  // to validate the name uniqueness
+  const schema = z.object({
+    name: z
+      .string()
+      .min(1)
+      .max(50)
+      .refine(
+        (name) => !releaseChannels.some((rc) => rc.name === name),
+        "Release channel name must be unique",
+      ),
+    description: z.string().max(1000).optional(),
+    releaseFilter: releaseCondition
+      .optional()
+      .refine((cond) => cond == null || isValidReleaseCondition(cond)),
+  });
+
   const [open, setOpen] = useState(false);
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
     workspaceSlug: string;

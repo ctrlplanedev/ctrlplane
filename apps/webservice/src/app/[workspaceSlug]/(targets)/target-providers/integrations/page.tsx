@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import React from "react";
 import { notFound } from "next/navigation";
 import {
@@ -13,6 +14,10 @@ import { Card } from "@ctrlplane/ui/card";
 
 import { api } from "~/trpc/server";
 import { GoogleActionButton } from "./GoogleActionButton";
+
+export const metadata: Metadata = {
+  title: "Target Integrations | Ctrlplane",
+};
 
 const Badge: React.FC<{ className?: string; children?: React.ReactNode }> = ({
   className,

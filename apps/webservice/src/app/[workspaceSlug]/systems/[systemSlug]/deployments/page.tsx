@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../SystemsBreadcrumb";
@@ -13,6 +14,8 @@ export default async function SystemDeploymentsPage({
 }: {
   params: { workspaceSlug: string; systemSlug: string };
 }) {
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) notFound();
   const system = await api.system.bySlug(params);
   const deployments = await api.deployment.bySystemId(system.id);
   const environments = await api.environment.bySystemId(system.id);
@@ -30,7 +33,7 @@ export default async function SystemDeploymentsPage({
             deployments={deployments}
             environments={environments}
             systemSlug={params.systemSlug}
-            workspaceSlug={params.workspaceSlug}
+            workspace={workspace}
           />
         </div>
       )}

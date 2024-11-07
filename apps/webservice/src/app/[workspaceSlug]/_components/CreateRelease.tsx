@@ -41,10 +41,9 @@ import {
 } from "@ctrlplane/ui/select";
 import { toast } from "@ctrlplane/ui/toast";
 import {
+  defaultCondition,
   isEmptyCondition,
   releaseCondition,
-  ReleaseFilterType,
-  ReleaseOperator,
 } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
@@ -52,7 +51,7 @@ import { ReleaseConditionDialog } from "./release-condition/ReleaseConditionDial
 
 const releaseDependency = z.object({
   deploymentId: z.string().uuid(),
-  releaseFilter: releaseCondition,
+  releaseFilter: releaseCondition.nullable(),
 });
 
 const releaseForm = z.object({
@@ -112,8 +111,16 @@ export const CreateReleaseDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
+    const releaseDependencies = data.releaseDependencies.map((dep) => ({
+      ...dep,
+      releaseFilter:
+        dep.releaseFilter == null || isEmptyCondition(dep.releaseFilter)
+          ? null
+          : dep.releaseFilter,
+    }));
     const release = await create.mutateAsync({
       ...data,
+      releaseDependencies,
       name: data.version.trim(),
     });
     await utils.release.list.invalidate({ deploymentId: release.deploymentId });
@@ -282,14 +289,14 @@ export const CreateReleaseDialog: React.FC<{
                       <FormItem>
                         <FormControl>
                           <ReleaseConditionDialog
-                            condition={value}
+                            condition={value ?? defaultCondition}
                             onChange={onChange}
                           >
                             <Button variant="ghost" size="icon">
-                              {isEmptyCondition(value) && (
+                              {value == null && (
                                 <IconFilterExclamation className="h-4 w-4" />
                               )}
-                              {!isEmptyCondition(value) && (
+                              {value != null && (
                                 <IconFilterFilled className="h-4 w-4" />
                               )}
                             </Button>
@@ -314,14 +321,7 @@ export const CreateReleaseDialog: React.FC<{
                 variant="outline"
                 className="w-16"
                 onClick={() =>
-                  append({
-                    deploymentId: "",
-                    releaseFilter: {
-                      type: ReleaseFilterType.Comparison,
-                      operator: ReleaseOperator.And,
-                      conditions: [],
-                    },
-                  })
+                  append({ deploymentId: "", releaseFilter: null })
                 }
               >
                 Add

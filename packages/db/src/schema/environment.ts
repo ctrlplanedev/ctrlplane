@@ -1,6 +1,5 @@
 import type { TargetCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
-import type { z } from "zod";
 import { relations, sql } from "drizzle-orm";
 import {
   bigint,
@@ -14,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 import {
   isValidTargetCondition,
@@ -26,24 +26,30 @@ import { release, releaseChannel } from "./release.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
 
-export const environment = pgTable("environment", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  systemId: uuid("system_id")
-    .notNull()
-    .references(() => system.id, { onDelete: "cascade" }),
-  name: text("name").notNull(),
-  description: text("description").default(""),
-  policyId: uuid("policy_id").references(() => environmentPolicy.id, {
-    onDelete: "set null",
-  }),
-  targetFilter: jsonb("target_filter")
-    .$type<TargetCondition | null>()
-    .default(sql`NULL`),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).default(sql`NULL`),
-});
+export const environment = pgTable(
+  "environment",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    systemId: uuid("system_id")
+      .notNull()
+      .references(() => system.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").default(""),
+    policyId: uuid("policy_id").references(() => environmentPolicy.id, {
+      onDelete: "set null",
+    }),
+    targetFilter: jsonb("target_filter")
+      .$type<TargetCondition | null>()
+      .default(sql`NULL`),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).default(
+      sql`NULL`,
+    ),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.systemId, t.name) }),
+);
 
 export type Environment = InferSelectModel<typeof environment>;
 
@@ -51,7 +57,23 @@ export const createEnvironment = createInsertSchema(environment, {
   targetFilter: targetCondition
     .optional()
     .refine((filter) => filter == null || isValidTargetCondition(filter)),
-}).omit({ id: true });
+})
+  .omit({ id: true })
+  .extend({
+    releaseChannels: z
+      .array(
+        z.object({
+          channelId: z.string().uuid(),
+          deploymentId: z.string().uuid(),
+        }),
+      )
+      .optional()
+      .refine((channels) => {
+        if (channels == null) return true;
+        const deploymentIds = new Set(channels.map((c) => c.deploymentId));
+        return deploymentIds.size === channels.length;
+      }),
+  });
 
 export const updateEnvironment = createEnvironment.partial();
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
@@ -63,6 +85,10 @@ export const environmentRelations = relations(environment, ({ many, one }) => ({
   }),
   releaseChannels: many(environmentReleaseChannel),
   environments: many(variableSetEnvironment),
+  system: one(system, {
+    fields: [environment.systemId],
+    references: [system.id],
+  }),
 }));
 
 export const approvalRequirement = pgEnum(

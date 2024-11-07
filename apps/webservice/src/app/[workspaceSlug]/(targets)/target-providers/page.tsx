@@ -1,4 +1,5 @@
 import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconExternalLink, IconSettings } from "@tabler/icons-react";
@@ -25,6 +26,10 @@ import { TargetFilterType } from "@ctrlplane/validators/targets";
 import { api } from "~/trpc/server";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { TargetProvidersGettingStarted } from "./TargetProvidersGettingStarted";
+
+export const metadata: Metadata = {
+  title: "Target Providers | Ctrlplane",
+};
 
 export default async function TargetProvidersPage({
   params,

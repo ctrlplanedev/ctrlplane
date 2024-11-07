@@ -378,7 +378,7 @@ export const deploymentRouter = createTRPCRouter({
               activeReleases: _.chain(t)
                 .map((a) => a.active_releases)
                 .filter(isPresent)
-                .uniqBy((a) => a.id)
+                .uniqBy((a) => a.environmentId)
                 .value(),
               releaseChannels: _.chain(t)
                 .map((a) => a.release_channel)

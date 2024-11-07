@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "release_channel_deployment_id_name_index" ON "release_channel" USING btree ("deployment_id","name");

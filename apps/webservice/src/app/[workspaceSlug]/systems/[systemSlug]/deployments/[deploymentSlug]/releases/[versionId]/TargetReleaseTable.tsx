@@ -1,10 +1,10 @@
 "use client";
 
-import type { Environment, Target } from "@ctrlplane/db/schema";
+import type { RouterOutputs } from "@ctrlplane/api";
+import type { Environment } from "@ctrlplane/db/schema";
 import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   IconChevronRight,
   IconDots,
@@ -12,14 +12,22 @@ import {
   IconFilter,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
+import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@ctrlplane/ui/collapsible";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { JobConditionBadge } from "~/app/[workspaceSlug]/_components/job-condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/_components/job-condition/JobConditionDialog";
@@ -30,6 +38,8 @@ import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "./JobDropdownMenu";
 import { PolicyApprovalRow } from "./PolicyApprovalRow";
 
+type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
+
 type CollapsibleTableRowProps = {
   environment: Environment;
   environmentCount: number;
@@ -39,18 +49,7 @@ type CollapsibleTableRowProps = {
     version: string;
     name: string;
   };
-  releaseJobTriggerData: Array<{
-    id: string;
-    environmentId: string;
-    job: {
-      id: string;
-      status: JobStatus;
-      metadata: Array<{ key: string; value: string }>;
-      externalId: string | null;
-    };
-    target: Target;
-    type: string;
-  }>;
+  triggersByTarget: Record<string, Trigger[]>;
 };
 
 const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
@@ -58,13 +57,9 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   environmentCount,
   deploymentName,
   release,
-  releaseJobTriggerData,
+  triggersByTarget,
 }) => {
-  const pathname = usePathname();
   const { setJobId } = useJobDrawer();
-  const jobs = releaseJobTriggerData.filter(
-    (job) => job.environmentId === environment.id,
-  );
 
   const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
     releaseId: release.id,
@@ -75,10 +70,24 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
     (approval) => approval.policyId === environment.policyId,
   );
 
-  const isOpen = jobs.length < 10 && environmentCount < 3;
+  const allTriggers = Object.values(triggersByTarget).flat();
+
+  const isOpen = allTriggers.length < 10 && environmentCount < 3;
   const [isExpanded, setIsExpanded] = useState(isOpen);
 
-  if (jobs.length === 0) return null;
+  const [expandedTargets, setExpandedTargets] = useState<
+    Record<string, boolean>
+  >({});
+
+  const switchTargetExpandedState = (targetId: string) =>
+    setExpandedTargets((prev) => {
+      const newState = { ...prev };
+      const currentTargetState = newState[targetId] ?? false;
+      newState[targetId] = !currentTargetState;
+      return newState;
+    });
+
+  if (allTriggers.length === 0) return null;
 
   return (
     <Fragment>
@@ -86,7 +95,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
         className={cn("sticky cursor-pointer bg-neutral-800/40")}
         onClick={() => setIsExpanded((t) => !t)}
       >
-        <TableCell colSpan={6}>
+        <TableCell colSpan={7}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <IconChevronRight
@@ -97,19 +106,19 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
               />
               {environment.name}
               <div className="flex items-center gap-1.5">
-                {Object.entries(_.groupBy(jobs, (job) => job.job.status)).map(
-                  ([status, groupedJobs]) => (
-                    <Badge
-                      key={status}
-                      variant="outline"
-                      className="rounded-full px-1.5 py-0.5"
-                      title={capitalCase(status).replace("_", " ")}
-                    >
-                      <JobTableStatusIcon status={status as JobStatus} />
-                      <span className="pl-1">{groupedJobs.length}</span>
-                    </Badge>
-                  ),
-                )}
+                {Object.entries(
+                  _.groupBy(allTriggers, (t) => t.job.status),
+                ).map(([status, groupedTriggers]) => (
+                  <Badge
+                    key={status}
+                    variant="outline"
+                    className="rounded-full px-1.5 py-0.5"
+                    title={JobStatusReadable[status as JobStatus]}
+                  >
+                    <JobTableStatusIcon status={status as JobStatus} />
+                    <span className="pl-1">{groupedTriggers.length}</span>
+                  </Badge>
+                ))}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -126,8 +135,10 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
       </TableRow>
       {isExpanded && (
         <>
-          {jobs.map((job, idx) => {
-            const linksMetadata = job.job.metadata.find(
+          {Object.entries(triggersByTarget).map(([, triggers]) => {
+            const target = triggers[0]!.target;
+            const trigger = triggers[0]!; // triggers are already sorted by createdAt from the query
+            const linksMetadata = trigger.job.metadata.find(
               (m) => m.key === String(ReservedMetadataKey.Links),
             )?.value;
 
@@ -137,81 +148,221 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 : null;
 
             return (
-              <TableRow
-                key={job.id}
-                className={cn(
-                  "cursor-pointer",
-                  idx !== jobs.length - 1 && "border-b-neutral-800/50",
-                )}
-                onClick={() => setJobId(job.job.id)}
-              >
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Link
-                    href={`${pathname}?target_id=${job.target.id}`}
-                    className="block w-full hover:text-blue-300"
+              <Collapsible key={target.id} asChild>
+                <>
+                  <TableRow
+                    className="cursor-pointer border-none"
+                    onClick={() => setJobId(trigger.job.id)}
                   >
-                    {job.target.name}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <JobTableStatusIcon status={job.job.status} />
-                    {capitalCase(job.job.status)}
-                  </div>
-                </TableCell>
-                <TableCell>{job.type}</TableCell>
-                <TableCell>
-                  {job.job.externalId != null ? (
-                    <code className="font-mono text-xs">
-                      {job.job.externalId}
-                    </code>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      No external ID
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  {links != null && (
-                    <div className="flex items-center gap-1">
-                      {Object.entries(links).map(([label, url]) => (
-                        <Link
-                          key={label}
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={buttonVariants({
-                            variant: "secondary",
-                            size: "sm",
-                            className: "gap-1",
-                          })}
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {triggers.length > 1 && (
+                        <CollapsibleTrigger asChild>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() =>
+                                switchTargetExpandedState(target.id)
+                              }
+                            >
+                              <IconChevronRight
+                                className={cn(
+                                  "h-3 w-3 text-muted-foreground transition-all",
+                                  expandedTargets[target.id] && "rotate-90",
+                                )}
+                              />
+                            </Button>
+                            {target.name}
+                          </div>
+                        </CollapsibleTrigger>
+                      )}
+
+                      {triggers.length === 1 && (
+                        <div className="pl-[29px]">{target.name}</div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <JobTableStatusIcon status={trigger.job.status} />
+                        {capitalCase(trigger.job.status)}
+                      </div>
+                    </TableCell>
+                    <TableCell>{trigger.type}</TableCell>
+                    <TableCell>
+                      {trigger.job.externalId != null ? (
+                        <code className="font-mono text-xs">
+                          {trigger.job.externalId}
+                        </code>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          No external ID
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {links != null && (
+                        <div className="flex items-center gap-1">
+                          {Object.entries(links).map(([label, url]) => (
+                            <Link
+                              key={label}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={buttonVariants({
+                                variant: "secondary",
+                                size: "sm",
+                                className: "gap-1",
+                              })}
+                            >
+                              <IconExternalLink className="h-4 w-4" />
+                              {label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="secondary"
+                        className="flex-shrink-0 text-xs text-muted-foreground hover:bg-secondary"
+                      >
+                        {formatDistanceToNowStrict(trigger.createdAt, {
+                          addSuffix: true,
+                        })}
+                      </Badge>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-end">
+                        <JobDropdownMenu
+                          release={release}
+                          deploymentName={deploymentName}
+                          target={trigger.target}
+                          environmentId={trigger.environmentId}
+                          job={{
+                            id: trigger.job.id,
+                            status: trigger.job.status,
+                          }}
                         >
-                          <IconExternalLink className="h-4 w-4" />
-                          {label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <div className="flex justify-end">
-                    <JobDropdownMenu
-                      release={release}
-                      deploymentName={deploymentName}
-                      target={job.target}
-                      environmentId={job.environmentId}
-                      job={{
-                        id: job.job.id,
-                        status: job.job.status,
-                      }}
-                    >
-                      <Button variant="ghost" size="icon">
-                        <IconDots size={16} />
-                      </Button>
-                    </JobDropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                          >
+                            <IconDots className="h-4 w-4" />
+                          </Button>
+                        </JobDropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  <CollapsibleContent asChild>
+                    <>
+                      {triggers.map((trigger, idx) => {
+                        if (idx === 0) return null;
+                        const linksMetadata = trigger.job.metadata.find(
+                          (m) => m.key === String(ReservedMetadataKey.Links),
+                        )?.value;
+
+                        const links =
+                          linksMetadata != null
+                            ? (JSON.parse(linksMetadata) as Record<
+                                string,
+                                string
+                              >)
+                            : null;
+
+                        return (
+                          <TableRow
+                            key={trigger.id}
+                            className="cursor-pointer border-none"
+                            onClick={() => setJobId(trigger.job.id)}
+                          >
+                            <TableCell className="p-0">
+                              <div className="pl-5">
+                                <div className="h-10 border-l border-neutral-700/50" />
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <JobTableStatusIcon
+                                  status={trigger.job.status}
+                                />
+                                {capitalCase(trigger.job.status)}
+                              </div>
+                            </TableCell>
+                            <TableCell>{trigger.type}</TableCell>
+                            <TableCell>
+                              {trigger.job.externalId != null ? (
+                                <code className="font-mono text-xs">
+                                  {trigger.job.externalId}
+                                </code>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  No external ID
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              {links != null && (
+                                <div className="flex items-center gap-1">
+                                  {Object.entries(links).map(([label, url]) => (
+                                    <Link
+                                      key={label}
+                                      href={url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={buttonVariants({
+                                        variant: "secondary",
+                                        size: "sm",
+                                        className: "gap-1",
+                                      })}
+                                    >
+                                      <IconExternalLink className="h-4 w-4" />
+                                      {label}
+                                    </Link>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="secondary"
+                                className="flex-shrink-0 text-xs text-muted-foreground hover:bg-secondary"
+                              >
+                                {formatDistanceToNowStrict(trigger.createdAt, {
+                                  addSuffix: true,
+                                })}
+                              </Badge>
+                            </TableCell>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <div className="flex justify-end">
+                                <JobDropdownMenu
+                                  release={release}
+                                  deploymentName={deploymentName}
+                                  target={trigger.target}
+                                  environmentId={trigger.environmentId}
+                                  job={{
+                                    id: trigger.job.id,
+                                    status: trigger.job.status,
+                                  }}
+                                >
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                  >
+                                    <IconDots className="h-4 w-4" />
+                                  </Button>
+                                </JobDropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </>
+                  </CollapsibleContent>
+                </>
+              </Collapsible>
             );
           })}
         </>
@@ -236,6 +387,17 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
     { releaseId: release.id, filter },
     { refetchInterval: 5_000 },
   );
+  const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];
+  const groupedTriggers = _.chain(releaseJobTriggers)
+    .groupBy((t) => t.environmentId)
+    .map((triggers) => ({
+      environment: environments.find(
+        (e) => e.id === triggers[0]!.environmentId,
+      ),
+      targets: _.groupBy(triggers, (t) => t.targetId),
+    }))
+    .filter((t) => isPresent(t.environment))
+    .value();
 
   return (
     <>
@@ -250,7 +412,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
         </JobConditionDialog>
       </div>
 
-      {(releaseJobTriggerQuery.data ?? []).length === 0 && (
+      {releaseJobTriggerQuery.isLoading && (
         <div className="space-y-2 p-4">
           {_.range(30).map((i) => (
             <Skeleton
@@ -262,17 +424,25 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
         </div>
       )}
 
-      {(releaseJobTriggerQuery.data ?? []).length > 0 && (
+      {!releaseJobTriggerQuery.isLoading && releaseJobTriggers.length === 0 && (
+        <div className="flex w-full items-center justify-center py-8">
+          <span className="text-sm text-muted-foreground">
+            No jobs found for this release
+          </span>
+        </div>
+      )}
+
+      {!releaseJobTriggerQuery.isLoading && releaseJobTriggers.length > 0 && (
         <Table className="table-fixed">
           <TableBody>
-            {environments.map((environment) => (
+            {groupedTriggers.map(({ environment, targets }) => (
               <CollapsibleTableRow
-                key={environment.id}
-                environment={environment}
-                environmentCount={environments.length}
+                key={environment!.id}
+                environment={environment!}
+                environmentCount={groupedTriggers.length}
                 deploymentName={deploymentName}
                 release={release}
-                releaseJobTriggerData={releaseJobTriggerQuery.data ?? []}
+                triggersByTarget={targets}
               />
             ))}
           </TableBody>

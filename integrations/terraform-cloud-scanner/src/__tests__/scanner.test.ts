@@ -46,12 +46,25 @@ describe("Scanner Module", () => {
     vi.spyOn(env, "CTRLPLANE_SCANNER_NAME", "get").mockReturnValue(
       "mock-scanner",
     );
+    vi.spyOn(env, "CTRLPLANE_WORKSPACE_TARGET_NAME", "get").mockReturnValue(
+      "{{workspace.attributes.name}}",
+    );
 
     const mockWorkspaces = [
       {
         id: "workspace-1",
         type: "workspaces",
-        attributes: { name: "Workspace-One", "tag-names": ["prod"] },
+        attributes: {
+          name: "Workspace-One",
+          "tag-names": ["prod", "env:staging"],
+          "auto-apply": true,
+          "terraform-version": "1.0.0",
+          "vcs-repo": {
+            identifier: "org/repo",
+            branch: "main",
+            "repository-http-url": "https://github.com/org/repo",
+          },
+        },
       },
     ];
 
@@ -67,79 +80,100 @@ describe("Scanner Module", () => {
           sensitive: false,
         },
       },
-      {
-        id: "var-2",
-        type: "vars",
-        attributes: {
-          key: "ENV_VAR",
-          value: "env_value",
-          category: "env",
-          hcl: false,
-          sensitive: false,
-        },
-      },
     ];
-
-    const mockProviderId = "provider-123";
 
     vi.mocked(listWorkspaces).mockResolvedValue(mockWorkspaces as any);
     vi.mocked(listVariables).mockResolvedValue(mockVariables as any);
 
-    vi.spyOn(api, "setTargetProvidersTargets").mockResolvedValue(undefined);
-    vi.spyOn(api, "upsertTargetProvider").mockResolvedValue({
-      id: mockProviderId,
-      name: "mock-provider-name",
-      workspaceId: "ctrlplane-workspace",
+    vi.spyOn(api, "GET").mockResolvedValue({
+      data: {
+        id: "provider-123",
+        name: "mock-provider-name",
+        workspaceId: "36427c59-e2bd-4b3f-bf54-54404ef6aa0e",
+      },
+      status: 200,
+      statusText: "OK",
+      headers: {},
+      config: {} as any,
+    });
+
+    const patchMock = vi.spyOn(api, "PATCH").mockResolvedValue({
+      data: {
+        "application/json": {
+          id: "mock-id",
+          name: "mock-name",
+          workspaceId: "mock-workspace-id",
+          kind: "mock-kind",
+          identifier: "mock-identifier",
+          version: "mock-version",
+          config: {},
+          metadata: {},
+        },
+      },
+      response: new Response(),
     });
 
     await scan();
 
-    expect(() => listVariables("workspace-1")).not.toThrow();
-    expect(() =>
-      api.upsertTargetProvider({
-        workspaceId: "ctrlplane-workspace",
-        name: "mock-scanner",
-      }),
-    ).not.toThrow();
+    expect(listWorkspaces).toHaveBeenCalled();
+    expect(listVariables).toHaveBeenCalledWith("workspace-1");
 
-    expect(() => listWorkspaces()).not.toThrow();
-    expect(() => listVariables("workspace-1")).not.toThrow();
-    expect(() =>
-      api.upsertTargetProvider({
-        workspaceId: "ctrlplane-workspace",
-        name: "mock-scanner",
-      }),
-    ).not.toThrow();
-
-    expect(() =>
-      api.setTargetProvidersTargets({
-        providerId: mockProviderId,
-        setTargetProvidersTargetsRequest: {
+    expect(patchMock).toHaveBeenCalledWith(
+      "/v1/target-providers/{providerId}/set",
+      expect.objectContaining({
+        body: {
           targets: [
             {
               version: "terraform/v1",
               kind: "Workspace",
-              name: "workspace-Workspace-One",
+              name: "mock-workspace-target-name",
               identifier: "workspace-1",
               config: {
                 workspaceId: "workspace-1",
               },
               metadata: {
-                "terraform/organization": "mock-org",
-                "terraform/workspace-name": "Workspace-One",
-                "var/TF_VAR_example": "example_value",
-                "env/ENV_VAR": "env_value",
-                "tags/prod": "true",
-                "ctrlplane/link": expect.stringContaining(
-                  "https://app.terraform.io/app/mock-org/workspaces/Workspace-One",
-                ),
+                "ctrlplane/external-id": "workspace-1",
+                "ctrlplane/links":
+                  '{"Terraform Workspace":"https://app.terraform.io/app/mock-org/workspaces/Workspace-One"}',
+                "terraform-cloud/organization": "mock-org",
+                "terraform-cloud/tag/env": "staging",
+                "terraform-cloud/tag/prod": "true",
+                "terraform-cloud/variables/TF_VAR_example": "example_value",
+                "terraform-cloud/vcs-repo/branch": "main",
+                "terraform-cloud/vcs-repo/identifier": "org/repo",
+                "terraform-cloud/vcs-repo/repository-http-url":
+                  "https://github.com/org/repo",
+                "terraform-cloud/workspace-auto-apply": "true",
+                "terraform-cloud/workspace-name": "Workspace-One",
+                "terraform/version": "1.0.0",
               },
             },
           ],
         },
+        params: {
+          path: {
+            providerId: "provider-123",
+          },
+        },
       }),
-    ).not.toThrow();
+    );
 
     expect(logger.info).toHaveBeenCalledWith("Successfully registered targets");
+  });
+
+  it("should handle scan errors gracefully", async () => {
+    vi.mocked(listWorkspaces).mockRejectedValue(new Error("API Error"));
+
+    const mockExit = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
+
+    await scan();
+
+    expect(logger.error).toHaveBeenCalledWith(
+      "An error occurred during the scan process:",
+      expect.any(Error),
+    );
+    expect(mockExit).toHaveBeenCalledWith(1);
   });
 });

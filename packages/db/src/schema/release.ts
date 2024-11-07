@@ -54,17 +54,21 @@ import {
 import { job } from "./job.js";
 import { target } from "./target.js";
 
-export const releaseChannel = pgTable("release_channel", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  description: text("description").default(""),
-  deploymentId: uuid("deployment_id")
-    .notNull()
-    .references(() => deployment.id, { onDelete: "cascade" }),
-  releaseFilter: jsonb("release_filter")
-    .$type<ReleaseCondition | null>()
-    .default(sql`NULL`),
-});
+export const releaseChannel = pgTable(
+  "release_channel",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    description: text("description").default(""),
+    deploymentId: uuid("deployment_id")
+      .notNull()
+      .references(() => deployment.id, { onDelete: "cascade" }),
+    releaseFilter: jsonb("release_filter")
+      .$type<ReleaseCondition | null>()
+      .default(sql`NULL`),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.name) }),
+);
 
 export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
 export const createReleaseChannel = createInsertSchema(releaseChannel, {
@@ -90,7 +94,9 @@ export const releaseDependency = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    releaseFilter: jsonb("release_filter").notNull().$type<ReleaseCondition>(),
+    releaseFilter: jsonb("release_filter")
+      .$type<ReleaseCondition | null>()
+      .default(sql`NULL`),
   },
   (t) => ({ unq: uniqueIndex().on(t.releaseId, t.deploymentId) }),
 );
@@ -159,6 +165,7 @@ export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
   "api", // calling API
   "redeploy", // redeploying
   "force_deploy", // force deploying a release
+  "new_environment",
 ]);
 
 export const releaseJobTrigger = pgTable(
@@ -286,7 +293,7 @@ const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
 
 export function releaseMatchesCondition(
   tx: Tx,
-  condition?: ReleaseCondition,
+  condition?: ReleaseCondition | null,
 ): SQL<unknown> | undefined {
   return condition == null || Object.keys(condition).length === 0
     ? undefined

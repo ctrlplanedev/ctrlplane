@@ -1,10 +1,8 @@
-import { Configuration, DefaultApi } from "@ctrlplane/node-sdk";
+import { createClient } from "@ctrlplane/node-sdk";
 
 import { env } from "./config.js";
 
-const config = new Configuration({
-  basePath: `${env.CTRLPLANE_BASE_URL}/api`,
+export const api = createClient({
+  baseUrl: env.CTRLPLANE_BASE_URL,
   apiKey: env.CTRLPLANE_API_KEY,
 });
-
-export const api = new DefaultApi(config);

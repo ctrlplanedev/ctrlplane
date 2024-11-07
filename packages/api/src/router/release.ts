@@ -194,40 +194,38 @@ export const releaseRouter = createTRPCRouter({
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(createRelease)
-    .mutation(async ({ ctx, input }) =>
-      ctx.db.transaction(async (db) => {
-        const rel = await db
-          .insert(release)
-          .values(input)
-          .returning()
-          .then(takeFirst);
+    .mutation(async ({ ctx, input }) => {
+      const rel = await db
+        .insert(release)
+        .values(input)
+        .returning()
+        .then(takeFirst);
 
-        const releaseDeps = input.releaseDependencies.map((rd) => ({
-          ...rd,
-          releaseId: rel.id,
-        }));
-        if (releaseDeps.length > 0)
-          await db.insert(releaseDependency).values(releaseDeps);
+      const releaseDeps = input.releaseDependencies.map((rd) => ({
+        ...rd,
+        releaseId: rel.id,
+      }));
+      if (releaseDeps.length > 0)
+        await db.insert(releaseDependency).values(releaseDeps);
 
-        const releaseJobTriggers = await createReleaseJobTriggers(
-          db,
-          "new_release",
-        )
-          .causedById(ctx.session.user.id)
-          .filter(isPassingReleaseStringCheckPolicy)
-          .releases([rel.id])
-          .then(createJobApprovals)
-          .insert();
+      const releaseJobTriggers = await createReleaseJobTriggers(
+        db,
+        "new_release",
+      )
+        .causedById(ctx.session.user.id)
+        .filter(isPassingReleaseStringCheckPolicy)
+        .releases([rel.id])
+        .then(createJobApprovals)
+        .insert();
 
-        await dispatchReleaseJobTriggers(db)
-          .releaseTriggers(releaseJobTriggers)
-          .filter(isPassingAllPolicies)
-          .then(cancelOldReleaseJobTriggersOnJobDispatch)
-          .dispatch();
+      await dispatchReleaseJobTriggers(db)
+        .releaseTriggers(releaseJobTriggers)
+        .filter(isPassingAllPolicies)
+        .then(cancelOldReleaseJobTriggersOnJobDispatch)
+        .dispatch();
 
-        return { ...rel, releaseJobTriggers };
-      }),
-    ),
+      return { ...rel, releaseJobTriggers };
+    }),
 
   blocked: protectedProcedure
     .meta({

@@ -16,7 +16,7 @@ import {
   createJobApprovals,
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
-  isPassingAllPolicies,
+  isPassingAllPoliciesExceptNewerThanLastActive,
   isPassingLockingPolicy,
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
@@ -91,7 +91,9 @@ export const releaseDeployRouter = createTRPCRouter({
       await dispatchReleaseJobTriggers(ctx.db)
         .releaseTriggers(releaseJobTriggers)
         .filter(
-          input.isForcedRelease ? isPassingLockingPolicy : isPassingAllPolicies,
+          input.isForcedRelease
+            ? isPassingLockingPolicy
+            : isPassingAllPoliciesExceptNewerThanLastActive,
         )
         .then(cancelOldReleaseJobTriggersOnJobDispatch)
         .dispatch();
@@ -160,7 +162,9 @@ export const releaseDeployRouter = createTRPCRouter({
       await dispatchReleaseJobTriggers(ctx.db)
         .releaseTriggers(releaseJobTriggers)
         .filter(
-          input.isForcedRelease ? isPassingLockingPolicy : isPassingAllPolicies,
+          input.isForcedRelease
+            ? isPassingLockingPolicy
+            : isPassingAllPoliciesExceptNewerThanLastActive,
         )
         .then(cancelOldReleaseJobTriggersOnJobDispatch)
         .dispatch();

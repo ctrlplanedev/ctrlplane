@@ -76,6 +76,7 @@ export const FlowDiagram: React.FC<{
         data: {
           workspaceId: workspace.id,
           releaseId: release.id,
+          releaseVersion: release.version,
           deploymentId: release.deploymentId,
           environmentId: env.id,
           policyType: policy?.releaseSequencing,

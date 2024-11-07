@@ -1,4 +1,4 @@
-import type { SetTargetProvidersTargetsRequest } from "@ctrlplane/node-sdk";
+import type { Operations } from "@ctrlplane/node-sdk";
 
 export function omitNullUndefined(obj: object) {
   return Object.entries(obj).reduce<Record<string, string>>(
@@ -11,5 +11,5 @@ export function omitNullUndefined(obj: object) {
 }
 
 export type ScannerFunc = () => Promise<
-  SetTargetProvidersTargetsRequest["targets"]
+  Operations["setTargetProvidersTargets"]["requestBody"]["content"]["application/json"]["targets"]
 >;

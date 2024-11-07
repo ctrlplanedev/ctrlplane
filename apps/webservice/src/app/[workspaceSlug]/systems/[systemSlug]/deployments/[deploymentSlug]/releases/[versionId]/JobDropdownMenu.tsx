@@ -77,7 +77,7 @@ const OverrideJobStatusDialog: React.FC<{
 
   const form = useForm({
     schema: overrideJobStatusFormSchema,
-    defaultValues: { status: job.status },
+    defaultValues: { status: JobStatus.Cancelled },
   });
 
   const onSubmit = form.handleSubmit((data) =>

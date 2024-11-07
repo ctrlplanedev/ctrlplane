@@ -1,8 +1,8 @@
-import type { SetTargetProvidersTargetsRequestTargetsInner } from "@ctrlplane/node-sdk";
 import handlebars from "handlebars";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
+import { TargetProvider } from "@ctrlplane/node-sdk";
 
 import type { Variable, Workspace } from "./types.js";
 import { listVariables, listWorkspaces } from "./api.js";
@@ -17,21 +17,27 @@ const workspaceTemplate = handlebars.compile(
  * Scans Terraform Cloud workspaces and registers them as targets with prefixed labels and a link.
  */
 export async function scan() {
+  const scanner = new TargetProvider(
+    {
+      workspaceId: env.CTRLPLANE_WORKSPACE_ID,
+      name: env.CTRLPLANE_SCANNER_NAME,
+    },
+    api,
+  );
   logger.info("Starting Terraform Cloud scan");
 
   try {
-    const providerId = await getOrCreateProviderId();
-    if (!providerId) {
-      logger.error(
-        "Provider ID is not available. Aborting target registration.",
-      );
-      process.exit(1);
-    }
+    const provider = await scanner.get();
+
+    logger.info(`Scanner ID: ${provider.id}`, { id: provider.id });
+    logger.info("Running Terrafrom Cloud scanner", {
+      date: new Date().toISOString(),
+    });
 
     const workspaces: Workspace[] = await listWorkspaces();
     logger.info(`Found ${workspaces.length} workspaces`);
 
-    const targets: SetTargetProvidersTargetsRequestTargetsInner[] = [];
+    const targets = [];
 
     for (const workspace of workspaces) {
       logger.info(
@@ -48,7 +54,7 @@ export async function scan() {
       const link = buildWorkspaceLink(workspace);
       const targetName = workspaceTemplate({ workspace });
 
-      const target: SetTargetProvidersTargetsRequestTargetsInner = {
+      const target = {
         version: "terraform/v1",
         kind: "Workspace",
         name: targetName,
@@ -74,16 +80,9 @@ export async function scan() {
       targets.push(target);
     }
 
-    const uniqueTargets = _.uniqBy(targets, (t) => t.identifier);
+    logger.info(`Registering ${targets.length} unique targets`);
 
-    logger.info(`Registering ${uniqueTargets.length} unique targets`);
-
-    await api.setTargetProvidersTargets({
-      providerId,
-      setTargetProvidersTargetsRequest: {
-        targets: uniqueTargets,
-      },
-    });
+    await scanner.set(targets);
 
     logger.info("Successfully registered targets");
   } catch (error) {
@@ -154,24 +153,4 @@ function buildWorkspaceLink(workspace: Workspace): Record<string, string> {
       env.TFE_ORGANIZATION,
     )}/workspaces/${encodeURIComponent(workspace.attributes.name)}`,
   };
-}
-
-/**
- * Helper function to get or create the provider ID.
- * @returns The provider ID as a string or null if failed.
- */
-async function getOrCreateProviderId(): Promise<string | null> {
-  return api
-    .upsertTargetProvider({
-      workspaceId: env.CTRLPLANE_WORKSPACE_ID,
-      name: env.CTRLPLANE_SCANNER_NAME,
-    })
-    .then(({ id }) => {
-      logger.info(`Using provider ID: ${id}`);
-      return id;
-    })
-    .catch((error) => {
-      logger.error("Failed to get or create provider ID:", error);
-      return null;
-    });
 }

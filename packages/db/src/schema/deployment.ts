@@ -1,4 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -56,6 +57,13 @@ const deploymentInsert = createInsertSchema(deployment, {
 export const createDeployment = deploymentInsert;
 export const updateDeployment = deploymentInsert.partial();
 export type Deployment = InferSelectModel<typeof deployment>;
+
+export const deploymentRelations = relations(deployment, ({ one }) => ({
+  system: one(system, {
+    fields: [deployment.systemId],
+    references: [system.id],
+  }),
+}));
 
 export const deploymentDependency = pgTable(
   "deployment_meta_dependency",
