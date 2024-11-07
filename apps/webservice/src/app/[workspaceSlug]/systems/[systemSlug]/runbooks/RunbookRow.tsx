@@ -2,7 +2,7 @@
 
 import type * as schema from "@ctrlplane/db/schema";
 import { useState } from "react";
-import { IconDotsVertical } from "@tabler/icons-react";
+import { IconBolt, IconDotsVertical, IconEdit } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,8 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import { api } from "~/trpc/react";
-import { EditAgentConfigDialog } from "../_components/EditAgentConfigDialog";
+import { EditRunbookDialog } from "./EditRunbookDialog";
 import { TriggerRunbookDialog } from "./TriggerRunbook";
 
 export const RunbookRow: React.FC<{
@@ -24,7 +23,6 @@ export const RunbookRow: React.FC<{
   workspace: schema.Workspace;
   jobAgents: schema.JobAgent[];
 }> = ({ runbook, workspace, jobAgents }) => {
-  const updateRunbook = api.runbook.update.useMutation();
   const [open, setOpen] = useState(false);
 
   return (
@@ -45,33 +43,27 @@ export const RunbookRow: React.FC<{
             runbook={runbook}
             onSuccess={() => setOpen(false)}
           >
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="flex cursor-pointer items-center gap-2"
+            >
+              <IconBolt className="h-4 w-4" />
               Trigger Runbook
             </DropdownMenuItem>
           </TriggerRunbookDialog>
-          {runbook.jobAgent != null && (
-            <EditAgentConfigDialog
-              jobAgent={runbook.jobAgent}
-              workspace={workspace}
-              jobAgents={jobAgents}
-              value={runbook.jobAgentConfig}
-              onSubmit={(data) =>
-                updateRunbook
-                  .mutateAsync({
-                    id: runbook.id,
-                    data: {
-                      jobAgentId: data.jobAgentId,
-                      jobAgentConfig: data.config,
-                    },
-                  })
-                  .then(() => setOpen(false))
-              }
+          <EditRunbookDialog
+            runbook={runbook}
+            workspace={workspace}
+            jobAgents={jobAgents}
+          >
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="flex cursor-pointer items-center gap-2"
             >
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                Edit Job Agent
-              </DropdownMenuItem>
-            </EditAgentConfigDialog>
-          )}
+              <IconEdit className="h-4 w-4" />
+              Edit Runbook
+            </DropdownMenuItem>
+          </EditRunbookDialog>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

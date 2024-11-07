@@ -34,16 +34,25 @@ import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;
   onChange: (type: string) => void;
-}> = ({ value, onChange }) => (
+  exclude?: string[];
+}> = ({ value, onChange, exclude }) => (
   <Select value={value} onValueChange={onChange}>
     <SelectTrigger>
       <SelectValue placeholder="Select type" />
     </SelectTrigger>
     <SelectContent>
-      <SelectItem value="string">String</SelectItem>
-      <SelectItem value="number">Number</SelectItem>
-      <SelectItem value="boolean">Boolean</SelectItem>
-      <SelectItem value="choice">Choice</SelectItem>
+      {!exclude?.includes("string") && (
+        <SelectItem value="string">String</SelectItem>
+      )}
+      {!exclude?.includes("number") && (
+        <SelectItem value="number">Number</SelectItem>
+      )}
+      {!exclude?.includes("boolean") && (
+        <SelectItem value="boolean">Boolean</SelectItem>
+      )}
+      {!exclude?.includes("choice") && (
+        <SelectItem value="choice">Choice</SelectItem>
+      )}
     </SelectContent>
   </Select>
 );
