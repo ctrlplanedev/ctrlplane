@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconBulb } from "@tabler/icons-react";
-import _ from "lodash";
 import { z } from "zod";
 
 import { Alert, AlertTitle } from "@ctrlplane/ui/alert";
@@ -32,7 +31,6 @@ import { VariableConfig } from "@ctrlplane/validators/variables";
 
 import {
   BooleanConfigFields,
-  ChoiceConfigFields,
   ConfigTypeSelector,
   NumberConfigFields,
   StringConfigFields,
@@ -59,8 +57,6 @@ export const CreateVariableDialog: React.FC<{
       config: { type: "string", inputType: "text" },
     },
   });
-
-  const { config } = form.watch();
 
   const onSubmit = form.handleSubmit(async (values) => {
     await create.mutateAsync({
@@ -118,13 +114,8 @@ export const CreateVariableDialog: React.FC<{
                     <FormControl>
                       <ConfigTypeSelector
                         value={value.type}
-                        onChange={(type: string) => {
-                          if (type === "choice") {
-                            onChange({ type, options: [] });
-                            return;
-                          }
-                          onChange({ type });
-                        }}
+                        onChange={(type: string) => onChange({ type })}
+                        exclude={["choice"]}
                       />
                     </FormControl>
                   </FormItem>
@@ -155,20 +146,9 @@ export const CreateVariableDialog: React.FC<{
                       }
                     />
                   )}
-
-                  {value.type === "choice" && (
-                    <ChoiceConfigFields
-                      config={value}
-                      updateConfig={(updates) =>
-                        onChange({ ...value, ...updates })
-                      }
-                    />
-                  )}
                 </>
               )}
             />
-
-            <pre className="text-xs">{JSON.stringify(config, null, 2)}</pre>
 
             <FormField
               control={form.control}

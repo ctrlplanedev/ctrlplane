@@ -100,13 +100,32 @@ export const runbookRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().uuid(),
-        data: SCHEMA.updateRunbook,
+        data: SCHEMA.updateRunbook.extend({
+          variables: z.array(createRunbookVariable),
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) =>
-      ctx.db
-        .update(SCHEMA.runbook)
-        .set(input.data)
-        .where(eq(SCHEMA.runbook.id, input.id)),
+      ctx.db.transaction((tx) =>
+        tx
+          .update(SCHEMA.runbook)
+          .set(input.data)
+          .where(eq(SCHEMA.runbook.id, input.id))
+          .returning()
+          .then(takeFirst)
+          .then((rb) =>
+            tx
+              .delete(SCHEMA.runbookVariable)
+              .where(eq(SCHEMA.runbookVariable.runbookId, rb.id))
+              .then(() =>
+                tx.insert(SCHEMA.runbookVariable).values(
+                  input.data.variables.map((v) => ({
+                    ...v,
+                    runbookId: rb.id,
+                  })),
+                ),
+              ),
+          ),
+      ),
     ),
 });
