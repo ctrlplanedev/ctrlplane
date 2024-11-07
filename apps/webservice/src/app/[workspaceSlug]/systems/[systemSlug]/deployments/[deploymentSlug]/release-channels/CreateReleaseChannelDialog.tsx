@@ -59,9 +59,10 @@ export const CreateReleaseChannelDialog: React.FC<
       .string()
       .min(1)
       .max(50)
-      .refine((name) => {
-        return !releaseChannels.some((rc) => rc.name === name);
-      }, "Release channel name must be unique"),
+      .refine(
+        (name) => !releaseChannels.some((rc) => rc.name === name),
+        "Release channel name must be unique",
+      ),
     description: z.string().max(1000).optional(),
     releaseFilter: releaseCondition
       .optional()
