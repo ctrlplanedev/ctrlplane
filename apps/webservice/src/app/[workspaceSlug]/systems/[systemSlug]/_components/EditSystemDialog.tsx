@@ -23,6 +23,7 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import { Label } from "@ctrlplane/ui/label";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
@@ -70,6 +71,10 @@ export const EditSystemDialog: React.FC<{
 
         <Form {...form}>
           <form onSubmit={onFormSubmit} className="space-y-3">
+            <div className="space-y-1">
+              <Label>ID</Label>
+              <Input value={system.id} disabled />
+            </div>
             <FormField
               control={form.control}
               name="name"

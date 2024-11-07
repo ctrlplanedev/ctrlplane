@@ -5,7 +5,7 @@ import type { TargetCondition } from "@ctrlplane/validators/targets";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconEdit, IconTarget, IconTrash } from "@tabler/icons-react";
+import { IconSettings, IconTarget, IconTrash } from "@tabler/icons-react";
 import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
@@ -64,8 +64,8 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
               className="flex cursor-pointer items-center gap-2"
               onSelect={(e) => e.preventDefault()}
             >
-              <IconEdit className="h-4 w-4 text-muted-foreground" />
-              Edit
+              <IconSettings className="h-4 w-4 text-muted-foreground" />
+              Settings
             </DropdownMenuItem>
           </EditSystemDialog>
           <DeleteSystemDialog system={system}>
