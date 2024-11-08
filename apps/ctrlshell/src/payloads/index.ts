@@ -1,4 +1,4 @@
-import { z } from "zod";
+import type { z } from "zod";
 
 import agentConnect from "./agent-connect";
 import agentHeartbeat from "./agent-heartbeat";
