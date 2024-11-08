@@ -14,7 +14,10 @@ import { cn } from "@ctrlplane/ui";
 import { Toaster } from "@ctrlplane/ui/toast";
 
 import { TRPCReactProvider } from "~/trpc/react";
+// import { register } from "../instrumentation";
 import SessionProvider from "./SessionProvider";
+
+// await register();
 
 export const metadata = {
   title: { default: "Ctrlplane" },

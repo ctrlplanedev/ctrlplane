@@ -33,18 +33,10 @@ const config = {
       "@opentelemetry/auto-instrumentations-node",
       "@appsignal/opentelemetry-instrumentation-bullmq",
       "@opentelemetry/exporter-trace-otlp-http",
+      "@opentelemetry/instrumentation-pg",
       "@opentelemetry/resources",
       "@opentelemetry/semantic-conventions",
     ],
-  },
-  // This is for tracing:
-  webpack: (config, { isServer }) => {
-    if (isServer == null)
-      config.resolve.fallback = {
-        // Disable the 'tls' module on the client side
-        tls: false,
-      };
-    return config;
   },
 
   async rewrites() {
