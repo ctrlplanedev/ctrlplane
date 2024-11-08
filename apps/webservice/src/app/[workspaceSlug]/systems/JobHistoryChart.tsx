@@ -74,17 +74,14 @@ export const JobHistoryChart: React.FC<{
       const total = _.sumBy(Object.values(dayData), (c) => c ?? 0);
       const failureCount = dayData[JobStatus.Failure] ?? 0;
       const failureRate = total > 0 ? (failureCount / total) * 100 : 0;
-      console.log(failureCount, failureRate);
       const date = new Date(d).toISOString();
       return { date, ...dayData, failureRate };
     },
   );
 
   const maxFailureRate = _.maxBy(chartData, "failureRate")?.failureRate ?? 0;
-  console.log("maxFailureRate", maxFailureRate);
   const maxLineTickDomain =
     maxFailureRate > 0 ? Math.min(100, Math.ceil(maxFailureRate * 1.1)) : 10;
-  console.log("maxLineTickDomain", maxLineTickDomain);
 
   const maxDailyCount =
     _.maxBy(dailyCounts.data, "totalCount")?.totalCount ?? 0;
