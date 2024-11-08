@@ -26,7 +26,7 @@ services:
 
   migrations:
     platform: linux/amd64
-    image: ctrlplane/migrations:eccfca2
+    image: ctrlplane/migrations:75685e0
     container_name: ctrlplane-migrations
     restart: "no"
     environment:
@@ -36,12 +36,14 @@ services:
 
   webservice:
     platform: linux/amd64
-    image: ctrlplane/webservice:6593512
+    image: ctrlplane/webservice:75685e0
     # build:
     #   context: .
     #   dockerfile: ./apps/webservice/Dockerfile
 
     container_name: ctrlplane-webservice
+    # command: sleep infinity
+    # command: node apps/webservice/server.js
     environment:
       BASE_URL: "http://127.0.0.1" # <set your instance url>
       AUTH_SECRET: "<auth-secret>"
@@ -49,12 +51,20 @@ services:
       # AUTH_OIDC_CLIENT_ID: "<oidc-client-id>"
       # AUTH_OIDC_CLIENT_SECRET: "<oidc-client-secret>"
 
+      # AUTH_GOOGLE_CLIENT_ID: <>
+      # AUTH_GOOGLE_CLIENT_SECRET: <>
+
       NEXTAUTH_URL: ${BASE_URL}
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
       REDIS_URL: redis://redis:6379
-      POSTGRES_URL: postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane
+      POSTGRES_URL: postgresql://ctrlplane:ctrlplane@postgres:5432/ctrlplane
       VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
-      # NODE_OPTIONS: "--require /app/apps/webservice/.next/serverinstrumentation.js"
+      # NODE_PATH: /app/apps/webservice/node_modules/
+      # NEXT_RUNTIME: nodejs
+      # OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: "http/protobuf"
+      # NODE_OPTIONS: "--require=@opentelemetry/instrumentation-pg"
+      # NEXT_OTEL_VERBOSE: 1
+      # OTEL_LOG_LEVEL: debug
     depends_on:
       - postgres
       - migrations
@@ -63,7 +73,7 @@ services:
 
   jobs:
     platform: linux/amd64
-    image: ctrlplane/jobs:eccfca2
+    image: ctrlplane/jobs:75685e0
     container_name: ctrlplane-jobs
     environment:
       POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
@@ -74,7 +84,7 @@ services:
 
   event-worker:
     platform: linux/amd64
-    image: ctrlplane/event-worker:eccfca2
+    image: ctrlplane/event-worker:75685e0
     container_name: ctrlplane-event-worker
     environment:
       POSTGRES_URL: "postgres://ctrlplane:ctrlplane@postgres:5432/ctrlplane"
