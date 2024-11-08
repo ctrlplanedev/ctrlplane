@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { addDays, isSameDay, startOfDay, sub } from "date-fns";
 import _ from "lodash";
 import * as LZString from "lz-string";
+import { useLocalStorage } from "react-use";
 import {
   Bar,
   CartesianGrid,
@@ -98,8 +99,11 @@ export const JobHistoryChart: React.FC<{
     0,
   );
 
-  const [showFailureRate, setShowFailureRate] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(true);
+  const [showFailureRate, setShowFailureRate] = useLocalStorage(
+    "show-failure-rate",
+    "false",
+  );
+  const [showTooltip, setShowTooltip] = useLocalStorage("show-tooltip", "true");
 
   const router = useRouter();
 
@@ -184,7 +188,7 @@ export const JobHistoryChart: React.FC<{
               }}
             />
 
-            {showFailureRate && (
+            {showFailureRate === "true" && (
               <YAxis
                 yAxisId="left"
                 orientation="left"
@@ -199,7 +203,7 @@ export const JobHistoryChart: React.FC<{
               domain={[0, maxBarTickDomain]}
             />
 
-            {showTooltip && (
+            {showTooltip === "true" && (
               <ChartTooltip
                 content={({ active, payload, label }) => {
                   const total = _.sumBy(
@@ -308,7 +312,7 @@ export const JobHistoryChart: React.FC<{
                 }}
               />
             ))}
-            {showFailureRate && (
+            {showFailureRate === "true" && (
               <Line
                 yAxisId="left"
                 dataKey="failureRate"
@@ -325,8 +329,10 @@ export const JobHistoryChart: React.FC<{
           <div className="flex items-center gap-2">
             <Checkbox
               id="show-tooltip"
-              checked={showTooltip}
-              onCheckedChange={(checked) => setShowTooltip(!!checked)}
+              checked={showTooltip === "true"}
+              onCheckedChange={(checked) =>
+                setShowTooltip(checked ? "true" : "false")
+              }
             />
             <label
               htmlFor="show-tooltip"
@@ -338,8 +344,10 @@ export const JobHistoryChart: React.FC<{
           <div className="flex items-center gap-2">
             <Checkbox
               id="show-failure-rate"
-              checked={showFailureRate}
-              onCheckedChange={(checked) => setShowFailureRate(!!checked)}
+              checked={showFailureRate === "true"}
+              onCheckedChange={(checked) =>
+                setShowFailureRate(checked ? "true" : "false")
+              }
             />
             <label
               htmlFor="show-failure-rate"
