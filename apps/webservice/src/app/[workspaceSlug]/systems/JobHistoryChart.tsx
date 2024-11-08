@@ -324,6 +324,7 @@ export const JobHistoryChart: React.FC<{
         <div className="flex flex-shrink-0 flex-col gap-2">
           <div className="flex items-center gap-2">
             <Checkbox
+              id="show-tooltip"
               checked={showTooltip}
               onCheckedChange={(checked) => setShowTooltip(!!checked)}
             />
@@ -336,6 +337,7 @@ export const JobHistoryChart: React.FC<{
           </div>
           <div className="flex items-center gap-2">
             <Checkbox
+              id="show-failure-rate"
               checked={showFailureRate}
               onCheckedChange={(checked) => setShowFailureRate(!!checked)}
             />
