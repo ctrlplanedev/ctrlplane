@@ -1,8 +1,11 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
-import { isSameDay, startOfDay, sub } from "date-fns";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
+import { useRouter } from "next/navigation";
+import { addDays, isSameDay, startOfDay, sub } from "date-fns";
 import _ from "lodash";
+import * as LZString from "lz-string";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import colors from "tailwindcss/colors";
 
@@ -13,6 +16,11 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
+import {
+  ComparisonOperator,
+  DateOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
@@ -68,6 +76,8 @@ export const JobHistoryChart: React.FC<{
     (acc, c) => acc + Number(c.totalCount),
     0,
   );
+
+  const router = useRouter();
 
   return (
     <div className={className}>
@@ -179,7 +189,36 @@ export const JobHistoryChart: React.FC<{
                 key={status}
                 dataKey={status.toLowerCase()}
                 stackId="jobs"
+                className="cursor-pointer"
                 fill={color}
+                onClick={(e) => {
+                  const start = new Date(e.date);
+                  const end = addDays(start, 1);
+
+                  const afterStartCondition: JobCondition = {
+                    type: FilterType.CreatedAt,
+                    operator: DateOperator.AfterOrOn,
+                    value: start.toISOString(),
+                  };
+
+                  const beforeEndCondition: JobCondition = {
+                    type: FilterType.CreatedAt,
+                    operator: DateOperator.Before,
+                    value: end.toISOString(),
+                  };
+
+                  const filter: JobCondition = {
+                    type: FilterType.Comparison,
+                    operator: ComparisonOperator.And,
+                    conditions: [afterStartCondition, beforeEndCondition],
+                  };
+
+                  const hash = LZString.compressToEncodedURIComponent(
+                    JSON.stringify(filter),
+                  );
+                  const filterLink = `/${workspace.slug}/jobs?job-filter=${hash}`;
+                  router.push(filterLink);
+                }}
               />
             ))}
           </BarChart>
