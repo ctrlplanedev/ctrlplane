@@ -27,11 +27,12 @@ import {
 import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 import { Checkbox } from "@ctrlplane/ui/checkbox";
 import {
+  ColumnOperator,
   ComparisonOperator,
   DateOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
@@ -103,7 +104,6 @@ export const JobHistoryChart: React.FC<{
     "show-failure-rate",
     "false",
   );
-  const [showTooltip, setShowTooltip] = useLocalStorage("show-tooltip", "true");
 
   const router = useRouter();
 
@@ -203,73 +203,70 @@ export const JobHistoryChart: React.FC<{
               domain={[0, maxBarTickDomain]}
             />
 
-            {showTooltip === "true" && (
-              <ChartTooltip
-                content={({ active, payload, label }) => {
-                  const total = _.sumBy(
-                    payload?.filter((p) => p.name !== "failureRate"),
-                    (p) => Number(p.value ?? 0),
-                  );
-                  const failureRate = Math.round(
-                    Number(
-                      payload?.find((p) => p.name === "failureRate")?.value ??
-                        0,
-                    ),
-                  );
-                  if (active && payload?.length)
-                    return (
-                      <div className="space-y-2 rounded-lg border bg-background p-2 shadow-sm">
-                        <div className="font-semibold">
-                          {new Date(label).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </div>
-
-                        <div className="flex flex-col">
-                          <span>Total: {total}</span>
-                          <span>Failure Rate: {failureRate}%</span>
-                        </div>
-
-                        <div>
-                          {payload
-                            .filter((p) => p.name !== "failureRate")
-                            .reverse()
-                            .map((entry, index) => (
-                              <div
-                                key={`item-${index}`}
-                                className="flex items-center gap-2"
-                              >
-                                <div
-                                  className="h-3 w-3 rounded-full"
-                                  style={{ backgroundColor: entry.color }}
-                                />
-                                <span>
-                                  {
-                                    statusLabels[
-                                      entry.name as Exclude<
-                                        JobStatus,
-                                        | JobStatus.Cancelled
-                                        | JobStatus.Skipped
-                                        | JobStatus.Pending
-                                      >
-                                    ]
-                                  }
-                                  :{" "}
-                                </span>
-                                <span className="font-semibold">
-                                  {entry.value}
-                                </span>
-                              </div>
-                            ))}
-                        </div>
+            <ChartTooltip
+              content={({ active, payload, label }) => {
+                const total = _.sumBy(
+                  payload?.filter((p) => p.name !== "failureRate"),
+                  (p) => Number(p.value ?? 0),
+                );
+                const failureRate = Math.round(
+                  Number(
+                    payload?.find((p) => p.name === "failureRate")?.value ?? 0,
+                  ),
+                );
+                if (active && payload?.length)
+                  return (
+                    <div className="space-y-2 rounded-lg border bg-background p-2 shadow-sm">
+                      <div className="font-semibold">
+                        {new Date(label).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
                       </div>
-                    );
-                  return null;
-                }}
-              />
-            )}
+
+                      <div className="flex flex-col">
+                        <span>Total: {total}</span>
+                        <span>Failure Rate: {failureRate}%</span>
+                      </div>
+
+                      <div>
+                        {payload
+                          .filter((p) => p.name !== "failureRate")
+                          .reverse()
+                          .map((entry, index) => (
+                            <div
+                              key={`item-${index}`}
+                              className="flex items-center gap-2"
+                            >
+                              <div
+                                className="h-3 w-3 rounded-full"
+                                style={{ backgroundColor: entry.color }}
+                              />
+                              <span>
+                                {
+                                  statusLabels[
+                                    entry.name as Exclude<
+                                      JobStatus,
+                                      | JobStatus.Cancelled
+                                      | JobStatus.Skipped
+                                      | JobStatus.Pending
+                                    >
+                                  ]
+                                }
+                                :{" "}
+                              </span>
+                              <span className="font-semibold">
+                                {entry.value}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  );
+                return null;
+              }}
+            />
 
             {Object.entries(statusColors).map(([status, color]) => (
               <Bar
@@ -298,10 +295,43 @@ export const JobHistoryChart: React.FC<{
                     value: end.toISOString(),
                   };
 
+                  const isCancelledCondition: JobCondition = {
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Cancelled,
+                  };
+
+                  const isPendingCondition: JobCondition = {
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Pending,
+                  };
+
+                  const isSkippedCondition: JobCondition = {
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Skipped,
+                  };
+
+                  const statusCondition: JobCondition = {
+                    type: FilterType.Comparison,
+                    not: true,
+                    operator: ComparisonOperator.Or,
+                    conditions: [
+                      isCancelledCondition,
+                      isPendingCondition,
+                      isSkippedCondition,
+                    ],
+                  };
+
                   const filter: JobCondition = {
                     type: FilterType.Comparison,
                     operator: ComparisonOperator.And,
-                    conditions: [afterStartCondition, beforeEndCondition],
+                    conditions: [
+                      afterStartCondition,
+                      beforeEndCondition,
+                      statusCondition,
+                    ],
                   };
 
                   const hash = LZString.compressToEncodedURIComponent(
@@ -316,8 +346,8 @@ export const JobHistoryChart: React.FC<{
               <Line
                 yAxisId="left"
                 dataKey="failureRate"
-                stroke={colors.red[600]}
-                strokeWidth={2}
+                stroke={colors.neutral[200]}
+                strokeWidth={1}
                 opacity={0.5}
                 dot={false}
               />
@@ -326,21 +356,6 @@ export const JobHistoryChart: React.FC<{
         </ChartContainer>
 
         <div className="flex flex-shrink-0 flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-tooltip"
-              checked={showTooltip === "true"}
-              onCheckedChange={(checked) =>
-                setShowTooltip(checked ? "true" : "false")
-              }
-            />
-            <label
-              htmlFor="show-tooltip"
-              className="text-sm text-muted-foreground"
-            >
-              Show tooltip
-            </label>
-          </div>
           <div className="flex items-center gap-2">
             <Checkbox
               id="show-failure-rate"
