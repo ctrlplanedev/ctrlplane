@@ -48,7 +48,7 @@ const sdk = new NodeSDK({
 
 try {
   sdk.start();
-  console.log("Tracing initialized test");
+  console.log("Tracing initialized");
 } catch (error) {
   console.error("Error initializing tracing", error);
 }
