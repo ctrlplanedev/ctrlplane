@@ -6,7 +6,7 @@ import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import {
   AlwaysOnSampler,
-  SimpleSpanProcessor,
+  BatchSpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 
@@ -14,7 +14,7 @@ const sdk = new NodeSDK({
   resource: new Resource({
     [ATTR_SERVICE_NAME]: "ctrlplane/webservice",
   }),
-  spanProcessors: [new SimpleSpanProcessor(new OTLPTraceExporter())],
+  spanProcessors: [new BatchSpanProcessor(new OTLPTraceExporter())],
   logRecordProcessors: [new BatchLogRecordProcessor(new OTLPLogExporter())],
   instrumentations: [
     getNodeAutoInstrumentations({
