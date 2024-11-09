@@ -1,0 +1,37 @@
+import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+
+import { runbook } from "./runbook.js";
+
+export const event = pgTable("event", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  event: text("event").notNull(),
+  action: text("action").notNull(),
+  payload: jsonb("payload").notNull(),
+});
+
+export const hook = pgTable("hook", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  event: text("event").notNull(),
+  action: text("action").notNull(),
+  name: text("name").notNull(),
+  scopeType: text("scope_type").notNull(),
+  scopeId: uuid("scope_id").notNull(),
+});
+
+export const runhook = pgTable("runhook", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hookId: uuid("hook_id")
+    .notNull()
+    .references(() => hook.id, { onDelete: "cascade" }),
+  runbookId: uuid("runbook_id")
+    .notNull()
+    .references(() => runbook.id, { onDelete: "cascade" }),
+});
+
+export const webhook = pgTable("webhook", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hookId: uuid("hook_id")
+    .notNull()
+    .references(() => hook.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+});
