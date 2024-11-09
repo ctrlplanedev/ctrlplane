@@ -47,6 +47,10 @@ RUN turbo build --filter=...@ctrlplane/webservice
 FROM base AS runner
 WORKDIR /app
 
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+USER nodejs
+
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/standalone ./
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/.next/static ./apps/webservice/.next/static
 COPY --from=installer --chown=nodejs:nodejs /app/apps/webservice/public ./apps/webservice/public
