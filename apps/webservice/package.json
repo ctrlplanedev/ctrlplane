@@ -33,7 +33,6 @@
     "@octokit/webhooks": "^13.3.0",
     "@octokit/webhooks-types": "^7.5.1",
     "@opentelemetry/auto-instrumentations-node": "^0.52.1",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.54.2",
     "@opentelemetry/sdk-node": "^0.54.2",
     "@t3-oss/env-nextjs": "catalog:",
     "@tabler/icons-react": "^3.17.0",

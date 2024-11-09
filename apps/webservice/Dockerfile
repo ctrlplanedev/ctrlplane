@@ -60,7 +60,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV AUTH_TRUST_HOST=true
 ENV NODE_ENV=production
-ENV NODE_PATH=/app/apps/webservice/node_modules
 ENV HOSTNAME=0.0.0.0
 
 CMD ["node", "apps/webservice/server.js"]
