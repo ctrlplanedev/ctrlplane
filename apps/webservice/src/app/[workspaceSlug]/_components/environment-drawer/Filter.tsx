@@ -31,7 +31,12 @@ import {
 import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import {
   defaultCondition,
+  isComparisonCondition,
   targetCondition,
 } from "@ctrlplane/validators/targets";
 
@@ -97,6 +102,20 @@ const filterForm = z.object({
   targetFilter: targetCondition.optional(),
 });
 
+const getFilter = (
+  targetFilter: TargetCondition | null,
+): TargetCondition | undefined => {
+  if (targetFilter == null) return undefined;
+  if (!isComparisonCondition(targetFilter))
+    return {
+      type: FilterType.Comparison,
+      operator: ComparisonOperator.And,
+      not: false,
+      conditions: [targetFilter],
+    };
+  return targetFilter;
+};
+
 export const EditFilterForm: React.FC<{
   environment: SCHEMA.Environment;
   workspaceId: string;
@@ -105,7 +124,7 @@ export const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: { targetFilter: environment.targetFilter ?? undefined },
+    defaultValues: { targetFilter: getFilter(environment.targetFilter) },
   });
 
   const { targetFilter } = form.watch();

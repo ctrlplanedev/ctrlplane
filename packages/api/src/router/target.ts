@@ -468,7 +468,7 @@ export const targetRouter = createTRPCRouter({
         ),
     })
     .input(z.array(z.string().uuid()))
-    .mutation(async ({ ctx, input }) =>
+    .mutation(({ ctx, input }) =>
       ctx.db
         .delete(schema.target)
         .where(inArray(schema.target.id, input))

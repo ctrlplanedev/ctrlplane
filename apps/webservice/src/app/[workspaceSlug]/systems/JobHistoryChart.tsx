@@ -1,9 +1,21 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
-import { isSameDay, startOfDay, sub } from "date-fns";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { addDays, isSameDay, startOfDay, sub } from "date-fns";
 import _ from "lodash";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import * as LZString from "lz-string";
+import { useLocalStorage } from "react-use";
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  XAxis,
+  YAxis,
+} from "recharts";
 import colors from "tailwindcss/colors";
 
 import {
@@ -13,7 +25,14 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { Checkbox } from "@ctrlplane/ui/checkbox";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  DateOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { dateRange } from "~/utils/date/range";
@@ -23,7 +42,7 @@ const statusColors = {
   [JobStatus.ExternalRunNotFound]: colors.red[700],
   [JobStatus.InvalidIntegration]: colors.amber[700],
   [JobStatus.InvalidJobAgent]: colors.amber[400],
-  [JobStatus.Failure]: colors.red[500],
+  [JobStatus.Failure]: colors.red[600],
   [JobStatus.InProgress]: colors.blue[500],
   [JobStatus.Completed]: colors.green[500],
 };
@@ -52,11 +71,23 @@ export const JobHistoryChart: React.FC<{
   const chartData = dateRange(sub(now, { weeks: 6 }), now, 1, "days").map(
     (d) => {
       const dayData =
-        dailyCounts.data?.find((c) => isSameDay(c.date, d))?.statusCounts ?? {};
+        dailyCounts.data?.find((c) => isSameDay(c.date, d))?.statusCounts ??
+        ({} as Record<JobStatus, number | undefined>);
+      const total = _.sumBy(Object.values(dayData), (c) => c ?? 0);
+      const failureCount = dayData[JobStatus.Failure] ?? 0;
+      const failureRate = total > 0 ? (failureCount / total) * 100 : 0;
       const date = new Date(d).toISOString();
-      return { date, ...dayData };
+      return { date, ...dayData, failureRate };
     },
   );
+
+  const maxFailureRate = _.maxBy(chartData, "failureRate")?.failureRate ?? 0;
+  const maxLineTickDomain =
+    maxFailureRate > 0 ? Math.min(100, Math.ceil(maxFailureRate * 1.1)) : 10;
+
+  const maxDailyCount =
+    _.maxBy(dailyCounts.data, "totalCount")?.totalCount ?? 0;
+  const maxBarTickDomain = Math.ceil(maxDailyCount * 1.1);
 
   const targets = api.target.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
@@ -68,6 +99,30 @@ export const JobHistoryChart: React.FC<{
     (acc, c) => acc + Number(c.totalCount),
     0,
   );
+
+  const [showFailureRate, setShowFailureRate] = useLocalStorage(
+    "show-failure-rate",
+    "false",
+  );
+
+  const router = useRouter();
+
+  /*
+    Hack - if animation is active, the bars animate on every render, including when
+    we toggle the tooltip or failure rate. Hence we should set a timeout with a duration
+    little longer than the animation duration and then disable the animation on 
+    subsequent renders.
+  */
+  const [isAnimationActive, setIsAnimationActive] = useState(true);
+  const animationDuration = 800;
+
+  useEffect(() => {
+    const timeout = setTimeout(
+      () => setIsAnimationActive(false),
+      animationDuration + 100,
+    );
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
     <div className={className}>
@@ -101,7 +156,7 @@ export const JobHistoryChart: React.FC<{
           </div>
         </div>
       </CardHeader>
-      <CardContent className="px-2 sm:p-6">
+      <CardContent className="flex px-2 sm:p-6">
         <ChartContainer
           config={{
             views: { label: "Job Executions" },
@@ -109,7 +164,7 @@ export const JobHistoryChart: React.FC<{
           }}
           className="aspect-auto h-[150px] w-full"
         >
-          <BarChart
+          <ComposedChart
             accessibilityLayer
             data={chartData}
             margin={{
@@ -132,11 +187,36 @@ export const JobHistoryChart: React.FC<{
                 });
               }}
             />
+
+            {showFailureRate === "true" && (
+              <YAxis
+                yAxisId="left"
+                orientation="left"
+                tickFormatter={(value: number) => `${value.toFixed(1)}%`}
+                domain={[0, maxLineTickDomain]}
+              />
+            )}
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={(value: number) => `${value}`}
+              domain={[0, maxBarTickDomain]}
+            />
+
             <ChartTooltip
               content={({ active, payload, label }) => {
+                const total = _.sumBy(
+                  payload?.filter((p) => p.name !== "failureRate"),
+                  (p) => Number(p.value ?? 0),
+                );
+                const failureRate = Math.round(
+                  Number(
+                    payload?.find((p) => p.name === "failureRate")?.value ?? 0,
+                  ),
+                );
                 if (active && payload?.length)
                   return (
-                    <div className="rounded-lg border bg-background p-2 shadow-sm">
+                    <div className="space-y-2 rounded-lg border bg-background p-2 shadow-sm">
                       <div className="font-semibold">
                         {new Date(label).toLocaleDateString("en-US", {
                           month: "short",
@@ -144,46 +224,154 @@ export const JobHistoryChart: React.FC<{
                           year: "numeric",
                         })}
                       </div>
-                      {payload.reverse().map((entry, index) => (
-                        <div
-                          key={`item-${index}`}
-                          className="flex items-center gap-2"
-                        >
-                          <div
-                            className="h-3 w-3 rounded-full"
-                            style={{ backgroundColor: entry.color }}
-                          />
-                          <span>
-                            {
-                              statusLabels[
-                                entry.name as Exclude<
-                                  JobStatus,
-                                  | JobStatus.Cancelled
-                                  | JobStatus.Skipped
-                                  | JobStatus.Pending
-                                >
-                              ]
-                            }
-                            :{" "}
-                          </span>
-                          <span className="font-semibold">{entry.value}</span>
-                        </div>
-                      ))}
+
+                      <div className="flex flex-col">
+                        <span>Total: {total}</span>
+                        <span>Failure Rate: {failureRate}%</span>
+                      </div>
+
+                      <div>
+                        {payload
+                          .filter((p) => p.name !== "failureRate")
+                          .reverse()
+                          .map((entry, index) => (
+                            <div
+                              key={`item-${index}`}
+                              className="flex items-center gap-2"
+                            >
+                              <div
+                                className="h-3 w-3 rounded-full"
+                                style={{ backgroundColor: entry.color }}
+                              />
+                              <span>
+                                {
+                                  statusLabels[
+                                    entry.name as Exclude<
+                                      JobStatus,
+                                      | JobStatus.Cancelled
+                                      | JobStatus.Skipped
+                                      | JobStatus.Pending
+                                    >
+                                  ]
+                                }
+                                :{" "}
+                              </span>
+                              <span className="font-semibold">
+                                {entry.value}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   );
                 return null;
               }}
             />
+
             {Object.entries(statusColors).map(([status, color]) => (
               <Bar
                 key={status}
                 dataKey={status.toLowerCase()}
                 stackId="jobs"
+                className="cursor-pointer"
+                yAxisId="right"
+                isAnimationActive={isAnimationActive}
+                animationBegin={0}
+                animationDuration={animationDuration}
                 fill={color}
+                onClick={(e) => {
+                  const start = new Date(e.date);
+                  const end = addDays(start, 1);
+
+                  const afterStartCondition: JobCondition = {
+                    type: FilterType.CreatedAt,
+                    operator: DateOperator.AfterOrOn,
+                    value: start.toISOString(),
+                  };
+
+                  const beforeEndCondition: JobCondition = {
+                    type: FilterType.CreatedAt,
+                    operator: DateOperator.Before,
+                    value: end.toISOString(),
+                  };
+
+                  const isCancelledCondition: JobCondition = {
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Cancelled,
+                  };
+
+                  const isPendingCondition: JobCondition = {
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Pending,
+                  };
+
+                  const isSkippedCondition: JobCondition = {
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Skipped,
+                  };
+
+                  const statusCondition: JobCondition = {
+                    type: FilterType.Comparison,
+                    not: true,
+                    operator: ComparisonOperator.Or,
+                    conditions: [
+                      isCancelledCondition,
+                      isPendingCondition,
+                      isSkippedCondition,
+                    ],
+                  };
+
+                  const filter: JobCondition = {
+                    type: FilterType.Comparison,
+                    operator: ComparisonOperator.And,
+                    conditions: [
+                      afterStartCondition,
+                      beforeEndCondition,
+                      statusCondition,
+                    ],
+                  };
+
+                  const hash = LZString.compressToEncodedURIComponent(
+                    JSON.stringify(filter),
+                  );
+                  const filterLink = `/${workspace.slug}/jobs?job-filter=${hash}`;
+                  router.push(filterLink);
+                }}
               />
             ))}
-          </BarChart>
+            {showFailureRate === "true" && (
+              <Line
+                yAxisId="left"
+                dataKey="failureRate"
+                stroke={colors.neutral[200]}
+                strokeWidth={1}
+                opacity={0.5}
+                dot={false}
+              />
+            )}
+          </ComposedChart>
         </ChartContainer>
+
+        <div className="flex flex-shrink-0 flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-failure-rate"
+              checked={showFailureRate === "true"}
+              onCheckedChange={(checked) =>
+                setShowFailureRate(checked ? "true" : "false")
+              }
+            />
+            <label
+              htmlFor="show-failure-rate"
+              className="text-sm text-muted-foreground"
+            >
+              Show failure rate
+            </label>
+          </div>
+        </div>
       </CardContent>
     </div>
   );

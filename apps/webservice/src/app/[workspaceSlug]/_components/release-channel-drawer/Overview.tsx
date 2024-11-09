@@ -20,7 +20,12 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import {
   defaultCondition,
+  isComparisonCondition,
   isEmptyCondition,
   isValidReleaseCondition,
   releaseCondition,
@@ -39,7 +44,6 @@ const getFinalFilter = (filter: ReleaseCondition | null) =>
 
 const getReleaseFilterUrl = (
   workspaceSlug: string,
-
   systemSlug?: string,
   deploymentSlug?: string,
   filter?: ReleaseCondition,
@@ -61,6 +65,20 @@ const schema = z.object({
     .refine((r) => r == null || isValidReleaseCondition(r)),
 });
 
+const getFilter = (
+  releaseFilter: ReleaseCondition | null,
+): ReleaseCondition | null => {
+  if (releaseFilter == null) return null;
+  if (!isComparisonCondition(releaseFilter))
+    return {
+      type: FilterType.Comparison,
+      operator: ComparisonOperator.And,
+      not: false,
+      conditions: [releaseFilter],
+    };
+  return releaseFilter;
+};
+
 export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
     workspaceSlug: string;
@@ -70,6 +88,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
 
   const defaultValues = {
     ...releaseChannel,
+    releaseFilter: getFilter(releaseChannel.releaseFilter),
     description: releaseChannel.description ?? undefined,
   };
   const form = useForm({ schema, defaultValues });

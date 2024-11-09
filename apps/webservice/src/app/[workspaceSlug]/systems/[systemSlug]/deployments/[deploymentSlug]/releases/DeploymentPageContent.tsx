@@ -177,7 +177,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         );
 
                       const hasTargets = env.targets.length > 0;
-                      const hasRelease =
+                      const isAlreadyDeployed =
                         environmentReleaseReleaseJobTriggers.length > 0;
                       const hasJobAgent = deployment.jobAgentId != null;
                       const blockedEnv = blockedEnvByRelease.data?.find(
@@ -187,9 +187,9 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       );
                       const isBlockedByReleaseChannel = blockedEnv != null;
 
-                      const showRelease = hasRelease;
-                      const canDeploy =
-                        !hasRelease &&
+                      const showRelease = isAlreadyDeployed;
+                      const showDeployButton =
+                        !isAlreadyDeployed &&
                         hasJobAgent &&
                         hasTargets &&
                         !isBlockedByReleaseChannel;
@@ -223,17 +223,17 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                               />
                             )}
 
-                            {canDeploy && (
+                            {showDeployButton && (
                               <DeployButton
                                 releaseId={release.id}
                                 environmentId={env.id}
                               />
                             )}
 
-                            {!canDeploy && !hasRelease && (
+                            {!isAlreadyDeployed && (
                               <div className="text-center text-xs text-muted-foreground/70">
-                                {isBlockedByReleaseChannel ? (
-                                  <span>
+                                {isBlockedByReleaseChannel && (
+                                  <>
                                     Blocked by{" "}
                                     <Button
                                       variant="link"
@@ -247,10 +247,15 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                                     >
                                       release channel
                                     </Button>
-                                  </span>
-                                ) : (
-                                  "No job agent"
+                                  </>
                                 )}
+                                {!isBlockedByReleaseChannel &&
+                                  !hasJobAgent &&
+                                  "No job agent"}
+                                {!isBlockedByReleaseChannel &&
+                                  hasJobAgent &&
+                                  !hasTargets &&
+                                  "No targets"}
                               </div>
                             )}
                           </div>

@@ -173,7 +173,7 @@ describe("job-variables-deployment", () => {
     expect(result[0]!.value).toEqual(variableValues[0]!.value);
   });
 
-  it("should return first value if no direct match or default value exists", async () => {
+  it("should return null if no direct match or default value exists", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
     const variables: variable[] = [
@@ -205,8 +205,7 @@ describe("job-variables-deployment", () => {
       },
     );
 
-    expect(result).toHaveLength(1);
-    expect(result[0]!.value).toEqual(variableValues[0]!.value);
+    expect(result).toHaveLength(0);
   });
 
   it("should include variables from matched variable set", async () => {

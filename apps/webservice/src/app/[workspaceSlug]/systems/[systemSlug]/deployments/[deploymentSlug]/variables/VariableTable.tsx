@@ -17,7 +17,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
 import type { VariableData } from "./variable-data";
-import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/TargetDrawer";
+import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/useTargetDrawer";
 import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
