@@ -3,8 +3,8 @@ connectors:
 exporters:
   datadog/exporter:
     api:
-      key: #<Fill me in>
-      site: #<Fill me in>
+      key: ${DD_API_KEY}
+      site: ${DD_SITE}
   debug: {}
   debug/detailed:
     verbosity: detailed

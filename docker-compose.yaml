@@ -35,36 +35,28 @@ services:
       - postgres
 
   webservice:
-    platform: linux/amd64
-    image: ctrlplane/webservice:75685e0
-    # build:
-    #   context: .
-    #   dockerfile: ./apps/webservice/Dockerfile
+    # platform: linux/amd64
+    # image: ctrlplane/webservice:75685e0
+    build:
+      context: .
+      dockerfile: ./apps/webservice/Dockerfile
 
     container_name: ctrlplane-webservice
-    # command: sleep infinity
-    # command: node apps/webservice/server.js
     environment:
       BASE_URL: "http://127.0.0.1" # <set your instance url>
-      AUTH_SECRET: "<auth-secret>"
-      # AUTH_OIDC_ISSUER: "<oidc-issuer>"
-      # AUTH_OIDC_CLIENT_ID: "<oidc-client-id>"
-      # AUTH_OIDC_CLIENT_SECRET: "<oidc-client-secret>"
+      AUTH_SECRET: ${AUTH_SECRET}
+      # AUTH_OIDC_ISSUER: ${AUTH_OIDC_ISSUER}
+      # AUTH_OIDC_CLIENT_ID: ${AUTH_OIDC_CLIENT_ID}
+      # AUTH_OIDC_CLIENT_SECRET: ${AUTH_OIDC_CLIENT_SECRET}
 
-      # AUTH_GOOGLE_CLIENT_ID: <>
-      # AUTH_GOOGLE_CLIENT_SECRET: <>
+      AUTH_GOOGLE_CLIENT_ID: 27586067691-1us5sc17f0pq0vs4c0ml1eaqphmf9sl9.apps.googleusercontent.com
+      AUTH_GOOGLE_CLIENT_SECRET: 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
 
       NEXTAUTH_URL: ${BASE_URL}
       OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
       REDIS_URL: redis://redis:6379
       POSTGRES_URL: postgresql://ctrlplane:ctrlplane@postgres:5432/ctrlplane
       VARIABLES_AES_256_KEY: d2506d733ee210078461c08ee8e1605be75ed73b0941d4b513ab7b159c6fbcd9
-      # NODE_PATH: /app/apps/webservice/node_modules/
-      # NEXT_RUNTIME: nodejs
-      # OTEL_EXPORTER_OTLP_TRACES_PROTOCOL: "http/protobuf"
-      # NODE_OPTIONS: "--require=@opentelemetry/instrumentation-pg"
-      # NEXT_OTEL_VERBOSE: 1
-      # OTEL_LOG_LEVEL: debug
     depends_on:
       - postgres
       - migrations
@@ -94,18 +86,18 @@ services:
       - postgres
       - redis
 
-  # otel-collector:
-  #   image: otel/opentelemetry-collector-contrib:latest
-  #   container_name: ctrlplane-otel-collector
-  #   command: ["--config=/etc/otel-collector-config.yaml"]
-  #   volumes:
-  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-  #   ports:
-  #     - "4317:4317" # OTLP gRPC
-  #     - "4318:4318" # OTLP HTTP
-  #     - "8125:8125" # StatsD
-  #     - "8888:8888" # Telemetry
-  #     - "9109:9109" # Prometheus endpoint
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: ctrlplane-otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8125:8125" # StatsD
+      - "8888:8888" # Telemetry
+      - "9109:9109" # Prometheus endpoint
 
 volumes:
   postgres_data:
