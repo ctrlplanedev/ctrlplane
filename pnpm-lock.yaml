@@ -914,6 +914,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../events
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../job-dispatch

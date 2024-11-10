@@ -13,7 +13,6 @@ export const event = pgTable("event", {
 
 export const hook = pgTable("hook", {
   id: uuid("id").primaryKey().defaultRandom(),
-  event: text("event").notNull(),
   action: text("action").notNull(),
   name: text("name").notNull(),
   scopeType: text("scope_type").notNull(),

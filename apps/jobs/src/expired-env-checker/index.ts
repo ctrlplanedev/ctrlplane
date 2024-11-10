@@ -13,9 +13,11 @@ export const run = async () => {
   const eventPromises = expiredEnvironments.flatMap(
     getEventsForEnvironmentDeleted,
   );
-  const events = (await Promise.all(eventPromises)).flat();
+  const events = (await Promise.allSettled(eventPromises))
+    .filter((result) => result.status === "fulfilled")
+    .flatMap((result) => result.value);
   const handleEventsPromises = events.map(handleEvent);
-  await Promise.all(handleEventsPromises);
+  await Promise.allSettled(handleEventsPromises);
 
   const envIds = expiredEnvironments.map((env) => env.id);
   await db

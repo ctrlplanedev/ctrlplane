@@ -11,7 +11,7 @@ export const handleTargetRemoved = async (event: TargetRemoved) => {
   const isSubscribedToTargetRemoved = and(
     eq(SCHEMA.hook.scopeId, deployment.id),
     eq(SCHEMA.hook.scopeType, "deployment"),
-    eq(SCHEMA.hook.event, "target.removed"),
+    eq(SCHEMA.hook.action, "target.removed"),
   );
   const runhooks = await db
     .select()
