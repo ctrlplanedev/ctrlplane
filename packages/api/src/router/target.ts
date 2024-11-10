@@ -15,6 +15,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import { getEventsForTargetDeleted, handleEvent } from "@ctrlplane/events";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 import { targetCondition } from "@ctrlplane/validators/targets";
@@ -468,12 +469,20 @@ export const targetRouter = createTRPCRouter({
         ),
     })
     .input(z.array(z.string().uuid()))
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const targets = await ctx.db.query.target.findMany({
+        where: inArray(schema.target.id, input),
+      });
+      const events = (
+        await Promise.allSettled(targets.map(getEventsForTargetDeleted))
+      ).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+      await Promise.allSettled(events.map(handleEvent));
+
+      return ctx.db
         .delete(schema.target)
         .where(inArray(schema.target.id, input))
-        .returning(),
-    ),
+        .returning();
+    }),
 
   metadataKeys: protectedProcedure
     .meta({
