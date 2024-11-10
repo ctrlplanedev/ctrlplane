@@ -27,6 +27,10 @@ const config = {
   experimental: {
     instrumentationHook: true,
     optimizePackageImports: ["googleapis"],
+    serverComponentsExternalPackages: [
+      "@opentelemetry/auto-instrumentations-node",
+      "@opentelemetry/sdk-node",
+    ],
   },
 
   async rewrites() {
