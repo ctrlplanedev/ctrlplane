@@ -12,5 +12,5 @@ export * from "./handlers/index.js";
 export const handleEvent = async (event: HookEvent) => {
   await db.insert(SCHEMA.event).values(event);
   if (isTargetRemoved(event)) return handleTargetRemoved(event);
-  throw new Error(`Unhandled event: ${event.event}`);
+  throw new Error(`Unhandled event: ${event.action}`);
 };

@@ -10,6 +10,6 @@ export type HookEvent = z.infer<typeof hookEvent>;
 
 // typeguards
 export const isTargetRemoved = (event: HookEvent): event is TargetRemoved =>
-  event.action === "removed";
+  event.action === "target.removed";
 export const isTargetDeleted = (event: HookEvent): event is TargetDeleted =>
-  event.action === "deleted";
+  event.action === "target.deleted";

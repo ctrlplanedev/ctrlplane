@@ -58,8 +58,7 @@ export const getEventsForEnvironmentDeleted = async (
 
   return system.deployments.flatMap((deployment) =>
     removedFromSystemTargets.map((target) => ({
-      event: "target",
-      action: "removed",
+      action: "target.removed",
       payload: { deployment, target },
     })),
   );

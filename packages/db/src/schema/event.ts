@@ -1,12 +1,14 @@
-import { jsonb, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 import { runbook } from "./runbook.js";
 
 export const event = pgTable("event", {
   id: uuid("id").primaryKey().defaultRandom(),
-  event: text("event").notNull(),
   action: text("action").notNull(),
   payload: jsonb("payload").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const hook = pgTable("hook", {
