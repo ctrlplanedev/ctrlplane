@@ -26,16 +26,10 @@ const config = {
 
   experimental: {
     instrumentationHook: true,
-    optimizePackageImports: ["bullmq", "googleapis"],
-    /** @see https://github.com/open-telemetry/opentelemetry-js/issues/4297 */
+    optimizePackageImports: ["googleapis"],
     serverComponentsExternalPackages: [
-      "@opentelemetry/sdk-node",
       "@opentelemetry/auto-instrumentations-node",
-      "@appsignal/opentelemetry-instrumentation-bullmq",
-      "@opentelemetry/exporter-trace-otlp-http",
-      "@opentelemetry/resources",
       "@opentelemetry/sdk-node",
-      "@opentelemetry/semantic-conventions",
     ],
   },
 

@@ -44,10 +44,6 @@ const sdk = new NodeSDK({
     }),
   ],
   sampler: new AlwaysOnSampler(),
-  // sampler:
-  //   env.NODE_ENV === "development"
-  //     ? new AlwaysOnSampler()
-  //     : new TraceIdRatioBasedSampler(env.OTEL_SAMPLER_RATIO),
 });
 
 try {
