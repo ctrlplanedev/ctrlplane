@@ -40,6 +40,10 @@
       "types": "./src/cac/index.ts",
       "default": "./dist/cac/index.js"
     },
+    "./session": {
+      "types": "./src/session/index.ts",
+      "default": "./dist/session/index.js"
+    },
     "./conditions": {
       "types": "./src/conditions/index.ts",
       "default": "./dist/conditions/index.js"

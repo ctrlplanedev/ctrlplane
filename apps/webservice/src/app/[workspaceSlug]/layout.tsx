@@ -1,3 +1,4 @@
+import dynamic from "next/dynamic";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@ctrlplane/auth";
@@ -11,6 +12,14 @@ import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
 import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
 import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { SidebarPanels } from "./SidebarPanels";
+
+const TerminalDrawer = dynamic(
+  () =>
+    import("./_components/terminal/TerminalSessionsDrawer").then(
+      (t) => t.TerminalDrawer,
+    ),
+  { ssr: false },
+);
 
 export default async function WorkspaceLayout({
   children,
@@ -43,6 +52,7 @@ export default async function WorkspaceLayout({
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
       <JobDrawer />
+      <TerminalDrawer />
     </>
   );
 }
