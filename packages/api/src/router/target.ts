@@ -15,6 +15,15 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
+import {
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createJobApprovals,
+  createReleaseJobTriggers,
+  dispatchReleaseJobTriggers,
+  isPassingAllPoliciesExceptNewerThanLastActive,
+  isPassingNoPendingJobsPolicy,
+  isPassingReleaseStringCheckPolicy,
+} from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 import { targetCondition } from "@ctrlplane/validators/targets";
@@ -527,5 +536,30 @@ export const targetRouter = createTRPCRouter({
         .where(eq(schema.target.id, input))
         .returning()
         .then(takeFirst),
+    ),
+
+  redeploy: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.TargetUpdate)
+          .on({ type: "target", id: input }),
+    })
+    .mutation(({ ctx, input }) =>
+      createReleaseJobTriggers(ctx.db, "redeploy")
+        .causedById(ctx.session.user.id)
+        .targets([input])
+        .filter(isPassingReleaseStringCheckPolicy)
+        .filter(isPassingNoPendingJobsPolicy)
+        .then(createJobApprovals)
+        .insert()
+        .then((triggers) =>
+          dispatchReleaseJobTriggers(ctx.db)
+            .releaseTriggers(triggers)
+            .filter(isPassingAllPoliciesExceptNewerThanLastActive)
+            .then(cancelOldReleaseJobTriggersOnJobDispatch)
+            .dispatch(),
+        ),
     ),
 });
