@@ -16,6 +16,14 @@ import {
   updateDeploymentVariable,
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
+import {
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createReleaseJobTriggers,
+  dispatchReleaseJobTriggers,
+  isPassingAllPolicies,
+  isPassingNoPendingJobsPolicy,
+  isPassingReleaseStringCheckPolicy,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -75,7 +83,7 @@ const valueRouter = createTRPCRouter({
       z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
     )
     .mutation(async ({ ctx, input }) => {
-      const defaultValueId = await ctx.db
+      const { deploymentId, defaultValueId } = await ctx.db
         .select()
         .from(deploymentVariableValue)
         .innerJoin(
@@ -84,9 +92,12 @@ const valueRouter = createTRPCRouter({
         )
         .where(eq(deploymentVariableValue.id, input.id))
         .then(takeFirst)
-        .then((v) => v.deployment_variable.defaultValueId);
+        .then((v) => ({
+          deploymentId: v.deployment_variable.deploymentId,
+          defaultValueId: v.deployment_variable.defaultValueId,
+        }));
 
-      return ctx.db.transaction((tx) =>
+      const updatedValue = await ctx.db.transaction((tx) =>
         tx
           .update(deploymentVariableValue)
           .set(input.data)
@@ -112,6 +123,30 @@ const valueRouter = createTRPCRouter({
             return updatedValue;
           }),
       );
+
+      if (input.data.value != null)
+        await ctx.db.query.target
+          .findMany({
+            where: targetMatchesMetadata(ctx.db, updatedValue.targetFilter),
+          })
+          .then((targets) =>
+            createReleaseJobTriggers(ctx.db, "variable_changed")
+              .causedById(ctx.session.user.id)
+              .targets(targets.map((t) => t.id))
+              .deployments([deploymentId])
+              .filter(isPassingNoPendingJobsPolicy)
+              .filter(isPassingReleaseStringCheckPolicy)
+              .insert()
+              .then((triggers) =>
+                dispatchReleaseJobTriggers(ctx.db)
+                  .releaseTriggers(triggers)
+                  .filter(isPassingAllPolicies)
+                  .then(cancelOldReleaseJobTriggersOnJobDispatch)
+                  .dispatch(),
+              ),
+          );
+
+      return updatedValue;
     }),
 
   delete: protectedProcedure
