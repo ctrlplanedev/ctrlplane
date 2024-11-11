@@ -1,9 +1,18 @@
 import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  eq,
+  ne,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
@@ -25,6 +34,10 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -124,7 +137,7 @@ const valueRouter = createTRPCRouter({
           }),
       );
 
-      if (input.data.value != null)
+      if (input.data.value != null && updatedValue.id !== defaultValueId)
         await ctx.db.query.target
           .findMany({
             where: targetMatchesMetadata(ctx.db, updatedValue.targetFilter),
@@ -145,6 +158,52 @@ const valueRouter = createTRPCRouter({
                   .dispatch(),
               ),
           );
+
+      /*
+        If the value is the default value, the targets we need to retrigger are the ones
+        that are not matched by any of the other values. So we grab every other value, and create
+        a comparison condition OR of all of the target filters.
+      */
+      if (input.data.value != null && updatedValue.id === defaultValueId) {
+        const otherValues = await ctx.db
+          .select()
+          .from(deploymentVariableValue)
+          .where(
+            and(
+              eq(deploymentVariableValue.variableId, updatedValue.variableId),
+              ne(deploymentVariableValue.id, updatedValue.id),
+            ),
+          );
+        const conditions = otherValues
+          .map((v) => v.targetFilter)
+          .filter(isPresent);
+        const condition: TargetCondition = {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.Or,
+          conditions,
+        };
+
+        await ctx.db.query.target
+          .findMany({
+            where: targetMatchesMetadata(ctx.db, condition),
+          })
+          .then((targets) =>
+            createReleaseJobTriggers(ctx.db, "variable_changed")
+              .causedById(ctx.session.user.id)
+              .targets(targets.map((t) => t.id))
+              .deployments([deploymentId])
+              .filter(isPassingNoPendingJobsPolicy)
+              .filter(isPassingReleaseStringCheckPolicy)
+              .insert()
+              .then((triggers) =>
+                dispatchReleaseJobTriggers(ctx.db)
+                  .releaseTriggers(triggers)
+                  .filter(isPassingAllPolicies)
+                  .then(cancelOldReleaseJobTriggersOnJobDispatch)
+                  .dispatch(),
+              ),
+          );
+      }
 
       return updatedValue;
     }),
