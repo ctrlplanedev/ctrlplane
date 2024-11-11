@@ -200,7 +200,10 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
+                    <TableCell
+                      onClick={(e) => e.stopPropagation()}
+                      className="py-0"
+                    >
                       {links != null && (
                         <div className="flex items-center gap-1">
                           {Object.entries(links).map(([label, url]) => (
@@ -211,7 +214,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                               rel="noopener noreferrer"
                               className={buttonVariants({
                                 variant: "secondary",
-                                size: "sm",
+                                size: "xs",
                                 className: "gap-1",
                               })}
                             >
@@ -302,7 +305,10 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                                 </span>
                               )}
                             </TableCell>
-                            <TableCell onClick={(e) => e.stopPropagation()}>
+                            <TableCell
+                              onClick={(e) => e.stopPropagation()}
+                              className="py-0"
+                            >
                               {links != null && (
                                 <div className="flex items-center gap-1">
                                   {Object.entries(links).map(([label, url]) => (
@@ -313,7 +319,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                                       rel="noopener noreferrer"
                                       className={buttonVariants({
                                         variant: "secondary",
-                                        size: "sm",
+                                        size: "xs",
                                         className: "gap-1",
                                       })}
                                     >
