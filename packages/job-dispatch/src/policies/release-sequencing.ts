@@ -136,24 +136,24 @@ export const isPassingNewerThanLastActiveReleasePolicy: ReleaseIdPolicyChecker =
       .groupBy((rjt) => {
         const release = releases.find((r) => r.id === rjt.releaseId);
         if (!release) return null;
-        return [release.deploymentId, rjt.environmentId];
+        return [rjt.environmentId, rjt.releaseId];
       })
       .filter(isPresent)
-      .map((triggers) => _.maxBy(triggers, (t) => t.createdAt)!)
       .map((t) => {
-        const release = releases.find((r) => r.id === t.releaseId);
+        const release = releases.find((r) => r.id === t[0]!.releaseId);
         if (!release) return null;
         const deployment = deployments.find(
           (d) => d.id === release.deploymentId,
         );
         if (!deployment) return null;
         const activeRelease = deployment.activeReleases.find(
-          (r) => r.environmentId === t.environmentId,
+          (r) => r.environmentId === t[0]!.environmentId,
         );
         if (!activeRelease) return t;
         if (release.id === activeRelease.id) return t;
         return isAfter(release.createdAt, activeRelease.createdAt) ? t : null;
       })
       .filter(isPresent)
-      .value();
+      .value()
+      .flat();
   };
