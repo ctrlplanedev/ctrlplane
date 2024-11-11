@@ -130,7 +130,7 @@ const valueRouter = createTRPCRouter({
             where: targetMatchesMetadata(ctx.db, updatedValue.targetFilter),
           })
           .then((targets) =>
-            createReleaseJobTriggers(ctx.db, "deployment_variable_changed")
+            createReleaseJobTriggers(ctx.db, "variable_changed")
               .causedById(ctx.session.user.id)
               .targets(targets.map((t) => t.id))
               .deployments([deploymentId])
