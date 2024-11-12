@@ -35,7 +35,7 @@ export const getEventsForDeploymentDeleted = async (
   });
 
   return targets.map((target) => ({
-    action: "target.removed",
+    action: "deployment.target.removed",
     payload: { deployment, target },
   }));
 };

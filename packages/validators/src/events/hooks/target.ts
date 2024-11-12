@@ -8,13 +8,13 @@ const target = z.object({
 });
 
 export const targetRemoved = z.object({
-  action: z.literal("target.removed"),
+  action: z.literal("deployment.target.removed"),
   payload: z.object({ deployment, target }),
 });
 export type TargetRemoved = z.infer<typeof targetRemoved>;
 
 export const targetDeleted = z.object({
-  action: z.literal("target.deleted"),
+  action: z.literal("deployment.target.deleted"),
   payload: z.object({ target }),
 });
 export type TargetDeleted = z.infer<typeof targetDeleted>;

@@ -44,7 +44,7 @@ export const getEventsForTargetDeleted = async (
   const deployments = (await Promise.all(deploymentPromises)).flat();
 
   return deployments.map((deployment) => ({
-    action: "target.removed",
+    action: "deployment.target.removed",
     payload: { target, deployment },
   }));
 };
