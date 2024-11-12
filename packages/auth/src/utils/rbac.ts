@@ -178,8 +178,8 @@ const getTargetMetadataGroupScopes = async (id: string) => {
 
   return [
     {
-      type: "targetMetadataGroup" as const,
-      id: result.target_metadata_group.id,
+      type: "resourceMetadataGroup" as const,
+      id: result.resource_metadata_group.id,
     },
     { type: "workspace" as const, id: result.workspace.id },
   ];
@@ -194,7 +194,7 @@ const getTargetScopes = async (id: string) => {
     .then(takeFirst);
 
   return [
-    { type: "target" as const, id: result.target.id },
+    { type: "resource" as const, id: result.resource.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };
@@ -208,7 +208,7 @@ const getTargetProviderScopes = async (id: string) => {
     .then(takeFirst);
 
   return [
-    { type: "targetProvider" as const, id: result.target_provider.id },
+    { type: "resourceProvider" as const, id: result.resource_provider.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };
@@ -222,7 +222,7 @@ const getTargetViewScopes = async (id: string) => {
     .then(takeFirst);
 
   return [
-    { type: "targetView" as const, id: result.target_view.id },
+    { type: "resourceView" as const, id: result.resource_view.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };
@@ -354,7 +354,7 @@ const getJobScopes = async (id: string) => {
 
   return [
     { type: "job" as const, id: result.job.id },
-    { type: "target" as const, id: result.target.id },
+    { type: "resource" as const, id: result.resource.id },
     { type: "environment" as const, id: result.environment.id },
     { type: "release" as const, id: result.release.id },
     { type: "deployment" as const, id: result.deployment.id },
@@ -369,9 +369,9 @@ export const scopeHandlers: Record<
   ScopeType,
   (id: string) => Promise<Array<Scope>>
 > = {
-  target: getTargetScopes,
-  targetView: getTargetViewScopes,
-  targetProvider: getTargetProviderScopes,
+  resource: getTargetScopes,
+  resourceView: getTargetViewScopes,
+  resourceProvider: getTargetProviderScopes,
   deployment: getDeploymentScopes,
   deploymentVariable: getDeploymentVariableScopes,
   runbook: getRunbookScopes,
@@ -381,7 +381,7 @@ export const scopeHandlers: Record<
   environmentPolicy: getEnvironmentPolicyScopes,
   release: getReleaseScopes,
   releaseChannel: getReleaseChannelScopes,
-  targetMetadataGroup: getTargetMetadataGroupScopes,
+  resourceMetadataGroup: getTargetMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
   job: getJobScopes,

@@ -14,7 +14,7 @@ export async function dispatchJobsForNewTargets(
   newTargetIds: string[],
   envId: string,
 ): Promise<void> {
-  const releaseJobTriggers = await createReleaseJobTriggers(db, "new_target")
+  const releaseJobTriggers = await createReleaseJobTriggers(db, "new_resource")
     .targets(newTargetIds)
     .environments([envId])
     .insert();

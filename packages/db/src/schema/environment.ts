@@ -38,7 +38,7 @@ export const environment = pgTable(
     policyId: uuid("policy_id").references(() => environmentPolicy.id, {
       onDelete: "set null",
     }),
-    targetFilter: jsonb("target_filter")
+    targetFilter: jsonb("resource_filter")
       .$type<TargetCondition | null>()
       .default(sql`NULL`),
     createdAt: timestamp("created_at", { withTimezone: true })

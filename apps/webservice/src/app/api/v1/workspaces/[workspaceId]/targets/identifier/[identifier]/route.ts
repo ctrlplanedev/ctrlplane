@@ -24,7 +24,7 @@ export const GET = request()
       if (target == null) return false;
       return can
         .perform(Permission.TargetGet)
-        .on({ type: "target", id: target.id });
+        .on({ type: "resource", id: target.id });
     }),
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
@@ -72,7 +72,7 @@ export const DELETE = request()
       if (target == null) return false;
       return can
         .perform(Permission.TargetDelete)
-        .on({ type: "target", id: target.id });
+        .on({ type: "resource", id: target.id });
     }),
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(

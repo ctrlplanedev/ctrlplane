@@ -15,7 +15,7 @@ import { target } from "./target.js";
 import { workspace } from "./workspace.js";
 
 export const targetProvider = pgTable(
-  "target_provider",
+  "resource_provider",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     workspaceId: uuid("workspace_id")
@@ -37,9 +37,9 @@ export const createTargetProvider = createInsertSchema(targetProvider).omit({
 });
 export type TargetProvider = InferSelectModel<typeof targetProvider>;
 
-export const targetProviderGoogle = pgTable("target_provider_google", {
+export const targetProviderGoogle = pgTable("resource_provider_google", {
   id: uuid("id").primaryKey().defaultRandom(),
-  targetProviderId: uuid("target_provider_id")
+  targetProviderId: uuid("resource_provider_id")
     .notNull()
     .references(() => targetProvider.id, { onDelete: "cascade" }),
 

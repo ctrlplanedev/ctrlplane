@@ -292,7 +292,7 @@ export const deploymentVariableRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "target", id: input }),
+          .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {

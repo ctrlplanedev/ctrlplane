@@ -108,7 +108,7 @@ export const releaseDeployRouter = createTRPCRouter({
           .perform(Permission.ReleaseGet, Permission.TargetUpdate)
           .on(
             { type: "release", id: input.releaseId },
-            { type: "target", id: input.targetId },
+            { type: "resource", id: input.targetId },
           ),
     })
     .input(

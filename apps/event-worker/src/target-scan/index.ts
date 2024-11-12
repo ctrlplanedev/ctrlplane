@@ -47,17 +47,17 @@ export const createTargetScanWorker = () =>
       }
 
       logger.info(
-        `Received scanning request for "${tp.target_provider.name}" (${targetProviderId}).`,
+        `Received scanning request for "${tp.resource_provider.name}" (${targetProviderId}).`,
       );
 
       const targets: InsertTarget[] = [];
 
-      if (tp.target_provider_google != null) {
+      if (tp.resource_provider_google != null) {
         logger.info("Found Google config, scanning for GKE targets");
         try {
           const gkeTargets = await getGkeTargets(
             tp.workspace,
-            tp.target_provider_google,
+            tp.resource_provider_google,
           );
           targets.push(...gkeTargets);
         } catch (error: any) {
@@ -69,18 +69,18 @@ export const createTargetScanWorker = () =>
 
       try {
         logger.info(
-          `Upserting ${targets.length} targets for provider ${tp.target_provider.id}`,
+          `Upserting ${targets.length} targets for provider ${tp.resource_provider.id}`,
         );
         if (targets.length > 0) {
           await upsertTargets(db, targets);
         } else {
           logger.info(
-            `No targets found for provider ${tp.target_provider.id}, skipping upsert.`,
+            `No targets found for provider ${tp.resource_provider.id}, skipping upsert.`,
           );
         }
       } catch (error: any) {
         logger.error(
-          `Error upserting targets for provider ${tp.target_provider.id}: ${error.message}`,
+          `Error upserting targets for provider ${tp.resource_provider.id}: ${error.message}`,
           { error },
         );
       }

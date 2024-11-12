@@ -60,7 +60,7 @@ export const deploymentVariableValue = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
     value: jsonb("value").$type<any>().notNull(),
-    targetFilter: jsonb("target_filter")
+    targetFilter: jsonb("resource_filter")
       .$type<TargetCondition | null>()
       .default(sql`NULL`),
   },

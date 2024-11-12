@@ -113,7 +113,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetMetadataGroupGet)
-          .on({ type: "targetMetadataGroup", id: input }),
+          .on({ type: "resourceMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -209,7 +209,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetMetadataGroupUpdate)
-          .on({ type: "targetMetadataGroup", id: input.id }),
+          .on({ type: "resourceMetadataGroup", id: input.id }),
     })
     .input(
       z.object({
@@ -231,7 +231,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetMetadataGroupDelete)
-          .on({ type: "targetMetadataGroup", id: input }),
+          .on({ type: "resourceMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>

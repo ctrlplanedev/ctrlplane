@@ -122,7 +122,7 @@ const targetViews = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewUpdate)
-          .on({ type: "targetView", id: input.id }),
+          .on({ type: "resourceView", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: schema.updateTargetView }))
     .mutation(async ({ ctx, input }) =>
@@ -139,7 +139,7 @@ const targetViews = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewDelete)
-          .on({ type: "targetView", id: input }),
+          .on({ type: "resourceView", id: input }),
     })
     .input(z.string().uuid())
     .mutation(async ({ ctx, input }) =>
@@ -151,7 +151,7 @@ const targetViews = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetViewGet)
-          .on({ type: "targetView", id: input }),
+          .on({ type: "resourceView", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -202,7 +202,7 @@ const targetVariables = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: input.targetId }),
+          .on({ type: "resource", id: input.targetId }),
     })
     .mutation(async ({ ctx, input }) => {
       const { sensitive } = input;
@@ -228,7 +228,7 @@ const targetVariables = createTRPCRouter({
 
         return canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: variable.targetId });
+          .on({ type: "resource", id: variable.targetId });
       },
     })
     .mutation(async ({ ctx, input }) => {
@@ -258,7 +258,7 @@ const targetVariables = createTRPCRouter({
 
         return canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: variable.targetId });
+          .on({ type: "resource", id: variable.targetId });
       },
     })
     .mutation(async ({ ctx, input }) =>
@@ -307,7 +307,9 @@ export const targetRouter = createTRPCRouter({
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.TargetGet).on({ type: "target", id: input }),
+        canUser
+          .perform(Permission.TargetGet)
+          .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -413,7 +415,7 @@ export const targetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: input.id }),
+          .on({ type: "resource", id: input.id }),
     })
     .input(
       z.object({
@@ -472,7 +474,7 @@ export const targetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.TargetDelete).on(
           ...(input as string[]).map((t) => ({
-            type: "target" as const,
+            type: "resource" as const,
             id: t,
           })),
         ),
@@ -518,7 +520,7 @@ export const targetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: input }),
+          .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
@@ -535,7 +537,7 @@ export const targetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: input }),
+          .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
@@ -553,7 +555,7 @@ export const targetRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "target", id: input }),
+          .on({ type: "resource", id: input }),
     })
     .mutation(({ ctx, input }) =>
       createReleaseJobTriggers(ctx.db, "redeploy")

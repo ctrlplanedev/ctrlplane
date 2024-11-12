@@ -76,7 +76,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
   rows: Array<{
     release_job_trigger: ReleaseJobTrigger;
     job: Job;
-    target: Target;
+    resource: Target;
     release: Release;
     deployment: Deployment;
     environment: Environment;
@@ -110,7 +110,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
           .value(),
       },
       jobAgent: v[0]!.job_agent,
-      target: v[0]!.target,
+      target: v[0]!.resource,
       release: { ...v[0]!.release, deployment: v[0]!.deployment },
       environment: v[0]!.environment,
       releaseDependencies: v
@@ -173,7 +173,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
               ...t.release_job_trigger,
               job: t.job,
               agent: t.job_agent,
-              target: t.target,
+              target: t.resource,
               release: { ...t.release, deployment: t.deployment },
               environment: t.environment,
             })),
@@ -291,7 +291,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             ...t.release_job_trigger,
             job: t.job,
             jobAgent: t.job_agent,
-            target: t.target,
+            target: t.resource,
             release: { ...t.release, deployment: t.deployment },
             environment: t.environment,
           })),
@@ -617,7 +617,7 @@ export const jobRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.SystemList)
-          .on({ type: "target", id: input }),
+          .on({ type: "resource", id: input }),
     })
     .input(z.string())
     .query(({ ctx, input }) =>
@@ -630,7 +630,7 @@ export const jobRouter = createTRPCRouter({
             ...t.release_job_trigger,
             job: t.job,
             agent: t.job_agent,
-            target: t.target,
+            target: t.resource,
             deployment: t.deployment,
             release: { ...t.release },
             environment: t.environment,

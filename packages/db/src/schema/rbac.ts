@@ -35,9 +35,9 @@ export type EntityType = z.infer<typeof entityTypeSchema>;
 export const scopeType = pgEnum("scope_type", [
   "release",
   "releaseChannel",
-  "target",
-  "targetProvider",
-  "targetMetadataGroup",
+  "resource",
+  "resourceProvider",
+  "resourceMetadataGroup",
   "workspace",
   "environment",
   "environmentPolicy",
@@ -48,7 +48,7 @@ export const scopeType = pgEnum("scope_type", [
   "job",
   "jobAgent",
   "runbook",
-  "targetView",
+  "resourceView",
 ]);
 export const scopeTypeSchema = z.enum(scopeType.enumValues);
 export type ScopeType = z.infer<typeof scopeTypeSchema>;
