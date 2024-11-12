@@ -40,7 +40,7 @@ export const isPassingReleaseDependencyPolicy = async (
                 NULL::uuid AS tr_id,
                 NULL::uuid AS source_id,
                 NULL::uuid AS target_id,
-                NULL::target_relationship_type AS type
+                NULL::resource_relationship_type AS type
             UNION ALL
             -- Recursive case: find all relationships connected to the current set of IDs
             SELECT
@@ -57,7 +57,7 @@ export const isPassingReleaseDependencyPolicy = async (
                 tr.target_id,
                 tr.type
             FROM reachable_relationships rr
-            JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+            JOIN resource_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
             WHERE
                 NOT CASE
                     WHEN tr.source_id = rr.id THEN tr.target_id

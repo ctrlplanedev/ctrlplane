@@ -64,7 +64,7 @@ const targetRelations = createTRPCRouter({
                 tr.target_id,
                 tr.type
             FROM reachable_relationships rr
-            JOIN target_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+            JOIN resource_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
             WHERE
                 NOT CASE
                     WHEN tr.source_id = rr.id THEN tr.target_id
@@ -276,9 +276,9 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       targetProvider: schema.targetProvider,
       workspace: schema.workspace,
       targetMetadata: sql<_StringStringRecord>`
-        jsonb_object_agg(target_metadata.key, target_metadata.value) 
-        FILTER (WHERE target_metadata.key IS NOT NULL)
-      `.as("target_metadata"),
+        jsonb_object_agg(resource_metadata.key, resource_metadata.value) 
+        FILTER (WHERE resource_metadata.key IS NOT NULL)
+      `.as("resource_metadata"),
     })
     .from(schema.target)
     .leftJoin(
