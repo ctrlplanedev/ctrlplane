@@ -27,4 +27,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
+// Health check endpoint
+app.get("/api/proxy/health", (_req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 export { app };

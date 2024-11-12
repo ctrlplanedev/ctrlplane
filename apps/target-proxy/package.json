@@ -1,15 +1,19 @@
 {
-  "name": "@ctrlplane/ctrlshell",
+  "name": "@ctrlplane/target-proxy",
   "private": true,
   "type": "module",
   "scripts": {
     "clean": "rm -rf .turbo node_modules",
-    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "dev:t": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
-    "format": "prettier --check . --ignore-path ../../.gitignore"
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/job-dispatch": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
+    "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-core": "catalog:",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

@@ -36,4 +36,4 @@ RUN adduser --system --uid 1001 expressjs
 USER expressjs
 
 COPY --from=installer /app .
-CMD ["node", "apps/webshell-router/dist/index.js"]
+CMD ["node", "apps/target-proxy/dist/index.js"]

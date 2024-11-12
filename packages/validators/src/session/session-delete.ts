@@ -5,4 +5,5 @@ export default z.object({
     .literal("session.delete")
     .describe("Type of payload - must be session.create"),
   sessionId: z.string().describe("ID of the session to delete"),
+  targetId: z.string().describe("Target ID for the session").optional(),
 });
