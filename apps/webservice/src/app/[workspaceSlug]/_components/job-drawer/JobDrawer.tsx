@@ -14,6 +14,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
+import { useReleaseChannel } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/useReleaseChannel";
 import { api } from "~/trpc/react";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
@@ -41,13 +42,23 @@ export const JobDrawer: React.FC = () => {
       ? (JSON.parse(linksMetadata.value) as Record<string, string>)
       : null;
 
+  const { isPassingReleaseChannel, loading: releaseChannelLoading } =
+    useReleaseChannel(
+      job?.release.deployment.id ?? "",
+      job?.environmentId ?? "",
+      job?.release.version ?? "",
+      jobQ.isSuccess,
+    );
+
+  const loading = jobQ.isLoading || releaseChannelLoading;
+
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
         className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none focus-visible:outline-none"
       >
-        {jobQ.isLoading && (
+        {loading && (
           <div className="flex h-full w-full items-center justify-center">
             <IconLoader2 className="h-8 w-8 animate-spin" />
           </div>
@@ -65,8 +76,9 @@ export const JobDrawer: React.FC = () => {
                     release={job.release}
                     environmentId={job.environment.id}
                     target={job.target}
-                    deploymentName={job.release.deployment.name}
+                    deployment={job.release.deployment}
                     job={job.job}
+                    isPassingReleaseChannel={isPassingReleaseChannel}
                   >
                     <Button variant="ghost" size="icon" className="h-6 w-6">
                       <IconDotsVertical className="h-3 w-3" />

@@ -1,7 +1,7 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import type { Environment } from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
@@ -37,13 +37,14 @@ import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableSt
 import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "./JobDropdownMenu";
 import { PolicyApprovalRow } from "./PolicyApprovalRow";
+import { useReleaseChannel } from "./useReleaseChannel";
 
 type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
 
 type CollapsibleTableRowProps = {
-  environment: Environment;
+  environment: SCHEMA.Environment;
   environmentCount: number;
-  deploymentName: string;
+  deployment: SCHEMA.Deployment;
   release: {
     id: string;
     version: string;
@@ -55,7 +56,7 @@ type CollapsibleTableRowProps = {
 const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   environment,
   environmentCount,
-  deploymentName,
+  deployment,
   release,
   triggersByTarget,
 }) => {
@@ -87,7 +88,25 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
       return newState;
     });
 
+  const { isPassingReleaseChannel, loading: releaseChannelLoading } =
+    useReleaseChannel(deployment.id, environment.id, release.version);
+
+  const loading = approvalsQ.isLoading || releaseChannelLoading;
+
   if (allTriggers.length === 0) return null;
+
+  if (loading)
+    return (
+      <div className="space-y-2 p-4">
+        {_.range(10).map((i) => (
+          <Skeleton
+            key={i}
+            className="h-9 w-full"
+            style={{ opacity: 1 * (1 - i / 10) }}
+          />
+        ))}
+      </div>
+    );
 
   return (
     <Fragment>
@@ -239,13 +258,14 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                       <div className="flex justify-end">
                         <JobDropdownMenu
                           release={release}
-                          deploymentName={deploymentName}
+                          deployment={deployment}
                           target={trigger.target}
                           environmentId={trigger.environmentId}
                           job={{
                             id: trigger.job.id,
                             status: trigger.job.status,
                           }}
+                          isPassingReleaseChannel={isPassingReleaseChannel}
                         >
                           <Button
                             variant="ghost"
@@ -344,13 +364,16 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                               <div className="flex justify-end">
                                 <JobDropdownMenu
                                   release={release}
-                                  deploymentName={deploymentName}
+                                  deployment={deployment}
                                   target={trigger.target}
                                   environmentId={trigger.environmentId}
                                   job={{
                                     id: trigger.job.id,
                                     status: trigger.job.status,
                                   }}
+                                  isPassingReleaseChannel={
+                                    isPassingReleaseChannel
+                                  }
                                 >
                                   <Button
                                     variant="ghost"
@@ -379,13 +402,13 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
 
 type TargetReleaseTableProps = {
   release: { id: string; version: string; name: string };
-  deploymentName: string;
-  environments: Environment[];
+  deployment: SCHEMA.Deployment;
+  environments: SCHEMA.Environment[];
 };
 
 export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   release,
-  deploymentName,
+  deployment,
   environments,
 }) => {
   const { filter, setFilter } = useJobFilter();
@@ -446,7 +469,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
                 key={environment!.id}
                 environment={environment!}
                 environmentCount={groupedTriggers.length}
-                deploymentName={deploymentName}
+                deployment={deployment}
                 release={release}
                 triggersByTarget={targets}
               />
