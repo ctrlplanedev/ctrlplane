@@ -239,6 +239,13 @@
       "when": 1730958730780,
       "tag": "0033_abnormal_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1731363267765,
+      "tag": "0034_brave_rogue",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IconTrash } from "@tabler/icons-react";
+import { IconRefresh, IconTrash } from "@tabler/icons-react";
 
 import {
   AlertDialog,
@@ -81,6 +81,56 @@ const DeleteTargetDialog: React.FC<DeleteTargetDialogProps> = ({
   );
 };
 
+type RedeployTargetDialogProps = {
+  targetId: string;
+  onClose: () => void;
+  children: React.ReactNode;
+};
+
+const RedeployTargetDialog: React.FC<RedeployTargetDialogProps> = ({
+  targetId,
+  onClose,
+  children,
+}) => {
+  const [open, setOpen] = useState(false);
+  const redeployTarget = api.target.redeploy.useMutation();
+
+  const onRedeploy = () =>
+    redeployTarget.mutateAsync(targetId).then(() => setOpen(false));
+
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) onClose();
+      }}
+    >
+      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Redeploy Target</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to redeploy this target? This will redeploy
+            the latest release across all systems and environments for this
+            target.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onRedeploy}
+            className={buttonVariants({ variant: "default" })}
+            disabled={redeployTarget.isPending}
+          >
+            Redeploy
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 type TargetActionsDropdownProps = {
   target: SCHEMA.Target;
   children: React.ReactNode;
@@ -95,6 +145,18 @@ export const TargetActionsDropdown: React.FC<TargetActionsDropdownProps> = ({
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start">
+        <RedeployTargetDialog
+          targetId={target.id}
+          onClose={() => setOpen(false)}
+        >
+          <DropdownMenuItem
+            className="flex cursor-pointer items-center gap-2"
+            onSelect={(e) => e.preventDefault()}
+          >
+            <IconRefresh className="h-4 w-4" />
+            Redeploy
+          </DropdownMenuItem>
+        </RedeployTargetDialog>
         <DeleteTargetDialog targetId={target.id} onClose={() => setOpen(false)}>
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2"
