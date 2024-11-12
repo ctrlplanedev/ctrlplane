@@ -38,6 +38,7 @@ class ReleaseJobTriggerBuilder {
 
   private environmentIds?: string[];
   private targetIds?: string[];
+  private deploymentIds?: string[];
   private releaseIds?: string[];
 
   private _filters: FilterFunc[] = [];
@@ -73,6 +74,11 @@ class ReleaseJobTriggerBuilder {
     return this;
   }
 
+  deployments(ids: string[]) {
+    this.deploymentIds = ids;
+    return this;
+  }
+
   releases(ids: string[]) {
     this.releaseIds = ids;
     return this;
@@ -82,6 +88,7 @@ class ReleaseJobTriggerBuilder {
     return and(
       ...[
         this.releaseIds && inArray(release.id, this.releaseIds),
+        this.deploymentIds && inArray(deployment.id, this.deploymentIds),
         this.environmentIds && inArray(environment.id, this.environmentIds),
       ].filter(isPresent),
       isNotNull(environment.targetFilter),

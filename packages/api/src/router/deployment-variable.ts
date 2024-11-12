@@ -1,22 +1,45 @@
 import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
+import type { TargetCondition } from "@ctrlplane/validators/targets";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  eq,
+  isNotNull,
+  ne,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   createDeploymentVariable,
   createDeploymentVariableValue,
   deployment,
   deploymentVariable,
   deploymentVariableValue,
+  environment,
   system,
   target,
   targetMatchesMetadata,
   updateDeploymentVariable,
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
+import {
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createReleaseJobTriggers,
+  dispatchReleaseJobTriggers,
+  isPassingAllPolicies,
+  isPassingNoPendingJobsPolicy,
+  isPassingReleaseStringCheckPolicy,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -75,7 +98,7 @@ const valueRouter = createTRPCRouter({
       z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
     )
     .mutation(async ({ ctx, input }) => {
-      const defaultValueId = await ctx.db
+      const { variable, value } = await ctx.db
         .select()
         .from(deploymentVariableValue)
         .innerJoin(
@@ -84,9 +107,31 @@ const valueRouter = createTRPCRouter({
         )
         .where(eq(deploymentVariableValue.id, input.id))
         .then(takeFirst)
-        .then((v) => v.deployment_variable.defaultValueId);
+        .then((v) => ({
+          variable: v.deployment_variable,
+          value: v.deployment_variable_value,
+        }));
+      const { deploymentId } = variable;
+      const dep = await ctx.db.query.deployment
+        .findFirst({
+          where: eq(deployment.id, deploymentId),
+          with: {
+            system: {
+              with: {
+                environments: { where: isNotNull(environment.targetFilter) },
+              },
+            },
+          },
+        })
+        .then((d) => d?.system.environments ?? []);
 
-      return ctx.db.transaction((tx) =>
+      const systemCondition: TargetCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.Or,
+        conditions: dep.map((e) => e.targetFilter).filter(isPresent),
+      };
+
+      const updatedValue = await ctx.db.transaction((tx) =>
         tx
           .update(deploymentVariableValue)
           .set(input.data)
@@ -94,7 +139,10 @@ const valueRouter = createTRPCRouter({
           .returning()
           .then(takeFirst)
           .then(async (updatedValue) => {
-            if (input.data.default && defaultValueId !== updatedValue.id)
+            if (
+              input.data.default &&
+              variable.defaultValueId !== updatedValue.id
+            )
               await tx
                 .update(deploymentVariable)
                 .set({ defaultValueId: updatedValue.id })
@@ -102,7 +150,7 @@ const valueRouter = createTRPCRouter({
 
             if (
               input.data.default === false &&
-              defaultValueId === updatedValue.id
+              variable.defaultValueId === updatedValue.id
             )
               await tx
                 .update(deploymentVariable)
@@ -112,6 +160,96 @@ const valueRouter = createTRPCRouter({
             return updatedValue;
           }),
       );
+
+      const newDefaultValueId = input.data.default
+        ? updatedValue.id
+        : variable.defaultValueId;
+
+      const otherValues = await ctx.db
+        .select()
+        .from(deploymentVariableValue)
+        .where(
+          and(
+            eq(deploymentVariableValue.variableId, updatedValue.variableId),
+            ne(deploymentVariableValue.id, updatedValue.id),
+          ),
+        );
+
+      const getOldTargetFilter = (): TargetCondition | null => {
+        if (value.id !== variable.defaultValueId) return value.targetFilter;
+        const conditions = otherValues
+          .map((v) => v.targetFilter)
+          .filter(isPresent);
+        return {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.Or,
+          not: true,
+          conditions,
+        };
+      };
+
+      const getNewTargetFilter = (): TargetCondition | null => {
+        if (updatedValue.id !== newDefaultValueId)
+          return updatedValue.targetFilter;
+        const conditions = otherValues
+          .map((v) => v.targetFilter)
+          .filter(isPresent);
+        return {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.Or,
+          not: true,
+          conditions,
+        };
+      };
+
+      const oldTargetFilter: TargetCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.And,
+        conditions: [systemCondition, getOldTargetFilter()].filter(isPresent),
+      };
+      const newTargetFilter: TargetCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.And,
+        conditions: [systemCondition, getNewTargetFilter()].filter(isPresent),
+      };
+
+      const oldTargets = await ctx.db.query.target.findMany({
+        where: targetMatchesMetadata(ctx.db, oldTargetFilter),
+      });
+
+      const newTargets = await ctx.db.query.target.findMany({
+        where: targetMatchesMetadata(ctx.db, newTargetFilter),
+      });
+
+      const oldTargetIds = new Set(oldTargets.map((t) => t.id));
+      const newTargetIds = new Set(newTargets.map((t) => t.id));
+
+      const addedTargets = newTargets.filter((t) => !oldTargetIds.has(t.id));
+      const removedTargets = oldTargets.filter((t) => !newTargetIds.has(t.id));
+      const stagnantTargets = newTargets.filter((t) => oldTargetIds.has(t.id));
+
+      const targetsToTrigger = [
+        ...addedTargets,
+        ...removedTargets,
+        ...(input.data.value !== null ? stagnantTargets : []),
+      ];
+
+      if (targetsToTrigger.length > 0)
+        await createReleaseJobTriggers(ctx.db, "variable_changed")
+          .causedById(ctx.session.user.id)
+          .targets(targetsToTrigger.map((t) => t.id))
+          .deployments([deploymentId])
+          .filter(isPassingNoPendingJobsPolicy)
+          .filter(isPassingReleaseStringCheckPolicy)
+          .insert()
+          .then((triggers) =>
+            dispatchReleaseJobTriggers(ctx.db)
+              .releaseTriggers(triggers)
+              .filter(isPassingAllPolicies)
+              .then(cancelOldReleaseJobTriggersOnJobDispatch)
+              .dispatch(),
+          );
+      return updatedValue;
     }),
 
   delete: protectedProcedure
