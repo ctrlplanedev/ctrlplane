@@ -34,6 +34,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { ReleaseConditionRender } from "../release-condition/ReleaseConditionRender";
+import { useReleaseFilter } from "../release-condition/useReleaseFilter";
 import { ReleaseBadgeList } from "../ReleaseBadgeList";
 
 type OverviewProps = {
@@ -86,6 +87,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
     systemSlug?: string;
     deploymentSlug?: string;
   }>();
+  const { filter: paramFilter, setFilter } = useReleaseFilter();
 
   const defaultValues = {
     ...releaseChannel,
@@ -106,6 +108,9 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
       .then(() =>
         utils.deployment.releaseChannel.byId.invalidate(releaseChannel.id),
       )
+      .then(() => {
+        if (paramFilter != null) setFilter(releaseFilter);
+      })
       .then(() => router.refresh());
   });
 

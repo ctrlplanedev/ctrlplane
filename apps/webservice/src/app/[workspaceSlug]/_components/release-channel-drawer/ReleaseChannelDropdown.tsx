@@ -22,6 +22,7 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
+import { useReleaseFilter } from "../release-condition/useReleaseFilter";
 import { useReleaseChannelDrawer } from "./useReleaseChannelDrawer";
 
 type DeleteReleaseChannelDialogProps = {
@@ -37,6 +38,7 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const { removeReleaseChannelId } = useReleaseChannelDrawer();
+  const { removeReleaseChannel } = useReleaseFilter();
   const router = useRouter();
   const deleteReleaseChannel =
     api.deployment.releaseChannel.delete.useMutation();
@@ -44,6 +46,7 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
     deleteReleaseChannel
       .mutateAsync(releaseChannelId)
       .then(() => removeReleaseChannelId())
+      .then(() => removeReleaseChannel())
       .then(() => router.refresh())
       .then(() => setOpen(false));
 

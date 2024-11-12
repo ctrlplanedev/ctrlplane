@@ -2,7 +2,7 @@
 
 import type * as schema from "@ctrlplane/db/schema";
 import { useParams, useRouter } from "next/navigation";
-import { IconFilter, IconGraph } from "@tabler/icons-react";
+import { IconFilter, IconGraph, IconSettings } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 
@@ -29,17 +29,19 @@ import { Release } from "../../TableCells";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type DeploymentPageContentProps = {
-  deployment: schema.Deployment;
+  deployment: schema.Deployment & { releaseChannels: schema.ReleaseChannel[] };
   environments: {
     id: string;
     name: string;
     targets: { id: string }[];
   }[];
+  releaseChannel: schema.ReleaseChannel | null;
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   deployment,
   environments,
+  releaseChannel,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
   const { setReleaseChannelId } = useReleaseChannelDrawer();
@@ -66,8 +68,12 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     <div>
       <div className="h-full text-sm">
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
-          <div className="flex-grow">
-            <ReleaseConditionDialog condition={filter} onChange={setFilter}>
+          <div className="flex flex-grow items-center gap-2">
+            <ReleaseConditionDialog
+              condition={filter}
+              onChange={setFilter}
+              releaseChannels={deployment.releaseChannels}
+            >
               <div className="flex items-center gap-2">
                 <Button
                   variant="ghost"
@@ -77,9 +83,24 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                   <IconFilter className="h-4 w-4" />
                 </Button>
 
-                {filter != null && <ReleaseConditionBadge condition={filter} />}
+                {filter != null && releaseChannel == null && (
+                  <ReleaseConditionBadge condition={filter} />
+                )}
               </div>
             </ReleaseConditionDialog>
+            {filter != null && releaseChannel != null && (
+              <div className="flex items-center gap-2">
+                <span>{releaseChannel.name}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setReleaseChannelId(releaseChannel.id)}
+                >
+                  <IconSettings className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
