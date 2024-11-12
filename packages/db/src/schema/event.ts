@@ -28,11 +28,3 @@ export const runhook = pgTable("runhook", {
     .notNull()
     .references(() => runbook.id, { onDelete: "cascade" }),
 });
-
-export const webhook = pgTable("webhook", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  hookId: uuid("hook_id")
-    .notNull()
-    .references(() => hook.id, { onDelete: "cascade" }),
-  url: text("url").notNull(),
-});
