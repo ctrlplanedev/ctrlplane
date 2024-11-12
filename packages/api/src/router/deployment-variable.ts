@@ -8,6 +8,7 @@ import {
   and,
   asc,
   eq,
+  isNotNull,
   ne,
   sql,
   takeFirst,
@@ -19,6 +20,7 @@ import {
   deployment,
   deploymentVariable,
   deploymentVariableValue,
+  environment,
   system,
   target,
   targetMatchesMetadata,
@@ -96,7 +98,7 @@ const valueRouter = createTRPCRouter({
       z.object({ id: z.string().uuid(), data: updateDeploymentVariableValue }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { deploymentId, defaultValueId } = await ctx.db
+      const { variable, value } = await ctx.db
         .select()
         .from(deploymentVariableValue)
         .innerJoin(
@@ -106,9 +108,28 @@ const valueRouter = createTRPCRouter({
         .where(eq(deploymentVariableValue.id, input.id))
         .then(takeFirst)
         .then((v) => ({
-          deploymentId: v.deployment_variable.deploymentId,
-          defaultValueId: v.deployment_variable.defaultValueId,
+          variable: v.deployment_variable,
+          value: v.deployment_variable_value,
         }));
+      const { deploymentId } = variable;
+      const dep = await ctx.db.query.deployment
+        .findFirst({
+          where: eq(deployment.id, deploymentId),
+          with: {
+            system: {
+              with: {
+                environments: { where: isNotNull(environment.targetFilter) },
+              },
+            },
+          },
+        })
+        .then((d) => d?.system.environments ?? []);
+
+      const systemCondition: TargetCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.Or,
+        conditions: dep.map((e) => e.targetFilter).filter(isPresent),
+      };
 
       const updatedValue = await ctx.db.transaction((tx) =>
         tx
@@ -118,7 +139,10 @@ const valueRouter = createTRPCRouter({
           .returning()
           .then(takeFirst)
           .then(async (updatedValue) => {
-            if (input.data.default && defaultValueId !== updatedValue.id)
+            if (
+              input.data.default &&
+              variable.defaultValueId !== updatedValue.id
+            )
               await tx
                 .update(deploymentVariable)
                 .set({ defaultValueId: updatedValue.id })
@@ -126,7 +150,7 @@ const valueRouter = createTRPCRouter({
 
             if (
               input.data.default === false &&
-              defaultValueId === updatedValue.id
+              variable.defaultValueId === updatedValue.id
             )
               await tx
                 .update(deploymentVariable)
@@ -137,74 +161,94 @@ const valueRouter = createTRPCRouter({
           }),
       );
 
-      if (input.data.value != null && updatedValue.id !== defaultValueId)
-        await ctx.db.query.target
-          .findMany({
-            where: targetMatchesMetadata(ctx.db, updatedValue.targetFilter),
-          })
-          .then((targets) =>
-            createReleaseJobTriggers(ctx.db, "variable_changed")
-              .causedById(ctx.session.user.id)
-              .targets(targets.map((t) => t.id))
-              .deployments([deploymentId])
-              .filter(isPassingNoPendingJobsPolicy)
-              .filter(isPassingReleaseStringCheckPolicy)
-              .insert()
-              .then((triggers) =>
-                dispatchReleaseJobTriggers(ctx.db)
-                  .releaseTriggers(triggers)
-                  .filter(isPassingAllPolicies)
-                  .then(cancelOldReleaseJobTriggersOnJobDispatch)
-                  .dispatch(),
-              ),
-          );
+      const newDefaultValueId = input.data.default
+        ? updatedValue.id
+        : variable.defaultValueId;
 
-      /*
-        If the value is the default value, the targets we need to retrigger are the ones
-        that are not matched by any of the other values. So we grab every other value, and create
-        a comparison condition OR of all of the target filters.
-      */
-      if (input.data.value != null && updatedValue.id === defaultValueId) {
-        const otherValues = await ctx.db
-          .select()
-          .from(deploymentVariableValue)
-          .where(
-            and(
-              eq(deploymentVariableValue.variableId, updatedValue.variableId),
-              ne(deploymentVariableValue.id, updatedValue.id),
-            ),
-          );
+      const otherValues = await ctx.db
+        .select()
+        .from(deploymentVariableValue)
+        .where(
+          and(
+            eq(deploymentVariableValue.variableId, updatedValue.variableId),
+            ne(deploymentVariableValue.id, updatedValue.id),
+          ),
+        );
+
+      const getOldTargetFilter = (): TargetCondition | null => {
+        if (value.id !== variable.defaultValueId) return value.targetFilter;
         const conditions = otherValues
           .map((v) => v.targetFilter)
           .filter(isPresent);
-        const condition: TargetCondition = {
+        return {
           type: FilterType.Comparison,
           operator: ComparisonOperator.Or,
+          not: true,
           conditions,
         };
+      };
 
-        await ctx.db.query.target
-          .findMany({
-            where: targetMatchesMetadata(ctx.db, condition),
-          })
-          .then((targets) =>
-            createReleaseJobTriggers(ctx.db, "variable_changed")
-              .causedById(ctx.session.user.id)
-              .targets(targets.map((t) => t.id))
-              .deployments([deploymentId])
-              .filter(isPassingNoPendingJobsPolicy)
-              .filter(isPassingReleaseStringCheckPolicy)
-              .insert()
-              .then((triggers) =>
-                dispatchReleaseJobTriggers(ctx.db)
-                  .releaseTriggers(triggers)
-                  .filter(isPassingAllPolicies)
-                  .then(cancelOldReleaseJobTriggersOnJobDispatch)
-                  .dispatch(),
-              ),
+      const getNewTargetFilter = (): TargetCondition | null => {
+        if (updatedValue.id !== newDefaultValueId)
+          return updatedValue.targetFilter;
+        const conditions = otherValues
+          .map((v) => v.targetFilter)
+          .filter(isPresent);
+        return {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.Or,
+          not: true,
+          conditions,
+        };
+      };
+
+      const oldTargetFilter: TargetCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.And,
+        conditions: [systemCondition, getOldTargetFilter()].filter(isPresent),
+      };
+      const newTargetFilter: TargetCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.And,
+        conditions: [systemCondition, getNewTargetFilter()].filter(isPresent),
+      };
+
+      const oldTargets = await ctx.db.query.target.findMany({
+        where: targetMatchesMetadata(ctx.db, oldTargetFilter),
+      });
+
+      const newTargets = await ctx.db.query.target.findMany({
+        where: targetMatchesMetadata(ctx.db, newTargetFilter),
+      });
+
+      const oldTargetIds = new Set(oldTargets.map((t) => t.id));
+      const newTargetIds = new Set(newTargets.map((t) => t.id));
+
+      const addedTargets = newTargets.filter((t) => !oldTargetIds.has(t.id));
+      const removedTargets = oldTargets.filter((t) => !newTargetIds.has(t.id));
+      const stagnantTargets = newTargets.filter((t) => oldTargetIds.has(t.id));
+
+      const targetsToTrigger = [
+        ...addedTargets,
+        ...removedTargets,
+        ...(input.data.value !== null ? stagnantTargets : []),
+      ];
+
+      if (targetsToTrigger.length > 0)
+        await createReleaseJobTriggers(ctx.db, "variable_changed")
+          .causedById(ctx.session.user.id)
+          .targets(targetsToTrigger.map((t) => t.id))
+          .deployments([deploymentId])
+          .filter(isPassingNoPendingJobsPolicy)
+          .filter(isPassingReleaseStringCheckPolicy)
+          .insert()
+          .then((triggers) =>
+            dispatchReleaseJobTriggers(ctx.db)
+              .releaseTriggers(triggers)
+              .filter(isPassingAllPolicies)
+              .then(cancelOldReleaseJobTriggersOnJobDispatch)
+              .dispatch(),
           );
-      }
-
       return updatedValue;
     }),
 
