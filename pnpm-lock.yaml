@@ -383,6 +383,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../../packages/events
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../../packages/job-dispatch
@@ -905,6 +908,9 @@ importers:
       '@ctrlplane/db':
         specifier: workspace:*
         version: link:../db
+      '@ctrlplane/events':
+        specifier: workspace:*
+        version: link:../events
       '@ctrlplane/job-dispatch':
         specifier: workspace:*
         version: link:../job-dispatch
@@ -1109,6 +1115,46 @@ importers:
       drizzle-kit:
         specifier: ^0.24.2
         version: 0.24.2
+      eslint:
+        specifier: 'catalog:'
+        version: 9.14.0(jiti@2.3.3)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.3.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.6.3
+
+  packages/events:
+    dependencies:
+      '@ctrlplane/db':
+        specifier: workspace:*
+        version: link:../db
+      '@ctrlplane/job-dispatch':
+        specifier: workspace:*
+        version: link:../job-dispatch
+      '@ctrlplane/validators':
+        specifier: workspace:*
+        version: link:../validators
+      ts-is-present:
+        specifier: ^1.2.2
+        version: 1.2.2
+      zod:
+        specifier: 'catalog:'
+        version: 3.23.8
+    devDependencies:
+      '@ctrlplane/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@ctrlplane/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@ctrlplane/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: catalog:node20
+        version: 20.16.10
       eslint:
         specifier: 'catalog:'
         version: 9.14.0(jiti@2.3.3)

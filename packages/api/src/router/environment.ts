@@ -23,6 +23,7 @@ import {
   targetMatchesMetadata,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
+import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
 import { dispatchJobsForNewTargets } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -322,12 +323,16 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
-      ctx.db.transaction((db) =>
-        db
-          .delete(environment)
-          .where(eq(environment.id, input))
-          .returning()
-          .then(takeFirst),
-      ),
+      ctx.db
+        .delete(environment)
+        .where(eq(environment.id, input))
+        .returning()
+        .then(takeFirst)
+        .then(async (env) => {
+          const events = await getEventsForEnvironmentDeleted(env);
+          const handleEventPromises = events.map(handleEvent);
+          await Promise.allSettled(handleEventPromises);
+          return env;
+        }),
     ),
 });

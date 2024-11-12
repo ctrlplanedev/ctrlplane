@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export * from "./hooks/index.js";
+
 export enum Channel {
   JobSync = "job-sync",
   DispatchJob = "dispatch-job",
