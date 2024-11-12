@@ -3,8 +3,6 @@ import type {
   AgentHeartbeat,
   SessionCreate,
   SessionDelete,
-  SessionInput,
-  SessionOutput,
   SessionResize,
 } from "@ctrlplane/validators/session";
 import type { IncomingMessage } from "http";
@@ -16,11 +14,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
-import {
-  agentConnect,
-  agentHeartbeat,
-  sessionOutput,
-} from "@ctrlplane/validators/session";
+import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
 
 import { ifMessage } from "./utils";
 
@@ -64,8 +58,6 @@ export class AgentSocket {
     return new AgentSocket(socket, request, target);
   }
 
-  private stdoutListeners = new Set<(data: SessionOutput) => void>();
-
   private constructor(
     private readonly socket: WebSocket,
     private readonly _: IncomingMessage,
@@ -85,20 +77,9 @@ export class AgentSocket {
             },
           ]);
         })
-        .is(sessionOutput, (data) => this.notifySubscribers(data))
         .is(agentHeartbeat, (data) => this.updateStatus(data))
         .handle(),
     );
-  }
-
-  onSessionStdout(callback: (data: SessionOutput) => void) {
-    this.stdoutListeners.add(callback);
-  }
-
-  private notifySubscribers(data: SessionOutput) {
-    for (const subscriber of this.stdoutListeners) {
-      subscriber(data);
-    }
   }
 
   private updateStatus(data: AgentHeartbeat) {
@@ -128,7 +109,7 @@ export class AgentSocket {
     return waitForResponse<T>(this.socket, predicate, timeoutMs);
   }
 
-  send(data: SessionCreate | SessionDelete | SessionInput | SessionResize) {
+  send(data: SessionCreate | SessionDelete | SessionResize) {
     return this.socket.send(JSON.stringify(data));
   }
 }
