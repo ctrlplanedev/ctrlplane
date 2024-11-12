@@ -10,6 +10,7 @@ import { JobDrawer } from "./_components/job-drawer/JobDrawer";
 import { ReleaseChannelDrawer } from "./_components/release-channel-drawer/ReleaseChannelDrawer";
 import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
 import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
+import { TerminalSessionsProvider } from "./_components/terminal/TerminalSessionsProvider";
 import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { SidebarPanels } from "./SidebarPanels";
 
@@ -39,7 +40,7 @@ export default async function WorkspaceLayout({
 
   const systems = await api.system.list({ workspaceId: workspace.id });
   return (
-    <>
+    <TerminalSessionsProvider>
       <div className="h-screen">
         <SidebarPanels workspace={workspace} systems={systems.items}>
           {children}
@@ -53,6 +54,6 @@ export default async function WorkspaceLayout({
       <VariableSetDrawer />
       <JobDrawer />
       <TerminalDrawer />
-    </>
+    </TerminalSessionsProvider>
   );
 }

@@ -32,7 +32,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isModalOpen, setModelOpen] = useState(false);
-  const { createSession } = useTerminalSessions();
+  const { createSession, setIsDrawerOpen } = useTerminalSessions();
 
   const [targetId, setTargetId] = React.useState("");
 
@@ -59,10 +59,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            Create New Terminal Session {workspace.data?.name}{" "}
-            {workspace.data != null ? "true" : "false"}
-          </DialogTitle>
+          <DialogTitle>Create Remote Session</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="grid w-full items-center gap-1.5">
@@ -134,6 +131,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
             onClick={() => {
               createSession(targetId);
               setModelOpen(false);
+              setIsDrawerOpen(true);
             }}
             disabled={targetId === ""}
           >

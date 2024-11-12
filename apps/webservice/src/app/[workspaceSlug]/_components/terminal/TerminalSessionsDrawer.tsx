@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Fragment } from "react";
-import { IconCircleFilled, IconPlus } from "@tabler/icons-react";
+import { IconCircleFilled, IconPlus, IconX } from "@tabler/icons-react";
 import { createPortal } from "react-dom";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
@@ -16,10 +16,7 @@ import {
 import { SocketTerminal } from "~/components/xterm/SessionTerminal";
 import { api } from "~/trpc/react";
 import { CreateSessionDialog } from "./CreateDialogSession";
-import {
-  TerminalSessionsProvider,
-  useTerminalSessions,
-} from "./TerminalSessionsProvider";
+import { useTerminalSessions } from "./TerminalSessionsProvider";
 import { useResizableHeight } from "./useResizableHeight";
 
 const MIN_HEIGHT = 200;
@@ -81,7 +78,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
 };
 
 const TerminalSessionsContent: React.FC = () => {
-  const { sessionIds } = useTerminalSessions();
+  const { sessionIds, setIsDrawerOpen } = useTerminalSessions();
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-9 items-center justify-end px-2">
@@ -90,6 +87,14 @@ const TerminalSessionsContent: React.FC = () => {
             <IconPlus className="h-5 w-5 text-neutral-400" />
           </Button>
         </CreateSessionDialog>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6"
+          onClick={() => setIsDrawerOpen(false)}
+        >
+          <IconX className="h-5 w-5 text-neutral-400" />
+        </Button>
       </div>
 
       <ResizablePanelGroup direction="horizontal" className="h-full w-full">
@@ -111,13 +116,12 @@ export const TerminalDrawer: React.FC = () => {
     DEFAULT_HEIGHT,
     MIN_HEIGHT,
   );
-
-  const [isOpen] = React.useState(true);
+  const { isDrawerOpen } = useTerminalSessions();
 
   return createPortal(
     <div
       className={`fixed bottom-0 left-0 right-0 z-30 bg-black drop-shadow-2xl ${
-        isOpen ? "" : "hidden"
+        isDrawerOpen ? "" : "hidden"
       }`}
       style={{ height: `${height}px` }}
     >
@@ -125,9 +129,8 @@ export const TerminalDrawer: React.FC = () => {
         className="absolute left-0 right-0 top-0 h-1 cursor-ns-resize bg-neutral-800 hover:bg-neutral-700"
         onMouseDown={handleMouseDown}
       />
-      <TerminalSessionsProvider>
-        <TerminalSessionsContent />
-      </TerminalSessionsProvider>
+
+      <TerminalSessionsContent />
     </div>,
     document.body,
   );

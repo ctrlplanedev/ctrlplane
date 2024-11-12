@@ -16,6 +16,7 @@ import { CreateDeploymentDialog } from "./_components/CreateDeployment";
 import { CreateReleaseDialog } from "./_components/CreateRelease";
 import { CreateSystemDialog } from "./_components/CreateSystem";
 import { CreateTargetDialog } from "./_components/CreateTarget";
+import { CreateSessionDialog } from "./_components/terminal/CreateDialogSession";
 
 export const SidebarCreateMenu: React.FC<{
   workspace: Workspace;
@@ -64,6 +65,11 @@ export const SidebarCreateMenu: React.FC<{
 
         <DropdownMenuGroup>
           <DropdownMenuItem>Execute Runbook</DropdownMenuItem>
+          <CreateSessionDialog>
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Remote Session
+            </DropdownMenuItem>
+          </CreateSessionDialog>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

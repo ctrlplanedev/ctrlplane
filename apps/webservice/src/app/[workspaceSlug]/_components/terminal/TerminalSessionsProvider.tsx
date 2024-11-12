@@ -9,6 +9,8 @@ import useWebSocket from "react-use-websocket";
 import { v4 as uuidv4 } from "uuid";
 
 type SessionContextType = {
+  isDrawerOpen: boolean;
+  setIsDrawerOpen: (open: boolean) => void;
   sessionIds: { sessionId: string; targetId: string }[];
   createSession: (targetId: string) => void;
   removeSession: (id: string) => void;
@@ -37,7 +39,7 @@ export const TerminalSessionsProvider: React.FC<{
   const [sessionIds, setSessionIds] = useState<
     { sessionId: string; targetId: string }[]
   >([]);
-
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { sendJsonMessage } = useWebSocket(url, {
     shouldReconnect: () => true,
   });
@@ -79,7 +81,15 @@ export const TerminalSessionsProvider: React.FC<{
 
   return (
     <SessionContext.Provider
-      value={{ sessionIds, createSession, removeSession, resizeSession }}
+      value={{
+        sessionIds,
+        createSession,
+        removeSession,
+        resizeSession,
+
+        isDrawerOpen,
+        setIsDrawerOpen,
+      }}
     >
       {children}
     </SessionContext.Provider>
