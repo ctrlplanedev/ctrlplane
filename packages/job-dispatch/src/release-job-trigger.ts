@@ -16,8 +16,8 @@ import {
   release,
   releaseJobTrigger,
   resource,
+  resourceMatchesMetadata,
   system,
-  targetMatchesMetadata,
 } from "@ctrlplane/db/schema";
 
 type FilterFunc = (
@@ -142,7 +142,7 @@ class ReleaseJobTriggerBuilder {
           .from(resource)
           .where(
             and(
-              targetMatchesMetadata(this.tx, resourceFilter),
+              resourceMatchesMetadata(this.tx, resourceFilter),
               eq(resource.workspaceId, workspaceId),
               isNull(resource.lockedAt),
               this.targetIds && inArray(resource.id, this.targetIds),

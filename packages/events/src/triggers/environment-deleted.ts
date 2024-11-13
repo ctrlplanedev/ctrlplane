@@ -15,7 +15,7 @@ export const getEventsForEnvironmentDeleted = async (
   const targets = await db
     .select()
     .from(SCHEMA.resource)
-    .where(SCHEMA.targetMatchesMetadata(db, environment.resourceFilter));
+    .where(SCHEMA.resourceMatchesMetadata(db, environment.resourceFilter));
   if (targets.length === 0) return [];
 
   const checks = and(
@@ -46,7 +46,7 @@ export const getEventsForEnvironmentDeleted = async (
           .from(SCHEMA.resource)
           .where(
             and(
-              SCHEMA.targetMatchesMetadata(db, removedFromSystemFilter),
+              SCHEMA.resourceMatchesMetadata(db, removedFromSystemFilter),
               inArray(
                 SCHEMA.resource.id,
                 targets.map((t) => t.id),

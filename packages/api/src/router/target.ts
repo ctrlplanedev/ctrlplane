@@ -184,7 +184,7 @@ const targetViews = createTRPCRouter({
           const total = await ctx.db
             .select({ count: count() })
             .from(schema.resource)
-            .where(schema.targetMatchesMetadata(ctx.db, view.filter))
+            .where(schema.resourceMatchesMetadata(ctx.db, view.filter))
             .then(takeFirst)
             .then((t) => t.count);
 
@@ -353,7 +353,7 @@ export const targetRouter = createTRPCRouter({
           schema.resource.workspaceId,
           input.workspaceId,
         );
-        const targetConditions = schema.targetMatchesMetadata(
+        const targetConditions = schema.resourceMatchesMetadata(
           ctx.db,
           input.filter,
         );

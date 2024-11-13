@@ -43,7 +43,7 @@ export const createJobsForNewEnvironment = async (
     .where(
       and(
         eq(SCHEMA.resource.workspaceId, workspaceId),
-        SCHEMA.targetMatchesMetadata(db, resourceFilter),
+        SCHEMA.resourceMatchesMetadata(db, resourceFilter),
       ),
     );
   if (resources.length === 0) return;

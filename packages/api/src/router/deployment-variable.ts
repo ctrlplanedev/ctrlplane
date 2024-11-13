@@ -22,8 +22,8 @@ import {
   deploymentVariableValue,
   environment,
   resource,
+  resourceMatchesMetadata,
   system,
-  targetMatchesMetadata,
   updateDeploymentVariable,
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
@@ -214,11 +214,11 @@ const valueRouter = createTRPCRouter({
       };
 
       const oldTargets = await ctx.db.query.resource.findMany({
-        where: targetMatchesMetadata(ctx.db, oldTargetFilter),
+        where: resourceMatchesMetadata(ctx.db, oldTargetFilter),
       });
 
       const newTargets = await ctx.db.query.resource.findMany({
-        where: targetMatchesMetadata(ctx.db, newTargetFilter),
+        where: resourceMatchesMetadata(ctx.db, newTargetFilter),
       });
 
       const oldTargetIds = new Set(oldTargets.map((t) => t.id));
@@ -331,7 +331,7 @@ export const deploymentVariableRouter = createTRPCRouter({
             .where(
               and(
                 eq(resource.id, input),
-                targetMatchesMetadata(ctx.db, targetFilter),
+                resourceMatchesMetadata(ctx.db, targetFilter),
               ),
             )
             .then(takeFirstOrNull);

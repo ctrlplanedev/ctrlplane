@@ -224,7 +224,7 @@ const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
   return cond.not ? not(con) : con;
 };
 
-export function targetMatchesMetadata(
+export function resourceMatchesMetadata(
   tx: Tx,
   metadata?: TargetCondition | null,
 ): SQL<unknown> | undefined {

@@ -25,8 +25,8 @@ import {
   releaseJobTrigger,
   releaseMatchesCondition,
   resource,
+  resourceMatchesMetadata,
   system,
-  targetMatchesMetadata,
   updateDeployment,
   updateReleaseChannel,
   workspace,
@@ -440,7 +440,7 @@ export const deploymentRouter = createTRPCRouter({
             .leftJoin(release, eq(release.deploymentId, deployment.id))
             .innerJoin(
               resource,
-              targetMatchesMetadata(ctx.db, env.environment.resourceFilter),
+              resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
             )
             .leftJoin(
               releaseJobTrigger,

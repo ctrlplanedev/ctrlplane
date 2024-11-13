@@ -71,7 +71,7 @@ export const getMatchedTarget = (
     .where(
       and(
         eq(SCHEMA.resource.id, targetId),
-        SCHEMA.targetMatchesMetadata(tx, targetFilter),
+        SCHEMA.resourceMatchesMetadata(tx, targetFilter),
       ),
     )
     .then(takeFirstOrNull);

@@ -37,7 +37,7 @@ export const getEventsForTargetDeleted = async (
     };
 
     const matchedTarget = await db.query.resource.findFirst({
-      where: SCHEMA.targetMatchesMetadata(db, systemFilter),
+      where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
     });
     if (matchedTarget == null) return [];
 

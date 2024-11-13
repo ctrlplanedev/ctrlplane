@@ -14,10 +14,10 @@ import { db } from "@ctrlplane/db/client";
 import {
   environment,
   resource,
+  resourceMatchesMetadata,
   resourceMetadata,
   resourceVariable,
   system,
-  targetMatchesMetadata,
 } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -53,7 +53,7 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
       .where(
         and(
           inArray(resource.id, targetIds),
-          targetMatchesMetadata(db, env.resourceFilter),
+          resourceMatchesMetadata(db, env.resourceFilter),
         ),
       )
       .then((tgs) => {

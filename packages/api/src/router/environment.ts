@@ -19,8 +19,8 @@ import {
   environmentReleaseChannel,
   releaseChannel,
   resource,
+  resourceMatchesMetadata,
   system,
-  targetMatchesMetadata,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
 import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
@@ -160,7 +160,10 @@ export const environmentRouter = createTRPCRouter({
                   .select()
                   .from(resource)
                   .where(
-                    targetMatchesMetadata(ctx.db, e.environment.resourceFilter),
+                    resourceMatchesMetadata(
+                      ctx.db,
+                      e.environment.resourceFilter,
+                    ),
                   )
               : [],
         })),
@@ -231,7 +234,7 @@ export const environmentRouter = createTRPCRouter({
         );
 
         if (hasTargetFiltersChanged) {
-          const oldQuery = targetMatchesMetadata(
+          const oldQuery = resourceMatchesMetadata(
             ctx.db,
             oldEnv.environment.resourceFilter,
           );
@@ -241,7 +244,7 @@ export const environmentRouter = createTRPCRouter({
             .where(
               and(
                 eq(resource.workspaceId, oldEnv.system.workspaceId),
-                targetMatchesMetadata(ctx.db, resourceFilter),
+                resourceMatchesMetadata(ctx.db, resourceFilter),
                 oldQuery && not(oldQuery),
               ),
             );

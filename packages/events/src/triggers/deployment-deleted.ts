@@ -31,7 +31,7 @@ export const getEventsForDeploymentDeleted = async (
   };
 
   const targets = await db.query.resource.findMany({
-    where: SCHEMA.targetMatchesMetadata(db, systemFilter),
+    where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
   });
 
   return targets.map((target) => ({
