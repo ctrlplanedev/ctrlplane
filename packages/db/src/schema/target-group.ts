@@ -18,7 +18,7 @@ export const resourceMetadataGroup = pgTable("resource_metadata_group", {
     .default(false),
 });
 
-export const createTargetMetadataGroup = createInsertSchema(
+export const createResourceMetadataGroup = createInsertSchema(
   resourceMetadataGroup,
 )
   .omit({
@@ -27,7 +27,8 @@ export const createTargetMetadataGroup = createInsertSchema(
   .extend({
     keys: z.array(z.string()),
   });
-export const updateTargetMetadataGroup = createTargetMetadataGroup.partial();
-export type TargetMetadataGroup = InferSelectModel<
+export const updateResourceMetadataGroup =
+  createResourceMetadataGroup.partial();
+export type ResourceMetadataGroup = InferSelectModel<
   typeof resourceMetadataGroup
 >;

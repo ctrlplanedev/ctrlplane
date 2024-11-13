@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { promisify } from "node:util";
 import type {
   InsertResource,
-  TargetProviderGoogle,
+  ResourceProviderGoogle,
   Workspace,
 } from "@ctrlplane/db/schema";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
@@ -215,7 +215,7 @@ const getVClustersForCluster = async (
 
 export const getGkeTargets = async (
   workspace: Workspace,
-  config: TargetProviderGoogle,
+  config: ResourceProviderGoogle,
 ) => {
   const { googleServiceAccountEmail } = workspace;
   log.info(

@@ -12,11 +12,11 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
-  createTargetMetadataGroup,
+  createResourceMetadataGroup,
   resource,
   resourceMetadata,
   resourceMetadataGroup,
-  updateTargetMetadataGroup,
+  updateResourceMetadataGroup,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -205,7 +205,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
           .perform(Permission.TargetMetadataGroupCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(createTargetMetadataGroup)
+    .input(createResourceMetadataGroup)
     .mutation(({ ctx, input }) =>
       ctx.db
         .insert(resourceMetadataGroup)
@@ -224,7 +224,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().uuid(),
-        data: updateTargetMetadataGroup,
+        data: updateResourceMetadataGroup,
       }),
     )
     .mutation(({ ctx, input }) =>

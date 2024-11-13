@@ -1,6 +1,6 @@
 "use client";
 
-import type { Resource, TargetProvider } from "@ctrlplane/db/schema";
+import type { Resource, ResourceProvider } from "@ctrlplane/db/schema";
 import { IconSparkles } from "@tabler/icons-react";
 import { format } from "date-fns";
 import yaml from "js-yaml";
@@ -66,7 +66,7 @@ const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
 export const OverviewContent: React.FC<{
   target: Resource & {
     metadata: Record<string, string>;
-    provider: TargetProvider | null;
+    provider: ResourceProvider | null;
   };
 }> = ({ target }) => {
   const links =

@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetMetadataGroup } from "@ctrlplane/db/schema";
+import type { ResourceMetadataGroup } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconX } from "@tabler/icons-react";
@@ -43,7 +43,7 @@ const metadataGroupFormSchema = z.object({
 export const EditMetadataGroupDialog: React.FC<{
   workspaceId: string;
   children: React.ReactNode;
-  metadataGroup: TargetMetadataGroup;
+  metadataGroup: ResourceMetadataGroup;
   parentClose?: () => void;
 }> = ({ workspaceId, metadataGroup, children, parentClose }) => {
   const [open, setOpen] = useState(false);

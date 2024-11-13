@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetMetadataGroup, Workspace } from "@ctrlplane/db/schema";
+import type { ResourceMetadataGroup, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconDots } from "@tabler/icons-react";
@@ -28,7 +28,7 @@ export const TargetGroupsTable: React.FC<{
   workspace: Workspace;
   metadataGroups: {
     targets: number;
-    targetMetadataGroup: TargetMetadataGroup;
+    targetMetadataGroup: ResourceMetadataGroup;
   }[];
 }> = ({ workspace, metadataGroups }) => {
   const [openDropdownId, setOpenDropdownId] = useState("");

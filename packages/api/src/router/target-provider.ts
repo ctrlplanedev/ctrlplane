@@ -3,12 +3,12 @@ import { z } from "zod";
 
 import { eq, inArray, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
-  createTargetProvider,
-  createTargetProviderGoogle,
+  createResourceProvider,
+  createResourceProviderGoogle,
   resource,
   resourceProvider,
   resourceProviderGoogle,
-  updateTargetProviderGoogle,
+  updateResourceProviderGoogle,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -118,9 +118,9 @@ export const targetProviderRouter = createTRPCRouter({
               .on({ type: "workspace", id: input.workspaceId }),
         })
         .input(
-          createTargetProvider.and(
+          createResourceProvider.and(
             z.object({
-              config: createTargetProviderGoogle.omit({
+              config: createResourceProviderGoogle.omit({
                 resourceProviderId: true,
               }),
             }),
@@ -154,7 +154,7 @@ export const targetProviderRouter = createTRPCRouter({
           z.object({
             targetProviderId: z.string().uuid(),
             name: z.string().optional(),
-            config: updateTargetProviderGoogle.omit({
+            config: updateResourceProviderGoogle.omit({
               resourceProviderId: true,
             }),
             repeatSeconds: z.number().min(1).nullable(),

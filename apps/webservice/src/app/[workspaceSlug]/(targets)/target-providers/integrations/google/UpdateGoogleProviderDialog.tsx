@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetProviderGoogle } from "@ctrlplane/db/schema";
+import type { ResourceProviderGoogle } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -47,7 +47,7 @@ const formSchema = createGoogleSchema.and(
 export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
-  googleConfig: TargetProviderGoogle | null;
+  googleConfig: ResourceProviderGoogle | null;
   onClose?: () => void;
   children: React.ReactNode;
 }> = ({ providerId, googleConfig, name, onClose, children }) => {

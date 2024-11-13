@@ -32,10 +32,10 @@ export const resourceProviderRelations = relations(
   ({ many }) => ({ resources: many(resource) }),
 );
 
-export const createTargetProvider = createInsertSchema(resourceProvider).omit({
-  id: true,
-});
-export type TargetProvider = InferSelectModel<typeof resourceProvider>;
+export const createResourceProvider = createInsertSchema(resourceProvider).omit(
+  { id: true },
+);
+export type ResourceProvider = InferSelectModel<typeof resourceProvider>;
 
 export const resourceProviderGoogle = pgTable("resource_provider_google", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -50,13 +50,14 @@ export const resourceProviderGoogle = pgTable("resource_provider_google", {
   importVCluster: boolean("import_vcluster").notNull().default(false),
 });
 
-export const createTargetProviderGoogle = createInsertSchema(
+export const createResourceProviderGoogle = createInsertSchema(
   resourceProviderGoogle,
   { projectIds: z.array(z.string().min(1)).min(1) },
 ).omit({ id: true });
 
-export const updateTargetProviderGoogle = createTargetProviderGoogle.partial();
+export const updateResourceProviderGoogle =
+  createResourceProviderGoogle.partial();
 
-export type TargetProviderGoogle = InferSelectModel<
+export type ResourceProviderGoogle = InferSelectModel<
   typeof resourceProviderGoogle
 >;
