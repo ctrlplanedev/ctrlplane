@@ -15,10 +15,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "workspaceId",
-                  "targets"
-                ],
+                "required": ["workspaceId", "targets"],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -61,10 +58,7 @@
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": [
-                              "key",
-                              "value"
-                            ],
+                            "required": ["key", "value"],
                             "properties": {
                               "key": {
                                 "type": "string"
@@ -124,10 +118,7 @@
                     "type": "object"
                   }
                 },
-                "required": [
-                  "version",
-                  "deploymentId"
-                ]
+                "required": ["version", "deploymentId"]
               }
             }
           }
@@ -160,6 +151,139 @@
         }
       }
     },
+    "/v1/release-channels": {
+      "post": {
+        "summary": "Create a release channel",
+        "operationId": "createReleaseChannel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["deploymentId", "name"],
+                "properties": {
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release channel created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "required": ["id", "deploymentId", "name", "createdAt"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Release channel already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error", "id"]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create release channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["error"]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/v1/environments": {
       "post": {
         "summary": "Create an environment",
@@ -170,12 +294,38 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "systemId"
-                ],
+                "required": ["systemId", "name"],
                 "properties": {
                   "systemId": {
                     "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "targetFilter": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "policyId": {
+                    "type": "string"
+                  },
+                  "releaseChannels": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["channelId", "deploymentId"],
+                      "properties": {
+                        "channelId": {
+                          "type": "string"
+                        },
+                        "deploymentId": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   },
                   "expiresAt": {
                     "type": "string",
@@ -200,6 +350,12 @@
                         "systemId": {
                           "type": "string"
                         },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
                         "expiresAt": {
                           "type": "string",
                           "format": "date-time",
@@ -210,9 +366,25 @@
                           "additionalProperties": true
                         }
                       },
-                      "required": [
-                        "systemId"
-                      ]
+                      "required": ["systemId"]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Environment already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
                     }
                   }
                 }
@@ -230,9 +402,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -338,10 +508,7 @@
                             "default": false
                           }
                         },
-                        "required": [
-                          "key",
-                          "value"
-                        ]
+                        "required": ["key", "value"]
                       }
                     }
                   },
@@ -378,9 +545,7 @@
                       "example": "Target not found"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -454,10 +619,7 @@
                           "default": false
                         }
                       },
-                      "required": [
-                        "key",
-                        "value"
-                      ]
+                      "required": ["key", "value"]
                     }
                   }
                 }
@@ -533,9 +695,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -563,9 +723,7 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "success"
-                  ],
+                  "required": ["success"],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -592,9 +750,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -664,12 +820,7 @@
                           "type": "object"
                         }
                       },
-                      "required": [
-                        "id",
-                        "version",
-                        "metadata",
-                        "config"
-                      ]
+                      "required": ["id", "version", "metadata", "config"]
                     },
                     "deployment": {
                       "type": "object",
@@ -714,12 +865,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "systemId",
-                        "jobAgentId"
-                      ]
+                      "required": ["id", "name", "systemId", "jobAgentId"]
                     },
                     "target": {
                       "type": "object",
@@ -773,11 +919,7 @@
                           "type": "string"
                         }
                       },
-                      "required": [
-                        "id",
-                        "name",
-                        "systemId"
-                      ]
+                      "required": ["id", "name", "systemId"]
                     },
                     "variables": {
                       "type": "object"
@@ -791,11 +933,7 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": [
-                            "pending",
-                            "approved",
-                            "rejected"
-                          ]
+                          "enum": ["pending", "approved", "rejected"]
                         },
                         "approver": {
                           "type": "object",
@@ -809,16 +947,10 @@
                               "type": "string"
                             }
                           },
-                          "required": [
-                            "id",
-                            "name"
-                          ]
+                          "required": ["id", "name"]
                         }
                       },
-                      "required": [
-                        "id",
-                        "status"
-                      ]
+                      "required": ["id", "status"]
                     },
                     "createdAt": {
                       "type": "string",
@@ -897,9 +1029,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "id"
-                  ]
+                  "required": ["id"]
                 }
               }
             }
@@ -928,11 +1058,7 @@
                     "type": "string"
                   }
                 },
-                "required": [
-                  "type",
-                  "name",
-                  "workspaceId"
-                ]
+                "required": ["type", "name", "workspaceId"]
               }
             }
           }
@@ -955,11 +1081,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "workspaceId"
-                  ]
+                  "required": ["id", "name", "workspaceId"]
                 }
               }
             }
@@ -991,9 +1113,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "targets"
-                ],
+                "required": ["targets"],
                 "properties": {
                   "targets": {
                     "type": "array",
@@ -1081,9 +1201,7 @@
                       "type": "boolean"
                     }
                   },
-                  "required": [
-                    "sucess"
-                  ]
+                  "required": ["sucess"]
                 }
               }
             }
@@ -1099,9 +1217,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1112,7 +1228,7 @@
     "/v1/deployments/{deploymentId}/release-channels": {
       "post": {
         "summary": "Create a release channel",
-        "operationId": "createReleaseChannel",
+        "operationId": "createReleaseChannel1",
         "parameters": [
           {
             "name": "deploymentId",
@@ -1129,9 +1245,7 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "name"
-                ],
+                "required": ["name"],
                 "properties": {
                   "name": {
                     "type": "string"
@@ -1200,9 +1314,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1218,9 +1330,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "error"
-                  ]
+                  "required": ["error"]
                 }
               }
             }
@@ -1521,12 +1631,7 @@
                       }
                     }
                   },
-                  "required": [
-                    "id",
-                    "identifier",
-                    "workspaceId",
-                    "providerId"
-                  ]
+                  "required": ["id", "identifier", "workspaceId", "providerId"]
                 }
               }
             }
@@ -1668,11 +1773,7 @@
                       "type": "string"
                     }
                   },
-                  "required": [
-                    "id",
-                    "name",
-                    "workspaceId"
-                  ]
+                  "required": ["id", "name", "workspaceId"]
                 }
               }
             }

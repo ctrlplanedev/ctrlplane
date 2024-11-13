@@ -46,6 +46,21 @@ export const openapi: Swagger.SwaggerV3 = {
               },
             },
           },
+          "409": {
+            description: "Release channel already exists",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                    id: { type: "string" },
+                  },
+                  required: ["error", "id"],
+                },
+              },
+            },
+          },
           "500": {
             description: "Failed to create release channel",
             content: {
