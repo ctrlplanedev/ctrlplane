@@ -6,8 +6,8 @@ import { Queue, Worker } from "bullmq";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
-  targetProvider,
-  targetProviderGoogle,
+  resourceProvider,
+  resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
 import { upsertTargets } from "@ctrlplane/job-dispatch";
@@ -31,12 +31,12 @@ export const createTargetScanWorker = () =>
 
       const tp = await db
         .select()
-        .from(targetProvider)
-        .where(eq(targetProvider.id, targetProviderId))
-        .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+        .from(resourceProvider)
+        .where(eq(resourceProvider.id, targetProviderId))
+        .innerJoin(workspace, eq(resourceProvider.workspaceId, workspace.id))
         .leftJoin(
-          targetProviderGoogle,
-          eq(targetProvider.id, targetProviderGoogle.targetProviderId),
+          resourceProviderGoogle,
+          eq(resourceProvider.id, resourceProviderGoogle.resourceProviderId),
         )
         .then(takeFirstOrNull);
 

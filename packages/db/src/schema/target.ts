@@ -31,10 +31,10 @@ import {
 } from "@ctrlplane/validators/targets";
 
 import type { Tx } from "../common.js";
-import { targetProvider } from "./target-provider.js";
+import { resourceProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
 
-export const target = pgTable(
+export const resource = pgTable(
   "resource",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -42,7 +42,7 @@ export const target = pgTable(
     name: text("name").notNull(),
     kind: text("kind").notNull(),
     identifier: text("identifier").notNull(),
-    providerId: uuid("provider_id").references(() => targetProvider.id, {
+    providerId: uuid("provider_id").references(() => resourceProvider.id, {
       onDelete: "set null",
     }),
     workspaceId: uuid("workspace_id")
@@ -60,18 +60,18 @@ export const target = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.identifier, t.workspaceId) }),
 );
 
-export const targetRelations = relations(target, ({ one, many }) => ({
-  metadata: many(targetMetadata),
-  variables: many(targetVariable),
-  provider: one(targetProvider, {
-    fields: [target.providerId],
-    references: [targetProvider.id],
+export const resourceRelations = relations(resource, ({ one, many }) => ({
+  metadata: many(resourceMetadata),
+  variables: many(resourceVariable),
+  provider: one(resourceProvider, {
+    fields: [resource.providerId],
+    references: [resourceProvider.id],
   }),
 }));
 
-export type Target = InferSelectModel<typeof target>;
+export type Target = InferSelectModel<typeof resource>;
 
-export const createTarget = createInsertSchema(target, {
+export const createTarget = createInsertSchema(resource, {
   version: z.string().min(1),
   name: z.string().min(1),
   kind: z.string().min(1),
@@ -79,11 +79,11 @@ export const createTarget = createInsertSchema(target, {
   config: z.record(z.any()),
 }).omit({ id: true });
 
-export type InsertTarget = InferInsertModel<typeof target>;
+export type InsertTarget = InferInsertModel<typeof resource>;
 
 export const updateTarget = createTarget.partial();
 
-export const targetSchema = pgTable(
+export const resourceSchema = pgTable(
   "resource_schema",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -97,7 +97,7 @@ export const targetSchema = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
 
-export const targetView = pgTable("resource_view", {
+export const resourceView = pgTable("resource_view", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id")
     .notNull()
@@ -107,44 +107,47 @@ export const targetView = pgTable("resource_view", {
   filter: jsonb("filter").notNull().$type<TargetCondition>(),
 });
 
-export type TargetView = InferSelectModel<typeof targetView>;
+export type TargetView = InferSelectModel<typeof resourceView>;
 
-export const createTargetView = createInsertSchema(targetView, {
+export const createTargetView = createInsertSchema(resourceView, {
   filter: targetCondition,
 }).omit({ id: true });
 
 export const updateTargetView = createTargetView.partial();
 
-export const targetMetadata = pgTable(
+export const resourceMetadata = pgTable(
   "resource_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
-    targetId: uuid("target_id")
-      .references(() => target.id, { onDelete: "cascade" })
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.targetId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.resourceId) }),
 );
 
-export const targetMetadataRelations = relations(targetMetadata, ({ one }) => ({
-  target: one(target, {
-    fields: [targetMetadata.targetId],
-    references: [target.id],
+export const resourceMetadataRelations = relations(
+  resourceMetadata,
+  ({ one }) => ({
+    resource: one(resource, {
+      fields: [resourceMetadata.resourceId],
+      references: [resource.id],
+    }),
   }),
-}));
+);
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
         .select()
-        .from(targetMetadata)
+        .from(resourceMetadata)
         .where(
           and(
-            eq(targetMetadata.targetId, target.id),
-            eq(targetMetadata.key, cond.key),
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
           ),
         ),
     );
@@ -153,12 +156,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select()
-        .from(targetMetadata)
+        .from(resourceMetadata)
         .where(
           and(
-            eq(targetMetadata.targetId, target.id),
-            eq(targetMetadata.key, cond.key),
-            sql`${targetMetadata.value} ~ ${cond.value}`,
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            sql`${resourceMetadata.value} ~ ${cond.value}`,
           ),
         ),
     );
@@ -167,12 +170,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select()
-        .from(targetMetadata)
+        .from(resourceMetadata)
         .where(
           and(
-            eq(targetMetadata.targetId, target.id),
-            eq(targetMetadata.key, cond.key),
-            like(targetMetadata.value, cond.value),
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            like(resourceMetadata.value, cond.value),
           ),
         ),
     );
@@ -181,12 +184,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select()
-        .from(targetMetadata)
+        .from(resourceMetadata)
         .where(
           and(
-            eq(targetMetadata.targetId, target.id),
-            eq(targetMetadata.key, cond.key),
-            eq(targetMetadata.value, cond.value),
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            eq(resourceMetadata.value, cond.value),
           ),
         ),
     );
@@ -196,19 +199,20 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 
 const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
   if (cond.operator === ColumnOperator.Like)
-    return like(target.identifier, cond.value);
+    return like(resource.identifier, cond.value);
   if (cond.operator === ColumnOperator.Equals)
-    return eq(target.identifier, cond.value);
-  return sql`${target.identifier} ~ ${cond.value}`;
+    return eq(resource.identifier, cond.value);
+  return sql`${resource.identifier} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
   if (cond.type === TargetFilterType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === TargetFilterType.Kind) return eq(target.kind, cond.value);
-  if (cond.type === TargetFilterType.Name) return like(target.name, cond.value);
+  if (cond.type === TargetFilterType.Kind) return eq(resource.kind, cond.value);
+  if (cond.type === TargetFilterType.Name)
+    return like(resource.name, cond.value);
   if (cond.type === TargetFilterType.Provider)
-    return eq(target.providerId, cond.value);
+    return eq(resource.providerId, cond.value);
   if (cond.type === TargetFilterType.Identifier)
     return buildIdentifierCondition(tx, cond);
 
@@ -229,58 +233,61 @@ export function targetMatchesMetadata(
     : buildCondition(tx, metadata);
 }
 
-export const targetRelationshipType = pgEnum("resource_relationship_type", [
+export const resourceRelationshipType = pgEnum("resource_relationship_type", [
   "associated_with",
   "depends_on",
 ]);
 
-export const targetRelationship = pgTable(
+export const resourceRelationship = pgTable(
   "resource_relationship",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     sourceId: uuid("source_id")
-      .references(() => target.id, { onDelete: "cascade" })
+      .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
     targetId: uuid("target_id")
-      .references(() => target.id, { onDelete: "cascade" })
+      .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
-    type: targetRelationshipType("type").notNull(),
+    type: resourceRelationshipType("type").notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.targetId, t.sourceId) }),
 );
 
 export const createTargetRelationship = createInsertSchema(
-  targetRelationship,
+  resourceRelationship,
 ).omit({ id: true });
 
 export const updateTargetRelationship = createTargetRelationship.partial();
-export type TargetRelationship = InferSelectModel<typeof targetRelationship>;
+export type TargetRelationship = InferSelectModel<typeof resourceRelationship>;
 
-export const targetVariable = pgTable(
+export const resourceVariable = pgTable(
   "resource_variable",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    targetId: uuid("target_id")
-      .references(() => target.id, { onDelete: "cascade" })
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
 
     key: text("key").notNull(),
     value: jsonb("value").$type<string | number | boolean>().notNull(),
     sensitive: boolean("sensitive").notNull().default(false),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.targetId, t.key) }),
+  (t) => ({ uniq: uniqueIndex().on(t.resourceId, t.key) }),
 );
 
-export const targetVariableRelations = relations(targetVariable, ({ one }) => ({
-  target: one(target, {
-    fields: [targetVariable.targetId],
-    references: [target.id],
+export const resourceVariableRelations = relations(
+  resourceVariable,
+  ({ one }) => ({
+    resource: one(resource, {
+      fields: [resourceVariable.resourceId],
+      references: [resource.id],
+    }),
   }),
-}));
+);
 
-export const createTargetVariable = createInsertSchema(targetVariable, {
+export const createTargetVariable = createInsertSchema(resourceVariable, {
   value: z.union([z.string(), z.number(), z.boolean()]),
 }).omit({ id: true });
 
 export const updateTargetVariable = createTargetVariable.partial();
-export type TargetVariable = InferSelectModel<typeof targetVariable>;
+export type TargetVariable = InferSelectModel<typeof resourceVariable>;

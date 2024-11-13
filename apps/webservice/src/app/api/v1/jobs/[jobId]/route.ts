@@ -11,10 +11,10 @@ import {
   jobVariable,
   release,
   releaseJobTrigger,
+  resource,
+  resourceMetadata,
   runbook,
   runbookJobTrigger,
-  target,
-  targetMetadata,
   updateJob,
   user,
 } from "@ctrlplane/db/schema";
@@ -80,7 +80,7 @@ export const GET = request()
         environment,
         eq(environment.id, releaseJobTrigger.environmentId),
       )
-      .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
+      .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
       .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
       .leftJoin(deployment, eq(deployment.id, release.deploymentId))
       .where(eq(job.id, params.jobId))
@@ -116,8 +116,8 @@ export const GET = request()
 
     const jobTargetMetadataRows = await db
       .select()
-      .from(targetMetadata)
-      .where(eq(targetMetadata.targetId, je.target?.id ?? ""));
+      .from(resourceMetadata)
+      .where(eq(resourceMetadata.resourceId, je.target?.id ?? ""));
 
     const metadata = Object.fromEntries(
       jobTargetMetadataRows.map((m) => [m.key, m.value]),

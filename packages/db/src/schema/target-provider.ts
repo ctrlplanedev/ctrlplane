@@ -11,10 +11,10 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { target } from "./target.js";
+import { resource } from "./target.js";
 import { workspace } from "./workspace.js";
 
-export const targetProvider = pgTable(
+export const resourceProvider = pgTable(
   "resource_provider",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -27,21 +27,21 @@ export const targetProvider = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.workspaceId, t.name) }),
 );
 
-export const targetProviderRelations = relations(
-  targetProvider,
-  ({ many }) => ({ targets: many(target) }),
+export const resourceProviderRelations = relations(
+  resourceProvider,
+  ({ many }) => ({ resources: many(resource) }),
 );
 
-export const createTargetProvider = createInsertSchema(targetProvider).omit({
+export const createTargetProvider = createInsertSchema(resourceProvider).omit({
   id: true,
 });
-export type TargetProvider = InferSelectModel<typeof targetProvider>;
+export type TargetProvider = InferSelectModel<typeof resourceProvider>;
 
-export const targetProviderGoogle = pgTable("resource_provider_google", {
+export const resourceProviderGoogle = pgTable("resource_provider_google", {
   id: uuid("id").primaryKey().defaultRandom(),
-  targetProviderId: uuid("resource_provider_id")
+  resourceProviderId: uuid("resource_provider_id")
     .notNull()
-    .references(() => targetProvider.id, { onDelete: "cascade" }),
+    .references(() => resourceProvider.id, { onDelete: "cascade" }),
 
   projectIds: text("project_ids").array().notNull(),
 
@@ -51,12 +51,12 @@ export const targetProviderGoogle = pgTable("resource_provider_google", {
 });
 
 export const createTargetProviderGoogle = createInsertSchema(
-  targetProviderGoogle,
+  resourceProviderGoogle,
   { projectIds: z.array(z.string().min(1)).min(1) },
 ).omit({ id: true });
 
 export const updateTargetProviderGoogle = createTargetProviderGoogle.partial();
 
 export type TargetProviderGoogle = InferSelectModel<
-  typeof targetProviderGoogle
+  typeof resourceProviderGoogle
 >;

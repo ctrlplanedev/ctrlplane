@@ -14,10 +14,10 @@ export const GET = request()
     authz(async ({ can, extra }) => {
       const { workspaceId, identifier } = extra;
 
-      const target = await db.query.target.findFirst({
+      const target = await db.query.resource.findFirst({
         where: and(
-          eq(schema.target.workspaceId, workspaceId),
-          eq(schema.target.identifier, identifier),
+          eq(schema.resource.workspaceId, workspaceId),
+          eq(schema.resource.identifier, identifier),
         ),
       });
 
@@ -29,10 +29,10 @@ export const GET = request()
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
     async (_, { params }) => {
-      const data = await db.query.target.findFirst({
+      const data = await db.query.resource.findFirst({
         where: and(
-          eq(schema.target.workspaceId, params.workspaceId),
-          eq(schema.target.identifier, params.identifier),
+          eq(schema.resource.workspaceId, params.workspaceId),
+          eq(schema.resource.identifier, params.identifier),
         ),
         with: {
           metadata: true,
@@ -62,10 +62,10 @@ export const DELETE = request()
     authz(async ({ can, extra }) => {
       const { workspaceId, identifier } = extra.params;
 
-      const target = await db.query.target.findFirst({
+      const target = await db.query.resource.findFirst({
         where: and(
-          eq(schema.target.workspaceId, workspaceId),
-          eq(schema.target.identifier, identifier),
+          eq(schema.resource.workspaceId, workspaceId),
+          eq(schema.resource.identifier, identifier),
         ),
       });
 
@@ -77,10 +77,10 @@ export const DELETE = request()
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
     async (_, { params }) => {
-      const target = await db.query.target.findFirst({
+      const target = await db.query.resource.findFirst({
         where: and(
-          eq(schema.target.workspaceId, params.workspaceId),
-          eq(schema.target.identifier, params.identifier),
+          eq(schema.resource.workspaceId, params.workspaceId),
+          eq(schema.resource.identifier, params.identifier),
         ),
       });
 
@@ -91,7 +91,7 @@ export const DELETE = request()
         );
       }
 
-      await db.delete(schema.target).where(eq(schema.target.id, target.id));
+      await db.delete(schema.resource).where(eq(schema.resource.id, target.id));
 
       return NextResponse.json({ success: true });
     },

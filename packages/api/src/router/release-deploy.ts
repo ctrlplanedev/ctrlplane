@@ -9,7 +9,7 @@ import {
   job,
   release,
   releaseJobTrigger,
-  target,
+  resource,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -122,8 +122,8 @@ export const releaseDeployRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const t = await ctx.db
         .select()
-        .from(target)
-        .where(eq(target.id, input.targetId))
+        .from(resource)
+        .where(eq(resource.id, input.targetId))
         .then(takeFirstOrNull);
       if (!t) throw new Error("Target not found");
 

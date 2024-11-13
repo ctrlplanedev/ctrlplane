@@ -14,13 +14,13 @@ export const getEventsForDeploymentDeleted = async (
   const system = await db.query.system.findFirst({
     where: eq(SCHEMA.system.id, deployment.systemId),
     with: {
-      environments: { where: isNotNull(SCHEMA.environment.targetFilter) },
+      environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
     },
   });
   if (system == null) return [];
 
   const envFilters = system.environments
-    .map((e) => e.targetFilter)
+    .map((e) => e.resourceFilter)
     .filter(isPresent);
   if (envFilters.length === 0) return [];
 
@@ -30,7 +30,7 @@ export const getEventsForDeploymentDeleted = async (
     conditions: envFilters,
   };
 
-  const targets = await db.query.target.findMany({
+  const targets = await db.query.resource.findMany({
     where: SCHEMA.targetMatchesMetadata(db, systemFilter),
   });
 

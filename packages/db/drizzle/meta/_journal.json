@@ -260,6 +260,13 @@
       "when": 1731388513429,
       "tag": "0036_furry_blue_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1731470608582,
+      "tag": "0037_giant_stardust",
+      "breakpoints": true
     }
   ]
 }

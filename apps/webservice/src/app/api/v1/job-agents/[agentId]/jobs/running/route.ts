@@ -9,7 +9,7 @@ import {
   job,
   release,
   releaseJobTrigger,
-  target,
+  resource,
 } from "@ctrlplane/db/schema";
 
 import { getUser } from "~/app/api/v1/auth";
@@ -27,7 +27,7 @@ export const GET = async (
     .from(job)
     .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
     .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
-    .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
+    .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
     .where(

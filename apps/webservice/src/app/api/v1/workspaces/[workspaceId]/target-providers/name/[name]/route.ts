@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { checkEntityPermissionForResource } from "@ctrlplane/auth/utils";
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { targetProvider, workspace } from "@ctrlplane/db/schema";
+import { resourceProvider, workspace } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { getUser } from "~/app/api/v1/auth";
@@ -35,10 +35,10 @@ export const GET = async (
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });
 
   const tp = await db
-    .insert(targetProvider)
+    .insert(resourceProvider)
     .values({ name: params.name, workspaceId: ws.id })
     .onConflictDoUpdate({
-      target: [targetProvider.workspaceId, targetProvider.name],
+      target: [resourceProvider.workspaceId, resourceProvider.name],
       set: { name: params.name },
     })
     .returning()

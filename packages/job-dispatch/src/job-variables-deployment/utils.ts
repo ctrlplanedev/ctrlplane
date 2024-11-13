@@ -29,8 +29,8 @@ export const getDeploymentVariables = (tx: Tx, releaseId: string) =>
 export const getTarget = (tx: Tx, targetId: string) =>
   tx
     .select()
-    .from(SCHEMA.target)
-    .where(eq(SCHEMA.target.id, targetId))
+    .from(SCHEMA.resource)
+    .where(eq(SCHEMA.resource.id, targetId))
     .then(takeFirstOrNull);
 
 export const getEnvironment = (tx: Tx, environmentId: string) =>
@@ -44,11 +44,11 @@ export const getEnvironment = (tx: Tx, environmentId: string) =>
 export const getTargetVariableValue = (tx: Tx, targetId: string, key: string) =>
   tx
     .select()
-    .from(SCHEMA.targetVariable)
+    .from(SCHEMA.resourceVariable)
     .where(
       and(
-        eq(SCHEMA.targetVariable.targetId, targetId),
-        eq(SCHEMA.targetVariable.key, key),
+        eq(SCHEMA.resourceVariable.resourceId, targetId),
+        eq(SCHEMA.resourceVariable.key, key),
       ),
     )
     .then(takeFirstOrNull);
@@ -67,10 +67,10 @@ export const getMatchedTarget = (
 ) =>
   tx
     .select()
-    .from(SCHEMA.target)
+    .from(SCHEMA.resource)
     .where(
       and(
-        eq(SCHEMA.target.id, targetId),
+        eq(SCHEMA.resource.id, targetId),
         SCHEMA.targetMatchesMetadata(tx, targetFilter),
       ),
     )
@@ -83,7 +83,7 @@ export const getFirstMatchedTarget = (
 ) =>
   Promise.all(
     values.map((value) =>
-      getMatchedTarget(tx, targetId, value.targetFilter).then(
+      getMatchedTarget(tx, targetId, value.resourceFilter).then(
         (matchedTarget) => (matchedTarget != null ? value : null),
       ),
     ),

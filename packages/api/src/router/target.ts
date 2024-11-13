@@ -93,8 +93,8 @@ const targetRelations = createTRPCRouter({
 
       const targets = await ctx.db
         .select()
-        .from(schema.target)
-        .where(inArray(schema.target.id, allIds));
+        .from(schema.resource)
+        .where(inArray(schema.resource.id, allIds));
 
       return { relationships, targets };
     }),
@@ -111,7 +111,7 @@ const targetViews = createTRPCRouter({
     .input(schema.createTargetView)
     .mutation(async ({ ctx, input }) =>
       ctx.db
-        .insert(schema.targetView)
+        .insert(schema.resourceView)
         .values(input)
         .returning()
         .then(takeFirst),
@@ -127,9 +127,9 @@ const targetViews = createTRPCRouter({
     .input(z.object({ id: z.string().uuid(), data: schema.updateTargetView }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
-        .update(schema.targetView)
+        .update(schema.resourceView)
         .set(input.data)
-        .where(eq(schema.targetView.id, input.id))
+        .where(eq(schema.resourceView.id, input.id))
         .returning()
         .then(takeFirst),
     ),
@@ -143,7 +143,9 @@ const targetViews = createTRPCRouter({
     })
     .input(z.string().uuid())
     .mutation(async ({ ctx, input }) =>
-      ctx.db.delete(schema.targetView).where(eq(schema.targetView.id, input)),
+      ctx.db
+        .delete(schema.resourceView)
+        .where(eq(schema.resourceView.id, input)),
     ),
 
   byId: protectedProcedure
@@ -157,8 +159,8 @@ const targetViews = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db
         .select()
-        .from(schema.targetView)
-        .where(eq(schema.targetView.id, input))
+        .from(schema.resourceView)
+        .where(eq(schema.resourceView.id, input))
         .then(takeFirst),
     ),
 
@@ -173,15 +175,15 @@ const targetViews = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const views = await ctx.db
         .select()
-        .from(schema.targetView)
-        .orderBy(schema.targetView.name)
-        .where(eq(schema.targetView.workspaceId, input));
+        .from(schema.resourceView)
+        .orderBy(schema.resourceView.name)
+        .where(eq(schema.resourceView.workspaceId, input));
 
       return Promise.all(
         views.map(async (view) => {
           const total = await ctx.db
             .select({ count: count() })
-            .from(schema.target)
+            .from(schema.resource)
             .where(schema.targetMatchesMetadata(ctx.db, view.filter))
             .then(takeFirst)
             .then((t) => t.count);
@@ -210,7 +212,7 @@ const targetVariables = createTRPCRouter({
         ? variablesAES256().encrypt(String(input.value))
         : input.value;
       const data = { ...input, value };
-      return ctx.db.insert(schema.targetVariable).values(data).returning();
+      return ctx.db.insert(schema.resourceVariable).values(data).returning();
     }),
 
   update: protectedProcedure
@@ -221,14 +223,14 @@ const targetVariables = createTRPCRouter({
       authorizationCheck: async ({ ctx, canUser, input }) => {
         const variable = await ctx.db
           .select()
-          .from(schema.targetVariable)
-          .where(eq(schema.targetVariable.id, input.id))
+          .from(schema.resourceVariable)
+          .where(eq(schema.resourceVariable.id, input.id))
           .then(takeFirstOrNull);
         if (!variable) return false;
 
         return canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "resource", id: variable.targetId });
+          .on({ type: "resource", id: variable.resourceId });
       },
     })
     .mutation(async ({ ctx, input }) => {
@@ -238,9 +240,9 @@ const targetVariables = createTRPCRouter({
         : input.data.value;
       const data = { ...input.data, value };
       return ctx.db
-        .update(schema.targetVariable)
+        .update(schema.resourceVariable)
         .set(data)
-        .where(eq(schema.targetVariable.id, input.id))
+        .where(eq(schema.resourceVariable.id, input.id))
         .returning()
         .then(takeFirst);
     }),
@@ -251,20 +253,20 @@ const targetVariables = createTRPCRouter({
       authorizationCheck: async ({ ctx, canUser, input }) => {
         const variable = await ctx.db
           .select()
-          .from(schema.targetVariable)
-          .where(eq(schema.targetVariable.id, input))
+          .from(schema.resourceVariable)
+          .where(eq(schema.resourceVariable.id, input))
           .then(takeFirstOrNull);
         if (!variable) return false;
 
         return canUser
           .perform(Permission.TargetUpdate)
-          .on({ type: "resource", id: variable.targetId });
+          .on({ type: "resource", id: variable.resourceId });
       },
     })
     .mutation(async ({ ctx, input }) =>
       ctx.db
-        .delete(schema.targetVariable)
-        .where(eq(schema.targetVariable.id, input)),
+        .delete(schema.resourceVariable)
+        .where(eq(schema.resourceVariable.id, input)),
     ),
 });
 
@@ -272,30 +274,34 @@ type _StringStringRecord = Record<string, string>;
 const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
     .select({
-      target: schema.target,
-      targetProvider: schema.targetProvider,
+      target: schema.resource,
+      targetProvider: schema.resourceProvider,
       workspace: schema.workspace,
       targetMetadata: sql<_StringStringRecord>`
         jsonb_object_agg(resource_metadata.key, resource_metadata.value) 
         FILTER (WHERE resource_metadata.key IS NOT NULL)
       `.as("resource_metadata"),
     })
-    .from(schema.target)
+    .from(schema.resource)
     .leftJoin(
-      schema.targetProvider,
-      eq(schema.target.providerId, schema.targetProvider.id),
+      schema.resourceProvider,
+      eq(schema.resource.providerId, schema.resourceProvider.id),
     )
     .innerJoin(
       schema.workspace,
-      eq(schema.target.workspaceId, schema.workspace.id),
+      eq(schema.resource.workspaceId, schema.workspace.id),
     )
     .leftJoin(
-      schema.targetMetadata,
-      eq(schema.targetMetadata.targetId, schema.target.id),
+      schema.resourceMetadata,
+      eq(schema.resourceMetadata.resourceId, schema.resource.id),
     )
     .where(and(...checks))
-    .groupBy(schema.target.id, schema.targetProvider.id, schema.workspace.id)
-    .orderBy(asc(schema.target.kind), asc(schema.target.name));
+    .groupBy(
+      schema.resource.id,
+      schema.resourceProvider.id,
+      schema.workspace.id,
+    )
+    .orderBy(asc(schema.resource.kind), asc(schema.resource.name));
 
 export const targetRouter = createTRPCRouter({
   metadataGroup: targetMetadataGroupRouter,
@@ -313,9 +319,9 @@ export const targetRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
-      ctx.db.query.target
+      ctx.db.query.resource
         .findFirst({
-          where: eq(schema.target.id, input),
+          where: eq(schema.resource.id, input),
           with: { metadata: true, variables: true, provider: true },
         })
         .then((t) => {
@@ -344,7 +350,7 @@ export const targetRouter = createTRPCRouter({
       )
       .query(({ ctx, input }) => {
         const workspaceIdCheck = eq(
-          schema.target.workspaceId,
+          schema.resource.workspaceId,
           input.workspaceId,
         );
         const targetConditions = schema.targetMatchesMetadata(
@@ -368,7 +374,7 @@ export const targetRouter = createTRPCRouter({
           .select({
             count: sql`COUNT(*)`.mapWith(Number),
           })
-          .from(schema.target)
+          .from(schema.resource)
           .where(and(...checks))
           .then(takeFirst)
           .then((t) => t.count);
@@ -393,14 +399,14 @@ export const targetRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
         const tg = await tx
-          .insert(schema.target)
+          .insert(schema.resource)
           .values(input)
           .returning()
           .then(takeFirst);
 
-        await tx.insert(schema.targetMetadata).values(
+        await tx.insert(schema.resourceMetadata).values(
           Object.entries(input.metadata).map(([key, value]) => ({
-            targetId: tg.id,
+            resourceId: tg.id,
             key,
             value,
           })),
@@ -428,36 +434,39 @@ export const targetRouter = createTRPCRouter({
     .mutation(async ({ ctx, input: { id, data } }) =>
       ctx.db.transaction(async (tx) => {
         const updatedTarget = await tx
-          .update(schema.target)
+          .update(schema.resource)
           .set(data)
-          .where(eq(schema.target.id, id))
+          .where(eq(schema.resource.id, id))
           .returning()
           .then(takeFirst);
 
         const metadataEntries = Object.entries(data.metadata).map(
           ([key, value]) => ({
-            targetId: id,
+            resourceId: id,
             key,
             value,
           }),
         );
 
         await tx
-          .insert(schema.targetMetadata)
+          .insert(schema.resourceMetadata)
           .values(metadataEntries)
           .onConflictDoUpdate({
-            target: [schema.targetMetadata.targetId, schema.targetMetadata.key],
+            target: [
+              schema.resourceMetadata.resourceId,
+              schema.resourceMetadata.key,
+            ],
             set: { value: sql`EXCLUDED.value` },
           })
           .then(() =>
             tx
-              .delete(schema.targetMetadata)
+              .delete(schema.resourceMetadata)
               .where(
                 and(
-                  eq(schema.targetMetadata.targetId, id),
+                  eq(schema.resourceMetadata.resourceId, id),
                   not(
                     inArray(
-                      schema.targetMetadata.key,
+                      schema.resourceMetadata.key,
                       Object.keys(data.metadata),
                     ),
                   ),
@@ -481,8 +490,8 @@ export const targetRouter = createTRPCRouter({
     })
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) => {
-      const targets = await ctx.db.query.target.findMany({
-        where: inArray(schema.target.id, input),
+      const targets = await ctx.db.query.resource.findMany({
+        where: inArray(schema.resource.id, input),
       });
       const events = (
         await Promise.allSettled(targets.map(getEventsForTargetDeleted))
@@ -490,8 +499,8 @@ export const targetRouter = createTRPCRouter({
       await Promise.allSettled(events.map(handleEvent));
 
       return ctx.db
-        .delete(schema.target)
-        .where(inArray(schema.target.id, input))
+        .delete(schema.resource)
+        .where(inArray(schema.resource.id, input))
         .returning();
     }),
 
@@ -505,13 +514,13 @@ export const targetRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
-        .selectDistinct({ key: schema.targetMetadata.key })
-        .from(schema.target)
+        .selectDistinct({ key: schema.resourceMetadata.key })
+        .from(schema.resource)
         .innerJoin(
-          schema.targetMetadata,
-          eq(schema.targetMetadata.targetId, schema.target.id),
+          schema.resourceMetadata,
+          eq(schema.resourceMetadata.resourceId, schema.resource.id),
         )
-        .where(eq(schema.target.workspaceId, input))
+        .where(eq(schema.resource.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),
 
@@ -525,9 +534,9 @@ export const targetRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(schema.target)
+        .update(schema.resource)
         .set({ lockedAt: new Date() })
-        .where(eq(schema.target.id, input))
+        .where(eq(schema.resource.id, input))
         .returning()
         .then(takeFirst),
     ),
@@ -542,9 +551,9 @@ export const targetRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(schema.target)
+        .update(schema.resource)
         .set({ lockedAt: null })
-        .where(eq(schema.target.id, input))
+        .where(eq(schema.resource.id, input))
         .returning()
         .then(takeFirst),
     ),

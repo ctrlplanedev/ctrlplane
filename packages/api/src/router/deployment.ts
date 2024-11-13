@@ -24,8 +24,8 @@ import {
   releaseChannel,
   releaseJobTrigger,
   releaseMatchesCondition,
+  resource,
   system,
-  target,
   targetMatchesMetadata,
   updateDeployment,
   updateReleaseChannel,
@@ -194,8 +194,8 @@ export const deploymentRouter = createTRPCRouter({
         .select({
           id: job.id,
           status: job.status,
-          targetId: releaseJobTrigger.targetId,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${releaseJobTrigger.targetId} ORDER BY ${job.createdAt} DESC)`.as(
+          targetId: releaseJobTrigger.resourceId,
+          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${releaseJobTrigger.resourceId} ORDER BY ${job.createdAt} DESC)`.as(
             "rank",
           ),
         })
@@ -211,7 +211,7 @@ export const deploymentRouter = createTRPCRouter({
           eq(releaseJobTrigger.jobId, latestJobsPerTarget.id),
         )
         .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
-        .innerJoin(target, eq(target.id, releaseJobTrigger.targetId))
+        .innerJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
         .where(
           and(eq(release.deploymentId, input), eq(latestJobsPerTarget.rank, 1)),
         )
@@ -415,8 +415,8 @@ export const deploymentRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const tg = await ctx.db
         .select()
-        .from(target)
-        .where(eq(target.id, input))
+        .from(resource)
+        .where(eq(resource.id, input))
         .then(takeFirst);
 
       const envs = await ctx.db
@@ -426,7 +426,7 @@ export const deploymentRouter = createTRPCRouter({
         .where(
           and(
             eq(system.workspaceId, tg.workspaceId),
-            isNotNull(environment.targetFilter),
+            isNotNull(environment.resourceFilter),
           ),
         );
 
@@ -439,13 +439,13 @@ export const deploymentRouter = createTRPCRouter({
             .innerJoin(environment, eq(environment.systemId, system.id))
             .leftJoin(release, eq(release.deploymentId, deployment.id))
             .innerJoin(
-              target,
-              targetMatchesMetadata(ctx.db, env.environment.targetFilter),
+              resource,
+              targetMatchesMetadata(ctx.db, env.environment.resourceFilter),
             )
             .leftJoin(
               releaseJobTrigger,
               and(
-                eq(releaseJobTrigger.targetId, target.id),
+                eq(releaseJobTrigger.resourceId, resource.id),
                 eq(releaseJobTrigger.releaseId, release.id),
                 eq(releaseJobTrigger.environmentId, environment.id),
               ),
@@ -454,7 +454,7 @@ export const deploymentRouter = createTRPCRouter({
 
             .where(
               and(
-                eq(target.id, input),
+                eq(resource.id, input),
                 inArray(job.status, [
                   JobStatus.Completed,
                   JobStatus.Pending,
@@ -472,6 +472,7 @@ export const deploymentRouter = createTRPCRouter({
                   ...row.release_job_trigger,
                   job: row.job,
                   release: row.release,
+                  targetId: row.resource.id,
                 },
               })),
             ),

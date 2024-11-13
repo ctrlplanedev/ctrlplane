@@ -35,7 +35,7 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const envFilters = system.environments
-    .map((env) => env.targetFilter)
+    .map((env) => env.resourceFilter)
     .filter(isPresent);
   const filter: TargetCondition = {
     type: TargetFilterType.Comparison,

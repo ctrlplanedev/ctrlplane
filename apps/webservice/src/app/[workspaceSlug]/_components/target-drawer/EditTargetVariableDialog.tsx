@@ -74,7 +74,7 @@ export const EditTargetVariableDialog: React.FC<
     updateTargetVariable
       .mutateAsync({ id: targetVariable.id, data })
       .then(() => form.reset(data))
-      .then(() => utils.target.byId.invalidate(targetVariable.targetId))
+      .then(() => utils.target.byId.invalidate(targetVariable.resourceId))
       .then(() => setOpen(false)),
   );
 

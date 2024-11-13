@@ -240,7 +240,7 @@ export const getGkeTargets = async (
         clusters.map((cluster) =>
           clusterToTarget(
             workspace.id,
-            config.targetProviderId,
+            config.resourceProviderId,
             project,
             cluster,
           ),
@@ -272,7 +272,7 @@ export const getGkeTargets = async (
             project,
             cluster,
             workspace.id,
-            config.targetProviderId,
+            config.resourceProviderId,
           )),
         );
 
@@ -283,7 +283,7 @@ export const getGkeTargets = async (
             project,
             cluster,
             workspace.id,
-            config.targetProviderId,
+            config.resourceProviderId,
           )),
         );
 

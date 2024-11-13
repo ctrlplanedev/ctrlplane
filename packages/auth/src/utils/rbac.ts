@@ -13,15 +13,15 @@ import {
   release,
   releaseChannel,
   releaseJobTrigger,
+  resource,
+  resourceMetadataGroup,
+  resourceProvider,
+  resourceView,
   role,
   rolePermission,
   runbook,
   runbookJobTrigger,
   system,
-  target,
-  targetMetadataGroup,
-  targetProvider,
-  targetView,
   variableSet,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -170,10 +170,10 @@ const getTargetMetadataGroupScopes = async (id: string) => {
     .select()
     .from(workspace)
     .innerJoin(
-      targetMetadataGroup,
-      eq(targetMetadataGroup.workspaceId, workspace.id),
+      resourceMetadataGroup,
+      eq(resourceMetadataGroup.workspaceId, workspace.id),
     )
-    .where(eq(targetMetadataGroup.id, id))
+    .where(eq(resourceMetadataGroup.id, id))
     .then(takeFirst);
 
   return [
@@ -189,8 +189,8 @@ const getTargetScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
-    .innerJoin(target, eq(target.workspaceId, workspace.id))
-    .where(eq(target.id, id))
+    .innerJoin(resource, eq(resource.workspaceId, workspace.id))
+    .where(eq(resource.id, id))
     .then(takeFirst);
 
   return [
@@ -203,8 +203,8 @@ const getTargetProviderScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
-    .innerJoin(targetProvider, eq(targetProvider.workspaceId, workspace.id))
-    .where(eq(targetProvider.id, id))
+    .innerJoin(resourceProvider, eq(resourceProvider.workspaceId, workspace.id))
+    .where(eq(resourceProvider.id, id))
     .then(takeFirst);
 
   return [
@@ -217,8 +217,8 @@ const getTargetViewScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
-    .innerJoin(targetView, eq(targetView.workspaceId, workspace.id))
-    .where(eq(targetView.id, id))
+    .innerJoin(resourceView, eq(resourceView.workspaceId, workspace.id))
+    .where(eq(resourceView.id, id))
     .then(takeFirst);
 
   return [
@@ -341,7 +341,7 @@ const getJobScopes = async (id: string) => {
     .select()
     .from(job)
     .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-    .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .innerJoin(deployment, eq(release.deploymentId, deployment.id))

@@ -423,7 +423,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
       environment: environments.find(
         (e) => e.id === triggers[0]!.environmentId,
       ),
-      targets: _.groupBy(triggers, (t) => t.targetId),
+      targets: _.groupBy(triggers, (t) => t.target.id),
     }))
     .filter((t) => isPresent(t.environment))
     .value();

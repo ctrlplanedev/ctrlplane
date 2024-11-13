@@ -126,8 +126,8 @@ export const VariableTargetInput: React.FC<
   });
   const envs = envsQ.data ?? [];
   const envConditions = envs
-    .filter((e) => e.targetFilter != null)
-    .map((e) => e.targetFilter!);
+    .filter((e) => e.resourceFilter != null)
+    .map((e) => e.resourceFilter!);
 
   const tFilterConditions: TargetCondition[] = [
     {
