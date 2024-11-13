@@ -124,7 +124,7 @@ export const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: { targetFilter: getFilter(environment.targetFilter) },
+    defaultValues: { targetFilter: getFilter(environment.resourceFilter) },
   });
 
   const { targetFilter } = form.watch();
@@ -141,10 +141,7 @@ export const EditFilterForm: React.FC<{
     update
       .mutateAsync({
         id: environment.id,
-        data: {
-          ...data,
-          targetFilter: targetFilter ?? null,
-        },
+        data: { ...data, resourceFilter: targetFilter ?? null },
       })
       .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))

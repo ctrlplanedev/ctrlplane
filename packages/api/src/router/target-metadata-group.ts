@@ -13,9 +13,9 @@ import {
 } from "@ctrlplane/db";
 import {
   createTargetMetadataGroup,
-  target,
-  targetMetadata,
-  targetMetadataGroup,
+  resource,
+  resourceMetadata,
+  resourceMetadataGroup,
   updateTargetMetadataGroup,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -41,18 +41,21 @@ export const targetMetadataGroupRouter = createTRPCRouter({
       then combine the two results and sort them by name
       */
       const matchingTargetsQuery = ctx.db
-        .select({ targetId: target.id })
-        .from(target)
-        .leftJoin(targetMetadata, eq(targetMetadata.targetId, target.id))
+        .select({ targetId: resource.id })
+        .from(resource)
+        .leftJoin(
+          resourceMetadata,
+          eq(resourceMetadata.resourceId, resource.id),
+        )
         .where(
           and(
-            eq(target.workspaceId, targetMetadataGroup.workspaceId),
-            sql`${targetMetadata.key} = ANY(${targetMetadataGroup.keys})`,
+            eq(resource.workspaceId, resourceMetadataGroup.workspaceId),
+            sql`${resourceMetadata.key} = ANY(${resourceMetadataGroup.keys})`,
           ),
         )
-        .groupBy(target.id)
+        .groupBy(resource.id)
         .having(
-          sql`COUNT(DISTINCT ${targetMetadata.key}) = ARRAY_LENGTH(${targetMetadataGroup.keys}, 1)`,
+          sql`COUNT(DISTINCT ${resourceMetadata.key}) = ARRAY_LENGTH(${resourceMetadataGroup.keys}, 1)`,
         );
 
       const nonNullGroups = await ctx.db
@@ -62,48 +65,55 @@ export const targetMetadataGroupRouter = createTRPCRouter({
               SELECT ${count()}
               FROM (${matchingTargetsQuery}) AS matching_targets
             ), 0)`.mapWith(Number),
-          targetMetadataGroup,
+          resourceMetadataGroup,
         })
-        .from(targetMetadataGroup)
+        .from(resourceMetadataGroup)
         .where(
           and(
-            eq(targetMetadataGroup.workspaceId, input),
-            eq(targetMetadataGroup.includeNullCombinations, false),
+            eq(resourceMetadataGroup.workspaceId, input),
+            eq(resourceMetadataGroup.includeNullCombinations, false),
           ),
         )
-        .orderBy(asc(targetMetadataGroup.name));
+        .orderBy(asc(resourceMetadataGroup.name));
 
       const allTargetCount = await ctx.db
         .select({
           targets: count(),
         })
-        .from(target)
-        .where(eq(target.workspaceId, input))
+        .from(resource)
+        .where(eq(resource.workspaceId, input))
         .then(takeFirst)
         .then((row) => row.targets);
 
       const nullCombinations = await ctx.db
         .select()
-        .from(targetMetadataGroup)
+        .from(resourceMetadataGroup)
         .where(
           and(
-            eq(targetMetadataGroup.workspaceId, input),
-            eq(targetMetadataGroup.includeNullCombinations, true),
+            eq(resourceMetadataGroup.workspaceId, input),
+            eq(resourceMetadataGroup.includeNullCombinations, true),
           ),
         )
-        .orderBy(asc(targetMetadataGroup.name))
+        .orderBy(asc(resourceMetadataGroup.name))
         .then((rows) =>
           rows.map((row) => ({
             targets: allTargetCount,
-            targetMetadataGroup: row,
+            resourceMetadataGroup: row,
           })),
         );
 
       const combinedGroups = [...nonNullGroups, ...nullCombinations];
 
-      const sortedGroups = combinedGroups.sort((a, b) =>
-        a.targetMetadataGroup.name.localeCompare(b.targetMetadataGroup.name),
-      );
+      const sortedGroups = combinedGroups
+        .sort((a, b) =>
+          a.resourceMetadataGroup.name.localeCompare(
+            b.resourceMetadataGroup.name,
+          ),
+        )
+        .map((group) => ({
+          targets: group.targets,
+          targetMetadataGroup: group.resourceMetadataGroup,
+        }));
 
       return sortedGroups;
     }),
@@ -119,47 +129,47 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const group = await ctx.db
         .select()
-        .from(targetMetadataGroup)
-        .where(eq(targetMetadataGroup.id, input))
+        .from(resourceMetadataGroup)
+        .where(eq(resourceMetadataGroup.id, input))
         .then(takeFirstOrNull);
 
       if (group == null) throw new Error("Group not found");
 
-      const targetMetadataAggBase = ctx.db
+      const resourceMetadataAggBase = ctx.db
         .select({
-          id: target.id,
+          id: resource.id,
           metadata: sql<Record<string, string>>`jsonb_object_agg(
-            ${targetMetadata.key},
-            ${targetMetadata.value}
+            ${resourceMetadata.key},
+            ${resourceMetadata.value}
           )`.as("metadata"),
         })
-        .from(target)
+        .from(resource)
         .innerJoin(
-          targetMetadata,
+          resourceMetadata,
           and(
-            eq(target.id, targetMetadata.targetId),
-            inArray(targetMetadata.key, group.keys),
+            eq(resource.id, resourceMetadata.resourceId),
+            inArray(resourceMetadata.key, group.keys),
           ),
         )
-        .where(eq(target.workspaceId, group.workspaceId))
-        .groupBy(target.id);
+        .where(eq(resource.workspaceId, group.workspaceId))
+        .groupBy(resource.id);
 
-      const targetMetadataAgg = group.includeNullCombinations
-        ? targetMetadataAggBase.as("target_metadata_agg")
-        : targetMetadataAggBase
+      const resourceMetadataAgg = group.includeNullCombinations
+        ? resourceMetadataAggBase.as("resource_metadata_agg")
+        : resourceMetadataAggBase
             .having(
-              sql<number>`COUNT(DISTINCT ${targetMetadata.key}) = ${group.keys.length}`,
+              sql<number>`COUNT(DISTINCT ${resourceMetadata.key}) = ${group.keys.length}`,
             )
-            .as("target_metadata_agg");
+            .as("resource_metadata_agg");
 
       const combinations = await ctx.db
-        .with(targetMetadataAgg)
+        .with(resourceMetadataAgg)
         .select({
-          metadata: targetMetadataAgg.metadata,
+          metadata: resourceMetadataAgg.metadata,
           targets: sql<number>`COUNT(*)`.as("targets"),
         })
-        .from(targetMetadataAgg)
-        .groupBy(targetMetadataAgg.metadata);
+        .from(resourceMetadataAgg)
+        .groupBy(resourceMetadataAgg.metadata);
 
       if (group.includeNullCombinations)
         return {
@@ -198,7 +208,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .input(createTargetMetadataGroup)
     .mutation(({ ctx, input }) =>
       ctx.db
-        .insert(targetMetadataGroup)
+        .insert(resourceMetadataGroup)
         .values(input)
         .returning()
         .then(takeFirst),
@@ -219,9 +229,9 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     )
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(targetMetadataGroup)
+        .update(resourceMetadataGroup)
         .set(input.data)
-        .where(eq(targetMetadataGroup.id, input.id))
+        .where(eq(resourceMetadataGroup.id, input.id))
         .returning()
         .then(takeFirst),
     ),
@@ -236,7 +246,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .delete(targetMetadataGroup)
-        .where(eq(targetMetadataGroup.id, input)),
+        .delete(resourceMetadataGroup)
+        .where(eq(resourceMetadataGroup.id, input)),
     ),
 });

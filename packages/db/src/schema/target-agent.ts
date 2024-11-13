@@ -1,10 +1,10 @@
 import { pgTable, uuid } from "drizzle-orm/pg-core";
 
-import { target } from "./target.js";
+import { resource } from "./target.js";
 
-export const targetSession = pgTable("target_session", {
+export const resourceSession = pgTable("resource_session", {
   id: uuid("id").primaryKey(),
-  targetId: uuid("target_id")
-    .references(() => target.id, { onDelete: "cascade" })
+  resourceId: uuid("resource_id")
+    .references(() => resource.id, { onDelete: "cascade" })
     .notNull(),
 });

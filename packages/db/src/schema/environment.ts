@@ -38,7 +38,7 @@ export const environment = pgTable(
     policyId: uuid("policy_id").references(() => environmentPolicy.id, {
       onDelete: "set null",
     }),
-    targetFilter: jsonb("resource_filter")
+    resourceFilter: jsonb("resource_filter")
       .$type<TargetCondition | null>()
       .default(sql`NULL`),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -54,7 +54,7 @@ export const environment = pgTable(
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  targetFilter: targetCondition
+  resourceFilter: targetCondition
     .optional()
     .refine((filter) => filter == null || isValidTargetCondition(filter)),
 })

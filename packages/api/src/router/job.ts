@@ -44,8 +44,8 @@ import {
   releaseDependency,
   releaseJobTrigger,
   releaseMatchesCondition,
+  resource,
   system,
-  target,
   updateJob,
   user,
 } from "@ctrlplane/db/schema";
@@ -66,7 +66,7 @@ const releaseJobTriggerQuery = (tx: Tx) =>
     .select()
     .from(releaseJobTrigger)
     .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-    .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+    .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
     .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .innerJoin(deployment, eq(release.deploymentId, deployment.id))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
@@ -126,7 +126,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
       rolloutDate:
         v[0]!.environment_policy != null
           ? rolloutDateFromReleaseJobTrigger(
-              v[0]!.release_job_trigger.targetId,
+              v[0]!.release_job_trigger.resourceId,
               v[0]!.release.id,
               v[0]!.environment.id,
               v[0]!.release.createdAt,
@@ -185,7 +185,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           })
           .from(releaseJobTrigger)
           .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-          .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
           .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
           .innerJoin(deployment, eq(release.deploymentId, deployment.id))
           .innerJoin(
@@ -434,20 +434,20 @@ const releaseJobTriggerRouter = createTRPCRouter({
 
       const targets = await ctx.db
         .select()
-        .from(target)
-        .where(inArray(target.id, allIds));
+        .from(resource)
+        .where(inArray(resource.id, allIds));
 
       const releaseDependenciesWithTargetPromises = releaseDependencies.map(
         async (rd) => {
           const latestJobSubquery = ctx.db
             .select({
               id: releaseJobTrigger.id,
-              targetId: releaseJobTrigger.targetId,
+              targetId: releaseJobTrigger.resourceId,
               releaseId: releaseJobTrigger.releaseId,
               status: job.status,
               createdAt: job.createdAt,
               rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY ${releaseJobTrigger.targetId}, ${releaseJobTrigger.releaseId}
+              PARTITION BY ${releaseJobTrigger.resourceId}, ${releaseJobTrigger.releaseId}
               ORDER BY ${job.createdAt} DESC
             )`.as("rank"),
             })
@@ -622,7 +622,7 @@ export const jobRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
-        .where(eq(target.id, input))
+        .where(eq(resource.id, input))
         .limit(1_000)
         .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
         .then((data) =>

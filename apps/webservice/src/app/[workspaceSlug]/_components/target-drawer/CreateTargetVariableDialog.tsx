@@ -65,7 +65,7 @@ export const CreateTargetVariableDialog: React.FC<
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit((data) =>
     createTargetVariable
-      .mutateAsync({ targetId, ...data })
+      .mutateAsync({ resourceId: targetId, ...data })
       .then(() => utils.target.byId.invalidate(targetId))
       .then(() => form.reset())
       .then(() => setOpen(false)),

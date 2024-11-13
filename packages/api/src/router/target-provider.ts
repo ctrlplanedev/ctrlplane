@@ -5,9 +5,9 @@ import { eq, inArray, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
   createTargetProvider,
   createTargetProviderGoogle,
-  target,
-  targetProvider,
-  targetProviderGoogle,
+  resource,
+  resourceProvider,
+  resourceProviderGoogle,
   updateTargetProviderGoogle,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -27,44 +27,44 @@ export const targetProviderRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const providers = await ctx.db
         .select()
-        .from(targetProvider)
+        .from(resourceProvider)
         .leftJoin(
-          targetProviderGoogle,
-          eq(targetProviderGoogle.targetProviderId, targetProvider.id),
+          resourceProviderGoogle,
+          eq(resourceProviderGoogle.resourceProviderId, resourceProvider.id),
         )
-        .where(eq(targetProvider.workspaceId, input));
+        .where(eq(resourceProvider.workspaceId, input));
 
       if (providers.length === 0) return [];
 
       const providerCounts = await ctx.db
         .select({
-          providerId: target.providerId,
+          providerId: resourceProvider.id,
           count: sql<number>`count(*)`.as("count"),
         })
-        .from(target)
+        .from(resource)
         .where(
           inArray(
-            target.providerId,
+            resource.providerId,
             providers.map((p) => p.resource_provider.id),
           ),
         )
-        .groupBy(target.providerId);
+        .groupBy(resourceProvider.id);
 
       const providerKinds = await ctx.db
         .select({
-          providerId: target.providerId,
-          kind: target.kind,
-          version: target.version,
+          providerId: resourceProvider.id,
+          kind: resource.kind,
+          version: resource.version,
           count: sql<number>`count(*)`.as("count"),
         })
-        .from(target)
+        .from(resource)
         .where(
           inArray(
-            target.providerId,
+            resource.providerId,
             providers.map((p) => p.resource_provider.id),
           ),
         )
-        .groupBy(target.providerId, target.kind, target.version)
+        .groupBy(resourceProvider.id, resource.kind, resource.version)
         .orderBy(sql`count(*) DESC`);
 
       return providers.map((provider) => ({
@@ -91,8 +91,8 @@ export const targetProviderRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db
         .select()
-        .from(targetProvider)
-        .where(eq(targetProvider.id, input))
+        .from(resourceProvider)
+        .where(eq(resourceProvider.id, input))
         .then(takeFirstOrNull),
     ),
 
@@ -121,7 +121,7 @@ export const targetProviderRouter = createTRPCRouter({
           createTargetProvider.and(
             z.object({
               config: createTargetProviderGoogle.omit({
-                targetProviderId: true,
+                resourceProviderId: true,
               }),
             }),
           ),
@@ -129,13 +129,13 @@ export const targetProviderRouter = createTRPCRouter({
         .mutation(({ ctx, input }) =>
           ctx.db.transaction(async (db) => {
             const tg = await db
-              .insert(targetProvider)
+              .insert(resourceProvider)
               .values(input)
               .returning()
               .then(takeFirst);
             const tgConfig = await db
-              .insert(targetProviderGoogle)
-              .values({ ...input.config, targetProviderId: tg.id })
+              .insert(resourceProviderGoogle)
+              .values({ ...input.config, resourceProviderId: tg.id })
               .returning()
               .then(takeFirst);
 
@@ -155,7 +155,7 @@ export const targetProviderRouter = createTRPCRouter({
             targetProviderId: z.string().uuid(),
             name: z.string().optional(),
             config: updateTargetProviderGoogle.omit({
-              targetProviderId: true,
+              resourceProviderId: true,
             }),
             repeatSeconds: z.number().min(1).nullable(),
           }),
@@ -164,18 +164,18 @@ export const targetProviderRouter = createTRPCRouter({
           return ctx.db.transaction(async (db) => {
             if (input.name != null)
               await db
-                .update(targetProvider)
+                .update(resourceProvider)
                 .set({ name: input.name })
-                .where(eq(targetProvider.id, input.targetProviderId))
+                .where(eq(resourceProvider.id, input.targetProviderId))
                 .returning()
                 .then(takeFirst);
 
             await db
-              .update(targetProviderGoogle)
+              .update(resourceProviderGoogle)
               .set(input.config)
               .where(
                 eq(
-                  targetProviderGoogle.targetProviderId,
+                  resourceProviderGoogle.resourceProviderId,
                   input.targetProviderId,
                 ),
               )
@@ -221,12 +221,12 @@ export const targetProviderRouter = createTRPCRouter({
       ctx.db.transaction(async (tx) => {
         if (input.deleteTargets)
           await tx
-            .delete(target)
-            .where(eq(target.providerId, input.providerId));
+            .delete(resource)
+            .where(eq(resource.providerId, input.providerId));
 
         const deletedProvider = await tx
-          .delete(targetProvider)
-          .where(eq(targetProvider.id, input.providerId))
+          .delete(resourceProvider)
+          .where(eq(resourceProvider.id, input.providerId))
           .returning()
           .then(takeFirst);
 

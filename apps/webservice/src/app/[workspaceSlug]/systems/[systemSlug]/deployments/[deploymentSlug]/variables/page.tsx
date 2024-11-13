@@ -31,7 +31,7 @@ export default async function VariablesPage({
     operator: TargetOperator.Or,
     conditions: await api.environment
       .bySystemId(deployment.systemId)
-      .then((envs) => envs.map((e) => e.targetFilter).filter(isPresent)),
+      .then((envs) => envs.map((e) => e.resourceFilter).filter(isPresent)),
   };
 
   const variablesPromises = variablesByDeployment.map(async (variable) => {
@@ -41,7 +41,7 @@ export default async function VariablesPage({
     const rest = variable.values.filter((v) => v.id !== defaultValue?.id);
 
     const valuesPromises = rest.map(async (v) => {
-      if (v.targetFilter == null)
+      if (v.resourceFilter == null)
         return {
           ...v,
           targetCount: 0,
@@ -50,13 +50,13 @@ export default async function VariablesPage({
         };
 
       const filterHash = LZString.compressToEncodedURIComponent(
-        JSON.stringify(v.targetFilter),
+        JSON.stringify(v.resourceFilter),
       );
 
       const filter: ComparisonCondition = {
         type: TargetFilterType.Comparison,
         operator: TargetOperator.And,
-        conditions: [systemTargetsFilter, v.targetFilter],
+        conditions: [systemTargetsFilter, v.resourceFilter],
       };
 
       const targets = await api.target.byWorkspaceId.list({
@@ -76,7 +76,7 @@ export default async function VariablesPage({
     const values = await Promise.all(valuesPromises);
 
     if (defaultValue != null) {
-      const restFilters = rest.map((v) => v.targetFilter).filter(isPresent);
+      const restFilters = rest.map((v) => v.resourceFilter).filter(isPresent);
 
       const filter: TargetCondition =
         restFilters.length === 0

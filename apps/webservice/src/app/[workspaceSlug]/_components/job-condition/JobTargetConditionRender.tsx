@@ -59,7 +59,8 @@ export const JobTargetConditionRender: React.FC<
   );
   const system = systemQ.data;
   const envFilters =
-    system?.environments.map((env) => env.targetFilter).filter(isPresent) ?? [];
+    system?.environments.map((env) => env.resourceFilter).filter(isPresent) ??
+    [];
 
   const systemFilter: TargetCondition = {
     type: FilterType.Comparison,

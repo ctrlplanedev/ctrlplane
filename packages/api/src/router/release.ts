@@ -26,7 +26,7 @@ import {
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
-  target,
+  resource,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -104,7 +104,7 @@ export const releaseRouter = createTRPCRouter({
           .select()
           .from(releaseJobTrigger)
           .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-          .innerJoin(target, eq(releaseJobTrigger.targetId, target.id))
+          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
           .where(
             inArray(
               releaseJobTrigger.releaseId,

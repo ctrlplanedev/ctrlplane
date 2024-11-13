@@ -13,11 +13,11 @@ import {
 import { db } from "@ctrlplane/db/client";
 import {
   environment,
+  resource,
+  resourceMetadata,
+  resourceVariable,
   system,
-  target,
   targetMatchesMetadata,
-  targetMetadata,
-  targetVariable,
 } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
@@ -27,7 +27,7 @@ import { dispatchJobsForNewTargets } from "./new-target.js";
 const log = logger.child({ label: "upsert-targets" });
 
 const getExistingTargetsForProvider = (db: Tx, providerId: string) =>
-  db.select().from(target).where(eq(target.providerId, providerId));
+  db.select().from(resource).where(eq(resource.providerId, providerId));
 
 const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
   const [firstTarget] = newTargets;
@@ -36,24 +36,24 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
   const workspaceId = firstTarget.workspaceId;
 
   const workspaceEnvs = await db
-    .select({ id: environment.id, targetFilter: environment.targetFilter })
+    .select({ id: environment.id, resourceFilter: environment.resourceFilter })
     .from(environment)
     .innerJoin(system, eq(system.id, environment.systemId))
     .where(
       and(
         eq(system.workspaceId, workspaceId),
-        isNotNull(environment.targetFilter),
+        isNotNull(environment.resourceFilter),
       ),
     );
 
   const targetIds = newTargets.map((t) => t.id);
   for (const env of workspaceEnvs) {
     db.select()
-      .from(target)
+      .from(resource)
       .where(
         and(
-          inArray(target.id, targetIds),
-          targetMatchesMetadata(db, env.targetFilter),
+          inArray(resource.id, targetIds),
+          targetMatchesMetadata(db, env.resourceFilter),
         ),
       )
       .then((tgs) => {
@@ -77,10 +77,10 @@ const upsertTargetVariables = async (
 ) => {
   const existingTargetVariables = await tx
     .select()
-    .from(targetVariable)
+    .from(resourceVariable)
     .where(
       inArray(
-        targetVariable.targetId,
+        resourceVariable.resourceId,
         targets.map((t) => t.id),
       ),
     )
@@ -92,7 +92,7 @@ const upsertTargetVariables = async (
   const targetVariablesValues = targets.flatMap((target) => {
     const { id, variables = [] } = target;
     return variables.map(({ key, value, sensitive }) => ({
-      targetId: id,
+      resourceId: id,
       key,
       value: sensitive
         ? variablesAES256().encrypt(JSON.stringify(value))
@@ -103,11 +103,14 @@ const upsertTargetVariables = async (
 
   if (targetVariablesValues.length > 0)
     await tx
-      .insert(targetVariable)
+      .insert(resourceVariable)
       .values(targetVariablesValues)
       .onConflictDoUpdate({
-        target: [targetVariable.key, targetVariable.targetId],
-        set: buildConflictUpdateColumns(targetVariable, ["value", "sensitive"]),
+        target: [resourceVariable.key, resourceVariable.resourceId],
+        set: buildConflictUpdateColumns(resourceVariable, [
+          "value",
+          "sensitive",
+        ]),
       })
       .catch((err) => {
         log.error("Error inserting target variables", { error: err });
@@ -118,17 +121,17 @@ const upsertTargetVariables = async (
     (variable) =>
       !targetVariablesValues.some(
         (newVariable) =>
-          newVariable.targetId === variable.targetId &&
+          newVariable.resourceId === variable.resourceId &&
           newVariable.key === variable.key,
       ),
   );
 
   if (variablesToDelete.length > 0)
     await tx
-      .delete(targetVariable)
+      .delete(resourceVariable)
       .where(
         inArray(
-          targetVariable.id,
+          resourceVariable.id,
           variablesToDelete.map((m) => m.id),
         ),
       )
@@ -144,10 +147,10 @@ const upsertTargetMetadata = async (
 ) => {
   const existingTargetMetadata = await tx
     .select()
-    .from(targetMetadata)
+    .from(resourceMetadata)
     .where(
       inArray(
-        targetMetadata.targetId,
+        resourceMetadata.resourceId,
         targets.map((t) => t.id),
       ),
     )
@@ -160,7 +163,7 @@ const upsertTargetMetadata = async (
     const { id, metadata = {} } = target;
 
     return Object.entries(metadata).map(([key, value]) => ({
-      targetId: id,
+      resourceId: id,
       key,
       value,
     }));
@@ -168,11 +171,11 @@ const upsertTargetMetadata = async (
 
   if (targetMetadataValues.length > 0)
     await tx
-      .insert(targetMetadata)
+      .insert(resourceMetadata)
       .values(targetMetadataValues)
       .onConflictDoUpdate({
-        target: [targetMetadata.targetId, targetMetadata.key],
-        set: buildConflictUpdateColumns(targetMetadata, ["value"]),
+        target: [resourceMetadata.resourceId, resourceMetadata.key],
+        set: buildConflictUpdateColumns(resourceMetadata, ["value"]),
       })
       .catch((err) => {
         log.error("Error inserting target metadata", { error: err });
@@ -183,17 +186,17 @@ const upsertTargetMetadata = async (
     (metadata) =>
       !targetMetadataValues.some(
         (newMetadata) =>
-          newMetadata.targetId === metadata.targetId &&
+          newMetadata.resourceId === metadata.resourceId &&
           newMetadata.key === metadata.key,
       ),
   );
 
   if (metadataToDelete.length > 0)
     await tx
-      .delete(targetMetadata)
+      .delete(resourceMetadata)
       .where(
         inArray(
-          targetMetadata.id,
+          resourceMetadata.id,
           metadataToDelete.map((m) => m.id),
         ),
       )
@@ -229,13 +232,13 @@ export const upsertTargets = async (
         return providerId == null
           ? db
               .select()
-              .from(target)
+              .from(resource)
               .where(
                 or(
                   ...targets.map((t) =>
                     and(
-                      eq(target.workspaceId, t.workspaceId),
-                      eq(target.identifier, t.identifier),
+                      eq(resource.workspaceId, t.workspaceId),
+                      eq(resource.identifier, t.identifier),
                     ),
                   ),
                 ),
@@ -249,12 +252,12 @@ export const upsertTargets = async (
     ).then((r) => r.flat());
 
     const targets = await tx
-      .insert(target)
+      .insert(resource)
       .values(targetsToInsert)
       .onConflictDoUpdate({
-        target: [target.identifier, target.workspaceId],
+        target: [resource.identifier, resource.workspaceId],
         set: {
-          ...buildConflictUpdateColumns(target, [
+          ...buildConflictUpdateColumns(resource, [
             "name",
             "version",
             "kind",
@@ -315,10 +318,10 @@ export const upsertTargets = async (
 
     if (targetsToDelete.length > 0) {
       await tx
-        .delete(target)
+        .delete(resource)
         .where(
           inArray(
-            target.id,
+            resource.id,
             targetsToDelete.map((t) => t.id),
           ),
         )

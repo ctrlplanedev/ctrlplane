@@ -20,13 +20,15 @@ export const getEventsForTargetDeleted = async (
   const systems = await db.query.system.findMany({
     where: eq(SCHEMA.system.workspaceId, target.workspaceId),
     with: {
-      environments: { where: isNotNull(SCHEMA.environment.targetFilter) },
+      environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
       deployments: true,
     },
   });
 
   const deploymentPromises = systems.map(async (s) => {
-    const filters = s.environments.map((e) => e.targetFilter).filter(isPresent);
+    const filters = s.environments
+      .map((e) => e.resourceFilter)
+      .filter(isPresent);
 
     const systemFilter: TargetCondition = {
       type: TargetFilterType.Comparison,
@@ -34,7 +36,7 @@ export const getEventsForTargetDeleted = async (
       conditions: filters,
     };
 
-    const matchedTarget = await db.query.target.findFirst({
+    const matchedTarget = await db.query.resource.findFirst({
       where: SCHEMA.targetMatchesMetadata(db, systemFilter),
     });
     if (matchedTarget == null) return [];

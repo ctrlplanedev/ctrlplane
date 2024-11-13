@@ -18,8 +18,8 @@ import {
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
   releaseChannel,
+  resource,
   system,
-  target,
   targetMatchesMetadata,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
@@ -155,12 +155,12 @@ export const environmentRouter = createTRPCRouter({
           ...e.environment,
           system: e.system,
           targets:
-            e.environment.targetFilter != null
+            e.environment.resourceFilter != null
               ? await ctx.db
                   .select()
-                  .from(target)
+                  .from(resource)
                   .where(
-                    targetMatchesMetadata(ctx.db, e.environment.targetFilter),
+                    targetMatchesMetadata(ctx.db, e.environment.resourceFilter),
                   )
               : [],
         })),
@@ -222,26 +222,26 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const { targetFilter } = input.data;
-      const isUpdatingTargetFilter = targetFilter != null;
+      const { resourceFilter } = input.data;
+      const isUpdatingTargetFilter = resourceFilter != null;
       if (isUpdatingTargetFilter) {
         const hasTargetFiltersChanged = !_.isEqual(
-          oldEnv.environment.targetFilter,
-          targetFilter,
+          oldEnv.environment.resourceFilter,
+          resourceFilter,
         );
 
         if (hasTargetFiltersChanged) {
           const oldQuery = targetMatchesMetadata(
             ctx.db,
-            oldEnv.environment.targetFilter,
+            oldEnv.environment.resourceFilter,
           );
           const newTargets = await ctx.db
-            .select({ id: target.id })
-            .from(target)
+            .select({ id: resource.id })
+            .from(resource)
             .where(
               and(
-                eq(target.workspaceId, oldEnv.system.workspaceId),
-                targetMatchesMetadata(ctx.db, targetFilter),
+                eq(resource.workspaceId, oldEnv.system.workspaceId),
+                targetMatchesMetadata(ctx.db, resourceFilter),
                 oldQuery && not(oldQuery),
               ),
             );

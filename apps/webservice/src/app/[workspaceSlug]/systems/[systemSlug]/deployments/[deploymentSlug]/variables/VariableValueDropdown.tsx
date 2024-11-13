@@ -80,7 +80,7 @@ const EditVariableValueDialog: React.FC<{
     schema: editVariableValueFormSchema,
     defaultValues: {
       value: value.value,
-      targetFilter: value.targetFilter,
+      targetFilter: value.resourceFilter,
       default: variable.defaultValueId === value.id,
     },
   });
@@ -89,7 +89,7 @@ const EditVariableValueDialog: React.FC<{
     update
       .mutateAsync({
         id: value.id,
-        data,
+        data: { ...data, resourceFilter: data.targetFilter },
       })
       .then(() => router.refresh())
       .then(onClose),

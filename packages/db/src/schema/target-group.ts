@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { workspace } from "./workspace.js";
 
-export const targetMetadataGroup = pgTable("resource_metadata_group", {
+export const resourceMetadataGroup = pgTable("resource_metadata_group", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id")
     .notNull()
@@ -18,7 +18,9 @@ export const targetMetadataGroup = pgTable("resource_metadata_group", {
     .default(false),
 });
 
-export const createTargetMetadataGroup = createInsertSchema(targetMetadataGroup)
+export const createTargetMetadataGroup = createInsertSchema(
+  resourceMetadataGroup,
+)
   .omit({
     id: true,
   })
@@ -26,4 +28,6 @@ export const createTargetMetadataGroup = createInsertSchema(targetMetadataGroup)
     keys: z.array(z.string()),
   });
 export const updateTargetMetadataGroup = createTargetMetadataGroup.partial();
-export type TargetMetadataGroup = InferSelectModel<typeof targetMetadataGroup>;
+export type TargetMetadataGroup = InferSelectModel<
+  typeof resourceMetadataGroup
+>;

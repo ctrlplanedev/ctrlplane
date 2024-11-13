@@ -44,7 +44,7 @@ export const TargetVariableDropdown: React.FC<TargetVariableDropdownProps> = ({
         </EditTargetVariableDialog>
         <DeleteTargetVariableDialog
           variableId={targetVariable.id}
-          targetId={targetVariable.targetId}
+          targetId={targetVariable.resourceId}
           onClose={() => setOpen(false)}
         >
           <DropdownMenuItem

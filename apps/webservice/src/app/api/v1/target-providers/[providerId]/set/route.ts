@@ -4,7 +4,11 @@ import { z } from "zod";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { createTarget, targetProvider, workspace } from "@ctrlplane/db/schema";
+import {
+  createTarget,
+  resourceProvider,
+  workspace,
+} from "@ctrlplane/db/schema";
 import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -55,9 +59,9 @@ export const PATCH = request()
 
     const query = await db
       .select()
-      .from(targetProvider)
-      .innerJoin(workspace, eq(workspace.id, targetProvider.workspaceId))
-      .where(eq(targetProvider.id, params.providerId))
+      .from(resourceProvider)
+      .innerJoin(workspace, eq(workspace.id, resourceProvider.workspaceId))
+      .where(eq(resourceProvider.id, params.providerId))
       .then(takeFirstOrNull);
 
     const provider = query?.resource_provider;

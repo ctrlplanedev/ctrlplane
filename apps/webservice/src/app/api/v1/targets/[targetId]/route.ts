@@ -21,8 +21,8 @@ export const GET = request()
     }),
   )
   .handle(async ({ db }, { params }: { params: { targetId: string } }) => {
-    const data = await db.query.target.findFirst({
-      where: eq(schema.target.id, params.targetId),
+    const data = await db.query.resource.findFirst({
+      where: eq(schema.resource.id, params.targetId),
       with: {
         metadata: true,
         variables: true,
@@ -73,8 +73,8 @@ export const PATCH = request()
     { body: z.infer<typeof patchSchema> },
     { params: { targetId: string } }
   >(async ({ db, body }, { params }) => {
-    const target = await db.query.target.findFirst({
-      where: eq(schema.target.id, params.targetId),
+    const target = await db.query.resource.findFirst({
+      where: eq(schema.resource.id, params.targetId),
     });
 
     if (target == null)
@@ -95,14 +95,16 @@ export const DELETE = request()
     ),
   )
   .handle(async ({ db }, { params }: { params: { targetId: string } }) => {
-    const target = await db.query.target.findFirst({
-      where: eq(schema.target.id, params.targetId),
+    const target = await db.query.resource.findFirst({
+      where: eq(schema.resource.id, params.targetId),
     });
 
     if (target == null)
       return NextResponse.json({ error: "Target not found" }, { status: 404 });
 
-    await db.delete(schema.target).where(eq(schema.target.id, params.targetId));
+    await db
+      .delete(schema.resource)
+      .where(eq(schema.resource.id, params.targetId));
 
     return NextResponse.json({ success: true });
   });

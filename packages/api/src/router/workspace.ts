@@ -13,8 +13,8 @@ import {
 import {
   createWorkspace,
   entityRole,
+  resource,
   role,
-  target,
   updateWorkspace,
   user,
   workspace,
@@ -223,10 +223,10 @@ export const workspaceRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const kinds = await ctx.db
-        .selectDistinct({ kind: target.kind })
-        .from(target)
-        .where(eq(target.workspaceId, input))
-        .orderBy(asc(target.kind));
+        .selectDistinct({ kind: resource.kind })
+        .from(resource)
+        .where(eq(resource.workspaceId, input))
+        .orderBy(asc(resource.kind));
 
       return kinds.map((row) => row.kind);
     }),

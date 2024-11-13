@@ -52,7 +52,7 @@ import {
   environmentReleaseChannel,
 } from "./environment.js";
 import { job } from "./job.js";
-import { target } from "./target.js";
+import { resource } from "./target.js";
 
 export const releaseChannel = pgTable(
   "release_channel",
@@ -185,8 +185,8 @@ export const releaseJobTrigger = pgTable(
     releaseId: uuid("release_id")
       .references(() => release.id, { onDelete: "cascade" })
       .notNull(),
-    targetId: uuid("resource_id")
-      .references(() => target.id, { onDelete: "cascade" })
+    resourceId: uuid("resource_id")
+      .references(() => resource.id, { onDelete: "cascade" })
       .notNull(),
     environmentId: uuid("environment_id")
       .references(() => environment.id, { onDelete: "cascade" })

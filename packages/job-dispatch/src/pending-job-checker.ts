@@ -12,7 +12,7 @@ export const isPassingNoPendingJobsPolicy: ReleasePolicyChecker = async (
     ? db
         .selectDistinctOn([
           SCHEMA.releaseJobTrigger.releaseId,
-          SCHEMA.releaseJobTrigger.targetId,
+          SCHEMA.releaseJobTrigger.resourceId,
           SCHEMA.releaseJobTrigger.environmentId,
         ])
         .from(SCHEMA.job)
@@ -31,8 +31,8 @@ export const isPassingNoPendingJobsPolicy: ReleasePolicyChecker = async (
               wf.map((w) => w.releaseId),
             ),
             inArray(
-              SCHEMA.releaseJobTrigger.targetId,
-              wf.map((w) => w.targetId),
+              SCHEMA.releaseJobTrigger.resourceId,
+              wf.map((w) => w.resourceId),
             ),
             or(
               eq(SCHEMA.job.status, JobStatus.Pending),
@@ -46,7 +46,7 @@ export const isPassingNoPendingJobsPolicy: ReleasePolicyChecker = async (
               !rows.some(
                 (r) =>
                   r.release_job_trigger.releaseId === w.releaseId &&
-                  r.release_job_trigger.targetId === w.targetId &&
+                  r.release_job_trigger.resourceId === w.resourceId &&
                   r.release_job_trigger.environmentId === w.environmentId,
               ),
           ),
