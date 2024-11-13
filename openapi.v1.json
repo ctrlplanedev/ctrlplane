@@ -120,8 +120,22 @@
                   "deploymentId": {
                     "type": "string"
                   },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
                   "metadata": {
-                    "type": "object"
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
@@ -156,8 +170,185 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Release already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
+      }
+    },
+    "/v1/release-channels": {
+      "post": {
+        "summary": "Create a release channel",
+        "operationId": "createReleaseChannel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "releaseFilter"
+                ],
+                "properties": {
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "releaseFilter": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release channel created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "releaseFilter": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Release channel already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create release channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     },
     "/v1/environments": {
@@ -171,11 +362,31 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "systemId"
+                  "systemId",
+                  "name"
                 ],
                 "properties": {
                   "systemId": {
                     "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "targetFilter": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "policyId": {
+                    "type": "string"
+                  },
+                  "releaseChannels": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "expiresAt": {
                     "type": "string",
@@ -200,6 +411,12 @@
                         "systemId": {
                           "type": "string"
                         },
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
                         "expiresAt": {
                           "type": "string",
                           "format": "date-time",
@@ -213,6 +430,24 @@
                       "required": [
                         "systemId"
                       ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Environment already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
                     }
                   }
                 }
@@ -1109,118 +1344,79 @@
         }
       }
     },
-    "/v1/deployments/{deploymentId}/release-channels": {
-      "post": {
-        "summary": "Create a release channel",
-        "operationId": "createReleaseChannel",
+    "/v1/job-agents/{agentId}/jobs/running": {
+      "get": {
+        "summary": "Get a agents running jobs",
+        "operationId": "getAgentRunningJob",
         "parameters": [
           {
-            "name": "deploymentId",
+            "name": "agentId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
-            }
+            },
+            "description": "The execution ID"
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "name"
-                ],
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string"
-                  },
-                  "releaseFilter": {
-                    "type": "object",
-                    "additionalProperties": true
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Release channel created successfully",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "jobAgentId": {
+                        "type": "string"
+                      },
+                      "jobAgentConfig": {
+                        "type": "object"
+                      },
+                      "externalId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "release": {
+                        "type": "object"
+                      },
+                      "deployment": {
+                        "type": "object"
+                      },
+                      "config": {
+                        "type": "object"
+                      },
+                      "runbook": {
+                        "type": "object"
+                      },
+                      "target": {
+                        "type": "object"
+                      },
+                      "environment": {
+                        "type": "object"
+                      }
                     },
-                    "name": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "deploymentId": {
-                      "type": "string"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "deploymentId",
-                    "createdAt",
-                    "updatedAt"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
+                    "required": [
+                      "id",
+                      "status",
+                      "message",
+                      "jobAgentId",
+                      "jobAgentConfig",
+                      "externalId",
+                      "config"
+                    ]
+                  }
                 }
               }
             }
@@ -1351,86 +1547,6 @@
                     "error": {
                       "type": "string"
                     }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/job-agents/{agentId}/jobs/running": {
-      "get": {
-        "summary": "Get a agents running jobs",
-        "operationId": "getAgentRunningJob",
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The execution ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "jobAgentId": {
-                        "type": "string"
-                      },
-                      "jobAgentConfig": {
-                        "type": "object"
-                      },
-                      "externalId": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "release": {
-                        "type": "object"
-                      },
-                      "deployment": {
-                        "type": "object"
-                      },
-                      "config": {
-                        "type": "object"
-                      },
-                      "runbook": {
-                        "type": "object"
-                      },
-                      "target": {
-                        "type": "object"
-                      },
-                      "environment": {
-                        "type": "object"
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "status",
-                      "message",
-                      "jobAgentId",
-                      "jobAgentConfig",
-                      "externalId",
-                      "config"
-                    ]
                   }
                 }
               }

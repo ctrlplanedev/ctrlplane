@@ -2,10 +2,11 @@ import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import type { Tx } from "@ctrlplane/db";
 import type { User } from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
+import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { createJobsForNewEnvironment } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
@@ -16,6 +17,7 @@ import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
+  releaseChannels: z.array(z.string()),
   expiresAt: z.coerce
     .date()
     .min(new Date(), "Expires at must be in the future")
@@ -80,10 +82,18 @@ export const POST = request()
           isPresent(ctx.body.releaseChannels) &&
           ctx.body.releaseChannels.length > 0
         ) {
+          const releaseChannels = await ctx.db
+            .select()
+            .from(schema.releaseChannel)
+            .where(inArray(schema.releaseChannel.id, ctx.body.releaseChannels));
+
           await createReleaseChannels(
             ctx.db,
             environment.id,
-            ctx.body.releaseChannels,
+            _.uniqBy(releaseChannels, (r) => r.deploymentId).map((r) => ({
+              channelId: r.id,
+              deploymentId: r.deploymentId,
+            })),
           );
         }
 

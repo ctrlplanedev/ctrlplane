@@ -17,11 +17,15 @@ export const openapi: Swagger.SwaggerV3 = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["deploymentId", "name"],
+                required: ["deploymentId", "name", "releaseFilter"],
                 properties: {
                   deploymentId: { type: "string" },
                   name: { type: "string" },
                   description: { type: "string", nullable: true },
+                  releaseFilter: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
                 },
               },
             },
@@ -40,8 +44,27 @@ export const openapi: Swagger.SwaggerV3 = {
                     name: { type: "string" },
                     description: { type: "string", nullable: true },
                     createdAt: { type: "string", format: "date-time" },
+                    releaseFilter: {
+                      type: "object",
+                      additionalProperties: true,
+                    },
                   },
                   required: ["id", "deploymentId", "name", "createdAt"],
+                },
+              },
+            },
+          },
+          "409": {
+            description: "Release channel already exists",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                    id: { type: "string" },
+                  },
+                  required: ["error", "id"],
                 },
               },
             },

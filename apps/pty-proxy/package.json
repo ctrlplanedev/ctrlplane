@@ -1,5 +1,5 @@
 {
-  "name": "@ctrlplane/target-proxy",
+  "name": "@ctrlplane/pty-proxy",
   "private": true,
   "type": "module",
   "scripts": {

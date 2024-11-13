@@ -18,14 +18,14 @@ export const openapi: Swagger.SwaggerV3 = {
               schema: {
                 type: "object",
                 properties: {
-                  version: {
-                    type: "string",
-                  },
-                  deploymentId: {
-                    type: "string",
-                  },
+                  version: { type: "string" },
+                  deploymentId: { type: "string" },
+                  createdAt: { type: "string", format: "date-time" },
+                  name: { type: "string" },
+                  config: { type: "object", additionalProperties: true },
                   metadata: {
                     type: "object",
+                    additionalProperties: { type: "string" },
                   },
                 },
                 required: ["version", "deploymentId"],
@@ -49,6 +49,20 @@ export const openapi: Swagger.SwaggerV3 = {
                         type: "string",
                       },
                     },
+                  },
+                },
+              },
+            },
+          },
+          "409": {
+            description: "Release already exists",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                    id: { type: "string" },
                   },
                 },
               },

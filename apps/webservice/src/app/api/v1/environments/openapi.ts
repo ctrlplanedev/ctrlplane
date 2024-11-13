@@ -17,10 +17,29 @@ export const openapi: Swagger.SwaggerV3 = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["systemId"],
+                required: ["systemId", "name"],
                 properties: {
                   systemId: {
                     type: "string",
+                  },
+                  name: {
+                    type: "string",
+                  },
+                  description: {
+                    type: "string",
+                  },
+                  targetFilter: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
+                  policyId: {
+                    type: "string",
+                  },
+                  releaseChannels: {
+                    type: "array",
+                    items: {
+                      type: "string",
+                    },
                   },
                   expiresAt: {
                     type: "string",
@@ -45,6 +64,12 @@ export const openapi: Swagger.SwaggerV3 = {
                         systemId: {
                           type: "string",
                         },
+                        name: {
+                          type: "string",
+                        },
+                        description: {
+                          type: "string",
+                        },
                         expiresAt: {
                           type: "string",
                           format: "date-time",
@@ -57,6 +82,20 @@ export const openapi: Swagger.SwaggerV3 = {
                       },
                       required: ["systemId"],
                     },
+                  },
+                },
+              },
+            },
+          },
+          "409": {
+            description: "Environment already exists",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                    id: { type: "string" },
                   },
                 },
               },
