@@ -38,7 +38,7 @@ export const targetProviderRouter = createTRPCRouter({
 
       const providerCounts = await ctx.db
         .select({
-          providerId: resourceProvider.id,
+          providerId: resource.providerId,
           count: sql<number>`count(*)`.as("count"),
         })
         .from(resource)
@@ -48,11 +48,11 @@ export const targetProviderRouter = createTRPCRouter({
             providers.map((p) => p.resource_provider.id),
           ),
         )
-        .groupBy(resourceProvider.id);
+        .groupBy(resource.providerId);
 
       const providerKinds = await ctx.db
         .select({
-          providerId: resourceProvider.id,
+          providerId: resource.providerId,
           kind: resource.kind,
           version: resource.version,
           count: sql<number>`count(*)`.as("count"),
@@ -64,7 +64,7 @@ export const targetProviderRouter = createTRPCRouter({
             providers.map((p) => p.resource_provider.id),
           ),
         )
-        .groupBy(resourceProvider.id, resource.kind, resource.version)
+        .groupBy(resource.providerId, resource.kind, resource.version)
         .orderBy(sql`count(*) DESC`);
 
       return providers.map((provider) => ({

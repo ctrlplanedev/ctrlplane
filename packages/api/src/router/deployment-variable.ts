@@ -360,7 +360,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           id: deploymentVariableValue.id,
           value: deploymentVariableValue.value,
           variableId: deploymentVariableValue.variableId,
-          targetFilter: deploymentVariableValue.resourceFilter,
+          resourceFilter: deploymentVariableValue.resourceFilter,
         })
         .from(deploymentVariableValue)
         .orderBy(asc(deploymentVariableValue.value))
@@ -378,7 +378,7 @@ export const deploymentVariableRouter = createTRPCRouter({
                     'id', ${deploymentVariableValueSubquery.id},
                     'value', ${deploymentVariableValueSubquery.value},
                     'variableId', ${deploymentVariableValueSubquery.variableId},
-                    'targetFilter', ${deploymentVariableValueSubquery.targetFilter}
+                    'resourceFilter', ${deploymentVariableValueSubquery.resourceFilter}
                   )
                 else null end
               ) filter (where ${deploymentVariableValueSubquery.id} is not null),
