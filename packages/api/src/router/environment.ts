@@ -24,7 +24,7 @@ import {
   updateEnvironment,
 } from "@ctrlplane/db/schema";
 import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
-import { dispatchJobsForNewTargets } from "@ctrlplane/job-dispatch";
+import { dispatchJobsForNewResources } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -154,7 +154,7 @@ export const environmentRouter = createTRPCRouter({
         envs.map(async (e) => ({
           ...e.environment,
           system: e.system,
-          targets:
+          resources:
             e.environment.resourceFilter != null
               ? await ctx.db
                   .select()
@@ -226,19 +226,19 @@ export const environmentRouter = createTRPCRouter({
         .then(takeFirst);
 
       const { resourceFilter } = input.data;
-      const isUpdatingTargetFilter = resourceFilter != null;
-      if (isUpdatingTargetFilter) {
-        const hasTargetFiltersChanged = !_.isEqual(
+      const isUpdatingResourceFilter = resourceFilter != null;
+      if (isUpdatingResourceFilter) {
+        const hasResourceFiltersChanged = !_.isEqual(
           oldEnv.environment.resourceFilter,
           resourceFilter,
         );
 
-        if (hasTargetFiltersChanged) {
+        if (hasResourceFiltersChanged) {
           const oldQuery = resourceMatchesMetadata(
             ctx.db,
             oldEnv.environment.resourceFilter,
           );
-          const newTargets = await ctx.db
+          const newResources = await ctx.db
             .select({ id: resource.id })
             .from(resource)
             .where(
@@ -249,14 +249,14 @@ export const environmentRouter = createTRPCRouter({
               ),
             );
 
-          if (newTargets.length > 0) {
-            await dispatchJobsForNewTargets(
+          if (newResources.length > 0) {
+            await dispatchJobsForNewResources(
               ctx.db,
-              newTargets.map((t) => t.id),
+              newResources.map((r) => r.id),
               input.id,
             );
             console.log(
-              `Found ${newTargets.length} new targets for environment ${input.id}`,
+              `Found ${newResources.length} new resources for environment ${input.id}`,
             );
           }
         }

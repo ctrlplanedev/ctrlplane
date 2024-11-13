@@ -1,9 +1,5 @@
-import type {
-  Deployment,
-  Environment,
-  Resource,
-  Workspace,
-} from "@ctrlplane/db/schema";
+import type { RouterOutputs } from "@ctrlplane/api";
+import type { Deployment, Workspace } from "@ctrlplane/db/schema";
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import Link from "next/link";
 import { IconCircleFilled } from "@tabler/icons-react";
@@ -22,6 +18,8 @@ import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/Dep
 import { api } from "~/trpc/server";
 import { Release } from "./TableCells";
 
+type Environment = RouterOutputs["environment"]["bySystemId"][number];
+
 const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
   children,
   className,
@@ -39,7 +37,7 @@ const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
 const EnvIcon: React.FC<{
   isFirst?: boolean;
   isLast?: boolean;
-  environment: Environment & { targets: Resource[] };
+  environment: Environment;
   workspaceSlug: string;
   systemSlug: string;
 }> = ({ environment: env, isFirst, isLast, workspaceSlug, systemSlug }) => {
@@ -61,7 +59,7 @@ const EnvIcon: React.FC<{
             variant="outline"
             className="rounded-full text-muted-foreground"
           >
-            {env.targets.length}
+            {env.resources.length}
           </Badge>
         </div>
       </Link>
@@ -72,7 +70,7 @@ const EnvIcon: React.FC<{
 const ReleaseCell: React.FC<{
   workspace: Workspace;
   systemSlug: string;
-  environment: Environment & { targets: Resource[] };
+  environment: Environment;
   release: {
     id: string;
     name: string;
@@ -119,7 +117,7 @@ const ReleaseCell: React.FC<{
         })
       : { items: null };
   const releaseJobTriggers = items ?? [];
-  const hasTargets = env.targets.length > 0;
+  const hasResources = env.resources.length > 0;
   const hasRelease = release != null;
   const jc = releaseJobTriggers
     .filter(
@@ -131,7 +129,7 @@ const ReleaseCell: React.FC<{
     .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
   return (
     <>
-      {hasRelease && hasTargets && (
+      {hasRelease && hasResources && (
         <Release
           releaseId={release.id}
           environment={env}
@@ -145,8 +143,8 @@ const ReleaseCell: React.FC<{
         />
       )}
 
-      {!hasTargets && hasRelease && (
-        <div className="text-center text-xs text-muted">No targets</div>
+      {!hasResources && hasRelease && (
+        <div className="text-center text-xs text-muted">No resources</div>
       )}
 
       {!hasRelease && (
@@ -159,7 +157,7 @@ const ReleaseCell: React.FC<{
 const DeploymentTable: React.FC<{
   workspace: Workspace;
   systemSlug: string;
-  environments: Array<Environment & { targets: Resource[] }>;
+  environments: Environment[];
   deployments: Array<
     Deployment & {
       activeReleases: Array<{

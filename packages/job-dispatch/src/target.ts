@@ -22,7 +22,7 @@ import {
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
-import { dispatchJobsForNewTargets } from "./new-target.js";
+import { dispatchJobsForNewResources } from "./new-target.js";
 
 const log = logger.child({ label: "upsert-targets" });
 
@@ -58,7 +58,7 @@ const dispatchNewTargets = async (db: Tx, newTargets: Resource[]) => {
       )
       .then((tgs) => {
         if (tgs.length === 0) return;
-        dispatchJobsForNewTargets(
+        dispatchJobsForNewResources(
           db,
           tgs.map((t) => t.id),
           env.id,

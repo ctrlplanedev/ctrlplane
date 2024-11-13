@@ -9,13 +9,13 @@ import { createReleaseJobTriggers } from "./release-job-trigger.js";
 /**
  * Dispatches jobs for new targets added to an environment.
  */
-export async function dispatchJobsForNewTargets(
+export async function dispatchJobsForNewResources(
   db: Tx,
-  newTargetIds: string[],
+  newResourceIds: string[],
   envId: string,
 ): Promise<void> {
   const releaseJobTriggers = await createReleaseJobTriggers(db, "new_resource")
-    .targets(newTargetIds)
+    .targets(newResourceIds)
     .environments([envId])
     .insert();
   if (releaseJobTriggers.length === 0) return;
