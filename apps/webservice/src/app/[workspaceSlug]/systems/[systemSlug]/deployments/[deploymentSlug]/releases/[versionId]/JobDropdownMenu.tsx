@@ -1,3 +1,6 @@
+"use client";
+
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -280,10 +283,19 @@ export const JobDropdownMenu: React.FC<{
   release: { id: string; version: string; name: string };
   environmentId: string;
   target: { id: string; name: string; lockedAt: Date | null } | null;
-  deploymentName: string;
+  deployment: SCHEMA.Deployment;
   job: { id: string; status: JobStatus };
+  isPassingReleaseChannel: boolean;
   children: React.ReactNode;
-}> = ({ release, deploymentName, target, environmentId, job, children }) => {
+}> = ({
+  release,
+  deployment,
+  target,
+  environmentId,
+  job,
+  isPassingReleaseChannel,
+  children,
+}) => {
   const [open, setOpen] = useState(false);
   const isActive = activeStatus.includes(job.status);
   return (
@@ -310,7 +322,26 @@ export const JobDropdownMenu: React.FC<{
             </TooltipProvider>
           )}
 
-          {!isActive && (
+          {!isActive && !isPassingReleaseChannel && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuItem
+                    onSelect={(e) => e.preventDefault()}
+                    className="space-x-2 text-muted-foreground hover:cursor-not-allowed focus:bg-transparent focus:text-muted-foreground"
+                  >
+                    <IconReload className="h-4 w-4" />
+                    <p>Redeploy</p>
+                  </DropdownMenuItem>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Release channel does not match filter
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
+          {!isActive && isPassingReleaseChannel && (
             <RedeployReleaseDialog
               release={release}
               environmentId={environmentId}
@@ -338,7 +369,7 @@ export const JobDropdownMenu: React.FC<{
 
           <ForceReleaseTargetDialog
             release={release}
-            deploymentName={deploymentName}
+            deploymentName={deployment.name}
             target={target}
             environmentId={environmentId}
             onClose={() => setOpen(false)}

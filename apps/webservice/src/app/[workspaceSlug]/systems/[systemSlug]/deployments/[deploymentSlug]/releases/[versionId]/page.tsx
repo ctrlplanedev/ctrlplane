@@ -67,7 +67,7 @@ export default async function ReleasePage({ params }: PageProps) {
 
         <TargetReleaseTable
           release={release}
-          deploymentName={deployment.name}
+          deployment={deployment}
           environments={environments}
         />
       </ScrollArea>

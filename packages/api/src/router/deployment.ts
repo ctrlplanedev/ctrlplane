@@ -330,6 +330,10 @@ export const deploymentRouter = createTRPCRouter({
         .innerJoin(system, eq(system.id, deployment.systemId))
         .innerJoin(workspace, eq(system.workspaceId, workspace.id))
         .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+        .leftJoin(
+          releaseChannel,
+          eq(releaseChannel.deploymentId, deployment.id),
+        )
         .where(
           and(
             eq(deployment.slug, deploymentSlug),
@@ -337,14 +341,16 @@ export const deploymentRouter = createTRPCRouter({
             eq(workspace.slug, workspaceSlug),
           ),
         )
-        .then(takeFirstOrNull)
         .then((r) =>
-          r == null
+          r[0] == null
             ? null
             : {
-                ...r.deployment,
-                system: { ...r.system, workspace: r.workspace },
-                agent: r.job_agent,
+                ...r[0].deployment,
+                system: { ...r[0].system, workspace: r[0].workspace },
+                agent: r[0].job_agent,
+                releaseChannels: r
+                  .map((r) => r.release_channel)
+                  .filter(isPresent),
               },
         ),
     ),

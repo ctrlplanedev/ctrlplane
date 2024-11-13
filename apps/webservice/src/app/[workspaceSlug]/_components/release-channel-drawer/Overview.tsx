@@ -7,7 +7,8 @@ import { IconExternalLink, IconLoader2 } from "@tabler/icons-react";
 import LZString from "lz-string";
 import { z } from "zod";
 
-import { Button } from "@ctrlplane/ui/button";
+import { cn } from "@ctrlplane/ui";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Form,
   FormControl,
@@ -33,6 +34,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { ReleaseConditionRender } from "../release-condition/ReleaseConditionRender";
+import { useReleaseFilter } from "../release-condition/useReleaseFilter";
 import { ReleaseBadgeList } from "../ReleaseBadgeList";
 
 type OverviewProps = {
@@ -85,6 +87,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
     systemSlug?: string;
     deploymentSlug?: string;
   }>();
+  const { filter: paramFilter, setFilter } = useReleaseFilter();
 
   const defaultValues = {
     ...releaseChannel,
@@ -105,6 +108,9 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
       .then(() =>
         utils.deployment.releaseChannel.byId.invalidate(releaseChannel.id),
       )
+      .then(() => {
+        if (paramFilter != null) setFilter(releaseFilter);
+      })
       .then(() => router.refresh());
   });
 
@@ -186,11 +192,16 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
             Save
           </Button>
           {releaseFilterUrl != null && (
-            <Link href={releaseFilterUrl} target="_blank">
-              <Button variant="outline" className="flex items-center gap-2">
-                <IconExternalLink className="h-4 w-4" />
-                View releases
-              </Button>
+            <Link
+              href={releaseFilterUrl}
+              target="_blank"
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "flex items-center gap-2",
+              )}
+            >
+              <IconExternalLink className="h-4 w-4" />
+              View releases
             </Link>
           )}
         </div>
