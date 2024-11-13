@@ -18,12 +18,11 @@ export const openapi: Swagger.SwaggerV3 = {
               schema: {
                 type: "object",
                 properties: {
-                  version: {
-                    type: "string",
-                  },
-                  deploymentId: {
-                    type: "string",
-                  },
+                  version: { type: "string" },
+                  deploymentId: { type: "string" },
+                  createdAt: { type: "string", format: "date-time" },
+                  name: { type: "string" },
+                  config: { type: "object", additionalProperties: true },
                   metadata: {
                     type: "object",
                     additionalProperties: {

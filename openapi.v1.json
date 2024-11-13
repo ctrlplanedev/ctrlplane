@@ -103,6 +103,77 @@
         }
       }
     },
+    "/v1/releases": {
+      "post": {
+        "summary": "Creates a release",
+        "operationId": "createRelease",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string"
+                  },
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/release-channels": {
       "post": {
         "summary": "Create a release channel",
@@ -379,66 +450,6 @@
                   "required": [
                     "error"
                   ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/releases": {
-      "post": {
-        "summary": "Creates a release",
-        "operationId": "createRelease",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": "string"
-                  },
-                  "deploymentId": {
-                    "type": "string"
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "version",
-                  "deploymentId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "string"
-                    },
-                    "metadata": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
-                    }
-                  }
                 }
               }
             }
@@ -1315,86 +1326,6 @@
         }
       }
     },
-    "/v1/job-agents/{agentId}/jobs/running": {
-      "get": {
-        "summary": "Get a agents running jobs",
-        "operationId": "getAgentRunningJob",
-        "parameters": [
-          {
-            "name": "agentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The execution ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "jobAgentId": {
-                        "type": "string"
-                      },
-                      "jobAgentConfig": {
-                        "type": "object"
-                      },
-                      "externalId": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "release": {
-                        "type": "object"
-                      },
-                      "deployment": {
-                        "type": "object"
-                      },
-                      "config": {
-                        "type": "object"
-                      },
-                      "runbook": {
-                        "type": "object"
-                      },
-                      "target": {
-                        "type": "object"
-                      },
-                      "environment": {
-                        "type": "object"
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "status",
-                      "message",
-                      "jobAgentId",
-                      "jobAgentConfig",
-                      "externalId",
-                      "config"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/job-agents/{agentId}/queue/next": {
       "get": {
         "summary": "Get the next jobs",
@@ -1518,6 +1449,86 @@
                     "error": {
                       "type": "string"
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/job-agents/{agentId}/jobs/running": {
+      "get": {
+        "summary": "Get a agents running jobs",
+        "operationId": "getAgentRunningJob",
+        "parameters": [
+          {
+            "name": "agentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The execution ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "jobAgentId": {
+                        "type": "string"
+                      },
+                      "jobAgentConfig": {
+                        "type": "object"
+                      },
+                      "externalId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "release": {
+                        "type": "object"
+                      },
+                      "deployment": {
+                        "type": "object"
+                      },
+                      "config": {
+                        "type": "object"
+                      },
+                      "runbook": {
+                        "type": "object"
+                      },
+                      "target": {
+                        "type": "object"
+                      },
+                      "environment": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status",
+                      "message",
+                      "jobAgentId",
+                      "jobAgentConfig",
+                      "externalId",
+                      "config"
+                    ]
                   }
                 }
               }

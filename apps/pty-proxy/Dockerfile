@@ -1,4 +1,5 @@
-FROM node:20-slim AS base
+ARG NODE_VERSION=20
+FROM node:${NODE_VERSION}-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -25,7 +26,7 @@ RUN pnpm install
 COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
 
-RUN pnpm turbo build --filter=webshell...
+RUN pnpm turbo build --filter=target-proxy...
 
 FROM base AS runner
 WORKDIR /app
@@ -34,6 +35,9 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 expressjs
 RUN adduser --system --uid 1001 expressjs
 USER expressjs
+
+ENV PORT=4000
+EXPOSE 4000
 
 COPY --from=installer /app .
 CMD ["node", "apps/target-proxy/dist/index.js"]
