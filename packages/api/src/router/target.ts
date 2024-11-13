@@ -47,7 +47,7 @@ const targetRelations = createTRPCRouter({
                 NULL::uuid AS tr_id,
                 NULL::uuid AS source_id,
                 NULL::uuid AS target_id,
-                NULL::target_relationship_type AS type
+                NULL::resource_relationship_type AS type
             UNION ALL
             -- Recursive case: find all relationships connected to the current set of IDs
             SELECT
