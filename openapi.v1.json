@@ -262,66 +262,6 @@
         ]
       }
     },
-    "/v1/releases": {
-      "post": {
-        "summary": "Creates a release",
-        "operationId": "createRelease",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": "string"
-                  },
-                  "deploymentId": {
-                    "type": "string"
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "version",
-                  "deploymentId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "string"
-                    },
-                    "metadata": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/environments": {
       "post": {
         "summary": "Create an environment",
@@ -356,19 +296,7 @@
                   "releaseChannels": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "required": [
-                        "channelId",
-                        "deploymentId"
-                      ],
-                      "properties": {
-                        "channelId": {
-                          "type": "string"
-                        },
-                        "deploymentId": {
-                          "type": "string"
-                        }
-                      }
+                      "type": "string"
                     }
                   },
                   "expiresAt": {
@@ -451,6 +379,66 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/releases": {
+      "post": {
+        "summary": "Creates a release",
+        "operationId": "createRelease",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string"
+                  },
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1327,11 +1315,10 @@
         }
       }
     },
-    "/v1/job-agents/{agentId}/queue/acknowledge": {
-      "post": {
-        "summary": "Acknowledge a job for an agent",
-        "operationId": "acknowledgeAgentJob",
-        "description": "Marks a job as acknowledged by the agent",
+    "/v1/job-agents/{agentId}/jobs/running": {
+      "get": {
+        "summary": "Get a agents running jobs",
+        "operationId": "getAgentRunningJob",
         "parameters": [
           {
             "name": "agentId",
@@ -1340,50 +1327,66 @@
             "schema": {
               "type": "string"
             },
-            "description": "The ID of the job agent"
+            "description": "The execution ID"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successfully acknowledged job",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "job": {
-                      "type": "object"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Workspace not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      },
+                      "jobAgentId": {
+                        "type": "string"
+                      },
+                      "jobAgentConfig": {
+                        "type": "object"
+                      },
+                      "externalId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "release": {
+                        "type": "object"
+                      },
+                      "deployment": {
+                        "type": "object"
+                      },
+                      "config": {
+                        "type": "object"
+                      },
+                      "runbook": {
+                        "type": "object"
+                      },
+                      "target": {
+                        "type": "object"
+                      },
+                      "environment": {
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status",
+                      "message",
+                      "jobAgentId",
+                      "jobAgentConfig",
+                      "externalId",
+                      "config"
+                    ]
                   }
                 }
               }
@@ -1458,10 +1461,11 @@
         }
       }
     },
-    "/v1/job-agents/{agentId}/jobs/running": {
-      "get": {
-        "summary": "Get a agents running jobs",
-        "operationId": "getAgentRunningJob",
+    "/v1/job-agents/{agentId}/queue/acknowledge": {
+      "post": {
+        "summary": "Acknowledge a job for an agent",
+        "operationId": "acknowledgeAgentJob",
+        "description": "Marks a job as acknowledged by the agent",
         "parameters": [
           {
             "name": "agentId",
@@ -1470,66 +1474,50 @@
             "schema": {
               "type": "string"
             },
-            "description": "The execution ID"
+            "description": "The ID of the job agent"
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Successfully acknowledged job",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "message": {
-                        "type": "string"
-                      },
-                      "jobAgentId": {
-                        "type": "string"
-                      },
-                      "jobAgentConfig": {
-                        "type": "object"
-                      },
-                      "externalId": {
-                        "type": "string",
-                        "nullable": true
-                      },
-                      "release": {
-                        "type": "object"
-                      },
-                      "deployment": {
-                        "type": "object"
-                      },
-                      "config": {
-                        "type": "object"
-                      },
-                      "runbook": {
-                        "type": "object"
-                      },
-                      "target": {
-                        "type": "object"
-                      },
-                      "environment": {
-                        "type": "object"
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "status",
-                      "message",
-                      "jobAgentId",
-                      "jobAgentConfig",
-                      "externalId",
-                      "config"
-                    ]
+                  "type": "object",
+                  "properties": {
+                    "job": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
                   }
                 }
               }

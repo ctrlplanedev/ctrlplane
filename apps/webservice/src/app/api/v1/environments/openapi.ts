@@ -38,12 +38,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   releaseChannels: {
                     type: "array",
                     items: {
-                      type: "object",
-                      required: ["channelId", "deploymentId"],
-                      properties: {
-                        channelId: { type: "string" },
-                        deploymentId: { type: "string" },
-                      },
+                      type: "string",
                     },
                   },
                   expiresAt: {
