@@ -5,9 +5,10 @@ import { NextResponse } from "next/server";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { takeFirst } from "@ctrlplane/db";
+import { takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { createJobsForNewEnvironment } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -45,8 +46,8 @@ export const POST = request()
     ),
   )
   .handle<{ user: User; can: PermissionChecker; body: z.infer<typeof body> }>(
-    (ctx) =>
-      ctx.db
+    async (ctx) => {
+      const environment = await ctx.db
         .insert(schema.environment)
         .values({
           ...ctx.body,
@@ -55,36 +56,45 @@ export const POST = request()
             : undefined,
         })
         .returning()
-        .then(takeFirst)
-        .then(async (environment) => {
-          if (
-            isPresent(ctx.body.releaseChannels) &&
-            ctx.body.releaseChannels.length > 0
-          )
-            await createReleaseChannels(
-              ctx.db,
-              environment.id,
-              ctx.body.releaseChannels,
-            );
-          await createJobsForNewEnvironment(ctx.db, environment);
-          return NextResponse.json({ environment });
-        })
-        .catch((error) => {
-          if (
-            error.code === "23505" &&
-            error.constraint === "environment_system_id_name_key"
-          ) {
-            return NextResponse.json(
-              {
-                error:
-                  "An environment with this name already exists in this system.",
-              },
-              { status: 409 },
-            );
-          }
-          return NextResponse.json(
-            { error: "Failed to create environment" },
-            { status: 500 },
+        .then(takeFirstOrNull);
+
+      if (environment)
+        return NextResponse.json(
+          { error: "Environment already exists", id: environment.id },
+          { status: 409 },
+        );
+
+      try {
+        const environment = await ctx.db
+          .insert(schema.environment)
+          .values({
+            ...ctx.body,
+            expiresAt: isPresent(ctx.body.expiresAt)
+              ? new Date(ctx.body.expiresAt)
+              : undefined,
+          })
+          .returning()
+          .then(takeFirst);
+
+        if (
+          isPresent(ctx.body.releaseChannels) &&
+          ctx.body.releaseChannels.length > 0
+        ) {
+          await createReleaseChannels(
+            ctx.db,
+            environment.id,
+            ctx.body.releaseChannels,
           );
-        }),
+        }
+
+        await createJobsForNewEnvironment(ctx.db, environment);
+        return NextResponse.json({ environment });
+      } catch (error) {
+        logger.error("Failed to create environment", { error });
+        return NextResponse.json(
+          { error: "Failed to create environment" },
+          { status: 500 },
+        );
+      }
+    },
   );

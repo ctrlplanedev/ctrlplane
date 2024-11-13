@@ -35,7 +35,7 @@ export const POST = request()
 
       if (releaseChannel)
         return NextResponse.json(
-          { error: "Release channel already exists" },
+          { error: "Release channel already exists", id: releaseChannel.id },
           { status: 409 },
         );
 

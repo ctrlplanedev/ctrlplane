@@ -53,7 +53,7 @@ export const POST = request()
 
         if (existingRelease)
           return NextResponse.json(
-            { error: "Release already exists" },
+            { error: "Release already exists", releaseId: existingRelease.id },
             { status: 409 },
           );
 
