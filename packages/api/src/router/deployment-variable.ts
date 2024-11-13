@@ -1,5 +1,5 @@
 import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -125,7 +125,7 @@ const valueRouter = createTRPCRouter({
         })
         .then((d) => d?.system.environments ?? []);
 
-      const systemCondition: TargetCondition = {
+      const systemCondition: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.Or,
         conditions: dep.map((e) => e.resourceFilter).filter(isPresent),
@@ -175,7 +175,7 @@ const valueRouter = createTRPCRouter({
           ),
         );
 
-      const getOldTargetFilter = (): TargetCondition | null => {
+      const getOldTargetFilter = (): ResourceCondition | null => {
         if (value.id !== variable.defaultValueId) return value.resourceFilter;
         const conditions = otherValues
           .map((v) => v.resourceFilter)
@@ -188,7 +188,7 @@ const valueRouter = createTRPCRouter({
         };
       };
 
-      const getNewTargetFilter = (): TargetCondition | null => {
+      const getNewTargetFilter = (): ResourceCondition | null => {
         if (updatedValue.id !== newDefaultValueId)
           return updatedValue.resourceFilter;
         const conditions = otherValues
@@ -202,12 +202,12 @@ const valueRouter = createTRPCRouter({
         };
       };
 
-      const oldTargetFilter: TargetCondition = {
+      const oldTargetFilter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [systemCondition, getOldTargetFilter()].filter(isPresent),
       };
-      const newTargetFilter: TargetCondition = {
+      const newTargetFilter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [systemCondition, getNewTargetFilter()].filter(isPresent),

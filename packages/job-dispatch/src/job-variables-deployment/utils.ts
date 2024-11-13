@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -63,7 +63,7 @@ export const getVariableValues = (tx: Tx, variableId: string) =>
 export const getMatchedTarget = (
   tx: Tx,
   targetId: string,
-  targetFilter: TargetCondition | null,
+  targetFilter: ResourceCondition | null,
 ) =>
   tx
     .select()

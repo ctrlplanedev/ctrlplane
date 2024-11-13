@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
@@ -272,7 +272,7 @@ type RunbookConfigFieldsFC<T extends RunbookVariableConfigType> = React.FC<{
 export const TargetConfigFields: RunbookConfigFieldsFC<
   TargetVariableConfigType
 > = ({ config, updateConfig }) => {
-  const onFilterChange = (condition: TargetCondition | undefined) => {
+  const onFilterChange = (condition: ResourceCondition | undefined) => {
     const cond = condition ?? defaultCondition;
     if (isEmptyCondition(cond)) updateConfig({ ...config, filter: undefined });
     if (!isEmptyCondition(cond)) updateConfig({ ...config, filter: cond });

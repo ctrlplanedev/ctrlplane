@@ -1,4 +1,4 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import type { InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
@@ -17,7 +17,7 @@ import { z } from "zod";
 
 import {
   isValidTargetCondition,
-  targetCondition,
+  resourceCondition,
 } from "@ctrlplane/validators/targets";
 
 import { user } from "./auth.js";
@@ -39,7 +39,7 @@ export const environment = pgTable(
       onDelete: "set null",
     }),
     resourceFilter: jsonb("resource_filter")
-      .$type<TargetCondition | null>()
+      .$type<ResourceCondition | null>()
       .default(sql`NULL`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -54,7 +54,7 @@ export const environment = pgTable(
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  resourceFilter: targetCondition
+  resourceFilter: resourceCondition
     .optional()
     .refine((filter) => filter == null || isValidTargetCondition(filter)),
 })

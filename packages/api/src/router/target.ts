@@ -27,7 +27,7 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
-import { targetCondition } from "@ctrlplane/validators/targets";
+import { resourceCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { targetMetadataGroupRouter } from "./target-metadata-group";
@@ -343,7 +343,7 @@ export const targetRouter = createTRPCRouter({
       .input(
         z.object({
           workspaceId: z.string().uuid(),
-          filter: targetCondition.optional(),
+          filter: resourceCondition.optional(),
           limit: z.number().int().nonnegative().max(1000).default(200),
           offset: z.number().int().nonnegative().default(0),
         }),

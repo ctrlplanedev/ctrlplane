@@ -5,7 +5,7 @@ import type {
   KindCondition,
   NameCondition,
   ProviderCondition,
-  TargetCondition,
+  ResourceCondition,
 } from "@ctrlplane/validators/targets";
 import React from "react";
 import _ from "lodash";
@@ -24,22 +24,22 @@ import {
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
-  TargetOperator,
+  ResourceOperator,
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
 
 const operatorVerbs = {
-  [TargetOperator.And]: "and",
-  [TargetOperator.Or]: "or",
-  [TargetOperator.Equals]: "is",
-  [TargetOperator.Null]: (
+  [ResourceOperator.And]: "and",
+  [ResourceOperator.Or]: "or",
+  [ResourceOperator.Equals]: "is",
+  [ResourceOperator.Null]: (
     <span>
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [TargetOperator.Regex]: "matches",
-  [TargetOperator.Like]: "contains",
+  [ResourceOperator.Regex]: "matches",
+  [ResourceOperator.Like]: "contains",
 };
 
 const ConditionBadge: React.FC<{
@@ -205,7 +205,7 @@ const StringifiedProviderCondition: React.FC<{
 };
 
 const StringifiedTargetCondition: React.FC<{
-  condition: TargetCondition;
+  condition: ResourceCondition;
   depth?: number;
   truncate?: boolean;
   tabbed?: boolean;
@@ -241,7 +241,7 @@ const StringifiedTargetCondition: React.FC<{
 };
 
 export const TargetConditionBadge: React.FC<{
-  condition: TargetCondition;
+  condition: ResourceCondition;
   tabbed?: boolean;
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>

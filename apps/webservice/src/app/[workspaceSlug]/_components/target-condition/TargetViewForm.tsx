@@ -15,14 +15,14 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   defaultCondition,
   isValidTargetCondition,
-  targetCondition,
+  resourceCondition,
 } from "@ctrlplane/validators/targets";
 
 import { TargetConditionRender } from "./TargetConditionRender";
 
 export const targetViewFormSchema = z.object({
   name: z.string().min(1),
-  filter: targetCondition.refine((data) => isValidTargetCondition(data), {
+  filter: resourceCondition.refine((data) => isValidTargetCondition(data), {
     message: "Invalid target condition",
   }),
   description: z.string().optional(),

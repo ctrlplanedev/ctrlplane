@@ -1,12 +1,12 @@
 import type { HookEvent } from "@ctrlplane/validators/events";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import { isPresent } from "ts-is-present";
 
 import { eq, isNotNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/targets";
 
 /**
  * Get events for a target that has been deleted.
@@ -30,8 +30,8 @@ export const getEventsForTargetDeleted = async (
       .map((e) => e.resourceFilter)
       .filter(isPresent);
 
-    const systemFilter: TargetCondition = {
-      type: TargetFilterType.Comparison,
+    const systemFilter: ResourceCondition = {
+      type: ResourceFilterType.Comparison,
       operator: ComparisonOperator.Or,
       conditions: filters,
     };

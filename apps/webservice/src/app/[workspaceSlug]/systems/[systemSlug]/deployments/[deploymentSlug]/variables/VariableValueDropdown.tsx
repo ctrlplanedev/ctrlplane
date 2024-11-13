@@ -44,7 +44,7 @@ import { Switch } from "@ctrlplane/ui/switch";
 import {
   defaultCondition,
   isValidTargetCondition,
-  targetCondition,
+  resourceCondition,
 } from "@ctrlplane/validators/targets";
 
 import type { VariableValue } from "./variable-data";
@@ -58,7 +58,7 @@ import { api } from "~/trpc/react";
 
 const editVariableValueFormSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
-  targetFilter: targetCondition
+  targetFilter: resourceCondition
     .nullish()
     .refine((data) => data == null || isValidTargetCondition(data), {
       message: "Invalid target condition",

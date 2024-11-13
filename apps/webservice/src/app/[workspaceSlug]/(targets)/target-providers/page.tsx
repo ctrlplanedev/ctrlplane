@@ -1,4 +1,4 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/server";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
@@ -45,8 +45,8 @@ export default async function TargetProvidersPage({
   if (targetProviders.length === 0) return <TargetProvidersGettingStarted />;
 
   const providers = targetProviders.map((provider) => {
-    const filter: TargetCondition = {
-      type: TargetFilterType.Provider,
+    const filter: ResourceCondition = {
+      type: ResourceFilterType.Provider,
       value: provider.id,
       operator: "equals",
     };

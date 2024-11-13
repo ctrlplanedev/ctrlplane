@@ -1,5 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -37,7 +37,7 @@ import {
 import {
   defaultCondition,
   isComparisonCondition,
-  targetCondition,
+  resourceCondition,
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/react";
@@ -46,7 +46,7 @@ import { TargetIcon } from "../TargetIcon";
 
 const TargetViewsCombobox: React.FC<{
   workspaceId: string;
-  onChange: (targetCondition: TargetCondition) => void;
+  onChange: (targetCondition: ResourceCondition) => void;
 }> = ({ workspaceId, onChange }) => {
   const targetViewsQ = api.target.view.list.useQuery(workspaceId, {
     enabled: workspaceId !== "",
@@ -99,12 +99,12 @@ const TargetViewsCombobox: React.FC<{
 };
 
 const filterForm = z.object({
-  targetFilter: targetCondition.optional(),
+  targetFilter: resourceCondition.optional(),
 });
 
 const getFilter = (
-  targetFilter: TargetCondition | null,
-): TargetCondition | undefined => {
+  targetFilter: ResourceCondition | null,
+): ResourceCondition | undefined => {
   if (targetFilter == null) return undefined;
   if (!isComparisonCondition(targetFilter))
     return {

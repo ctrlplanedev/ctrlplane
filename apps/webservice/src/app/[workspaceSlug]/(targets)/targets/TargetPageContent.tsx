@@ -1,7 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import React from "react";
 import { IconDots, IconFilter, IconLoader2 } from "@tabler/icons-react";
 import range from "lodash/range";
@@ -42,7 +42,7 @@ export const TargetPageContent: React.FC<{
     { placeholderData: (prev) => prev },
   );
 
-  const onFilterChange = (condition: TargetCondition | undefined) => {
+  const onFilterChange = (condition: ResourceCondition | undefined) => {
     const cond = condition ?? defaultCondition;
     if (isEmptyCondition(cond)) setFilter(undefined);
     if (!isEmptyCondition(cond)) setFilter(cond);

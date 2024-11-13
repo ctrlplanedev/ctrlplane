@@ -1,14 +1,14 @@
 import type {
   ComparisonCondition,
-  TargetCondition,
+  ResourceCondition,
 } from "@ctrlplane/validators/targets";
 import { notFound } from "next/navigation";
 import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
 import {
-  TargetFilterType,
-  TargetOperator,
+  ResourceFilterType,
+  ResourceOperator,
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/server";
@@ -27,8 +27,8 @@ export default async function VariablesPage({
   );
 
   const systemTargetsFilter: ComparisonCondition = {
-    type: TargetFilterType.Comparison,
-    operator: TargetOperator.Or,
+    type: ResourceFilterType.Comparison,
+    operator: ResourceOperator.Or,
     conditions: await api.environment
       .bySystemId(deployment.systemId)
       .then((envs) => envs.map((e) => e.resourceFilter).filter(isPresent)),
@@ -54,8 +54,8 @@ export default async function VariablesPage({
       );
 
       const filter: ComparisonCondition = {
-        type: TargetFilterType.Comparison,
-        operator: TargetOperator.And,
+        type: ResourceFilterType.Comparison,
+        operator: ResourceOperator.And,
         conditions: [systemTargetsFilter, v.resourceFilter],
       };
 
@@ -78,17 +78,17 @@ export default async function VariablesPage({
     if (defaultValue != null) {
       const restFilters = rest.map((v) => v.resourceFilter).filter(isPresent);
 
-      const filter: TargetCondition =
+      const filter: ResourceCondition =
         restFilters.length === 0
           ? systemTargetsFilter
           : {
-              type: TargetFilterType.Comparison,
-              operator: TargetOperator.And,
+              type: ResourceFilterType.Comparison,
+              operator: ResourceOperator.And,
               conditions: [
                 systemTargetsFilter,
                 {
-                  type: TargetFilterType.Comparison,
-                  operator: TargetOperator.Or,
+                  type: ResourceFilterType.Comparison,
+                  operator: ResourceOperator.Or,
                   not: true,
                   conditions: restFilters,
                 },

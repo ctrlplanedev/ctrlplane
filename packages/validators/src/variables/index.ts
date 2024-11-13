@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { targetCondition } from "../targets/index.js";
+import { resourceCondition } from "../targets/index.js";
 
 export const ChoiceVariableConfig = z.object({
   type: z.literal("choice"),
@@ -34,7 +34,7 @@ export type BooleanVariableConfigType = z.infer<typeof BooleanVariableConfig>;
 
 export const TargetVariableConfig = z.object({
   type: z.literal("target"),
-  filter: targetCondition.optional(),
+  filter: resourceCondition.optional(),
 });
 export type TargetVariableConfigType = z.infer<typeof TargetVariableConfig>;
 

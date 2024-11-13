@@ -1,7 +1,7 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type {
   IdentifierCondition,
-  TargetCondition,
+  ResourceCondition,
 } from "@ctrlplane/validators/targets";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
@@ -26,8 +26,8 @@ import {
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
-  targetCondition,
-  TargetFilterType,
+  resourceCondition,
+  ResourceFilterType,
 } from "@ctrlplane/validators/targets";
 
 import type { Tx } from "../common.js";
@@ -104,13 +104,13 @@ export const resourceView = pgTable("resource_view", {
     .references(() => workspace.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description").default(""),
-  filter: jsonb("filter").notNull().$type<TargetCondition>(),
+  filter: jsonb("filter").notNull().$type<ResourceCondition>(),
 });
 
 export type ResourceView = InferSelectModel<typeof resourceView>;
 
 export const createResourceView = createInsertSchema(resourceView, {
-  filter: targetCondition,
+  filter: resourceCondition,
 }).omit({ id: true });
 
 export const updateResourceView = createResourceView.partial();
@@ -205,15 +205,16 @@ const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
   return sql`${resource.identifier} ~ ${cond.value}`;
 };
 
-const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
-  if (cond.type === TargetFilterType.Metadata)
+const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
+  if (cond.type === ResourceFilterType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === TargetFilterType.Kind) return eq(resource.kind, cond.value);
-  if (cond.type === TargetFilterType.Name)
+  if (cond.type === ResourceFilterType.Kind)
+    return eq(resource.kind, cond.value);
+  if (cond.type === ResourceFilterType.Name)
     return like(resource.name, cond.value);
-  if (cond.type === TargetFilterType.Provider)
+  if (cond.type === ResourceFilterType.Provider)
     return eq(resource.providerId, cond.value);
-  if (cond.type === TargetFilterType.Identifier)
+  if (cond.type === ResourceFilterType.Identifier)
     return buildIdentifierCondition(tx, cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
@@ -226,7 +227,7 @@ const buildCondition = (tx: Tx, cond: TargetCondition): SQL => {
 
 export function resourceMatchesMetadata(
   tx: Tx,
-  metadata?: TargetCondition | null,
+  metadata?: ResourceCondition | null,
 ): SQL<unknown> | undefined {
   return metadata == null || Object.keys(metadata).length === 0
     ? undefined

@@ -1,7 +1,7 @@
 import type { Deployment } from "@ctrlplane/db/schema";
 import type {
   ComparisonCondition,
-  TargetCondition,
+  ResourceCondition,
 } from "@ctrlplane/validators/targets";
 import React from "react";
 import { notFound } from "next/navigation";
@@ -10,8 +10,8 @@ import { isPresent } from "ts-is-present";
 
 import { Card } from "@ctrlplane/ui/card";
 import {
-  TargetFilterType,
-  TargetOperator,
+  ResourceFilterType,
+  ResourceOperator,
 } from "@ctrlplane/validators/targets";
 
 import { api } from "~/trpc/server";
@@ -29,8 +29,8 @@ const Variables: React.FC<{
   );
 
   const systemTargetsFilter: ComparisonCondition = {
-    type: TargetFilterType.Comparison,
-    operator: TargetOperator.Or,
+    type: ResourceFilterType.Comparison,
+    operator: ResourceOperator.Or,
     conditions: await api.environment
       .bySystemId(deployment.systemId)
       .then((envs) => envs.map((e) => e.resourceFilter).filter(isPresent)),
@@ -56,8 +56,8 @@ const Variables: React.FC<{
       );
 
       const filter: ComparisonCondition = {
-        type: TargetFilterType.Comparison,
-        operator: TargetOperator.And,
+        type: ResourceFilterType.Comparison,
+        operator: ResourceOperator.And,
         conditions: [systemTargetsFilter, v.resourceFilter],
       };
 
@@ -80,17 +80,17 @@ const Variables: React.FC<{
     if (defaultValue != null) {
       const restFilters = rest.map((v) => v.resourceFilter).filter(isPresent);
 
-      const filter: TargetCondition =
+      const filter: ResourceCondition =
         restFilters.length === 0
           ? systemTargetsFilter
           : {
-              type: TargetFilterType.Comparison,
-              operator: TargetOperator.And,
+              type: ResourceFilterType.Comparison,
+              operator: ResourceOperator.And,
               conditions: [
                 systemTargetsFilter,
                 {
-                  type: TargetFilterType.Comparison,
-                  operator: TargetOperator.Or,
+                  type: ResourceFilterType.Comparison,
+                  operator: ResourceOperator.Or,
                   not: true,
                   conditions: restFilters,
                 },

@@ -13,7 +13,7 @@ import { kindCondition } from "./kind-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
 
-export type TargetCondition =
+export type ResourceCondition =
   | ComparisonCondition
   | MetadataCondition
   | KindCondition
@@ -21,7 +21,7 @@ export type TargetCondition =
   | ProviderCondition
   | IdentifierCondition;
 
-export const targetCondition = z.union([
+export const resourceCondition = z.union([
   comparisonCondition,
   metadataCondition,
   kindCondition,
@@ -30,7 +30,7 @@ export const targetCondition = z.union([
   identifierCondition,
 ]);
 
-export enum TargetOperator {
+export enum ResourceOperator {
   Equals = "equals",
   Like = "like",
   Regex = "regex",
@@ -39,7 +39,7 @@ export enum TargetOperator {
   Or = "or",
 }
 
-export enum TargetFilterType {
+export enum ResourceFilterType {
   Metadata = "metadata",
   Kind = "kind",
   Name = "name",
@@ -48,17 +48,17 @@ export enum TargetFilterType {
   Comparison = "comparison",
 }
 
-export const defaultCondition: TargetCondition = {
-  type: TargetFilterType.Comparison,
-  operator: TargetOperator.And,
+export const defaultCondition: ResourceCondition = {
+  type: ResourceFilterType.Comparison,
+  operator: ResourceOperator.And,
   not: false,
   conditions: [],
 };
 
 export const isComparisonCondition = (
-  condition: TargetCondition,
+  condition: ResourceCondition,
 ): condition is ComparisonCondition =>
-  condition.type === TargetFilterType.Comparison;
+  condition.type === ResourceFilterType.Comparison;
 
 export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 
@@ -66,7 +66,7 @@ export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 // including any nested conditions
 export const doesConvertingToComparisonRespectMaxDepth = (
   depth: number,
-  condition: TargetCondition,
+  condition: ResourceCondition,
 ): boolean => {
   if (depth > MAX_DEPTH_ALLOWED) return false;
   if (isComparisonCondition(condition)) {
@@ -78,37 +78,39 @@ export const doesConvertingToComparisonRespectMaxDepth = (
   return true;
 };
 
-export const isEmptyCondition = (condition: TargetCondition): boolean =>
+export const isEmptyCondition = (condition: ResourceCondition): boolean =>
   isComparisonCondition(condition) && condition.conditions.length === 0;
 
 export const isMetadataCondition = (
-  condition: TargetCondition,
+  condition: ResourceCondition,
 ): condition is MetadataCondition =>
-  condition.type === TargetFilterType.Metadata;
+  condition.type === ResourceFilterType.Metadata;
 
 export const isKindCondition = (
-  condition: TargetCondition,
-): condition is KindCondition => condition.type === TargetFilterType.Kind;
+  condition: ResourceCondition,
+): condition is KindCondition => condition.type === ResourceFilterType.Kind;
 
 export const isNameCondition = (
-  condition: TargetCondition,
-): condition is NameCondition => condition.type === TargetFilterType.Name;
+  condition: ResourceCondition,
+): condition is NameCondition => condition.type === ResourceFilterType.Name;
 
 export const isProviderCondition = (
-  condition: TargetCondition,
+  condition: ResourceCondition,
 ): condition is ProviderCondition =>
-  condition.type === TargetFilterType.Provider;
+  condition.type === ResourceFilterType.Provider;
 
 export const isIdentifierCondition = (
-  condition: TargetCondition,
+  condition: ResourceCondition,
 ): condition is IdentifierCondition =>
-  condition.type === TargetFilterType.Identifier;
+  condition.type === ResourceFilterType.Identifier;
 
-export const isValidTargetCondition = (condition: TargetCondition): boolean => {
+export const isValidTargetCondition = (
+  condition: ResourceCondition,
+): boolean => {
   if (isComparisonCondition(condition))
     return condition.conditions.every((c) => isValidTargetCondition(c));
   if (isMetadataCondition(condition)) {
-    if (condition.operator === TargetOperator.Null)
+    if (condition.operator === ResourceOperator.Null)
       return condition.value == null && condition.key.length > 0;
     return condition.value.length > 0 && condition.key.length > 0;
   }

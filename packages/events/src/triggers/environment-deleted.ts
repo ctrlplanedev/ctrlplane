@@ -1,12 +1,12 @@
 import type { HookEvent } from "@ctrlplane/validators/events";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNotNull, ne } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/targets";
 
 export const getEventsForEnvironmentDeleted = async (
   environment: SCHEMA.Environment,
@@ -32,8 +32,8 @@ export const getEventsForEnvironmentDeleted = async (
     .map((e) => e.resourceFilter)
     .filter(isPresent);
 
-  const removedFromSystemFilter: TargetCondition = {
-    type: TargetFilterType.Comparison,
+  const removedFromSystemFilter: ResourceCondition = {
+    type: ResourceFilterType.Comparison,
     operator: ComparisonOperator.Or,
     not: true,
     conditions: envFilters,

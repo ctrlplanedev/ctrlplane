@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/targets";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -26,8 +26,8 @@ import { TargetConditionRender } from "./TargetConditionRender";
 import { TargetViewForm, targetViewFormSchema } from "./TargetViewForm";
 
 type TargetConditionDialogProps = {
-  condition?: TargetCondition;
-  onChange: (condition: TargetCondition | undefined) => void;
+  condition?: ResourceCondition;
+  onChange: (condition: ResourceCondition | undefined) => void;
   children: React.ReactNode;
 };
 
@@ -94,7 +94,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
 
 type CreateTargetViewDialogProps = {
   workspaceId: string;
-  filter?: TargetCondition;
+  filter?: ResourceCondition;
   onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
