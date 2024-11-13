@@ -1,3 +1,4 @@
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,6 +17,11 @@ export const useReleaseFilter = () => {
       return undefined;
     }
   }, [urlParams]);
+
+  const releaseChannelId = useMemo<string | undefined>(
+    () => urlParams.get("release-channel") ?? undefined,
+    [urlParams],
+  );
 
   const setFilter = useCallback(
     (filter: ReleaseCondition | undefined) => {
@@ -36,5 +42,36 @@ export const useReleaseFilter = () => {
     [router],
   );
 
-  return { filter, setFilter };
+  const setReleaseChannel = useCallback(
+    (releaseChannel: SCHEMA.ReleaseChannel) => {
+      const query = new URLSearchParams(window.location.search);
+      query.set("release-channel", releaseChannel.id);
+      if (releaseChannel.releaseFilter != null) {
+        const filterJson = LZString.compressToEncodedURIComponent(
+          JSON.stringify(releaseChannel.releaseFilter),
+        );
+        query.set("filter", filterJson);
+      }
+
+      router.replace(`?${query.toString()}`);
+      router.refresh();
+    },
+    [router],
+  );
+
+  const removeReleaseChannel = useCallback(() => {
+    const query = new URLSearchParams(window.location.search);
+    query.delete("release-channel");
+    query.delete("filter");
+    router.replace(`?${query.toString()}`);
+    router.refresh();
+  }, [router]);
+
+  return {
+    filter,
+    setFilter,
+    releaseChannelId,
+    setReleaseChannel,
+    removeReleaseChannel,
+  };
 };

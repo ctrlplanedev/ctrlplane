@@ -8,6 +8,7 @@ import { DeploymentPageContent } from "./DeploymentPageContent";
 
 type PageProps = {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
+  searchParams: { "release-channel"?: string };
 };
 
 export async function generateMetadata({
@@ -21,15 +22,22 @@ export async function generateMetadata({
   };
 }
 
-export default async function DeploymentPage({ params }: PageProps) {
+export default async function DeploymentPage({
+  params,
+  searchParams,
+}: PageProps) {
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
   const { system } = deployment;
   const environments = await api.environment.bySystemId(system.id);
+  const releaseChannel = searchParams["release-channel"]
+    ? await api.deployment.releaseChannel.byId(searchParams["release-channel"])
+    : null;
   return (
     <DeploymentPageContent
       deployment={deployment}
       environments={environments}
+      releaseChannel={releaseChannel}
     />
   );
 }
