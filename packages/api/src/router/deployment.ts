@@ -190,11 +190,11 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(z.string())
     .query(({ ctx, input }) => {
-      const latestJobsPerTarget = ctx.db
+      const latestJobsPerResource = ctx.db
         .select({
           id: job.id,
           status: job.status,
-          targetId: releaseJobTrigger.resourceId,
+          resourceId: releaseJobTrigger.resourceId,
           rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${releaseJobTrigger.resourceId} ORDER BY ${job.createdAt} DESC)`.as(
             "rank",
           ),
@@ -205,21 +205,24 @@ export const deploymentRouter = createTRPCRouter({
 
       return ctx.db
         .select()
-        .from(latestJobsPerTarget)
+        .from(latestJobsPerResource)
         .innerJoin(
           releaseJobTrigger,
-          eq(releaseJobTrigger.jobId, latestJobsPerTarget.id),
+          eq(releaseJobTrigger.jobId, latestJobsPerResource.id),
         )
         .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
         .innerJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
         .where(
-          and(eq(release.deploymentId, input), eq(latestJobsPerTarget.rank, 1)),
+          and(
+            eq(release.deploymentId, input),
+            eq(latestJobsPerResource.rank, 1),
+          ),
         )
         .then((r) =>
           r.map((row) => ({
             ...row.latest_jobs,
             release: row.release,
-            target: row.resource,
+            resource: row.resource,
             releaseJobTrigger: row.release_job_trigger,
           })),
         );
@@ -472,7 +475,7 @@ export const deploymentRouter = createTRPCRouter({
                   ...row.release_job_trigger,
                   job: row.job,
                   release: row.release,
-                  targetId: row.resource.id,
+                  resourceId: row.resource.id,
                 },
               })),
             ),
