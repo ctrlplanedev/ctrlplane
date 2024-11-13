@@ -51,7 +51,7 @@ const job: Job = {
   },
 };
 
-const target: SCHEMA.Target = {
+const target: SCHEMA.Resource = {
   id: "0",
   name: "test",
   workspaceId: "0",

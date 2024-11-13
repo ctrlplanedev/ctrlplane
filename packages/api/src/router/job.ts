@@ -11,7 +11,7 @@ import type {
   Release,
   ReleaseDependency,
   ReleaseJobTrigger,
-  Target,
+  Resource,
   User,
 } from "@ctrlplane/db/schema";
 import _ from "lodash";
@@ -76,7 +76,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
   rows: Array<{
     release_job_trigger: ReleaseJobTrigger;
     job: Job;
-    resource: Target;
+    resource: Resource;
     release: Release;
     deployment: Deployment;
     environment: Environment;

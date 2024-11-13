@@ -1,7 +1,7 @@
 import type {
   Deployment,
   Environment,
-  Target,
+  Resource,
   Workspace,
 } from "@ctrlplane/db/schema";
 import type { JobCondition } from "@ctrlplane/validators/jobs";
@@ -39,7 +39,7 @@ const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
 const EnvIcon: React.FC<{
   isFirst?: boolean;
   isLast?: boolean;
-  environment: Environment & { targets: Target[] };
+  environment: Environment & { targets: Resource[] };
   workspaceSlug: string;
   systemSlug: string;
 }> = ({ environment: env, isFirst, isLast, workspaceSlug, systemSlug }) => {
@@ -72,7 +72,7 @@ const EnvIcon: React.FC<{
 const ReleaseCell: React.FC<{
   workspace: Workspace;
   systemSlug: string;
-  environment: Environment & { targets: Target[] };
+  environment: Environment & { targets: Resource[] };
   release: {
     id: string;
     name: string;
@@ -159,7 +159,7 @@ const ReleaseCell: React.FC<{
 const DeploymentTable: React.FC<{
   workspace: Workspace;
   systemSlug: string;
-  environments: Array<Environment & { targets: Target[] }>;
+  environments: Array<Environment & { targets: Resource[] }>;
   deployments: Array<
     Deployment & {
       activeReleases: Array<{

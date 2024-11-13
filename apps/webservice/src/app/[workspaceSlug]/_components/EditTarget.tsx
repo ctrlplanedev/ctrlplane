@@ -1,6 +1,6 @@
 "use client";
 
-import type { Target } from "@ctrlplane/db/schema";
+import type { Resource } from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconX } from "@tabler/icons-react";
@@ -34,7 +34,7 @@ import { Label } from "@ctrlplane/ui/label";
 import { api } from "~/trpc/react";
 import { ConfigEditor } from "./ConfigEditor";
 
-type TargetWithMetadata = Target & {
+type TargetWithMetadata = Resource & {
   metadata: Record<string, string>;
 };
 

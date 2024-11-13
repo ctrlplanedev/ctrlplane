@@ -132,7 +132,7 @@ const RedeployTargetDialog: React.FC<RedeployTargetDialogProps> = ({
 };
 
 type TargetActionsDropdownProps = {
-  target: SCHEMA.Target;
+  target: SCHEMA.Resource;
   children: React.ReactNode;
 };
 

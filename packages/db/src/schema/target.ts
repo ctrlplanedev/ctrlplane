@@ -69,7 +69,7 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
   }),
 }));
 
-export type Target = InferSelectModel<typeof resource>;
+export type Resource = InferSelectModel<typeof resource>;
 
 export const createTarget = createInsertSchema(resource, {
   version: z.string().min(1),

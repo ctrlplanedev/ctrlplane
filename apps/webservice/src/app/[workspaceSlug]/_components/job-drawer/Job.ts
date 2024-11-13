@@ -8,7 +8,7 @@ export type Job = SCHEMA.ReleaseJobTrigger & {
     variables: SCHEMA.JobVariable[];
   };
   jobAgent: SCHEMA.JobAgent;
-  target: SCHEMA.Target;
+  target: SCHEMA.Resource;
   release: SCHEMA.Release & { deployment: SCHEMA.Deployment };
   environment: SCHEMA.Environment;
   rolloutDate: Date | null;

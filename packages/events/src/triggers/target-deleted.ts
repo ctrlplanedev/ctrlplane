@@ -15,7 +15,7 @@ import { TargetFilterType } from "@ctrlplane/validators/targets";
  * @param target
  */
 export const getEventsForTargetDeleted = async (
-  target: SCHEMA.Target,
+  target: SCHEMA.Resource,
 ): Promise<HookEvent[]> => {
   const systems = await db.query.system.findMany({
     where: eq(SCHEMA.system.workspaceId, target.workspaceId),

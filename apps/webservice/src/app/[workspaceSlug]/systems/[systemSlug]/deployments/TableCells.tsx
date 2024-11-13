@@ -2,7 +2,7 @@ import type {
   Deployment,
   Job,
   ReleaseJobTrigger,
-  Target,
+  Resource,
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import {
@@ -123,7 +123,7 @@ export const Release: React.FC<{
   releaseJobTriggers: Array<
     ReleaseJobTrigger & {
       job: Job;
-      target: Target;
+      target: Resource;
       deployment?: Deployment | null;
     }
   >;

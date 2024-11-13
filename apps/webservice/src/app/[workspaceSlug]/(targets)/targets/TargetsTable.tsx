@@ -1,6 +1,6 @@
 "use client";
 
-import type { Target } from "@ctrlplane/db/schema";
+import type { Resource } from "@ctrlplane/db/schema";
 import type { ColumnDef } from "@tanstack/react-table";
 import { IconLock, IconX } from "@tabler/icons-react";
 import {
@@ -37,7 +37,7 @@ import {
 import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
 import { api } from "~/trpc/react";
 
-const columns: ColumnDef<Target>[] = [
+const columns: ColumnDef<Resource>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -112,8 +112,8 @@ const columns: ColumnDef<Target>[] = [
 
 export const TargetsTable: React.FC<{
   activeTargetIds?: string[];
-  targets: Target[];
-  onTableRowClick?: (target: Target) => void;
+  targets: Resource[];
+  onTableRowClick?: (target: Resource) => void;
 }> = ({ targets, onTableRowClick, activeTargetIds }) => {
   const deleteTargetsMutation = api.target.delete.useMutation();
 

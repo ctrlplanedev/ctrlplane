@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { InsertTarget, Target } from "@ctrlplane/db/schema";
+import type { InsertTarget, Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import {
@@ -29,7 +29,7 @@ const log = logger.child({ label: "upsert-targets" });
 const getExistingTargetsForProvider = (db: Tx, providerId: string) =>
   db.select().from(resource).where(eq(resource.providerId, providerId));
 
-const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
+const dispatchNewTargets = async (db: Tx, newTargets: Resource[]) => {
   const [firstTarget] = newTargets;
   if (firstTarget == null) return;
 
@@ -70,7 +70,7 @@ const dispatchNewTargets = async (db: Tx, newTargets: Target[]) => {
 const upsertTargetVariables = async (
   tx: Tx,
   targets: Array<
-    Target & {
+    Resource & {
       variables?: Array<{ key: string; value: any; sensitive: boolean }>;
     }
   >,
@@ -143,7 +143,7 @@ const upsertTargetVariables = async (
 
 const upsertTargetMetadata = async (
   tx: Tx,
-  targets: Array<Target & { metadata?: Record<string, string> }>,
+  targets: Array<Resource & { metadata?: Record<string, string> }>,
 ) => {
   const existingTargetMetadata = await tx
     .select()

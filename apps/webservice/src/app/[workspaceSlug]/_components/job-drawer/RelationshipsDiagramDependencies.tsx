@@ -86,7 +86,7 @@ const getUndirectedGraph = (
 type DependenciesDiagramProps = {
   targetId: string;
   relationships: Array<schema.TargetRelationship>;
-  targets: Array<schema.Target>;
+  targets: Array<schema.Resource>;
   releaseDependencies: (schema.ReleaseDependency & {
     deploymentName: string;
     target?: string;
