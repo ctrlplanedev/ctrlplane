@@ -31,7 +31,7 @@ import {
 } from "@ctrlplane/validators/targets";
 
 import type { Tx } from "../common.js";
-import { resourceProvider } from "./target-provider.js";
+import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
 export const resource = pgTable(

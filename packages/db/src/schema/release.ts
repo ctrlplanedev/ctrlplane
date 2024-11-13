@@ -52,7 +52,7 @@ import {
   environmentReleaseChannel,
 } from "./environment.js";
 import { job } from "./job.js";
-import { resource } from "./target.js";
+import { resource } from "./resource.js";
 
 export const releaseChannel = pgTable(
   "release_channel",

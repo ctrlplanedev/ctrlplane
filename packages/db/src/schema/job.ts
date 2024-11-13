@@ -45,7 +45,7 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
 import { release } from "./release.js";
-import { resource } from "./target.js";
+import { resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [

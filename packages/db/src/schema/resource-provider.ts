@@ -11,7 +11,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { resource } from "./target.js";
+import { resource } from "./resource.js";
 import { workspace } from "./workspace.js";
 
 export const resourceProvider = pgTable(
