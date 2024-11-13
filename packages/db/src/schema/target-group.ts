@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import { workspace } from "./workspace.js";
 
-export const targetMetadataGroup = pgTable("target_metadata_group", {
+export const targetMetadataGroup = pgTable("resource_metadata_group", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id")
     .notNull()

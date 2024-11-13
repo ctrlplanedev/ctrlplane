@@ -17,7 +17,7 @@ export const GET = request()
     authz(({ can, extra }) => {
       return can
         .perform(Permission.TargetGet)
-        .on({ type: "target", id: extra.params.targetId });
+        .on({ type: "resource", id: extra.params.targetId });
     }),
   )
   .handle(async ({ db }, { params }: { params: { targetId: string } }) => {
@@ -65,7 +65,7 @@ export const PATCH = request()
     authz(({ can, extra }) =>
       can
         .perform(Permission.TargetUpdate)
-        .on({ type: "target", id: extra.params.targetId }),
+        .on({ type: "resource", id: extra.params.targetId }),
     ),
   )
   .use(parseBody(patchSchema))
@@ -91,7 +91,7 @@ export const DELETE = request()
     authz(({ can, extra }) =>
       can
         .perform(Permission.TargetDelete)
-        .on({ type: "target", id: extra.params.targetId }),
+        .on({ type: "resource", id: extra.params.targetId }),
     ),
   )
   .handle(async ({ db }, { params }: { params: { targetId: string } }) => {

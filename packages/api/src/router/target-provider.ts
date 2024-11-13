@@ -45,7 +45,7 @@ export const targetProviderRouter = createTRPCRouter({
         .where(
           inArray(
             target.providerId,
-            providers.map((p) => p.target_provider.id),
+            providers.map((p) => p.resource_provider.id),
           ),
         )
         .groupBy(target.providerId);
@@ -61,21 +61,21 @@ export const targetProviderRouter = createTRPCRouter({
         .where(
           inArray(
             target.providerId,
-            providers.map((p) => p.target_provider.id),
+            providers.map((p) => p.resource_provider.id),
           ),
         )
         .groupBy(target.providerId, target.kind, target.version)
         .orderBy(sql`count(*) DESC`);
 
       return providers.map((provider) => ({
-        ...provider.target_provider,
-        googleConfig: provider.target_provider_google,
+        ...provider.resource_provider,
+        googleConfig: provider.resource_provider_google,
         targetCount:
           providerCounts.find(
-            (pc) => pc.providerId === provider.target_provider.id,
+            (pc) => pc.providerId === provider.resource_provider.id,
           )?.count ?? 0,
         kinds: providerKinds
-          .filter((pk) => pk.providerId === provider.target_provider.id)
+          .filter((pk) => pk.providerId === provider.resource_provider.id)
           .map(({ kind, version, count }) => ({ kind, version, count })),
       }));
     }),
@@ -85,7 +85,7 @@ export const targetProviderRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetList)
-          .on({ type: "targetProvider", id: input }),
+          .on({ type: "resourceProvider", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -102,7 +102,7 @@ export const targetProviderRouter = createTRPCRouter({
         authorizationCheck: ({ canUser, input }) =>
           canUser
             .perform(Permission.TargetProviderUpdate)
-            .on({ type: "targetProvider", id: input }),
+            .on({ type: "resourceProvider", id: input }),
       })
       .input(z.string().uuid())
       .mutation(async ({ input }) =>
@@ -209,7 +209,7 @@ export const targetProviderRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.TargetDelete)
-          .on({ type: "targetProvider", id: input.providerId }),
+          .on({ type: "resourceProvider", id: input.providerId }),
     })
     .input(
       z.object({

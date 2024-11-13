@@ -44,7 +44,7 @@ export const PATCH = request()
     authz(({ can, extra }) =>
       can
         .perform(Permission.TargetUpdate)
-        .on({ type: "targetProvider", id: extra.params.providerId }),
+        .on({ type: "resourceProvider", id: extra.params.providerId }),
     ),
   )
   .handle<
@@ -60,7 +60,7 @@ export const PATCH = request()
       .where(eq(targetProvider.id, params.providerId))
       .then(takeFirstOrNull);
 
-    const provider = query?.target_provider;
+    const provider = query?.resource_provider;
     if (!provider)
       return NextResponse.json(
         { error: "Provider not found" },

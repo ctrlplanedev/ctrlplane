@@ -219,7 +219,7 @@ export const deploymentRouter = createTRPCRouter({
           r.map((row) => ({
             ...row.latest_jobs,
             release: row.release,
-            target: row.target,
+            target: row.resource,
             releaseJobTrigger: row.release_job_trigger,
           })),
         );
@@ -410,7 +410,7 @@ export const deploymentRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentList)
-          .on({ type: "target", id: input }),
+          .on({ type: "resource", id: input }),
     })
     .query(async ({ ctx, input }) => {
       const tg = await ctx.db

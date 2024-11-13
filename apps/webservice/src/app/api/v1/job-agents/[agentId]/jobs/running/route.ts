@@ -47,7 +47,7 @@ export const GET = async (
         ...row.job,
         config: row.release_job_trigger,
         environment: row.environment,
-        target: row.target,
+        target: row.resource,
         deployment: row.deployment,
         release: row.release,
       })),

@@ -89,7 +89,7 @@ export const GET = request()
         job: row.job,
         runbook: row.runbook,
         environment: row.environment,
-        target: row.target,
+        target: row.resource,
         deployment: row.deployment,
         release: row.release,
       }));

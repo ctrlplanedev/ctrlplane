@@ -35,7 +35,7 @@ import { targetProvider } from "./target-provider.js";
 import { workspace } from "./workspace.js";
 
 export const target = pgTable(
-  "target",
+  "resource",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     version: text("version").notNull(),
@@ -84,7 +84,7 @@ export type InsertTarget = InferInsertModel<typeof target>;
 export const updateTarget = createTarget.partial();
 
 export const targetSchema = pgTable(
-  "target_schema",
+  "resource_schema",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     workspaceId: uuid("workspace_id")
@@ -97,7 +97,7 @@ export const targetSchema = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.version, t.kind, t.workspaceId) }),
 );
 
-export const targetView = pgTable("target_view", {
+export const targetView = pgTable("resource_view", {
   id: uuid("id").primaryKey().defaultRandom(),
   workspaceId: uuid("workspace_id")
     .notNull()
@@ -116,7 +116,7 @@ export const createTargetView = createInsertSchema(targetView, {
 export const updateTargetView = createTargetView.partial();
 
 export const targetMetadata = pgTable(
-  "target_metadata",
+  "resource_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
     targetId: uuid("target_id")
@@ -229,13 +229,13 @@ export function targetMatchesMetadata(
     : buildCondition(tx, metadata);
 }
 
-export const targetRelationshipType = pgEnum("target_relationship_type", [
+export const targetRelationshipType = pgEnum("resource_relationship_type", [
   "associated_with",
   "depends_on",
 ]);
 
 export const targetRelationship = pgTable(
-  "target_relationship",
+  "resource_relationship",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     sourceId: uuid("source_id")
@@ -257,7 +257,7 @@ export const updateTargetRelationship = createTargetRelationship.partial();
 export type TargetRelationship = InferSelectModel<typeof targetRelationship>;
 
 export const targetVariable = pgTable(
-  "target_variable",
+  "resource_variable",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     targetId: uuid("target_id")
