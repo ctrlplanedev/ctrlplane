@@ -1,0 +1,16 @@
+name: "Downloads the latest Bash Client"
+description: "Download the Ctrlplane Bash client"
+author: "Ctrlplane"
+inputs:
+  script_url:
+    description: "URL of the Bash script to download and run"
+    default: "https://raw.githubusercontent.com/ctrlplane/ctrlplane/main/sdks/bash/client.sh"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download Ctrlplane Bash Client
+      shell: bash
+      run: |
+        curl -sL "${{ inputs.script_url }}" -o ctrlplane.sh
+        chmod +x ctrlplane.sh
