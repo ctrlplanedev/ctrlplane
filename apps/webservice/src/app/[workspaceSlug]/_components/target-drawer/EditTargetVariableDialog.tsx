@@ -32,7 +32,7 @@ import {
 import { api } from "~/trpc/react";
 
 type EditTargetVariableDialogProps = {
-  targetVariable: SCHEMA.TargetVariable;
+  targetVariable: SCHEMA.ResourceVariable;
   existingKeys: string[];
   children: React.ReactNode;
   onClose: () => void;

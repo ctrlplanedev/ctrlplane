@@ -1,4 +1,4 @@
-import type { InsertTarget } from "@ctrlplane/db/schema";
+import type { InsertResource } from "@ctrlplane/db/schema";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import _ from "lodash";
 
@@ -34,7 +34,7 @@ export const getKubeConfig = async (
 };
 
 export const createNamespaceTarget = (
-  clusterTarget: InsertTarget,
+  clusterTarget: InsertResource,
   namespace: any,
   project: string,
   cluster: google.container.v1.ICluster,

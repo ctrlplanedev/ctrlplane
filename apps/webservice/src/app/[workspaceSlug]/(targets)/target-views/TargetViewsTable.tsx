@@ -19,7 +19,7 @@ import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/_components/tar
 
 export const TargetViewsTable: React.FC<{
   workspace: schema.Workspace;
-  views: (schema.TargetView & { total: number; hash: string })[];
+  views: (schema.ResourceView & { total: number; hash: string })[];
 }> = ({ views, workspace }) => {
   const router = useRouter();
 

@@ -2,7 +2,7 @@ import { exec as execCallback } from "node:child_process";
 import fs from "node:fs";
 import { promisify } from "node:util";
 import type {
-  InsertTarget,
+  InsertResource,
   TargetProviderGoogle,
   Workspace,
 } from "@ctrlplane/db/schema";
@@ -232,7 +232,7 @@ export const getGkeTargets = async (
     config.projectIds,
   );
 
-  const targets: InsertTarget[] = [];
+  const targets: InsertResource[] = [];
 
   if (config.importGke)
     targets.push(

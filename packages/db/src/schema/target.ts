@@ -71,7 +71,7 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
 
 export type Resource = InferSelectModel<typeof resource>;
 
-export const createTarget = createInsertSchema(resource, {
+export const createResource = createInsertSchema(resource, {
   version: z.string().min(1),
   name: z.string().min(1),
   kind: z.string().min(1),
@@ -79,9 +79,9 @@ export const createTarget = createInsertSchema(resource, {
   config: z.record(z.any()),
 }).omit({ id: true });
 
-export type InsertTarget = InferInsertModel<typeof resource>;
+export type InsertResource = InferInsertModel<typeof resource>;
 
-export const updateTarget = createTarget.partial();
+export const updateResource = createResource.partial();
 
 export const resourceSchema = pgTable(
   "resource_schema",
@@ -107,13 +107,13 @@ export const resourceView = pgTable("resource_view", {
   filter: jsonb("filter").notNull().$type<TargetCondition>(),
 });
 
-export type TargetView = InferSelectModel<typeof resourceView>;
+export type ResourceView = InferSelectModel<typeof resourceView>;
 
-export const createTargetView = createInsertSchema(resourceView, {
+export const createResourceView = createInsertSchema(resourceView, {
   filter: targetCondition,
 }).omit({ id: true });
 
-export const updateTargetView = createTargetView.partial();
+export const updateResourceView = createResourceView.partial();
 
 export const resourceMetadata = pgTable(
   "resource_metadata",
@@ -253,12 +253,14 @@ export const resourceRelationship = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.targetId, t.sourceId) }),
 );
 
-export const createTargetRelationship = createInsertSchema(
+export const createResourceRelationship = createInsertSchema(
   resourceRelationship,
 ).omit({ id: true });
 
-export const updateTargetRelationship = createTargetRelationship.partial();
-export type TargetRelationship = InferSelectModel<typeof resourceRelationship>;
+export const updateResourceRelationship = createResourceRelationship.partial();
+export type ResourceRelationship = InferSelectModel<
+  typeof resourceRelationship
+>;
 
 export const resourceVariable = pgTable(
   "resource_variable",
@@ -285,9 +287,9 @@ export const resourceVariableRelations = relations(
   }),
 );
 
-export const createTargetVariable = createInsertSchema(resourceVariable, {
+export const createResourceVariable = createInsertSchema(resourceVariable, {
   value: z.union([z.string(), z.number(), z.boolean()]),
 }).omit({ id: true });
 
-export const updateTargetVariable = createTargetVariable.partial();
-export type TargetVariable = InferSelectModel<typeof resourceVariable>;
+export const updateResourceVariable = createResourceVariable.partial();
+export type ResourceVariable = InferSelectModel<typeof resourceVariable>;

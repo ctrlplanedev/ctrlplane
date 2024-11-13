@@ -76,7 +76,7 @@ const DeleteTargetViewDialog: React.FC<{
 };
 
 export const TargetViewActionsDropdown: React.FC<{
-  view: schema.TargetView;
+  view: schema.ResourceView;
   children: React.ReactNode;
 }> = ({ view, children }) => {
   const [open, setOpen] = useState(false);

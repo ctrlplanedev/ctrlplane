@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "@ctrlplane/db/client";
-import { createTarget } from "@ctrlplane/db/schema";
+import { createResource } from "@ctrlplane/db/schema";
 import { upsertTargets } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -14,7 +14,7 @@ import { request } from "../middleware";
 const patchBodySchema = z.object({
   workspaceId: z.string().uuid(),
   targets: z.array(
-    createTarget
+    createResource
       .omit({ lockedAt: true, providerId: true, workspaceId: true })
       .extend({
         metadata: z.record(z.string()).optional(),

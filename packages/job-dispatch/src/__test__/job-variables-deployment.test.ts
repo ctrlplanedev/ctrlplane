@@ -566,7 +566,7 @@ describe("job-variables-deployment", () => {
   it("should prioritize target variable if it exists", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const targetVariable: SCHEMA.TargetVariable = {
+    const targetVariable: SCHEMA.ResourceVariable = {
       id: "0",
       resourceId: "0",
       key: "test",
@@ -661,7 +661,7 @@ describe("job-variables-deployment", () => {
   it("should prioritize target variable if it exists and return sensitive value if it is", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const targetVariable: SCHEMA.TargetVariable = {
+    const targetVariable: SCHEMA.ResourceVariable = {
       id: "0",
       resourceId: "0",
       key: "test",

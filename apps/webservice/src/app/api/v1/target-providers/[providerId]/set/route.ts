@@ -5,7 +5,7 @@ import { z } from "zod";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
-  createTarget,
+  createResource,
   resourceProvider,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -18,7 +18,7 @@ import { request } from "../../../middleware";
 
 const bodySchema = z.object({
   targets: z.array(
-    createTarget
+    createResource
       .omit({ lockedAt: true, providerId: true, workspaceId: true })
       .extend({
         metadata: z.record(z.string()).optional(),

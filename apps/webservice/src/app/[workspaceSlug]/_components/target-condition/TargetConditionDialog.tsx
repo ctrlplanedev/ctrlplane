@@ -95,7 +95,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
 type CreateTargetViewDialogProps = {
   workspaceId: string;
   filter?: TargetCondition;
-  onSubmit?: (view: schema.TargetView) => void;
+  onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
 
@@ -150,9 +150,9 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
 };
 
 type EditTargetViewDialogProps = {
-  view: schema.TargetView;
+  view: schema.ResourceView;
   onClose?: () => void;
-  onSubmit?: (view: schema.TargetView) => void;
+  onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
 

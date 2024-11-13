@@ -29,7 +29,7 @@ import { TargetsTable } from "./TargetsTable";
 
 export const TargetPageContent: React.FC<{
   workspace: schema.Workspace;
-  view: schema.TargetView | null;
+  view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
   const { filter, setFilter, setView } = useTargetFilter();
   const workspaceId = workspace.id;

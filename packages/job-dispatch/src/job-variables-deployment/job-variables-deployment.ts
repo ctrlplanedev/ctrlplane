@@ -113,7 +113,7 @@ export const determineReleaseVariableValue = async (
   defaultValueId: string | null,
   jobTarget: schema.Resource,
 ): Promise<{
-  value: schema.DeploymentVariableValue | schema.TargetVariable;
+  value: schema.DeploymentVariableValue | schema.ResourceVariable;
   directMatch: boolean;
   sensitive: boolean;
 } | null> => {

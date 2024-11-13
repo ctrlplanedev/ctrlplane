@@ -13,7 +13,7 @@ import { DeleteTargetVariableDialog } from "./DeleteTargetVariableDialog";
 import { EditTargetVariableDialog } from "./EditTargetVariableDialog";
 
 type TargetVariableDropdownProps = {
-  targetVariable: SCHEMA.TargetVariable;
+  targetVariable: SCHEMA.ResourceVariable;
   existingKeys: string[];
   children: React.ReactNode;
 };

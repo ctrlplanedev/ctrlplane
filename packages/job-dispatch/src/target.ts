@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { InsertTarget, Resource } from "@ctrlplane/db/schema";
+import type { InsertResource, Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import {
@@ -209,7 +209,7 @@ const upsertTargetMetadata = async (
 export const upsertTargets = async (
   tx: Tx,
   targetsToInsert: Array<
-    InsertTarget & {
+    InsertResource & {
       metadata?: Record<string, string>;
       variables?: Array<{ key: string; value: any; sensitive: boolean }>;
     }

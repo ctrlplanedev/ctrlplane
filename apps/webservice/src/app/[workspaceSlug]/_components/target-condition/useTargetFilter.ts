@@ -38,7 +38,7 @@ export const useTargetFilter = () => {
   );
 
   const setView = useCallback(
-    (view: schema.TargetView) => {
+    (view: schema.ResourceView) => {
       const query = new URLSearchParams(window.location.search);
       const filterJson = LZString.compressToEncodedURIComponent(
         JSON.stringify(view.filter),

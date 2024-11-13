@@ -38,7 +38,7 @@ const useOnLayout = () => {
 };
 
 const TargetDiagram: React.FC<{
-  relationships: Array<schema.TargetRelationship>;
+  relationships: Array<schema.ResourceRelationship>;
   targets: Array<schema.Resource>;
   targetId: string;
 }> = ({ relationships, targets, targetId }) => {

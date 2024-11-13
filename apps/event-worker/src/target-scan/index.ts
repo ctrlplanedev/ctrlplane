@@ -1,4 +1,4 @@
-import type { InsertTarget } from "@ctrlplane/db/schema";
+import type { InsertResource } from "@ctrlplane/db/schema";
 import type { TargetScanEvent } from "@ctrlplane/validators/events";
 import type { Job } from "bullmq";
 import { Queue, Worker } from "bullmq";
@@ -50,7 +50,7 @@ export const createTargetScanWorker = () =>
         `Received scanning request for "${tp.resource_provider.name}" (${targetProviderId}).`,
       );
 
-      const targets: InsertTarget[] = [];
+      const targets: InsertResource[] = [];
 
       if (tp.resource_provider_google != null) {
         logger.info("Found Google config, scanning for GKE targets");

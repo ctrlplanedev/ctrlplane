@@ -108,7 +108,7 @@ const targetViews = createTRPCRouter({
           .perform(Permission.TargetViewCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(schema.createTargetView)
+    .input(schema.createResourceView)
     .mutation(async ({ ctx, input }) =>
       ctx.db
         .insert(schema.resourceView)
@@ -124,7 +124,7 @@ const targetViews = createTRPCRouter({
           .perform(Permission.TargetViewUpdate)
           .on({ type: "resourceView", id: input.id }),
     })
-    .input(z.object({ id: z.string().uuid(), data: schema.updateTargetView }))
+    .input(z.object({ id: z.string().uuid(), data: schema.updateResourceView }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
         .update(schema.resourceView)
@@ -199,7 +199,7 @@ const targetViews = createTRPCRouter({
 
 const targetVariables = createTRPCRouter({
   create: protectedProcedure
-    .input(schema.createTargetVariable)
+    .input(schema.createResourceVariable)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -217,7 +217,7 @@ const targetVariables = createTRPCRouter({
 
   update: protectedProcedure
     .input(
-      z.object({ id: z.string().uuid(), data: schema.updateTargetVariable }),
+      z.object({ id: z.string().uuid(), data: schema.updateResourceVariable }),
     )
     .meta({
       authorizationCheck: async ({ ctx, canUser, input }) => {
@@ -394,7 +394,7 @@ export const targetRouter = createTRPCRouter({
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(
-      schema.createTarget.and(z.object({ metadata: z.record(z.string()) })),
+      schema.createResource.and(z.object({ metadata: z.record(z.string()) })),
     )
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
@@ -426,7 +426,7 @@ export const targetRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string().uuid(),
-        data: schema.updateTarget.and(
+        data: schema.updateResource.and(
           z.object({ metadata: z.record(z.string()) }),
         ),
       }),
