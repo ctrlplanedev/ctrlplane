@@ -26,6 +26,9 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   metadata: {
                     type: "object",
+                    additionalProperties: {
+                      type: "string",
+                    },
                   },
                 },
                 required: ["version", "deploymentId"],
