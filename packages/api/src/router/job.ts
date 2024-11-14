@@ -110,7 +110,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
           .value(),
       },
       jobAgent: v[0]!.job_agent,
-      target: v[0]!.resource,
+      resource: v[0]!.resource,
       release: { ...v[0]!.release, deployment: v[0]!.deployment },
       environment: v[0]!.environment,
       releaseDependencies: v
@@ -173,7 +173,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
               ...t.release_job_trigger,
               job: t.job,
               agent: t.job_agent,
-              target: t.resource,
+              resource: t.resource,
               release: { ...t.release, deployment: t.deployment },
               environment: t.environment,
             })),
@@ -291,7 +291,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             ...t.release_job_trigger,
             job: t.job,
             jobAgent: t.job_agent,
-            target: t.resource,
+            resource: t.resource,
             release: { ...t.release, deployment: t.deployment },
             environment: t.environment,
           })),
@@ -382,8 +382,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
           WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
             -- Base case: start with the given ID and no relationship
             SELECT 
-                ${data.target.id}::uuid AS id, 
-                ARRAY[${data.target.id}::uuid] AS visited,
+                ${data.resource.id}::uuid AS id, 
+                ARRAY[${data.resource.id}::uuid] AS visited,
                 NULL::uuid AS tr_id,
                 NULL::uuid AS source_id,
                 NULL::uuid AS target_id,
@@ -410,7 +410,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
                     WHEN tr.source_id = rr.id THEN tr.target_id
                     ELSE tr.source_id
                 END = ANY(rr.visited)                
-                AND tr.target_id != ${data.target.id}
+                AND tr.target_id != ${data.resource.id}
         )
         SELECT DISTINCT tr_id AS id, source_id, target_id, type
         FROM reachable_relationships
@@ -430,19 +430,19 @@ const releaseJobTriggerRouter = createTRPCRouter({
       const sourceIds = relationships.map((r) => r.sourceId);
       const targetIds = relationships.map((r) => r.targetId);
 
-      const allIds = _.uniq([...sourceIds, ...targetIds, data.target.id]);
+      const allIds = _.uniq([...sourceIds, ...targetIds, data.resource.id]);
 
-      const targets = await ctx.db
+      const resources = await ctx.db
         .select()
         .from(resource)
         .where(inArray(resource.id, allIds));
 
-      const releaseDependenciesWithTargetPromises = releaseDependencies.map(
+      const releaseDependenciesWithResourcePromises = releaseDependencies.map(
         async (rd) => {
           const latestJobSubquery = ctx.db
             .select({
               id: releaseJobTrigger.id,
-              targetId: releaseJobTrigger.resourceId,
+              resourceId: releaseJobTrigger.resourceId,
               releaseId: releaseJobTrigger.releaseId,
               status: job.status,
               createdAt: job.createdAt,
@@ -455,7 +455,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
             .as("latest_job");
 
-          const targetFulfillingDependency = await ctx.db
+          const resourceFulfillingDependency = await ctx.db
             .select()
             .from(release)
             .innerJoin(deployment, eq(release.deploymentId, deployment.id))
@@ -467,7 +467,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
               and(
                 releaseMatchesCondition(ctx.db, rd.releaseFilter),
                 eq(deployment.id, rd.deploymentId),
-                inArray(latestJobSubquery.targetId, allIds),
+                inArray(latestJobSubquery.resourceId, allIds),
                 eq(latestJobSubquery.rank, 1),
                 eq(latestJobSubquery.status, JobStatus.Completed),
               ),
@@ -475,7 +475,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
 
           return {
             ...rd,
-            target: targetFulfillingDependency.at(0)?.latest_job.targetId,
+            resource: resourceFulfillingDependency.at(0)?.latest_job.resourceId,
           };
         },
       );
@@ -483,16 +483,16 @@ const releaseJobTriggerRouter = createTRPCRouter({
       return {
         ...data,
         releaseDependencies: await Promise.all(
-          releaseDependenciesWithTargetPromises,
+          releaseDependenciesWithResourcePromises,
         ),
         relationships,
-        relatedTargets: targets,
+        relatedResources: resources,
       };
     }),
 });
 
 const rolloutDateFromReleaseJobTrigger = (
-  targetId: string,
+  resourceId: string,
   releaseId: string,
   environmentId: string,
   releaseCreatedAt: Date,
@@ -504,7 +504,7 @@ const rolloutDateFromReleaseJobTrigger = (
   }>,
 ) => {
   const rolloutDate = getRolloutDateForReleaseJobTrigger(
-    [releaseId, environmentId, targetId].join(":"),
+    [releaseId, environmentId, resourceId].join(":"),
     releaseCreatedAt,
     environmentPolicyDuration,
   );
@@ -612,7 +612,7 @@ const metadataKeysRouter = createTRPCRouter({
 });
 
 export const jobRouter = createTRPCRouter({
-  byTargetId: protectedProcedure
+  byResourceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -630,7 +630,7 @@ export const jobRouter = createTRPCRouter({
             ...t.release_job_trigger,
             job: t.job,
             agent: t.job_agent,
-            target: t.resource,
+            resource: t.resource,
             deployment: t.deployment,
             release: { ...t.release },
             environment: t.environment,

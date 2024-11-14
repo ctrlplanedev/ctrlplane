@@ -155,7 +155,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
       {isExpanded && (
         <>
           {Object.entries(triggersByTarget).map(([, triggers]) => {
-            const target = triggers[0]!.target;
+            const resource = triggers[0]!.resource;
             const trigger = triggers[0]!; // triggers are already sorted by createdAt from the query
             const linksMetadata = trigger.job.metadata.find(
               (m) => m.key === String(ReservedMetadataKey.Links),
@@ -167,7 +167,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 : null;
 
             return (
-              <Collapsible key={target.id} asChild>
+              <Collapsible key={resource.id} asChild>
                 <>
                   <TableRow
                     className="cursor-pointer border-none"
@@ -182,23 +182,23 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                               size="icon"
                               className="h-6 w-6"
                               onClick={() =>
-                                switchTargetExpandedState(target.id)
+                                switchTargetExpandedState(resource.id)
                               }
                             >
                               <IconChevronRight
                                 className={cn(
                                   "h-3 w-3 text-muted-foreground transition-all",
-                                  expandedTargets[target.id] && "rotate-90",
+                                  expandedTargets[resource.id] && "rotate-90",
                                 )}
                               />
                             </Button>
-                            {target.name}
+                            {resource.name}
                           </div>
                         </CollapsibleTrigger>
                       )}
 
                       {triggers.length === 1 && (
-                        <div className="pl-[29px]">{target.name}</div>
+                        <div className="pl-[29px]">{resource.name}</div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -259,7 +259,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                         <JobDropdownMenu
                           release={release}
                           deployment={deployment}
-                          target={trigger.target}
+                          target={trigger.resource}
                           environmentId={trigger.environmentId}
                           job={{
                             id: trigger.job.id,
@@ -365,7 +365,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                                 <JobDropdownMenu
                                   release={release}
                                   deployment={deployment}
-                                  target={trigger.target}
+                                  target={trigger.resource}
                                   environmentId={trigger.environmentId}
                                   job={{
                                     id: trigger.job.id,
@@ -423,7 +423,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
       environment: environments.find(
         (e) => e.id === triggers[0]!.environmentId,
       ),
-      targets: _.groupBy(triggers, (t) => t.target.id),
+      targets: _.groupBy(triggers, (t) => t.resource.id),
     }))
     .filter((t) => isPresent(t.environment))
     .value();

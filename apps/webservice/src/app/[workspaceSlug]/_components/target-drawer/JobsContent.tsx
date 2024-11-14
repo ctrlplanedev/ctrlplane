@@ -5,7 +5,7 @@ import { Card } from "@ctrlplane/ui/card";
 import { api } from "~/trpc/react";
 
 export const JobsContent: React.FC<{ targetId: string }> = ({ targetId }) => {
-  const jobs = api.job.byTargetId.useQuery(targetId);
+  const jobs = api.job.byResourceId.useQuery(targetId);
   return (
     <div className="space-y-4">
       <div className="space-y-2 text-sm">

@@ -114,7 +114,7 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
                   onClick={() => setJobId(job.job.id)}
                   className="cursor-pointer"
                 >
-                  <TableCell>{job.target.name}</TableCell>
+                  <TableCell>{job.resource.name}</TableCell>
                   <TableCell>{job.environment.name}</TableCell>
                   <TableCell>{job.release.deployment.name}</TableCell>
                   <TableCell>

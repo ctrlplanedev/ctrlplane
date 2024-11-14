@@ -124,7 +124,7 @@ const ReleaseCell: React.FC<{
       (releaseJobTrigger) =>
         isPresent(releaseJobTrigger.environmentId) &&
         isPresent(releaseJobTrigger.releaseId) &&
-        isPresent(releaseJobTrigger.target.id),
+        isPresent(releaseJobTrigger.resource.id),
     )
     .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
   return (

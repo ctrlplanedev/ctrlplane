@@ -120,6 +120,7 @@ export const releaseRouter = createTRPCRouter({
               ...j.release_job_trigger,
               job: j.job,
               target: j.resource,
+              resource: j.resource,
             })),
         }));
       };
