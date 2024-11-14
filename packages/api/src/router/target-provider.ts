@@ -106,7 +106,7 @@ export const resourceProviderRouter = createTRPCRouter({
       })
       .input(z.string().uuid())
       .mutation(async ({ input }) =>
-        targetScanQueue.add(input, { targetProviderId: input }),
+        targetScanQueue.add(input, { resourceProviderId: input }),
       ),
 
     google: createTRPCRouter({
@@ -144,7 +144,7 @@ export const resourceProviderRouter = createTRPCRouter({
 
             await targetScanQueue.add(
               tg.id,
-              { targetProviderId: tg.id },
+              { resourceProviderId: tg.id },
               { repeat: { every: ms("10m"), immediately: true } },
             );
 
@@ -189,7 +189,7 @@ export const resourceProviderRouter = createTRPCRouter({
               await targetScanQueue.remove(input.resourceProviderId);
               await targetScanQueue.add(
                 input.resourceProviderId,
-                { targetProviderId: input.resourceProviderId },
+                { resourceProviderId: input.resourceProviderId },
                 {
                   repeat: {
                     every: input.repeatSeconds * 1000,
@@ -201,7 +201,7 @@ export const resourceProviderRouter = createTRPCRouter({
             }
 
             await targetScanQueue.add(input.resourceProviderId, {
-              targetProviderId: input.resourceProviderId,
+              resourceProviderId: input.resourceProviderId,
             });
           });
         }),

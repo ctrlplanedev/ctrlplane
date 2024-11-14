@@ -7,7 +7,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { connectToCluster } from "./google.js";
 
-const log = logger.child({ label: "target-scan/gke/kube" });
+const log = logger.child({ label: "resource-scan/gke/kube" });
 
 export const getKubeConfig = async (
   googleClusterClient: any,
@@ -33,19 +33,20 @@ export const getKubeConfig = async (
   }
 };
 
-export const createNamespaceTarget = (
-  clusterTarget: InsertResource,
+export const createNamespaceResource = (
+  clusterResource: InsertResource,
   namespace: any,
   project: string,
   cluster: google.container.v1.ICluster,
 ) => {
-  return _.merge(_.cloneDeep(clusterTarget), {
+  return _.merge(_.cloneDeep(clusterResource), {
     name: `${cluster.name ?? cluster.id ?? ""}/${namespace.metadata!.name}`,
     kind: "Namespace",
     identifier: `${project}/${cluster.name}/${namespace.metadata!.name}`,
     config: { namespace: namespace.metadata!.name },
     metadata: {
-      [ReservedMetadataKey.ParentTargetIdentifier]: clusterTarget.identifier,
+      [ReservedMetadataKey.ParentResourceIdentifier]:
+        clusterResource.identifier,
       ...namespace.metadata?.labels,
       "kubernetes/namespace": namespace.metadata!.name ?? "",
     },

@@ -5,11 +5,11 @@ export * from "./hooks/index.js";
 export enum Channel {
   JobSync = "job-sync",
   DispatchJob = "dispatch-job",
-  TargetScan = "target-scan",
+  ResourceScan = "target-scan",
 }
 
-export const targetScanEvent = z.object({ targetProviderId: z.string() });
-export type TargetScanEvent = z.infer<typeof targetScanEvent>;
+export const resourceScanEvent = z.object({ resourceProviderId: z.string() });
+export type ResourceScanEvent = z.infer<typeof resourceScanEvent>;
 
 export const dispatchJobEvent = z.object({
   jobId: z.string(),

@@ -17,16 +17,16 @@ import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import {
-  clusterToTarget,
+  clusterToResource,
   connectToCluster,
   getClient,
   getClusters,
 } from "./google.js";
-import { createNamespaceTarget } from "./kube.js";
+import { createNamespaceResource } from "./kube.js";
 
 const exec = promisify(execCallback);
 
-const log = logger.child({ label: "target-import/gke" });
+const log = logger.child({ label: "resource-scan/gke" });
 
 const getClustersByProject = async (
   googleClusterClient: any,
@@ -94,7 +94,7 @@ const getNamespacesForCluster = async (
   project: string,
   cluster: google.container.v1.ICluster,
   workspaceId: string,
-  targetProviderId: string,
+  resourceProviderId: string,
 ) => {
   if (cluster.name == null || cluster.location == null) {
     log.warn(`Skipping cluster with missing name or location`, {
@@ -110,16 +110,18 @@ const getNamespacesForCluster = async (
   try {
     const response = await k8sApi.listNamespace();
     const namespaces = response.body.items;
-    const clusterTarget = clusterToTarget(
+    const clusterResource = clusterToResource(
       workspaceId,
-      targetProviderId,
+      resourceProviderId,
       project,
       cluster,
     );
 
     return namespaces
       .filter((n) => n.metadata?.name != null)
-      .map((n) => createNamespaceTarget(clusterTarget, n, project, cluster));
+      .map((n) =>
+        createNamespaceResource(clusterResource, n, project, cluster),
+      );
   } catch (error: any) {
     log.error(
       `Unable to list namespaces for cluster: ${cluster.name}/${cluster.id} - ${error.message}`,
@@ -134,7 +136,7 @@ const getVClustersForCluster = async (
   project: string,
   cluster: google.container.v1.ICluster,
   workspaceId: string,
-  targetProviderId: string,
+  resourceProviderId: string,
 ) => {
   if (cluster.name == null || cluster.location == null) {
     log.warn(`Skipping cluster with missing name or location`, {
@@ -169,9 +171,9 @@ const getVClustersForCluster = async (
       return [];
     }
 
-    const clusterTarget = clusterToTarget(
+    const clusterResource = clusterToResource(
       workspaceId,
-      targetProviderId,
+      resourceProviderId,
       project,
       cluster,
     );
@@ -179,19 +181,19 @@ const getVClustersForCluster = async (
     return vclusters.map((vcluster) => {
       const version = new SemVer(vcluster.Version);
       return {
-        ...clusterTarget,
+        ...clusterResource,
         name: `${cluster.name}/${vcluster.Namespace}/${vcluster.Name}`,
         identifier: `${project}/${cluster.name}/${vcluster.Namespace}/${vcluster.Name}`,
         kind: "ClusterAPI",
         config: {
-          ...clusterTarget.config,
+          ...clusterResource.config,
           name: cluster.name,
           namespace: vcluster.Namespace,
           status: vcluster.Status,
           vcluster: vcluster.Name,
         },
         metadata: {
-          ...clusterTarget.metadata,
+          ...clusterResource.metadata,
           "vcluster/version": vcluster.Version,
           "vcluster/version-major": String(version.major),
           "vcluster/version-minor": String(version.minor),
@@ -213,7 +215,7 @@ const getVClustersForCluster = async (
   }
 };
 
-export const getGkeTargets = async (
+export const getGkeResources = async (
   workspace: Workspace,
   config: ResourceProviderGoogle,
 ) => {
@@ -232,13 +234,13 @@ export const getGkeTargets = async (
     config.projectIds,
   );
 
-  const targets: InsertResource[] = [];
+  const resources: InsertResource[] = [];
 
   if (config.importGke)
-    targets.push(
+    resources.push(
       ...clusters.flatMap(({ project, clusters }) =>
         clusters.map((cluster) =>
-          clusterToTarget(
+          clusterToResource(
             workspace.id,
             config.resourceProviderId,
             project,
@@ -266,7 +268,7 @@ export const getGkeTargets = async (
       if (kubeConfig == null) return [];
 
       if (config.importNamespaces)
-        targets.push(
+        resources.push(
           ...(await getNamespacesForCluster(
             kubeConfig,
             project,
@@ -277,7 +279,7 @@ export const getGkeTargets = async (
         );
 
       if (config.importVCluster)
-        targets.push(
+        resources.push(
           ...(await getVClustersForCluster(
             kubeConfig,
             project,
@@ -287,18 +289,18 @@ export const getGkeTargets = async (
           )),
         );
 
-      return targets;
+      return resources;
     }),
   );
 
-  const targetCounts = _.countBy(targets, (target) =>
-    [target.kind, target.version].join("/"),
+  const resourceCounts = _.countBy(resources, (resource) =>
+    [resource.kind, resource.version].join("/"),
   );
-  log.info(`Found ${targets.length} targets`, {
-    targetCounts: Object.entries(targetCounts)
+  log.info(`Found ${resources.length} resources`, {
+    resourceCounts: Object.entries(resourceCounts)
       .map(([key, count]) => `${key}: ${count}`)
       .join(", "),
   });
 
-  return targets;
+  return resources;
 };
