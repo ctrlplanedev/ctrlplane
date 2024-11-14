@@ -50,7 +50,7 @@ async function run() {
 
       const {
         variables,
-        target,
+        resource,
         release,
         environment,
         runbook,
@@ -60,16 +60,16 @@ async function run() {
 
       setOutputAndLog("base_url", baseUrl);
 
-      setOutputAndLog("target", target);
-      setOutputAndLog("target_id", target?.id);
-      setOutputAndLog("target_name", target?.name);
-      setOutputAndLog("target_kind", target?.kind);
-      setOutputAndLog("target_version", target?.version);
-      setOutputAndLog("target_identifier", target?.identifier);
-      setOutputsRecursively("target_config", target?.config);
-      setOutputsRecursively("target_metadata", target?.metadata);
+      setOutputAndLog("resource", resource);
+      setOutputAndLog("resource_id", resource?.id);
+      setOutputAndLog("resource_name", resource?.name);
+      setOutputAndLog("resource_kind", resource?.kind);
+      setOutputAndLog("resource_version", resource?.version);
+      setOutputAndLog("resource_identifier", resource?.identifier);
+      setOutputsRecursively("resource_config", resource?.config);
+      setOutputsRecursively("resource_metadata", resource?.metadata);
 
-      setOutputAndLog("workspace_id", target?.workspaceId);
+      setOutputAndLog("workspace_id", resource?.workspaceId);
 
       setOutputAndLog("environment_id", environment?.id);
       setOutputAndLog("environment_name", environment?.name);

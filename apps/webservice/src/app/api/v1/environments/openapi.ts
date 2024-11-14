@@ -28,7 +28,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   description: {
                     type: "string",
                   },
-                  targetFilter: {
+                  resourceFilter: {
                     type: "object",
                     additionalProperties: true,
                   },
@@ -75,7 +75,7 @@ export const openapi: Swagger.SwaggerV3 = {
                           format: "date-time",
                           nullable: true,
                         },
-                        targetFilter: {
+                        resourceFilter: {
                           type: "object",
                           additionalProperties: true,
                         },

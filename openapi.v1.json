@@ -26,7 +26,7 @@
                   "description": {
                     "type": "string"
                   },
-                  "targetFilter": {
+                  "resourceFilter": {
                     "type": "object",
                     "additionalProperties": true
                   },
@@ -73,7 +73,7 @@
                           "format": "date-time",
                           "nullable": true
                         },
-                        "targetFilter": {
+                        "resourceFilter": {
                           "type": "object",
                           "additionalProperties": true
                         }
@@ -548,7 +548,7 @@
                       },
                       "required": ["id", "name", "systemId", "jobAgentId"]
                     },
-                    "target": {
+                    "resource": {
                       "type": "object",
                       "properties": {
                         "id": {
