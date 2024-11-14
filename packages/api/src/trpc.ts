@@ -98,7 +98,7 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
     return result;
   }
 
-  logger.info(message, meta);
+  logger.debug(message, meta);
   return result;
 });
 
