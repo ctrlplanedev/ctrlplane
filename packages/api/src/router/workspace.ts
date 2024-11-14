@@ -213,7 +213,7 @@ export const workspaceRouter = createTRPCRouter({
         .then((w) => w?.workspace ?? null),
     ),
 
-  targetKinds: protectedProcedure
+  resourceKinds: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
