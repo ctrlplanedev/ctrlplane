@@ -109,7 +109,7 @@ export const integrationsRouter = createTRPCRouter({
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message:
-              "Cannot delete Google service account while active target providers exist.",
+              "Cannot delete Google service account while active resource providers exist.",
           });
 
         const projectId = await auth.getProjectId();
