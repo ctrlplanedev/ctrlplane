@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { upsertTargets } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
@@ -80,7 +80,7 @@ export const PATCH = request()
     if (target == null)
       return NextResponse.json({ error: "Target not found" }, { status: 404 });
 
-    const t = await upsertTargets(db, [_.merge(target, body)]);
+    const t = await upsertResources(db, [_.merge(target, body)]);
 
     return NextResponse.json(t[0]);
   });

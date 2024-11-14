@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
-import { upsertTargets } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
@@ -55,7 +55,7 @@ export const POST = request()
           { status: 400 },
         );
 
-      const targets = await upsertTargets(
+      const targets = await upsertResources(
         db,
         ctx.body.targets.map((t) => ({
           ...t,

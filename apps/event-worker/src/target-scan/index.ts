@@ -10,7 +10,7 @@ import {
   resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
-import { upsertTargets } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
@@ -72,7 +72,7 @@ export const createTargetScanWorker = () =>
           `Upserting ${targets.length} targets for provider ${tp.resource_provider.id}`,
         );
         if (targets.length > 0) {
-          await upsertTargets(db, targets);
+          await upsertResources(db, targets);
         } else {
           logger.info(
             `No targets found for provider ${tp.resource_provider.id}, skipping upsert.`,
