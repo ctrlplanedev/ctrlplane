@@ -22,9 +22,10 @@ async function findOpenAPIFiles() {
   try {
     console.log("Finding OpenAPI files...");
 
-    const files = await glob("../../apps/webservice/src/app/api/**/*.ts", {
+    let files = await glob("../../apps/webservice/src/app/api/**/*.ts", {
       ignore: ["**/node_modules/**", "**/dist/**", "**/build/**"],
     });
+    files = files.sort();
 
     const specs = await Promise.all(
       files.map(async (file) => {
