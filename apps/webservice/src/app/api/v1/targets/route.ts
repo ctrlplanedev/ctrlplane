@@ -43,7 +43,7 @@ export const POST = request()
   .use(
     authz(({ can, ctx }) =>
       can
-        .perform(Permission.TargetUpdate)
+        .perform(Permission.ResourceUpdate)
         .on({ type: "workspace", id: ctx.body.workspaceId }),
     ),
   )

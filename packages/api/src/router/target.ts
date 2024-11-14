@@ -105,7 +105,7 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewCreate)
+          .perform(Permission.ResourceViewCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(schema.createResourceView)
@@ -121,7 +121,7 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewUpdate)
+          .perform(Permission.ResourceViewUpdate)
           .on({ type: "resourceView", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: schema.updateResourceView }))
@@ -138,7 +138,7 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewDelete)
+          .perform(Permission.ResourceViewDelete)
           .on({ type: "resourceView", id: input }),
     })
     .input(z.string().uuid())
@@ -152,7 +152,7 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewGet)
+          .perform(Permission.ResourceViewGet)
           .on({ type: "resourceView", id: input }),
     })
     .input(z.string().uuid())
@@ -168,7 +168,7 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewList)
+          .perform(Permission.ResourceViewList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
@@ -203,7 +203,7 @@ const targetVariables = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input.targetId }),
     })
     .mutation(async ({ ctx, input }) => {
@@ -229,7 +229,7 @@ const targetVariables = createTRPCRouter({
         if (!variable) return false;
 
         return canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: variable.resourceId });
       },
     })
@@ -259,7 +259,7 @@ const targetVariables = createTRPCRouter({
         if (!variable) return false;
 
         return canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: variable.resourceId });
       },
     })
@@ -314,7 +314,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetGet)
+          .perform(Permission.ResourceGet)
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
@@ -337,7 +337,7 @@ export const targetRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.TargetList)
+            .perform(Permission.ResourceList)
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .input(
@@ -390,7 +390,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetCreate)
+          .perform(Permission.ResourceCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(
@@ -420,7 +420,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input.id }),
     })
     .input(
@@ -481,7 +481,7 @@ export const targetRouter = createTRPCRouter({
   delete: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.TargetDelete).on(
+        canUser.perform(Permission.ResourceDelete).on(
           ...(input as string[]).map((t) => ({
             type: "resource" as const,
             id: t,
@@ -508,7 +508,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetList)
+          .perform(Permission.ResourceList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string())
@@ -528,7 +528,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
@@ -545,7 +545,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
@@ -563,7 +563,7 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
     .mutation(({ ctx, input }) =>

@@ -29,7 +29,7 @@ export const GET = async (
   const canAccess = await checkEntityPermissionForResource(
     { type: "user", id: user.id },
     { type: "workspace", id: ws.id },
-    [Permission.TargetGet],
+    [Permission.ResourceGet],
   );
   if (!canAccess)
     return NextResponse.json({ error: "Permission denied" }, { status: 403 });

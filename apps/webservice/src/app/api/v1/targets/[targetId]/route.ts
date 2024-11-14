@@ -16,7 +16,7 @@ export const GET = request()
   .use(
     authz(({ can, extra }) => {
       return can
-        .perform(Permission.TargetGet)
+        .perform(Permission.ResourceGet)
         .on({ type: "resource", id: extra.params.targetId });
     }),
   )
@@ -64,7 +64,7 @@ export const PATCH = request()
   .use(
     authz(({ can, extra }) =>
       can
-        .perform(Permission.TargetUpdate)
+        .perform(Permission.ResourceUpdate)
         .on({ type: "resource", id: extra.params.targetId }),
     ),
   )
@@ -90,7 +90,7 @@ export const DELETE = request()
   .use(
     authz(({ can, extra }) =>
       can
-        .perform(Permission.TargetDelete)
+        .perform(Permission.ResourceDelete)
         .on({ type: "resource", id: extra.params.targetId }),
     ),
   )

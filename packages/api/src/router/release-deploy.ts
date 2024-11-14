@@ -105,7 +105,7 @@ export const releaseDeployRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseGet, Permission.TargetUpdate)
+          .perform(Permission.ReleaseGet, Permission.ResourceUpdate)
           .on(
             { type: "release", id: input.releaseId },
             { type: "resource", id: input.targetId },

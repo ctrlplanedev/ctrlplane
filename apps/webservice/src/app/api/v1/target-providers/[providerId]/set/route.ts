@@ -47,7 +47,7 @@ export const PATCH = request()
   .use(
     authz(({ can, extra }) =>
       can
-        .perform(Permission.TargetUpdate)
+        .perform(Permission.ResourceUpdate)
         .on({ type: "resourceProvider", id: extra.params.providerId }),
     ),
   )

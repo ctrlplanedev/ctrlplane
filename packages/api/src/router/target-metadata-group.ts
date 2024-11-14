@@ -27,7 +27,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetMetadataGroupList)
+          .perform(Permission.ResourceMetadataGroupList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
@@ -122,7 +122,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetMetadataGroupGet)
+          .perform(Permission.ResourceMetadataGroupGet)
           .on({ type: "resourceMetadataGroup", id: input }),
     })
     .input(z.string().uuid())
@@ -202,7 +202,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetMetadataGroupCreate)
+          .perform(Permission.ResourceMetadataGroupCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(createResourceMetadataGroup)
@@ -218,7 +218,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetMetadataGroupUpdate)
+          .perform(Permission.ResourceMetadataGroupUpdate)
           .on({ type: "resourceMetadataGroup", id: input.id }),
     })
     .input(
@@ -240,7 +240,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetMetadataGroupDelete)
+          .perform(Permission.ResourceMetadataGroupDelete)
           .on({ type: "resourceMetadataGroup", id: input }),
     })
     .input(z.string().uuid())

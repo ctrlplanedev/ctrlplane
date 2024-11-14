@@ -217,7 +217,7 @@ export const workspaceRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetList)
+          .perform(Permission.ResourceList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())

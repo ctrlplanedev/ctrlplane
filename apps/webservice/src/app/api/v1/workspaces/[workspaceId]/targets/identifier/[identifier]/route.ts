@@ -23,7 +23,7 @@ export const GET = request()
 
       if (target == null) return false;
       return can
-        .perform(Permission.TargetGet)
+        .perform(Permission.ResourceGet)
         .on({ type: "resource", id: target.id });
     }),
   )
@@ -71,7 +71,7 @@ export const DELETE = request()
 
       if (target == null) return false;
       return can
-        .perform(Permission.TargetDelete)
+        .perform(Permission.ResourceDelete)
         .on({ type: "resource", id: target.id });
     }),
   )
