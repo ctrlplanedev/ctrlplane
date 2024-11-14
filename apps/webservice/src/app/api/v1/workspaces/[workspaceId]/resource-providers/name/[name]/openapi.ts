@@ -7,10 +7,10 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/workspaces/{workspaceId}/target-providers/name/{name}": {
+    "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
       get: {
-        summary: "Upserts a target provider.",
-        operationId: "upsertTargetProvider",
+        summary: "Upserts a resource provider.",
+        operationId: "upsertResourceProvider",
         parameters: [
           {
             name: "workspaceId",
@@ -28,13 +28,13 @@ export const openapi: Swagger.SwaggerV3 = {
             schema: {
               type: "string",
             },
-            description: "Name of the target provider",
+            description: "Name of the resource provider",
           },
         ],
         responses: {
           "200": {
             description:
-              "Successfully retrieved or created the target provider",
+              "Successfully retrieved or created the resource provider",
             content: {
               "application/json": {
                 schema: {

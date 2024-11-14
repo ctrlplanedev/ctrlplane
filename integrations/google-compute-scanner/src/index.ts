@@ -2,7 +2,7 @@ import { CronJob } from "cron";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
-import { TargetProvider } from "@ctrlplane/node-sdk";
+import { ResourceProvider } from "@ctrlplane/node-sdk";
 
 import { env } from "./config.js";
 import {
@@ -13,7 +13,7 @@ import {
 import { api } from "./sdk.js";
 
 const scan = async () => {
-  const scanner = new TargetProvider(
+  const scanner = new ResourceProvider(
     {
       workspaceId: env.CTRLPLANE_WORKSPACE_ID,
       name: env.CTRLPLANE_SCANNER_NAME,

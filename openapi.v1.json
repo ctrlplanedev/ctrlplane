@@ -15,7 +15,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["systemId", "name"],
+                "required": [
+                  "systemId",
+                  "name"
+                ],
                 "properties": {
                   "systemId": {
                     "type": "string"
@@ -78,7 +81,9 @@
                           "additionalProperties": true
                         }
                       },
-                      "required": ["systemId"]
+                      "required": [
+                        "systemId"
+                      ]
                     }
                   }
                 }
@@ -114,7 +119,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -354,7 +361,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["type", "name", "workspaceId"]
+                "required": [
+                  "type",
+                  "name",
+                  "workspaceId"
+                ]
               }
             }
           }
@@ -377,7 +388,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -415,7 +430,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["sucess"]
+                  "required": [
+                    "sucess"
+                  ]
                 }
               }
             }
@@ -431,7 +448,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -501,7 +520,12 @@
                           "type": "object"
                         }
                       },
-                      "required": ["id", "version", "metadata", "config"]
+                      "required": [
+                        "id",
+                        "version",
+                        "metadata",
+                        "config"
+                      ]
                     },
                     "deployment": {
                       "type": "object",
@@ -546,7 +570,12 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId", "jobAgentId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId",
+                        "jobAgentId"
+                      ]
                     },
                     "resource": {
                       "type": "object",
@@ -600,7 +629,11 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId"
+                      ]
                     },
                     "variables": {
                       "type": "object"
@@ -614,7 +647,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "approved", "rejected"]
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected"
+                          ]
                         },
                         "approver": {
                           "type": "object",
@@ -628,10 +665,16 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "name"]
+                          "required": [
+                            "id",
+                            "name"
+                          ]
                         }
                       },
-                      "required": ["id", "status"]
+                      "required": [
+                        "id",
+                        "status"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -710,7 +753,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 }
               }
             }
@@ -728,7 +773,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["deploymentId", "name", "releaseFilter"],
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "releaseFilter"
+                ],
                 "properties": {
                   "deploymentId": {
                     "type": "string"
@@ -779,7 +828,12 @@
                       "additionalProperties": true
                     }
                   },
-                  "required": ["id", "deploymentId", "name", "createdAt"]
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
                 }
               }
             }
@@ -795,7 +849,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -811,7 +867,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -830,7 +888,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error", "id"]
+                  "required": [
+                    "error",
+                    "id"
+                  ]
                 }
               }
             }
@@ -846,7 +907,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -894,7 +957,10 @@
                     }
                   }
                 },
-                "required": ["version", "deploymentId"]
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
               }
             }
           }
@@ -966,7 +1032,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["resources"],
+                "required": [
+                  "resources"
+                ],
                 "properties": {
                   "resources": {
                     "type": "array",
@@ -1139,7 +1207,9 @@
                       "example": "Resource not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1266,7 +1336,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1294,7 +1366,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["success"],
+                  "required": [
+                    "success"
+                  ],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -1321,7 +1395,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1339,7 +1415,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "resources"],
+                "required": [
+                  "workspaceId",
+                  "resources"
+                ],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -1407,6 +1486,72 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
+      "get": {
+        "summary": "Upserts a resource provider.",
+        "operationId": "upsertResourceProvider",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Name of the workspace"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Name of the resource provider"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved or created the resource provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "workspaceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Permission denied"
+          },
+          "404": {
+            "description": "Workspace not found"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }
@@ -1493,7 +1638,12 @@
                       }
                     }
                   },
-                  "required": ["id", "identifier", "workspaceId", "providerId"]
+                  "required": [
+                    "id",
+                    "identifier",
+                    "workspaceId",
+                    "providerId"
+                  ]
                 }
               }
             }
@@ -1592,75 +1742,16 @@
           }
         }
       }
-    },
-    "/v1/workspaces/{workspaceId}/target-providers/name/{name}": {
-      "get": {
-        "summary": "Upserts a target provider.",
-        "operationId": "upsertTargetProvider",
-        "parameters": [
-          {
-            "name": "workspaceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Name of the workspace"
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Name of the target provider"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully retrieved or created the target provider",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "workspaceId": {
-                      "type": "string"
-                    }
-                  },
-                  "required": ["id", "name", "workspaceId"]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Permission denied"
-          },
-          "404": {
-            "description": "Workspace not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        }
-      }
     }
   },
   "components": {
     "schemas": {
       "Variable": {
         "type": "object",
-        "required": ["key", "value"],
+        "required": [
+          "key",
+          "value"
+        ],
         "properties": {
           "key": {
             "type": "string"
