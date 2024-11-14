@@ -6,51 +6,24 @@ settings:
 
 catalogs:
   default:
-    '@next/eslint-plugin-next':
-      specifier: ^14.2.6
-      version: 14.2.13
-    '@octokit/rest':
-      specifier: ^20.1.1
-      version: 20.1.1
     '@t3-oss/env-core':
       specifier: ^0.11.1
       version: 0.11.1
-    '@t3-oss/env-nextjs':
-      specifier: ^0.11.1
-      version: 0.11.1
-    bullmq:
-      specifier: ^5.15.0
-      version: 5.15.0
-    date-fns:
-      specifier: ^3.6.0
-      version: 3.6.0
     eslint:
       specifier: ^9.11.1
       version: 9.14.0
-    eslint-plugin-vitest:
-      specifier: ^0.5.4
-      version: 0.5.4
-    next:
-      specifier: ^14.2.17
-      version: 14.2.17
     next-auth:
       specifier: 5.0.0-beta.22
       version: 5.0.0-beta.22
     prettier:
       specifier: ^3.3.3
       version: 3.3.3
-    tailwindcss:
-      specifier: ^3.4.11
-      version: 3.4.13
     tsx:
       specifier: ^4.19.1
       version: 4.19.1
     typescript:
       specifier: ^5.6.3
       version: 5.6.3
-    typescript-eslint:
-      specifier: ^8.13.0
-      version: 8.13.0
     zod:
       specifier: ^3.23.8
       version: 3.23.8
@@ -58,23 +31,6 @@ catalogs:
     '@types/node':
       specifier: ^20.12.0
       version: 20.16.10
-  node22:
-    '@types/node':
-      specifier: ^22.5.5
-      version: 22.7.4
-  react18:
-    '@types/react':
-      specifier: ^18.3.5
-      version: 18.3.10
-    '@types/react-dom':
-      specifier: ^18.3.0
-      version: 18.3.0
-    react:
-      specifier: 18.3.1
-      version: 18.3.1
-    react-dom:
-      specifier: 18.3.1
-      version: 18.3.1
 
 importers:
 
@@ -374,9 +330,6 @@ importers:
       express:
         specifier: ^4.19.2
         version: 4.21.1
-      express-rate-limit:
-        specifier: ^7.3.0
-        version: 7.4.1(express@4.21.1)
       helmet:
         specifier: ^7.1.0
         version: 7.2.0
@@ -7766,12 +7719,6 @@ packages:
   expand-template@2.0.3:
     resolution: {integrity: sha512-XYfuKMvj4O35f/pOXLObndIRvyQ+/+6AhODh+OKWj9S9498pHHn/IMszH+gt0fBCRWMNfk1ZSp5x3AifmnI2vg==}
     engines: {node: '>=6'}
-
-  express-rate-limit@7.4.1:
-    resolution: {integrity: sha512-KS3efpnpIDVIXopMc65EMbWbUht7qvTCdtCR2dD/IZmi9MIkopYESwyRqLgv8Pfu589+KqDqOdzJWW7AHoACeg==}
-    engines: {node: '>= 16'}
-    peerDependencies:
-      express: 4 || 5 || ^5.0.0-beta.1
 
   express@4.21.1:
     resolution: {integrity: sha512-YSFlK1Ee0/GC8QaO91tHcDxJiE/X4FbpAyQWkxAvG6AXCuR65YzK8ua6D9hvi/TzUfZMpc+BwuM1IPw8fmQBiQ==}
@@ -17038,7 +16985,7 @@ snapshots:
 
   '@swc/helpers@0.5.13':
     dependencies:
-      tslib: 2.7.0
+      tslib: 2.8.0
 
   '@swc/helpers@0.5.5':
     dependencies:
@@ -19870,10 +19817,6 @@ snapshots:
 
   expand-template@2.0.3:
     optional: true
-
-  express-rate-limit@7.4.1(express@4.21.1):
-    dependencies:
-      express: 4.21.1
 
   express@4.21.1:
     dependencies:
