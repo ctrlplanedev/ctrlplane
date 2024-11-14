@@ -1,4 +1,4 @@
-name: Apps / Jobs
+name: Apps / Pty Proxy
 
 on:
   pull_request:
