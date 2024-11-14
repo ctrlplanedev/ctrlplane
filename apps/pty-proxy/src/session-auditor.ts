@@ -1,7 +1,7 @@
 import type WebSocket from "ws";
 import { z } from "zod";
 
-import { ifMessage } from "./controller/utils";
+import { ifMessage } from "./controller/utils.js";
 
 export const auditSessions = (socket: WebSocket) => {
   socket.on(

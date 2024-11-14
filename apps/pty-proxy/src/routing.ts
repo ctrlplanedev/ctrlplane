@@ -1,8 +1,8 @@
 import { createServer } from "node:http";
 import type { Express } from "express";
 
-import { controllerOnUpgrade } from "./controller";
-import { sessionOnUpgrade } from "./sessions";
+import { controllerOnUpgrade } from "./controller/index.js";
+import { sessionOnUpgrade } from "./sessions/index.js";
 
 export const addSocket = (expressApp: Express) => {
   const server = createServer(expressApp);

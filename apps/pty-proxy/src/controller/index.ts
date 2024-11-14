@@ -5,9 +5,9 @@ import { WebSocketServer } from "ws";
 
 import { logger } from "@ctrlplane/logger";
 
-import { AgentSocket } from "./agent-socket";
-import { agents, users } from "./sockets";
-import { UserSocket } from "./user-socket";
+import { AgentSocket } from "./agent-socket.js";
+import { agents, users } from "./sockets.js";
+import { UserSocket } from "./user-socket.js";
 
 const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
   const agent = await AgentSocket.from(ws, request);

@@ -1,7 +1,7 @@
 import type { IncomingMessage } from "http";
 import type { Session } from "next-auth";
 
-import { env } from "./config";
+import { env } from "./config.js";
 
 export const getSession = async (req: IncomingMessage) => {
   const options: RequestInit = {

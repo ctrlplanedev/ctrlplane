@@ -16,7 +16,7 @@ import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
 
-import { ifMessage } from "./utils";
+import { ifMessage } from "./utils.js";
 
 export class AgentSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {

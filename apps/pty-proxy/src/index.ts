@@ -1,8 +1,8 @@
 import ms from "ms";
 
-import { env } from "./config";
-import { addSocket } from "./routing";
-import { app } from "./server";
+import { env } from "./config.js";
+import { addSocket } from "./routing.js";
+import { app } from "./server.js";
 
 const server = addSocket(app).listen(env.PORT, () => {
   console.log(`Server is running on port ${env.PORT}`);

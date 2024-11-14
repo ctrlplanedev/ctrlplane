@@ -1,13 +1,13 @@
 import type { IncomingMessage } from "node:http";
 import type WebSocket from "ws";
-import { createSessionSocket } from "@/sessions";
 
 import { logger } from "@ctrlplane/logger";
 import { sessionCreate, sessionResize } from "@ctrlplane/validators/session";
 
-import { getSession } from "../auth";
-import { agents } from "./sockets";
-import { ifMessage } from "./utils";
+import { getSession } from "../auth.js";
+import { createSessionSocket } from "../sessions/index.js";
+import { agents } from "./sockets.js";
+import { ifMessage } from "./utils.js";
 
 type User = { id: string };
 
