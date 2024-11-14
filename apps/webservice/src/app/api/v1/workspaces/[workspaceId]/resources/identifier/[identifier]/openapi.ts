@@ -7,10 +7,10 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/workspaces/{workspaceId}/targets/identifier/{identifier}": {
+    "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}": {
       get: {
-        summary: "Get a target by identifier",
-        operationId: "getTargetByIdentifier",
+        summary: "Get a resource by identifier",
+        operationId: "getResourceByIdentifier",
         parameters: [
           {
             name: "workspaceId",
@@ -110,8 +110,8 @@ export const openapi: Swagger.SwaggerV3 = {
         },
       },
       delete: {
-        summary: "Delete a target by identifier",
-        operationId: "deleteTargetByIdentifier",
+        summary: "Delete a resource by identifier",
+        operationId: "deleteResourceByIdentifier",
         parameters: [
           {
             name: "workspaceId",
@@ -129,7 +129,7 @@ export const openapi: Swagger.SwaggerV3 = {
             schema: {
               type: "string",
             },
-            description: "Identifier of the target",
+            description: "Identifier of the resource",
           },
         ],
         responses: {
