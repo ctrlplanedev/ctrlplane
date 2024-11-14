@@ -30,7 +30,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { targetMetadataGroupRouter } from "./target-metadata-group";
+import { resourceMetadataGroupRouter } from "./target-metadata-group";
 import { targetProviderRouter } from "./target-provider";
 
 const targetRelations = createTRPCRouter({
@@ -304,7 +304,7 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
     .orderBy(asc(schema.resource.kind), asc(schema.resource.name));
 
 export const targetRouter = createTRPCRouter({
-  metadataGroup: targetMetadataGroupRouter,
+  metadataGroup: resourceMetadataGroupRouter,
   provider: targetProviderRouter,
   relations: targetRelations,
   view: targetViews,

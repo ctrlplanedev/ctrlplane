@@ -22,7 +22,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const targetMetadataGroupRouter = createTRPCRouter({
+export const resourceMetadataGroupRouter = createTRPCRouter({
   groups: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -35,13 +35,13 @@ export const targetMetadataGroupRouter = createTRPCRouter({
       /*
       perform two separate queries:
 
-      1. grab all target groups where null combinations are not allowed and add the metadata key count subquery to get the number of targets in that label group
-      2. count all the targets in the workspace once, then grab only the metadata groups where null combinations were allowed and add the total target count to the metadata group
+      1. grab all resource groups where null combinations are not allowed and add the metadata key count subquery to get the number of resources in that label group
+      2. count all the resources in the workspace once, then grab only the metadata groups where null combinations were allowed and add the total resource count to the metadata group
       
       then combine the two results and sort them by name
       */
-      const matchingTargetsQuery = ctx.db
-        .select({ targetId: resource.id })
+      const matchingResourcesQuery = ctx.db
+        .select({ resourceId: resource.id })
         .from(resource)
         .leftJoin(
           resourceMetadata,
@@ -60,10 +60,10 @@ export const targetMetadataGroupRouter = createTRPCRouter({
 
       const nonNullGroups = await ctx.db
         .select({
-          targets: sql<number>`
+          resources: sql<number>`
             COALESCE((
               SELECT ${count()}
-              FROM (${matchingTargetsQuery}) AS matching_targets
+              FROM (${matchingResourcesQuery}) AS matching_resources
             ), 0)`.mapWith(Number),
           resourceMetadataGroup,
         })
@@ -76,14 +76,14 @@ export const targetMetadataGroupRouter = createTRPCRouter({
         )
         .orderBy(asc(resourceMetadataGroup.name));
 
-      const allTargetCount = await ctx.db
+      const allResourceCount = await ctx.db
         .select({
-          targets: count(),
+          resources: count(),
         })
         .from(resource)
         .where(eq(resource.workspaceId, input))
         .then(takeFirst)
-        .then((row) => row.targets);
+        .then((row) => row.resources);
 
       const nullCombinations = await ctx.db
         .select()
@@ -97,7 +97,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
         .orderBy(asc(resourceMetadataGroup.name))
         .then((rows) =>
           rows.map((row) => ({
-            targets: allTargetCount,
+            resources: allResourceCount,
             resourceMetadataGroup: row,
           })),
         );
@@ -111,8 +111,8 @@ export const targetMetadataGroupRouter = createTRPCRouter({
           ),
         )
         .map((group) => ({
-          targets: group.targets,
-          targetMetadataGroup: group.resourceMetadataGroup,
+          resources: group.resources,
+          resourceMetadataGroup: group.resourceMetadataGroup,
         }));
 
       return sortedGroups;
@@ -166,7 +166,7 @@ export const targetMetadataGroupRouter = createTRPCRouter({
         .with(resourceMetadataAgg)
         .select({
           metadata: resourceMetadataAgg.metadata,
-          targets: sql<number>`COUNT(*)`.as("targets"),
+          resources: sql<number>`COUNT(*)`.as("resources"),
         })
         .from(resourceMetadataAgg)
         .groupBy(resourceMetadataAgg.metadata);
