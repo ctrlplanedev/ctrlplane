@@ -68,7 +68,7 @@ export const PATCH = request()
     authz(({ can, extra }) =>
       can
         .perform(Permission.ResourceUpdate)
-        .on({ type: "resource", id: extra.params.targetId }),
+        .on({ type: "resource", id: extra.params.resourceId }),
     ),
   )
   .use(parseBody(patchSchema))

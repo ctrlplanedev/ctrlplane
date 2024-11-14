@@ -35,32 +35,18 @@ export const openapi: Swagger.SwaggerV3 = {
                         "config",
                       ],
                       properties: {
-                        name: {
-                          type: "string",
-                        },
-                        kind: {
-                          type: "string",
-                        },
-                        identifier: {
-                          type: "string",
-                        },
-                        version: {
-                          type: "string",
-                        },
-                        config: {
-                          type: "object",
-                        },
+                        name: { type: "string" },
+                        kind: { type: "string" },
+                        identifier: { type: "string" },
+                        version: { type: "string" },
+                        config: { type: "object" },
                         metadata: {
                           type: "object",
-                          additionalProperties: {
-                            type: "string",
-                          },
+                          additionalProperties: { type: "string" },
                         },
                         variables: {
                           type: "array",
-                          items: {
-                            $ref: "#/components/schemas/Variable",
-                          },
+                          items: { $ref: "#/components/schemas/Variable" },
                         },
                       },
                     },

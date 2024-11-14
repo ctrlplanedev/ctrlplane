@@ -7,10 +7,10 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/target-providers/{providerId}/set": {
+    "/v1/resource-providers/{providerId}/set": {
       patch: {
-        summary: "Sets the target for a provider.",
-        operationId: "setTargetProvidersTargets",
+        summary: "Sets the resource for a provider.",
+        operationId: "setResourceProvidersResources",
         parameters: [
           {
             name: "providerId",
@@ -28,9 +28,9 @@ export const openapi: Swagger.SwaggerV3 = {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["targets"],
+                required: ["resources"],
                 properties: {
-                  targets: {
+                  resources: {
                     type: "array",
                     items: {
                       type: "object",
@@ -75,13 +75,13 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         responses: {
           "200": {
-            description: "Successfully updated the deployment target",
+            description: "Successfully updated the deployment resources",
           },
           "400": {
             description: "Invalid request",
           },
           "404": {
-            description: "Deployment target not found",
+            description: "Deployment resources not found",
           },
           "500": {
             description: "Internal server error",
