@@ -402,9 +402,6 @@ importers:
       '@ctrlplane/prettier-config':
         specifier: workspace:^
         version: link:../../tooling/prettier
-      '@ctrlplane/tailwind-config':
-        specifier: workspace:*
-        version: link:../../tooling/tailwind
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
