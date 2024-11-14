@@ -30,7 +30,6 @@
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
-    "@ctrlplane/tailwind-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
