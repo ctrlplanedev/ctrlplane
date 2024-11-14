@@ -82,24 +82,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     variables: {
                       type: "array",
                       items: {
-                        type: "object",
-                        properties: {
-                          key: {
-                            type: "string",
-                          },
-                          value: {
-                            oneOf: [
-                              { type: "string" },
-                              { type: "number" },
-                              { type: "boolean" },
-                            ],
-                          },
-                          sensitive: {
-                            type: "boolean",
-                            default: false,
-                          },
-                        },
-                        required: ["key", "value"],
+                        $ref: "#/components/schemas/Variable",
                       },
                     },
                   },
@@ -187,24 +170,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   variables: {
                     type: "array",
                     items: {
-                      type: "object",
-                      properties: {
-                        key: {
-                          type: "string",
-                        },
-                        value: {
-                          oneOf: [
-                            { type: "string" },
-                            { type: "number" },
-                            { type: "boolean" },
-                          ],
-                        },
-                        sensitive: {
-                          type: "boolean",
-                          default: false,
-                        },
-                      },
-                      required: ["key", "value"],
+                      $ref: "#/components/schemas/Variable",
                     },
                   },
                 },

@@ -1020,30 +1020,7 @@
                     "variables": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "key": {
-                            "type": "string"
-                          },
-                          "value": {
-                            "oneOf": [
-                              {
-                                "type": "string"
-                              },
-                              {
-                                "type": "number"
-                              },
-                              {
-                                "type": "boolean"
-                              }
-                            ]
-                          },
-                          "sensitive": {
-                            "type": "boolean",
-                            "default": false
-                          }
-                        },
-                        "required": ["key", "value"]
+                        "$ref": "#/components/schemas/Variable"
                       }
                     }
                   },
@@ -1131,30 +1108,7 @@
                   "variables": {
                     "type": "array",
                     "items": {
-                      "type": "object",
-                      "properties": {
-                        "key": {
-                          "type": "string"
-                        },
-                        "value": {
-                          "oneOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "number"
-                            },
-                            {
-                              "type": "boolean"
-                            }
-                          ]
-                        },
-                        "sensitive": {
-                          "type": "boolean",
-                          "default": false
-                        }
-                      },
-                      "required": ["key", "value"]
+                      "$ref": "#/components/schemas/Variable"
                     }
                   }
                 }
@@ -1345,29 +1299,7 @@
                         "variables": {
                           "type": "array",
                           "items": {
-                            "type": "object",
-                            "required": ["key", "value"],
-                            "properties": {
-                              "key": {
-                                "type": "string"
-                              },
-                              "value": {
-                                "oneOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "number"
-                                  },
-                                  {
-                                    "type": "boolean"
-                                  }
-                                ]
-                              },
-                              "sensitive": {
-                                "type": "boolean"
-                              }
-                            }
+                            "$ref": "#/components/schemas/Variable"
                           }
                         }
                       }
@@ -1725,6 +1657,33 @@
     }
   },
   "components": {
+    "schemas": {
+      "Variable": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          },
+          "sensitive": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
     "securitySchemes": {
       "apiKey": {
         "type": "apiKey",
