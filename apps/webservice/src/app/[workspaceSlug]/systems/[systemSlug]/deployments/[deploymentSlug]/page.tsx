@@ -61,7 +61,7 @@ const Variables: React.FC<{
         conditions: [systemTargetsFilter, v.resourceFilter],
       };
 
-      const targets = await api.target.byWorkspaceId.list({
+      const targets = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,
@@ -97,7 +97,7 @@ const Variables: React.FC<{
               ],
             };
 
-      const defaultTargets = await api.target.byWorkspaceId.list({
+      const defaultTargets = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,

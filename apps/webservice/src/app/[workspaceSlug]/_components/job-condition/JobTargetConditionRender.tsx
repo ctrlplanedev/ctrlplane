@@ -36,7 +36,7 @@ export const JobTargetConditionRender: React.FC<
   useDebounce(() => setSearchDebounced(search), 300, [search]);
   const [open, setOpen] = useState(false);
 
-  const targetQ = api.target.byId.useQuery(condition.value);
+  const targetQ = api.resource.byId.useQuery(condition.value);
   const target = targetQ.data;
 
   const { workspaceSlug, systemSlug } = useParams<{
@@ -79,7 +79,7 @@ export const JobTargetConditionRender: React.FC<
 
   const filter = systemTargetsFilter ?? searchFilter;
 
-  const targetsQ = api.target.byWorkspaceId.list.useQuery(
+  const targetsQ = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: workspace?.id ?? "", filter, limit: 8 },
     { enabled: workspace != null, placeholderData: (prev) => prev },
   );

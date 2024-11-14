@@ -39,7 +39,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
 
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
       limit: 500,

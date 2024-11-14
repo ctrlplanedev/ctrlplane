@@ -40,7 +40,9 @@ export default async function TargetProvidersPage({
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
 
-  const targetProviders = await api.target.provider.byWorkspaceId(workspace.id);
+  const targetProviders = await api.resource.provider.byWorkspaceId(
+    workspace.id,
+  );
 
   if (targetProviders.length === 0) return <TargetProvidersGettingStarted />;
 

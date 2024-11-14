@@ -29,7 +29,7 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
     { workspaceId: workspace.data?.id ?? "" },
     { enabled: workspace.isSuccess },
   );
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
       filter:

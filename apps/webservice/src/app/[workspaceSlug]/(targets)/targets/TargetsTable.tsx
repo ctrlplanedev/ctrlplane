@@ -115,7 +115,7 @@ export const TargetsTable: React.FC<{
   targets: Resource[];
   onTableRowClick?: (target: Resource) => void;
 }> = ({ targets, onTableRowClick, activeTargetIds }) => {
-  const deleteTargetsMutation = api.target.delete.useMutation();
+  const deleteTargetsMutation = api.resource.delete.useMutation();
 
   const table = useReactTable({
     data: targets,
@@ -129,7 +129,7 @@ export const TargetsTable: React.FC<{
       .getSelectedRowModel()
       .rows.map((row) => row.original.id);
     await deleteTargetsMutation.mutateAsync(selectedTargets);
-    await utils.target.byWorkspaceId.invalidate();
+    await utils.resource.byWorkspaceId.invalidate();
     table.toggleAllRowsSelected(false);
   };
 

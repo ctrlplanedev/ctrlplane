@@ -142,7 +142,7 @@ export const VariableTargetInput: React.FC<
     operator: ResourceOperator.And,
     conditions: tFilterConditions,
   };
-  const allTargetsQ = api.target.byWorkspaceId.list.useQuery(
+  const allTargetsQ = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: system?.workspaceId ?? "", filter: tFilter },
     { enabled: system != null, placeholderData: (prev) => prev },
   );
@@ -161,7 +161,7 @@ export const VariableTargetInput: React.FC<
     operator: ResourceOperator.And,
     conditions: tFilterConditionsWithSearch,
   };
-  const targetsQ = api.target.byWorkspaceId.list.useQuery(
+  const targetsQ = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: system?.workspaceId ?? "", filter: tFilterWithSearch },
     { enabled: system != null, placeholderData: (prev) => prev },
   );

@@ -35,7 +35,7 @@ export const TargetDrawer: React.FC = () => {
   const isOpen = targetId != null && targetId != "";
   const setIsOpen = removeTargetId;
 
-  const targetQ = api.target.byId.useQuery(targetId ?? "", {
+  const targetQ = api.resource.byId.useQuery(targetId ?? "", {
     enabled: isOpen,
     refetchInterval: 10_000,
   });
@@ -44,8 +44,8 @@ export const TargetDrawer: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState("overview");
 
-  const lockTarget = api.target.lock.useMutation();
-  const unlockTarget = api.target.unlock.useMutation();
+  const lockTarget = api.resource.lock.useMutation();
+  const unlockTarget = api.resource.unlock.useMutation();
   const router = useRouter();
   const utils = api.useUtils();
 
@@ -123,7 +123,7 @@ export const TargetDrawer: React.FC = () => {
               {target.provider == null && (
                 <EditTargetDialog
                   target={target}
-                  onSuccess={() => utils.target.byId.invalidate(target.id)}
+                  onSuccess={() => utils.resource.byId.invalidate(target.id)}
                 >
                   <Button
                     variant="outline"

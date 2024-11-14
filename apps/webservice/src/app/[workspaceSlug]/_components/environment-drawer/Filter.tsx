@@ -48,7 +48,7 @@ const TargetViewsCombobox: React.FC<{
   workspaceId: string;
   onChange: (targetCondition: ResourceCondition) => void;
 }> = ({ workspaceId, onChange }) => {
-  const targetViewsQ = api.target.view.list.useQuery(workspaceId, {
+  const targetViewsQ = api.resource.view.list.useQuery(workspaceId, {
     enabled: workspaceId !== "",
   });
   const targetViews = targetViewsQ.data ?? [];
@@ -130,7 +130,7 @@ export const EditFilterForm: React.FC<{
   const { targetFilter } = form.watch();
 
   const filter = targetFilter ?? undefined;
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter, limit: 10 },
     { enabled: workspaceId !== "" },
   );

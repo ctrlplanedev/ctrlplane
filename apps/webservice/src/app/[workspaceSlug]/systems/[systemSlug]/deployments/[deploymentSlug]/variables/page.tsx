@@ -59,7 +59,7 @@ export default async function VariablesPage({
         conditions: [systemTargetsFilter, v.resourceFilter],
       };
 
-      const targets = await api.target.byWorkspaceId.list({
+      const targets = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,
@@ -95,7 +95,7 @@ export default async function VariablesPage({
               ],
             };
 
-      const defaultTargets = await api.target.byWorkspaceId.list({
+      const defaultTargets = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,

@@ -33,7 +33,7 @@ const DeleteTargetViewDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ viewId, onClose, children }) => {
   const [open, setOpen] = useState(false);
-  const deleteTargetView = api.target.view.delete.useMutation();
+  const deleteTargetView = api.resource.view.delete.useMutation();
   const { removeView } = useTargetFilter();
 
   return (

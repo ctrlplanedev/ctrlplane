@@ -89,7 +89,7 @@ export const JobHistoryChart: React.FC<{
     _.maxBy(dailyCounts.data, "totalCount")?.totalCount ?? 0;
   const maxBarTickDomain = Math.ceil(maxDailyCount * 1.1);
 
-  const targets = api.target.byWorkspaceId.list.useQuery({
+  const targets = api.resource.byWorkspaceId.list.useQuery({
     workspaceId: workspace.id,
     limit: 0,
   });

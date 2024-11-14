@@ -191,7 +191,7 @@ const StringifiedIdentifierCondition: React.FC<{
 const StringifiedProviderCondition: React.FC<{
   condition: ProviderCondition;
 }> = ({ condition }) => {
-  const provider = api.target.provider.byId.useQuery(condition.value);
+  const provider = api.resource.provider.byId.useQuery(condition.value);
 
   return (
     <ConditionBadge>

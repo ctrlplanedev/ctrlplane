@@ -116,7 +116,7 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
   });
   const router = useRouter();
 
-  const createTargetView = api.target.view.create.useMutation();
+  const createTargetView = api.resource.view.create.useMutation();
 
   const onFormSubmit = (data: TargetViewFormSchema) => {
     createTargetView
@@ -173,7 +173,7 @@ export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
   });
   const router = useRouter();
 
-  const updateTargetView = api.target.view.update.useMutation();
+  const updateTargetView = api.resource.view.update.useMutation();
 
   const onFormSubmit = (data: TargetViewFormSchema) => {
     updateTargetView

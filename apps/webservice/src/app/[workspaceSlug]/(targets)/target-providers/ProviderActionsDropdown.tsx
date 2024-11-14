@@ -40,10 +40,10 @@ export const ProviderActionsDropdown: React.FC<{
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
 
-  const deleteProvider = api.target.provider.delete.useMutation({
-    onSuccess: () => utils.target.provider.byWorkspaceId.invalidate(),
+  const deleteProvider = api.resource.provider.delete.useMutation({
+    onSuccess: () => utils.resource.provider.byWorkspaceId.invalidate(),
   });
-  const sync = api.target.provider.managed.sync.useMutation();
+  const sync = api.resource.provider.managed.sync.useMutation();
   const router = useRouter();
 
   const handleDelete = async (deleteResources: boolean) => {

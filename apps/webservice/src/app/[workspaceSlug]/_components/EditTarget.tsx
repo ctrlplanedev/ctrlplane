@@ -97,7 +97,7 @@ export const EditTargetDialog: React.FC<{
   });
 
   const router = useRouter();
-  const update = api.target.update.useMutation();
+  const update = api.resource.update.useMutation();
 
   const onSubmit = form.handleSubmit((data) => {
     const config = yaml.load(data.config) as Record<string, any>;

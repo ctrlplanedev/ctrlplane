@@ -26,7 +26,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   sessionId,
   targetId,
 }) => {
-  const target = api.target.byId.useQuery(targetId);
+  const target = api.resource.byId.useQuery(targetId);
   const { resizeSession } = useTerminalSessions();
   const { getWebSocket, readyState } = useWebSocket(
     `/api/v1/target/proxy/session/${sessionId}`,

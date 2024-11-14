@@ -47,7 +47,7 @@ export const EditMetadataGroupDialog: React.FC<{
   parentClose?: () => void;
 }> = ({ workspaceId, metadataGroup, children, parentClose }) => {
   const [open, setOpen] = useState(false);
-  const updateMetadataGroup = api.target.metadataGroup.update.useMutation();
+  const updateMetadataGroup = api.resource.metadataGroup.update.useMutation();
   const utils = api.useUtils();
   const [input, setInput] = useState("");
   const router = useRouter();
@@ -76,7 +76,7 @@ export const EditMetadataGroupDialog: React.FC<{
           keys: values.keys.map((key) => key.value),
         },
       })
-      .then(() => utils.target.metadataGroup.groups.invalidate())
+      .then(() => utils.resource.metadataGroup.groups.invalidate())
       .then(() => parentClose?.())
       .then(() => setOpen(false))
       .then(() => router.refresh()),

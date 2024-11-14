@@ -94,15 +94,15 @@ const TargetDiagram: React.FC<{
 export const TargetHierarchyRelationshipsDiagram: React.FC<{
   targetId: string;
 }> = ({ targetId }) => {
-  const hierarchy = api.target.relations.hierarchy.useQuery(targetId);
+  const hierarchy = api.resource.relations.hierarchy.useQuery(targetId);
 
   if (hierarchy.data == null) return null;
-  const { relationships, targets } = hierarchy.data;
+  const { relationships, resources } = hierarchy.data;
   return (
     <ReactFlowProvider>
       <TargetDiagram
         relationships={relationships}
-        targets={targets}
+        targets={resources}
         targetId={targetId}
       />
     </ReactFlowProvider>

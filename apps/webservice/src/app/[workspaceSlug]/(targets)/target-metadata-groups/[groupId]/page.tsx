@@ -11,7 +11,7 @@ export default async function TargetMetadataGroupPages({
   params: { workspaceSlug: string; groupId: string };
 }) {
   const { workspaceSlug, groupId } = params;
-  const metadataGroup = await api.target.metadataGroup
+  const metadataGroup = await api.resource.metadataGroup
     .byId(groupId)
     .catch(notFound);
   return (

@@ -33,7 +33,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceMetadataGroupRouter } from "./target-metadata-group";
 import { resourceProviderRouter } from "./target-provider";
 
-const targetRelations = createTRPCRouter({
+const resourceRelations = createTRPCRouter({
   hierarchy: protectedProcedure
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -91,16 +91,16 @@ const targetRelations = createTRPCRouter({
 
       const allIds = _.uniq([...sourceIds, ...targetIds, input]);
 
-      const targets = await ctx.db
+      const resources = await ctx.db
         .select()
         .from(schema.resource)
         .where(inArray(schema.resource.id, allIds));
 
-      return { relationships, targets };
+      return { relationships, resources };
     }),
 });
 
-const targetViews = createTRPCRouter({
+const resourceViews = createTRPCRouter({
   create: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -197,14 +197,14 @@ const targetViews = createTRPCRouter({
     }),
 });
 
-const targetVariables = createTRPCRouter({
+const resourceVariables = createTRPCRouter({
   create: protectedProcedure
     .input(schema.createResourceVariable)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.ResourceUpdate)
-          .on({ type: "resource", id: input.targetId }),
+          .on({ type: "resource", id: input.resourceId }),
     })
     .mutation(async ({ ctx, input }) => {
       const { sensitive } = input;
@@ -271,13 +271,13 @@ const targetVariables = createTRPCRouter({
 });
 
 type _StringStringRecord = Record<string, string>;
-const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
+const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
     .select({
-      target: schema.resource,
-      targetProvider: schema.resourceProvider,
+      resource: schema.resource,
+      resourceProvider: schema.resourceProvider,
       workspace: schema.workspace,
-      targetMetadata: sql<_StringStringRecord>`
+      resourceMetadata: sql<_StringStringRecord>`
         jsonb_object_agg(resource_metadata.key, resource_metadata.value) 
         FILTER (WHERE resource_metadata.key IS NOT NULL)
       `.as("resource_metadata"),
@@ -303,12 +303,12 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
     )
     .orderBy(asc(schema.resource.kind), asc(schema.resource.name));
 
-export const targetRouter = createTRPCRouter({
+export const resourceRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
   provider: resourceProviderRouter,
-  relations: targetRelations,
-  view: targetViews,
-  variable: targetVariables,
+  relations: resourceRelations,
+  view: resourceViews,
+  variable: resourceVariables,
 
   byId: protectedProcedure
     .meta({
@@ -353,20 +353,20 @@ export const targetRouter = createTRPCRouter({
           schema.resource.workspaceId,
           input.workspaceId,
         );
-        const targetConditions = schema.resourceMatchesMetadata(
+        const resourceConditions = schema.resourceMatchesMetadata(
           ctx.db,
           input.filter,
         );
-        const checks = [workspaceIdCheck, targetConditions].filter(isPresent);
+        const checks = [workspaceIdCheck, resourceConditions].filter(isPresent);
 
-        const items = targetQuery(ctx.db, checks)
+        const items = resourceQuery(ctx.db, checks)
           .limit(input.limit)
           .offset(input.offset)
           .then((t) =>
             t.map((a) => ({
-              ...a.target,
-              provider: a.targetProvider,
-              metadata: a.targetMetadata,
+              ...a.resource,
+              provider: a.resourceProvider,
+              metadata: a.resourceMetadata,
             })),
           );
 
@@ -433,7 +433,7 @@ export const targetRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input: { id, data } }) =>
       ctx.db.transaction(async (tx) => {
-        const updatedTarget = await tx
+        const updatedResource = await tx
           .update(schema.resource)
           .set(data)
           .where(eq(schema.resource.id, id))
@@ -474,7 +474,7 @@ export const targetRouter = createTRPCRouter({
               ),
           );
 
-        return updatedTarget;
+        return updatedResource;
       }),
     ),
 
@@ -490,11 +490,11 @@ export const targetRouter = createTRPCRouter({
     })
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) => {
-      const targets = await ctx.db.query.resource.findMany({
+      const resources = await ctx.db.query.resource.findMany({
         where: inArray(schema.resource.id, input),
       });
       const events = (
-        await Promise.allSettled(targets.map(getEventsForTargetDeleted))
+        await Promise.allSettled(resources.map(getEventsForTargetDeleted))
       ).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
       await Promise.allSettled(events.map(handleEvent));
 

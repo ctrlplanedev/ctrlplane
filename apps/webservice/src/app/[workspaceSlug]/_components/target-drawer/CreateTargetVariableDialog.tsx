@@ -40,7 +40,7 @@ export const CreateTargetVariableDialog: React.FC<
   CreateTargetVariableDialogProps
 > = ({ targetId, existingKeys, children }) => {
   const [open, setOpen] = useState(false);
-  const createTargetVariable = api.target.variable.create.useMutation();
+  const createTargetVariable = api.resource.variable.create.useMutation();
   const schema = z.object({
     key: z
       .string()
@@ -66,7 +66,7 @@ export const CreateTargetVariableDialog: React.FC<
   const onSubmit = form.handleSubmit((data) =>
     createTargetVariable
       .mutateAsync({ resourceId: targetId, ...data })
-      .then(() => utils.target.byId.invalidate(targetId))
+      .then(() => utils.resource.byId.invalidate(targetId))
       .then(() => form.reset())
       .then(() => setOpen(false)),
   );

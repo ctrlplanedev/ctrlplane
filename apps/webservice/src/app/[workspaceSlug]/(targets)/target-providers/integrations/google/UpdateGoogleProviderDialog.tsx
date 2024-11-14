@@ -65,7 +65,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
   });
 
   const utils = api.useUtils();
-  const update = api.target.provider.managed.google.update.useMutation();
+  const update = api.resource.provider.managed.google.update.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
     if (workspace.data == null) return;
     await update.mutateAsync({
@@ -79,7 +79,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
       },
       repeatSeconds: data.repeatSeconds === 0 ? null : data.repeatSeconds,
     });
-    await utils.target.provider.byWorkspaceId.invalidate();
+    await utils.resource.provider.byWorkspaceId.invalidate();
     setOpen(false);
     onClose?.();
   });

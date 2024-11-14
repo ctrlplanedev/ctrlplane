@@ -33,11 +33,11 @@ export const TargetPageContent: React.FC<{
 }> = ({ workspace, view }) => {
   const { filter, setFilter, setView } = useTargetFilter();
   const workspaceId = workspace.id;
-  const targetsAll = api.target.byWorkspaceId.list.useQuery({
+  const targetsAll = api.resource.byWorkspaceId.list.useQuery({
     workspaceId,
     limit: 0,
   });
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter },
     { placeholderData: (prev) => prev },
   );

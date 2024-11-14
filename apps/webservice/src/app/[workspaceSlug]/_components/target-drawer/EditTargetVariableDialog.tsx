@@ -42,7 +42,7 @@ export const EditTargetVariableDialog: React.FC<
   EditTargetVariableDialogProps
 > = ({ targetVariable, existingKeys, children, onClose }) => {
   const [open, setOpen] = useState(false);
-  const updateTargetVariable = api.target.variable.update.useMutation();
+  const updateTargetVariable = api.resource.variable.update.useMutation();
   const utils = api.useUtils();
   const keysWithoutCurrent = existingKeys.filter(
     (k) => k !== targetVariable.key,
@@ -74,7 +74,7 @@ export const EditTargetVariableDialog: React.FC<
     updateTargetVariable
       .mutateAsync({ id: targetVariable.id, data })
       .then(() => form.reset(data))
-      .then(() => utils.target.byId.invalidate(targetVariable.resourceId))
+      .then(() => utils.resource.byId.invalidate(targetVariable.resourceId))
       .then(() => setOpen(false)),
   );
 
