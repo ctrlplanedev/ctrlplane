@@ -1,4 +1,4 @@
-import type { InsertTarget, Target } from "@ctrlplane/db/schema";
+import type { InsertResource, Resource } from "@ctrlplane/db/schema";
 import type {
   AgentHeartbeat,
   SessionCreate,
@@ -12,7 +12,7 @@ import type { MessageEvent } from "ws";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { upsertTargets } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
 
@@ -46,31 +46,31 @@ export class AgentSocket {
       return null;
     }
 
-    const targetInfo: InsertTarget = {
+    const resourceInfo: InsertResource = {
       name: agentName,
       version: "ctrlplane/v1",
       kind: "TargetSession",
       identifier: `ctrlplane/target-agent/${agentName}`,
       workspaceId: workspace.id,
     };
-    const [target] = await upsertTargets(db, [targetInfo]);
-    if (target == null) return null;
-    return new AgentSocket(socket, request, target);
+    const [resource] = await upsertResources(db, [resourceInfo]);
+    if (resource == null) return null;
+    return new AgentSocket(socket, request, resource);
   }
 
   private constructor(
     private readonly socket: WebSocket,
     private readonly _: IncomingMessage,
-    public readonly target: Target,
+    public readonly resource: Resource,
   ) {
-    this.target = target;
+    this.resource = resource;
     this.socket.on(
       "message",
       ifMessage()
         .is(agentConnect, async (data) => {
-          await upsertTargets(db, [
+          await upsertResources(db, [
             {
-              ...target,
+              ...this.resource,
               config: data.config,
               metadata: data.metadata,
               version: "ctrlplane/v1",
