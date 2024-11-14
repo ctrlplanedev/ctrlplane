@@ -37,7 +37,7 @@ class ReleaseJobTriggerBuilder {
   private _causedById?: string;
 
   private environmentIds?: string[];
-  private targetIds?: string[];
+  private resourceIds?: string[];
   private deploymentIds?: string[];
   private releaseIds?: string[];
 
@@ -64,8 +64,8 @@ class ReleaseJobTriggerBuilder {
     return this;
   }
 
-  targets(ids: string[]) {
-    this.targetIds = ids;
+  resources(ids: string[]) {
+    this.resourceIds = ids;
     return this;
   }
 
@@ -137,7 +137,7 @@ class ReleaseJobTriggerBuilder {
       releases.flatMap(async (release) => {
         const { resourceFilter } = release.environment;
         const { workspaceId } = release.system;
-        const targets = await this.tx
+        const resources = await this.tx
           .select()
           .from(resource)
           .where(
@@ -145,13 +145,13 @@ class ReleaseJobTriggerBuilder {
               resourceMatchesMetadata(this.tx, resourceFilter),
               eq(resource.workspaceId, workspaceId),
               isNull(resource.lockedAt),
-              this.targetIds && inArray(resource.id, this.targetIds),
+              this.resourceIds && inArray(resource.id, this.resourceIds),
             ),
           );
 
-        return targets.map((target) => ({
+        return resources.map((resource) => ({
           ...release,
-          target,
+          resource,
         }));
       }),
     ).then((result) => result.flat());
@@ -164,7 +164,7 @@ class ReleaseJobTriggerBuilder {
     let wt: ReleaseJobTriggerInsert[] = vals.map((v) => ({
       type: this.type,
       causedById: this._causedById,
-      resourceId: v.target.id,
+      resourceId: v.resource.id,
       environmentId: v.environment.id,
       releaseId: v.release.id,
       jobId: "",

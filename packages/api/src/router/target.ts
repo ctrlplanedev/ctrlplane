@@ -569,7 +569,7 @@ export const targetRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       createReleaseJobTriggers(ctx.db, "redeploy")
         .causedById(ctx.session.user.id)
-        .targets([input])
+        .resources([input])
         .filter(isPassingReleaseStringCheckPolicy)
         .filter(isPassingNoPendingJobsPolicy)
         .then(createJobApprovals)

@@ -237,7 +237,7 @@ const valueRouter = createTRPCRouter({
       if (targetsToTrigger.length > 0)
         await createReleaseJobTriggers(ctx.db, "variable_changed")
           .causedById(ctx.session.user.id)
-          .targets(targetsToTrigger.map((t) => t.id))
+          .resources(targetsToTrigger.map((t) => t.id))
           .deployments([deploymentId])
           .filter(isPassingNoPendingJobsPolicy)
           .filter(isPassingReleaseStringCheckPolicy)

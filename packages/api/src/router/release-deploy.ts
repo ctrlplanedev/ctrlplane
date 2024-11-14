@@ -150,7 +150,7 @@ export const releaseDeployRouter = createTRPCRouter({
         .causedById(ctx.session.user.id)
         .environments([env.id])
         .releases([rel.id])
-        .targets([t.id])
+        .resources([t.id])
         .filter(
           input.isForcedRelease
             ? (_, releaseJobTriggers) => releaseJobTriggers

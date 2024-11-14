@@ -15,7 +15,7 @@ export async function dispatchJobsForNewResources(
   envId: string,
 ): Promise<void> {
   const releaseJobTriggers = await createReleaseJobTriggers(db, "new_resource")
-    .targets(newResourceIds)
+    .resources(newResourceIds)
     .environments([envId])
     .insert();
   if (releaseJobTriggers.length === 0) return;

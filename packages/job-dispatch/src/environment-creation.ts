@@ -83,7 +83,7 @@ export const createJobsForNewEnvironment = async (
     "new_environment",
   )
     .environments([env.id])
-    .targets(resources.map((t) => t.id))
+    .resources(resources.map((t) => t.id))
     .releases(releases.map((r) => r.id))
     .then(createJobApprovals)
     .insert();
