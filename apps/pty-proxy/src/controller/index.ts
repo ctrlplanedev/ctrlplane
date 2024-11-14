@@ -13,10 +13,10 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
   const agent = await AgentSocket.from(ws, request);
   if (agent != null) {
     logger.info("Agent connected", {
-      targetId: agent.target.id,
-      name: agent.target.name,
+      resourceId: agent.resource.id,
+      name: agent.resource.name,
     });
-    agents.set(agent.target.id, agent);
+    agents.set(agent.resource.id, agent);
     return;
   }
 
