@@ -13,7 +13,7 @@ import { request } from "../middleware";
 
 const patchBodySchema = z.object({
   workspaceId: z.string().uuid(),
-  targets: z.array(
+  resources: z.array(
     createResource
       .omit({ lockedAt: true, providerId: true, workspaceId: true })
       .extend({
@@ -49,20 +49,20 @@ export const POST = request()
   )
   .handle<{ user: schema.User; body: z.infer<typeof patchBodySchema> }>(
     async (ctx) => {
-      if (ctx.body.targets.length === 0)
+      if (ctx.body.resources.length === 0)
         return NextResponse.json(
-          { error: "No targets provided" },
+          { error: "No resources provided" },
           { status: 400 },
         );
 
-      const targets = await upsertResources(
+      const resources = await upsertResources(
         db,
-        ctx.body.targets.map((t) => ({
+        ctx.body.resources.map((t) => ({
           ...t,
           workspaceId: ctx.body.workspaceId,
         })),
       );
 
-      return NextResponse.json({ count: targets.length });
+      return NextResponse.json({ count: resources.length });
     },
   );

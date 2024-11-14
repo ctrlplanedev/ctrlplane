@@ -945,101 +945,19 @@
         }
       }
     },
-    "/v1/target-providers/{providerId}/set": {
-      "patch": {
-        "summary": "Sets the target for a provider.",
-        "operationId": "setTargetProvidersTargets",
-        "parameters": [
-          {
-            "name": "providerId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "UUID of the scanner"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["targets"],
-                "properties": {
-                  "targets": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "identifier": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        },
-                        "kind": {
-                          "type": "string"
-                        },
-                        "config": {
-                          "type": "object",
-                          "additionalProperties": true
-                        },
-                        "metadata": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": [
-                        "identifier",
-                        "name",
-                        "version",
-                        "kind",
-                        "config",
-                        "metadata"
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successfully updated the deployment target"
-          },
-          "400": {
-            "description": "Invalid request"
-          },
-          "404": {
-            "description": "Deployment target not found"
-          },
-          "500": {
-            "description": "Internal server error"
-          }
-        }
-      }
-    },
-    "/v1/targets/{targetId}": {
+    "/v1/resources/{resourceId}": {
       "get": {
-        "summary": "Get a target",
-        "operationId": "getTarget",
+        "summary": "Get a resource",
+        "operationId": "getResource",
         "parameters": [
           {
-            "name": "targetId",
+            "name": "resourceId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The target ID"
+            "description": "The resource ID"
           }
         ],
         "responses": {
@@ -1151,7 +1069,7 @@
             "description": "Permission denied"
           },
           "404": {
-            "description": "Target not found",
+            "description": "Resource not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1159,7 +1077,7 @@
                   "properties": {
                     "error": {
                       "type": "string",
-                      "example": "Target not found"
+                      "example": "Resource not found"
                     }
                   },
                   "required": ["error"]
@@ -1170,11 +1088,11 @@
         }
       },
       "patch": {
-        "summary": "Update a target",
-        "operationId": "updateTarget",
+        "summary": "Update a resource",
+        "operationId": "updateResource",
         "parameters": [
           {
-            "name": "targetId",
+            "name": "resourceId",
             "in": "path",
             "required": true,
             "schema": {
@@ -1246,7 +1164,7 @@
         },
         "responses": {
           "200": {
-            "description": "Target updated successfully",
+            "description": "Resource updated successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1302,7 +1220,7 @@
             "description": "Permission denied"
           },
           "404": {
-            "description": "Target not found",
+            "description": "Resource not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1320,22 +1238,22 @@
         }
       },
       "delete": {
-        "summary": "Delete a target",
-        "operationId": "deleteTarget",
+        "summary": "Delete a resource",
+        "operationId": "deleteResource",
         "parameters": [
           {
-            "name": "targetId",
+            "name": "resourceId",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "The target ID"
+            "description": "The resource ID"
           }
         ],
         "responses": {
           "200": {
-            "description": "Target deleted successfully",
+            "description": "Resource deleted successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1357,7 +1275,7 @@
             "description": "Permission denied"
           },
           "404": {
-            "description": "Target not found",
+            "description": "Resource not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1375,23 +1293,23 @@
         }
       }
     },
-    "/v1/targets": {
+    "/v1/resources": {
       "post": {
-        "summary": "Create or update multiple targets",
-        "operationId": "upsertTargets",
+        "summary": "Create or update multiple resources",
+        "operationId": "upsertResources",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "targets"],
+                "required": ["workspaceId", "resources"],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
                     "format": "uuid"
                   },
-                  "targets": {
+                  "resources": {
                     "type": "array",
                     "items": {
                       "type": "object",
@@ -1462,7 +1380,101 @@
         },
         "responses": {
           "200": {
-            "description": "All of the cats"
+            "description": "All of the cats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/target-providers/{providerId}/set": {
+      "patch": {
+        "summary": "Sets the target for a provider.",
+        "operationId": "setTargetProvidersTargets",
+        "parameters": [
+          {
+            "name": "providerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "UUID of the scanner"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["targets"],
+                "properties": {
+                  "targets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "identifier": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        },
+                        "kind": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "metadata": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "identifier",
+                        "name",
+                        "version",
+                        "kind",
+                        "config",
+                        "metadata"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successfully updated the deployment target"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "Deployment target not found"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }

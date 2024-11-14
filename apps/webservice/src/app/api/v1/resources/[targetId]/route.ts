@@ -17,12 +17,12 @@ export const GET = request()
     authz(({ can, extra }) => {
       return can
         .perform(Permission.ResourceGet)
-        .on({ type: "resource", id: extra.params.targetId });
+        .on({ type: "resource", id: extra.params.resourceId });
     }),
   )
-  .handle(async ({ db }, { params }: { params: { targetId: string } }) => {
+  .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
     const data = await db.query.resource.findFirst({
-      where: eq(schema.resource.id, params.targetId),
+      where: eq(schema.resource.id, params.resourceId),
       with: {
         metadata: true,
         variables: true,
@@ -31,12 +31,15 @@ export const GET = request()
     });
 
     if (data == null)
-      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Resource not found" },
+        { status: 404 },
+      );
 
-    const { metadata, ...target } = data;
+    const { metadata, ...resource } = data;
 
     return NextResponse.json({
-      ...target,
+      ...resource,
       metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
     });
   });
@@ -71,16 +74,19 @@ export const PATCH = request()
   .use(parseBody(patchSchema))
   .handle<
     { body: z.infer<typeof patchSchema> },
-    { params: { targetId: string } }
+    { params: { resourceId: string } }
   >(async ({ db, body }, { params }) => {
-    const target = await db.query.resource.findFirst({
-      where: eq(schema.resource.id, params.targetId),
+    const resource = await db.query.resource.findFirst({
+      where: eq(schema.resource.id, params.resourceId),
     });
 
-    if (target == null)
-      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+    if (resource == null)
+      return NextResponse.json(
+        { error: "Resource not found" },
+        { status: 404 },
+      );
 
-    const t = await upsertResources(db, [_.merge(target, body)]);
+    const t = await upsertResources(db, [_.merge(resource, body)]);
 
     return NextResponse.json(t[0]);
   });
@@ -91,20 +97,23 @@ export const DELETE = request()
     authz(({ can, extra }) =>
       can
         .perform(Permission.ResourceDelete)
-        .on({ type: "resource", id: extra.params.targetId }),
+        .on({ type: "resource", id: extra.params.resourceId }),
     ),
   )
-  .handle(async ({ db }, { params }: { params: { targetId: string } }) => {
-    const target = await db.query.resource.findFirst({
-      where: eq(schema.resource.id, params.targetId),
+  .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
+    const resource = await db.query.resource.findFirst({
+      where: eq(schema.resource.id, params.resourceId),
     });
 
-    if (target == null)
-      return NextResponse.json({ error: "Target not found" }, { status: 404 });
+    if (resource == null)
+      return NextResponse.json(
+        { error: "Resource not found" },
+        { status: 404 },
+      );
 
     await db
       .delete(schema.resource)
-      .where(eq(schema.resource.id, params.targetId));
+      .where(eq(schema.resource.id, params.resourceId));
 
     return NextResponse.json({ success: true });
   });

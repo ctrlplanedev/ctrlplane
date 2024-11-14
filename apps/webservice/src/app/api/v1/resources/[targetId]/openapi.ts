@@ -7,19 +7,19 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/targets/{targetId}": {
+    "/v1/resources/{resourceId}": {
       get: {
-        summary: "Get a target",
-        operationId: "getTarget",
+        summary: "Get a resource",
+        operationId: "getResource",
         parameters: [
           {
-            name: "targetId",
+            name: "resourceId",
             in: "path",
             required: true,
             schema: {
               type: "string",
             },
-            description: "The target ID",
+            description: "The resource ID",
           },
         ],
         responses: {
@@ -125,7 +125,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "Permission denied",
           },
           "404": {
-            description: "Target not found",
+            description: "Resource not found",
             content: {
               "application/json": {
                 schema: {
@@ -133,7 +133,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   properties: {
                     error: {
                       type: "string",
-                      example: "Target not found",
+                      example: "Resource not found",
                     },
                   },
                   required: ["error"],
@@ -144,11 +144,11 @@ export const openapi: Swagger.SwaggerV3 = {
         },
       },
       patch: {
-        summary: "Update a target",
-        operationId: "updateTarget",
+        summary: "Update a resource",
+        operationId: "updateResource",
         parameters: [
           {
-            name: "targetId",
+            name: "resourceId",
             in: "path",
             required: true,
             schema: {
@@ -214,7 +214,7 @@ export const openapi: Swagger.SwaggerV3 = {
         },
         responses: {
           "200": {
-            description: "Target updated successfully",
+            description: "Resource updated successfully",
             content: {
               "application/json": {
                 schema: {
@@ -270,7 +270,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "Permission denied",
           },
           "404": {
-            description: "Target not found",
+            description: "Resource not found",
             content: {
               "application/json": {
                 schema: {
@@ -288,22 +288,22 @@ export const openapi: Swagger.SwaggerV3 = {
         },
       },
       delete: {
-        summary: "Delete a target",
-        operationId: "deleteTarget",
+        summary: "Delete a resource",
+        operationId: "deleteResource",
         parameters: [
           {
-            name: "targetId",
+            name: "resourceId",
             in: "path",
             required: true,
             schema: {
               type: "string",
             },
-            description: "The target ID",
+            description: "The resource ID",
           },
         ],
         responses: {
           "200": {
-            description: "Target deleted successfully",
+            description: "Resource deleted successfully",
             content: {
               "application/json": {
                 schema: {
@@ -325,7 +325,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "Permission denied",
           },
           "404": {
-            description: "Target not found",
+            description: "Resource not found",
             content: {
               "application/json": {
                 schema: {

@@ -7,23 +7,23 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/targets": {
+    "/v1/resources": {
       post: {
-        summary: "Create or update multiple targets",
-        operationId: "upsertTargets",
+        summary: "Create or update multiple resources",
+        operationId: "upsertResources",
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
                 type: "object",
-                required: ["workspaceId", "targets"],
+                required: ["workspaceId", "resources"],
                 properties: {
                   workspaceId: {
                     type: "string",
                     format: "uuid",
                   },
-                  targets: {
+                  resources: {
                     type: "array",
                     items: {
                       type: "object",
@@ -89,6 +89,16 @@ export const openapi: Swagger.SwaggerV3 = {
         responses: {
           200: {
             description: "All of the cats",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    count: { type: "number" },
+                  },
+                },
+              },
+            },
           },
         },
       },
