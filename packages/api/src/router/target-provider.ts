@@ -15,7 +15,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { targetScanQueue } from "../dispatch";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const targetProviderRouter = createTRPCRouter({
+export const resourceProviderRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -70,7 +70,7 @@ export const targetProviderRouter = createTRPCRouter({
       return providers.map((provider) => ({
         ...provider.resource_provider,
         googleConfig: provider.resource_provider_google,
-        targetCount:
+        resourceCount:
           providerCounts.find(
             (pc) => pc.providerId === provider.resource_provider.id,
           )?.count ?? 0,
@@ -155,7 +155,7 @@ export const targetProviderRouter = createTRPCRouter({
       update: protectedProcedure
         .input(
           z.object({
-            targetProviderId: z.string().uuid(),
+            resourceProviderId: z.string().uuid(),
             name: z.string().optional(),
             config: updateResourceProviderGoogle.omit({
               resourceProviderId: true,
@@ -169,7 +169,7 @@ export const targetProviderRouter = createTRPCRouter({
               await db
                 .update(resourceProvider)
                 .set({ name: input.name })
-                .where(eq(resourceProvider.id, input.targetProviderId))
+                .where(eq(resourceProvider.id, input.resourceProviderId))
                 .returning()
                 .then(takeFirst);
 
@@ -179,17 +179,17 @@ export const targetProviderRouter = createTRPCRouter({
               .where(
                 eq(
                   resourceProviderGoogle.resourceProviderId,
-                  input.targetProviderId,
+                  input.resourceProviderId,
                 ),
               )
               .returning()
               .then(takeFirst);
 
             if (input.repeatSeconds != null) {
-              await targetScanQueue.remove(input.targetProviderId);
+              await targetScanQueue.remove(input.resourceProviderId);
               await targetScanQueue.add(
-                input.targetProviderId,
-                { targetProviderId: input.targetProviderId },
+                input.resourceProviderId,
+                { targetProviderId: input.resourceProviderId },
                 {
                   repeat: {
                     every: input.repeatSeconds * 1000,
@@ -200,8 +200,8 @@ export const targetProviderRouter = createTRPCRouter({
               return;
             }
 
-            await targetScanQueue.add(input.targetProviderId, {
-              targetProviderId: input.targetProviderId,
+            await targetScanQueue.add(input.resourceProviderId, {
+              targetProviderId: input.resourceProviderId,
             });
           });
         }),
@@ -217,12 +217,12 @@ export const targetProviderRouter = createTRPCRouter({
     .input(
       z.object({
         providerId: z.string().uuid(),
-        deleteTargets: z.boolean().optional().default(false),
+        deleteResources: z.boolean().optional().default(false),
       }),
     )
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
-        if (input.deleteTargets)
+        if (input.deleteResources)
           await tx
             .delete(resource)
             .where(eq(resource.providerId, input.providerId));

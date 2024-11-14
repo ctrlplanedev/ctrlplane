@@ -46,10 +46,10 @@ export const ProviderActionsDropdown: React.FC<{
   const sync = api.target.provider.managed.sync.useMutation();
   const router = useRouter();
 
-  const handleDelete = async (deleteTargets: boolean) => {
+  const handleDelete = async (deleteResources: boolean) => {
     await deleteProvider.mutateAsync({
       providerId: provider.id,
-      deleteTargets,
+      deleteResources,
     });
     router.refresh();
   };

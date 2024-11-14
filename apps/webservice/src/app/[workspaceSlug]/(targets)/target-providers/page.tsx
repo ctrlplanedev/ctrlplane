@@ -101,8 +101,8 @@ export default async function TargetProvidersPage({
                       className="flex h-6 items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
                     >
                       <IconExternalLink className="h-4 w-4" />
-                      {provider.targetCount}{" "}
-                      {provider.targetCount === 1 ? "target" : "targets"}
+                      {provider.resourceCount}{" "}
+                      {provider.resourceCount === 1 ? "resource" : "resources"}
                     </Badge>
                   </div>
                 </Link>

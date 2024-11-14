@@ -70,7 +70,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
     if (workspace.data == null) return;
     await update.mutateAsync({
       ...data,
-      targetProviderId: providerId,
+      resourceProviderId: providerId,
       config: {
         projectIds: data.projectIds.map((p) => p.value),
         importGke: data.importGke,

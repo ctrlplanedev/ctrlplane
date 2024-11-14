@@ -31,7 +31,7 @@ import { resourceCondition } from "@ctrlplane/validators/targets";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceMetadataGroupRouter } from "./target-metadata-group";
-import { targetProviderRouter } from "./target-provider";
+import { resourceProviderRouter } from "./target-provider";
 
 const targetRelations = createTRPCRouter({
   hierarchy: protectedProcedure
@@ -305,7 +305,7 @@ const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
 
 export const targetRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
-  provider: targetProviderRouter,
+  provider: resourceProviderRouter,
   relations: targetRelations,
   view: targetViews,
   variable: targetVariables,
