@@ -1,4 +1,4 @@
-import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/targets";
+import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 import type { ClusterManagerClient } from "@google-cloud/container";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import type { AuthClient } from "google-auth-library";

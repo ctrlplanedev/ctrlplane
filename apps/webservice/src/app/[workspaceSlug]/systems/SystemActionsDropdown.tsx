@@ -1,7 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -19,7 +19,7 @@ import {
 import {
   ResourceFilterType,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { DeleteSystemDialog } from "./[systemSlug]/_components/DeleteSystemDialog";
 import { EditSystemDialog } from "./[systemSlug]/_components/EditSystemDialog";

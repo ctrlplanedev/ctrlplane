@@ -16,7 +16,7 @@ import {
   defaultCondition,
   isValidTargetCondition,
   resourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { TargetConditionRender } from "./TargetConditionRender";
 

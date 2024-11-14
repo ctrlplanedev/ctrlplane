@@ -2,7 +2,7 @@ import type { Deployment } from "@ctrlplane/db/schema";
 import type {
   ComparisonCondition,
   ResourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 import React from "react";
 import { notFound } from "next/navigation";
 import LZString from "lz-string";
@@ -12,7 +12,7 @@ import { Card } from "@ctrlplane/ui/card";
 import {
   ResourceFilterType,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/server";
 import { EditDeploymentSection } from "./EditDeploymentSection";

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
@@ -26,7 +26,7 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   defaultCondition,
   isEmptyCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
 import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";

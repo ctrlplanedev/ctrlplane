@@ -45,7 +45,7 @@ import {
   defaultCondition,
   isValidTargetCondition,
   resourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
 import { TargetConditionRender } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionRender";

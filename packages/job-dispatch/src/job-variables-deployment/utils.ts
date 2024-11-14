@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";

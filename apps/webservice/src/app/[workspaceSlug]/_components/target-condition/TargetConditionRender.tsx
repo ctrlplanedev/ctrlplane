@@ -1,4 +1,4 @@
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 
 import {
@@ -8,7 +8,7 @@ import {
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";

@@ -1,4 +1,4 @@
-import type { ProviderCondition } from "@ctrlplane/validators/targets";
+import type { ProviderCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";

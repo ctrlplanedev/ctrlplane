@@ -1,4 +1,4 @@
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
 export type TargetConditionRenderProps<T extends ResourceCondition> = {
   condition: T;

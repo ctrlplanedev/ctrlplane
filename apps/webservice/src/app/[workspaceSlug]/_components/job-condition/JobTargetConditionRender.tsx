@@ -1,5 +1,5 @@
 import type { JobTargetCondition } from "@ctrlplane/validators/jobs";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { IconLoader2, IconSelector } from "@tabler/icons-react";
@@ -23,7 +23,7 @@ import {
 import {
   ResourceFilterType,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { JobConditionRenderProps } from "./job-condition-props";
 import { api } from "~/trpc/react";

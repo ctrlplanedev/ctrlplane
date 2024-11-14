@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -18,7 +18,7 @@ import {
   defaultCondition,
   isValidTargetCondition,
   MAX_DEPTH_ALLOWED,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { TargetViewFormSchema } from "./TargetViewForm";
 import { api } from "~/trpc/react";

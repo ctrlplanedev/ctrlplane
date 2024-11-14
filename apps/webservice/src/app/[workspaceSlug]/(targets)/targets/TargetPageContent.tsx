@@ -1,7 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 import { IconDots, IconFilter, IconLoader2 } from "@tabler/icons-react";
 import range from "lodash/range";
@@ -12,7 +12,7 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   defaultCondition,
   isEmptyCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { NoFilterMatch } from "~/app/[workspaceSlug]/_components/filter/NoFilterMatch";
 import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";

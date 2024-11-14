@@ -27,7 +27,7 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
-import { resourceCondition } from "@ctrlplane/validators/targets";
+import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceMetadataGroupRouter } from "./target-metadata-group";

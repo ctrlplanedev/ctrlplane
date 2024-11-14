@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { resourceCondition } from "../targets/index.js";
+import { resourceCondition } from "../resources/index.js";
 
 export const ChoiceVariableConfig = z.object({
   type: z.literal("choice"),

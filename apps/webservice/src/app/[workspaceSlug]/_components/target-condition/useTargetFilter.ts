@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";

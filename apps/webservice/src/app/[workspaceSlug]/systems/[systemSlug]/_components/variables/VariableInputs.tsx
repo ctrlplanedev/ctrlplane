@@ -1,4 +1,4 @@
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type {
   ChoiceVariableConfigType,
   StringVariableConfigType,
@@ -28,7 +28,7 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   ResourceFilterType,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 

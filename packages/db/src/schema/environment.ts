@@ -1,4 +1,4 @@
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
@@ -18,7 +18,7 @@ import { z } from "zod";
 import {
   isValidTargetCondition,
   resourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";

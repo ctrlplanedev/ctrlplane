@@ -1,7 +1,7 @@
 import type {
   ComparisonCondition,
   ResourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 import { notFound } from "next/navigation";
 import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
@@ -9,7 +9,7 @@ import { isPresent } from "ts-is-present";
 import {
   ResourceFilterType,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/server";
 import { VariableTable } from "./VariableTable";

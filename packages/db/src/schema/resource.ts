@@ -2,7 +2,7 @@ import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type {
   IdentifierCondition,
   ResourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
 import {
@@ -28,7 +28,7 @@ import {
 import {
   resourceCondition,
   ResourceFilterType,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
 import { resourceProvider } from "./resource-provider.js";

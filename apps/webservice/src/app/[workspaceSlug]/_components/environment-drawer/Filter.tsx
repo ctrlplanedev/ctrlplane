@@ -1,5 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -38,7 +38,7 @@ import {
   defaultCondition,
   isComparisonCondition,
   resourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 import { TargetConditionRender } from "../target-condition/TargetConditionRender";

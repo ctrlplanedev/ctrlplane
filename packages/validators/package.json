@@ -8,9 +8,9 @@
       "types": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./targets": {
-      "types": "./src/targets/index.ts",
-      "default": "./dist/targets/index.js"
+    "./resources": {
+      "types": "./src/resources/index.ts",
+      "default": "./dist/resources/index.js"
     },
     "./releases": {
       "types": "./src/releases/index.ts",

@@ -1,4 +1,4 @@
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { ResourceFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/server";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";

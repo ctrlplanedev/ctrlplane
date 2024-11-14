@@ -1,7 +1,7 @@
 import type {
   ComparisonCondition,
   ResourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 import {
   IconChevronDown,
   IconCopy,
@@ -36,7 +36,7 @@ import {
   isComparisonCondition,
   ResourceFilterType,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { TargetConditionRender } from "./TargetConditionRender";

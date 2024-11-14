@@ -1,5 +1,5 @@
 import type { ColumnOperatorType } from "@ctrlplane/validators/conditions";
-import type { IdentifierCondition } from "@ctrlplane/validators/targets";
+import type { IdentifierCondition } from "@ctrlplane/validators/resources";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { ColumnConditionRender } from "../filter/ColumnConditionRender";

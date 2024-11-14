@@ -1,4 +1,4 @@
-import type { ResourceCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { VariableConfigType } from "@ctrlplane/validators/variables";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
@@ -14,7 +14,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { resourceCondition } from "@ctrlplane/validators/targets";
+import { resourceCondition } from "@ctrlplane/validators/resources";
 import { VariableConfig } from "@ctrlplane/validators/variables";
 
 import { deployment } from "./deployment.js";

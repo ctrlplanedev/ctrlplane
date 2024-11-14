@@ -6,7 +6,7 @@ import type {
   NameCondition,
   ProviderCondition,
   ResourceCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 import React from "react";
 import _ from "lodash";
 
@@ -25,7 +25,7 @@ import {
   isNameCondition,
   isProviderCondition,
   ResourceOperator,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 
