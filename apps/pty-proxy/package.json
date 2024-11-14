@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "clean": "rm -rf .turbo node_modules",
     "dev:t": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",

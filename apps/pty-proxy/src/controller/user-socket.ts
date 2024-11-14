@@ -1,4 +1,3 @@
-import type { SessionOutput } from "@ctrlplane/validators/session";
 import type { IncomingMessage } from "node:http";
 import type WebSocket from "ws";
 import { createSessionSocket } from "@/sessions";
@@ -63,7 +62,7 @@ export class UserSocket {
 
           logger.info("Found agent for session create", {
             targetId: data.targetId,
-            agentName: agent.target.name,
+            agentName: agent.resource.name,
           });
 
           createSessionSocket(data.sessionId);
@@ -89,9 +88,5 @@ export class UserSocket {
         })
         .handle(),
     );
-  }
-
-  send(data: SessionOutput) {
-    return this.socket.send(JSON.stringify(data));
   }
 }
