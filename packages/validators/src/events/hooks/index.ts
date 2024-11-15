@@ -13,3 +13,9 @@ export const isTargetRemoved = (event: HookEvent): event is TargetRemoved =>
   event.action === "deployment.target.removed";
 export const isTargetDeleted = (event: HookEvent): event is TargetDeleted =>
   event.action === "deployment.target.deleted";
+
+// action
+export const hookActionsList = hookEvent.options.map(
+  (schema) => schema.shape.action.value,
+);
+export const hookActions = z.enum(hookActionsList as [string, ...string[]]);

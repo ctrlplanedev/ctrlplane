@@ -92,6 +92,12 @@ export enum Permission {
   RunbookGet = "runbook.get",
   RunbookList = "runbook.list",
   RunbookUpdate = "runbook.update",
+
+  HookCreate = "hook.create",
+  HookGet = "hook.get",
+  HookList = "hook.list",
+  HookUpdate = "hook.update",
+  HookDelete = "hook.delete",
 }
 
 export const permission = z.nativeEnum(Permission);
