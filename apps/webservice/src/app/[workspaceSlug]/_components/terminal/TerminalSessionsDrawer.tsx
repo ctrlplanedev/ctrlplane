@@ -29,7 +29,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   const target = api.resource.byId.useQuery(targetId);
   const { resizeSession } = useTerminalSessions();
   const { getWebSocket, readyState } = useWebSocket(
-    `/api/v1/target/proxy/session/${sessionId}`,
+    `/api/v1/resources/proxy/session/${sessionId}`,
     { shouldReconnect: () => true },
   );
   const connectionStatus = {
@@ -111,7 +111,7 @@ const TerminalSessionsContent: React.FC = () => {
   );
 };
 
-export const TerminalDrawer: React.FC = () => {
+const TerminalDrawer: React.FC = () => {
   const { height, handleMouseDown } = useResizableHeight(
     DEFAULT_HEIGHT,
     MIN_HEIGHT,
@@ -135,3 +135,5 @@ export const TerminalDrawer: React.FC = () => {
     document.body,
   );
 };
+
+export default TerminalDrawer;

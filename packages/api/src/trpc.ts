@@ -94,7 +94,7 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
   }
 
   if (durationMs > 100) {
-    logger.error(message, meta);
+    logger.warn(message, meta);
     return result;
   }
 

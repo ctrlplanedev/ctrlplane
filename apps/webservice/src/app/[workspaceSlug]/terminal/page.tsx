@@ -14,7 +14,7 @@ const Terminal = dynamic(
 );
 export default function TermPage() {
   const { sendJsonMessage, readyState } = useWebSocket(
-    "/api/v1/target/proxy/controller",
+    "/api/v1/resources/proxy/controller",
   );
   const [targetId] = useState("f8610471-5077-4fb3-8c93-f82f7301bb2f");
 

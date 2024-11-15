@@ -11,6 +11,7 @@ import {
   IconLock,
   IconLockOpen,
   IconPackage,
+  IconTerminal,
   IconTopologyStar3,
   IconVariable,
 } from "@tabler/icons-react";
@@ -22,6 +23,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { api } from "~/trpc/react";
 import { EditTargetDialog } from "../EditTarget";
 import { TabButton } from "../TabButton";
+import { useTerminalSessions } from "../terminal/TerminalSessionsProvider";
 import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
@@ -56,6 +58,8 @@ export const TargetDrawer: React.FC = () => {
           string
         >)
       : null;
+
+  const { createSession, setIsDrawerOpen } = useTerminalSessions();
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -92,7 +96,7 @@ export const TargetDrawer: React.FC = () => {
                         className: "gap-1",
                       })}
                     >
-                      <IconExternalLink className="h-4 w-4" />
+                      <IconExternalLink className="h-3 w-3" />
                       {label}
                     </Link>
                   ))}
@@ -111,14 +115,29 @@ export const TargetDrawer: React.FC = () => {
               >
                 {target.lockedAt != null ? (
                   <>
-                    <IconLockOpen className="h-4 w-4" /> Unlock
+                    <IconLockOpen className="h-3 w-3" /> Unlock
                   </>
                 ) : (
                   <>
-                    <IconLock className="h-4 w-4" /> Lock
+                    <IconLock className="h-3 w-3" /> Lock
                   </>
                 )}
               </Button>
+
+              {target.kind === "AccessNode" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => {
+                    createSession(target.id);
+                    setIsDrawerOpen(true);
+                    removeTargetId();
+                  }}
+                >
+                  <IconTerminal className="h-3 w-3" /> Connect
+                </Button>
+              )}
 
               {target.provider == null && (
                 <EditTargetDialog

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect } from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
@@ -8,7 +10,7 @@ export const SessionTerminal: React.FC<{ sessionId: string }> = ({
 }) => {
   console.log(sessionId);
   const { getWebSocket, readyState } = useWebSocket(
-    `/api/v1/target/proxy/session/${sessionId}`,
+    `/api/v1/resources/proxy/session/${sessionId}`,
   );
 
   const { terminalRef, divRef, fitAddon } = useSessionTerminal(

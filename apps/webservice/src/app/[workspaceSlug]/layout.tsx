@@ -15,10 +15,7 @@ import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSet
 import { SidebarPanels } from "./SidebarPanels";
 
 const TerminalDrawer = dynamic(
-  () =>
-    import("./_components/terminal/TerminalSessionsDrawer").then(
-      (t) => t.TerminalDrawer,
-    ),
+  () => import("./_components/terminal/TerminalSessionsDrawer"),
   { ssr: false },
 );
 

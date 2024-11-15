@@ -46,7 +46,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
       filter: {
         type: "kind",
         operator: "equals",
-        value: "TargetSession",
+        value: "AccessNode",
       },
     },
     { enabled: workspace.data != null },
