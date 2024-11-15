@@ -7,7 +7,7 @@ export * from "./policy-create.js";
 export * from "./release-sequencing.js";
 export * from "./gradual-rollout.js";
 export * from "./new-resource.js";
-export * from "./target.js";
+export * from "./resource.js";
 export * from "./lock-checker.js";
 export * from "./queue.js";
 

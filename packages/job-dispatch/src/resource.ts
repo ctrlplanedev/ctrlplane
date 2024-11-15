@@ -206,14 +206,14 @@ const upsertResourceMetadata = async (
       });
 };
 
+export type ResourceToInsert = InsertResource & {
+  metadata?: Record<string, string>;
+  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+};
+
 export const upsertResources = async (
   tx: Tx,
-  resourcesToInsert: Array<
-    InsertResource & {
-      metadata?: Record<string, string>;
-      variables?: Array<{ key: string; value: any; sensitive: boolean }>;
-    }
-  >,
+  resourcesToInsert: ResourceToInsert[],
 ) => {
   try {
     // Get existing resources from the database, grouped by providerId.

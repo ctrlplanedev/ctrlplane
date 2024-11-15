@@ -1,6 +1,5 @@
-import type { InsertResource, Resource } from "@ctrlplane/db/schema";
+import type { ResourceToInsert } from "@ctrlplane/job-dispatch";
 import type {
-  AgentHeartbeat,
   SessionCreate,
   SessionDelete,
   SessionResize,
@@ -9,19 +8,21 @@ import type { IncomingMessage } from "http";
 import type WebSocket from "ws";
 import type { MessageEvent } from "ws";
 
+import { can, getUser } from "@ctrlplane/auth/utils";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
+import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
 
 import { ifMessage } from "./utils.js";
 
 export class AgentSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {
-    const agentName = request.headers["x-agent-name"]?.toString();
-    if (agentName == null) {
+    const name = request.headers["x-agent-name"]?.toString();
+    if (name == null) {
       logger.warn("Agent connection rejected - missing agent name");
       return null;
     }
@@ -42,48 +43,81 @@ export class AgentSocket {
       where: eq(schema.workspace.slug, workspaceSlug),
     });
     if (workspace == null) {
-      logger.error("Agent connection rejected - workspace not found");
+      logger.error("Agent connection rejected - workspace not found", {
+        workspaceSlug,
+      });
       return null;
     }
 
-    const resourceInfo: InsertResource = {
-      name: agentName,
-      version: "ctrlplane/v1",
-      kind: "TargetSession",
-      identifier: `ctrlplane/target-agent/${agentName}`,
-      workspaceId: workspace.id,
-    };
-    const [resource] = await upsertResources(db, [resourceInfo]);
-    if (resource == null) return null;
-    return new AgentSocket(socket, request, resource);
+    const user = await getUser(apiKey);
+    if (user == null) {
+      logger.error("Agent connection rejected - invalid API key", { apiKey });
+      throw new Error("Invalid API key.");
+    }
+
+    const hasAccess = await can()
+      .user(user.id)
+      .perform(Permission.ResourceCreate)
+      .on({ type: "workspace", id: workspace.id });
+
+    if (!hasAccess) {
+      logger.error(
+        `Agent connection rejected - user (${user.email}) does not have access ` +
+          `to create resources in workspace (${workspace.slug})`,
+        { user, workspace },
+      );
+      throw new Error("User does not have access.");
+    }
+
+    return new AgentSocket(socket, name, workspace.id);
   }
+
+  private resource: ResourceToInsert | null = null;
 
   private constructor(
     private readonly socket: WebSocket,
-    private readonly _: IncomingMessage,
-    public readonly resource: Resource,
+    private readonly name: string,
+    private readonly workspaceId: string,
   ) {
-    this.resource = resource;
     this.socket.on(
       "message",
       ifMessage()
-        .is(agentConnect, async (data) => {
-          await upsertResources(db, [
-            {
-              ...this.resource,
-              config: data.config,
-              metadata: data.metadata,
-              version: "ctrlplane/v1",
+        .is(agentConnect, (data) =>
+          this.updateResource({
+            config: data.config,
+            metadata: data.metadata,
+          }),
+        )
+        .is(agentHeartbeat, () =>
+          this.updateResource({
+            metadata: {
+              ...(this.resource?.metadata ?? {}),
+              ["last-heartbeat"]: new Date().toISOString(),
             },
-          ]);
-        })
-        .is(agentHeartbeat, (data) => this.updateStatus(data))
+          }),
+        )
         .handle(),
     );
   }
 
-  private updateStatus(data: AgentHeartbeat) {
-    console.log("status", data.timestamp);
+  async updateResource(
+    resource: Omit<
+      Partial<ResourceToInsert>,
+      "name" | "version" | "kind" | "identifier" | "workspaceId"
+    >,
+  ) {
+    const [res] = await upsertResources(db, [
+      {
+        ...resource,
+        name: this.name,
+        version: "ctrlplane.access/v1",
+        kind: "AccessNode",
+        identifier: `ctrlplane/access/access-node/${this.name}`,
+        workspaceId: this.workspaceId,
+      },
+    ]);
+    if (res == null) throw new Error("Failed to create resource");
+    this.resource = res;
   }
 
   createSession(session: SessionCreate) {
