@@ -14,9 +14,9 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
   if (agent != null) {
     logger.info("Agent connected");
     if (agent.resource?.id == null) {
-      logger.error("Agent resource id is null");
-      ws.close();
-      throw new Error("Agent resource id is null");
+      logger.error("Agent resource ID is null");
+      ws.close(1008, "Agent resource ID is null");
+      throw new Error("Agent resource ID is null");
     }
 
     agents.set(agent.resource.id, agent);
@@ -32,8 +32,9 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
     return;
   }
 
-  logger.warn("Connection rejected - neither agent nor user");
-  ws.close();
+  const msg = "Neither agent nor user";
+  logger.warn(msg);
+  ws.close(1008, msg);
 };
 
 const wss = new WebSocketServer({ noServer: true });
