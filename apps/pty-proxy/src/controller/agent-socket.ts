@@ -12,11 +12,12 @@ import { can, getUser } from "@ctrlplane/auth/utils";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { deleteResources, upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
 
+import { agents } from "./sockets.js";
 import { ifMessage } from "./utils.js";
 
 export class AgentSocket {
@@ -84,14 +85,16 @@ export class AgentSocket {
     this.socket.on(
       "message",
       ifMessage()
-        .is(agentConnect, (data) =>
+        .is(agentConnect, (data) => {
           this.updateResource({
+            updatedAt: new Date(),
             config: data.config,
             metadata: data.metadata,
-          }),
-        )
+          });
+        })
         .is(agentHeartbeat, () =>
           this.updateResource({
+            updatedAt: new Date(),
             metadata: {
               ...(this.resource?.metadata ?? {}),
               ["last-heartbeat"]: new Date().toISOString(),
@@ -100,6 +103,14 @@ export class AgentSocket {
         )
         .handle(),
     );
+
+    this.socket.on("close", () => {
+      logger.info("Agent disconnected", { agentName: this.name });
+      if (this.resource?.id == null) return;
+
+      agents.delete(this.resource.id);
+      deleteResources(db, [this.resource.id]);
+    });
   }
 
   async updateResource(

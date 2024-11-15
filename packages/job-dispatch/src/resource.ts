@@ -320,18 +320,13 @@ export const upsertResources = async (
     );
 
     if (resourcesToDelete.length > 0) {
-      await tx
-        .delete(resource)
-        .where(
-          inArray(
-            resource.id,
-            resourcesToDelete.map((r) => r.id),
-          ),
-        )
-        .catch((err) => {
-          log.error("Error deleting resources", { error: err });
-          throw err;
-        });
+      await deleteResources(
+        tx,
+        resourcesToDelete.map((r) => r.id),
+      ).catch((err) => {
+        log.error("Error deleting resources", { error: err });
+        throw err;
+      });
 
       log.info(`Deleted ${resourcesToDelete.length} resources`, {
         resourcesToDelete,
@@ -343,4 +338,14 @@ export const upsertResources = async (
     log.error("Error upserting resources", { error: err });
     throw err;
   }
+};
+
+/**
+ * Delete resources from the database.
+ *
+ * @param tx - The transaction to use.
+ * @param resourceIds - The ids of the resources to delete.
+ */
+export const deleteResources = async (tx: Tx, resourceIds: string[]) => {
+  await tx.delete(resource).where(inArray(resource.id, resourceIds));
 };
