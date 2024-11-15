@@ -1,8 +1,10 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { runhook } from "./event.js";
 import { jobAgent } from "./job-agent.js";
 import { job } from "./job.js";
 import { system } from "./system.js";
@@ -31,6 +33,10 @@ const runbookInsert = createInsertSchema(runbook, {
 export const createRunbook = runbookInsert;
 export const updateRunbook = runbookInsert.partial();
 export type Runbook = InferSelectModel<typeof runbook>;
+
+export const runbookRelations = relations(runbook, ({ many }) => ({
+  runhooks: many(runhook),
+}));
 
 export const runbookJobTrigger = pgTable(
   "runbook_job_trigger",

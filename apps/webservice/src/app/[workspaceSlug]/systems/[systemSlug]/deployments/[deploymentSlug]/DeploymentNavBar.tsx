@@ -54,16 +54,19 @@ export const DeploymentNavBar: React.FC<DeploymentNavBarProps> = ({
   const variablesUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/variables`;
   const releaseChannelsUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/release-channels`;
   const overviewUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`;
+  const hooksUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/hooks`;
 
   const isReleasesActive = pathname.includes("/releases");
   const isVariablesActive = pathname.includes("/variables");
   const isJobsActive = pathname.includes("/jobs");
   const isReleaseChannelsActive = pathname.includes("/release-channels");
+  const isHooksActive = pathname.includes("/hooks");
   const isSettingsActive =
     !isReleasesActive &&
     !isVariablesActive &&
     !isJobsActive &&
-    !isReleaseChannelsActive;
+    !isReleaseChannelsActive &&
+    !isHooksActive;
 
   return (
     <div className="flex items-center justify-between border-b p-2">
@@ -113,6 +116,16 @@ export const DeploymentNavBar: React.FC<DeploymentNavBarProps> = ({
                   active={isJobsActive}
                 >
                   Jobs
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+            <NavigationMenuItem>
+              <Link href={hooksUrl} legacyBehavior passHref>
+                <NavigationMenuLink
+                  className="group inline-flex h-9 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent/50 hover:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50"
+                  active={isHooksActive}
+                >
+                  Hooks
                 </NavigationMenuLink>
               </Link>
             </NavigationMenuItem>
