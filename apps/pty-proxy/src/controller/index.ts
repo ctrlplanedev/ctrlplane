@@ -12,10 +12,13 @@ import { UserSocket } from "./user-socket.js";
 const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
   const agent = await AgentSocket.from(ws, request);
   if (agent != null) {
-    logger.info("Agent connected", {
-      resourceId: agent.resource.id,
-      name: agent.resource.name,
-    });
+    logger.info("Agent connected");
+    if (agent.resource?.id == null) {
+      logger.error("Agent resource id is null");
+      ws.close();
+      throw new Error("Agent resource id is null");
+    }
+
     agents.set(agent.resource.id, agent);
     return;
   }

@@ -13,12 +13,12 @@ export const addSocket = (expressApp: Express) => {
     }
 
     const { pathname } = new URL(request.url, "ws://base.ws");
-    if (pathname.startsWith("/api/v1/target/proxy/session")) {
+    if (pathname.startsWith("/api/v1/resources/proxy/session")) {
       sessionOnUpgrade(request, socket, head);
       return;
     }
 
-    if (pathname.startsWith("/api/v1/target/proxy/controller")) {
+    if (pathname.startsWith("/api/v1/resources/proxy/controller")) {
       controllerOnUpgrade(request, socket, head);
       return;
     }

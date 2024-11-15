@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf .turbo node_modules",
-    "dev:t": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
+    "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "with-env": "dotenv -e ../../.env --"

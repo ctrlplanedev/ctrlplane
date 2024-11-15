@@ -33,18 +33,19 @@ const config = {
     ],
   },
 
-  // async rewrites() {
-  //   return [
-  //     {
-  //       source: "/api/v1/target/proxy/controller",
-  //       destination: "http://localhost:4000/api/v1/target/proxy/controller",
-  //     },
-  //     {
-  //       source: "/api/v1/target/proxy/session/:path*",
-  //       destination: "http://localhost:4000/api/v1/target/proxy/session/:path*",
-  //     },
-  //   ];
-  // },
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/resources/proxy/controller",
+        destination: "http://localhost:4000/api/v1/resources/proxy/controller",
+      },
+      {
+        source: "/api/v1/resources/proxy/session/:path*",
+        destination:
+          "http://localhost:4000/api/v1/resources/proxy/session/:path*",
+      },
+    ];
+  },
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },

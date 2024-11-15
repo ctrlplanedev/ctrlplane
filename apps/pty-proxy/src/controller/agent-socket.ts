@@ -69,10 +69,12 @@ export class AgentSocket {
       throw new Error("User does not have access.");
     }
 
-    return new AgentSocket(socket, name, workspace.id);
+    const agent = new AgentSocket(socket, name, workspace.id);
+    await agent.updateResource({});
+    return agent;
   }
 
-  private resource: ResourceToInsert | null = null;
+  resource: ResourceToInsert | null = null;
 
   private constructor(
     private readonly socket: WebSocket,
