@@ -25,6 +25,7 @@ COPY tooling/typescript/package.json ./tooling/typescript/package.json
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/validators/package.json ./packages/validators/package.json
 COPY packages/secrets/package.json ./packages/secrets/package.json
+COPY packages/auth/package.json ./packages/auth/package.json
 COPY packages/logger/package.json ./packages/logger/package.json
 COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
