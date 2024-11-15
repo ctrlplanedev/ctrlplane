@@ -28006,7 +28006,7 @@ function dist_createClient(options) {
     headers: { "x-api-key": options?.apiKey }
   });
 }
-var TargetProvider = class {
+var ResourceProvider = class {
   /**
    * Creates a new TargetProvider instance
    * @param options - Configuration options
@@ -28020,32 +28020,32 @@ var TargetProvider = class {
   }
   provider = null;
   /**
-   * Gets the target provider details, caching the result
-   * @returns The target provider details
+   * Gets the resource provider details, caching the result
+   * @returns The resource provider details
    */
   async get() {
     if (this.provider != null) {
       return this.provider;
     }
     const { data } = await this.client.GET(
-      "/v1/workspaces/{workspaceId}/target-providers/name/{name}",
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
       { params: { path: this.options } }
     );
     this.provider = data;
     return this.provider;
   }
   /**
-   * Sets the targets for this provider
-   * @param targets - Array of targets to set
+   * Sets the resources for this provider
+   * @param resources - Array of resources to set
    * @returns The API response
    * @throws Error if the scanner is not found
    */
-  async set(targets) {
+  async set(resources) {
     const scanner = await this.get();
     if (scanner == null) throw new Error("Scanner not found");
-    return this.client.PATCH("/v1/target-providers/{providerId}/set", {
+    return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
       params: { path: { providerId: scanner.id } },
-      body: { targets: uniqBy(targets, (t) => t.identifier) }
+      body: { resources: uniqBy(resources, (t) => t.identifier) }
     });
   }
 };

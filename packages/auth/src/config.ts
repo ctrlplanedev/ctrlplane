@@ -11,7 +11,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { signInSchema } from "@ctrlplane/validators/auth";
 
-import { env } from "../env";
+import { env } from "./env";
 import { getUserByCredentials } from "./utils/credentials";
 
 declare module "next-auth" {
