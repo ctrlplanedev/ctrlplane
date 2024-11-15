@@ -62,7 +62,7 @@ export class UserSocket {
 
           logger.info("Found agent for session create", {
             targetId: data.targetId,
-            agentName: agent.resource.name,
+            agentName: agent.resource?.name,
           });
 
           createSessionSocket(data.sessionId);
