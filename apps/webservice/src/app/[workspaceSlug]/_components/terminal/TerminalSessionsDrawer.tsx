@@ -43,7 +43,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   return (
     <>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        {target.data?.name} ({targetId} / {sessionId})
+        {target.data?.name}
         <div className="flex items-center gap-1 rounded-md border px-1 pr-2">
           <span
             className={cn({
