@@ -20,7 +20,7 @@ export default async function TargetsPage({
 
   const view =
     searchParams.view != null
-      ? await api.target.view.byId(searchParams.view)
+      ? await api.resource.view.byId(searchParams.view)
       : null;
 
   return <TargetPageContent workspace={workspace} view={view} />;

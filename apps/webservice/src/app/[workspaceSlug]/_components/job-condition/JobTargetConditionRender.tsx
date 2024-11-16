@@ -1,5 +1,5 @@
 import type { JobTargetCondition } from "@ctrlplane/validators/jobs";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { IconLoader2, IconSelector } from "@tabler/icons-react";
@@ -21,9 +21,9 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
+  ResourceFilterType,
+  ResourceOperator,
+} from "@ctrlplane/validators/resources";
 
 import type { JobConditionRenderProps } from "./job-condition-props";
 import { api } from "~/trpc/react";
@@ -36,7 +36,7 @@ export const JobTargetConditionRender: React.FC<
   useDebounce(() => setSearchDebounced(search), 300, [search]);
   const [open, setOpen] = useState(false);
 
-  const targetQ = api.target.byId.useQuery(condition.value);
+  const targetQ = api.resource.byId.useQuery(condition.value);
   const target = targetQ.data;
 
   const { workspaceSlug, systemSlug } = useParams<{
@@ -47,9 +47,9 @@ export const JobTargetConditionRender: React.FC<
   const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
   const workspace = workspaceQ.data;
 
-  const searchFilter: TargetCondition = {
-    type: TargetFilterType.Name,
-    operator: TargetOperator.Like,
+  const searchFilter: ResourceCondition = {
+    type: ResourceFilterType.Name,
+    operator: ResourceOperator.Like,
     value: `%${searchDebounced}%`,
   };
 
@@ -59,15 +59,16 @@ export const JobTargetConditionRender: React.FC<
   );
   const system = systemQ.data;
   const envFilters =
-    system?.environments.map((env) => env.targetFilter).filter(isPresent) ?? [];
+    system?.environments.map((env) => env.resourceFilter).filter(isPresent) ??
+    [];
 
-  const systemFilter: TargetCondition = {
+  const systemFilter: ResourceCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: envFilters,
   };
 
-  const systemTargetsFilter: TargetCondition | undefined =
+  const systemTargetsFilter: ResourceCondition | undefined =
     system != null
       ? {
           type: FilterType.Comparison,
@@ -78,7 +79,7 @@ export const JobTargetConditionRender: React.FC<
 
   const filter = systemTargetsFilter ?? searchFilter;
 
-  const targetsQ = api.target.byWorkspaceId.list.useQuery(
+  const targetsQ = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: workspace?.id ?? "", filter, limit: 8 },
     { enabled: workspace != null, placeholderData: (prev) => prev },
   );

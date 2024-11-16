@@ -1,4 +1,4 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { VariableConfigType } from "@ctrlplane/validators/variables";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { AnyPgColumn, ColumnsWithTable } from "drizzle-orm/pg-core";
@@ -14,7 +14,7 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-import { targetCondition } from "@ctrlplane/validators/targets";
+import { resourceCondition } from "@ctrlplane/validators/resources";
 import { VariableConfig } from "@ctrlplane/validators/variables";
 
 import { deployment } from "./deployment.js";
@@ -60,8 +60,8 @@ export const deploymentVariableValue = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     variableId: uuid("variable_id").notNull(),
     value: jsonb("value").$type<any>().notNull(),
-    targetFilter: jsonb("resource_filter")
-      .$type<TargetCondition | null>()
+    resourceFilter: jsonb("resource_filter")
+      .$type<ResourceCondition | null>()
       .default(sql`NULL`),
   },
   (t) => ({
@@ -79,7 +79,7 @@ export type DeploymentVariableValue = InferSelectModel<
 >;
 export const createDeploymentVariableValue = createInsertSchema(
   deploymentVariableValue,
-  { targetFilter: targetCondition },
+  { resourceFilter: resourceCondition },
 )
   .omit({
     id: true,

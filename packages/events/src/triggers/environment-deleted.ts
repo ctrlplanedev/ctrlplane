@@ -1,25 +1,25 @@
 import type { HookEvent } from "@ctrlplane/validators/events";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNotNull, ne } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 export const getEventsForEnvironmentDeleted = async (
   environment: SCHEMA.Environment,
 ): Promise<HookEvent[]> => {
-  if (environment.targetFilter == null) return [];
+  if (environment.resourceFilter == null) return [];
   const targets = await db
     .select()
-    .from(SCHEMA.target)
-    .where(SCHEMA.targetMatchesMetadata(db, environment.targetFilter));
+    .from(SCHEMA.resource)
+    .where(SCHEMA.resourceMatchesMetadata(db, environment.resourceFilter));
   if (targets.length === 0) return [];
 
   const checks = and(
-    isNotNull(SCHEMA.environment.targetFilter),
+    isNotNull(SCHEMA.environment.resourceFilter),
     ne(SCHEMA.environment.id, environment.id),
   );
   const system = await db.query.system.findFirst({
@@ -29,11 +29,11 @@ export const getEventsForEnvironmentDeleted = async (
   if (system == null) return [];
 
   const envFilters = system.environments
-    .map((e) => e.targetFilter)
+    .map((e) => e.resourceFilter)
     .filter(isPresent);
 
-  const removedFromSystemFilter: TargetCondition = {
-    type: TargetFilterType.Comparison,
+  const removedFromSystemFilter: ResourceCondition = {
+    type: ResourceFilterType.Comparison,
     operator: ComparisonOperator.Or,
     not: true,
     conditions: envFilters,
@@ -43,12 +43,12 @@ export const getEventsForEnvironmentDeleted = async (
     envFilters.length > 0
       ? await db
           .select()
-          .from(SCHEMA.target)
+          .from(SCHEMA.resource)
           .where(
             and(
-              SCHEMA.targetMatchesMetadata(db, removedFromSystemFilter),
+              SCHEMA.resourceMatchesMetadata(db, removedFromSystemFilter),
               inArray(
-                SCHEMA.target.id,
+                SCHEMA.resource.id,
                 targets.map((t) => t.id),
               ),
             ),

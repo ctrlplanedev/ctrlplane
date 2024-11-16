@@ -17,7 +17,7 @@ export default async function TargetViewsPage({
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (!workspace) return notFound();
 
-  const views = await api.target.view.list(workspace.id);
+  const views = await api.resource.view.list(workspace.id);
   const viewsWithHash = views.map((view) => ({
     ...view,
     hash: LZString.compressToEncodedURIComponent(JSON.stringify(view.filter)),

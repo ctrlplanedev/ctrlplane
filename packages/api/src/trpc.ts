@@ -88,12 +88,17 @@ export const loggedProcedure = t.procedure.use(async (opts) => {
   };
 
   const message = `${result.ok ? "OK" : "NOT OK"} - request from ${source} by ${email}`;
-  if (durationMs > 100 || !result.ok) {
+  if (!result.ok) {
+    logger.error(message, meta);
+    return result;
+  }
+
+  if (durationMs > 100) {
     logger.warn(message, meta);
     return result;
   }
 
-  logger.info(message, meta);
+  logger.debug(message, meta);
   return result;
 });
 

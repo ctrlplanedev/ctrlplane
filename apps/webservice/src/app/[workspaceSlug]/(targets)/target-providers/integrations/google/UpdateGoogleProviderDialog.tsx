@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetProviderGoogle } from "@ctrlplane/db/schema";
+import type { ResourceProviderGoogle } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -47,7 +47,7 @@ const formSchema = createGoogleSchema.and(
 export const UpdateGoogleProviderDialog: React.FC<{
   providerId: string;
   name: string;
-  googleConfig: TargetProviderGoogle | null;
+  googleConfig: ResourceProviderGoogle | null;
   onClose?: () => void;
   children: React.ReactNode;
 }> = ({ providerId, googleConfig, name, onClose, children }) => {
@@ -65,12 +65,12 @@ export const UpdateGoogleProviderDialog: React.FC<{
   });
 
   const utils = api.useUtils();
-  const update = api.target.provider.managed.google.update.useMutation();
+  const update = api.resource.provider.managed.google.update.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
     if (workspace.data == null) return;
     await update.mutateAsync({
       ...data,
-      targetProviderId: providerId,
+      resourceProviderId: providerId,
       config: {
         projectIds: data.projectIds.map((p) => p.value),
         importGke: data.importGke,
@@ -79,7 +79,7 @@ export const UpdateGoogleProviderDialog: React.FC<{
       },
       repeatSeconds: data.repeatSeconds === 0 ? null : data.repeatSeconds,
     });
-    await utils.target.provider.byWorkspaceId.invalidate();
+    await utils.resource.provider.byWorkspaceId.invalidate();
     setOpen(false);
     onClose?.();
   });

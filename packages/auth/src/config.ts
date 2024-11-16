@@ -11,8 +11,8 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { signInSchema } from "@ctrlplane/validators/auth";
 
-import { env } from "../env";
-import { getUserByCredentials } from "./utils/credentials";
+import { env } from "./env.js";
+import { getUserByCredentials } from "./utils/credentials.js";
 
 declare module "next-auth" {
   interface Session {

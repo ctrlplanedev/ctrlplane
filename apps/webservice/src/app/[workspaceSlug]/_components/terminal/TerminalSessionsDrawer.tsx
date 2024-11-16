@@ -26,10 +26,10 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   sessionId,
   targetId,
 }) => {
-  const target = api.target.byId.useQuery(targetId);
+  const target = api.resource.byId.useQuery(targetId);
   const { resizeSession } = useTerminalSessions();
   const { getWebSocket, readyState } = useWebSocket(
-    `/api/v1/target/proxy/session/${sessionId}`,
+    `/api/v1/resources/proxy/session/${sessionId}`,
     { shouldReconnect: () => true },
   );
   const connectionStatus = {
@@ -43,7 +43,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   return (
     <>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        {target.data?.name} ({targetId} / {sessionId})
+        {target.data?.name}
         <div className="flex items-center gap-1 rounded-md border px-1 pr-2">
           <span
             className={cn({
@@ -111,7 +111,7 @@ const TerminalSessionsContent: React.FC = () => {
   );
 };
 
-export const TerminalDrawer: React.FC = () => {
+const TerminalDrawer: React.FC = () => {
   const { height, handleMouseDown } = useResizableHeight(
     DEFAULT_HEIGHT,
     MIN_HEIGHT,
@@ -135,3 +135,5 @@ export const TerminalDrawer: React.FC = () => {
     document.body,
   );
 };
+
+export default TerminalDrawer;

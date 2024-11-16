@@ -13,7 +13,7 @@ import { DeleteTargetVariableDialog } from "./DeleteTargetVariableDialog";
 import { EditTargetVariableDialog } from "./EditTargetVariableDialog";
 
 type TargetVariableDropdownProps = {
-  targetVariable: SCHEMA.TargetVariable;
+  targetVariable: SCHEMA.ResourceVariable;
   existingKeys: string[];
   children: React.ReactNode;
 };
@@ -44,7 +44,7 @@ export const TargetVariableDropdown: React.FC<TargetVariableDropdownProps> = ({
         </EditTargetVariableDialog>
         <DeleteTargetVariableDialog
           variableId={targetVariable.id}
-          targetId={targetVariable.targetId}
+          targetId={targetVariable.resourceId}
           onClose={() => setOpen(false)}
         >
           <DropdownMenuItem

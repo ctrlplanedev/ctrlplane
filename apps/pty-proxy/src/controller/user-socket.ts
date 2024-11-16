@@ -1,19 +1,24 @@
-import type { SessionOutput } from "@ctrlplane/validators/session";
 import type { IncomingMessage } from "node:http";
 import type WebSocket from "ws";
-import { createSessionSocket } from "@/sessions";
 
 import { logger } from "@ctrlplane/logger";
 import { sessionCreate, sessionResize } from "@ctrlplane/validators/session";
 
-import { getSession } from "../auth";
-import { agents } from "./sockets";
-import { ifMessage } from "./utils";
+import { getSession } from "../auth.js";
+import { createSessionSocket } from "../sessions/index.js";
+import { agents } from "./sockets.js";
+import { ifMessage } from "./utils.js";
 
 type User = { id: string };
 
 export class UserSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {
+    logger.info("Checking if connection is user", {
+      headers: {
+        cookie: request.headers.cookie ? "[REDACTED]" : undefined,
+      },
+    });
+
     const session = await getSession(request);
     if (session == null) {
       logger.warn("User connection rejected - no session found");
@@ -51,7 +56,7 @@ export class UserSocket {
             userId: user.id,
           });
 
-          const agent = agents.get(data.targetId);
+          const { agent } = agents.get(data.targetId) ?? { agent: null };
           if (agent == null) {
             logger.warn("Agent not found for session create", {
               targetId: data.targetId,
@@ -63,7 +68,6 @@ export class UserSocket {
 
           logger.info("Found agent for session create", {
             targetId: data.targetId,
-            agentName: agent.target.name,
           });
 
           createSessionSocket(data.sessionId);
@@ -76,7 +80,7 @@ export class UserSocket {
             userId: user.id,
           });
 
-          const agent = agents.get(targetId);
+          const { agent } = agents.get(targetId) ?? { agent: null };
           if (agent == null) {
             logger.warn("Agent not found for session resize", {
               targetId,
@@ -89,9 +93,5 @@ export class UserSocket {
         })
         .handle(),
     );
-  }
-
-  send(data: SessionOutput) {
-    return this.socket.send(JSON.stringify(data));
   }
 }

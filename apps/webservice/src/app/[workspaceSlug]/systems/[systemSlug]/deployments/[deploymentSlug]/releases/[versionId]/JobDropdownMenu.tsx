@@ -182,7 +182,7 @@ const ForceReleaseTargetDialog: React.FC<{
   onClose,
   children,
 }) => {
-  const forceRelease = api.release.deploy.toTarget.useMutation();
+  const forceRelease = api.release.deploy.toResource.useMutation();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
@@ -214,7 +214,7 @@ const ForceReleaseTargetDialog: React.FC<{
               forceRelease
                 .mutateAsync({
                   releaseId: release.id,
-                  targetId: target.id,
+                  resourceId: target.id,
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
@@ -238,7 +238,7 @@ const RedeployReleaseDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ release, environmentId, target, children }) => {
   const router = useRouter();
-  const redeploy = api.release.deploy.toTarget.useMutation();
+  const redeploy = api.release.deploy.toResource.useMutation();
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -264,7 +264,7 @@ const RedeployReleaseDialog: React.FC<{
               redeploy
                 .mutateAsync({
                   environmentId,
-                  targetId: target.id,
+                  resourceId: target.id,
                   releaseId: release.id,
                 })
                 .then(() => router.refresh())

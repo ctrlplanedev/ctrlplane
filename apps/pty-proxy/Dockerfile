@@ -1,43 +1,48 @@
-ARG NODE_VERSION=20
-FROM node:${NODE_VERSION}-alpine AS base
+ARG NODE_VERSION=22
+FROM node:${NODE_VERSION}-alpine
+
+RUN apk add --no-cache libc6-compat python3 make g++ bash nano
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-COPY . /app
-WORKDIR /app
 
-FROM base AS builder
+RUN npm install -g turbo
+RUN corepack enable pnpm
 
-RUN pnpm add -g turbo
-COPY . .
-RUN turbo prune api --docker
-
-FROM base AS installer
-RUN apk add --no-cache libc6-compat
-RUN apk update
 WORKDIR /app
 
 COPY .gitignore .gitignore
-COPY --from=builder /app/out/json/ .
-COPY --from=builder /app/out/pnpm-lock.yaml ./pnpm-lock.yaml
-RUN pnpm install
-
-COPY --from=builder /app/out/full/ .
 COPY turbo.json turbo.json
+RUN pnpm add -g turbo
 
-RUN pnpm turbo build --filter=target-proxy...
+COPY package.json package.json
+COPY pnpm-*.yaml .
 
-FROM base AS runner
-WORKDIR /app
+COPY tooling/prettier/package.json ./tooling/prettier/package.json
+COPY tooling/eslint/package.json ./tooling/eslint/package.json
+COPY tooling/typescript/package.json ./tooling/typescript/package.json
 
-# Don't run production as root
-RUN addgroup --system --gid 1001 expressjs
-RUN adduser --system --uid 1001 expressjs
-USER expressjs
+COPY packages/db/package.json ./packages/db/package.json
+COPY packages/validators/package.json ./packages/validators/package.json
+COPY packages/secrets/package.json ./packages/secrets/package.json
+COPY packages/auth/package.json ./packages/auth/package.json
+COPY packages/logger/package.json ./packages/logger/package.json
+COPY packages/job-dispatch/package.json ./packages/job-dispatch/package.json
 
-ENV PORT=4000
-EXPOSE 4000
+COPY apps/pty-proxy/package.json ./apps/pty-proxy/package.json
 
-COPY --from=installer /app .
-CMD ["node", "apps/target-proxy/dist/index.js"]
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+RUN turbo build --filter=...@ctrlplane/pty-proxy
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+USER nodejs
+
+ENV NODE_ENV=production
+
+WORKDIR apps/pty-proxy/dist/
+
+CMD ["node", "index.js"]

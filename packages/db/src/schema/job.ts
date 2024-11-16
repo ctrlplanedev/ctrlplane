@@ -45,7 +45,7 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
 import { release } from "./release.js";
-import { target } from "./target.js";
+import { resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -218,7 +218,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.Environment)
     return eq(environment.id, cond.value);
   if (cond.type === FilterType.Version) return buildVersionCondition(cond);
-  if (cond.type === JobFilterType.JobTarget) return eq(target.id, cond.value);
+  if (cond.type === JobFilterType.JobTarget) return eq(resource.id, cond.value);
   if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));

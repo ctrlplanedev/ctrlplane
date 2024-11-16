@@ -76,7 +76,7 @@ export const GoogleDialog: React.FC<{
 
   const router = useRouter();
   const utils = api.useUtils();
-  const create = api.target.provider.managed.google.create.useMutation();
+  const create = api.resource.provider.managed.google.create.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
     await create.mutateAsync({
       ...data,
@@ -88,7 +88,7 @@ export const GoogleDialog: React.FC<{
         importNamespaces: data.importNamespaces,
       },
     });
-    await utils.target.provider.byWorkspaceId.invalidate();
+    await utils.resource.provider.byWorkspaceId.invalidate();
     router.refresh();
     router.push(`/${workspace.slug}/target-providers`);
   });

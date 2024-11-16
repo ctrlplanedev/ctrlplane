@@ -35,7 +35,7 @@ const useTargetFilterUniqueness = (
         node.data.targetFilter,
       ],
       queryFn: () =>
-        utils.target.byWorkspaceId.list
+        utils.resource.byWorkspaceId.list
           .fetch({
             limit: 0,
             workspaceId,

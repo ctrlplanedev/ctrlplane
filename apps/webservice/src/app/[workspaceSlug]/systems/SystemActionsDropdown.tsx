@@ -1,7 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -17,9 +17,9 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
+  ResourceFilterType,
+  ResourceOperator,
+} from "@ctrlplane/validators/resources";
 
 import { DeleteSystemDialog } from "./[systemSlug]/_components/DeleteSystemDialog";
 import { EditSystemDialog } from "./[systemSlug]/_components/EditSystemDialog";
@@ -35,11 +35,11 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const envFilters = system.environments
-    .map((env) => env.targetFilter)
+    .map((env) => env.resourceFilter)
     .filter(isPresent);
-  const filter: TargetCondition = {
-    type: TargetFilterType.Comparison,
-    operator: TargetOperator.Or,
+  const filter: ResourceCondition = {
+    type: ResourceFilterType.Comparison,
+    operator: ResourceOperator.Or,
     conditions: envFilters,
   };
   const hash = LZString.compressToEncodedURIComponent(JSON.stringify(filter));

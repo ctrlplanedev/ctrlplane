@@ -1,4 +1,4 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type {
   ChoiceVariableConfigType,
   StringVariableConfigType,
@@ -26,9 +26,9 @@ import {
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
-  TargetFilterType,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
+  ResourceFilterType,
+  ResourceOperator,
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 
@@ -126,23 +126,23 @@ export const VariableTargetInput: React.FC<
   });
   const envs = envsQ.data ?? [];
   const envConditions = envs
-    .filter((e) => e.targetFilter != null)
-    .map((e) => e.targetFilter!);
+    .filter((e) => e.resourceFilter != null)
+    .map((e) => e.resourceFilter!);
 
-  const tFilterConditions: TargetCondition[] = [
+  const tFilterConditions: ResourceCondition[] = [
     {
-      type: TargetFilterType.Comparison,
-      operator: TargetOperator.Or,
+      type: ResourceFilterType.Comparison,
+      operator: ResourceOperator.Or,
       conditions: envConditions,
     },
   ];
   if (filter != null) tFilterConditions.push(filter);
-  const tFilter: TargetCondition = {
-    type: TargetFilterType.Comparison,
-    operator: TargetOperator.And,
+  const tFilter: ResourceCondition = {
+    type: ResourceFilterType.Comparison,
+    operator: ResourceOperator.And,
     conditions: tFilterConditions,
   };
-  const allTargetsQ = api.target.byWorkspaceId.list.useQuery(
+  const allTargetsQ = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: system?.workspaceId ?? "", filter: tFilter },
     { enabled: system != null, placeholderData: (prev) => prev },
   );
@@ -151,17 +151,17 @@ export const VariableTargetInput: React.FC<
 
   const tFilterConditionsWithSearch = tFilterConditions.concat([
     {
-      type: TargetFilterType.Name,
-      operator: TargetOperator.Like,
+      type: ResourceFilterType.Name,
+      operator: ResourceOperator.Like,
       value: `%${search}%`,
     },
   ]);
-  const tFilterWithSearch: TargetCondition = {
-    type: TargetFilterType.Comparison,
-    operator: TargetOperator.And,
+  const tFilterWithSearch: ResourceCondition = {
+    type: ResourceFilterType.Comparison,
+    operator: ResourceOperator.And,
     conditions: tFilterConditionsWithSearch,
   };
-  const targetsQ = api.target.byWorkspaceId.list.useQuery(
+  const targetsQ = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: system?.workspaceId ?? "", filter: tFilterWithSearch },
     { enabled: system != null, placeholderData: (prev) => prev },
   );

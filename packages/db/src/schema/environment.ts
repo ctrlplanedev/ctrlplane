@@ -1,4 +1,4 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
@@ -17,8 +17,8 @@ import { z } from "zod";
 
 import {
   isValidTargetCondition,
-  targetCondition,
-} from "@ctrlplane/validators/targets";
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
@@ -38,8 +38,8 @@ export const environment = pgTable(
     policyId: uuid("policy_id").references(() => environmentPolicy.id, {
       onDelete: "set null",
     }),
-    targetFilter: jsonb("resource_filter")
-      .$type<TargetCondition | null>()
+    resourceFilter: jsonb("resource_filter")
+      .$type<ResourceCondition | null>()
       .default(sql`NULL`),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -54,7 +54,7 @@ export const environment = pgTable(
 export type Environment = InferSelectModel<typeof environment>;
 
 export const createEnvironment = createInsertSchema(environment, {
-  targetFilter: targetCondition
+  resourceFilter: resourceCondition
     .optional()
     .refine((filter) => filter == null || isValidTargetCondition(filter)),
 })

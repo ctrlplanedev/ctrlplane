@@ -5,20 +5,27 @@
   "type": "module",
   "exports": {
     ".": {
-      "react-server": "./src/index.rsc.ts",
-      "default": "./src/index.ts"
+      "react-server": "./dist/index.rsc.js",
+      "types": "./src/index.ts",
+      "default": "./dist/index.js"
     },
     "./utils": {
-      "default": "./src/utils/index.ts"
+      "types": "./src/utils/index.ts",
+      "default": "./dist/utils/index.js"
     },
-    "./env": "./env.ts"
+    "./env": {
+      "types": "./src/env.ts",
+      "default": "./dist/env.js"
+    }
   },
   "license": "MIT",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
     "clean": "rm -rf .turbo node_modules",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "1.4.1",
@@ -28,8 +35,8 @@
     "bcryptjs": "^2.4.3",
     "next": "catalog:",
     "next-auth": "catalog:",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "catalog:react18",
+    "react-dom": "catalog:react18",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -37,6 +44,8 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/bcryptjs": "^2.4.6",
+    "@types/react": "catalog:react18",
+    "@types/react-dom": "catalog:react18",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"

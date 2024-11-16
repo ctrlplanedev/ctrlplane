@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
@@ -8,7 +8,7 @@ export const useTargetFilter = () => {
   const urlParams = useSearchParams();
   const router = useRouter();
 
-  const filter = useMemo<TargetCondition | undefined>(() => {
+  const filter = useMemo<ResourceCondition | undefined>(() => {
     const filterJson = urlParams.get("filter");
     if (filterJson == null) return undefined;
     try {
@@ -19,7 +19,7 @@ export const useTargetFilter = () => {
   }, [urlParams]);
 
   const setFilter = useCallback(
-    (filter: TargetCondition | undefined) => {
+    (filter: ResourceCondition | undefined) => {
       if (filter == null) {
         const query = new URLSearchParams(window.location.search);
         query.delete("filter");
@@ -38,7 +38,7 @@ export const useTargetFilter = () => {
   );
 
   const setView = useCallback(
-    (view: schema.TargetView) => {
+    (view: schema.ResourceView) => {
       const query = new URLSearchParams(window.location.search);
       const filterJson = LZString.compressToEncodedURIComponent(
         JSON.stringify(view.filter),

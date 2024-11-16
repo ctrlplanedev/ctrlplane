@@ -48,7 +48,7 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
     .filter((p) => {
       if (p.environment_policy == null) return true;
       return isReleaseJobTriggerInRolloutWindow(
-        [p.release.id, p.environment.id, p.release_job_trigger.targetId].join(
+        [p.release.id, p.environment.id, p.release_job_trigger.resourceId].join(
           ":",
         ),
         p.release.createdAt,

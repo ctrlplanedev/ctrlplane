@@ -13,7 +13,8 @@ export const MetadataFilterInput: React.FC<{
   selectedKeys: string[];
   onChange: (value: string) => void;
 }> = ({ value, workspaceId, selectedKeys = [], onChange }) => {
-  const { data: metadataKeys } = api.target.metadataKeys.useQuery(workspaceId);
+  const { data: metadataKeys } =
+    api.resource.metadataKeys.useQuery(workspaceId);
   const [open, setOpen] = useState(false);
   const filteredLabels = useMatchSorter(metadataKeys ?? [], value).filter(
     (k) => !selectedKeys.includes(k),

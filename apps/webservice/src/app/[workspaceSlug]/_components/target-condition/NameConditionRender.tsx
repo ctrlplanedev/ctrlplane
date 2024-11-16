@@ -1,4 +1,4 @@
-import type { NameCondition } from "@ctrlplane/validators/targets";
+import type { NameCondition } from "@ctrlplane/validators/resources";
 
 import { cn } from "@ctrlplane/ui";
 import { Input } from "@ctrlplane/ui/input";

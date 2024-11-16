@@ -5,8 +5,8 @@ import { z } from "zod";
 
 import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import {
-  targetProvider,
-  targetProviderGoogle,
+  resourceProvider,
+  resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -98,18 +98,18 @@ export const integrationsRouter = createTRPCRouter({
 
         const existingGoogleProviders = await ctx.db
           .select()
-          .from(targetProvider)
+          .from(resourceProvider)
           .innerJoin(
-            targetProviderGoogle,
-            eq(targetProvider.id, targetProviderGoogle.targetProviderId),
+            resourceProviderGoogle,
+            eq(resourceProvider.id, resourceProviderGoogle.resourceProviderId),
           )
-          .where(eq(targetProvider.workspaceId, input));
+          .where(eq(resourceProvider.workspaceId, input));
 
         if (existingGoogleProviders.length > 0)
           throw new TRPCError({
             code: "PRECONDITION_FAILED",
             message:
-              "Cannot delete Google service account while active target providers exist.",
+              "Cannot delete Google service account while active resource providers exist.",
           });
 
         const projectId = await auth.getProjectId();

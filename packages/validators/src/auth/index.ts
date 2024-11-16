@@ -42,27 +42,27 @@ export enum Permission {
   SystemList = "system.list",
   SystemDelete = "system.delete",
 
-  TargetCreate = "target.create",
-  TargetList = "target.list",
-  TargetGet = "target.get",
-  TargetUpdate = "target.update",
-  TargetDelete = "target.delete",
+  ResourceCreate = "resource.create",
+  ResourceList = "resource.list",
+  ResourceGet = "resource.get",
+  ResourceUpdate = "resource.update",
+  ResourceDelete = "resource.delete",
 
-  TargetProviderGet = "targetProvider.get",
-  TargetProviderDelete = "targetProvider.delete",
-  TargetProviderUpdate = "targetProvider.update",
+  ResourceProviderGet = "resourceProvider.get",
+  ResourceProviderDelete = "resourceProvider.delete",
+  ResourceProviderUpdate = "resourceProvider.update",
 
-  TargetViewCreate = "targetView.create",
-  TargetViewList = "targetView.list",
-  TargetViewGet = "targetView.get",
-  TargetViewUpdate = "targetView.update",
-  TargetViewDelete = "targetView.delete",
+  ResourceViewCreate = "resourceView.create",
+  ResourceViewList = "resourceView.list",
+  ResourceViewGet = "resourceView.get",
+  ResourceViewUpdate = "resourceView.update",
+  ResourceViewDelete = "resourceView.delete",
 
-  TargetMetadataGroupList = "targetMetadataGroup.list",
-  TargetMetadataGroupGet = "targetMetadataGroup.get",
-  TargetMetadataGroupCreate = "targetMetadataGroup.create",
-  TargetMetadataGroupUpdate = "targetMetadataGroup.update",
-  TargetMetadataGroupDelete = "targetMetadataGroup.delete",
+  ResourceMetadataGroupList = "resourceMetadataGroup.list",
+  ResourceMetadataGroupGet = "resourceMetadataGroup.get",
+  ResourceMetadataGroupCreate = "resourceMetadataGroup.create",
+  ResourceMetadataGroupUpdate = "resourceMetadataGroup.update",
+  ResourceMetadataGroupDelete = "resourceMetadataGroup.delete",
 
   DeploymentCreate = "deployment.create",
   DeploymentUpdate = "deployment.update",
@@ -92,6 +92,12 @@ export enum Permission {
   RunbookGet = "runbook.get",
   RunbookList = "runbook.list",
   RunbookUpdate = "runbook.update",
+
+  HookCreate = "hook.create",
+  HookGet = "hook.get",
+  HookList = "hook.list",
+  HookUpdate = "hook.update",
+  HookDelete = "hook.delete",
 }
 
 export const permission = z.nativeEnum(Permission);

@@ -11,10 +11,10 @@ import {
   jobVariable,
   release,
   releaseJobTrigger,
+  resource,
+  resourceMetadata,
   runbook,
   runbookJobTrigger,
-  target,
-  targetMetadata,
   updateJob,
   user,
 } from "@ctrlplane/db/schema";
@@ -80,7 +80,7 @@ export const GET = request()
         environment,
         eq(environment.id, releaseJobTrigger.environmentId),
       )
-      .leftJoin(target, eq(target.id, releaseJobTrigger.targetId))
+      .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
       .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
       .leftJoin(deployment, eq(deployment.id, release.deploymentId))
       .where(eq(job.id, params.jobId))
@@ -89,7 +89,7 @@ export const GET = request()
         job: row.job,
         runbook: row.runbook,
         environment: row.environment,
-        target: row.resource,
+        resource: row.resource,
         deployment: row.deployment,
         release: row.release,
       }));
@@ -114,22 +114,22 @@ export const GET = request()
       }),
     );
 
-    const jobTargetMetadataRows = await db
+    const jobResourceMetadataRows = await db
       .select()
-      .from(targetMetadata)
-      .where(eq(targetMetadata.targetId, je.target?.id ?? ""));
+      .from(resourceMetadata)
+      .where(eq(resourceMetadata.resourceId, je.resource?.id ?? ""));
 
     const metadata = Object.fromEntries(
-      jobTargetMetadataRows.map((m) => [m.key, m.value]),
+      jobResourceMetadataRows.map((m) => [m.key, m.value]),
     );
 
-    const targetWithMetadata = { ...je.target, metadata };
+    const resourceWithMetadata = { ...je.resource, metadata };
 
     return NextResponse.json({
       ...je.job,
       ...je,
       variables,
-      target: targetWithMetadata,
+      resource: resourceWithMetadata,
       approval,
     });
   });

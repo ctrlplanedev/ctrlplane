@@ -1,4 +1,4 @@
-import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/targets";
+import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import type { V1Namespace } from "@kubernetes/client-node";
 import Container from "@google-cloud/container";
@@ -9,7 +9,7 @@ import { SemVer } from "semver";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { kubernetesNamespaceV1 } from "@ctrlplane/validators/targets";
+import { kubernetesNamespaceV1 } from "@ctrlplane/validators/resources";
 
 import { env } from "./config.js";
 import { connectToCluster } from "./gke-connect.js";

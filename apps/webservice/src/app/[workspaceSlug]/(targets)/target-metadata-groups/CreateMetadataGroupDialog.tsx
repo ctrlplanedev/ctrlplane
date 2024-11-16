@@ -44,7 +44,7 @@ export const CreateMetadataGroupDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ workspaceId, children }) => {
   const [open, setOpen] = useState(false);
-  const createMetadataGroup = api.target.metadataGroup.create.useMutation();
+  const createMetadataGroup = api.resource.metadataGroup.create.useMutation();
   const utils = api.useUtils();
   const [input, setInput] = useState("");
   const router = useRouter();
@@ -72,7 +72,7 @@ export const CreateMetadataGroupDialog: React.FC<{
         keys: values.keys.map((key) => key.value),
         workspaceId,
       })
-      .then(() => utils.target.metadataGroup.groups.invalidate())
+      .then(() => utils.resource.metadataGroup.groups.invalidate())
       .then(() => setOpen(false))
       .then(() => router.refresh());
   });

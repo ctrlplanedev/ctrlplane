@@ -1,5 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -37,8 +37,8 @@ import {
 import {
   defaultCondition,
   isComparisonCondition,
-  targetCondition,
-} from "@ctrlplane/validators/targets";
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 import { TargetConditionRender } from "../target-condition/TargetConditionRender";
@@ -46,9 +46,9 @@ import { TargetIcon } from "../TargetIcon";
 
 const TargetViewsCombobox: React.FC<{
   workspaceId: string;
-  onChange: (targetCondition: TargetCondition) => void;
+  onChange: (targetCondition: ResourceCondition) => void;
 }> = ({ workspaceId, onChange }) => {
-  const targetViewsQ = api.target.view.list.useQuery(workspaceId, {
+  const targetViewsQ = api.resource.view.list.useQuery(workspaceId, {
     enabled: workspaceId !== "",
   });
   const targetViews = targetViewsQ.data ?? [];
@@ -99,12 +99,12 @@ const TargetViewsCombobox: React.FC<{
 };
 
 const filterForm = z.object({
-  targetFilter: targetCondition.optional(),
+  targetFilter: resourceCondition.optional(),
 });
 
 const getFilter = (
-  targetFilter: TargetCondition | null,
-): TargetCondition | undefined => {
+  targetFilter: ResourceCondition | null,
+): ResourceCondition | undefined => {
   if (targetFilter == null) return undefined;
   if (!isComparisonCondition(targetFilter))
     return {
@@ -124,13 +124,13 @@ export const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: { targetFilter: getFilter(environment.targetFilter) },
+    defaultValues: { targetFilter: getFilter(environment.resourceFilter) },
   });
 
   const { targetFilter } = form.watch();
 
   const filter = targetFilter ?? undefined;
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter, limit: 10 },
     { enabled: workspaceId !== "" },
   );
@@ -141,10 +141,7 @@ export const EditFilterForm: React.FC<{
     update
       .mutateAsync({
         id: environment.id,
-        data: {
-          ...data,
-          targetFilter: targetFilter ?? null,
-        },
+        data: { ...data, resourceFilter: targetFilter ?? null },
       })
       .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))

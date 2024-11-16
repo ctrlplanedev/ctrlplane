@@ -10,7 +10,7 @@ export default async function DeploymentTargetsPage({
     targetId: string;
   };
 }) {
-  const target = await api.target.byId(params.targetId);
+  const target = await api.resource.byId(params.targetId);
   return (
     <div className="container mx-auto">
       <h1>{target?.name}</h1>

@@ -14,8 +14,8 @@ export const createJobsForNewEnvironment = async (
   db: Tx,
   env: SCHEMA.Environment,
 ) => {
-  const { targetFilter } = env;
-  if (targetFilter == null) return;
+  const { resourceFilter } = env;
+  if (resourceFilter == null) return;
 
   const releaseChannels = await db.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, env.id),
@@ -37,16 +37,16 @@ export const createJobsForNewEnvironment = async (
   const policyReleaseChannels =
     releaseChannels.policy?.environmentPolicyReleaseChannels ?? [];
 
-  const targets = await db
+  const resources = await db
     .select()
-    .from(SCHEMA.target)
+    .from(SCHEMA.resource)
     .where(
       and(
-        eq(SCHEMA.target.workspaceId, workspaceId),
-        SCHEMA.targetMatchesMetadata(db, targetFilter),
+        eq(SCHEMA.resource.workspaceId, workspaceId),
+        SCHEMA.resourceMatchesMetadata(db, resourceFilter),
       ),
     );
-  if (targets.length === 0) return;
+  if (resources.length === 0) return;
 
   const releasePromises = deployments.map(async (deployment) => {
     const envReleaseChannel = envReleaseChannels.find(
@@ -83,7 +83,7 @@ export const createJobsForNewEnvironment = async (
     "new_environment",
   )
     .environments([env.id])
-    .targets(targets.map((t) => t.id))
+    .resources(resources.map((t) => t.id))
     .releases(releases.map((r) => r.id))
     .then(createJobApprovals)
     .insert();

@@ -4,7 +4,7 @@ import type {
   SessionCreate,
   SessionResize,
 } from "@ctrlplane/validators/session";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import useWebSocket from "react-use-websocket";
 import { v4 as uuidv4 } from "uuid";
 
@@ -32,7 +32,7 @@ export const useTerminalSessions = () => {
   return context;
 };
 
-const url = "/api/v1/target/proxy/controller";
+const url = "/api/v1/resources/proxy/controller";
 export const TerminalSessionsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
@@ -44,40 +44,47 @@ export const TerminalSessionsProvider: React.FC<{
     shouldReconnect: () => true,
   });
 
-  const resizeSession = (
-    sessionId: string,
-    targetId: string,
-    cols: number,
-    rows: number,
-  ) => {
-    const resizePayload: SessionResize = {
-      type: "session.resize",
-      sessionId,
-      targetId,
-      cols,
-      rows,
-    };
-    console.log(resizePayload);
-    sendJsonMessage(resizePayload);
-  };
+  const resizeSession = useCallback(
+    (sessionId: string, targetId: string, cols: number, rows: number) => {
+      const resizePayload: SessionResize = {
+        type: "session.resize",
+        sessionId,
+        targetId,
+        cols,
+        rows,
+      };
+      console.log(resizePayload);
+      sendJsonMessage(resizePayload);
+    },
+    [sendJsonMessage],
+  );
 
-  const createSession = (targetId: string) => {
-    const sessionId = uuidv4();
-    const sessionCreatePayload: SessionCreate = {
-      type: "session.create",
-      targetId,
-      sessionId,
-      cols: 80,
-      rows: 24,
-    };
-    sendJsonMessage(sessionCreatePayload);
-    setTimeout(() => {
-      setSessionIds((prev) => [...prev, { sessionId, targetId }]);
-    }, 500);
-  };
-  const removeSession = (id: string) => {
-    setSessionIds((prev) => prev.filter((session) => session.sessionId !== id));
-  };
+  const createSession = useCallback(
+    (targetId: string) => {
+      const sessionId = uuidv4();
+      const sessionCreatePayload: SessionCreate = {
+        type: "session.create",
+        targetId,
+        sessionId,
+        cols: 80,
+        rows: 24,
+      };
+      sendJsonMessage(sessionCreatePayload);
+      setTimeout(() => {
+        setSessionIds((prev) => [...prev, { sessionId, targetId }]);
+      }, 500);
+    },
+    [sendJsonMessage, setSessionIds],
+  );
+
+  const removeSession = useCallback(
+    (id: string) => {
+      setSessionIds((prev) =>
+        prev.filter((session) => session.sessionId !== id),
+      );
+    },
+    [setSessionIds],
+  );
 
   return (
     <SessionContext.Provider

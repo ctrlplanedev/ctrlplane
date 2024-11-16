@@ -117,7 +117,7 @@ export const openapi: Swagger.SwaggerV3 = {
                       },
                       required: ["id", "name", "systemId", "jobAgentId"],
                     },
-                    target: {
+                    resource: {
                       type: "object",
                       properties: {
                         id: {

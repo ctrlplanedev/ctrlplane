@@ -5,8 +5,8 @@ import type {
   KindCondition,
   NameCondition,
   ProviderCondition,
-  TargetCondition,
-} from "@ctrlplane/validators/targets";
+  ResourceCondition,
+} from "@ctrlplane/validators/resources";
 import React from "react";
 import _ from "lodash";
 
@@ -24,22 +24,22 @@ import {
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
-  TargetOperator,
-} from "@ctrlplane/validators/targets";
+  ResourceOperator,
+} from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 
 const operatorVerbs = {
-  [TargetOperator.And]: "and",
-  [TargetOperator.Or]: "or",
-  [TargetOperator.Equals]: "is",
-  [TargetOperator.Null]: (
+  [ResourceOperator.And]: "and",
+  [ResourceOperator.Or]: "or",
+  [ResourceOperator.Equals]: "is",
+  [ResourceOperator.Null]: (
     <span>
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [TargetOperator.Regex]: "matches",
-  [TargetOperator.Like]: "contains",
+  [ResourceOperator.Regex]: "matches",
+  [ResourceOperator.Like]: "contains",
 };
 
 const ConditionBadge: React.FC<{
@@ -191,7 +191,7 @@ const StringifiedIdentifierCondition: React.FC<{
 const StringifiedProviderCondition: React.FC<{
   condition: ProviderCondition;
 }> = ({ condition }) => {
-  const provider = api.target.provider.byId.useQuery(condition.value);
+  const provider = api.resource.provider.byId.useQuery(condition.value);
 
   return (
     <ConditionBadge>
@@ -205,7 +205,7 @@ const StringifiedProviderCondition: React.FC<{
 };
 
 const StringifiedTargetCondition: React.FC<{
-  condition: TargetCondition;
+  condition: ResourceCondition;
   depth?: number;
   truncate?: boolean;
   tabbed?: boolean;
@@ -241,7 +241,7 @@ const StringifiedTargetCondition: React.FC<{
 };
 
 export const TargetConditionBadge: React.FC<{
-  condition: TargetCondition;
+  condition: ResourceCondition;
   tabbed?: boolean;
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>

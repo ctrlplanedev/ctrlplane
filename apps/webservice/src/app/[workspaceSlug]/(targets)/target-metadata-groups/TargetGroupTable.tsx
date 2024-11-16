@@ -1,6 +1,6 @@
 "use client";
 
-import type { TargetMetadataGroup, Workspace } from "@ctrlplane/db/schema";
+import type { ResourceMetadataGroup, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconDots } from "@tabler/icons-react";
@@ -27,8 +27,8 @@ import { EditMetadataGroupDialog } from "./EditMetadataGroupDialog";
 export const TargetGroupsTable: React.FC<{
   workspace: Workspace;
   metadataGroups: {
-    targets: number;
-    targetMetadataGroup: TargetMetadataGroup;
+    resources: number;
+    resourceMetadataGroup: ResourceMetadataGroup;
   }[];
 }> = ({ workspace, metadataGroups }) => {
   const [openDropdownId, setOpenDropdownId] = useState("");
@@ -45,32 +45,32 @@ export const TargetGroupsTable: React.FC<{
       <TableBody>
         {metadataGroups.map((metadataGroup) => (
           <TableRow
-            key={metadataGroup.targetMetadataGroup.id}
+            key={metadataGroup.resourceMetadataGroup.id}
             className="cursor-pointer border-b-neutral-800/50"
             onClick={() =>
               router.push(
-                `/${workspace.slug}/target-metadata-groups/${metadataGroup.targetMetadataGroup.id}`,
+                `/${workspace.slug}/target-metadata-groups/${metadataGroup.resourceMetadataGroup.id}`,
               )
             }
           >
-            <TableCell>{metadataGroup.targetMetadataGroup.name}</TableCell>
+            <TableCell>{metadataGroup.resourceMetadataGroup.name}</TableCell>
             <TableCell>
               <div className="flex flex-col font-mono text-xs text-red-400">
-                {metadataGroup.targetMetadataGroup.keys.map((key) => (
+                {metadataGroup.resourceMetadataGroup.keys.map((key) => (
                   <span key={key}>{key}</span>
                 ))}
               </div>
             </TableCell>
-            <TableCell>{metadataGroup.targets}</TableCell>
+            <TableCell>{metadataGroup.resources}</TableCell>
             <TableCell
               className="flex justify-end"
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenu
-                open={openDropdownId === metadataGroup.targetMetadataGroup.id}
+                open={openDropdownId === metadataGroup.resourceMetadataGroup.id}
                 onOpenChange={(open) => {
                   if (open)
-                    setOpenDropdownId(metadataGroup.targetMetadataGroup.id);
+                    setOpenDropdownId(metadataGroup.resourceMetadataGroup.id);
                   if (!open) setOpenDropdownId("");
                 }}
               >
@@ -83,14 +83,14 @@ export const TargetGroupsTable: React.FC<{
                   <EditMetadataGroupDialog
                     workspaceId={workspace.id}
                     parentClose={() => setOpenDropdownId("")}
-                    metadataGroup={metadataGroup.targetMetadataGroup}
+                    metadataGroup={metadataGroup.resourceMetadataGroup}
                   >
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       Edit
                     </DropdownMenuItem>
                   </EditMetadataGroupDialog>
                   <DeleteMetadataGroupDialog
-                    id={metadataGroup.targetMetadataGroup.id}
+                    id={metadataGroup.resourceMetadataGroup.id}
                   >
                     <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                       Delete

@@ -1,4 +1,4 @@
-import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/targets";
+import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 import type { ClusterManagerClient } from "@google-cloud/container";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import type { AuthClient } from "google-auth-library";
@@ -12,7 +12,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { omitNullUndefined } from "../utils.js";
 
-const log = logger.child({ label: "target-scan/gke/google" });
+const log = logger.child({ label: "resource-scan/gke/google" });
 
 const sourceCredentials = new GoogleAuth({
   scopes: ["https://www.googleapis.com/auth/cloud-platform"],
@@ -88,7 +88,7 @@ export const connectToCluster = async (
   return kubeConfig;
 };
 
-export const clusterToTarget = (
+export const clusterToResource = (
   workspaceId: string,
   providerId: string,
   project: string,

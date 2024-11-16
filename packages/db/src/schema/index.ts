@@ -1,6 +1,6 @@
 export * from "./auth.js";
-export * from "./target.js";
-export * from "./target-provider.js";
+export * from "./resource.js";
+export * from "./resource-provider.js";
 export * from "./deployment.js";
 export * from "./environment.js";
 export * from "./release.js";
@@ -14,7 +14,7 @@ export * from "./deployment-variables.js";
 export * from "./dashboard.js";
 export * from "./variable-sets.js";
 export * from "./invite.js";
-export * from "./target-group.js";
+export * from "./resource-group.js";
 export * from "./runbook-variables.js";
 export * from "./rbac.js";
 export * from "./job-agent.js";

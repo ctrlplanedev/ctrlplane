@@ -34,7 +34,7 @@ export const determineVariablesForReleaseJob = async (
 
   if (variables.length === 0) return [];
 
-  const jobTarget = await utils.getTarget(tx, job.releaseJobTrigger.targetId);
+  const jobTarget = await utils.getTarget(tx, job.releaseJobTrigger.resourceId);
 
   if (!jobTarget) throw new Error(`Target not found for job ${job.id}`);
 
@@ -111,9 +111,9 @@ export const determineReleaseVariableValue = async (
   variableKey: string,
   variableId: string,
   defaultValueId: string | null,
-  jobTarget: schema.Target,
+  jobTarget: schema.Resource,
 ): Promise<{
-  value: schema.DeploymentVariableValue | schema.TargetVariable;
+  value: schema.DeploymentVariableValue | schema.ResourceVariable;
   directMatch: boolean;
   sensitive: boolean;
 } | null> => {
@@ -142,7 +142,7 @@ export const determineReleaseVariableValue = async (
   );
 
   const valuesWithFilter = deploymentVariableValues.filter((v) =>
-    isPresent(v.targetFilter),
+    isPresent(v.resourceFilter),
   );
 
   const firstMatchedValue = await utils.getFirstMatchedTarget(

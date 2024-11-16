@@ -4,7 +4,7 @@ import { WebSocketServer } from "ws";
 
 import { logger } from "@ctrlplane/logger";
 
-import { sessionServers } from "./servers";
+import { sessionServers } from "./servers.js";
 
 const MAX_HISTORY_BYTES = 1024;
 

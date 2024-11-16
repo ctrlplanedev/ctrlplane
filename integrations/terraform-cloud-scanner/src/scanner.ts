@@ -2,7 +2,7 @@ import handlebars from "handlebars";
 import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
-import { TargetProvider } from "@ctrlplane/node-sdk";
+import { ResourceProvider } from "@ctrlplane/node-sdk";
 
 import type { Variable, Workspace } from "./types.js";
 import { listVariables, listWorkspaces } from "./api.js";
@@ -17,7 +17,7 @@ const workspaceTemplate = handlebars.compile(
  * Scans Terraform Cloud workspaces and registers them as targets with prefixed labels and a link.
  */
 export async function scan() {
-  const scanner = new TargetProvider(
+  const scanner = new ResourceProvider(
     {
       workspaceId: env.CTRLPLANE_WORKSPACE_ID,
       name: env.CTRLPLANE_SCANNER_NAME,

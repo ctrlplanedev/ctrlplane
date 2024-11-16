@@ -1,7 +1,7 @@
 "use client";
 
 import type * as schema from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 import { IconDots, IconFilter, IconLoader2 } from "@tabler/icons-react";
 import range from "lodash/range";
@@ -12,7 +12,7 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   defaultCondition,
   isEmptyCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import { NoFilterMatch } from "~/app/[workspaceSlug]/_components/filter/NoFilterMatch";
 import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
@@ -29,20 +29,20 @@ import { TargetsTable } from "./TargetsTable";
 
 export const TargetPageContent: React.FC<{
   workspace: schema.Workspace;
-  view: schema.TargetView | null;
+  view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
   const { filter, setFilter, setView } = useTargetFilter();
   const workspaceId = workspace.id;
-  const targetsAll = api.target.byWorkspaceId.list.useQuery({
+  const targetsAll = api.resource.byWorkspaceId.list.useQuery({
     workspaceId,
     limit: 0,
   });
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter },
     { placeholderData: (prev) => prev },
   );
 
-  const onFilterChange = (condition: TargetCondition | undefined) => {
+  const onFilterChange = (condition: ResourceCondition | undefined) => {
     const cond = condition ?? defaultCondition;
     if (isEmptyCondition(cond)) setFilter(undefined);
     if (!isEmptyCondition(cond)) setFilter(cond);

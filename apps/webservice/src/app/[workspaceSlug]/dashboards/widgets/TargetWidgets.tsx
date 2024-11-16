@@ -95,11 +95,11 @@ export const WidgetTargetMetadataCount: Widget<{
     const key = config.key ?? "kubernetes/autoscaling-enabled";
     const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
     const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-    const targets = api.target.byWorkspaceId.list.useQuery(
+    const targets = api.resource.byWorkspaceId.list.useQuery(
       { workspaceId: workspace.data?.id ?? "" },
       { enabled: workspace.isSuccess },
     );
-    const metadataKeys = api.target.metadataKeys.useQuery(
+    const metadataKeys = api.resource.metadataKeys.useQuery(
       workspace.data?.id ?? "",
       {
         enabled: workspace.isSuccess,

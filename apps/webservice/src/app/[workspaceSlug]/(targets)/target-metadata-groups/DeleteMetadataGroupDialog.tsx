@@ -22,7 +22,7 @@ export const DeleteMetadataGroupDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ id, children }) => {
   const [open, setOpen] = useState(false);
-  const deleteMetadataGroup = api.target.metadataGroup.delete.useMutation();
+  const deleteMetadataGroup = api.resource.metadataGroup.delete.useMutation();
   const router = useRouter();
 
   return (

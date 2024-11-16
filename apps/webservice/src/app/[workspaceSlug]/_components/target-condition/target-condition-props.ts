@@ -1,6 +1,6 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 
-export type TargetConditionRenderProps<T extends TargetCondition> = {
+export type TargetConditionRenderProps<T extends ResourceCondition> = {
   condition: T;
   onChange: (condition: T) => void;
   depth?: number;

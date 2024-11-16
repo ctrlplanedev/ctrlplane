@@ -5,18 +5,21 @@ import { WebSocketServer } from "ws";
 
 import { logger } from "@ctrlplane/logger";
 
-import { AgentSocket } from "./agent-socket";
-import { agents, users } from "./sockets";
-import { UserSocket } from "./user-socket";
+import { AgentSocket } from "./agent-socket.js";
+import { agents, users } from "./sockets.js";
+import { UserSocket } from "./user-socket.js";
 
 const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
   const agent = await AgentSocket.from(ws, request);
   if (agent != null) {
-    logger.info("Agent connected", {
-      targetId: agent.target.id,
-      name: agent.target.name,
-    });
-    agents.set(agent.target.id, agent);
+    logger.info("Agent connected");
+    if (agent.resource?.id == null) {
+      logger.error("Agent resource ID is null");
+      ws.close(1008, "Agent resource ID is null");
+      throw new Error("Agent resource ID is null");
+    }
+
+    agents.set(agent.resource.id, { lastSync: new Date(), agent });
     return;
   }
 
@@ -29,8 +32,9 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
     return;
   }
 
-  logger.warn("Connection rejected - neither agent nor user");
-  ws.close();
+  const msg = "Neither agent nor user";
+  logger.warn(msg);
+  ws.close(1008, msg);
 };
 
 const wss = new WebSocketServer({ noServer: true });

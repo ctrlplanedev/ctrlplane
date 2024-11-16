@@ -1,5 +1,6 @@
 "use client";
 
+import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import { useParams, useRouter } from "next/navigation";
 import { IconFilter, IconGraph, IconSettings } from "@tabler/icons-react";
@@ -28,13 +29,11 @@ import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
+type Environment = RouterOutputs["environment"]["bySystemId"][number];
+
 type DeploymentPageContentProps = {
   deployment: schema.Deployment & { releaseChannels: schema.ReleaseChannel[] };
-  environments: {
-    id: string;
-    name: string;
-    targets: { id: string }[];
-  }[];
+  environments: Environment[];
   releaseChannel: schema.ReleaseChannel | null;
 };
 
@@ -154,7 +153,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           variant="outline"
                           className="rounded-full px-1.5 font-light text-muted-foreground"
                         >
-                          {env.targets.length}
+                          {env.resources.length}
                         </Badge>
                       </div>
                     </TableHead>
@@ -197,7 +196,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           (t) => t.environmentId === env.id,
                         );
 
-                      const hasTargets = env.targets.length > 0;
+                      const hasResources = env.resources.length > 0;
                       const isAlreadyDeployed =
                         environmentReleaseReleaseJobTriggers.length > 0;
                       const hasJobAgent = deployment.jobAgentId != null;
@@ -212,7 +211,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       const showDeployButton =
                         !isAlreadyDeployed &&
                         hasJobAgent &&
-                        hasTargets &&
+                        hasResources &&
                         !isBlockedByReleaseChannel;
 
                       return (
@@ -275,8 +274,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                                   "No job agent"}
                                 {!isBlockedByReleaseChannel &&
                                   hasJobAgent &&
-                                  !hasTargets &&
-                                  "No targets"}
+                                  !hasResources &&
+                                  "No resources"}
                               </div>
                             )}
                           </div>

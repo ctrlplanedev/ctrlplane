@@ -1,5 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -29,8 +29,8 @@ export const getDeploymentVariables = (tx: Tx, releaseId: string) =>
 export const getTarget = (tx: Tx, targetId: string) =>
   tx
     .select()
-    .from(SCHEMA.target)
-    .where(eq(SCHEMA.target.id, targetId))
+    .from(SCHEMA.resource)
+    .where(eq(SCHEMA.resource.id, targetId))
     .then(takeFirstOrNull);
 
 export const getEnvironment = (tx: Tx, environmentId: string) =>
@@ -44,11 +44,11 @@ export const getEnvironment = (tx: Tx, environmentId: string) =>
 export const getTargetVariableValue = (tx: Tx, targetId: string, key: string) =>
   tx
     .select()
-    .from(SCHEMA.targetVariable)
+    .from(SCHEMA.resourceVariable)
     .where(
       and(
-        eq(SCHEMA.targetVariable.targetId, targetId),
-        eq(SCHEMA.targetVariable.key, key),
+        eq(SCHEMA.resourceVariable.resourceId, targetId),
+        eq(SCHEMA.resourceVariable.key, key),
       ),
     )
     .then(takeFirstOrNull);
@@ -63,15 +63,15 @@ export const getVariableValues = (tx: Tx, variableId: string) =>
 export const getMatchedTarget = (
   tx: Tx,
   targetId: string,
-  targetFilter: TargetCondition | null,
+  targetFilter: ResourceCondition | null,
 ) =>
   tx
     .select()
-    .from(SCHEMA.target)
+    .from(SCHEMA.resource)
     .where(
       and(
-        eq(SCHEMA.target.id, targetId),
-        SCHEMA.targetMatchesMetadata(tx, targetFilter),
+        eq(SCHEMA.resource.id, targetId),
+        SCHEMA.resourceMatchesMetadata(tx, targetFilter),
       ),
     )
     .then(takeFirstOrNull);
@@ -83,7 +83,7 @@ export const getFirstMatchedTarget = (
 ) =>
   Promise.all(
     values.map((value) =>
-      getMatchedTarget(tx, targetId, value.targetFilter).then(
+      getMatchedTarget(tx, targetId, value.resourceFilter).then(
         (matchedTarget) => (matchedTarget != null ? value : null),
       ),
     ),

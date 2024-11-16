@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
 
-import { authConfig } from "./config";
+import { authConfig } from "./config.js";
 
-export * from "./config";
+export * from "./config.js";
 export type { Session } from "next-auth";
 
 const {

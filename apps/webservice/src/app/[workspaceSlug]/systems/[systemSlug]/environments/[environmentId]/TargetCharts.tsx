@@ -1,6 +1,6 @@
 "use client";
 
-import type { Target } from "@ctrlplane/db/schema";
+import type { Resource } from "@ctrlplane/db/schema";
 import { useMemo } from "react";
 import _ from "lodash";
 import randomColor from "randomcolor";
@@ -12,7 +12,7 @@ import {
   ChartTooltipContent,
 } from "@ctrlplane/ui/chart";
 
-export const PieTargetsByKind: React.FC<{ targets: Target[] }> = ({
+export const PieTargetsByKind: React.FC<{ targets: Resource[] }> = ({
   targets,
 }) => {
   const chartData = _.chain(targets)
@@ -86,7 +86,7 @@ export const PieTargetsByKind: React.FC<{ targets: Target[] }> = ({
   );
 };
 
-export const PieTargetsByProvider: React.FC<{ targets: Target[] }> = ({
+export const PieTargetsByProvider: React.FC<{ targets: Resource[] }> = ({
   targets,
 }) => {
   const chartData = _.chain(targets)

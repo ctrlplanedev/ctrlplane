@@ -37,7 +37,7 @@ const DeleteTargetDialog: React.FC<DeleteTargetDialogProps> = ({
   children,
 }) => {
   const [open, setOpen] = useState(false);
-  const deleteTarget = api.target.delete.useMutation();
+  const deleteTarget = api.resource.delete.useMutation();
   const { removeTargetId } = useTargetDrawer();
   const utils = api.useUtils();
   const router = useRouter();
@@ -46,7 +46,7 @@ const DeleteTargetDialog: React.FC<DeleteTargetDialogProps> = ({
     deleteTarget
       .mutateAsync([targetId])
       .then(() => removeTargetId())
-      .then(() => utils.target.byWorkspaceId.list.invalidate())
+      .then(() => utils.resource.byWorkspaceId.list.invalidate())
       .then(() => router.refresh())
       .then(() => onClose());
 
@@ -93,7 +93,7 @@ const RedeployTargetDialog: React.FC<RedeployTargetDialogProps> = ({
   children,
 }) => {
   const [open, setOpen] = useState(false);
-  const redeployTarget = api.target.redeploy.useMutation();
+  const redeployTarget = api.resource.redeploy.useMutation();
 
   const onRedeploy = () =>
     redeployTarget.mutateAsync(targetId).then(() => setOpen(false));
@@ -132,7 +132,7 @@ const RedeployTargetDialog: React.FC<RedeployTargetDialogProps> = ({
 };
 
 type TargetActionsDropdownProps = {
-  target: SCHEMA.Target;
+  target: SCHEMA.Resource;
   children: React.ReactNode;
 };
 

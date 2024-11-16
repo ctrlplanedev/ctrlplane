@@ -32,15 +32,15 @@ export default function TargetLayout({
   const pathname = usePathname();
   const { workspaceSlug } = params;
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const targets = api.target.byWorkspaceId.list.useQuery(
+  const targets = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.data?.id ?? "", limit: 0 },
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
-  const metadataGroups = api.target.metadataGroup.groups.useQuery(
+  const metadataGroups = api.resource.metadataGroup.groups.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
-  const targetProviders = api.target.provider.byWorkspaceId.useQuery(
+  const targetProviders = api.resource.provider.byWorkspaceId.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data?.id !== "" },
   );
@@ -55,7 +55,7 @@ export default function TargetLayout({
    *
    * This is NOT a reference to that album.
    */
-  const views = api.target.view.list.useQuery(workspace.data?.id ?? "", {
+  const views = api.resource.view.list.useQuery(workspace.data?.id ?? "", {
     enabled: workspace.isSuccess && workspace.data?.id !== "",
   });
   return (

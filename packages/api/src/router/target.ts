@@ -27,13 +27,13 @@ import {
 } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
-import { targetCondition } from "@ctrlplane/validators/targets";
+import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { targetMetadataGroupRouter } from "./target-metadata-group";
-import { targetProviderRouter } from "./target-provider";
+import { resourceMetadataGroupRouter } from "./target-metadata-group";
+import { resourceProviderRouter } from "./target-provider";
 
-const targetRelations = createTRPCRouter({
+const resourceRelations = createTRPCRouter({
   hierarchy: protectedProcedure
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
@@ -91,27 +91,27 @@ const targetRelations = createTRPCRouter({
 
       const allIds = _.uniq([...sourceIds, ...targetIds, input]);
 
-      const targets = await ctx.db
+      const resources = await ctx.db
         .select()
-        .from(schema.target)
-        .where(inArray(schema.target.id, allIds));
+        .from(schema.resource)
+        .where(inArray(schema.resource.id, allIds));
 
-      return { relationships, targets };
+      return { relationships, resources };
     }),
 });
 
-const targetViews = createTRPCRouter({
+const resourceViews = createTRPCRouter({
   create: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewCreate)
+          .perform(Permission.ResourceViewCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(schema.createTargetView)
+    .input(schema.createResourceView)
     .mutation(async ({ ctx, input }) =>
       ctx.db
-        .insert(schema.targetView)
+        .insert(schema.resourceView)
         .values(input)
         .returning()
         .then(takeFirst),
@@ -121,15 +121,15 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewUpdate)
+          .perform(Permission.ResourceViewUpdate)
           .on({ type: "resourceView", id: input.id }),
     })
-    .input(z.object({ id: z.string().uuid(), data: schema.updateTargetView }))
+    .input(z.object({ id: z.string().uuid(), data: schema.updateResourceView }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
-        .update(schema.targetView)
+        .update(schema.resourceView)
         .set(input.data)
-        .where(eq(schema.targetView.id, input.id))
+        .where(eq(schema.resourceView.id, input.id))
         .returning()
         .then(takeFirst),
     ),
@@ -138,27 +138,29 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewDelete)
+          .perform(Permission.ResourceViewDelete)
           .on({ type: "resourceView", id: input }),
     })
     .input(z.string().uuid())
     .mutation(async ({ ctx, input }) =>
-      ctx.db.delete(schema.targetView).where(eq(schema.targetView.id, input)),
+      ctx.db
+        .delete(schema.resourceView)
+        .where(eq(schema.resourceView.id, input)),
     ),
 
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewGet)
+          .perform(Permission.ResourceViewGet)
           .on({ type: "resourceView", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db
         .select()
-        .from(schema.targetView)
-        .where(eq(schema.targetView.id, input))
+        .from(schema.resourceView)
+        .where(eq(schema.resourceView.id, input))
         .then(takeFirst),
     ),
 
@@ -166,23 +168,23 @@ const targetViews = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetViewList)
+          .perform(Permission.ResourceViewList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const views = await ctx.db
         .select()
-        .from(schema.targetView)
-        .orderBy(schema.targetView.name)
-        .where(eq(schema.targetView.workspaceId, input));
+        .from(schema.resourceView)
+        .orderBy(schema.resourceView.name)
+        .where(eq(schema.resourceView.workspaceId, input));
 
       return Promise.all(
         views.map(async (view) => {
           const total = await ctx.db
             .select({ count: count() })
-            .from(schema.target)
-            .where(schema.targetMatchesMetadata(ctx.db, view.filter))
+            .from(schema.resource)
+            .where(schema.resourceMatchesMetadata(ctx.db, view.filter))
             .then(takeFirst)
             .then((t) => t.count);
 
@@ -195,14 +197,14 @@ const targetViews = createTRPCRouter({
     }),
 });
 
-const targetVariables = createTRPCRouter({
+const resourceVariables = createTRPCRouter({
   create: protectedProcedure
-    .input(schema.createTargetVariable)
+    .input(schema.createResourceVariable)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
-          .on({ type: "resource", id: input.targetId }),
+          .perform(Permission.ResourceUpdate)
+          .on({ type: "resource", id: input.resourceId }),
     })
     .mutation(async ({ ctx, input }) => {
       const { sensitive } = input;
@@ -210,25 +212,25 @@ const targetVariables = createTRPCRouter({
         ? variablesAES256().encrypt(String(input.value))
         : input.value;
       const data = { ...input, value };
-      return ctx.db.insert(schema.targetVariable).values(data).returning();
+      return ctx.db.insert(schema.resourceVariable).values(data).returning();
     }),
 
   update: protectedProcedure
     .input(
-      z.object({ id: z.string().uuid(), data: schema.updateTargetVariable }),
+      z.object({ id: z.string().uuid(), data: schema.updateResourceVariable }),
     )
     .meta({
       authorizationCheck: async ({ ctx, canUser, input }) => {
         const variable = await ctx.db
           .select()
-          .from(schema.targetVariable)
-          .where(eq(schema.targetVariable.id, input.id))
+          .from(schema.resourceVariable)
+          .where(eq(schema.resourceVariable.id, input.id))
           .then(takeFirstOrNull);
         if (!variable) return false;
 
         return canUser
-          .perform(Permission.TargetUpdate)
-          .on({ type: "resource", id: variable.targetId });
+          .perform(Permission.ResourceUpdate)
+          .on({ type: "resource", id: variable.resourceId });
       },
     })
     .mutation(async ({ ctx, input }) => {
@@ -238,9 +240,9 @@ const targetVariables = createTRPCRouter({
         : input.data.value;
       const data = { ...input.data, value };
       return ctx.db
-        .update(schema.targetVariable)
+        .update(schema.resourceVariable)
         .set(data)
-        .where(eq(schema.targetVariable.id, input.id))
+        .where(eq(schema.resourceVariable.id, input.id))
         .returning()
         .then(takeFirst);
     }),
@@ -251,71 +253,75 @@ const targetVariables = createTRPCRouter({
       authorizationCheck: async ({ ctx, canUser, input }) => {
         const variable = await ctx.db
           .select()
-          .from(schema.targetVariable)
-          .where(eq(schema.targetVariable.id, input))
+          .from(schema.resourceVariable)
+          .where(eq(schema.resourceVariable.id, input))
           .then(takeFirstOrNull);
         if (!variable) return false;
 
         return canUser
-          .perform(Permission.TargetUpdate)
-          .on({ type: "resource", id: variable.targetId });
+          .perform(Permission.ResourceUpdate)
+          .on({ type: "resource", id: variable.resourceId });
       },
     })
     .mutation(async ({ ctx, input }) =>
       ctx.db
-        .delete(schema.targetVariable)
-        .where(eq(schema.targetVariable.id, input)),
+        .delete(schema.resourceVariable)
+        .where(eq(schema.resourceVariable.id, input)),
     ),
 });
 
 type _StringStringRecord = Record<string, string>;
-const targetQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
+const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
     .select({
-      target: schema.target,
-      targetProvider: schema.targetProvider,
+      resource: schema.resource,
+      resourceProvider: schema.resourceProvider,
       workspace: schema.workspace,
-      targetMetadata: sql<_StringStringRecord>`
+      resourceMetadata: sql<_StringStringRecord>`
         jsonb_object_agg(resource_metadata.key, resource_metadata.value) 
         FILTER (WHERE resource_metadata.key IS NOT NULL)
       `.as("resource_metadata"),
     })
-    .from(schema.target)
+    .from(schema.resource)
     .leftJoin(
-      schema.targetProvider,
-      eq(schema.target.providerId, schema.targetProvider.id),
+      schema.resourceProvider,
+      eq(schema.resource.providerId, schema.resourceProvider.id),
     )
     .innerJoin(
       schema.workspace,
-      eq(schema.target.workspaceId, schema.workspace.id),
+      eq(schema.resource.workspaceId, schema.workspace.id),
     )
     .leftJoin(
-      schema.targetMetadata,
-      eq(schema.targetMetadata.targetId, schema.target.id),
+      schema.resourceMetadata,
+      eq(schema.resourceMetadata.resourceId, schema.resource.id),
     )
     .where(and(...checks))
-    .groupBy(schema.target.id, schema.targetProvider.id, schema.workspace.id)
-    .orderBy(asc(schema.target.kind), asc(schema.target.name));
+    .groupBy(
+      schema.resource.id,
+      schema.resourceProvider.id,
+      schema.workspace.id,
+    )
+    .orderBy(asc(schema.resource.kind), asc(schema.resource.name));
 
-export const targetRouter = createTRPCRouter({
-  metadataGroup: targetMetadataGroupRouter,
-  provider: targetProviderRouter,
-  relations: targetRelations,
-  view: targetViews,
-  variable: targetVariables,
+export const resourceRouter = createTRPCRouter({
+  metadataGroup: resourceMetadataGroupRouter,
+  provider: resourceProviderRouter,
+  relations: resourceRelations,
+  view: resourceViews,
+  variable: resourceVariables,
 
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetGet)
+          .perform(Permission.ResourceGet)
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
-      ctx.db.query.target
+      ctx.db.query.resource
         .findFirst({
-          where: eq(schema.target.id, input),
+          where: eq(schema.resource.id, input),
           with: { metadata: true, variables: true, provider: true },
         })
         .then((t) => {
@@ -331,36 +337,36 @@ export const targetRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.TargetList)
+            .perform(Permission.ResourceList)
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .input(
         z.object({
           workspaceId: z.string().uuid(),
-          filter: targetCondition.optional(),
+          filter: resourceCondition.optional(),
           limit: z.number().int().nonnegative().max(1000).default(200),
           offset: z.number().int().nonnegative().default(0),
         }),
       )
       .query(({ ctx, input }) => {
         const workspaceIdCheck = eq(
-          schema.target.workspaceId,
+          schema.resource.workspaceId,
           input.workspaceId,
         );
-        const targetConditions = schema.targetMatchesMetadata(
+        const resourceConditions = schema.resourceMatchesMetadata(
           ctx.db,
           input.filter,
         );
-        const checks = [workspaceIdCheck, targetConditions].filter(isPresent);
+        const checks = [workspaceIdCheck, resourceConditions].filter(isPresent);
 
-        const items = targetQuery(ctx.db, checks)
+        const items = resourceQuery(ctx.db, checks)
           .limit(input.limit)
           .offset(input.offset)
           .then((t) =>
             t.map((a) => ({
-              ...a.target,
-              provider: a.targetProvider,
-              metadata: a.targetMetadata,
+              ...a.resource,
+              provider: a.resourceProvider,
+              metadata: a.resourceMetadata,
             })),
           );
 
@@ -368,7 +374,7 @@ export const targetRouter = createTRPCRouter({
           .select({
             count: sql`COUNT(*)`.mapWith(Number),
           })
-          .from(schema.target)
+          .from(schema.resource)
           .where(and(...checks))
           .then(takeFirst)
           .then((t) => t.count);
@@ -384,23 +390,23 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetCreate)
+          .perform(Permission.ResourceCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
     .input(
-      schema.createTarget.and(z.object({ metadata: z.record(z.string()) })),
+      schema.createResource.and(z.object({ metadata: z.record(z.string()) })),
     )
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
         const tg = await tx
-          .insert(schema.target)
+          .insert(schema.resource)
           .values(input)
           .returning()
           .then(takeFirst);
 
-        await tx.insert(schema.targetMetadata).values(
+        await tx.insert(schema.resourceMetadata).values(
           Object.entries(input.metadata).map(([key, value]) => ({
-            targetId: tg.id,
+            resourceId: tg.id,
             key,
             value,
           })),
@@ -414,50 +420,53 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input.id }),
     })
     .input(
       z.object({
         id: z.string().uuid(),
-        data: schema.updateTarget.and(
+        data: schema.updateResource.and(
           z.object({ metadata: z.record(z.string()) }),
         ),
       }),
     )
     .mutation(async ({ ctx, input: { id, data } }) =>
       ctx.db.transaction(async (tx) => {
-        const updatedTarget = await tx
-          .update(schema.target)
+        const updatedResource = await tx
+          .update(schema.resource)
           .set(data)
-          .where(eq(schema.target.id, id))
+          .where(eq(schema.resource.id, id))
           .returning()
           .then(takeFirst);
 
         const metadataEntries = Object.entries(data.metadata).map(
           ([key, value]) => ({
-            targetId: id,
+            resourceId: id,
             key,
             value,
           }),
         );
 
         await tx
-          .insert(schema.targetMetadata)
+          .insert(schema.resourceMetadata)
           .values(metadataEntries)
           .onConflictDoUpdate({
-            target: [schema.targetMetadata.targetId, schema.targetMetadata.key],
+            target: [
+              schema.resourceMetadata.resourceId,
+              schema.resourceMetadata.key,
+            ],
             set: { value: sql`EXCLUDED.value` },
           })
           .then(() =>
             tx
-              .delete(schema.targetMetadata)
+              .delete(schema.resourceMetadata)
               .where(
                 and(
-                  eq(schema.targetMetadata.targetId, id),
+                  eq(schema.resourceMetadata.resourceId, id),
                   not(
                     inArray(
-                      schema.targetMetadata.key,
+                      schema.resourceMetadata.key,
                       Object.keys(data.metadata),
                     ),
                   ),
@@ -465,14 +474,14 @@ export const targetRouter = createTRPCRouter({
               ),
           );
 
-        return updatedTarget;
+        return updatedResource;
       }),
     ),
 
   delete: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.TargetDelete).on(
+        canUser.perform(Permission.ResourceDelete).on(
           ...(input as string[]).map((t) => ({
             type: "resource" as const,
             id: t,
@@ -481,17 +490,17 @@ export const targetRouter = createTRPCRouter({
     })
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) => {
-      const targets = await ctx.db.query.target.findMany({
-        where: inArray(schema.target.id, input),
+      const resources = await ctx.db.query.resource.findMany({
+        where: inArray(schema.resource.id, input),
       });
       const events = (
-        await Promise.allSettled(targets.map(getEventsForTargetDeleted))
+        await Promise.allSettled(resources.map(getEventsForTargetDeleted))
       ).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
       await Promise.allSettled(events.map(handleEvent));
 
       return ctx.db
-        .delete(schema.target)
-        .where(inArray(schema.target.id, input))
+        .delete(schema.resource)
+        .where(inArray(schema.resource.id, input))
         .returning();
     }),
 
@@ -499,19 +508,19 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetList)
+          .perform(Permission.ResourceList)
           .on({ type: "workspace", id: input }),
     })
     .input(z.string())
     .query(({ ctx, input }) =>
       ctx.db
-        .selectDistinct({ key: schema.targetMetadata.key })
-        .from(schema.target)
+        .selectDistinct({ key: schema.resourceMetadata.key })
+        .from(schema.resource)
         .innerJoin(
-          schema.targetMetadata,
-          eq(schema.targetMetadata.targetId, schema.target.id),
+          schema.resourceMetadata,
+          eq(schema.resourceMetadata.resourceId, schema.resource.id),
         )
-        .where(eq(schema.target.workspaceId, input))
+        .where(eq(schema.resource.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),
 
@@ -519,15 +528,15 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(schema.target)
+        .update(schema.resource)
         .set({ lockedAt: new Date() })
-        .where(eq(schema.target.id, input))
+        .where(eq(schema.resource.id, input))
         .returning()
         .then(takeFirst),
     ),
@@ -536,15 +545,15 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(schema.target)
+        .update(schema.resource)
         .set({ lockedAt: null })
-        .where(eq(schema.target.id, input))
+        .where(eq(schema.resource.id, input))
         .returning()
         .then(takeFirst),
     ),
@@ -554,13 +563,13 @@ export const targetRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.TargetUpdate)
+          .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
     .mutation(({ ctx, input }) =>
       createReleaseJobTriggers(ctx.db, "redeploy")
         .causedById(ctx.session.user.id)
-        .targets([input])
+        .resources([input])
         .filter(isPassingReleaseStringCheckPolicy)
         .filter(isPassingNoPendingJobsPolicy)
         .then(createJobApprovals)

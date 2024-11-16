@@ -1,5 +1,5 @@
 import type { DeploymentVariableValue } from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -21,9 +21,9 @@ import {
   deploymentVariable,
   deploymentVariableValue,
   environment,
+  resource,
+  resourceMatchesMetadata,
   system,
-  target,
-  targetMatchesMetadata,
   updateDeploymentVariable,
   updateDeploymentVariableValue,
 } from "@ctrlplane/db/schema";
@@ -118,17 +118,17 @@ const valueRouter = createTRPCRouter({
           with: {
             system: {
               with: {
-                environments: { where: isNotNull(environment.targetFilter) },
+                environments: { where: isNotNull(environment.resourceFilter) },
               },
             },
           },
         })
         .then((d) => d?.system.environments ?? []);
 
-      const systemCondition: TargetCondition = {
+      const systemCondition: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.Or,
-        conditions: dep.map((e) => e.targetFilter).filter(isPresent),
+        conditions: dep.map((e) => e.resourceFilter).filter(isPresent),
       };
 
       const updatedValue = await ctx.db.transaction((tx) =>
@@ -175,10 +175,10 @@ const valueRouter = createTRPCRouter({
           ),
         );
 
-      const getOldTargetFilter = (): TargetCondition | null => {
-        if (value.id !== variable.defaultValueId) return value.targetFilter;
+      const getOldTargetFilter = (): ResourceCondition | null => {
+        if (value.id !== variable.defaultValueId) return value.resourceFilter;
         const conditions = otherValues
-          .map((v) => v.targetFilter)
+          .map((v) => v.resourceFilter)
           .filter(isPresent);
         return {
           type: FilterType.Comparison,
@@ -188,11 +188,11 @@ const valueRouter = createTRPCRouter({
         };
       };
 
-      const getNewTargetFilter = (): TargetCondition | null => {
+      const getNewTargetFilter = (): ResourceCondition | null => {
         if (updatedValue.id !== newDefaultValueId)
-          return updatedValue.targetFilter;
+          return updatedValue.resourceFilter;
         const conditions = otherValues
-          .map((v) => v.targetFilter)
+          .map((v) => v.resourceFilter)
           .filter(isPresent);
         return {
           type: FilterType.Comparison,
@@ -202,23 +202,23 @@ const valueRouter = createTRPCRouter({
         };
       };
 
-      const oldTargetFilter: TargetCondition = {
+      const oldTargetFilter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [systemCondition, getOldTargetFilter()].filter(isPresent),
       };
-      const newTargetFilter: TargetCondition = {
+      const newTargetFilter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.And,
         conditions: [systemCondition, getNewTargetFilter()].filter(isPresent),
       };
 
-      const oldTargets = await ctx.db.query.target.findMany({
-        where: targetMatchesMetadata(ctx.db, oldTargetFilter),
+      const oldTargets = await ctx.db.query.resource.findMany({
+        where: resourceMatchesMetadata(ctx.db, oldTargetFilter),
       });
 
-      const newTargets = await ctx.db.query.target.findMany({
-        where: targetMatchesMetadata(ctx.db, newTargetFilter),
+      const newTargets = await ctx.db.query.resource.findMany({
+        where: resourceMatchesMetadata(ctx.db, newTargetFilter),
       });
 
       const oldTargetIds = new Set(oldTargets.map((t) => t.id));
@@ -237,7 +237,7 @@ const valueRouter = createTRPCRouter({
       if (targetsToTrigger.length > 0)
         await createReleaseJobTriggers(ctx.db, "variable_changed")
           .causedById(ctx.session.user.id)
-          .targets(targetsToTrigger.map((t) => t.id))
+          .resources(targetsToTrigger.map((t) => t.id))
           .deployments([deploymentId])
           .filter(isPassingNoPendingJobsPolicy)
           .filter(isPassingReleaseStringCheckPolicy)
@@ -298,9 +298,9 @@ export const deploymentVariableRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const deploymentVariables = await ctx.db
         .select()
-        .from(target)
-        .where(eq(target.id, input))
-        .innerJoin(system, eq(target.workspaceId, system.workspaceId))
+        .from(resource)
+        .where(eq(resource.id, input))
+        .innerJoin(system, eq(resource.workspaceId, system.workspaceId))
         .innerJoin(deployment, eq(deployment.systemId, system.id))
         .innerJoin(
           deploymentVariable,
@@ -315,7 +315,7 @@ export const deploymentVariableRouter = createTRPCRouter({
             .groupBy((r) => r.deployment_variable.id)
             .map((r) => ({
               ...r[0]!.deployment_variable,
-              targetFilter: r[0]!.deployment_variable_value.targetFilter,
+              targetFilter: r[0]!.deployment_variable_value.resourceFilter,
               value: r[0]!.deployment_variable_value,
             }))
             .value(),
@@ -327,11 +327,11 @@ export const deploymentVariableRouter = createTRPCRouter({
 
           const tg = await ctx.db
             .select()
-            .from(target)
+            .from(resource)
             .where(
               and(
-                eq(target.id, input),
-                targetMatchesMetadata(ctx.db, targetFilter),
+                eq(resource.id, input),
+                resourceMatchesMetadata(ctx.db, targetFilter),
               ),
             )
             .then(takeFirstOrNull);
@@ -360,7 +360,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           id: deploymentVariableValue.id,
           value: deploymentVariableValue.value,
           variableId: deploymentVariableValue.variableId,
-          targetFilter: deploymentVariableValue.targetFilter,
+          resourceFilter: deploymentVariableValue.resourceFilter,
         })
         .from(deploymentVariableValue)
         .orderBy(asc(deploymentVariableValue.value))
@@ -378,7 +378,7 @@ export const deploymentVariableRouter = createTRPCRouter({
                     'id', ${deploymentVariableValueSubquery.id},
                     'value', ${deploymentVariableValueSubquery.value},
                     'variableId', ${deploymentVariableValueSubquery.variableId},
-                    'targetFilter', ${deploymentVariableValueSubquery.targetFilter}
+                    'resourceFilter', ${deploymentVariableValueSubquery.resourceFilter}
                   )
                 else null end
               ) filter (where ${deploymentVariableValueSubquery.id} is not null),

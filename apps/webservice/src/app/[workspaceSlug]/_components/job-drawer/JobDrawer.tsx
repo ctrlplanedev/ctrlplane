@@ -75,7 +75,7 @@ export const JobDrawer: React.FC = () => {
                   <JobDropdownMenu
                     release={job.release}
                     environmentId={job.environment.id}
-                    target={job.target}
+                    target={job.resource}
                     deployment={job.release.deployment}
                     job={job.job}
                     isPassingReleaseChannel={isPassingReleaseChannel}
@@ -130,9 +130,9 @@ export const JobDrawer: React.FC = () => {
                 </div>
 
                 <DependenciesDiagram
-                  targetId={job.target.id}
+                  targetId={job.resource.id}
                   relationships={job.relationships}
-                  targets={job.relatedTargets}
+                  targets={job.relatedResources}
                   releaseDependencies={job.releaseDependencies}
                 />
               </div>

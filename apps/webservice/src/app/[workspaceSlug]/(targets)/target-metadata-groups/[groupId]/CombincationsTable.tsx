@@ -15,7 +15,7 @@ import {
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
   combinations: Array<{
-    targets: number;
+    resources: number;
     metadata: Record<string, string | null>;
   }>;
 }> = ({ workspaceSlug, combinations }) => {
@@ -30,7 +30,7 @@ export const CombinationsTable: React.FC<{
       </TableHeader>
       <TableBody>
         {combinations.map((combination, idx) => {
-          const { targets, metadata } = combination;
+          const { resources, metadata } = combination;
           return (
             <TableRow
               key={idx}
@@ -70,7 +70,7 @@ export const CombinationsTable: React.FC<{
                   </div>
                 ))}
               </TableCell>
-              <TableCell>{targets}</TableCell>
+              <TableCell>{resources}</TableCell>
             </TableRow>
           );
         })}

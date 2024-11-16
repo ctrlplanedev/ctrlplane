@@ -15,9 +15,9 @@ import {
   jobAgent,
   release,
   releaseJobTrigger,
+  resource,
+  resourceMatchesMetadata,
   system,
-  target,
-  targetMatchesMetadata,
 } from "@ctrlplane/db/schema";
 
 type FilterFunc = (
@@ -37,7 +37,7 @@ class ReleaseJobTriggerBuilder {
   private _causedById?: string;
 
   private environmentIds?: string[];
-  private targetIds?: string[];
+  private resourceIds?: string[];
   private deploymentIds?: string[];
   private releaseIds?: string[];
 
@@ -64,8 +64,8 @@ class ReleaseJobTriggerBuilder {
     return this;
   }
 
-  targets(ids: string[]) {
-    this.targetIds = ids;
+  resources(ids: string[]) {
+    this.resourceIds = ids;
     return this;
   }
 
@@ -91,7 +91,7 @@ class ReleaseJobTriggerBuilder {
         this.deploymentIds && inArray(deployment.id, this.deploymentIds),
         this.environmentIds && inArray(environment.id, this.environmentIds),
       ].filter(isPresent),
-      isNotNull(environment.targetFilter),
+      isNotNull(environment.resourceFilter),
     );
   }
 
@@ -135,23 +135,23 @@ class ReleaseJobTriggerBuilder {
     const releases = await releaseJobTriggers.where(this._where());
     return Promise.all(
       releases.flatMap(async (release) => {
-        const { targetFilter } = release.environment;
+        const { resourceFilter } = release.environment;
         const { workspaceId } = release.system;
-        const targets = await this.tx
+        const resources = await this.tx
           .select()
-          .from(target)
+          .from(resource)
           .where(
             and(
-              targetMatchesMetadata(this.tx, targetFilter),
-              eq(target.workspaceId, workspaceId),
-              isNull(target.lockedAt),
-              this.targetIds && inArray(target.id, this.targetIds),
+              resourceMatchesMetadata(this.tx, resourceFilter),
+              eq(resource.workspaceId, workspaceId),
+              isNull(resource.lockedAt),
+              this.resourceIds && inArray(resource.id, this.resourceIds),
             ),
           );
 
-        return targets.map((target) => ({
+        return resources.map((resource) => ({
           ...release,
-          target,
+          resource,
         }));
       }),
     ).then((result) => result.flat());
@@ -164,7 +164,7 @@ class ReleaseJobTriggerBuilder {
     let wt: ReleaseJobTriggerInsert[] = vals.map((v) => ({
       type: this.type,
       causedById: this._causedById,
-      targetId: v.target.id,
+      resourceId: v.resource.id,
       environmentId: v.environment.id,
       releaseId: v.release.id,
       jobId: "",

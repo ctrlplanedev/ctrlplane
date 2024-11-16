@@ -4,40 +4,6 @@
  */
 
 export interface paths {
-  "/v1/targets": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Create or update multiple targets */
-    post: operations["upsertTargets"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/releases": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Creates a release */
-    post: operations["createRelease"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/v1/environments": {
     parameters: {
       query?: never;
@@ -55,120 +21,15 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/targets/{targetId}": {
+  "/v1/job-agents/{agentId}/jobs/running": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get a target */
-    get: operations["getTarget"];
-    put?: never;
-    post?: never;
-    /** Delete a target */
-    delete: operations["deleteTarget"];
-    options?: never;
-    head?: never;
-    /** Update a target */
-    patch: operations["updateTarget"];
-    trace?: never;
-  };
-  "/v1/jobs/{jobId}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get a job */
-    get: operations["getJob"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update a job */
-    patch: operations["updateJob"];
-    trace?: never;
-  };
-  "/v1/job-agents/name": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Upserts the agent */
-    patch: operations["updateJobAgent"];
-    trace?: never;
-  };
-  "/v1/target-providers/{providerId}/set": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Sets the target for a provider. */
-    patch: operations["setTargetProvidersTargets"];
-    trace?: never;
-  };
-  "/v1/jobs/{jobId}/acknowledge": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Acknowledge a job */
-    post: operations["acknowledgeJob"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/deployments/{deploymentId}/release-channels": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Create a release channel */
-    post: operations["createReleaseChannel"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/v1/job-agents/{agentId}/queue/next": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Get the next jobs */
-    get: operations["getNextJobs"];
+    /** Get a agents running jobs */
+    get: operations["getAgentRunningJob"];
     put?: never;
     post?: never;
     delete?: never;
@@ -197,15 +58,15 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/job-agents/{agentId}/jobs/running": {
+  "/v1/job-agents/{agentId}/queue/next": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get a agents running jobs */
-    get: operations["getAgentRunningJob"];
+    /** Get the next jobs */
+    get: operations["getNextJobs"];
     put?: never;
     post?: never;
     delete?: never;
@@ -214,36 +75,175 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/targets/identifier/{identifier}": {
+  "/v1/job-agents/name": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Get a target by identifier */
-    get: operations["getTargetByIdentifier"];
+    get?: never;
     put?: never;
     post?: never;
-    /** Delete a target by identifier */
-    delete: operations["deleteTargetByIdentifier"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Upserts the agent */
+    patch: operations["updateJobAgent"];
+    trace?: never;
+  };
+  "/v1/jobs/{jobId}/acknowledge": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Acknowledge a job */
+    post: operations["acknowledgeJob"];
+    delete?: never;
     options?: never;
     head?: never;
     patch?: never;
     trace?: never;
   };
-  "/v1/workspaces/{workspaceId}/target-providers/name/{name}": {
+  "/v1/jobs/{jobId}": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Upserts a target provider. */
-    get: operations["upsertTargetProvider"];
+    /** Get a job */
+    get: operations["getJob"];
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    /** Update a job */
+    patch: operations["updateJob"];
+    trace?: never;
+  };
+  "/v1/release-channels": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a release channel */
+    post: operations["createReleaseChannel"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/releases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Creates a release */
+    post: operations["createRelease"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/resource-providers/{providerId}/set": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Sets the resource for a provider. */
+    patch: operations["setResourceProvidersResources"];
+    trace?: never;
+  };
+  "/v1/resources/{resourceId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a resource */
+    get: operations["getResource"];
+    put?: never;
+    post?: never;
+    /** Delete a resource */
+    delete: operations["deleteResource"];
+    options?: never;
+    head?: never;
+    /** Update a resource */
+    patch: operations["updateResource"];
+    trace?: never;
+  };
+  "/v1/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create or update multiple resources */
+    post: operations["upsertResources"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Upserts a resource provider. */
+    get: operations["upsertResourceProvider"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/resources/identifier/{identifier}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a resource by identifier */
+    get: operations["getResourceByIdentifier"];
+    put?: never;
+    post?: never;
+    /** Delete a resource by identifier */
+    delete: operations["deleteResourceByIdentifier"];
     options?: never;
     head?: never;
     patch?: never;
@@ -252,7 +252,13 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: never;
+  schemas: {
+    Variable: {
+      key: string;
+      value: string | number | boolean;
+      sensitive?: boolean;
+    };
+  };
   responses: never;
   parameters: never;
   requestBodies: never;
@@ -261,80 +267,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  upsertTargets: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          /** Format: uuid */
-          workspaceId: string;
-          targets: {
-            name: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            config: Record<string, never>;
-            metadata?: {
-              [key: string]: string;
-            };
-            variables?: {
-              key: string;
-              value: string | number | boolean;
-              sensitive?: boolean;
-            }[];
-          }[];
-        };
-      };
-    };
-    responses: {
-      /** @description All of the cats */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  createRelease: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          version: string;
-          deploymentId: string;
-          metadata?: Record<string, never>;
-        };
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            id?: string;
-            version?: string;
-            metadata?: {
-              [key: string]: string;
-            };
-          };
-        };
-      };
-    };
-  };
   createEnvironment: {
     parameters: {
       query?: never;
@@ -346,6 +278,13 @@ export interface operations {
       content: {
         "application/json": {
           systemId: string;
+          name: string;
+          description?: string;
+          resourceFilter?: {
+            [key: string]: unknown;
+          };
+          policyId?: string;
+          releaseChannels?: string[];
           /** Format: date-time */
           expiresAt?: string;
         };
@@ -361,12 +300,26 @@ export interface operations {
           "application/json": {
             environment?: {
               systemId: string;
+              name?: string;
+              description?: string;
               /** Format: date-time */
               expiresAt?: string | null;
-              targetFilter?: {
+              resourceFilter?: {
                 [key: string]: unknown;
               };
             };
+          };
+        };
+      };
+      /** @description Environment already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+            id?: string;
           };
         };
       };
@@ -383,13 +336,13 @@ export interface operations {
       };
     };
   };
-  getTarget: {
+  getAgentRunningJob: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description The target ID */
-        targetId: string;
+        /** @description The execution ID */
+        agentId: string;
       };
       cookie?: never;
     };
@@ -403,82 +356,42 @@ export interface operations {
         content: {
           "application/json": {
             id: string;
-            name: string;
-            workspaceId: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            config: {
-              [key: string]: unknown;
-            };
-            /** Format: date-time */
-            lockedAt?: string | null;
-            /** Format: date-time */
-            updatedAt: string;
-            provider?: {
-              id?: string;
-              name?: string;
-            } | null;
-            metadata: {
-              [key: string]: string;
-            };
-            variables?: {
-              key: string;
-              value: string | number | boolean;
-              /** @default false */
-              sensitive: boolean;
-            }[];
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Target not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            /** @example Target not found */
-            error: string;
-          };
+            status: string;
+            message: string;
+            jobAgentId: string;
+            jobAgentConfig: Record<string, never>;
+            externalId: string | null;
+            release?: Record<string, never>;
+            deployment?: Record<string, never>;
+            config: Record<string, never>;
+            runbook?: Record<string, never>;
+            target?: Record<string, never>;
+            environment?: Record<string, never>;
+          }[];
         };
       };
     };
   };
-  deleteTarget: {
+  acknowledgeAgentJob: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description The target ID */
-        targetId: string;
+        /** @description The ID of the job agent */
+        agentId: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Target deleted successfully */
+      /** @description Successfully acknowledged job */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            success: boolean;
+            job?: Record<string, never>;
           };
         };
       };
@@ -487,59 +400,76 @@ export interface operations {
         headers: {
           [name: string]: unknown;
         };
-        content?: never;
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
+        content: {
+          "application/json": {
+            error?: string;
+          };
         };
-        content?: never;
       };
-      /** @description Target not found */
+      /** @description Workspace not found */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            error: string;
+            error?: string;
           };
         };
       };
     };
   };
-  updateTarget: {
+  getNextJobs: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        targetId: string;
+        /** @description The agent ID */
+        agentId: string;
       };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            jobs?: {
+              /** @description The job ID */
+              id: string;
+              status: string;
+              jobAgentId: string;
+              jobAgentConfig: Record<string, never>;
+              message: string;
+              releaseJobTriggerId: string;
+            }[];
+          };
+        };
+      };
+    };
+  };
+  updateJobAgent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
       cookie?: never;
     };
     requestBody: {
       content: {
         "application/json": {
-          name?: string;
-          version?: string;
-          kind?: string;
-          identifier?: string;
-          workspaceId?: string;
-          metadata?: {
-            [key: string]: string;
-          };
-          variables?: {
-            key: string;
-            value: string | number | boolean;
-            /** @default false */
-            sensitive?: boolean;
-          }[];
+          workspaceId: string;
+          name: string;
+          type: string;
         };
       };
     };
     responses: {
-      /** @description Target updated successfully */
+      /** @description Successfully retrieved or created the agent */
       200: {
         headers: {
           [name: string]: unknown;
@@ -549,34 +479,43 @@ export interface operations {
             id: string;
             name: string;
             workspaceId: string;
-            kind: string;
-            identifier: string;
-            version: string;
-            config: {
-              [key: string]: unknown;
-            };
-            metadata: {
-              [key: string]: string;
-            };
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  acknowledgeJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The job ID */
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            sucess: boolean;
           };
         };
       };
       /** @description Unauthorized */
       401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Target not found */
-      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -641,7 +580,7 @@ export interface operations {
               systemId: string;
               jobAgentId: string;
             };
-            target?: {
+            resource?: {
               id: string;
               name: string;
               version: string;
@@ -713,7 +652,7 @@ export interface operations {
       };
     };
   };
-  updateJobAgent: {
+  createReleaseChannel: {
     parameters: {
       query?: never;
       header?: never;
@@ -723,145 +662,10 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": {
-          workspaceId: string;
+          deploymentId: string;
           name: string;
-          type: string;
-        };
-      };
-    };
-    responses: {
-      /** @description Successfully retrieved or created the agent */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            id: string;
-            name: string;
-            workspaceId: string;
-          };
-        };
-      };
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  setTargetProvidersTargets: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description UUID of the scanner */
-        providerId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          targets: {
-            identifier: string;
-            name: string;
-            version: string;
-            kind: string;
-            config: {
-              [key: string]: unknown;
-            };
-            metadata: {
-              [key: string]: string;
-            };
-          }[];
-        };
-      };
-    };
-    responses: {
-      /** @description Successfully updated the deployment target */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Invalid request */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Deployment target not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  acknowledgeJob: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description The job ID */
-        jobId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            sucess: boolean;
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            error: string;
-          };
-        };
-      };
-    };
-  };
-  createReleaseChannel: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        deploymentId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": {
-          name: string;
-          description?: string;
-          releaseFilter?: {
+          description?: string | null;
+          releaseFilter: {
             [key: string]: unknown;
           };
         };
@@ -876,13 +680,14 @@ export interface operations {
         content: {
           "application/json": {
             id: string;
+            deploymentId: string;
             name: string;
             description?: string | null;
-            deploymentId: string;
             /** Format: date-time */
             createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
+            releaseFilter?: {
+              [key: string]: unknown;
+            };
           };
         };
       };
@@ -908,19 +713,55 @@ export interface operations {
           };
         };
       };
+      /** @description Release channel already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+            id: string;
+          };
+        };
+      };
+      /** @description Failed to create release channel */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
     };
   };
-  getNextJobs: {
+  createRelease: {
     parameters: {
       query?: never;
       header?: never;
-      path: {
-        /** @description The agent ID */
-        agentId: string;
-      };
+      path?: never;
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          version: string;
+          deploymentId: string;
+          /** Format: date-time */
+          createdAt?: string;
+          name?: string;
+          config?: {
+            [key: string]: unknown;
+          };
+          metadata?: {
+            [key: string]: string;
+          };
+        };
+      };
+    };
     responses: {
       /** @description OK */
       200: {
@@ -929,74 +770,94 @@ export interface operations {
         };
         content: {
           "application/json": {
-            jobs?: {
-              /** @description The job ID */
-              id: string;
-              status: string;
-              jobAgentId: string;
-              jobAgentConfig: Record<string, never>;
-              message: string;
-              releaseJobTriggerId: string;
-            }[];
+            id?: string;
+            version?: string;
+            metadata?: {
+              [key: string]: string;
+            };
+          };
+        };
+      };
+      /** @description Release already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+            id?: string;
           };
         };
       };
     };
   };
-  acknowledgeAgentJob: {
+  setResourceProvidersResources: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description The ID of the job agent */
-        agentId: string;
+        /** @description UUID of the scanner */
+        providerId: string;
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        "application/json": {
+          resources: {
+            identifier: string;
+            name: string;
+            version: string;
+            kind: string;
+            config: {
+              [key: string]: unknown;
+            };
+            metadata: {
+              [key: string]: string;
+            };
+          }[];
+        };
+      };
+    };
     responses: {
-      /** @description Successfully acknowledged job */
+      /** @description Successfully updated the deployment resources */
       200: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          "application/json": {
-            job?: Record<string, never>;
-          };
-        };
+        content?: never;
       };
-      /** @description Unauthorized */
-      401: {
+      /** @description Invalid request */
+      400: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          "application/json": {
-            error?: string;
-          };
-        };
+        content?: never;
       };
-      /** @description Workspace not found */
+      /** @description Deployment resources not found */
       404: {
         headers: {
           [name: string]: unknown;
         };
-        content: {
-          "application/json": {
-            error?: string;
-          };
+        content?: never;
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
         };
+        content?: never;
       };
     };
   };
-  getAgentRunningJob: {
+  getResource: {
     parameters: {
       query?: never;
       header?: never;
       path: {
-        /** @description The execution ID */
-        agentId: string;
+        /** @description The resource ID */
+        resourceId: string;
       };
       cookie?: never;
     };
@@ -1010,23 +871,279 @@ export interface operations {
         content: {
           "application/json": {
             id: string;
-            status: string;
-            message: string;
-            jobAgentId: string;
-            jobAgentConfig: Record<string, never>;
-            externalId: string | null;
-            release?: Record<string, never>;
-            deployment?: Record<string, never>;
-            config: Record<string, never>;
-            runbook?: Record<string, never>;
-            target?: Record<string, never>;
-            environment?: Record<string, never>;
-          }[];
+            name: string;
+            workspaceId: string;
+            kind: string;
+            identifier: string;
+            version: string;
+            config: {
+              [key: string]: unknown;
+            };
+            /** Format: date-time */
+            lockedAt?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            provider?: {
+              id?: string;
+              name?: string;
+            } | null;
+            metadata: {
+              [key: string]: string;
+            };
+            variables?: components["schemas"]["Variable"][];
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Resource not found */
+            error: string;
+          };
         };
       };
     };
   };
-  getTargetByIdentifier: {
+  deleteResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The resource ID */
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Resource deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            success: boolean;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  updateResource: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        resourceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          name?: string;
+          version?: string;
+          kind?: string;
+          identifier?: string;
+          workspaceId?: string;
+          metadata?: {
+            [key: string]: string;
+          };
+          variables?: components["schemas"]["Variable"][];
+        };
+      };
+    };
+    responses: {
+      /** @description Resource updated successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            name: string;
+            workspaceId: string;
+            kind: string;
+            identifier: string;
+            version: string;
+            config: {
+              [key: string]: unknown;
+            };
+            metadata: {
+              [key: string]: string;
+            };
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  upsertResources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /** Format: uuid */
+          workspaceId: string;
+          resources: {
+            name: string;
+            kind: string;
+            identifier: string;
+            version: string;
+            config: Record<string, never>;
+            metadata?: {
+              [key: string]: string;
+            };
+            variables?: components["schemas"]["Variable"][];
+          }[];
+        };
+      };
+    };
+    responses: {
+      /** @description All of the cats */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            count?: number;
+          };
+        };
+      };
+    };
+  };
+  upsertResourceProvider: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Name of the workspace */
+        workspaceId: string;
+        /** @description Name of the resource provider */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully retrieved or created the resource provider */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            name: string;
+            workspaceId: string;
+          };
+        };
+      };
+      /** @description Unauthorized */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Workspace not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getResourceByIdentifier: {
     parameters: {
       query?: never;
       header?: never;
@@ -1102,14 +1219,14 @@ export interface operations {
       };
     };
   };
-  deleteTargetByIdentifier: {
+  deleteResourceByIdentifier: {
     parameters: {
       query?: never;
       header?: never;
       path: {
         /** @description ID of the workspace */
         workspaceId: string;
-        /** @description Identifier of the target */
+        /** @description Identifier of the resource */
         identifier: string;
       };
       cookie?: never;
@@ -1153,63 +1270,6 @@ export interface operations {
             error?: string;
           };
         };
-      };
-      /** @description Internal server error */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  upsertTargetProvider: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Name of the workspace */
-        workspaceId: string;
-        /** @description Name of the target provider */
-        name: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successfully retrieved or created the target provider */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": {
-            id: string;
-            name: string;
-            workspaceId: string;
-          };
-        };
-      };
-      /** @description Unauthorized */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Permission denied */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Workspace not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
       /** @description Internal server error */
       500: {

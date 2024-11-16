@@ -1,12 +1,12 @@
 import type { HookEvent } from "@ctrlplane/validators/events";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
 import { eq, isNotNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 export const getEventsForDeploymentDeleted = async (
   deployment: SCHEMA.Deployment,
@@ -14,24 +14,24 @@ export const getEventsForDeploymentDeleted = async (
   const system = await db.query.system.findFirst({
     where: eq(SCHEMA.system.id, deployment.systemId),
     with: {
-      environments: { where: isNotNull(SCHEMA.environment.targetFilter) },
+      environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
     },
   });
   if (system == null) return [];
 
   const envFilters = system.environments
-    .map((e) => e.targetFilter)
+    .map((e) => e.resourceFilter)
     .filter(isPresent);
   if (envFilters.length === 0) return [];
 
-  const systemFilter: TargetCondition = {
-    type: TargetFilterType.Comparison,
+  const systemFilter: ResourceCondition = {
+    type: ResourceFilterType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: envFilters,
   };
 
-  const targets = await db.query.target.findMany({
-    where: SCHEMA.targetMatchesMetadata(db, systemFilter),
+  const targets = await db.query.resource.findMany({
+    where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
   });
 
   return targets.map((target) => ({

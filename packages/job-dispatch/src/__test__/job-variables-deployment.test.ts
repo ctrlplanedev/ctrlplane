@@ -44,14 +44,14 @@ const job: Job = {
     jobId: "0",
     type: "new_release",
     releaseId: "0",
-    targetId: "0",
+    resourceId: "0",
     environmentId: "0",
     createdAt: new Date(),
     causedById: null,
   },
 };
 
-const target: SCHEMA.Target = {
+const target: SCHEMA.Resource = {
   id: "0",
   name: "test",
   workspaceId: "0",
@@ -78,19 +78,19 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
     id: "0",
     variableId: "0",
     value: "test1",
-    targetFilter: null,
+    resourceFilter: null,
   },
   {
     id: "1",
     variableId: "0",
     value: "test2",
-    targetFilter: null,
+    resourceFilter: null,
   },
   {
     id: "2",
     variableId: "0",
     value: "test3",
-    targetFilter: null,
+    resourceFilter: null,
   },
 ];
 
@@ -237,7 +237,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [
@@ -305,7 +305,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [
@@ -372,7 +372,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [
@@ -439,7 +439,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [
@@ -506,7 +506,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [
@@ -566,9 +566,9 @@ describe("job-variables-deployment", () => {
   it("should prioritize target variable if it exists", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const targetVariable: SCHEMA.TargetVariable = {
+    const targetVariable: SCHEMA.ResourceVariable = {
       id: "0",
-      targetId: "0",
+      resourceId: "0",
       key: "test",
       value: "test6",
       sensitive: false,
@@ -601,7 +601,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [
@@ -661,9 +661,9 @@ describe("job-variables-deployment", () => {
   it("should prioritize target variable if it exists and return sensitive value if it is", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const targetVariable: SCHEMA.TargetVariable = {
+    const targetVariable: SCHEMA.ResourceVariable = {
       id: "0",
-      targetId: "0",
+      resourceId: "0",
       key: "test",
       value: "test6",
       sensitive: true,
@@ -696,7 +696,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: null,
-      targetFilter: null,
+      resourceFilter: null,
       expiresAt: null,
       createdAt: new Date(),
       environments: [

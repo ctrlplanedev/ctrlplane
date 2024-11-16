@@ -16,7 +16,7 @@ import { api } from "~/trpc/react";
 export const TargetAnnotationPieChart: React.FC<{
   workspaceId: string;
 }> = ({ workspaceId }) => {
-  const targets = api.target.byWorkspaceId.list.useQuery({ workspaceId });
+  const targets = api.resource.byWorkspaceId.list.useQuery({ workspaceId });
   const [showUndefined] = useState(false);
   const [annotation] = useState<string | null>(
     "kubernetes/autoscaling-enabled",

@@ -1,4 +1,4 @@
-import type { KindCondition } from "@ctrlplane/validators/targets";
+import type { KindCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
@@ -10,7 +10,7 @@ export const KindConditionRender: React.FC<
 > = ({ condition, onChange, className }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const kinds = api.workspace.targetKinds.useQuery(workspace.data?.id ?? "", {
+  const kinds = api.workspace.resourceKinds.useQuery(workspace.data?.id ?? "", {
     enabled: workspace.isSuccess && workspace.data != null,
   });
 

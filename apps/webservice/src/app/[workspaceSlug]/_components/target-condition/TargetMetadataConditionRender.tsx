@@ -10,7 +10,7 @@ export const TargetMetadataConditionRender: React.FC<
 > = ({ condition, onChange, className }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const metadataKeys = api.target.metadataKeys.useQuery(
+  const metadataKeys = api.resource.metadataKeys.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data != null },
   );

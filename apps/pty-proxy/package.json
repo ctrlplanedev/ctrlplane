@@ -3,13 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "tsc",
     "clean": "rm -rf .turbo node_modules",
-    "dev:t": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
+    "dev": "pnpm with-env tsx watch --clear-screen=false src/index.ts",
     "lint": "eslint",
     "format": "prettier --check . --ignore-path ../../.gitignore",
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
@@ -19,7 +21,6 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "express-rate-limit": "^7.3.0",
     "helmet": "^7.1.0",
     "ms": "^2.1.3",
     "next-auth": "catalog:",
@@ -30,7 +31,6 @@
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
-    "@ctrlplane/tailwind-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",

@@ -19,7 +19,7 @@ export function createClient(options: ClientOptions & { apiKey: string }) {
 /**
  * Class for managing target providers in the CtrlPlane API
  */
-export class TargetProvider {
+export class ResourceProvider {
   /**
    * Creates a new TargetProvider instance
    * @param options - Configuration options
@@ -33,12 +33,12 @@ export class TargetProvider {
   ) {}
 
   private provider:
-    | operations["upsertTargetProvider"]["responses"]["200"]["content"]["application/json"]
+    | operations["upsertResourceProvider"]["responses"]["200"]["content"]["application/json"]
     | null = null;
 
   /**
-   * Gets the target provider details, caching the result
-   * @returns The target provider details
+   * Gets the resource provider details, caching the result
+   * @returns The resource provider details
    */
   async get() {
     if (this.provider != null) {
@@ -46,7 +46,7 @@ export class TargetProvider {
     }
 
     const { data } = await this.client.GET(
-      "/v1/workspaces/{workspaceId}/target-providers/name/{name}",
+      "/v1/workspaces/{workspaceId}/resource-providers/name/{name}",
       { params: { path: this.options } },
     );
     this.provider = data;
@@ -54,20 +54,20 @@ export class TargetProvider {
   }
 
   /**
-   * Sets the targets for this provider
-   * @param targets - Array of targets to set
+   * Sets the resources for this provider
+   * @param resources - Array of resources to set
    * @returns The API response
    * @throws Error if the scanner is not found
    */
   async set(
-    targets: operations["setTargetProvidersTargets"]["requestBody"]["content"]["application/json"]["targets"],
+    resources: operations["setResourceProvidersResources"]["requestBody"]["content"]["application/json"]["resources"],
   ) {
     const scanner = await this.get();
     if (scanner == null) throw new Error("Scanner not found");
 
-    return this.client.PATCH("/v1/target-providers/{providerId}/set", {
+    return this.client.PATCH("/v1/resource-providers/{providerId}/set", {
       params: { path: { providerId: scanner.id } },
-      body: { targets: uniqBy(targets, (t) => t.identifier) },
+      body: { resources: uniqBy(resources, (t) => t.identifier) },
     });
   }
 }

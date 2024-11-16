@@ -25,7 +25,7 @@ import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ReleaseCell } from "./ReleaseCell";
 
 const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
-  const jobs = api.job.byTargetId.useQuery(targetId);
+  const jobs = api.job.byResourceId.useQuery(targetId);
   const deployments = api.deployment.byTargetId.useQuery(targetId);
   return (
     <Table className="w-full min-w-max border-separate border-spacing-0">
@@ -106,12 +106,12 @@ export default function TargetPage({
 }: {
   params: { targetId: string };
 }) {
-  const target = api.target.byId.useQuery(params.targetId);
-  const jobs = api.job.byTargetId.useQuery(params.targetId);
+  const target = api.resource.byId.useQuery(params.targetId);
+  const jobs = api.job.byResourceId.useQuery(params.targetId);
   const deployments = api.deployment.byTargetId.useQuery(params.targetId);
 
-  const unlockTarget = api.target.unlock.useMutation();
-  const lockTarget = api.target.lock.useMutation();
+  const unlockTarget = api.resource.unlock.useMutation();
+  const lockTarget = api.resource.lock.useMutation();
 
   const utils = api.useUtils();
 
@@ -139,7 +139,7 @@ export default function TargetPage({
                   target.data!.lockedAt != null ? unlockTarget : lockTarget;
                 mutation
                   .mutateAsync(target.data!.id)
-                  .then(() => utils.target.byId.invalidate(params.targetId));
+                  .then(() => utils.resource.byId.invalidate(params.targetId));
               }}
             >
               {target.data.lockedAt != null ? (

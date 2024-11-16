@@ -44,8 +44,8 @@ import { Switch } from "@ctrlplane/ui/switch";
 import {
   defaultCondition,
   isValidTargetCondition,
-  targetCondition,
-} from "@ctrlplane/validators/targets";
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
 import { TargetConditionRender } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionRender";
@@ -58,7 +58,7 @@ import { api } from "~/trpc/react";
 
 const editVariableValueFormSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
-  targetFilter: targetCondition
+  targetFilter: resourceCondition
     .nullish()
     .refine((data) => data == null || isValidTargetCondition(data), {
       message: "Invalid target condition",
@@ -80,7 +80,7 @@ const EditVariableValueDialog: React.FC<{
     schema: editVariableValueFormSchema,
     defaultValues: {
       value: value.value,
-      targetFilter: value.targetFilter,
+      targetFilter: value.resourceFilter,
       default: variable.defaultValueId === value.id,
     },
   });
@@ -89,7 +89,7 @@ const EditVariableValueDialog: React.FC<{
     update
       .mutateAsync({
         id: value.id,
-        data,
+        data: { ...data, resourceFilter: data.targetFilter },
       })
       .then(() => router.refresh())
       .then(onClose),

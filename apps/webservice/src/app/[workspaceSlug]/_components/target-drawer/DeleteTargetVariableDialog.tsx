@@ -25,13 +25,13 @@ export const DeleteTargetVariableDialog: React.FC<
   DeleteTargetVariableDialogProps
 > = ({ variableId, targetId, onClose, children }) => {
   const [open, setOpen] = useState(false);
-  const deleteTargetVariable = api.target.variable.delete.useMutation();
+  const deleteTargetVariable = api.resource.variable.delete.useMutation();
   const utils = api.useUtils();
 
   const onDelete = () =>
     deleteTargetVariable
       .mutateAsync(variableId)
-      .then(() => utils.target.byId.invalidate(targetId))
+      .then(() => utils.resource.byId.invalidate(targetId))
       .then(() => setOpen(false));
 
   return (

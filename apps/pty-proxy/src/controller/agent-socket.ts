@@ -1,6 +1,5 @@
-import type { InsertTarget, Target } from "@ctrlplane/db/schema";
+import type { ResourceToInsert } from "@ctrlplane/job-dispatch";
 import type {
-  AgentHeartbeat,
   SessionCreate,
   SessionDelete,
   SessionResize,
@@ -9,20 +8,30 @@ import type { IncomingMessage } from "http";
 import type WebSocket from "ws";
 import type { MessageEvent } from "ws";
 
+import { can, getUser } from "@ctrlplane/auth/utils";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { upsertTargets } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
+import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
 
-import { ifMessage } from "./utils";
+import { agents } from "./sockets.js";
+import { ifMessage } from "./utils.js";
 
 export class AgentSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {
-    const agentName = request.headers["x-agent-name"]?.toString();
-    if (agentName == null) {
-      logger.warn("Agent connection rejected - missing agent name");
+    logger.info("Checking if connection is agent", {
+      headers: {
+        agentName: request.headers["x-agent-name"],
+        apiKey: request.headers["x-api-key"] ? "[REDACTED]" : undefined,
+        workspace: request.headers["x-workspace"],
+      },
+    });
+    const name = request.headers["x-agent-name"]?.toString();
+    if (name == null) {
+      logger.error("Agent connection rejected - missing agent name");
       return null;
     }
 
@@ -42,48 +51,94 @@ export class AgentSocket {
       where: eq(schema.workspace.slug, workspaceSlug),
     });
     if (workspace == null) {
-      logger.error("Agent connection rejected - workspace not found");
-      return null;
+      logger.error("Agent connection rejected - workspace not found", {
+        workspaceSlug,
+      });
+      throw new Error("Workspace not found.");
     }
 
-    const targetInfo: InsertTarget = {
-      name: agentName,
-      version: "ctrlplane/v1",
-      kind: "TargetSession",
-      identifier: `ctrlplane/target-agent/${agentName}`,
-      workspaceId: workspace.id,
-    };
-    const [target] = await upsertTargets(db, [targetInfo]);
-    if (target == null) return null;
-    return new AgentSocket(socket, request, target);
+    logger.info(`Agent connection accepted "${workspaceSlug}/${name}"`);
+
+    const user = await getUser(apiKey);
+    if (user == null) {
+      logger.error("Agent connection rejected - invalid API key", { apiKey });
+      throw new Error("Invalid API key.");
+    }
+
+    const hasAccess = await can()
+      .user(user.id)
+      .perform(Permission.ResourceCreate)
+      .on({ type: "workspace", id: workspace.id });
+
+    if (!hasAccess) {
+      logger.error(
+        `Agent connection rejected - user (${user.email}) does not have access ` +
+          `to create resources in workspace (${workspace.slug})`,
+        { user, workspace },
+      );
+      throw new Error("User does not have access.");
+    }
+
+    const agent = new AgentSocket(socket, name, workspace.id);
+    await agent.updateResource({});
+    return agent;
   }
 
+  resource: ResourceToInsert | null = null;
+
   private constructor(
-    private readonly socket: WebSocket,
-    private readonly _: IncomingMessage,
-    public readonly target: Target,
+    public readonly socket: WebSocket,
+    private readonly name: string,
+    private readonly workspaceId: string,
   ) {
-    this.target = target;
     this.socket.on(
       "message",
       ifMessage()
-        .is(agentConnect, async (data) => {
-          await upsertTargets(db, [
-            {
-              ...target,
-              config: data.config,
-              metadata: data.metadata,
-              version: "ctrlplane/v1",
-            },
-          ]);
+        .is(agentConnect, (data) => {
+          this.updateResource({
+            updatedAt: new Date(),
+            config: data.config,
+            metadata: data.metadata,
+          });
         })
-        .is(agentHeartbeat, (data) => this.updateStatus(data))
+        .is(agentHeartbeat, (data) => {
+          logger.info("Received agent heartbeat", {
+            agentName: this.name,
+            timestamp: data.timestamp,
+          });
+          this.updateResource({});
+        })
         .handle(),
     );
+
+    this.socket.on("close", () => {
+      logger.info("Agent disconnected", {
+        id: this.resource?.id,
+        agentName: this.name,
+      });
+    });
   }
 
-  private updateStatus(data: AgentHeartbeat) {
-    console.log("status", data.timestamp);
+  async updateResource(
+    resource: Omit<
+      Partial<ResourceToInsert>,
+      "name" | "version" | "kind" | "identifier" | "workspaceId"
+    >,
+  ) {
+    const [res] = await upsertResources(db, [
+      {
+        ...resource,
+        name: this.name,
+        version: "ctrlplane.access/v1",
+        kind: "AccessNode",
+        identifier: `ctrlplane/access/access-node/${this.name}`,
+        workspaceId: this.workspaceId,
+        updatedAt: new Date(),
+      },
+    ]);
+    if (res == null) throw new Error("Failed to create resource");
+    this.resource = res;
+    agents.set(res.id, { lastSync: new Date(), agent: this });
   }
 
   createSession(session: SessionCreate) {

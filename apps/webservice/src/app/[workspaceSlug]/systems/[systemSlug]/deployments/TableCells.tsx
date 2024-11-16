@@ -2,7 +2,7 @@ import type {
   Deployment,
   Job,
   ReleaseJobTrigger,
-  Target,
+  Resource,
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import {
@@ -123,7 +123,7 @@ export const Release: React.FC<{
   releaseJobTriggers: Array<
     ReleaseJobTrigger & {
       job: Job;
-      target: Target;
+      resource: Resource;
       deployment?: Deployment | null;
     }
   >;
@@ -144,7 +144,7 @@ export const Release: React.FC<{
   } = props;
 
   const latestJobsByTarget = _.chain(releaseJobTriggers)
-    .groupBy((r) => r.target.id)
+    .groupBy((r) => r.resource.id)
     .mapValues((triggers) =>
       _.maxBy(triggers, (t) => new Date(t.job.createdAt)),
     )
@@ -162,7 +162,7 @@ export const Release: React.FC<{
     .value();
 
   const configuredWithMessages = releaseJobTriggers.filter((d) =>
-    [d.job, d.target, d.job.message].every(isPresent),
+    [d.job, d.resource, d.job.message].every(isPresent),
   );
 
   const firstReleaseJobTrigger = releaseJobTriggers.at(0);
@@ -213,7 +213,7 @@ export const Release: React.FC<{
                         fill={getStatusColor(d.job.status)}
                         strokeWidth={0}
                       />
-                      {d.target.name}
+                      {d.resource.name}
                     </div>
                     {d.job.message != null && d.job.message !== "" && (
                       <div className="text-xs text-muted-foreground">

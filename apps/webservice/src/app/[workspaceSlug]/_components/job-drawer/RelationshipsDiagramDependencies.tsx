@@ -68,7 +68,7 @@ const getDFSPath = (
 };
 
 const getUndirectedGraph = (
-  relationships: Array<schema.TargetRelationship>,
+  relationships: Array<schema.ResourceRelationship>,
 ) => {
   const graph: Record<string, Set<string>> = {};
 
@@ -85,8 +85,8 @@ const getUndirectedGraph = (
 
 type DependenciesDiagramProps = {
   targetId: string;
-  relationships: Array<schema.TargetRelationship>;
-  targets: Array<schema.Target>;
+  relationships: Array<schema.ResourceRelationship>;
+  targets: Array<schema.Resource>;
   releaseDependencies: (schema.ReleaseDependency & {
     deploymentName: string;
     target?: string;

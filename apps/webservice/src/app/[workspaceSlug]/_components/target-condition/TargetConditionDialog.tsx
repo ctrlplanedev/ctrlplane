@@ -1,5 +1,5 @@
 import type * as schema from "@ctrlplane/db/schema";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -18,7 +18,7 @@ import {
   defaultCondition,
   isValidTargetCondition,
   MAX_DEPTH_ALLOWED,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { TargetViewFormSchema } from "./TargetViewForm";
 import { api } from "~/trpc/react";
@@ -26,8 +26,8 @@ import { TargetConditionRender } from "./TargetConditionRender";
 import { TargetViewForm, targetViewFormSchema } from "./TargetViewForm";
 
 type TargetConditionDialogProps = {
-  condition?: TargetCondition;
-  onChange: (condition: TargetCondition | undefined) => void;
+  condition?: ResourceCondition;
+  onChange: (condition: ResourceCondition | undefined) => void;
   children: React.ReactNode;
 };
 
@@ -94,8 +94,8 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
 
 type CreateTargetViewDialogProps = {
   workspaceId: string;
-  filter?: TargetCondition;
-  onSubmit?: (view: schema.TargetView) => void;
+  filter?: ResourceCondition;
+  onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
 
@@ -116,7 +116,7 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
   });
   const router = useRouter();
 
-  const createTargetView = api.target.view.create.useMutation();
+  const createTargetView = api.resource.view.create.useMutation();
 
   const onFormSubmit = (data: TargetViewFormSchema) => {
     createTargetView
@@ -150,9 +150,9 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
 };
 
 type EditTargetViewDialogProps = {
-  view: schema.TargetView;
+  view: schema.ResourceView;
   onClose?: () => void;
-  onSubmit?: (view: schema.TargetView) => void;
+  onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
 
@@ -173,7 +173,7 @@ export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
   });
   const router = useRouter();
 
-  const updateTargetView = api.target.view.update.useMutation();
+  const updateTargetView = api.resource.view.update.useMutation();
 
   const onFormSubmit = (data: TargetViewFormSchema) => {
     updateTargetView

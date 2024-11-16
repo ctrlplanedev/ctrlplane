@@ -35,8 +35,8 @@ export const isPassingReleaseDependencyPolicy = async (
           WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
             -- Base case: start with the given ID and no relationship
             SELECT 
-                ${trigger.targetId}::uuid AS id, 
-                ARRAY[${trigger.targetId}::uuid] AS visited,
+                ${trigger.resourceId}::uuid AS id, 
+                ARRAY[${trigger.resourceId}::uuid] AS visited,
                 NULL::uuid AS tr_id,
                 NULL::uuid AS source_id,
                 NULL::uuid AS target_id,
@@ -63,7 +63,7 @@ export const isPassingReleaseDependencyPolicy = async (
                     WHEN tr.source_id = rr.id THEN tr.target_id
                     ELSE tr.source_id
                 END = ANY(rr.visited)                
-                AND tr.target_id != ${trigger.targetId}
+                AND tr.target_id != ${trigger.resourceId}
         )
         SELECT DISTINCT tr_id AS id, source_id, target_id, type
         FROM reachable_relationships
@@ -83,18 +83,18 @@ export const isPassingReleaseDependencyPolicy = async (
       const sourceIds = relationships.map((r) => r.sourceId);
       const targetIds = relationships.map((r) => r.targetId);
 
-      const allIds = _.uniq([...sourceIds, ...targetIds, trigger.targetId]);
+      const allIds = _.uniq([...sourceIds, ...targetIds, trigger.resourceId]);
 
       const passingDepsPromises = deps.map(async (dep) => {
         const latestJobSubquery = db
           .select({
             id: schema.releaseJobTrigger.id,
-            targetId: schema.releaseJobTrigger.targetId,
+            targetId: schema.releaseJobTrigger.resourceId,
             releaseId: schema.releaseJobTrigger.releaseId,
             status: schema.job.status,
             createdAt: schema.job.createdAt,
             rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY ${schema.releaseJobTrigger.targetId}, ${schema.releaseJobTrigger.releaseId}
+              PARTITION BY ${schema.releaseJobTrigger.resourceId}, ${schema.releaseJobTrigger.releaseId}
               ORDER BY ${schema.job.createdAt} DESC
             )`.as("rank"),
           })

@@ -79,7 +79,7 @@ export const CreateTargetDialog: React.FC<{
   }, [form, open]);
 
   const router = useRouter();
-  const create = api.target.create.useMutation();
+  const create = api.resource.create.useMutation();
   const onSubmit = form.handleSubmit(async (data) => {
     const config = yaml.load(data.config) as Record<string, any>;
     const target = await create.mutateAsync({

@@ -1,12 +1,12 @@
 import type { HookEvent } from "@ctrlplane/validators/events";
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
 import { eq, isNotNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { TargetFilterType } from "@ctrlplane/validators/targets";
+import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 /**
  * Get events for a target that has been deleted.
@@ -15,27 +15,29 @@ import { TargetFilterType } from "@ctrlplane/validators/targets";
  * @param target
  */
 export const getEventsForTargetDeleted = async (
-  target: SCHEMA.Target,
+  target: SCHEMA.Resource,
 ): Promise<HookEvent[]> => {
   const systems = await db.query.system.findMany({
     where: eq(SCHEMA.system.workspaceId, target.workspaceId),
     with: {
-      environments: { where: isNotNull(SCHEMA.environment.targetFilter) },
+      environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
       deployments: true,
     },
   });
 
   const deploymentPromises = systems.map(async (s) => {
-    const filters = s.environments.map((e) => e.targetFilter).filter(isPresent);
+    const filters = s.environments
+      .map((e) => e.resourceFilter)
+      .filter(isPresent);
 
-    const systemFilter: TargetCondition = {
-      type: TargetFilterType.Comparison,
+    const systemFilter: ResourceCondition = {
+      type: ResourceFilterType.Comparison,
       operator: ComparisonOperator.Or,
       conditions: filters,
     };
 
-    const matchedTarget = await db.query.target.findFirst({
-      where: SCHEMA.targetMatchesMetadata(db, systemFilter),
+    const matchedTarget = await db.query.resource.findFirst({
+      where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
     });
     if (matchedTarget == null) return [];
 

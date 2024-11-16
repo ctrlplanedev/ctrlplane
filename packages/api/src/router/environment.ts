@@ -18,13 +18,13 @@ import {
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
   releaseChannel,
+  resource,
+  resourceMatchesMetadata,
   system,
-  target,
-  targetMatchesMetadata,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
 import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
-import { dispatchJobsForNewTargets } from "@ctrlplane/job-dispatch";
+import { dispatchJobsForNewResources } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -154,13 +154,16 @@ export const environmentRouter = createTRPCRouter({
         envs.map(async (e) => ({
           ...e.environment,
           system: e.system,
-          targets:
-            e.environment.targetFilter != null
+          resources:
+            e.environment.resourceFilter != null
               ? await ctx.db
                   .select()
-                  .from(target)
+                  .from(resource)
                   .where(
-                    targetMatchesMetadata(ctx.db, e.environment.targetFilter),
+                    resourceMatchesMetadata(
+                      ctx.db,
+                      e.environment.resourceFilter,
+                    ),
                   )
               : [],
         })),
@@ -222,38 +225,38 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const { targetFilter } = input.data;
-      const isUpdatingTargetFilter = targetFilter != null;
-      if (isUpdatingTargetFilter) {
-        const hasTargetFiltersChanged = !_.isEqual(
-          oldEnv.environment.targetFilter,
-          targetFilter,
+      const { resourceFilter } = input.data;
+      const isUpdatingResourceFilter = resourceFilter != null;
+      if (isUpdatingResourceFilter) {
+        const hasResourceFiltersChanged = !_.isEqual(
+          oldEnv.environment.resourceFilter,
+          resourceFilter,
         );
 
-        if (hasTargetFiltersChanged) {
-          const oldQuery = targetMatchesMetadata(
+        if (hasResourceFiltersChanged) {
+          const oldQuery = resourceMatchesMetadata(
             ctx.db,
-            oldEnv.environment.targetFilter,
+            oldEnv.environment.resourceFilter,
           );
-          const newTargets = await ctx.db
-            .select({ id: target.id })
-            .from(target)
+          const newResources = await ctx.db
+            .select({ id: resource.id })
+            .from(resource)
             .where(
               and(
-                eq(target.workspaceId, oldEnv.system.workspaceId),
-                targetMatchesMetadata(ctx.db, targetFilter),
+                eq(resource.workspaceId, oldEnv.system.workspaceId),
+                resourceMatchesMetadata(ctx.db, resourceFilter),
                 oldQuery && not(oldQuery),
               ),
             );
 
-          if (newTargets.length > 0) {
-            await dispatchJobsForNewTargets(
+          if (newResources.length > 0) {
+            await dispatchJobsForNewResources(
               ctx.db,
-              newTargets.map((t) => t.id),
+              newResources.map((r) => r.id),
               input.id,
             );
             console.log(
-              `Found ${newTargets.length} new targets for environment ${input.id}`,
+              `Found ${newResources.length} new resources for environment ${input.id}`,
             );
           }
         }

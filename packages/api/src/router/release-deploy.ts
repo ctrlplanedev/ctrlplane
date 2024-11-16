@@ -9,7 +9,7 @@ import {
   job,
   release,
   releaseJobTrigger,
-  target,
+  resource,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -101,19 +101,19 @@ export const releaseDeployRouter = createTRPCRouter({
       return releaseJobTriggers;
     }),
 
-  toTarget: protectedProcedure
+  toResource: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseGet, Permission.TargetUpdate)
+          .perform(Permission.ReleaseGet, Permission.ResourceUpdate)
           .on(
             { type: "release", id: input.releaseId },
-            { type: "resource", id: input.targetId },
+            { type: "resource", id: input.resourceId },
           ),
     })
     .input(
       z.object({
-        targetId: z.string().uuid(),
+        resourceId: z.string().uuid(),
         releaseId: z.string().uuid(),
         environmentId: z.string().uuid(),
         isForcedRelease: z.boolean().optional(),
@@ -122,12 +122,12 @@ export const releaseDeployRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const t = await ctx.db
         .select()
-        .from(target)
-        .where(eq(target.id, input.targetId))
+        .from(resource)
+        .where(eq(resource.id, input.resourceId))
         .then(takeFirstOrNull);
-      if (!t) throw new Error("Target not found");
+      if (!t) throw new Error("Resource not found");
 
-      if (t.lockedAt != null) throw new Error("Target is locked");
+      if (t.lockedAt != null) throw new Error("Resource is locked");
 
       const rel = await ctx.db
         .select()
@@ -150,7 +150,7 @@ export const releaseDeployRouter = createTRPCRouter({
         .causedById(ctx.session.user.id)
         .environments([env.id])
         .releases([rel.id])
-        .targets([t.id])
+        .resources([t.id])
         .filter(
           input.isForcedRelease
             ? (_, releaseJobTriggers) => releaseJobTriggers

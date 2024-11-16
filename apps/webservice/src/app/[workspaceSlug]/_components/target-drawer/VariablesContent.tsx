@@ -20,7 +20,7 @@ import { TargetVariableDropdown } from "./TargetVariableDropdown";
 
 const TargetVariableSection: React.FC<{
   targetId: string;
-  targetVariables: SCHEMA.TargetVariable[];
+  targetVariables: SCHEMA.ResourceVariable[];
 }> = ({ targetId, targetVariables }) => (
   <div className="space-y-6 py-1">
     <div className="flex items-center gap-2 text-lg font-semibold">
@@ -102,7 +102,7 @@ const VariableRow: React.FC<{
 
 export const VariableContent: React.FC<{
   targetId: string;
-  targetVariables: SCHEMA.TargetVariable[];
+  targetVariables: SCHEMA.ResourceVariable[];
 }> = ({ targetId, targetVariables }) => {
   const deployments = api.deployment.byTargetId.useQuery(targetId);
   const variables = api.deployment.variable.byTargetId.useQuery(targetId);

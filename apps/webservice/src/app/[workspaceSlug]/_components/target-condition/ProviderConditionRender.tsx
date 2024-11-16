@@ -1,4 +1,4 @@
-import type { ProviderCondition } from "@ctrlplane/validators/targets";
+import type { ProviderCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
@@ -10,7 +10,7 @@ export const ProviderConditionRender: React.FC<
 > = ({ condition, onChange, className }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
-  const providers = api.target.provider.byWorkspaceId.useQuery(
+  const providers = api.resource.provider.byWorkspaceId.useQuery(
     workspace.data?.id ?? "",
     { enabled: workspace.isSuccess && workspace.data != null },
   );

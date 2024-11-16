@@ -15,5 +15,26 @@ export const openapi: Swagger.SwaggerV3 = {
         name: "x-api-key",
       },
     },
+    schemas: {
+      Variable: {
+        type: "object",
+        required: ["key", "value"],
+        properties: {
+          key: {
+            type: "string",
+          },
+          value: {
+            oneOf: [
+              { type: "string" },
+              { type: "number" },
+              { type: "boolean" },
+            ],
+          },
+          sensitive: {
+            type: "boolean",
+          },
+        },
+      },
+    },
   },
 };

@@ -246,7 +246,7 @@ const StringifiedVersionCondition: React.FC<{
 const StringifiedJobTargetCondition: React.FC<{
   condition: JobTargetCondition;
 }> = ({ condition }) => {
-  const targetQ = api.target.byId.useQuery(condition.value);
+  const targetQ = api.resource.byId.useQuery(condition.value);
   const target = targetQ.data;
 
   return (

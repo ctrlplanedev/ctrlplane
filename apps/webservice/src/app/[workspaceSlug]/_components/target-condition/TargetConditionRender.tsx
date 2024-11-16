@@ -1,4 +1,4 @@
-import type { TargetCondition } from "@ctrlplane/validators/targets";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React from "react";
 
 import {
@@ -8,7 +8,7 @@ import {
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
-} from "@ctrlplane/validators/targets";
+} from "@ctrlplane/validators/resources";
 
 import type { TargetConditionRenderProps } from "./target-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
@@ -23,7 +23,7 @@ import { TargetMetadataConditionRender } from "./TargetMetadataConditionRender";
  * to render this component properly.
  */
 export const TargetConditionRender: React.FC<
-  TargetConditionRenderProps<TargetCondition>
+  TargetConditionRenderProps<ResourceCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
   if (isComparisonCondition(condition))
     return (

@@ -1,8 +1,8 @@
 "use client";
 
 import type {
-  TargetProvider,
-  TargetProviderGoogle,
+  ResourceProvider,
+  ResourceProviderGoogle,
 } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,8 +30,8 @@ import {
 import { api } from "~/trpc/react";
 import { UpdateGoogleProviderDialog } from "./integrations/google/UpdateGoogleProviderDialog";
 
-type Provider = TargetProvider & {
-  googleConfig: TargetProviderGoogle | null;
+type Provider = ResourceProvider & {
+  googleConfig: ResourceProviderGoogle | null;
 };
 
 export const ProviderActionsDropdown: React.FC<{
@@ -40,16 +40,16 @@ export const ProviderActionsDropdown: React.FC<{
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
 
-  const deleteProvider = api.target.provider.delete.useMutation({
-    onSuccess: () => utils.target.provider.byWorkspaceId.invalidate(),
+  const deleteProvider = api.resource.provider.delete.useMutation({
+    onSuccess: () => utils.resource.provider.byWorkspaceId.invalidate(),
   });
-  const sync = api.target.provider.managed.sync.useMutation();
+  const sync = api.resource.provider.managed.sync.useMutation();
   const router = useRouter();
 
-  const handleDelete = async (deleteTargets: boolean) => {
+  const handleDelete = async (deleteResources: boolean) => {
     await deleteProvider.mutateAsync({
       providerId: provider.id,
-      deleteTargets,
+      deleteResources,
     });
     router.refresh();
   };

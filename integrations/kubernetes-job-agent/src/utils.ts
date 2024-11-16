@@ -11,5 +11,5 @@ export function omitNullUndefined(obj: object) {
 }
 
 export type ScannerFunc = () => Promise<
-  Operations["setTargetProvidersTargets"]["requestBody"]["content"]["application/json"]["targets"]
+  Operations["setResourceProvidersResources"]["requestBody"]["content"]["application/json"]["resources"]
 >;

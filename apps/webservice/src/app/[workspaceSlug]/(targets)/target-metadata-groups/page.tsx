@@ -16,7 +16,7 @@ export default async function TargetMetadataGroupPages({
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
 
-  const metadataGroups = await api.target.metadataGroup.groups(workspace.id);
+  const metadataGroups = await api.resource.metadataGroup.groups(workspace.id);
   if (metadataGroups.length === 0)
     return <TargetMetadataGroupsGettingStarted workspace={workspace} />;
 

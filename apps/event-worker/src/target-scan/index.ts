@@ -1,67 +1,71 @@
-import type { InsertTarget } from "@ctrlplane/db/schema";
-import type { TargetScanEvent } from "@ctrlplane/validators/events";
+import type { InsertResource } from "@ctrlplane/db/schema";
+import type { ResourceScanEvent } from "@ctrlplane/validators/events";
 import type { Job } from "bullmq";
 import { Queue, Worker } from "bullmq";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
-  targetProvider,
-  targetProviderGoogle,
+  resourceProvider,
+  resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
-import { upsertTargets } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
 import { redis } from "../redis.js";
-import { getGkeTargets } from "./gke.js";
+import { getGkeResources } from "./gke.js";
 
-const targetScanQueue = new Queue(Channel.TargetScan, { connection: redis });
-const removeTargetJob = (job: Job) =>
+const resourceScanQueue = new Queue(Channel.ResourceScan, {
+  connection: redis,
+});
+const removeResourceJob = (job: Job) =>
   job.repeatJobKey != null
-    ? targetScanQueue.removeRepeatableByKey(job.repeatJobKey)
+    ? resourceScanQueue.removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-export const createTargetScanWorker = () =>
-  new Worker<TargetScanEvent>(
-    Channel.TargetScan,
+export const createResourceScanWorker = () =>
+  new Worker<ResourceScanEvent>(
+    Channel.ResourceScan,
     async (job) => {
-      const { targetProviderId } = job.data;
+      const { resourceProviderId } = job.data;
 
-      const tp = await db
+      const rp = await db
         .select()
-        .from(targetProvider)
-        .where(eq(targetProvider.id, targetProviderId))
-        .innerJoin(workspace, eq(targetProvider.workspaceId, workspace.id))
+        .from(resourceProvider)
+        .where(eq(resourceProvider.id, resourceProviderId))
+        .innerJoin(workspace, eq(resourceProvider.workspaceId, workspace.id))
         .leftJoin(
-          targetProviderGoogle,
-          eq(targetProvider.id, targetProviderGoogle.targetProviderId),
+          resourceProviderGoogle,
+          eq(resourceProvider.id, resourceProviderGoogle.resourceProviderId),
         )
         .then(takeFirstOrNull);
 
-      if (tp == null) {
-        logger.error(`Target provider with ID ${targetProviderId} not found.`);
-        await removeTargetJob(job);
+      if (rp == null) {
+        logger.error(
+          `Resource provider with ID ${resourceProviderId} not found.`,
+        );
+        await removeResourceJob(job);
         return;
       }
 
       logger.info(
-        `Received scanning request for "${tp.resource_provider.name}" (${targetProviderId}).`,
+        `Received scanning request for "${rp.resource_provider.name}" (${resourceProviderId}).`,
       );
 
-      const targets: InsertTarget[] = [];
+      const resources: InsertResource[] = [];
 
-      if (tp.resource_provider_google != null) {
-        logger.info("Found Google config, scanning for GKE targets");
+      if (rp.resource_provider_google != null) {
+        logger.info("Found Google config, scanning for GKE resources");
         try {
-          const gkeTargets = await getGkeTargets(
-            tp.workspace,
-            tp.resource_provider_google,
+          const gkeResources = await getGkeResources(
+            rp.workspace,
+            rp.resource_provider_google,
           );
-          targets.push(...gkeTargets);
+          resources.push(...gkeResources);
         } catch (error: any) {
-          logger.error(`Error scanning GKE targets: ${error.message}`, {
+          logger.error(`Error scanning GKE resources: ${error.message}`, {
             error,
           });
         }
@@ -69,18 +73,18 @@ export const createTargetScanWorker = () =>
 
       try {
         logger.info(
-          `Upserting ${targets.length} targets for provider ${tp.resource_provider.id}`,
+          `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
         );
-        if (targets.length > 0) {
-          await upsertTargets(db, targets);
+        if (resources.length > 0) {
+          await upsertResources(db, resources);
         } else {
           logger.info(
-            `No targets found for provider ${tp.resource_provider.id}, skipping upsert.`,
+            `No resources found for provider ${rp.resource_provider.id}, skipping upsert.`,
           );
         }
       } catch (error: any) {
         logger.error(
-          `Error upserting targets for provider ${tp.resource_provider.id}: ${error.message}`,
+          `Error upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,
           { error },
         );
       }
