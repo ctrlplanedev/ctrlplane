@@ -101,15 +101,13 @@ export class AgentSocket {
             metadata: data.metadata,
           });
         })
-        .is(agentHeartbeat, () =>
-          this.updateResource({
-            updatedAt: new Date(),
-            metadata: {
-              ...(this.resource?.metadata ?? {}),
-              ["last-heartbeat"]: new Date().toISOString(),
-            },
-          }),
-        )
+        .is(agentHeartbeat, (data) => {
+          logger.info("Received agent heartbeat", {
+            agentName: this.name,
+            timestamp: data.timestamp,
+          });
+          this.updateResource({});
+        })
         .handle(),
     );
 
@@ -135,6 +133,7 @@ export class AgentSocket {
         kind: "AccessNode",
         identifier: `ctrlplane/access/access-node/${this.name}`,
         workspaceId: this.workspaceId,
+        updatedAt: new Date(),
       },
     ]);
     if (res == null) throw new Error("Failed to create resource");
