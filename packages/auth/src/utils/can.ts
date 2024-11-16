@@ -1,6 +1,6 @@
 import type { EntityType, ScopeType } from "@ctrlplane/db/schema";
 
-import { checkEntityPermissionForResource } from "./rbac";
+import { checkEntityPermissionForResource } from "./rbac.js";
 
 // New type definition
 export type CanFunction = {

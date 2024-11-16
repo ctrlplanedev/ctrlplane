@@ -1,3 +1,3 @@
-export * from "./api-key";
-export * from "./rbac";
-export * from "./can";
+export * from "./api-key.js";
+export * from "./rbac.js";
+export * from "./can.js";
