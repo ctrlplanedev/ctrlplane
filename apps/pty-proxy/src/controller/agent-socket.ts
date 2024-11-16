@@ -12,7 +12,7 @@ import { can, getUser } from "@ctrlplane/auth/utils";
 import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { deleteResources, upsertResources } from "@ctrlplane/job-dispatch";
+import { upsertResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 import { agentConnect, agentHeartbeat } from "@ctrlplane/validators/session";
@@ -87,7 +87,7 @@ export class AgentSocket {
   resource: ResourceToInsert | null = null;
 
   private constructor(
-    private readonly socket: WebSocket,
+    public readonly socket: WebSocket,
     private readonly name: string,
     private readonly workspaceId: string,
   ) {
@@ -114,11 +114,10 @@ export class AgentSocket {
     );
 
     this.socket.on("close", () => {
-      logger.info("Agent disconnected", { agentName: this.name });
-      if (this.resource?.id == null) return;
-
-      agents.delete(this.resource.id);
-      deleteResources(db, [this.resource.id]);
+      logger.info("Agent disconnected", {
+        id: this.resource?.id,
+        agentName: this.name,
+      });
     });
   }
 
@@ -140,6 +139,7 @@ export class AgentSocket {
     ]);
     if (res == null) throw new Error("Failed to create resource");
     this.resource = res;
+    agents.set(res.id, { lastSync: new Date(), agent: this });
   }
 
   createSession(session: SessionCreate) {

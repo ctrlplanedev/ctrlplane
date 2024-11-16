@@ -19,7 +19,7 @@ const onConnect = async (ws: WebSocket, request: IncomingMessage) => {
       throw new Error("Agent resource ID is null");
     }
 
-    agents.set(agent.resource.id, agent);
+    agents.set(agent.resource.id, { lastSync: new Date(), agent });
     return;
   }
 

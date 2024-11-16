@@ -56,7 +56,7 @@ export class UserSocket {
             userId: user.id,
           });
 
-          const agent = agents.get(data.targetId);
+          const { agent } = agents.get(data.targetId) ?? { agent: null };
           if (agent == null) {
             logger.warn("Agent not found for session create", {
               targetId: data.targetId,
@@ -80,7 +80,7 @@ export class UserSocket {
             userId: user.id,
           });
 
-          const agent = agents.get(targetId);
+          const { agent } = agents.get(targetId) ?? { agent: null };
           if (agent == null) {
             logger.warn("Agent not found for session resize", {
               targetId,
