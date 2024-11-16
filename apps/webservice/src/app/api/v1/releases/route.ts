@@ -16,7 +16,7 @@ import {
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { authn, authz } from "../auth";
+import { authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
@@ -25,7 +25,7 @@ const bodySchema = createRelease.and(
 );
 
 export const POST = request()
-  .use(authn)
+  // .use(authn)
   .use(parseBody(bodySchema))
   .use(
     authz(({ ctx, can }) =>

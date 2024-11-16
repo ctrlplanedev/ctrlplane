@@ -1,5 +1,6 @@
 "use client";
 
+import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AttachAddon } from "@xterm/addon-attach";
 import { ClipboardAddon } from "@xterm/addon-clipboard";
@@ -17,12 +18,13 @@ import { useDebounce, useSize } from "react-use";
 import { ReadyState } from "react-use-websocket";
 
 export const useSessionTerminal = (
+  terminalRef: MutableRefObject<Terminal | null>,
   getWebsocket: () => WebSocketLike | null,
   readyState: ReadyState,
 ) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [fitAddon] = useState(new FitAddon());
-  const terminalRef = useRef<Terminal | null>(null);
+
   const reloadTerminal = useCallback(() => {
     if (readyState !== ReadyState.OPEN) return;
     if (divRef.current == null) return;
@@ -49,7 +51,7 @@ export const useSessionTerminal = (
     terminal.unicode.activeVersion = "11";
     terminalRef.current = terminal;
     return terminal;
-  }, [fitAddon, getWebsocket, readyState]);
+  }, [fitAddon, getWebsocket, readyState, terminalRef]);
 
   useEffect(() => {
     if (divRef.current == null) return;
@@ -57,12 +59,13 @@ export const useSessionTerminal = (
     terminalRef.current?.dispose();
     reloadTerminal();
     fitAddon.fit();
-  }, [fitAddon, readyState, reloadTerminal]);
+  }, [fitAddon, readyState, reloadTerminal, terminalRef]);
 
   return { terminalRef, divRef, fitAddon, reloadTerminal };
 };
 
 export const SocketTerminal: React.FC<{
+  terminalRef: MutableRefObject<Terminal | null>;
   getWebSocket: () => WebSocketLike | null;
   onResize?: (size: {
     width: number;
@@ -72,8 +75,9 @@ export const SocketTerminal: React.FC<{
   }) => void;
   readyState: ReadyState;
   sessionId: string;
-}> = ({ getWebSocket, readyState, onResize }) => {
-  const { terminalRef, divRef, fitAddon } = useSessionTerminal(
+}> = ({ getWebSocket, readyState, onResize, terminalRef }) => {
+  const { divRef, fitAddon } = useSessionTerminal(
+    terminalRef,
     getWebSocket,
     readyState,
   );
