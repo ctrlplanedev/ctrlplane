@@ -24,7 +24,9 @@ export class AgentSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {
     const name = request.headers["x-agent-name"]?.toString();
     if (name == null) {
-      logger.warn("Agent connection rejected - missing agent name");
+      logger.warn("Agent connection rejected - missing agent name", {
+        headers: request.headers,
+      });
       return null;
     }
 
