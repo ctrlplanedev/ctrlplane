@@ -13,6 +13,12 @@ type User = { id: string };
 
 export class UserSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {
+    logger.info("Checking if connection is user", {
+      headers: {
+        cookie: request.headers.cookie ? "[REDACTED]" : undefined,
+      },
+    });
+
     const session = await getSession(request);
     if (session == null) {
       logger.warn("User connection rejected - no session found");

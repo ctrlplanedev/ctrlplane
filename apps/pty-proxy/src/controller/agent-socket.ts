@@ -22,11 +22,16 @@ import { ifMessage } from "./utils.js";
 
 export class AgentSocket {
   static async from(socket: WebSocket, request: IncomingMessage) {
+    logger.info("Checking if connection is agent", {
+      headers: {
+        agentName: request.headers["x-agent-name"],
+        apiKey: request.headers["x-api-key"] ? "[REDACTED]" : undefined,
+        workspace: request.headers["x-workspace"],
+      },
+    });
     const name = request.headers["x-agent-name"]?.toString();
     if (name == null) {
-      logger.warn("Agent connection rejected - missing agent name", {
-        headers: request.headers,
-      });
+      logger.error("Agent connection rejected - missing agent name");
       return null;
     }
 
@@ -49,8 +54,10 @@ export class AgentSocket {
       logger.error("Agent connection rejected - workspace not found", {
         workspaceSlug,
       });
-      return null;
+      throw new Error("Workspace not found.");
     }
+
+    logger.info(`Agent connection accepted "${workspaceSlug}/${name}"`);
 
     const user = await getUser(apiKey);
     if (user == null) {

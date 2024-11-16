@@ -11,11 +11,6 @@ export const addSocket = (expressApp: Express) => {
   logger.info("Created HTTP server for WebSocket upgrades");
 
   server.on("upgrade", (request, socket, head) => {
-    logger.debug("Received WebSocket upgrade request", {
-      url: request.url,
-      headers: request.headers,
-    });
-
     if (request.url == null) {
       logger.warn("WebSocket upgrade rejected - no URL provided");
       socket.destroy();
