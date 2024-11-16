@@ -34,8 +34,8 @@
     "bcryptjs": "^2.4.3",
     "next": "catalog:",
     "next-auth": "catalog:",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
+    "react": "catalog:react18",
+    "react-dom": "catalog:react18",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -43,6 +43,8 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/bcryptjs": "^2.4.6",
+    "@types/react": "catalog:react18",
+    "@types/react-dom": "catalog:react18",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
