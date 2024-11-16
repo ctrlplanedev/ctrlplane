@@ -8,6 +8,7 @@ on:
       - packages/db/**
       - packages/logger/**
       - packages/job-dispatch/**
+      - packages/auth/**
       - packages/validators/**
       - .github/workflows/apps-pty-proxy.yaml
       - pnpm-lock.yaml
@@ -19,6 +20,7 @@ on:
       - packages/logger/**
       - packages/job-dispatch/**
       - packages/validators/**
+      - packages/auth/**
       - .github/workflows/apps-pty-proxy.yaml
       - pnpm-lock.yaml
 
