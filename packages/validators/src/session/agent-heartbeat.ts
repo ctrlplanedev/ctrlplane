@@ -7,8 +7,8 @@ export default z
       .describe("Type of payload - must be agent.heartbeat"),
     timestamp: z
       .string()
-      .datetime({ offset: true })
-      .describe("Timestamp of the heartbeat")
+      .datetime()
+      .describe("Timestamp of the heartbeat in RFC3339 format")
       .optional(),
   })
   .passthrough();
