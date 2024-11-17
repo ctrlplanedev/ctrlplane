@@ -1,6 +1,7 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
+import { usePathname } from "next/navigation";
 import { IconBookmark } from "@tabler/icons-react";
 import LZString from "lz-string";
 
@@ -18,6 +19,7 @@ import { SidebarLink } from "./SidebarLink";
 export const SidebarPopoverTargets: React.FC<{ workspace: Workspace }> = ({
   workspace,
 }) => {
+  const pathname = usePathname();
   const kinds = api.workspace.resourceKinds.useQuery(workspace.id);
 
   const views = api.resource.view.list.useQuery(workspace.id);
@@ -25,6 +27,15 @@ export const SidebarPopoverTargets: React.FC<{ workspace: Workspace }> = ({
     ...view,
     hash: LZString.compressToEncodedURIComponent(JSON.stringify(view.filter)),
   }));
+
+  const recentlyAdded = api.resource.byWorkspaceId.list.useQuery({
+    workspaceId: workspace.id,
+    orderBy: [{ property: "createdAt", direction: "desc" }],
+    limit: 5,
+  });
+
+  const totalTargets =
+    (recentlyAdded.data?.total ?? 0) - (recentlyAdded.data?.items.length ?? 0);
 
   return (
     <div className="space-y-4 text-sm">
@@ -86,6 +97,27 @@ export const SidebarPopoverTargets: React.FC<{ workspace: Workspace }> = ({
               </Badge>
             </SidebarLink>
           ))}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <div className="text-xs font-semibold uppercase text-muted-foreground">
+          Recently Added Targets
+        </div>
+        <div>
+          {recentlyAdded.data?.items.map((resource) => (
+            <SidebarLink
+              href={`${pathname}?target_id=${resource.id}`}
+              key={resource.id}
+            >
+              <span className="flex-grow">{resource.name}</span>
+            </SidebarLink>
+          ))}
+          {totalTargets > 0 && (
+            <div className="mt-2 px-1 text-xs text-muted-foreground">
+              +{totalTargets} other targets
+            </div>
+          )}
         </div>
       </div>
     </div>
