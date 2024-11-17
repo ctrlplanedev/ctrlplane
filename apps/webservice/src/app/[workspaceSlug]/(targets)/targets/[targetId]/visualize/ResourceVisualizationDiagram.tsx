@@ -2,12 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type {
-  EdgeTypes,
-  NodeMouseHandler,
-  NodeTypes,
-  ReactFlowInstance,
-} from "reactflow";
+import type { EdgeTypes, NodeTypes, ReactFlowInstance } from "reactflow";
 import React, { useCallback, useEffect, useState } from "react";
 import { compact } from "lodash";
 import ReactFlow, {
@@ -55,9 +50,8 @@ const nodeTypes: NodeTypes = {
 };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const useOnLayout = () => {
-  const { getNodes, fitView, setNodes, setEdges, getEdges } = useReactFlow();
+const useOnLayout = (setIsLayouted: (isLayouted: boolean) => void) => {
+  const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
   return useCallback(() => {
     const layouted = getLayoutedElementsDagre(
       getNodes(),
@@ -68,19 +62,15 @@ const useOnLayout = () => {
     );
     setNodes([...layouted.nodes]);
     setEdges([...layouted.edges]);
-
-    window.requestAnimationFrame(() => {
-      // hack to get it to center - we should figure out when the layout is done
-      // and then call fitView. We are betting that everything should be
-      // rendered correctly in 100ms before fitting the view.
-      sleep(100).then(() => fitView({ padding: 0.12, maxZoom: 1 }));
-    });
-  }, [getNodes, getEdges, setNodes, setEdges, fitView]);
+    setIsLayouted(true);
+  }, [getNodes, getEdges, setNodes, setEdges, setIsLayouted]);
 };
 
 export const ResourceVisualizationDiagram: React.FC<
   ResourceVisualizationDiagramProps
 > = ({ resource, relationships }) => {
+  const [isLayouted, setIsLayouted] = useState(false);
+  const [isViewFitted, setIsViewFitted] = useState(false);
   const { systems, provider } = relationships;
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
     compact([
@@ -112,7 +102,6 @@ export const ResourceVisualizationDiagram: React.FC<
           position: { x: 0, y: 0 },
         })),
       ),
-
       provider != null && {
         id: provider.id,
         type: NodeType.Provider,
@@ -138,7 +127,7 @@ export const ResourceVisualizationDiagram: React.FC<
       providerEdge,
     ]),
   );
-  const onLayout = useOnLayout();
+  const onLayout = useOnLayout(setIsLayouted);
 
   const [reactFlowInstance, setReactFlowInstance] =
     useState<ReactFlowInstance | null>(null);
@@ -148,9 +137,17 @@ export const ResourceVisualizationDiagram: React.FC<
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reactFlowInstance]);
 
-  const onNodeClick: NodeMouseHandler = (event, node) => {
-    console.log(node);
-  };
+  useEffect(() => {
+    if (
+      reactFlowInstance != null &&
+      nodes.length &&
+      isLayouted &&
+      !isViewFitted
+    ) {
+      reactFlowInstance.fitView({ padding: 0.12, maxZoom: 1 });
+      setIsViewFitted(true);
+    }
+  }, [reactFlowInstance, nodes, isLayouted, isViewFitted]);
 
   return (
     <ReactFlow
@@ -158,7 +155,6 @@ export const ResourceVisualizationDiagram: React.FC<
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
-      onNodeClick={onNodeClick}
       fitView
       proOptions={{ hideAttribution: true }}
       deleteKeyCode={[]}

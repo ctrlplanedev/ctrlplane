@@ -361,7 +361,7 @@ export const resourceRouter = createTRPCRouter({
         const matchedEnvironmentsPromises = s.environments.map(async (e) => {
           const matchedResource = await ctx.db.query.resource.findFirst({
             where: and(
-              eq(schema.resource.workspaceId, s.workspaceId),
+              eq(schema.resource.id, resource.id),
               schema.resourceMatchesMetadata(ctx.db, e.resourceFilter),
             ),
           });

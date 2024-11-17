@@ -22,7 +22,7 @@ export const DepEdge: React.FC<EdgeProps> = ({
     targetPosition,
   });
 
-  const edgeLabel = capitalCase(String(label).replace("_", " "));
+  const edgeLabel = capitalCase(String(label).replace(/_/g, " "));
 
   return (
     <>

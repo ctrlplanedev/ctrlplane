@@ -8,10 +8,14 @@ export default async function VisualizePage({
 }: {
   params: { targetId: string };
 }) {
-  const resource = await api.resource.byId(targetId);
-  if (resource == null) return notFound();
-  const relationships = await api.resource.relationships(resource.id);
-  if (relationships == null) return notFound();
+  const resourceId = targetId;
+  const resourcePromise = api.resource.byId(resourceId);
+  const relationshipsPromise = api.resource.relationships(resourceId);
+  const [resource, relationships] = await Promise.all([
+    resourcePromise,
+    relationshipsPromise,
+  ]);
+  if (resource == null || relationships == null) return notFound();
 
   return (
     <ResourceVisualizationDiagramProvider
