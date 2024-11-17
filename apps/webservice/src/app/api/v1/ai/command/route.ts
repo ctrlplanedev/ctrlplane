@@ -14,6 +14,7 @@ import { request } from "../../middleware";
 export const maxDuration = 60;
 
 const bodySchema = z.object({
+  history: z.string().optional(),
   prompt: z.string(),
 });
 
@@ -49,6 +50,16 @@ export const POST = request()
                 "Never return plain text responses - only return executable shell commands. " +
                 "Format: Return the raw command without backticks or any formatting.",
             },
+
+            ...(body.history
+              ? [
+                  {
+                    role: "user" as const,
+                    content: `Here is the current terminal history for context:\n${body.history}`,
+                  },
+                ]
+              : []),
+
             {
               role: "user",
               content: `Convert this request into a shell command (return ONLY the command):

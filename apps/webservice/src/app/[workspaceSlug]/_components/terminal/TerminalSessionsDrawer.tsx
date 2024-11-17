@@ -35,10 +35,24 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   const terminalRef = useRef<Terminal | null>(null);
   const target = api.resource.byId.useQuery(targetId);
   const { resizeSession } = useTerminalSessions();
+  const [terminalContent, setTerminalContent] = useState("");
   const { getWebSocket, readyState } = useWebSocket(
     `/api/v1/resources/proxy/session/${sessionId}`,
     {
       shouldReconnect: () => true,
+      onMessage: (e) => {
+        const decoder = new TextDecoder();
+        const text: string =
+          e.data instanceof ArrayBuffer
+            ? decoder.decode(e.data)
+            : // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+              e.data.toString();
+        setTerminalContent((prev) => {
+          // eslint-disable-next-line no-control-regex
+          const newContent = prev + text.replace(/\x1B\[[0-9;]*m/g, "");
+          return newContent.slice(-1000);
+        });
+      },
     },
   );
   const connectionStatus = {
@@ -91,7 +105,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
 
     const res = await fetch("/api/v1/ai/command", {
       method: "POST",
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, history: terminalContent }),
     });
     const { text } = await res.json();
 
