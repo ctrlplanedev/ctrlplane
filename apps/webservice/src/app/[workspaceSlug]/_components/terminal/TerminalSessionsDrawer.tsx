@@ -10,6 +10,7 @@ import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 
 import { SocketTerminal } from "~/components/xterm/SessionTerminal";
+import { api } from "~/trpc/react";
 import { CreateSessionDialog } from "./CreateDialogSession";
 import { useTerminalSessions } from "./TerminalSessionsProvider";
 import { useResizableHeight } from "./useResizableHeight";
@@ -165,47 +166,51 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   );
 };
 
+const TerminalTab: React.FC<{ targetId: string; sessionId: string }> = ({
+  targetId,
+  sessionId,
+}) => {
+  const { removeSession, activeSessionId, setActiveSessionId } =
+    useTerminalSessions();
+  const resource = api.resource.byId.useQuery(targetId);
+  return (
+    <div
+      key={sessionId}
+      onClick={() => setActiveSessionId(sessionId)}
+      className={cn(
+        "flex cursor-pointer items-center gap-2 border-b-2 p-2 pt-4 text-xs",
+        activeSessionId === sessionId
+          ? "border-blue-300 text-blue-300"
+          : "border-transparent text-neutral-400",
+      )}
+    >
+      <span>{resource.data?.name ?? targetId}</span>
+
+      <button
+        type="button"
+        aria-label={`Close ${targetId} terminal session`}
+        className="rounded-full text-xs text-blue-300 hover:text-neutral-300"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          removeSession(sessionId);
+        }}
+      >
+        <IconX className="h-3 w-3" />
+      </button>
+    </div>
+  );
+};
+
 const TerminalSessionsContent: React.FC = () => {
-  const {
-    targets,
-    sessionIds,
-    removeSession,
-    activeSessionId,
-    setActiveSessionId,
-    setIsDrawerOpen,
-  } = useTerminalSessions();
+  const { sessionIds, activeSessionId, setIsDrawerOpen } =
+    useTerminalSessions();
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-9 items-center border-b">
         {sessionIds.map((s) => (
-          <div
-            key={s.sessionId}
-            onClick={() => setActiveSessionId(s.sessionId)}
-            className={cn(
-              "flex cursor-pointer items-center gap-2 border-b-2 p-2 pt-4 text-xs",
-              activeSessionId === s.sessionId
-                ? "border-blue-300 text-blue-300"
-                : "border-transparent text-neutral-400",
-            )}
-          >
-            <span>
-              {targets.find((t) => t.id === s.targetId)?.name ?? s.targetId}
-            </span>
-
-            <button
-              type="button"
-              aria-label={`Close ${s.targetId} terminal session`}
-              className="rounded-full text-xs text-blue-300 hover:text-neutral-300"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                removeSession(s.sessionId);
-              }}
-            >
-              <IconX className="h-3 w-3" />
-            </button>
-          </div>
+          <TerminalTab key={s.sessionId} {...s} />
         ))}
 
         <div className="flex-grow" />

@@ -4,18 +4,9 @@ import type {
   SessionCreate,
   SessionResize,
 } from "@ctrlplane/validators/session";
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import useWebSocket from "react-use-websocket";
-import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
-
-import { api } from "~/trpc/react";
 
 type SessionContextType = {
   activeSessionId: string | null;
@@ -40,16 +31,7 @@ export const useTerminalSessions = () => {
   if (!context)
     throw new Error("useSession must be used within a SessionProvider");
 
-  const utils = api.useUtils();
-  const targets = useMemo(
-    () =>
-      context.sessionIds
-        .map((s) => utils.resource.byId.getData(s.targetId))
-        .filter(isPresent),
-    [context.sessionIds, utils.resource.byId],
-  );
-
-  return { targets, ...context };
+  return context;
 };
 
 const url = "/api/v1/resources/proxy/controller";
