@@ -1,7 +1,7 @@
 "use client";
 
 import type { Terminal } from "@xterm/xterm";
-import React, { Fragment, useEffect, useRef, useState } from "react";
+import React, { Fragment, useRef, useState } from "react";
 import {
   IconCircleFilled,
   IconLoader2,
@@ -65,7 +65,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
 
   const promptInput = useRef<HTMLInputElement>(null);
   const [showPrompt, setShowPrompt] = useState(false);
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Escape") {
       e.preventDefault();
       setShowPrompt(false);
@@ -85,12 +85,6 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
         });
     }
   };
-
-  useEffect(() => {
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +114,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   };
 
   return (
-    <div className="relative h-full">
+    <div className="relative h-full" onKeyDown={handleKeyDown}>
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         {target.data?.name}
         <div className="flex items-center gap-1 rounded-md border px-1 pr-2">
