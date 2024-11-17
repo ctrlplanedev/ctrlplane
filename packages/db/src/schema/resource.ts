@@ -67,6 +67,10 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
     fields: [resource.providerId],
     references: [resourceProvider.id],
   }),
+  workspace: one(workspace, {
+    fields: [resource.workspaceId],
+    references: [workspace.id],
+  }),
 }));
 
 export type Resource = InferSelectModel<typeof resource>;
