@@ -37,7 +37,9 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   const { resizeSession } = useTerminalSessions();
   const { getWebSocket, readyState } = useWebSocket(
     `/api/v1/resources/proxy/session/${sessionId}`,
-    { shouldReconnect: () => true },
+    {
+      shouldReconnect: () => true,
+    },
   );
   const connectionStatus = {
     [ReadyState.CONNECTING]: "Connecting",
@@ -81,7 +83,12 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    if (prompt.length === 0) {
+      terminalRef.current?.focus();
+      return;
+    }
     setIsLoading(true);
+
     const res = await fetch("/api/v1/ai/command", {
       method: "POST",
       body: JSON.stringify({ prompt }),
@@ -120,17 +127,24 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
       </div>
 
       {readyState === ReadyState.OPEN && (
-        <div className="h-[calc(100%-30px)]">
-          <SocketTerminal
-            terminalRef={terminalRef}
-            getWebSocket={getWebSocket}
-            readyState={readyState}
-            sessionId={sessionId}
-            onResize={({ cols, rows }) =>
-              resizeSession(sessionId, targetId, cols, rows)
-            }
-          />
-        </div>
+        <>
+          <div className="h-[calc(100%-30px)]">
+            <SocketTerminal
+              terminalRef={terminalRef}
+              getWebSocket={getWebSocket}
+              readyState={readyState}
+              sessionId={sessionId}
+              onResize={({ cols, rows }) =>
+                resizeSession(sessionId, targetId, cols, rows)
+              }
+            />
+          </div>
+          {!showPrompt && (
+            <div className="text-[0.02em] text-neutral-500">
+              ⌘K to generate a command
+            </div>
+          )}
+        </>
       )}
 
       <div

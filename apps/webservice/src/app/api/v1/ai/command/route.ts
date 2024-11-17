@@ -44,16 +44,15 @@ export const POST = request()
             {
               role: "system",
               content:
-                "You are a command-line assistant. Return only the shell command " +
-                "that best matches the user's request, with no explanation or additional text:",
+                "You are a command-line assistant. You must ALWAYS return ONLY a valid shell command, with no explanation or additional text. " +
+                "If the user's request cannot be directly translated to a shell command, generate the most relevant shell command that could help. " +
+                "Never return plain text responses - only return executable shell commands. " +
+                "Format: Return the raw command without backticks or any formatting.",
             },
             {
               role: "user",
-              content: `
-              Task: ${body.prompt}
-
-              Command:
-              `,
+              content: `Convert this request into a shell command (return ONLY the command):
+              ${body.prompt}`,
             },
           ],
         });
