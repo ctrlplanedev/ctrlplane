@@ -1,7 +1,8 @@
 import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
 import {
+  IconBraces,
   IconServer,
-  IconTarget,
+  IconTerminal,
   IconUserDollar,
   IconUsersGroup,
 } from "@tabler/icons-react";
@@ -20,6 +21,7 @@ export const TargetIcon: React.FC<{ version: string; kind?: string }> = ({
     return <IconServer className="h-4 w-4 shrink-0 text-cyan-300" />;
   if (version.includes("terraform"))
     return <SiTerraform className="h-4 w-4 shrink-0 text-purple-300" />;
-
-  return <IconTarget className="h-4 w-4 shrink-0 text-neutral-300" />;
+  if (version.includes("ctrlplane.access"))
+    return <IconTerminal className="h-4 w-4 shrink-0 text-neutral-300" />;
+  return <IconBraces className="h-4 w-4 shrink-0 text-neutral-300" />;
 };

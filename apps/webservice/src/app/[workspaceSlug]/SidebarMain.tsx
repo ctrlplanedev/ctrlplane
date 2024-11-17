@@ -23,10 +23,7 @@ export const SidebarMain: React.FC<{
     deploymentSlug?: string;
   }>();
 
-  const system = api.system.bySlug.useQuery(
-    { workspaceSlug, systemSlug: systemSlug ?? "" },
-    { enabled: systemSlug != null },
-  );
+  const system = systems.find((s) => s.slug === systemSlug);
   const deployment = api.deployment.bySlug.useQuery(
     {
       workspaceSlug,
@@ -56,7 +53,7 @@ export const SidebarMain: React.FC<{
 
           <SidebarCreateMenu
             workspace={workspace}
-            systemId={system.data?.id}
+            systemId={system?.id}
             deploymentId={deployment.data?.id}
           />
         </div>

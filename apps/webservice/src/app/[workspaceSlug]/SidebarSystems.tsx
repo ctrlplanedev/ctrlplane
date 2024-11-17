@@ -23,9 +23,11 @@ import {
 } from "@ctrlplane/ui/collapsible";
 
 import { CreateSystemDialog } from "./_components/CreateSystem";
+import { useSidebar } from "./SidebarContext";
 import { SidebarLink } from "./SidebarLink";
 
 const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
+  const { setActiveSidebarItem } = useSidebar();
   const [open, setOpen] = useLocalStorage(
     `sidebar-systems-${system.id}`,
     "false",
@@ -36,6 +38,7 @@ const SystemCollapsible: React.FC<{ system: System }> = ({ system }) => {
       open={open === "true"}
       onOpenChange={() => setOpen(open === "true" ? "false" : "true")}
       className="space-y-1 text-sm"
+      onMouseEnter={() => setActiveSidebarItem(`systems:${system.id}`)}
     >
       <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1 hover:bg-neutral-800/50">
         <span className="truncate">{system.name}</span>

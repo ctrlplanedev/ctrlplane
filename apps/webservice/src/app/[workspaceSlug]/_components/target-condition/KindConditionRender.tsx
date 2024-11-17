@@ -16,7 +16,7 @@ export const KindConditionRender: React.FC<
 
   const setKind = (kind: string) => onChange({ ...condition, value: kind });
 
-  const options = (kinds.data ?? []).map((kind) => ({
+  const options = (kinds.data ?? []).map(({ kind }) => ({
     key: kind,
     value: kind,
     display: kind,
