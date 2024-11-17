@@ -4,11 +4,22 @@ import type {
   SessionCreate,
   SessionResize,
 } from "@ctrlplane/validators/session";
-import React, { createContext, useCallback, useContext, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import useWebSocket from "react-use-websocket";
+import { isPresent } from "ts-is-present";
 import { v4 as uuidv4 } from "uuid";
 
+import { api } from "~/trpc/react";
+
 type SessionContextType = {
+  activeSessionId: string | null;
+  setActiveSessionId: (id: string | null) => void;
   isDrawerOpen: boolean;
   setIsDrawerOpen: (open: boolean) => void;
   sessionIds: { sessionId: string; targetId: string }[];
@@ -29,7 +40,16 @@ export const useTerminalSessions = () => {
   if (!context)
     throw new Error("useSession must be used within a SessionProvider");
 
-  return context;
+  const utils = api.useUtils();
+  const targets = useMemo(
+    () =>
+      context.sessionIds
+        .map((s) => utils.resource.byId.getData(s.targetId))
+        .filter(isPresent),
+    [context.sessionIds, utils.resource.byId],
+  );
+
+  return { targets, ...context };
 };
 
 const url = "/api/v1/resources/proxy/controller";
@@ -39,6 +59,7 @@ export const TerminalSessionsProvider: React.FC<{
   const [sessionIds, setSessionIds] = useState<
     { sessionId: string; targetId: string }[]
   >([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { sendJsonMessage } = useWebSocket(url, {
     shouldReconnect: () => true,
@@ -53,7 +74,6 @@ export const TerminalSessionsProvider: React.FC<{
         cols,
         rows,
       };
-      console.log(resizePayload);
       sendJsonMessage(resizePayload);
     },
     [sendJsonMessage],
@@ -70,9 +90,10 @@ export const TerminalSessionsProvider: React.FC<{
         rows: 24,
       };
       sendJsonMessage(sessionCreatePayload);
-      setTimeout(() => {
+      window.requestAnimationFrame(() => {
         setSessionIds((prev) => [...prev, { sessionId, targetId }]);
-      }, 500);
+        setActiveSessionId(sessionId);
+      });
     },
     [sendJsonMessage, setSessionIds],
   );
@@ -82,8 +103,10 @@ export const TerminalSessionsProvider: React.FC<{
       setSessionIds((prev) =>
         prev.filter((session) => session.sessionId !== id),
       );
+      if (activeSessionId === id)
+        setActiveSessionId(sessionIds[0]?.sessionId ?? null);
     },
-    [setSessionIds],
+    [activeSessionId, sessionIds],
   );
 
   return (
@@ -93,7 +116,8 @@ export const TerminalSessionsProvider: React.FC<{
         createSession,
         removeSession,
         resizeSession,
-
+        activeSessionId,
+        setActiveSessionId,
         isDrawerOpen,
         setIsDrawerOpen,
       }}

@@ -1,26 +1,15 @@
 "use client";
 
 import type { Terminal } from "@xterm/xterm";
-import React, { Fragment, useRef, useState } from "react";
-import {
-  IconCircleFilled,
-  IconLoader2,
-  IconPlus,
-  IconX,
-} from "@tabler/icons-react";
+import React, { useRef, useState } from "react";
+import { IconLoader2, IconPlus, IconX } from "@tabler/icons-react";
 import { createPortal } from "react-dom";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@ctrlplane/ui/resizable";
 
 import { SocketTerminal } from "~/components/xterm/SessionTerminal";
-import { api } from "~/trpc/react";
 import { CreateSessionDialog } from "./CreateDialogSession";
 import { useTerminalSessions } from "./TerminalSessionsProvider";
 import { useResizableHeight } from "./useResizableHeight";
@@ -33,7 +22,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
   targetId,
 }) => {
   const terminalRef = useRef<Terminal | null>(null);
-  const target = api.resource.byId.useQuery(targetId);
+
   const { resizeSession } = useTerminalSessions();
   const [terminalContent, setTerminalContent] = useState("");
   const { getWebSocket, readyState } = useWebSocket(
@@ -55,13 +44,6 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
       },
     },
   );
-  const connectionStatus = {
-    [ReadyState.CONNECTING]: "Connecting",
-    [ReadyState.OPEN]: "Open",
-    [ReadyState.CLOSING]: "Closing",
-    [ReadyState.CLOSED]: "Closed",
-    [ReadyState.UNINSTANTIATED]: "Uninstantiated",
-  }[readyState];
 
   const promptInput = useRef<HTMLInputElement>(null);
   const [showPrompt, setShowPrompt] = useState(false);
@@ -115,25 +97,6 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
 
   return (
     <div className="relative h-full" onKeyDown={handleKeyDown}>
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        {target.data?.name}
-        <div className="flex items-center gap-1 rounded-md border px-1 pr-2">
-          <span
-            className={cn({
-              "text-yellow-500": readyState === ReadyState.CONNECTING,
-              "text-green-500": readyState === ReadyState.OPEN,
-              "text-red-500":
-                readyState === ReadyState.CLOSED ||
-                readyState === ReadyState.UNINSTANTIATED,
-              "text-orange-500": readyState === ReadyState.CLOSING,
-            })}
-          >
-            <IconCircleFilled className="h-2 w-2" />
-          </span>
-          <span className="text-xs italic">{connectionStatus}</span>
-        </div>
-      </div>
-
       {readyState === ReadyState.OPEN && (
         <>
           <div className="h-[calc(100%-30px)]">
@@ -203,15 +166,56 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
 };
 
 const TerminalSessionsContent: React.FC = () => {
-  const { sessionIds, setIsDrawerOpen } = useTerminalSessions();
+  const {
+    targets,
+    sessionIds,
+    removeSession,
+    activeSessionId,
+    setActiveSessionId,
+    setIsDrawerOpen,
+  } = useTerminalSessions();
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-9 items-center justify-end px-2">
+      <div className="flex h-9 items-center border-b">
+        {sessionIds.map((s) => (
+          <div
+            key={s.sessionId}
+            onClick={() => setActiveSessionId(s.sessionId)}
+            className={cn(
+              "flex cursor-pointer items-center gap-2 border-b-2 p-2 pt-4 text-xs",
+              activeSessionId === s.sessionId
+                ? "border-blue-300 text-blue-300"
+                : "border-transparent text-neutral-400",
+            )}
+          >
+            <span>
+              {targets.find((t) => t.id === s.targetId)?.name ?? s.targetId}
+            </span>
+
+            <button
+              type="button"
+              aria-label={`Close ${s.targetId} terminal session`}
+              className="rounded-full text-xs text-blue-300 hover:text-neutral-300"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                removeSession(s.sessionId);
+              }}
+            >
+              <IconX className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+
+        <div className="flex-grow" />
+
         <CreateSessionDialog>
           <Button variant="ghost" size="icon" className="h-6 w-6">
             <IconPlus className="h-5 w-5 text-neutral-400" />
           </Button>
         </CreateSessionDialog>
+
         <Button
           variant="ghost"
           size="icon"
@@ -222,16 +226,19 @@ const TerminalSessionsContent: React.FC = () => {
         </Button>
       </div>
 
-      <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-        {sessionIds.map((s, idx) => (
-          <Fragment key={s.sessionId}>
-            {idx !== 0 && <ResizableHandle className="bg-neutral-700" />}
-            <ResizablePanel key={s.sessionId} className="px-4">
-              <SessionTerminal {...s} />
-            </ResizablePanel>
-          </Fragment>
+      <div className="mt-4 h-full w-full flex-grow">
+        {sessionIds.map((s) => (
+          <div
+            key={s.sessionId}
+            className={cn(
+              "h-full px-4",
+              activeSessionId !== s.sessionId && "hidden",
+            )}
+          >
+            <SessionTerminal {...s} />
+          </div>
         ))}
-      </ResizablePanelGroup>
+      </div>
     </div>
   );
 };
