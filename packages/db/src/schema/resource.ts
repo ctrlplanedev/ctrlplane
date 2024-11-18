@@ -31,6 +31,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
+import { deployment } from "./deployment.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -269,6 +270,22 @@ export const updateResourceRelationship = createResourceRelationship.partial();
 export type ResourceRelationship = InferSelectModel<
   typeof resourceRelationship
 >;
+
+export const deploymentResourceRelationship = pgTable(
+  "deployment_resource_relationship",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspace.id, { onDelete: "cascade" })
+      .notNull(),
+    deploymentId: uuid("deployment_id")
+      .references(() => deployment.id, { onDelete: "cascade" })
+      .notNull(),
+    resourceIdentifier: text("resource_identifier")
+      .references(() => resource.identifier, { onDelete: "cascade" })
+      .notNull(),
+  },
+);
 
 export const resourceVariable = pgTable(
   "resource_variable",
