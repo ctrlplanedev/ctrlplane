@@ -92,7 +92,7 @@ export const AppSidebarSystem: React.FC<{
             url: `/${workspaceSlug}/systems/${s.slug}/environments`,
           },
           {
-            title: "Deployements",
+            title: "Deployments",
             icon: IconShip,
             url: `/${workspaceSlug}/systems/${s.slug}/deployments`,
           },
