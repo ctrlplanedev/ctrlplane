@@ -62,6 +62,7 @@ const target: SCHEMA.Resource = {
   identifier: "test",
   providerId: "0",
   lockedAt: null,
+  createdAt: new Date(),
 };
 
 const release: SCHEMA.Release = {

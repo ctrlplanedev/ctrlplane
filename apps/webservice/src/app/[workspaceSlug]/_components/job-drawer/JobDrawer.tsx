@@ -13,8 +13,8 @@ import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { JobDropdownMenu } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
-import { useReleaseChannel } from "~/app/[workspaceSlug]/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/useReleaseChannel";
+import { JobDropdownMenu } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
+import { useReleaseChannel } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/useReleaseChannel";
 import { api } from "~/trpc/react";
 import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
