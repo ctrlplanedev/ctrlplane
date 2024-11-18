@@ -54,9 +54,11 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
         <SidebarGroup>
           <SidebarGroupLabel>Saved Views</SidebarGroupLabel>
           <SidebarMenu>
-            <div className="rounded-md px-2 text-xs text-neutral-600">
-              No saved filters found.
-            </div>
+            {views.data?.length === 0 && views.isSuccess && (
+              <div className="rounded-md px-2 text-xs text-neutral-600">
+                No saved filters found.
+              </div>
+            )}
             {viewsWithHash != null && viewsWithHash.length > 0 && (
               <>
                 {viewsWithHash.map(({ id, name, hash }) => (
