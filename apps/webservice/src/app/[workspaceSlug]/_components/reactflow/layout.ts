@@ -86,8 +86,8 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
       config?.extraEdgeLength,
       config?.nodesep,
     );
-    setNodes([...layouted.nodes]);
-    setEdges([...layouted.edges]);
+    setNodes(layouted.nodes);
+    setEdges(layouted.edges);
     setIsLayouted(true);
   }, [getNodes, getEdges, setNodes, setEdges, setIsLayouted, config]);
 
