@@ -7,6 +7,7 @@ import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
 import {
   boolean,
+  foreignKey,
   json,
   jsonb,
   pgEnum,
@@ -275,16 +276,21 @@ export const deploymentResourceRelationship = pgTable(
   "deployment_resource_relationship",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    workspaceId: uuid("workspace_id")
-      .references(() => workspace.id, { onDelete: "cascade" })
-      .notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
     deploymentId: uuid("deployment_id")
       .references(() => deployment.id, { onDelete: "cascade" })
       .notNull(),
-    resourceIdentifier: text("resource_identifier")
-      .references(() => resource.identifier, { onDelete: "cascade" })
-      .notNull(),
+    resourceIdentifier: text("resource_identifier").notNull(),
   },
+  (t) => ({
+    // Must use composite foreign key (workspace_id, identifier) instead of simple FK to identifier, as identifiers
+    // are only unique per workspace. Simple FK would fail with "no unique constraint" error
+    resourceFk: foreignKey({
+      columns: [t.resourceIdentifier, t.workspaceId],
+      foreignColumns: [resource.identifier, resource.workspaceId],
+    }).onDelete("cascade"),
+    uniq: uniqueIndex().on(t.workspaceId, t.resourceIdentifier),
+  }),
 );
 
 export const resourceVariable = pgTable(

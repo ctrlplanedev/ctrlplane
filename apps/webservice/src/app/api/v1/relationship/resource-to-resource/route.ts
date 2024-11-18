@@ -18,45 +18,56 @@ export const POST = request()
   .use(authn)
   .use(parseBody(bodySchema))
   .handle<{ body: z.infer<typeof bodySchema> }>(async (ctx) => {
-    const { body, db } = ctx;
+    try {
+      const { body, db } = ctx;
 
-    const fromResource = await db
-      .select()
-      .from(SCHEMA.resource)
-      .where(
-        and(
-          eq(SCHEMA.resource.identifier, body.fromIdentifier),
-          eq(SCHEMA.resource.workspaceId, body.workspaceId),
-        ),
-      )
-      .then(takeFirstOrNull);
-    if (!fromResource)
+      const fromResource = await db
+        .select()
+        .from(SCHEMA.resource)
+        .where(
+          and(
+            eq(SCHEMA.resource.identifier, body.fromIdentifier),
+            eq(SCHEMA.resource.workspaceId, body.workspaceId),
+          ),
+        )
+        .then(takeFirstOrNull);
+      if (!fromResource)
+        return Response.json(
+          { error: `${body.fromIdentifier} not found` },
+          { status: 404 },
+        );
+
+      const toResource = await db
+        .select()
+        .from(SCHEMA.resource)
+        .where(
+          and(
+            eq(SCHEMA.resource.identifier, body.toIdentifier),
+            eq(SCHEMA.resource.workspaceId, body.workspaceId),
+          ),
+        )
+        .then(takeFirstOrNull);
+      if (!toResource)
+        return Response.json(
+          { error: `${body.toIdentifier} not found` },
+          { status: 404 },
+        );
+
+      await db.insert(SCHEMA.resourceRelationship).values({
+        sourceId: fromResource.id,
+        targetId: toResource.id,
+        type: body.type,
+      });
+
       return Response.json(
-        { error: `${body.fromIdentifier} not found` },
-        { status: 404 },
+        { message: "Relationship created" },
+        { status: 200 },
       );
-
-    const toResource = await db
-      .select()
-      .from(SCHEMA.resource)
-      .where(
-        and(
-          eq(SCHEMA.resource.identifier, body.toIdentifier),
-          eq(SCHEMA.resource.workspaceId, body.workspaceId),
-        ),
-      )
-      .then(takeFirstOrNull);
-    if (!toResource)
+    } catch (error) {
+      console.error(error);
       return Response.json(
-        { error: `${body.toIdentifier} not found` },
-        { status: 404 },
+        { error: "Failed to create relationship" },
+        { status: 500 },
       );
-
-    await db.insert(SCHEMA.resourceRelationship).values({
-      sourceId: fromResource.id,
-      targetId: toResource.id,
-      type: body.type,
-    });
-
-    return Response.json({ message: "Relationship created" }, { status: 200 });
+    }
   });
