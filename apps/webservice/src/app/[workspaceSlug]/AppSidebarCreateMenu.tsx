@@ -1,5 +1,8 @@
+"use client";
+
 import type { Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -12,17 +15,35 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { api } from "~/trpc/react";
 import { CreateDeploymentDialog } from "./_components/CreateDeployment";
 import { CreateReleaseDialog } from "./_components/CreateRelease";
 import { CreateSystemDialog } from "./_components/CreateSystem";
 import { CreateTargetDialog } from "./_components/CreateTarget";
 import { CreateSessionDialog } from "./_components/terminal/CreateDialogSession";
 
-export const SidebarCreateMenu: React.FC<{
+export const AppSidebarCreateMenu: React.FC<{
   workspace: Workspace;
-  deploymentId?: string;
-  systemId?: string;
-}> = (props) => {
+}> = ({ workspace }) => {
+  const { deploymentSlug, workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug?: string;
+    deploymentSlug?: string;
+  }>();
+
+  const system = api.system.bySlug.useQuery(
+    { workspaceSlug, systemSlug: systemSlug ?? "" },
+    { enabled: systemSlug != null },
+  );
+  const deployment = api.deployment.bySlug.useQuery(
+    {
+      workspaceSlug,
+      systemSlug: systemSlug ?? "",
+      deploymentSlug: deploymentSlug ?? "",
+    },
+    { enabled: deploymentSlug != null && systemSlug != null },
+  );
+
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -42,19 +63,26 @@ export const SidebarCreateMenu: React.FC<{
       >
         <DropdownMenuGroup>
           <CreateSystemDialog
-            workspace={props.workspace}
+            workspace={workspace}
             onSuccess={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New System
             </DropdownMenuItem>
           </CreateSystemDialog>
-          <CreateDeploymentDialog {...props} onSuccess={() => setOpen(false)}>
+          <CreateDeploymentDialog
+            systemId={system.data?.id}
+            onSuccess={() => setOpen(false)}
+          >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New Deployment
             </DropdownMenuItem>
           </CreateDeploymentDialog>
-          <CreateReleaseDialog {...props} onClose={() => setOpen(false)}>
+          <CreateReleaseDialog
+            systemId={system.data?.id}
+            deploymentId={deployment.data?.id}
+            onClose={() => setOpen(false)}
+          >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               New Release
             </DropdownMenuItem>
@@ -75,7 +103,10 @@ export const SidebarCreateMenu: React.FC<{
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <CreateTargetDialog {...props} onSuccess={() => setOpen(false)}>
+          <CreateTargetDialog
+            workspace={workspace}
+            onSuccess={() => setOpen(false)}
+          >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
               Bootstrap Target
             </DropdownMenuItem>

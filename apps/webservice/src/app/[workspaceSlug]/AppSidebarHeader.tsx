@@ -1,9 +1,9 @@
 "use client";
 
-import type { Workspace } from "@ctrlplane/db/schema";
+import type { System, Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import { signOut, useSession } from "next-auth/react";
+import { IconCheck, IconChevronDown, IconSearch } from "@tabler/icons-react";
+import { signOut } from "next-auth/react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -19,14 +19,17 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
+import { SidebarMenu, SidebarMenuItem } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/react";
+import { SearchDialog } from "./_components/SearchDialog";
+import { AppSidebarCreateMenu } from "./AppSidebarCreateMenu";
 
-export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
-  workspace,
-}) => {
-  const { data } = useSession();
-  const workspaces = api.workspace.list.useQuery();
+const WorkspaceDropdown: React.FC<{
+  workspace: Workspace;
+  workspaces: Workspace[];
+  viewer: { email: string };
+}> = ({ workspace, workspaces, viewer }) => {
   const update = api.profile.update.useMutation();
   return (
     <DropdownMenu>
@@ -53,9 +56,9 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
           <DropdownMenuPortal>
             <DropdownMenuSubContent className="w-[200px] bg-neutral-900">
               <DropdownMenuLabel className="font-normal text-muted-foreground">
-                {data?.user.email}
+                {viewer.email}
               </DropdownMenuLabel>
-              {workspaces.data?.map((ws) => (
+              {workspaces.map((ws) => (
                 <Link
                   key={ws.id}
                   href={`/${ws.slug}`}
@@ -83,5 +86,32 @@ export const SidebarWorkspaceDropdown: React.FC<{ workspace: Workspace }> = ({
         <DropdownMenuItem onClick={() => signOut()}>Log out</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+};
+
+export const AppSidebarHeader: React.FC<{
+  systems: System[];
+  workspace: Workspace;
+  workspaces: Workspace[];
+  viewer: { email: string };
+}> = ({ workspace, workspaces, viewer }) => {
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem className="flex items-center gap-2">
+        <div className="flex-grow overflow-x-auto">
+          <WorkspaceDropdown
+            workspace={workspace}
+            workspaces={workspaces}
+            viewer={viewer}
+          />
+        </div>
+        <SearchDialog>
+          <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
+            <IconSearch className="h-4 w-4" />
+          </Button>
+        </SearchDialog>
+        <AppSidebarCreateMenu workspace={workspace} />
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 };
