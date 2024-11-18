@@ -7,7 +7,14 @@ import { IconBookmark } from "@tabler/icons-react";
 import LZString from "lz-string";
 
 import { Badge } from "@ctrlplane/ui/badge";
-import { SidebarMenuButton } from "@ctrlplane/ui/sidebar";
+import {
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+} from "@ctrlplane/ui/sidebar";
 import {
   ComparisonOperator,
   FilterType,
@@ -41,103 +48,107 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
     (recentlyAdded.data?.total ?? 0) - (recentlyAdded.data?.items.length ?? 0);
 
   return (
-    <div className="space-y-4 text-sm">
-      <div className="text-lg font-semibold">Targets</div>
+    <>
+      <SidebarHeader className="mt-1 px-3">Resources</SidebarHeader>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Saved Views</SidebarGroupLabel>
+          <SidebarMenu>
+            {views.data?.length === 0 && views.isSuccess && (
+              <div className="rounded-md px-2 text-xs text-neutral-600">
+                No saved filters found.
+              </div>
+            )}
+            {viewsWithHash != null && viewsWithHash.length > 0 && (
+              <>
+                {viewsWithHash.map(({ id, name, hash }) => (
+                  <SidebarMenuButton asChild key={id}>
+                    <Link
+                      href={`/${workspace.slug}/targets?filter=${hash}`}
+                      onClick={() => setActiveSidebarItem(null)}
+                    >
+                      <IconBookmark className="h-4 w-4 text-muted-foreground" />
+                      {name}
+                    </Link>
+                  </SidebarMenuButton>
+                ))}
+              </>
+            )}
+          </SidebarMenu>
+        </SidebarGroup>
 
-      <div className="space-y-1.5">
-        <div className="text-xs font-semibold uppercase text-muted-foreground">
-          Saved Views
-        </div>
-        <div>
-          <div className="rounded-md text-xs text-neutral-600">
-            No saved filters found.
-          </div>
-          {viewsWithHash != null && viewsWithHash.length > 0 && (
-            <>
-              {viewsWithHash.map(({ id, name, hash }) => (
-                <SidebarMenuButton asChild key={id}>
-                  <Link
-                    href={`/${workspace.slug}/targets?filter=${hash}`}
-                    onClick={() => setActiveSidebarItem(null)}
-                  >
-                    <IconBookmark className="h-4 w-4 text-muted-foreground" />
-                    {name}
+        <SidebarGroup>
+          <SidebarGroupLabel>Kinds</SidebarGroupLabel>
+          <SidebarMenu>
+            {kinds.data?.map(({ version, kind, count }) => {
+              const url = `/${workspace.slug}/targets?filter=${LZString.compressToEncodedURIComponent(
+                JSON.stringify({
+                  type: FilterType.Comparison,
+                  operator: ComparisonOperator.And,
+                  conditions: [
+                    {
+                      type: ResourceFilterType.Kind,
+                      value: kind,
+                      operator: "equals",
+                    },
+                  ],
+                }),
+              )}`;
+              return (
+                <SidebarMenuButton
+                  asChild
+                  key={`${version}/${kind}`}
+                  isActive={pathname.includes(url)}
+                >
+                  <Link href={url} onClick={() => setActiveSidebarItem(null)}>
+                    <TargetIcon version={version} kind={kind} />
+                    <span className="flex-grow">{kind}</span>
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full bg-neutral-500/10 text-xs text-muted-foreground"
+                    >
+                      {count}
+                    </Badge>
                   </Link>
                 </SidebarMenuButton>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
+              );
+            })}
+          </SidebarMenu>
+        </SidebarGroup>
 
-      <div className="space-y-1.5">
-        <div className="text-xs font-semibold uppercase text-muted-foreground">
-          Kinds
-        </div>
-        <div>
-          {kinds.data?.map(({ version, kind, count }) => {
-            const url = `/${workspace.slug}/targets?filter=${LZString.compressToEncodedURIComponent(
-              JSON.stringify({
-                type: FilterType.Comparison,
-                operator: ComparisonOperator.And,
-                conditions: [
-                  {
-                    type: ResourceFilterType.Kind,
-                    value: kind,
-                    operator: "equals",
-                  },
-                ],
-              }),
-            )}`;
-            return (
+        <SidebarGroup>
+          <SidebarGroupLabel>Recently Added</SidebarGroupLabel>
+          <SidebarMenu>
+            {recentlyAdded.data?.items.map((resource) => (
               <SidebarMenuButton
                 asChild
-                key={`${version}/${kind}`}
-                isActive={pathname.includes(url)}
+                key={resource.id}
+                isActive={pathname.includes(`?target_id=${resource.id}`)}
               >
-                <Link href={url} onClick={() => setActiveSidebarItem(null)}>
-                  <TargetIcon version={version} kind={kind} />
-                  <span className="flex-grow">{kind}</span>
-                  <Badge
-                    variant="secondary"
-                    className="rounded-full bg-neutral-500/10 text-xs text-muted-foreground"
-                  >
-                    {count}
-                  </Badge>
+                <Link
+                  href={`${pathname}?target_id=${resource.id}`}
+                  onClick={() => setActiveSidebarItem(null)}
+                >
+                  <TargetIcon version={resource.version} kind={resource.kind} />
+                  <span className="flex-grow">{resource.name}</span>
                 </Link>
               </SidebarMenuButton>
-            );
-          })}
-        </div>
-      </div>
+            ))}
 
-      <div className="space-y-1.5">
-        <div className="text-xs font-semibold uppercase text-muted-foreground">
-          Recently Added Targets
-        </div>
-        <div>
-          {recentlyAdded.data?.items.map((resource) => (
             <SidebarMenuButton
               asChild
-              key={resource.id}
-              isActive={pathname.includes(`?target_id=${resource.id}`)}
+              className="pl-2 text-[0.02em] text-muted-foreground"
             >
               <Link
-                href={`${pathname}?target_id=${resource.id}`}
+                href={`/${workspace.slug}/targets`}
                 onClick={() => setActiveSidebarItem(null)}
               >
-                <TargetIcon version={resource.version} kind={resource.kind} />
-                <span className="flex-grow">{resource.name}</span>
+                View {totalTargets} other targets
               </Link>
             </SidebarMenuButton>
-          ))}
-          {totalTargets > 0 && (
-            <div className="mt-2 px-1 text-xs text-muted-foreground">
-              +{totalTargets} other targets
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+          </SidebarMenu>
+        </SidebarGroup>
+      </SidebarContent>
+    </>
   );
 };
