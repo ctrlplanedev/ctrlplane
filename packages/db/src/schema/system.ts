@@ -48,7 +48,11 @@ export const updateSystem = createSystem.partial();
 
 export type System = InferSelectModel<typeof system>;
 
-export const systemRelations = relations(system, ({ many }) => ({
+export const systemRelations = relations(system, ({ one, many }) => ({
   environments: many(environment),
   deployments: many(deployment),
+  workspace: one(workspace, {
+    fields: [system.workspaceId],
+    references: [workspace.id],
+  }),
 }));
