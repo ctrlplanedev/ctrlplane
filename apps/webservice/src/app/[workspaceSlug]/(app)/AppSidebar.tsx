@@ -31,7 +31,10 @@ export const AppSidebar: React.FC<{ workspace: Workspace }> = async ({
       </SidebarHeader>
       <SidebarContent>
         <AppSidebarWorkspace workspaceSlug={workspace.slug} />
-        <AppSidebarSystem systems={systems.items} />
+        <AppSidebarSystem
+          workspaceSlug={workspace.slug}
+          systems={systems.items}
+        />
       </SidebarContent>
     </SidebarWithPopover>
   );

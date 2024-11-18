@@ -8,6 +8,7 @@ import { Popover, PopoverAnchor, PopoverContent } from "@ctrlplane/ui/popover";
 
 import { useSidebarPopover } from "./AppSidebarPopoverContext";
 import { AppSidebarResourcesPopover } from "./AppSidebarResourcesPopover";
+import { AppSidebarSystemPopover } from "./AppSidebarSystemPopover";
 
 export const AppSidebarPopover: React.FC<{ workspace: Workspace }> = ({
   workspace,
@@ -24,6 +25,12 @@ export const AppSidebarPopover: React.FC<{ workspace: Workspace }> = ({
       >
         {activeSidebarItem === "resources" && (
           <AppSidebarResourcesPopover workspace={workspace} />
+        )}
+        {activeSidebarItem?.startsWith("system:") && (
+          <AppSidebarSystemPopover
+            workspace={workspace}
+            systemId={activeSidebarItem.split(":")[1] ?? ""}
+          />
         )}
       </PopoverContent>
     </Popover>

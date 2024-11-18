@@ -58,11 +58,11 @@ const navMain = (prefix: string) => [
     items: [
       {
         title: "Agents",
-        url: "#",
+        url: `${prefix}/jobs-agents`,
       },
       {
         title: "Runs",
-        url: "#",
+        url: `${prefix}/jobs`,
       },
     ],
   },
@@ -76,37 +76,39 @@ export const AppSidebarWorkspace: React.FC<{ workspaceSlug: string }> = ({
 };
 
 export const AppSidebarSystem: React.FC<{
+  workspaceSlug: string;
   systems: System[];
-}> = ({ systems }) => {
+}> = ({ workspaceSlug, systems }) => {
   const items = useMemo(
     () =>
       systems.map((s) => ({
         title: s.name,
         isActive: true,
+        popoverId: `system:${s.id}`,
         items: [
           {
             title: "Environments",
             icon: IconPlant,
-            url: "#",
+            url: `/${workspaceSlug}/systems/${s.slug}/environments`,
           },
           {
             title: "Deployements",
             icon: IconShip,
-            url: "#",
+            url: `/${workspaceSlug}/systems/${s.slug}/deployments`,
           },
           {
             title: "Runbooks",
             icon: IconRun,
-            url: "#",
+            url: `/${workspaceSlug}/systems/${s.slug}/runbooks`,
           },
           {
             title: "Variable Sets",
             icon: IconVariable,
-            url: "#",
+            url: `/${workspaceSlug}/systems/${s.slug}/variable-sets`,
           },
         ],
       })),
-    [systems],
+    [workspaceSlug, systems],
   );
   return <SidebarNavMain title="Systems" items={items} />;
 };

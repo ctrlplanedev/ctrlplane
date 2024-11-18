@@ -16,10 +16,12 @@ import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 import { TargetIcon } from "./_components/TargetIcon";
+import { useSidebarPopover } from "./AppSidebarPopoverContext";
 
 export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
   workspace,
 }) => {
+  const { setActiveSidebarItem } = useSidebarPopover();
   const pathname = usePathname();
   const kinds = api.workspace.resourceKinds.useQuery(workspace.id);
 
@@ -54,7 +56,10 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
             <>
               {viewsWithHash.map(({ id, name, hash }) => (
                 <SidebarMenuButton asChild key={id}>
-                  <Link href={`/${workspace.slug}/targets?filter=${hash}`}>
+                  <Link
+                    href={`/${workspace.slug}/targets?filter=${hash}`}
+                    onClick={() => setActiveSidebarItem(null)}
+                  >
                     <IconBookmark className="h-4 w-4 text-muted-foreground" />
                     {name}
                   </Link>
@@ -90,7 +95,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                 key={`${version}/${kind}`}
                 isActive={pathname.includes(url)}
               >
-                <Link href={url}>
+                <Link href={url} onClick={() => setActiveSidebarItem(null)}>
                   <TargetIcon version={version} kind={kind} />
                   <span className="flex-grow">{kind}</span>
                   <Badge
@@ -117,7 +122,10 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
               key={resource.id}
               isActive={pathname.includes(`?target_id=${resource.id}`)}
             >
-              <Link href={`${pathname}?target_id=${resource.id}`}>
+              <Link
+                href={`${pathname}?target_id=${resource.id}`}
+                onClick={() => setActiveSidebarItem(null)}
+              >
                 <TargetIcon version={resource.version} kind={resource.kind} />
                 <span className="flex-grow">{resource.name}</span>
               </Link>
