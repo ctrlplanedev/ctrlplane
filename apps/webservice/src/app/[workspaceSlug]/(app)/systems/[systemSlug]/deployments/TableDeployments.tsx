@@ -14,7 +14,7 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
-import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/_components/DeploymentOptionsDropdown";
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/DeploymentOptionsDropdown";
 import { api } from "~/trpc/server";
 import { Release } from "./TableCells";
 

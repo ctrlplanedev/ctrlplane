@@ -20,7 +20,7 @@ export const AppSidebar: React.FC<{ workspace: Workspace }> = async ({
 
   return (
     <SidebarWithPopover>
-      <AppSidebarPopover />
+      <AppSidebarPopover workspace={workspace} />
       <SidebarHeader>
         <AppSidebarHeader
           workspace={workspace}

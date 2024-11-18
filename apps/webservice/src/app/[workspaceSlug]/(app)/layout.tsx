@@ -5,18 +5,18 @@ import { auth } from "@ctrlplane/auth";
 import { SidebarInset } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
-import { EnvironmentDrawer } from "../_components/environment-drawer/EnvironmentDrawer";
-import { EnvironmentPolicyDrawer } from "../_components/environment-policy-drawer/EnvironmentPolicyDrawer";
-import { JobDrawer } from "../_components/job-drawer/JobDrawer";
-import { ReleaseChannelDrawer } from "../_components/release-channel-drawer/ReleaseChannelDrawer";
-import { ReleaseDrawer } from "../_components/release-drawer/ReleaseDrawer";
-import { TargetDrawer } from "../_components/target-drawer/TargetDrawer";
-import { VariableSetDrawer } from "../_components/variable-set-drawer/VariableSetDrawer";
+import { EnvironmentDrawer } from "./_components/environment-drawer/EnvironmentDrawer";
+import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer/EnvironmentPolicyDrawer";
+import { JobDrawer } from "./_components/job-drawer/JobDrawer";
+import { ReleaseChannelDrawer } from "./_components/release-channel-drawer/ReleaseChannelDrawer";
+import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
+import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
+import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { AppSidebar } from "./AppSidebar";
 import { AppSidebarPopoverProvider } from "./AppSidebarPopoverContext";
 
 const TerminalDrawer = dynamic(
-  () => import("../_components/terminal/TerminalSessionsDrawer"),
+  () => import("./_components/terminal/TerminalSessionsDrawer"),
   { ssr: false },
 );
 

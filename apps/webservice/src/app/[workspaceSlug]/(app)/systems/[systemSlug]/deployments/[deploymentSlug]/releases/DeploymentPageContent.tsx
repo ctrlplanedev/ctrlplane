@@ -20,10 +20,10 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/_components/release-channel-drawer/useReleaseChannelDrawer";
-import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
-import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
-import { useReleaseFilter } from "~/app/[workspaceSlug]/_components/release-condition/useReleaseFilter";
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
+import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionBadge";
+import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionDialog";
+import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
 import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";

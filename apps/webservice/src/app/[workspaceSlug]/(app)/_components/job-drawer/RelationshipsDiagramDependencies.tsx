@@ -22,9 +22,9 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 
-import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
-import { DepEdge } from "~/app/[workspaceSlug]/_components/relationships/DepEdge";
-import { TargetNode } from "~/app/[workspaceSlug]/_components/relationships/TargetNode";
+import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+import { DepEdge } from "~/app/[workspaceSlug]/(app)/_components/relationships/DepEdge";
+import { TargetNode } from "~/app/[workspaceSlug]/(app)/_components/relationships/TargetNode";
 
 const nodeTypes: NodeTypes = { target: TargetNode };
 const edgeTypes: EdgeTypes = { default: DepEdge };

@@ -14,8 +14,8 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
-import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/_components/target-condition/TargetViewActionsDropdown";
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionBadge";
+import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetViewActionsDropdown";
 
 export const TargetViewsTable: React.FC<{
   workspace: schema.Workspace;

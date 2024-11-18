@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/_components/release-channel-drawer/useReleaseChannelDrawer";
-import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
+import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionBadge";
 
 type ReleaseChannel = SCHEMA.ReleaseChannel & { total: number };
 

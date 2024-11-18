@@ -3,7 +3,7 @@ import { Handle, Position } from "reactflow";
 
 import { cn } from "@ctrlplane/ui";
 
-import { TargetIcon as ResourceIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
+import { TargetIcon as ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/TargetIcon";
 
 type ResourceNodeProps = NodeProps<{
   name: string;

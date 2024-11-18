@@ -21,7 +21,7 @@ import {
 import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseFilterType } from "@ctrlplane/validators/releases";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/_components/release-channel-drawer/useReleaseChannelDrawer";
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { api } from "~/trpc/react";
 
 type ReleaseSequencingNodeProps = NodeProps<{

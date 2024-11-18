@@ -34,7 +34,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { TargetIcon } from "~/app/[workspaceSlug]/_components/TargetIcon";
+import { TargetIcon } from "~/app/[workspaceSlug]/(app)/_components/TargetIcon";
 import { api } from "~/trpc/react";
 
 const columns: ColumnDef<Resource>[] = [

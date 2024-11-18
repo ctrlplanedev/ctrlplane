@@ -2,7 +2,7 @@ import { IconShip } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateDeploymentDialog } from "../../../../_components/CreateDeployment";
+import { CreateDeploymentDialog } from "../../../_components/CreateDeployment";
 
 export const DeploymentGettingStarted: React.FC<{ systemId: string }> = ({
   systemId,

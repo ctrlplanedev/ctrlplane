@@ -36,8 +36,8 @@ import {
   releaseCondition,
 } from "@ctrlplane/validators/releases";
 
-import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionBadge";
-import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/_components/release-condition/ReleaseConditionDialog";
+import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionBadge";
+import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionDialog";
 import { api } from "~/trpc/react";
 
 type CreateReleaseChannelDialogProps = {

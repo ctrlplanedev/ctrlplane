@@ -22,7 +22,7 @@ import {
 import { SidebarMenu, SidebarMenuItem } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/react";
-import { SearchDialog } from "../_components/SearchDialog";
+import { SearchDialog } from "./_components/SearchDialog";
 import { AppSidebarCreateMenu } from "./AppSidebarCreateMenu";
 
 const WorkspaceDropdown: React.FC<{

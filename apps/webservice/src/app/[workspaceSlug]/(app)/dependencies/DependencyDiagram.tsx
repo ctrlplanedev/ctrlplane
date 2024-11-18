@@ -31,7 +31,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
-import { getLayoutedElementsDagre } from "../../_components/reactflow/layout";
+import { getLayoutedElementsDagre } from "../_components/reactflow/layout";
 
 const useOnLayout = () => {
   const { getNodes, fitView, setNodes, setEdges, getEdges } = useReactFlow();

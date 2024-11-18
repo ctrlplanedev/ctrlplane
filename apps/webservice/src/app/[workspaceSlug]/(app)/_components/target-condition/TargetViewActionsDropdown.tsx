@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import { EditTargetViewDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
+import { EditTargetViewDialog } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
 import { useTargetFilter } from "./useTargetFilter";
 

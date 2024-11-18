@@ -29,11 +29,11 @@ import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
-import { JobConditionBadge } from "~/app/[workspaceSlug]/_components/job-condition/JobConditionBadge";
-import { JobConditionDialog } from "~/app/[workspaceSlug]/_components/job-condition/JobConditionDialog";
-import { useJobFilter } from "~/app/[workspaceSlug]/_components/job-condition/useJobFilter";
-import { useJobDrawer } from "~/app/[workspaceSlug]/_components/job-drawer/useJobDrawer";
-import { JobTableStatusIcon } from "~/app/[workspaceSlug]/_components/JobTableStatusIcon";
+import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
+import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
+import { useJobFilter } from "~/app/[workspaceSlug]/(app)/_components/job-condition/useJobFilter";
+import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
+import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "./JobDropdownMenu";
 import { PolicyApprovalRow } from "./PolicyApprovalRow";

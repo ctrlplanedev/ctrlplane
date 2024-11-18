@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateReleaseDialog } from "~/app/[workspaceSlug]/_components/CreateRelease";
+import { CreateReleaseDialog } from "~/app/[workspaceSlug]/(app)/_components/CreateRelease";
 import { api } from "~/trpc/react";
 import { CreateHookDialog } from "./hooks/CreateHookDialog";
 import { CreateReleaseChannelDialog } from "./release-channels/CreateReleaseChannelDialog";

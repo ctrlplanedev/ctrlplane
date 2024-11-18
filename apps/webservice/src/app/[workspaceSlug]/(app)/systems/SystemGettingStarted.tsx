@@ -3,7 +3,7 @@ import { IconTopologyComplex } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateSystemDialog } from "../../_components/CreateSystem";
+import { CreateSystemDialog } from "../_components/CreateSystem";
 
 export const SystemGettingStarted: React.FC<{
   workspace: Workspace;

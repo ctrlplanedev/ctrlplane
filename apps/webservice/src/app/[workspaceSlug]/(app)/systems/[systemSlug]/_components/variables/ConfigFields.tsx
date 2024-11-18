@@ -28,8 +28,8 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
 
-import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
-import { TargetConditionDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionBadge";
+import { TargetConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
 
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;

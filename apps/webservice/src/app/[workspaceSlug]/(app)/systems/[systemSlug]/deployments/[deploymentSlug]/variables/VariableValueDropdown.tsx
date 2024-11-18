@@ -48,7 +48,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
-import { TargetConditionRender } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionRender";
+import { TargetConditionRender } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionRender";
 import {
   VariableBooleanInput,
   VariableChoiceSelect,

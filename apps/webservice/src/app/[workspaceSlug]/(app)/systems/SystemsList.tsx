@@ -16,10 +16,10 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import type { SystemFilter } from "./SystemFilter";
 import { api } from "~/trpc/react";
-import { useFilters } from "../../_components/filter/Filter";
-import { FilterDropdown } from "../../_components/filter/FilterDropdown";
-import { ContentDialog } from "../../_components/filter/FilterDropdownItems";
-import { NoFilterMatch } from "../../_components/filter/NoFilterMatch";
+import { useFilters } from "../_components/filter/Filter";
+import { FilterDropdown } from "../_components/filter/FilterDropdown";
+import { ContentDialog } from "../_components/filter/FilterDropdownItems";
+import { NoFilterMatch } from "../_components/filter/NoFilterMatch";
 import { SystemsTable } from "./SystemsTable";
 
 export const SystemsList: React.FC<{

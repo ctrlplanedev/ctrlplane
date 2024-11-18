@@ -11,7 +11,7 @@ import ReactFlow, {
   useNodesState,
 } from "reactflow";
 
-import { useLayoutAndFitView } from "~/app/[workspaceSlug]/_components/reactflow/layout";
+import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
 import { DepEdge } from "./DepEdge";
 import {
   createEdgeFromProviderToResource,

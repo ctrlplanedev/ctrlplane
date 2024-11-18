@@ -18,7 +18,7 @@ const navMain = (prefix: string) => [
   {
     title: "Systems",
     icon: IconCategory,
-    isActive: true,
+    isOpen: true,
     items: [
       {
         title: "Dependencies",
@@ -29,9 +29,9 @@ const navMain = (prefix: string) => [
   },
   {
     title: "Resources",
-    popoverId: "targets",
+    popoverId: "resources",
     icon: IconObjectScan,
-    isActive: true,
+    isOpen: true,
     items: [
       {
         title: "List",
@@ -54,6 +54,7 @@ const navMain = (prefix: string) => [
   {
     title: "Jobs",
     icon: IconRocket,
+    isOpen: true,
     items: [
       {
         title: "Agents",

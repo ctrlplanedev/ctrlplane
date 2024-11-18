@@ -11,14 +11,14 @@ import type { NodeTypes, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
 import ReactFlow, { useEdgesState, useNodesState } from "reactflow";
 
-import { ArrowEdge } from "~/app/[workspaceSlug]/_components/reactflow/ArrowEdge";
+import { ArrowEdge } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ArrowEdge";
 import {
   createEdgesFromPolicyDeployment,
   createEdgesFromPolicyToReleaseSequencing,
   createEdgesFromReleaseSequencingToEnvironment,
   createEdgesWherePolicyHasNoEnvironment,
-} from "~/app/[workspaceSlug]/_components/reactflow/edges";
-import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
+} from "~/app/[workspaceSlug]/(app)/_components/reactflow/edges";
+import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
 import { EnvironmentNode } from "./FlowNode";
 import { PolicyNode } from "./FlowPolicyNode";
 import { ReleaseSequencingNode } from "./ReleaseSequencingNode";

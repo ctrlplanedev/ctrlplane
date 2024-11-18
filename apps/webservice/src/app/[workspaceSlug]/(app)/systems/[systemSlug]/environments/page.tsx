@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { ReactFlowProvider } from "~/app/[workspaceSlug]/_components/reactflow/ReactFlowProvider";
+import { ReactFlowProvider } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ReactFlowProvider";
 import { api } from "~/trpc/server";
 import { DeleteNodeDialogProvider } from "./DeleteNodeDialog";
 import { EnvFlowBuilder } from "./EnvFlowBuilder";

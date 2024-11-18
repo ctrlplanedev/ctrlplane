@@ -4,7 +4,7 @@ import { IconTopologyComplex } from "@tabler/icons-react";
 
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 
-import { CreateTargetDialog } from "../../../_components/CreateTarget";
+import { CreateTargetDialog } from "../../_components/CreateTarget";
 
 export const TargetGettingStarted: React.FC<{ workspace: Workspace }> = ({
   workspace,

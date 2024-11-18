@@ -14,15 +14,15 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
 
-import { NoFilterMatch } from "~/app/[workspaceSlug]/_components/filter/NoFilterMatch";
-import { TargetConditionBadge } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionBadge";
+import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
+import { TargetConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionBadge";
 import {
   CreateTargetViewDialog,
   TargetConditionDialog,
-} from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
-import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/_components/target-condition/TargetViewActionsDropdown";
-import { useTargetFilter } from "~/app/[workspaceSlug]/_components/target-condition/useTargetFilter";
-import { useTargetDrawer } from "~/app/[workspaceSlug]/_components/target-drawer/useTargetDrawer";
+} from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
+import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetViewActionsDropdown";
+import { useTargetFilter } from "~/app/[workspaceSlug]/(app)/_components/target-condition/useTargetFilter";
+import { useTargetDrawer } from "~/app/[workspaceSlug]/(app)/_components/target-drawer/useTargetDrawer";
 import { api } from "~/trpc/react";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";

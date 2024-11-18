@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ScrollArea } from "@ctrlplane/ui/scroll-area";
 
-import { ReactFlowProvider } from "~/app/[workspaceSlug]/_components/reactflow/ReactFlowProvider";
+import { ReactFlowProvider } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ReactFlowProvider";
 import { api } from "~/trpc/server";
 import { FlowDiagram } from "./FlowDiagram";
 import { TargetReleaseTable } from "./TargetReleaseTable";

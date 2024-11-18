@@ -16,11 +16,11 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
-import { CreateDeploymentDialog } from "../_components/CreateDeployment";
-import { CreateReleaseDialog } from "../_components/CreateRelease";
-import { CreateSystemDialog } from "../_components/CreateSystem";
-import { CreateTargetDialog } from "../_components/CreateTarget";
-import { CreateSessionDialog } from "../_components/terminal/CreateDialogSession";
+import { CreateDeploymentDialog } from "./_components/CreateDeployment";
+import { CreateReleaseDialog } from "./_components/CreateRelease";
+import { CreateSystemDialog } from "./_components/CreateSystem";
+import { CreateTargetDialog } from "./_components/CreateTarget";
+import { CreateSessionDialog } from "./_components/terminal/CreateDialogSession";
 
 export const AppSidebarCreateMenu: React.FC<{
   workspace: Workspace;

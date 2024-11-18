@@ -19,7 +19,7 @@ import {
   NavigationMenuList,
 } from "@ctrlplane/ui/navigation-menu";
 
-import { CreateTargetViewDialog } from "~/app/[workspaceSlug]/_components/target-condition/TargetConditionDialog";
+import { CreateTargetViewDialog } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
 
 export default function TargetLayout({

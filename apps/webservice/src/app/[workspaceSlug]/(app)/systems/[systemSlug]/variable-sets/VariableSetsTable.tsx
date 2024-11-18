@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { useVariableSetDrawer } from "~/app/[workspaceSlug]/_components/variable-set-drawer/useVariableSetDrawer";
+import { useVariableSetDrawer } from "~/app/[workspaceSlug]/(app)/_components/variable-set-drawer/useVariableSetDrawer";
 
 type Environment = SCHEMA.VariableSetEnvironment & {
   environment: SCHEMA.Environment;
