@@ -29,7 +29,10 @@ export const resourceProvider = pgTable(
 
 export const resourceProviderRelations = relations(
   resourceProvider,
-  ({ many }) => ({ resources: many(resource) }),
+  ({ many }) => ({
+    resources: many(resource),
+    google: many(resourceProviderGoogle),
+  }),
 );
 
 export const createResourceProvider = createInsertSchema(resourceProvider).omit(
@@ -61,3 +64,13 @@ export const updateResourceProviderGoogle =
 export type ResourceProviderGoogle = InferSelectModel<
   typeof resourceProviderGoogle
 >;
+
+export const resourceProviderGoogleRelations = relations(
+  resourceProviderGoogle,
+  ({ one }) => ({
+    provider: one(resourceProvider, {
+      fields: [resourceProviderGoogle.resourceProviderId],
+      references: [resourceProvider.id],
+    }),
+  }),
+);

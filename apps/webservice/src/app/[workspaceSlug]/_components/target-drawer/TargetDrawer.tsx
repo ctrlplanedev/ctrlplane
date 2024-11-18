@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   IconDotsVertical,
   IconExternalLink,
@@ -34,6 +34,7 @@ import { VariableContent } from "./VariablesContent";
 
 export const TargetDrawer: React.FC = () => {
   const { targetId, removeTargetId } = useTargetDrawer();
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const isOpen = targetId != null && targetId != "";
   const setIsOpen = removeTargetId;
 
@@ -123,6 +124,17 @@ export const TargetDrawer: React.FC = () => {
                   </>
                 )}
               </Button>
+
+              <Link
+                href={`/${workspaceSlug}/targets/${target.id}/visualize`}
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "sm",
+                  className: "gap-1",
+                })}
+              >
+                <IconTopologyStar3 className="h-3 w-3" /> Visualize
+              </Link>
 
               {target.kind === "AccessNode" && (
                 <Button

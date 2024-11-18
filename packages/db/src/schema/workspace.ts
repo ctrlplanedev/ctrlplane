@@ -1,4 +1,5 @@
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   pgTable,
@@ -11,6 +12,8 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import { role } from "./rbac.js";
+import { resource } from "./resource.js";
+import { system } from "./system.js";
 
 export const workspace = pgTable("workspace", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -44,6 +47,11 @@ export const createWorkspace = createInsertSchema(
 export const updateWorkspace = createWorkspace.partial();
 
 export type Workspace = InferSelectModel<typeof workspace>;
+
+export const workspaceRelations = relations(workspace, ({ many }) => ({
+  resources: many(resource),
+  systems: many(system),
+}));
 
 export const workspaceEmailDomainMatching = pgTable(
   "workspace_email_domain_matching",

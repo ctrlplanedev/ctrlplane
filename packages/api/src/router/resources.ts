@@ -10,6 +10,7 @@ import {
   desc,
   eq,
   inArray,
+  isNotNull,
   not,
   sql,
   takeFirst,
@@ -331,6 +332,68 @@ export const resourceRouter = createTRPCRouter({
           return { ...t, metadata };
         }),
     ),
+
+  relationships: protectedProcedure
+    .input(z.string().uuid())
+    .query(async ({ ctx, input }) => {
+      const hasFilter = isNotNull(schema.environment.resourceFilter);
+      const resource = await ctx.db.query.resource.findFirst({
+        where: eq(schema.resource.id, input),
+        with: {
+          provider: { with: { google: true } },
+          workspace: {
+            with: {
+              systems: {
+                with: {
+                  environments: { where: hasFilter },
+                  deployments: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      if (resource == null) return null;
+
+      const { systems } = resource.workspace;
+
+      const matchedSystemsPromises = systems.map(async (s) => {
+        const matchedEnvironmentsPromises = s.environments.map(async (e) => {
+          const matchedResource = await ctx.db.query.resource.findFirst({
+            where: and(
+              eq(schema.resource.id, resource.id),
+              schema.resourceMatchesMetadata(ctx.db, e.resourceFilter),
+            ),
+          });
+
+          return matchedResource != null ? e : null;
+        });
+
+        const matchedEnvironments = await Promise.all(
+          matchedEnvironmentsPromises,
+        ).then((t) => t.filter(isPresent));
+        if (matchedEnvironments.length === 0) return null;
+
+        return { ...s, environments: matchedEnvironments };
+      });
+
+      const matchedSystems = await Promise.all(matchedSystemsPromises).then(
+        (t) => t.filter(isPresent),
+      );
+
+      const provider =
+        resource.provider == null
+          ? null
+          : {
+              ...resource.provider,
+              google:
+                resource.provider.google.length > 0
+                  ? resource.provider.google[0]!
+                  : null,
+            };
+
+      return { systems: matchedSystems, provider };
+    }),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure

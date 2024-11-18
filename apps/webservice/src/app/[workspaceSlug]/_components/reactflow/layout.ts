@@ -1,7 +1,9 @@
 "use client";
 
-import type { Edge, Node } from "reactflow";
+import type { Edge, Node, ReactFlowInstance } from "reactflow";
+import { useCallback, useEffect, useState } from "react";
 import dagre from "dagre";
+import { useReactFlow } from "reactflow";
 
 const generateLevels = (nodes: Node[], edges: Edge[]) => {
   const levels: Record<string, number> = {};
@@ -60,4 +62,57 @@ export const getLayoutedElementsDagre = (
     }),
     edges,
   };
+};
+
+type LayoutConfig = {
+  direction?: "TB" | "LR" | "BT" | "RL";
+  extraEdgeLength?: number;
+  nodesep?: number;
+  padding?: number;
+  maxZoom?: number;
+};
+
+export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
+  const [isLayouted, setIsLayouted] = useState(false);
+  const [isViewFitted, setIsViewFitted] = useState(false);
+
+  const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
+
+  const onLayout = useCallback(() => {
+    const layouted = getLayoutedElementsDagre(
+      getNodes(),
+      getEdges(),
+      config?.direction,
+      config?.extraEdgeLength,
+      config?.nodesep,
+    );
+    setNodes(layouted.nodes);
+    setEdges(layouted.edges);
+    setIsLayouted(true);
+  }, [getNodes, getEdges, setNodes, setEdges, setIsLayouted, config]);
+
+  const [reactFlowInstance, setReactFlowInstance] =
+    useState<ReactFlowInstance | null>(null);
+
+  useEffect(() => {
+    if (reactFlowInstance != null) onLayout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reactFlowInstance]);
+
+  useEffect(() => {
+    if (
+      reactFlowInstance != null &&
+      nodes.length &&
+      isLayouted &&
+      !isViewFitted
+    ) {
+      reactFlowInstance.fitView({
+        padding: config?.padding ?? 0.12,
+        maxZoom: config?.maxZoom ?? 1,
+      });
+      setIsViewFitted(true);
+    }
+  }, [reactFlowInstance, nodes, isLayouted, isViewFitted, config]);
+
+  return setReactFlowInstance;
 };
