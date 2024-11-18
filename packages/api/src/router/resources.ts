@@ -17,7 +17,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { getEventsForTargetDeleted, handleEvent } from "@ctrlplane/events";
+import { getEventsForResourceDeleted, handleEvent } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -582,7 +582,7 @@ export const resourceRouter = createTRPCRouter({
         where: inArray(schema.resource.id, input),
       });
       const events = (
-        await Promise.allSettled(resources.map(getEventsForTargetDeleted))
+        await Promise.allSettled(resources.map(getEventsForResourceDeleted))
       ).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
       await Promise.allSettled(events.map(handleEvent));
 

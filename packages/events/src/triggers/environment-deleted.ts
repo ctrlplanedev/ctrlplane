@@ -12,11 +12,11 @@ export const getEventsForEnvironmentDeleted = async (
   environment: SCHEMA.Environment,
 ): Promise<HookEvent[]> => {
   if (environment.resourceFilter == null) return [];
-  const targets = await db
+  const resources = await db
     .select()
     .from(SCHEMA.resource)
     .where(SCHEMA.resourceMatchesMetadata(db, environment.resourceFilter));
-  if (targets.length === 0) return [];
+  if (resources.length === 0) return [];
 
   const checks = and(
     isNotNull(SCHEMA.environment.resourceFilter),
@@ -39,7 +39,7 @@ export const getEventsForEnvironmentDeleted = async (
     conditions: envFilters,
   };
 
-  const removedFromSystemTargets =
+  const removedFromSystemResources =
     envFilters.length > 0
       ? await db
           .select()
@@ -49,17 +49,17 @@ export const getEventsForEnvironmentDeleted = async (
               SCHEMA.resourceMatchesMetadata(db, removedFromSystemFilter),
               inArray(
                 SCHEMA.resource.id,
-                targets.map((t) => t.id),
+                resources.map((r) => r.id),
               ),
             ),
           )
-      : targets;
-  if (removedFromSystemTargets.length === 0) return [];
+      : resources;
+  if (removedFromSystemResources.length === 0) return [];
 
   return system.deployments.flatMap((deployment) =>
-    removedFromSystemTargets.map((target) => ({
-      action: "deployment.target.removed",
-      payload: { deployment, target },
+    removedFromSystemResources.map((resource) => ({
+      action: "deployment.resource.removed",
+      payload: { deployment, resource },
     })),
   );
 };

@@ -9,16 +9,16 @@ import { ComparisonOperator } from "@ctrlplane/validators/conditions";
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 /**
- * Get events for a target that has been deleted.
- * NOTE: Because we may need to do inner joins on target metadata for the filter,
- * this actually needs to be called before the target is actually deleted.
- * @param target
+ * Get events for a resource that has been deleted.
+ * NOTE: Because we may need to do inner joins on resource metadata for the filter,
+ * this actually needs to be called before the resource is actually deleted.
+ * @param resource
  */
-export const getEventsForTargetDeleted = async (
-  target: SCHEMA.Resource,
+export const getEventsForResourceDeleted = async (
+  resource: SCHEMA.Resource,
 ): Promise<HookEvent[]> => {
   const systems = await db.query.system.findMany({
-    where: eq(SCHEMA.system.workspaceId, target.workspaceId),
+    where: eq(SCHEMA.system.workspaceId, resource.workspaceId),
     with: {
       environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
       deployments: true,
@@ -36,17 +36,17 @@ export const getEventsForTargetDeleted = async (
       conditions: filters,
     };
 
-    const matchedTarget = await db.query.resource.findFirst({
+    const matchedResource = await db.query.resource.findFirst({
       where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
     });
-    if (matchedTarget == null) return [];
+    if (matchedResource == null) return [];
 
     return s.deployments;
   });
   const deployments = (await Promise.all(deploymentPromises)).flat();
 
   return deployments.map((deployment) => ({
-    action: "deployment.target.removed",
-    payload: { target, deployment },
+    action: "deployment.resource.removed",
+    payload: { resource, deployment },
   }));
 };
