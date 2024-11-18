@@ -60,7 +60,6 @@ export const POST = request()
 
       return Response.json(body);
     } catch (error) {
-      console.error(error);
       if (error instanceof Error && error.message.includes("duplicate key"))
         return Response.json(
           { error: "Resource already associated with a deployment" },

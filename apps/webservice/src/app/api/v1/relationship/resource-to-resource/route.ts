@@ -64,7 +64,11 @@ export const POST = request()
         { status: 200 },
       );
     } catch (error) {
-      console.error(error);
+      if (error instanceof Error && error.message.includes("duplicate key"))
+        return Response.json(
+          { error: "Relationship already exists" },
+          { status: 400 },
+        );
       return Response.json(
         { error: "Failed to create relationship" },
         { status: 500 },
