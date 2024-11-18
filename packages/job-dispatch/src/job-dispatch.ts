@@ -141,16 +141,5 @@ export const dispatchRunbook = async (
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
   const job = await createTriggeredRunbookJob(db, runbook, values);
-  await createReleaseVariables(db, job.id)
-    .then(() => dispatchJobsQueue.add(job.id, { jobId: job.id }))
-    .catch((error) =>
-      db
-        .update(schema.job)
-        .set({
-          status: JobStatus.Failure,
-          message: `Failed to create release variables: ${error.message}`,
-        })
-        .where(eq(schema.job.id, job.id)),
-    );
   return job;
 };
