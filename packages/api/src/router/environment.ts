@@ -287,15 +287,19 @@ export const environmentRouter = createTRPCRouter({
               conditions: otherEnvFilters,
             };
 
+            const isRemovedFromEnv = inArray(
+              resource.id,
+              removedResources.map((r) => r.id),
+            );
+
+            const isRemovedFromSystem =
+              otherEnvFilters.length > 0
+                ? resourceMatchesMetadata(ctx.db, sysFilter)
+                : undefined;
+
             const removedFromSystemResources =
               await ctx.db.query.resource.findMany({
-                where: and(
-                  inArray(
-                    resource.id,
-                    removedResources.map((r) => r.id),
-                  ),
-                  resourceMatchesMetadata(ctx.db, sysFilter),
-                ),
+                where: and(isRemovedFromEnv, isRemovedFromSystem),
               });
 
             const events = removedFromSystemResources.flatMap((resource) =>
