@@ -274,6 +274,13 @@
       "when": 1731882197888,
       "tag": "0038_fearless_stark_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1731959174672,
+      "tag": "0039_hard_joystick",
+      "breakpoints": true
     }
   ]
 }
