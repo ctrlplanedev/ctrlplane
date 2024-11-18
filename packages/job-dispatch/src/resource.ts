@@ -19,7 +19,6 @@ import {
   resourceVariable,
   system,
 } from "@ctrlplane/db/schema";
-import { getEventsForResourceDeleted, handleEvent } from "@ctrlplane/events";
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
@@ -348,13 +347,5 @@ export const upsertResources = async (
  * @param resourceIds - The ids of the resources to delete.
  */
 export const deleteResources = async (tx: Tx, resourceIds: string[]) => {
-  const resources = await tx.query.resource.findMany({
-    where: inArray(resource.id, resourceIds),
-  });
-  const eventsPromises = resources.map(getEventsForResourceDeleted);
-  const events = (await Promise.allSettled(eventsPromises)).flatMap((r) =>
-    r.status === "fulfilled" ? r.value : [],
-  );
-  await Promise.allSettled(events.map(handleEvent));
   await tx.delete(resource).where(inArray(resource.id, resourceIds));
 };
