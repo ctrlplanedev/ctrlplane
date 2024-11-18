@@ -7,6 +7,7 @@ import {
   and,
   asc,
   count,
+  desc,
   eq,
   inArray,
   isNotNull,
@@ -301,8 +302,7 @@ const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       schema.resource.id,
       schema.resourceProvider.id,
       schema.workspace.id,
-    )
-    .orderBy(asc(schema.resource.kind), asc(schema.resource.name));
+    );
 
 export const resourceRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
@@ -409,6 +409,14 @@ export const resourceRouter = createTRPCRouter({
           filter: resourceCondition.optional(),
           limit: z.number().int().nonnegative().max(1000).default(200),
           offset: z.number().int().nonnegative().default(0),
+          orderBy: z
+            .array(
+              z.object({
+                property: z.enum(["kind", "name", "createdAt"]),
+                direction: z.enum(["asc", "desc"]).optional().default("asc"),
+              }),
+            )
+            .optional(),
         }),
       )
       .query(({ ctx, input }) => {
@@ -422,9 +430,28 @@ export const resourceRouter = createTRPCRouter({
         );
         const checks = [workspaceIdCheck, resourceConditions].filter(isPresent);
 
+        const properties = {
+          kind: schema.resource.kind,
+          name: schema.resource.name,
+          createdAt: schema.resource.createdAt,
+        };
+
+        const orderBy: SQL[] = input.orderBy
+          ? []
+          : [asc(schema.resource.kind), asc(schema.resource.name)];
+
+        if (input.orderBy)
+          for (const order of input.orderBy) {
+            const column = properties[order.property];
+            orderBy.push(
+              order.direction === "asc" ? asc(column) : desc(column),
+            );
+          }
+
         const items = resourceQuery(ctx.db, checks)
           .limit(input.limit)
           .offset(input.offset)
+          .orderBy(...orderBy)
           .then((t) =>
             t.map((a) => ({
               ...a.resource,
@@ -434,9 +461,7 @@ export const resourceRouter = createTRPCRouter({
           );
 
         const total = ctx.db
-          .select({
-            count: sql`COUNT(*)`.mapWith(Number),
-          })
+          .select({ count: sql`COUNT(*)`.mapWith(Number) })
           .from(schema.resource)
           .where(and(...checks))
           .then(takeFirst)

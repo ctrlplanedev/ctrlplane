@@ -66,7 +66,7 @@ export const TargetDrawer: React.FC = () => {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none focus-visible:outline-none"
+        className="left-auto right-0 top-0 mt-0 h-screen w-2/3 overflow-auto rounded-none"
       >
         <div className="border-b p-6">
           <div className="flex items-center">

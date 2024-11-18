@@ -52,6 +52,9 @@ export const resource = pgTable(
       .notNull()
       .default("{}")
       .$type<Record<string, any>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
       () => new Date(),

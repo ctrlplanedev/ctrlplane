@@ -9,6 +9,8 @@ import useWebSocket from "react-use-websocket";
 import { v4 as uuidv4 } from "uuid";
 
 type SessionContextType = {
+  activeSessionId: string | null;
+  setActiveSessionId: (id: string | null) => void;
   isDrawerOpen: boolean;
   setIsDrawerOpen: (open: boolean) => void;
   sessionIds: { sessionId: string; targetId: string }[];
@@ -39,6 +41,7 @@ export const TerminalSessionsProvider: React.FC<{
   const [sessionIds, setSessionIds] = useState<
     { sessionId: string; targetId: string }[]
   >([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { sendJsonMessage } = useWebSocket(url, {
     shouldReconnect: () => true,
@@ -53,7 +56,6 @@ export const TerminalSessionsProvider: React.FC<{
         cols,
         rows,
       };
-      console.log(resizePayload);
       sendJsonMessage(resizePayload);
     },
     [sendJsonMessage],
@@ -70,9 +72,10 @@ export const TerminalSessionsProvider: React.FC<{
         rows: 24,
       };
       sendJsonMessage(sessionCreatePayload);
-      setTimeout(() => {
+      window.requestAnimationFrame(() => {
         setSessionIds((prev) => [...prev, { sessionId, targetId }]);
-      }, 500);
+        setActiveSessionId(sessionId);
+      });
     },
     [sendJsonMessage, setSessionIds],
   );
@@ -82,8 +85,10 @@ export const TerminalSessionsProvider: React.FC<{
       setSessionIds((prev) =>
         prev.filter((session) => session.sessionId !== id),
       );
+      if (activeSessionId === id)
+        setActiveSessionId(sessionIds[0]?.sessionId ?? null);
     },
-    [setSessionIds],
+    [activeSessionId, sessionIds],
   );
 
   return (
@@ -93,7 +98,8 @@ export const TerminalSessionsProvider: React.FC<{
         createSession,
         removeSession,
         resizeSession,
-
+        activeSessionId,
+        setActiveSessionId,
         isDrawerOpen,
         setIsDrawerOpen,
       }}

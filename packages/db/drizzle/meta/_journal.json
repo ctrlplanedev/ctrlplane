@@ -267,6 +267,13 @@
       "when": 1731470608582,
       "tag": "0037_giant_stardust",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1731882197888,
+      "tag": "0038_fearless_stark_industries",
+      "breakpoints": true
     }
   ]
 }

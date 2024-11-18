@@ -7,6 +7,7 @@ import {
   eq,
   isNull,
   or,
+  sql,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -223,11 +224,16 @@ export const workspaceRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const kinds = await ctx.db
-        .selectDistinct({ kind: resource.kind })
+        .select({
+          version: resource.version,
+          kind: resource.kind,
+          count: sql`count(*)`.mapWith(Number),
+        })
         .from(resource)
         .where(eq(resource.workspaceId, input))
+        .groupBy(resource.version, resource.kind)
         .orderBy(asc(resource.kind));
 
-      return kinds.map((row) => row.kind);
+      return kinds.map((row) => row);
     }),
 });
