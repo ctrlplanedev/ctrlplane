@@ -1,21 +1,17 @@
 import { z } from "zod";
 
-import type { TargetDeleted, TargetRemoved } from "./target.js";
-import { targetDeleted, targetRemoved } from "./target.js";
+import type { ResourceRemoved } from "./target.js";
+import { resourceRemoved } from "./target.js";
 
 export * from "./target.js";
 
-export const hookEvent = z.union([targetRemoved, targetDeleted]);
+export const hookEvent = resourceRemoved;
 export type HookEvent = z.infer<typeof hookEvent>;
 
 // typeguards
-export const isTargetRemoved = (event: HookEvent): event is TargetRemoved =>
-  event.action === "deployment.target.removed";
-export const isTargetDeleted = (event: HookEvent): event is TargetDeleted =>
-  event.action === "deployment.target.deleted";
+export const isResourceRemoved = (event: HookEvent): event is ResourceRemoved =>
+  true;
 
 // action
-export const hookActionsList = hookEvent.options.map(
-  (schema) => schema.shape.action.value,
-);
+export const hookActionsList = ["deployment.resource.removed"];
 export const hookActions = z.enum(hookActionsList as [string, ...string[]]);

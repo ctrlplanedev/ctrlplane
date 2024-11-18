@@ -30,12 +30,12 @@ export const getEventsForDeploymentDeleted = async (
     conditions: envFilters,
   };
 
-  const targets = await db.query.resource.findMany({
+  const resources = await db.query.resource.findMany({
     where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
   });
 
-  return targets.map((target) => ({
-    action: "deployment.target.removed",
-    payload: { deployment, target },
+  return resources.map((resource) => ({
+    action: "deployment.resource.removed",
+    payload: { deployment, resource },
   }));
 };
