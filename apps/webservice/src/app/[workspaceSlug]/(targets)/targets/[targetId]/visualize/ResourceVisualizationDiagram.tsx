@@ -2,17 +2,16 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { EdgeTypes, NodeTypes, ReactFlowInstance } from "reactflow";
-import React, { useCallback, useEffect, useState } from "react";
+import type { EdgeTypes, NodeTypes } from "reactflow";
+import React from "react";
 import { compact } from "lodash";
 import ReactFlow, {
   ReactFlowProvider,
   useEdgesState,
   useNodesState,
-  useReactFlow,
 } from "reactflow";
 
-import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/_components/reactflow/layout";
+import { useLayoutAndFitView } from "~/app/[workspaceSlug]/_components/reactflow/layout";
 import { DepEdge } from "./DepEdge";
 import {
   createEdgeFromProviderToResource,
@@ -50,27 +49,9 @@ const nodeTypes: NodeTypes = {
 };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
-const useOnLayout = (setIsLayouted: (isLayouted: boolean) => void) => {
-  const { getNodes, setNodes, setEdges, getEdges } = useReactFlow();
-  return useCallback(() => {
-    const layouted = getLayoutedElementsDagre(
-      getNodes(),
-      getEdges(),
-      "TB",
-      0,
-      50,
-    );
-    setNodes([...layouted.nodes]);
-    setEdges([...layouted.edges]);
-    setIsLayouted(true);
-  }, [getNodes, getEdges, setNodes, setEdges, setIsLayouted]);
-};
-
 export const ResourceVisualizationDiagram: React.FC<
   ResourceVisualizationDiagramProps
 > = ({ resource, relationships }) => {
-  const [isLayouted, setIsLayouted] = useState(false);
-  const [isViewFitted, setIsViewFitted] = useState(false);
   const { systems, provider } = relationships;
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
     compact([
@@ -127,27 +108,8 @@ export const ResourceVisualizationDiagram: React.FC<
       providerEdge,
     ]),
   );
-  const onLayout = useOnLayout(setIsLayouted);
 
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
-
-  useEffect(() => {
-    if (reactFlowInstance != null) onLayout();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reactFlowInstance]);
-
-  useEffect(() => {
-    if (
-      reactFlowInstance != null &&
-      nodes.length &&
-      isLayouted &&
-      !isViewFitted
-    ) {
-      reactFlowInstance.fitView({ padding: 0.12, maxZoom: 1 });
-      setIsViewFitted(true);
-    }
-  }, [reactFlowInstance, nodes, isLayouted, isViewFitted]);
+  const setReactFlowInstance = useLayoutAndFitView(nodes);
 
   return (
     <ReactFlow
