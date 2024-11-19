@@ -178,7 +178,7 @@ export default function OverviewPage({
                 </div>
                 <div>
                   <Link
-                    href={"https://docs.ctrlplane.dev/kubernetes/jobs-agent"}
+                    href={"https://docs.ctrlplane.dev/kubernetes/job-agent"}
                   >
                     <Button variant="secondary" size="sm">
                       Open
