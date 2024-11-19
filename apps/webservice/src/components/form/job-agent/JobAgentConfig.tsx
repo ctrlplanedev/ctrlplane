@@ -4,6 +4,7 @@ import type { JobAgent } from "@ctrlplane/db/schema";
 
 import { Input } from "@ctrlplane/ui/input";
 
+import type { JobAgentGithubStyleCongig } from "./JobAgentGitHubConfig";
 import { JobAgentGitHubConfig } from "./JobAgentGitHubConfig";
 import { JobAgentKubernetesConfig } from "./JobAgentKubernetesConfig";
 
@@ -12,6 +13,7 @@ type JobAgentConfigProps = {
   jobAgent?: JobAgent | null;
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
+  githubFormStyleConfig?: JobAgentGithubStyleCongig;
 };
 
 export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
@@ -19,6 +21,7 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
   jobAgent,
   value,
   onChange,
+  githubFormStyleConfig,
 }) => {
   if (jobAgent == null)
     return <Input placeholder="Select a job agent" disabled />;
@@ -27,7 +30,7 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
   if (jobAgent.type === "github-app")
     return (
       <JobAgentGitHubConfig
-        className="w-80"
+        styleConfig={githubFormStyleConfig}
         value={value}
         jobAgent={jobAgent}
         workspaceId={workspace.id}

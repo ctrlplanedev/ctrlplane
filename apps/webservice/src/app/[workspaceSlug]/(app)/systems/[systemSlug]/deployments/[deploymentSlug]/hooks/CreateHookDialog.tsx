@@ -1,12 +1,12 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { HookAction } from "@ctrlplane/validators/events";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { IconPlus, IconSelector, IconX } from "@tabler/icons-react";
+import { IconSelector } from "@tabler/icons-react";
 import { z } from "zod";
 
-import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Command,
@@ -30,64 +30,71 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  useFieldArray,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
-import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
-import { hookActions, hookActionsList } from "@ctrlplane/validators/events";
+import {
+  hookActions,
+  hookActionsList,
+  RunhookVariables,
+} from "@ctrlplane/validators/events";
 
+import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
+import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
 import { api } from "~/trpc/react";
 
 type CreateHookDialogProps = {
   deploymentId: string;
-  runbooks: SCHEMA.Runbook[];
+  jobAgents: SCHEMA.JobAgent[];
+  workspace: SCHEMA.Workspace;
   children: React.ReactNode;
 };
 
 const schema = z.object({
   name: z.string().min(1),
   action: hookActions,
-  runbookIds: z.array(z.object({ id: z.string().uuid() })),
+  jobAgentId: z.string().uuid().nullable(),
+  jobAgentConfig: z.record(z.any()).nullable(),
 });
+
+const defaultValues = {
+  name: "",
+  action: "",
+  jobAgentId: null,
+  jobAgentConfig: {},
+};
 
 export const CreateHookDialog: React.FC<CreateHookDialogProps> = ({
   deploymentId,
-  runbooks,
+  jobAgents,
+  workspace,
   children,
 }) => {
   const [open, setOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
-  const [runbooksOpen, setRunbooksOpen] = useState(false);
   const createHook = api.deployment.hook.create.useMutation();
   const utils = api.useUtils();
   const router = useRouter();
 
-  const defaultValues = { name: "", action: "", runbookIds: [] };
   const form = useForm({ schema, defaultValues });
   const onSubmit = form.handleSubmit((data) =>
     createHook
       .mutateAsync({
         ...data,
+        variables: RunhookVariables[data.action as HookAction],
         scopeType: "deployment",
         scopeId: deploymentId,
-        runbookIds: data.runbookIds.map((r) => r.id),
+        jobAgentId: data.jobAgentId ?? undefined,
+        jobAgentConfig: data.jobAgentConfig ?? undefined,
       })
       .then(() => utils.deployment.hook.list.invalidate(deploymentId))
       .then(() => router.refresh())
       .then(() => setOpen(false)),
   );
 
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "runbookIds",
-  });
-
-  const selectedRunbookIds = form.watch("runbookIds").map((r) => r.id);
-  const unselectedRunbooks = runbooks.filter(
-    (r) => !selectedRunbookIds.includes(r.id),
-  );
+  const { jobAgentId } = form.watch();
+  const jobAgent = jobAgents.find((d) => d.id === jobAgentId);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -159,64 +166,66 @@ export const CreateHookDialog: React.FC<CreateHookDialogProps> = ({
               )}
             />
 
-            <div className="flex flex-col gap-2">
-              <Label>Runbooks</Label>
-              <div className="flex flex-wrap gap-2">
-                {fields.map((field, index) => (
-                  <FormField
-                    key={field.id}
-                    control={form.control}
-                    name={`runbookIds.${index}.id`}
-                    render={({ field }) => {
-                      const runbook = runbooks.find(
-                        (r) => r.id === field.value,
-                      );
-                      return (
-                        <Badge
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          {runbook?.name ?? ""}
-                          <IconX
-                            className="h-4 w-4 cursor-pointer"
-                            onClick={() => remove(index)}
-                          />
-                        </Badge>
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
+            <DialogHeader>
+              <DialogTitle>Attach Runbook</DialogTitle>
+              <DialogDescription>
+                This runbook will trigger when the hook is triggered.
+              </DialogDescription>
+            </DialogHeader>
 
-            <Popover open={runbooksOpen} onOpenChange={setRunbooksOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <IconPlus className="h-4 w-4" />
-                  Add Runbook
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="p-0">
-                <Command>
-                  <CommandInput placeholder="Search runbook..." />
-                  <CommandList>
-                    {unselectedRunbooks.map((runbook) => (
-                      <CommandItem
-                        key={runbook.id}
-                        onSelect={() => {
-                          append({ id: runbook.id });
-                          setRunbooksOpen(false);
-                        }}
-                      >
-                        {runbook.name}
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <FormField
+              control={form.control}
+              name="jobAgentId"
+              render={({ field: { value, onChange } }) => (
+                <FormItem>
+                  <FormLabel>Job Agent</FormLabel>
+                  <FormControl>
+                    <JobAgentSelector
+                      jobAgents={jobAgents}
+                      workspace={workspace}
+                      value={value ?? undefined}
+                      onChange={onChange}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="jobAgentConfig"
+              render={({ field: { value, onChange } }) => (
+                <FormItem>
+                  <FormLabel>Config</FormLabel>
+                  <FormControl>
+                    <JobAgentConfig
+                      workspace={workspace}
+                      jobAgent={jobAgent}
+                      value={value ?? {}}
+                      onChange={onChange}
+                      githubFormStyleConfig={{
+                        className: "flex flex-col gap-2 items-center w-[450px]",
+                        buttonWidth: "w-[450px]",
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  form.setValue("jobAgentId", null, { shouldDirty: true });
+                  form.setValue("jobAgentConfig", {}, { shouldDirty: true });
+                }}
+              >
+                Remove Runbook
+              </Button>
+              <div className="flex-grow" />
               <Button
                 type="submit"
                 disabled={createHook.isPending || !form.formState.isDirty}

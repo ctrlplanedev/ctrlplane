@@ -18,13 +18,15 @@ import { EditHookDialog } from "./EditHookDialog";
 type Hook = RouterOutputs["deployment"]["hook"]["list"][number];
 type HookActionsDropdownProps = {
   hook: Hook;
-  runbooks: SCHEMA.Runbook[];
+  jobAgents: SCHEMA.JobAgent[];
+  workspace: SCHEMA.Workspace;
   children: React.ReactNode;
 };
 
 export const HookActionsDropdown: React.FC<HookActionsDropdownProps> = ({
   hook,
-  runbooks,
+  jobAgents,
+  workspace,
   children,
 }) => {
   const [open, setOpen] = useState(false);
@@ -35,7 +37,8 @@ export const HookActionsDropdown: React.FC<HookActionsDropdownProps> = ({
       <DropdownMenuContent>
         <EditHookDialog
           hook={hook}
-          runbooks={runbooks}
+          jobAgents={jobAgents}
+          workspace={workspace}
           onClose={() => setOpen(false)}
         >
           <DropdownMenuItem

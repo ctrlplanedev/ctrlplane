@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { RunbookVariable } from "./runbook-variable";
+
 const deployment = z.object({ id: z.string().uuid(), name: z.string() });
 const resource = z.object({
   id: z.string().uuid(),
@@ -12,3 +14,17 @@ export const resourceRemoved = z.object({
   payload: z.object({ deployment, resource }),
 });
 export type ResourceRemoved = z.infer<typeof resourceRemoved>;
+
+const resourceVar: RunbookVariable = {
+  key: "resourceId",
+  name: "Resource Id",
+  config: { type: "resource" },
+};
+
+const deploymentVar: RunbookVariable = {
+  key: "deploymentId",
+  name: "Deployment Id",
+  config: { type: "string", inputType: "text" },
+};
+
+export const ResourceRemovedVariables = [resourceVar, deploymentVar];

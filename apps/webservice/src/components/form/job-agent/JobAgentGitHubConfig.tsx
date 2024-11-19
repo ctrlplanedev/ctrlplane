@@ -17,13 +17,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
 
+export type JobAgentGithubStyleCongig = {
+  className?: string;
+  buttonWidth?: string;
+};
+
 export const JobAgentGitHubConfig: React.FC<{
   value: Record<string, any>;
   jobAgent: JobAgent;
   workspaceId: string;
   onChange: (v: Record<string, any>) => void;
-  className?: string;
-}> = ({ value, jobAgent, workspaceId, onChange, className }) => {
+  styleConfig?: JobAgentGithubStyleCongig;
+}> = ({ value, jobAgent, workspaceId, onChange, styleConfig }) => {
   const repos = api.github.organizations.repos.list.useQuery({
     owner: jobAgent.config.owner,
     installationId: jobAgent.config.installationId,
@@ -68,7 +73,7 @@ export const JobAgentGitHubConfig: React.FC<{
   }, [workflows.data, value.workflowId]);
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-3", styleConfig?.className)}>
       <div>
         <Popover open={repoOpen} onOpenChange={setRepoOpen}>
           <PopoverTrigger asChild>
@@ -76,7 +81,10 @@ export const JobAgentGitHubConfig: React.FC<{
               variant="outline"
               role="combobox"
               aria-expanded={repoOpen}
-              className={cn("items-center justify-start gap-2 px-2", className)}
+              className={cn(
+                "w-80 items-center justify-start gap-2 px-2",
+                styleConfig?.buttonWidth,
+              )}
             >
               <IconSelector className="h-4 w-4" />
               <span className="overflow-hidden text-ellipsis">
@@ -84,7 +92,7 @@ export const JobAgentGitHubConfig: React.FC<{
               </span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className={cn("p-0", className)}>
+          <PopoverContent className={cn("w-80 p-0", styleConfig?.buttonWidth)}>
             <Command>
               <CommandInput placeholder="Search repo..." />
               <CommandGroup>
@@ -120,7 +128,10 @@ export const JobAgentGitHubConfig: React.FC<{
               variant="outline"
               role="combobox"
               aria-expanded={workflowOpen}
-              className={cn("items-center justify-start gap-2 px-2", className)}
+              className={cn(
+                "w-80 items-center justify-start gap-2 px-2",
+                styleConfig?.buttonWidth,
+              )}
             >
               <IconSelector className="h-4 w-4" />
               <span className="overflow-hidden text-ellipsis">
@@ -128,7 +139,7 @@ export const JobAgentGitHubConfig: React.FC<{
               </span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className={cn("p-0", className)}>
+          <PopoverContent className={cn("w-80 p-0", styleConfig?.buttonWidth)}>
             <Command>
               <CommandInput placeholder="Search workflow..." />
               <CommandGroup>
