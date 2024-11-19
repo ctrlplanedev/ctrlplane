@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 import { addDays, isSameDay, startOfDay, sub } from "date-fns";
 import _ from "lodash";
 import * as LZString from "lz-string";
-import { useLocalStorage } from "react-use";
 import {
   Bar,
   CartesianGrid,
@@ -25,7 +24,6 @@ import {
   CardTitle,
 } from "@ctrlplane/ui/card";
 import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
-import { Checkbox } from "@ctrlplane/ui/checkbox";
 import {
   ColumnOperator,
   ComparisonOperator,
@@ -98,11 +96,6 @@ export const JobHistoryChart: React.FC<{
   const totalJobs = dailyCounts.data?.reduce(
     (acc, c) => acc + Number(c.totalCount),
     0,
-  );
-
-  const [showFailureRate, setShowFailureRate] = useLocalStorage(
-    "show-failure-rate",
-    "false",
   );
 
   const router = useRouter();
@@ -188,14 +181,13 @@ export const JobHistoryChart: React.FC<{
               }}
             />
 
-            {showFailureRate === "true" && (
-              <YAxis
-                yAxisId="left"
-                orientation="left"
-                tickFormatter={(value: number) => `${value.toFixed(1)}%`}
-                domain={[0, maxLineTickDomain]}
-              />
-            )}
+            <YAxis
+              yAxisId="left"
+              orientation="left"
+              tickFormatter={(value: number) => `${value.toFixed(1)}%`}
+              domain={[0, maxLineTickDomain]}
+            />
+
             <YAxis
               yAxisId="right"
               orientation="right"
@@ -342,36 +334,17 @@ export const JobHistoryChart: React.FC<{
                 }}
               />
             ))}
-            {showFailureRate === "true" && (
-              <Line
-                yAxisId="left"
-                dataKey="failureRate"
-                stroke={colors.neutral[200]}
-                strokeWidth={1}
-                opacity={0.5}
-                dot={false}
-              />
-            )}
+
+            <Line
+              yAxisId="left"
+              dataKey="failureRate"
+              stroke={colors.neutral[200]}
+              strokeWidth={1}
+              opacity={0.3}
+              dot={false}
+            />
           </ComposedChart>
         </ChartContainer>
-
-        <div className="flex flex-shrink-0 flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-failure-rate"
-              checked={showFailureRate === "true"}
-              onCheckedChange={(checked) =>
-                setShowFailureRate(checked ? "true" : "false")
-              }
-            />
-            <label
-              htmlFor="show-failure-rate"
-              className="text-sm text-muted-foreground"
-            >
-              Show failure rate
-            </label>
-          </div>
-        </div>
       </CardContent>
     </div>
   );
