@@ -33,12 +33,19 @@ export const env = createEnv({
    * Specify your client-side environment variables schema here.
    * For them to be exposed to the client, prefix them with NEXT_PUBLIC_.
    */
-  client: {},
+  client: {
+    NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY: z.string().optional(),
+    NEXT_PUBLIC_OPENREPLAY_INGEST_POINT: z.string().optional(),
+  },
 
   /**
    * Destructure all variables from process.env to make sure they aren't tree-shaken away.
    */
   experimental__runtimeEnv: {
+    NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY:
+      process.env.NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY,
+    NEXT_PUBLIC_OPENREPLAY_INGEST_POINT:
+      process.env.NEXT_PUBLIC_OPENREPLAY_INGEST_POINT,
     NODE_ENV: process.env.NODE_ENV,
   },
 

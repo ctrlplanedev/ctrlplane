@@ -33,6 +33,7 @@
     "@octokit/rest": "catalog:",
     "@octokit/webhooks": "^13.3.0",
     "@octokit/webhooks-types": "^7.5.1",
+    "@openreplay/tracker": "^14.0.14",
     "@opentelemetry/auto-instrumentations-node": "^0.52.1",
     "@opentelemetry/sdk-node": "^0.54.2",
     "@t3-oss/env-nextjs": "catalog:",

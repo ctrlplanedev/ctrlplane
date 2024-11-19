@@ -6,6 +6,7 @@ import "react-resizable/css/styles.css";
 import "./react-grid-layout.css";
 
 import type { Viewport } from "next";
+import dynamic from "next/dynamic";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 
@@ -15,6 +16,8 @@ import { Toaster } from "@ctrlplane/ui/toast";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import SessionProvider from "./SessionProvider";
+
+const OpenReplay = dynamic(() => import("./openreplay"), { ssr: false });
 
 export const metadata = {
   title: { default: "Ctrlplane" },
@@ -38,6 +41,7 @@ export default async function RootLayout({
           GeistMono.variable,
         )}
       >
+        <OpenReplay userId={session?.user.id} />
         <SessionProvider session={session}>
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </SessionProvider>
