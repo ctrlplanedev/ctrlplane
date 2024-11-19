@@ -4,7 +4,7 @@ import type { JobAgent } from "@ctrlplane/db/schema";
 
 import { Input } from "@ctrlplane/ui/input";
 
-import type { JobAgentGithubStyleCongig } from "./JobAgentGitHubConfig";
+import type { JobAgentGithubStyleConfig } from "./JobAgentGitHubConfig";
 import { JobAgentGitHubConfig } from "./JobAgentGitHubConfig";
 import { JobAgentKubernetesConfig } from "./JobAgentKubernetesConfig";
 
@@ -13,7 +13,7 @@ type JobAgentConfigProps = {
   jobAgent?: JobAgent | null;
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
-  githubFormStyleConfig?: JobAgentGithubStyleCongig;
+  githubFormStyleConfig?: JobAgentGithubStyleConfig;
 };
 
 export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({

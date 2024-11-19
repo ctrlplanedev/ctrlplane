@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 import { api } from "~/trpc/react";
 
-export type JobAgentGithubStyleCongig = {
+export type JobAgentGithubStyleConfig = {
   className?: string;
   buttonWidth?: string;
 };
@@ -27,7 +27,7 @@ export const JobAgentGitHubConfig: React.FC<{
   jobAgent: JobAgent;
   workspaceId: string;
   onChange: (v: Record<string, any>) => void;
-  styleConfig?: JobAgentGithubStyleCongig;
+  styleConfig?: JobAgentGithubStyleConfig;
 }> = ({ value, jobAgent, workspaceId, onChange, styleConfig }) => {
   const repos = api.github.organizations.repos.list.useQuery({
     owner: jobAgent.config.owner,
