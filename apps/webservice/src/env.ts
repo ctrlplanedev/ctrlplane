@@ -27,25 +27,20 @@ export const env = createEnv({
     GITHUB_WEBHOOK_SECRET: z.string().optional(),
     BASE_URL: z.string(),
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
+    OPENREPLAY_PROJECT_KEY: z.string().optional(),
+    OPENREPLAY_INGEST_POINT: z.string().optional(),
   },
 
   /**
    * Specify your client-side environment variables schema here.
    * For them to be exposed to the client, prefix them with NEXT_PUBLIC_.
    */
-  client: {
-    NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY: z.string().optional(),
-    NEXT_PUBLIC_OPENREPLAY_INGEST_POINT: z.string().optional(),
-  },
+  client: {},
 
   /**
    * Destructure all variables from process.env to make sure they aren't tree-shaken away.
    */
   experimental__runtimeEnv: {
-    NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY:
-      process.env.NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY,
-    NEXT_PUBLIC_OPENREPLAY_INGEST_POINT:
-      process.env.NEXT_PUBLIC_OPENREPLAY_INGEST_POINT,
     NODE_ENV: process.env.NODE_ENV,
   },
 

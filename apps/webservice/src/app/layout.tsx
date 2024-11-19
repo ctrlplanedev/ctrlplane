@@ -14,6 +14,7 @@ import { auth } from "@ctrlplane/auth";
 import { cn } from "@ctrlplane/ui";
 import { Toaster } from "@ctrlplane/ui/toast";
 
+import { env } from "~/env";
 import { TRPCReactProvider } from "~/trpc/react";
 import SessionProvider from "./SessionProvider";
 
@@ -41,7 +42,11 @@ export default async function RootLayout({
           GeistMono.variable,
         )}
       >
-        <OpenReplay userId={session?.user.id} />
+        <OpenReplay
+          userId={session?.user.id}
+          projectKey={env.OPENREPLAY_PROJECT_KEY}
+          ingestPoint={env.OPENREPLAY_INGEST_POINT}
+        />
         <SessionProvider session={session}>
           <TRPCReactProvider>{children}</TRPCReactProvider>
         </SessionProvider>
