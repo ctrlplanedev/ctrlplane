@@ -21,7 +21,7 @@ export const env = createEnv({
       ),
     CTRLPLANE_EKS_NAMESPACE_IGNORE: z
       .string()
-      .default(["kube-system", "kube-public", "kube-node-lease"].join(",")),
+      .default(["kube-system"].join(",")),
     CTRLPLANE_COMPUTE_TARGET_NAME: z
       .string()
       .default("aws-{{ projectId }}-{{ vm.name }}"),
@@ -31,6 +31,7 @@ export const env = createEnv({
 
     AWS_ACCOUNT_ID: z.string().min(1),
     AWS_REGION: z.string().default("us-east-1"),
+    AWS_PROFILE: z.string(),
 
     // GOOGLE_PROJECT_ID: z.string().min(1),
   },

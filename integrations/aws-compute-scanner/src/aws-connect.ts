@@ -1,63 +1,75 @@
-import type { ClusterManagerClient } from "@google-cloud/container";
-import { EKSClient } from "@aws-sdk/client-eks";
-import { fromIni } from "@aws-sdk/credential-providers";
+import { DescribeClusterCommand, EKSClient } from "@aws-sdk/client-eks";
+import { fromSSO } from "@aws-sdk/credential-providers";
 import { KubeConfig } from "@kubernetes/client-node";
 
 import { env } from "./config.js";
 
-export const createEksClient = () => {
-  const isGoogleCloud =
-    process.env.GOOGLE_CLOUD_PROJECT && process.env.GOOGLE_CLOUD_REGION;
+export const createEksClient = (region: string) => {
+  const isGoogleCloud = process.env.GOOGLE_CLOUD_PROJECT;
 
-  console.log("A");
-
-  try {
-    const client: EKSClient = new EKSClient({
-      region: env.AWS_REGION,
-      credentials: isGoogleCloud
-        ? undefined
-        : fromIni({ profile: "AWSAdministratorAccess-770934259321" }),
-    });
-    return client;
-  } catch (error) {
-    console.log("b");
-    console.error("Failed to create EKS client:", error);
-    throw error;
-  }
+  return new EKSClient({
+    region,
+    credentials: isGoogleCloud
+      ? undefined
+      : fromSSO({ profile: env.AWS_PROFILE }),
+  });
 };
 
-// export const connectToCluster = async (
-//   clusterClient: ClusterManagerClient,
-//   project: string,
-//   clusterName: string,
-//   clusterLocation: string,
-// ) => {
-//   const [credentials] = await clusterClient.getCluster({
-//     name: `projects/${project}/locations/${clusterLocation}/clusters/${clusterName}`,
-//   });
-//   const kubeConfig = new KubeConfig();
-//   kubeConfig.loadFromOptions({
-//     clusters: [
-//       {
-//         name: clusterName,
-//         server: `https://${credentials.endpoint}`,
-//         caData: credentials.masterAuth!.clusterCaCertificate!,
-//       },
-//     ],
-//     users: [
-//       {
-//         name: clusterName,
-//         token: (await sourceCredentials.getAccessToken())!,
-//       },
-//     ],
-//     contexts: [
-//       {
-//         name: clusterName,
-//         user: clusterName,
-//         cluster: clusterName,
-//       },
-//     ],
-//     currentContext: clusterName,
-//   });
-//   return kubeConfig;
-// };
+export const connectToCluster = async (clusterName: string, region: string) => {
+  const eksClient = createEksClient(region);
+
+  const response = await eksClient.send(
+    new DescribeClusterCommand({ name: clusterName }),
+  );
+
+  if (response.cluster == null)
+    throw new Error(`Cluster ${clusterName} not found`);
+
+  const kubeConfig = new KubeConfig();
+
+  kubeConfig.loadFromOptions({
+    clusters: [
+      {
+        name: clusterName,
+        server: response.cluster.endpoint!,
+        caData: response.cluster.certificateAuthority?.data,
+      },
+    ],
+    users: [
+      {
+        name: `${clusterName}-user`,
+        exec: {
+          apiVersion: "client.authentication.k8s.io/v1",
+          command: "aws",
+          args: [
+            "eks",
+            "get-token",
+            "--cluster-name",
+            clusterName,
+            "--region",
+            region,
+            "--profile",
+            env.AWS_PROFILE,
+          ],
+          env: [
+            {
+              name: "AWS_SDK_LOAD_CONFIG",
+              value: "1",
+            },
+          ],
+          interactiveMode: "Never",
+        },
+      },
+    ],
+    contexts: [
+      {
+        name: `${clusterName}-context`,
+        user: `${clusterName}-user`,
+        cluster: clusterName,
+      },
+    ],
+    currentContext: `${clusterName}-context`,
+  });
+
+  return kubeConfig;
+};

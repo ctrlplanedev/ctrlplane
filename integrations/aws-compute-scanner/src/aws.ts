@@ -1,15 +1,17 @@
-import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/targets";
-import type { V1Namespace } from "@kubernetes/client-node";
-import { EKSClient, ListClustersCommand } from "@aws-sdk/client-eks";
+import type { Cluster } from "@aws-sdk/client-eks";
+import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
+import { DescribeRegionsCommand, EC2Client } from "@aws-sdk/client-ec2";
+import {
+  DescribeClusterCommand,
+  ListClustersCommand,
+} from "@aws-sdk/client-eks";
 import { GetCallerIdentityCommand, STSClient } from "@aws-sdk/client-sts";
 import { CoreV1Api } from "@kubernetes/client-node";
-import handlebars from "handlebars";
 import _ from "lodash";
-import { SemVer } from "semver";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { kubernetesNamespaceV1 } from "@ctrlplane/validators/targets";
+import { kubernetesNamespaceV1 } from "@ctrlplane/validators/resources";
 
 import { connectToCluster, createEksClient } from "./aws-connect.js";
 import { env } from "./config.js";
@@ -17,155 +19,175 @@ import { omitNullUndefined } from "./utils.js";
 
 export const eksLogger = logger.child({ label: "eks" });
 
-const clusterClient = new EKSClient({});
+const getAwsRegions = async (credentials: any) => {
+  const ec2Client = new EC2Client({
+    region: "us-east-1",
+    credentials,
+  });
 
-const getClusters = async () => {
-  const eksClient = createEksClient();
-
-  // Optional: Check AWS identity for verification
-  const stsClient = new STSClient({ region: env.AWS_REGION });
-  const identity = await stsClient.send(new GetCallerIdentityCommand({}));
-  console.log("Authenticated AWS Identity:", identity);
-
-  // List EKS clusters
-  const command = new ListClustersCommand({});
-  const response = await eksClient.send(command);
-  return response.clusters;
+  const response = await ec2Client.send(new DescribeRegionsCommand({}));
+  return response.Regions?.map((region) => region.RegionName) ?? [];
 };
 
-// const clusterNameTemplate = handlebars.compile(env.CTRLPLANE_AWS_TARGET_NAME);
-// const targetClusterName = (cluster: eks.Cluster) =>
-//   clusterNameTemplate({ cluster, projectId: env.AWS_ACCOUNT_ID });
+async function getRegionalEksClusters(region: string) {
+  const regionalEksClient = createEksClient(region);
+  try {
+    const response = await regionalEksClient.send(new ListClustersCommand({}));
+    return (
+      response.clusters?.map((cluster) => ({ region, name: cluster })) ?? []
+    );
+  } catch (error) {
+    eksLogger.warn(`Error fetching clusters in region ${region}:`, error);
+    return [];
+  }
+}
 
-// // const namespaceNameTemplate = handlebars.compile(
-// //   env.CTRLPLANE_GKE_NAMESPACE_TARGET_NAME,
-// // );
-// const targetNamespaceName = (
-//   namespace: V1Namespace,
-//   cluster: google.container.v1.ICluster,
-// ) =>
-//   namespaceNameTemplate({
-//     namespace,
-//     cluster,
-//     projectId: env.GOOGLE_PROJECT_ID,
-//   });
+const getClusters = async () => {
+  const eksClient = createEksClient("us-east-1");
+  const credentials = eksClient.config.credentials;
+  const stsClient = new STSClient({ region: "us-east-1", credentials });
+
+  try {
+    const identity = await stsClient.send(new GetCallerIdentityCommand({}));
+    eksLogger.info("Authenticated AWS Identity:", identity);
+
+    const regions = await getAwsRegions(credentials);
+    eksLogger.info(`Scanning ${regions.length} AWS regions for EKS clusters`);
+
+    const allClusters = await Promise.all(
+      regions.map((region) => getRegionalEksClusters(region!)),
+    );
+    return allClusters.flat();
+  } catch (error) {
+    eksLogger.error("Error fetching clusters or AWS identity:", error);
+    throw error;
+  }
+};
 
 export const getKubernetesClusters = async (): Promise<
   Array<{
-    cluster: eks.Cluster;
-    target: KubernetesClusterAPIV1;
+    cluster: Cluster;
+    region: string;
+    resource: KubernetesClusterAPIV1;
   }>
 > => {
   eksLogger.info("Scanning AWS EKS clusters");
-  const clusters = (await getClusters()) ?? [];
-  console.log(clusters);
-  // return clusters.map((cluster) => {
-  //   const masterVersion = new SemVer(cluster.currentMasterVersion ?? "0");
-  //   const nodeVersion = new SemVer(cluster.currentNodeVersion ?? "0");
-  //   const autoscaling = String(
-  //     cluster.autoscaling?.enableNodeAutoprovisioning ?? false,
-  //   );
+  const clusters = await getClusters();
 
-  //   const appUrl = `https://console.cloud.google.com/kubernetes/clusters/details/${cluster.location}/${cluster.name}/details?project=${env.GOOGLE_PROJECT_ID}`;
+  return Promise.all(
+    clusters.map(async ({ name, region }) => {
+      const eksClient = createEksClient(region);
+      const cluster = await eksClient.send(
+        new DescribeClusterCommand({ name }),
+      );
 
-  //   return {
-  //     cluster,
-  //     target: {
-  //       version: "kubernetes/v1",
-  //       kind: "ClusterAPI",
-  //       name: targetClusterName(cluster),
-  //       identifier: `${env.AWS_ACCOUNT_ID}/${cluster.name}`,
-  //       config: {
-  //         name: cluster.name!,
-  //         auth: {
-  //           method: "aws/eks",
-  //           project: env.AWS_ACCOUNT_ID,
-  //           location: cluster.location!,
-  //           clusterName: cluster.name!,
-  //         },
-  //         status: cluster.status?.toString() ?? "STATUS_UNSPECIFIED",
-  //         server: {
-  //           certificateAuthorityData: cluster.masterAuth?.clusterCaCertificate,
-  //           endpoint: `https://${cluster.endpoint}`,
-  //         },
-  //       },
-  //       metadata: omitNullUndefined({
-  //         [ReservedMetadataKey.Links]: JSON.stringify({
-  //           "Google Console": appUrl,
-  //         }),
-  //         [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
-  //         [ReservedMetadataKey.KubernetesFlavor]: "gke",
-  //         [ReservedMetadataKey.KubernetesVersion]:
-  //           masterVersion.version.split("-")[0],
+      if (!cluster.cluster) {
+        throw new Error(`Could not get details for cluster ${name}`);
+      }
 
-  //         "google/self-link": cluster.selfLink,
-  //         "google/location": cluster.location,
-  //         "google/autopilot": String(cluster.autopilot?.enabled ?? false),
+      const clusterInfo = cluster.cluster;
+      const appUrl = `https://console.aws.amazon.com/eks/home?region=${env.AWS_REGION}#/clusters/${name}`;
 
-  //         "kubernetes/status": cluster.status,
-  //         "kubernetes/node-count": String(cluster.currentNodeCount ?? 0),
+      return {
+        cluster: clusterInfo,
+        region: region,
+        resource: {
+          version: "kubernetes/v1",
+          kind: "ClusterAPI",
+          name: name,
+          identifier: `${env.AWS_ACCOUNT_ID}/${name}`,
+          config: {
+            name: name,
+            auth: {
+              method: "aws/eks",
+              region: region,
+              project: env.AWS_ACCOUNT_ID,
+              location: clusterInfo.endpoint,
+              clusterName: name,
+            },
+            status: clusterInfo.status ?? "UNKNOWN",
+            server: {
+              certificateAuthorityData: clusterInfo.certificateAuthority?.data,
+              endpoint: clusterInfo.endpoint ?? "",
+            },
+          },
+          metadata: omitNullUndefined({
+            [ReservedMetadataKey.Links]: JSON.stringify({
+              "AWS Console": appUrl,
+            }),
+            [ReservedMetadataKey.ExternalId]: clusterInfo.arn ?? "",
+            [ReservedMetadataKey.KubernetesFlavor]: "eks",
+            [ReservedMetadataKey.KubernetesVersion]: clusterInfo.version,
 
-  //         "kubernetes/master-version": masterVersion.version,
-  //         "kubernetes/master-version-major": String(masterVersion.major),
-  //         "kubernetes/master-version-minor": String(masterVersion.minor),
-  //         "kubernetes/master-version-patch": String(masterVersion.patch),
+            "aws/arn": clusterInfo.arn,
+            "aws/region": region,
+            "aws/platform-version": clusterInfo.platformVersion,
 
-  //         "kubernetes/node-version": nodeVersion.version,
-  //         "kubernetes/node-version-major": String(nodeVersion.major),
-  //         "kubernetes/node-version-minor": String(nodeVersion.minor),
-  //         "kubernetes/node-version-patch": String(nodeVersion.patch),
+            "kubernetes/status": clusterInfo.status,
+            "kubernetes/version-major":
+              clusterInfo.version?.split(".")[0] ?? "",
+            "kubernetes/version-minor":
+              clusterInfo.version?.split(".")[1] ?? "",
 
-  //         "kubernetes/autoscaling-enabled": autoscaling,
-
-  //         ...(cluster.resourceLabels ?? {}),
-  //       }),
-  //     },
-  //   };
-  // });
+            ...(clusterInfo.tags ?? {}),
+          }),
+        },
+      };
+    }),
+  );
 };
 
-// // export const getKubernetesNamespace = async (
-// //   clusters: Array<{
-// //     cluster: google.container.v1.ICluster;
-// //     target: KubernetesClusterAPIV1;
-// //   }>,
-// // ) => {
-// //   gkeLogger.info("Coverting GKE clusters to namespaces");
+export const getKubernetesNamespace = async (
+  clusters: Array<{
+    cluster: Cluster;
+    region: string;
+    resource: KubernetesClusterAPIV1;
+  }>,
+) => {
+  const namespaceResources = clusters.map(
+    async ({ cluster, resource, region }) => {
+      try {
+        if (cluster.name == null) throw new Error("Cluster name is required");
 
-// //   const namespaceTargets = clusters.map(async ({ cluster, target }) => {
-// //     const kubeConfig = await connectToCluster(
-// //       clusterClient,
-// //       env.GOOGLE_PROJECT_ID,
-// //       cluster.name!,
-// //       cluster.location!,
-// //     );
-// //     const k8sApi = kubeConfig.makeApiClient(CoreV1Api);
-// //     const namespaces = await k8sApi
-// //       .listNamespace()
-// //       .then((r) => r.body.items.filter((n) => n.metadata != null));
-// //     return namespaces
-// //       .filter(
-// //         (n) =>
-// //           !env.CTRLPLANE_GKE_NAMESPACE_IGNORE.split(",").includes(
-// //             n.metadata!.name!,
-// //           ),
-// //       )
-// //       .map((n) =>
-// //         kubernetesNamespaceV1.parse(
-// //           _.merge(_.cloneDeep(target), {
-// //             kind: "Namespace",
-// //             name: targetNamespaceName(n, cluster),
-// //             identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,
-// //             config: { namespace: n.metadata!.name },
-// //             metadata: {
-// //               "ctrlplane/parent-target-identifier": target.identifier,
-// //               "kubernetes/namespace": n.metadata!.name,
-// //               ...n.metadata?.labels,
-// //             },
-// //           }),
-// //         ),
-// //       );
-// //   });
+        const kubeConfig = await connectToCluster(cluster.name, region);
+        const k8sApi = kubeConfig.makeApiClient(CoreV1Api);
+        const namespaceList = await k8sApi.listNamespace();
+        const namespaces = namespaceList.body.items.filter((n) => n.metadata);
+        const ignoreList = env.CTRLPLANE_EKS_NAMESPACE_IGNORE.split(",");
 
-// //   return Promise.all(namespaceTargets).then((v) => v.flat());
-// // };
+        return namespaces
+          .filter((n) => {
+            const namespaceName = n.metadata?.name;
+            return namespaceName && !ignoreList.includes(namespaceName);
+          })
+          .map((n) => {
+            const namespaceName = n.metadata?.name;
+            if (namespaceName == null)
+              throw new Error("Namespace name is required");
+
+            return kubernetesNamespaceV1.parse(
+              _.merge(_.cloneDeep(resource), {
+                kind: "Namespace",
+                name: namespaceName,
+                identifier: `${env.AWS_ACCOUNT_ID}/${cluster.name}/${namespaceName}`,
+                config: { namespace: namespaceName },
+                metadata: {
+                  "ctrlplane/parent-target-identifier": resource.identifier,
+                  "kubernetes/namespace": namespaceName,
+                  ...n.metadata?.labels,
+                },
+              }),
+            );
+          });
+      } catch (error) {
+        eksLogger.error(
+          `Error processing namespace for cluster ${cluster.name}:`,
+          error,
+        );
+        return [];
+      }
+    },
+  );
+
+  return Promise.all(namespaceResources).then((v) => v.flat());
+};

@@ -19,12 +19,12 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@aws-sdk/client-ec2": "^3.694.0",
     "@aws-sdk/client-eks": "^3.688.0",
     "@aws-sdk/credential-providers": "^3.687.0",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/node-sdk": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
-    "@google-cloud/container": "^5.16.0",
     "@kubernetes/client-node": "^0.22.0",
     "@t3-oss/env-core": "catalog:",
     "cron": "^3.1.7",

@@ -1,15 +1,18 @@
 import { CronJob } from "cron";
-import _ from "lodash";
 
 import { logger } from "@ctrlplane/logger";
-import { TargetProvider } from "@ctrlplane/node-sdk";
+import { ResourceProvider } from "@ctrlplane/node-sdk";
 
-import { eksLogger, getKubernetesClusters } from "./aws.js";
+import {
+  eksLogger,
+  getKubernetesClusters,
+  getKubernetesNamespace,
+} from "./aws.js";
 import { env } from "./config.js";
 import { api } from "./sdk.js";
 
 const scan = async () => {
-  const scanner = new TargetProvider(
+  const scanner = new ResourceProvider(
     {
       workspaceId: env.CTRLPLANE_WORKSPACE_ID,
       name: env.CTRLPLANE_SCANNER_NAME,
@@ -25,17 +28,16 @@ const scan = async () => {
   });
 
   const clusters = await getKubernetesClusters();
-  console.log(clusters);
   eksLogger.info(`Found ${clusters.length} clusters`, {
     count: clusters.length,
   });
 
-  // const namespaces = await getKubernetesNamespace(clusters);
-  // gkeLogger.info(`Found ${namespaces.length} namespaces`, {
-  //   count: namespaces.length,
-  // });
+  const namespaces = await getKubernetesNamespace(clusters);
+  eksLogger.info(`Found ${namespaces.length} namespaces`, {
+    count: namespaces.length,
+  });
 
-  // await scanner.set([...clusters.map((t) => t.target), ...namespaces]);
+  await scanner.set([...clusters.map((t) => t.resource), ...namespaces]);
 };
 
 logger.info(
