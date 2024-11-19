@@ -4,6 +4,7 @@ import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { createRunbookVariable } from "./runbook-variables.js";
 import { runbook } from "./runbook.js";
 
 export const event = pgTable("event", {
@@ -25,7 +26,11 @@ export const hook = pgTable("hook", {
 
 export const createHook = createInsertSchema(hook)
   .omit({ id: true })
-  .extend({ runbookIds: z.array(z.string().uuid()) });
+  .extend({
+    jobAgentId: z.string().optional(),
+    jobAgentConfig: z.record(z.any()).optional(),
+    variables: z.array(createRunbookVariable),
+  });
 
 export const updateHook = createHook.partial();
 export type Hook = InferSelectModel<typeof hook>;

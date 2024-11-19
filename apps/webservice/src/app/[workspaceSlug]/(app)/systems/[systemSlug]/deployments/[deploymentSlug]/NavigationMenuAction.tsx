@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -15,6 +15,7 @@ export const NavigationMenuAction: React.FC<{
   deploymentId: string;
   systemId: string;
 }> = ({ deploymentId, systemId }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const pathname = usePathname();
   const isVariablesActive = pathname.includes("variables");
   const isReleaseChannelsActive = pathname.includes("release-channels");
@@ -24,8 +25,13 @@ export const NavigationMenuAction: React.FC<{
     api.deployment.releaseChannel.list.byDeploymentId.useQuery(deploymentId);
   const releaseChannels = releaseChannelsQ.data ?? [];
 
-  const runbooksQ = api.runbook.bySystemId.useQuery(systemId);
-  const runbooks = runbooksQ.data ?? [];
+  const workspaceQ = api.workspace.bySlug.useQuery(workspaceSlug);
+  const workspace = workspaceQ.data;
+
+  const jobAgentsQ = api.job.agent.byWorkspaceId.useQuery(workspace?.id ?? "", {
+    enabled: workspace != null,
+  });
+  const jobAgents = jobAgentsQ.data ?? [];
 
   return (
     <div>
@@ -48,8 +54,12 @@ export const NavigationMenuAction: React.FC<{
         </CreateReleaseChannelDialog>
       )}
 
-      {isHooksActive && (
-        <CreateHookDialog deploymentId={deploymentId} runbooks={runbooks}>
+      {isHooksActive && workspace != null && (
+        <CreateHookDialog
+          deploymentId={deploymentId}
+          jobAgents={jobAgents}
+          workspace={workspace}
+        >
           <Button size="sm" variant="secondary">
             New Hook
           </Button>

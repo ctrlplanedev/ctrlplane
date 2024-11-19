@@ -19,10 +19,15 @@ type Hook = RouterOutputs["deployment"]["hook"]["list"][number];
 
 type HooksTableProps = {
   hooks: Hook[];
-  runbooks: SCHEMA.Runbook[];
+  jobAgents: SCHEMA.JobAgent[];
+  workspace: SCHEMA.Workspace;
 };
 
-export const HooksTable: React.FC<HooksTableProps> = ({ hooks, runbooks }) => (
+export const HooksTable: React.FC<HooksTableProps> = ({
+  hooks,
+  jobAgents,
+  workspace,
+}) => (
   <Table className="table-fixed">
     <TableHeader>
       <TableRow>
@@ -55,7 +60,11 @@ export const HooksTable: React.FC<HooksTableProps> = ({ hooks, runbooks }) => (
             </div>
           </TableCell>
           <TableCell className="text-right">
-            <HookActionsDropdown hook={hook} runbooks={runbooks}>
+            <HookActionsDropdown
+              hook={hook}
+              jobAgents={jobAgents}
+              workspace={workspace}
+            >
               <Button variant="ghost" size="icon" className="h-6 w-6">
                 <IconDots className="h-4 w-4" />
               </Button>
