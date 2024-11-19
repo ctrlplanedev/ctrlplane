@@ -43,7 +43,7 @@ export default async function RootLayout({
         )}
       >
         <OpenReplay
-          userId={session?.user.id}
+          userId={session?.user.email ?? session?.user.id}
           projectKey={env.OPENREPLAY_PROJECT_KEY}
           ingestPoint={env.OPENREPLAY_INGEST_POINT}
         />

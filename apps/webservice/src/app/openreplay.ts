@@ -9,14 +9,18 @@ const Openreplay: React.FC<{
   ingestPoint: string | undefined;
 }> = ({ userId, projectKey, ingestPoint }) => {
   const tracker = useMemo(() => {
-    console.log({ projectKey, ingestPoint });
     if (projectKey == null) return null;
-    return new Tracker({ projectKey, ingestPoint });
+    return new Tracker({
+      defaultInputMode: 0,
+      projectKey,
+      ingestPoint,
+      respectDoNotTrack: false,
+    });
   }, [projectKey, ingestPoint]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && tracker != null) {
-      tracker.start({ userID: userId, forceNew: true });
+      tracker.start({ userID: userId });
     }
   }, [tracker, userId]);
 
