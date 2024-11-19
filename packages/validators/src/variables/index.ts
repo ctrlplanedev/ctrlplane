@@ -32,11 +32,11 @@ export const BooleanVariableConfig = z.object({
 });
 export type BooleanVariableConfigType = z.infer<typeof BooleanVariableConfig>;
 
-export const TargetVariableConfig = z.object({
-  type: z.literal("target"),
+export const ResourceVariableConfig = z.object({
+  type: z.literal("resource"),
   filter: resourceCondition.optional(),
 });
-export type TargetVariableConfigType = z.infer<typeof TargetVariableConfig>;
+export type ResourceVariableConfigType = z.infer<typeof ResourceVariableConfig>;
 
 export const VariableConfig = z.union([
   StringVariableConfig,
@@ -47,7 +47,7 @@ export const VariableConfig = z.union([
 
 export type VariableConfigType = z.infer<typeof VariableConfig>;
 
-export const RunbookVariableConfig = VariableConfig.or(TargetVariableConfig);
+export const RunbookVariableConfig = VariableConfig.or(ResourceVariableConfig);
 export type RunbookVariableConfigType = z.infer<typeof RunbookVariableConfig>;
 
 export function validateJSONSchema(

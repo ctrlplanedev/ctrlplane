@@ -1,8 +1,8 @@
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type {
   ChoiceVariableConfigType,
+  ResourceVariableConfigType,
   StringVariableConfigType,
-  TargetVariableConfigType,
 } from "@ctrlplane/validators/variables";
 import { useState } from "react";
 import { useParams } from "next/navigation";
@@ -105,8 +105,8 @@ export const VariableBooleanInput: React.FC<{
   </Select>
 );
 
-export const VariableTargetInput: React.FC<
-  TargetVariableConfigType & {
+export const VariableResourceInput: React.FC<
+  ResourceVariableConfigType & {
     value: string;
     onChange: (v: string) => void;
   }
@@ -129,45 +129,45 @@ export const VariableTargetInput: React.FC<
     .filter((e) => e.resourceFilter != null)
     .map((e) => e.resourceFilter!);
 
-  const tFilterConditions: ResourceCondition[] = [
+  const rFilterConditions: ResourceCondition[] = [
     {
       type: ResourceFilterType.Comparison,
       operator: ResourceOperator.Or,
       conditions: envConditions,
     },
   ];
-  if (filter != null) tFilterConditions.push(filter);
-  const tFilter: ResourceCondition = {
+  if (filter != null) rFilterConditions.push(filter);
+  const rFilter: ResourceCondition = {
     type: ResourceFilterType.Comparison,
     operator: ResourceOperator.And,
-    conditions: tFilterConditions,
+    conditions: rFilterConditions,
   };
-  const allTargetsQ = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: system?.workspaceId ?? "", filter: tFilter },
+  const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
+    { workspaceId: system?.workspaceId ?? "", filter: rFilter },
     { enabled: system != null, placeholderData: (prev) => prev },
   );
-  const allTargets = allTargetsQ.data?.items ?? [];
-  const selectedTarget = allTargets.find((t) => t.id === value);
+  const allResources = allResourcesQ.data?.items ?? [];
+  const selectedResource = allResources.find((r) => r.id === value);
 
-  const tFilterConditionsWithSearch = tFilterConditions.concat([
+  const rFilterConditionsWithSearch = rFilterConditions.concat([
     {
       type: ResourceFilterType.Name,
       operator: ResourceOperator.Like,
       value: `%${search}%`,
     },
   ]);
-  const tFilterWithSearch: ResourceCondition = {
+  const rFilterWithSearch: ResourceCondition = {
     type: ResourceFilterType.Comparison,
     operator: ResourceOperator.And,
-    conditions: tFilterConditionsWithSearch,
+    conditions: rFilterConditionsWithSearch,
   };
-  const targetsQ = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId: system?.workspaceId ?? "", filter: tFilterWithSearch },
+  const resourcesQ = api.resource.byWorkspaceId.list.useQuery(
+    { workspaceId: system?.workspaceId ?? "", filter: rFilterWithSearch },
     { enabled: system != null, placeholderData: (prev) => prev },
   );
-  const targets = targetsQ.data?.items ?? [];
+  const resources = resourcesQ.data?.items ?? [];
 
-  const isLoading = allTargetsQ.isLoading || targetsQ.isLoading;
+  const isLoading = allResourcesQ.isLoading || resourcesQ.isLoading;
 
   return (
     <div>
@@ -181,7 +181,7 @@ export const VariableTargetInput: React.FC<
           >
             <IconSelector className="h-4 w-4" />
             <span className="overflow-hidden text-ellipsis">
-              {selectedTarget?.name ?? value}
+              {selectedResource?.name ?? value}
             </span>
           </Button>
         </PopoverTrigger>
@@ -194,21 +194,21 @@ export const VariableTargetInput: React.FC<
               )}
             </div>
             <CommandList>
-              {targets.map((t) => (
+              {resources.map((r) => (
                 <CommandItem
-                  key={t.id}
-                  value={t.id}
+                  key={r.id}
+                  value={r.id}
                   onSelect={() => {
-                    onChange(t.id);
+                    onChange(r.id);
                     setOpen(false);
                   }}
                   className="cursor-pointer overflow-ellipsis"
                 >
-                  {t.name}
+                  {r.name}
                 </CommandItem>
               ))}
-              {targets.length === 0 && !isLoading && (
-                <CommandItem disabled>No targets found</CommandItem>
+              {resources.length === 0 && !isLoading && (
+                <CommandItem disabled>No resources found</CommandItem>
               )}
             </CommandList>
           </Command>

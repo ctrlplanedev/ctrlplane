@@ -5,9 +5,9 @@ import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
   NumberVariableConfigType,
+  ResourceVariableConfigType,
   RunbookVariableConfigType,
   StringVariableConfigType,
-  TargetVariableConfigType,
   VariableConfigType,
 } from "@ctrlplane/validators/variables";
 import { IconX } from "@tabler/icons-react";
@@ -70,7 +70,7 @@ export const RunbookConfigTypeSelector: React.FC<{
       <SelectItem value="number">Number</SelectItem>
       <SelectItem value="boolean">Boolean</SelectItem>
       <SelectItem value="choice">Choice</SelectItem>
-      <SelectItem value="target">Target</SelectItem>
+      <SelectItem value="resource">Resource</SelectItem>
     </SelectContent>
   </Select>
 );
@@ -269,8 +269,8 @@ type RunbookConfigFieldsFC<T extends RunbookVariableConfigType> = React.FC<{
   updateConfig: (updates: Partial<T>) => void;
 }>;
 
-export const TargetConfigFields: RunbookConfigFieldsFC<
-  TargetVariableConfigType
+export const ResourceConfigFields: RunbookConfigFieldsFC<
+  ResourceVariableConfigType
 > = ({ config, updateConfig }) => {
   const onFilterChange = (condition: ResourceCondition | undefined) => {
     const cond = condition ?? defaultCondition;

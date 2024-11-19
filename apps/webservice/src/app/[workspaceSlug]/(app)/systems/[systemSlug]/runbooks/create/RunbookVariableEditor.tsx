@@ -27,9 +27,9 @@ import {
   BooleanConfigFields,
   ChoiceConfigFields,
   NumberConfigFields,
+  ResourceConfigFields,
   RunbookConfigTypeSelector,
   StringConfigFields,
-  TargetConfigFields,
 } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/variables/ConfigFields";
 
 type RunbookVariableEditorProps = {
@@ -49,11 +49,11 @@ export const RunbookVariableEditor = forwardRef<
     const mergedConfig = _.merge(value.config, config);
 
     // explicitly overwrite the filter instead of merging
-    const isTargetType =
-      mergedConfig?.type === "target" && config?.type === "target";
-    const isTargetFilterChanged =
-      isTargetType && mergedConfig.filter !== config.filter;
-    if (isTargetFilterChanged) mergedConfig.filter = config.filter;
+    const isResourceType =
+      mergedConfig?.type === "resource" && config?.type === "resource";
+    const isResourceFilterChanged =
+      isResourceType && mergedConfig.filter !== config.filter;
+    if (isResourceFilterChanged) mergedConfig.filter = config.filter;
 
     update({ config: mergedConfig });
   };
@@ -102,8 +102,8 @@ export const RunbookVariableEditor = forwardRef<
       {config?.type === "number" && (
         <NumberConfigFields config={config} updateConfig={updateConfig} />
       )}
-      {config?.type === "target" && (
-        <TargetConfigFields config={config} updateConfig={updateConfig} />
+      {config?.type === "resource" && (
+        <ResourceConfigFields config={config} updateConfig={updateConfig} />
       )}
     </div>
   );

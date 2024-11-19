@@ -22,8 +22,8 @@ import { Label } from "@ctrlplane/ui/label";
 import {
   VariableBooleanInput,
   VariableChoiceSelect,
+  VariableResourceInput,
   VariableStringInput,
-  VariableTargetInput,
 } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/variables/VariableInputs";
 import { api } from "~/trpc/react";
 
@@ -101,8 +101,8 @@ export const TriggerRunbookDialog: React.FC<TriggerRunbookDialogProps> = ({
                 />
               )}
 
-              {v.config?.type === "target" && (
-                <VariableTargetInput
+              {v.config?.type === "resource" && (
+                <VariableResourceInput
                   {...v.config}
                   value={getValue(v.key) ?? ""}
                   onChange={onChange(v.key)}
