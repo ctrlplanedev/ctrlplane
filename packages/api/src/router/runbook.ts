@@ -101,7 +101,7 @@ export const runbookRouter = createTRPCRouter({
       z.object({
         id: z.string().uuid(),
         data: SCHEMA.updateRunbook.extend({
-          variables: z.array(createRunbookVariable),
+          variables: z.array(createRunbookVariable).optional(),
         }),
       }),
     )
@@ -113,19 +113,19 @@ export const runbookRouter = createTRPCRouter({
           .where(eq(SCHEMA.runbook.id, input.id))
           .returning()
           .then(takeFirst)
-          .then((rb) =>
-            tx
+          .then((rb) => {
+            const vars = input.data.variables;
+            if (vars == null || vars.length === 0) return rb;
+            return tx
               .delete(SCHEMA.runbookVariable)
               .where(eq(SCHEMA.runbookVariable.runbookId, rb.id))
               .then(() =>
-                tx.insert(SCHEMA.runbookVariable).values(
-                  input.data.variables.map((v) => ({
-                    ...v,
-                    runbookId: rb.id,
-                  })),
-                ),
-              ),
-          ),
+                tx
+                  .insert(SCHEMA.runbookVariable)
+                  .values(vars.map((v) => ({ ...v, runbookId: rb.id }))),
+              )
+              .then(() => rb);
+          }),
       ),
     ),
 });
