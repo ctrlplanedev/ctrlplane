@@ -82,7 +82,10 @@ export const EditHookDialog: React.FC<EditHookDialogProps> = ({
   const form = useForm({ schema, defaultValues });
   const onSubmit = form.handleSubmit(async (data) => {
     const variables = RunhookVariables[data.action as HookAction];
-    const jobAgentId = data.jobAgentId ?? undefined;
+    const jobAgentId =
+      data.jobAgentId === "" || data.jobAgentId == null
+        ? undefined
+        : data.jobAgentId;
     const jobAgentConfig = data.jobAgentConfig ?? undefined;
     await updateHook
       .mutateAsync({
@@ -222,8 +225,8 @@ export const EditHookDialog: React.FC<EditHookDialogProps> = ({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  form.setValue("jobAgentId", null, { shouldDirty: true });
-                  form.setValue("jobAgentConfig", {}, { shouldDirty: true });
+                  form.setValue("jobAgentId", null);
+                  form.setValue("jobAgentConfig", {});
                 }}
               >
                 Remove Runbook

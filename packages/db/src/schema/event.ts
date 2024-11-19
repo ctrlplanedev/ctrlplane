@@ -27,7 +27,7 @@ export const hook = pgTable("hook", {
 export const createHook = createInsertSchema(hook)
   .omit({ id: true })
   .extend({
-    jobAgentId: z.string().uuid().optional(),
+    jobAgentId: z.string().optional(),
     jobAgentConfig: z.record(z.any()).optional(),
     variables: z.array(createRunbookVariable),
   });

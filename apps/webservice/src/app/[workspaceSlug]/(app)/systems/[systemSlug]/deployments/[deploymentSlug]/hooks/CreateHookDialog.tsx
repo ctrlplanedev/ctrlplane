@@ -54,7 +54,7 @@ type CreateHookDialogProps = {
 const schema = z.object({
   name: z.string().min(1),
   action: hookActions,
-  jobAgentId: z.string().uuid().nullable(),
+  jobAgentId: z.string().nullable(),
   jobAgentConfig: z.record(z.any()).nullable(),
 });
 
@@ -85,7 +85,10 @@ export const CreateHookDialog: React.FC<CreateHookDialogProps> = ({
         variables: RunhookVariables[data.action as HookAction],
         scopeType: "deployment",
         scopeId: deploymentId,
-        jobAgentId: data.jobAgentId ?? undefined,
+        jobAgentId:
+          data.jobAgentId === "" || data.jobAgentId == null
+            ? undefined
+            : data.jobAgentId,
         jobAgentConfig: data.jobAgentConfig ?? undefined,
       })
       .then(() => utils.deployment.hook.list.invalidate(deploymentId))
@@ -219,8 +222,8 @@ export const CreateHookDialog: React.FC<CreateHookDialogProps> = ({
                 type="button"
                 variant="outline"
                 onClick={() => {
-                  form.setValue("jobAgentId", null, { shouldDirty: true });
-                  form.setValue("jobAgentConfig", {}, { shouldDirty: true });
+                  form.setValue("jobAgentId", null);
+                  form.setValue("jobAgentConfig", {});
                 }}
               >
                 Remove Runbook
