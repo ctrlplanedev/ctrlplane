@@ -63,13 +63,13 @@ const mapApprovalResponse = (row: ApprovalJoinResult | null) =>
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra }) => {
+    authz(({ can, extra: { params } }) => {
       return can
         .perform(Permission.JobGet)
-        .on({ type: "job", id: extra.params.jobId });
+        .on({ type: "job", id: params.jobId });
     }),
   )
-  .handle(async ({ db }, { params }: { params: { jobId: string } }) => {
+  .handle<object, { params: { jobId: string } }>(async ({ db }, { params }) => {
     const row = await db
       .select()
       .from(job)
@@ -106,7 +106,7 @@ export const GET = request()
     const approval =
       je.release?.id && policyId
         ? await getApprovalDetails(je.release.id, policyId)
-        : null;
+        : undefined;
 
     const jobVariableRows = await db
       .select()
@@ -121,22 +121,18 @@ export const GET = request()
       }),
     );
 
-    const jobResourceMetadataRows = await db
+    const jobWithVariables = { ...je, variables };
+    if (je.resource == null) return NextResponse.json(jobWithVariables);
+
+    const metadata = await db
       .select()
       .from(resourceMetadata)
-      .where(eq(resourceMetadata.resourceId, je.resource?.id ?? ""));
-
-    const metadata = Object.fromEntries(
-      jobResourceMetadataRows.map((m) => [m.key, m.value]),
-    );
-
-    const resourceWithMetadata = { ...je.resource, metadata };
+      .where(eq(resourceMetadata.resourceId, je.resource.id))
+      .then((rows) => Object.fromEntries(rows.map((m) => [m.key, m.value])));
 
     return NextResponse.json({
-      ...je.job,
-      ...je,
-      variables,
-      resource: resourceWithMetadata,
+      ...jobWithVariables,
+      resource: { ...jobWithVariables.resource, metadata },
       approval,
     });
   });

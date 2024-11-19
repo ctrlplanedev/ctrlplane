@@ -28,8 +28,29 @@ export const authz: (
   }) => Promise<boolean>,
 ) => Middleware<any, { user: User }> =
   (checker) => async (ctx, extra, next) => {
-    if (await checker({ ctx, extra, can: can().user(ctx.user.id) }))
+    try {
+      const allowed = await checker({
+        ctx,
+        extra,
+        can: can().user(ctx.user.id),
+      });
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "Permission denied" },
+          { status: 403 },
+        );
+      }
       return next(ctx);
-
-    return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          error: "Permission check failed",
+          message:
+            error?.message ||
+            "An unexpected error occurred during permission check",
+          code: "PERMISSION_CHECK_ERROR",
+        },
+        { status: 500 },
+      );
+    }
   };
