@@ -8,6 +8,9 @@ import { env } from "~/env";
 let tracker: Tracker | undefined;
 
 if (env.NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY) {
+  console.log(
+    `Initializing OpenReplay ingestion: ${env.NEXT_PUBLIC_OPENREPLAY_INGEST_POINT}`,
+  );
   tracker = new Tracker({
     projectKey: env.NEXT_PUBLIC_OPENREPLAY_PROJECT_KEY,
     ingestPoint: env.NEXT_PUBLIC_OPENREPLAY_INGEST_POINT,
