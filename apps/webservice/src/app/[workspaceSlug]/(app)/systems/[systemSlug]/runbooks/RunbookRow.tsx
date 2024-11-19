@@ -2,7 +2,12 @@
 
 import type * as schema from "@ctrlplane/db/schema";
 import { useState } from "react";
-import { IconBolt, IconDotsVertical, IconEdit } from "@tabler/icons-react";
+import {
+  IconBolt,
+  IconDotsVertical,
+  IconEdit,
+  IconTrash,
+} from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { DeleteRunbookDialog } from "./DeleteRunbookDialog";
 import { EditRunbookDialog } from "./EditRunbookDialog";
 import { TriggerRunbookDialog } from "./TriggerRunbook";
 
@@ -64,6 +70,15 @@ export const RunbookRow: React.FC<{
               Edit Runbook
             </DropdownMenuItem>
           </EditRunbookDialog>
+          <DeleteRunbookDialog runbook={runbook} onClose={() => setOpen(false)}>
+            <DropdownMenuItem
+              onSelect={(e) => e.preventDefault()}
+              className="flex cursor-pointer items-center gap-2"
+            >
+              <IconTrash className="h-4 w-4 text-red-500" />
+              Delete Runbook
+            </DropdownMenuItem>
+          </DeleteRunbookDialog>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

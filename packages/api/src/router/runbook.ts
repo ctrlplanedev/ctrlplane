@@ -128,4 +128,17 @@ export const runbookRouter = createTRPCRouter({
           }),
       ),
     ),
+
+  delete: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.RunbookDelete).on({
+          type: "runbook",
+          id: input,
+        }),
+    })
+    .mutation(({ ctx, input }) =>
+      ctx.db.delete(SCHEMA.runbook).where(eq(SCHEMA.runbook.id, input)),
+    ),
 });
