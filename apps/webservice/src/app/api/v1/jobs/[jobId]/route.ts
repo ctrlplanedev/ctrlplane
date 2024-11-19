@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -70,7 +70,7 @@ export const GET = request()
     }),
   )
   .handle(async ({ db }, { params }: { params: { jobId: string } }) => {
-    const je = await db
+    const row = await db
       .select()
       .from(job)
       .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
@@ -84,15 +84,22 @@ export const GET = request()
       .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
       .leftJoin(deployment, eq(deployment.id, release.deploymentId))
       .where(eq(job.id, params.jobId))
-      .then(takeFirst)
-      .then((row) => ({
-        job: row.job,
-        runbook: row.runbook,
-        environment: row.environment,
-        resource: row.resource,
-        deployment: row.deployment,
-        release: row.release,
-      }));
+      .then(takeFirstOrNull);
+
+    if (row == null)
+      return NextResponse.json(
+        { error: "Job execution not found." },
+        { status: 404 },
+      );
+
+    const je = {
+      job: row.job,
+      runbook: row.runbook,
+      environment: row.environment,
+      resource: row.resource,
+      deployment: row.deployment,
+      release: row.release,
+    };
 
     const policyId = je.environment?.policyId;
 

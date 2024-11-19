@@ -116,7 +116,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get a job */
+    /** Get a Job */
     get: operations["getJob"];
     put?: never;
     post?: never;
@@ -532,7 +532,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description The execution ID */
+        /** @description The job ID */
         jobId: string;
       };
       cookie?: never;
@@ -614,6 +614,18 @@ export interface operations {
             jobAgentConfig: {
               [key: string]: unknown;
             };
+          };
+        };
+      };
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job not found. */
+            error?: string;
           };
         };
       };
