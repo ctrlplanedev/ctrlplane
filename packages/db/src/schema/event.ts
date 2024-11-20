@@ -56,9 +56,7 @@ export const runhook = pgTable(
       .notNull()
       .references(() => runbook.id, { onDelete: "cascade" }),
   },
-  (t) => ({
-    uniq: uniqueIndex().on(t.hookId, t.runbookId),
-  }),
+  (t) => ({ uniq: uniqueIndex().on(t.hookId, t.runbookId) }),
 );
 
 export const runhookRelations = relations(runhook, ({ one }) => ({

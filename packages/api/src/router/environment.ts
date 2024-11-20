@@ -26,8 +26,11 @@ import {
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
-import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
-import { dispatchJobsForNewResources } from "@ctrlplane/job-dispatch";
+import {
+  dispatchJobsForNewResources,
+  getEventsForEnvironmentDeleted,
+  handleEvent,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
   ComparisonOperator,

@@ -37,7 +37,10 @@ import {
   updateReleaseChannel,
   workspace,
 } from "@ctrlplane/db/schema";
-import { getEventsForDeploymentDeleted, handleEvent } from "@ctrlplane/events";
+import {
+  getEventsForDeploymentDeleted,
+  handleEvent,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 

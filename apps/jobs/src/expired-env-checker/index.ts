@@ -1,7 +1,10 @@
 import { inArray, lte } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
+import {
+  getEventsForEnvironmentDeleted,
+  handleEvent,
+} from "@ctrlplane/job-dispatch";
 
 export const run = async () => {
   const expiredEnvironments = await db

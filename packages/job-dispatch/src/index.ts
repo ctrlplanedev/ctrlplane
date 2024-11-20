@@ -23,3 +23,4 @@ export * from "./policies/concurrency-policy.js";
 export * from "./policies/release-window.js";
 export * from "./environment-creation.js";
 export * from "./pending-job-checker.js";
+export * from "./events/index.js";

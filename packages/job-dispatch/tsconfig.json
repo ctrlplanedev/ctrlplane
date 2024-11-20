@@ -2,7 +2,8 @@
   "extends": "@ctrlplane/tsconfig/internal-package.json",
   "compilerOptions": {
     "outDir": "dist",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "rootDir": "."
   },
   "include": ["src", "../api/src/utils"],
   "exclude": ["node_modules"]
