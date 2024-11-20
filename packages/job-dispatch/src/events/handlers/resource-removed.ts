@@ -3,7 +3,8 @@ import type { ResourceRemoved } from "@ctrlplane/validators/events";
 import { and, eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { dispatchRunbook } from "@ctrlplane/job-dispatch";
+
+import { dispatchRunbook } from "../../job-dispatch.js";
 
 export const handleResourceRemoved = async (event: ResourceRemoved) => {
   const { resource, deployment } = event.payload;

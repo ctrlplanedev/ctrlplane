@@ -17,11 +17,11 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { getEventsForResourceDeleted, handleEvent } from "@ctrlplane/events";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
   createReleaseJobTriggers,
+  deleteResources,
   dispatchReleaseJobTriggers,
   isPassingAllPoliciesExceptNewerThanLastActive,
   isPassingNoPendingJobsPolicy,
@@ -577,20 +577,11 @@ export const resourceRouter = createTRPCRouter({
         ),
     })
     .input(z.array(z.string().uuid()))
-    .mutation(async ({ ctx, input }) => {
-      const resources = await ctx.db.query.resource.findMany({
-        where: inArray(schema.resource.id, input),
-      });
-      const events = (
-        await Promise.allSettled(resources.map(getEventsForResourceDeleted))
-      ).flatMap((r) => (r.status === "fulfilled" ? r.value : []));
-      await Promise.allSettled(events.map(handleEvent));
-
-      return ctx.db
-        .delete(schema.resource)
-        .where(inArray(schema.resource.id, input))
-        .returning();
-    }),
+    .mutation(async ({ ctx, input }) =>
+      ctx.db.query.resource
+        .findMany({ where: inArray(schema.resource.id, input) })
+        .then((resources) => deleteResources(ctx.db, resources)),
+    ),
 
   metadataKeys: protectedProcedure
     .meta({

@@ -76,6 +76,7 @@ export const EditHookDialog: React.FC<EditHookDialogProps> = ({
 
   const defaultValues = {
     ...hook,
+    action: hook.action as HookAction,
     jobAgentId: hook.runhook?.runbook.jobAgentId ?? null,
     jobAgentConfig: hook.runhook?.runbook.jobAgentConfig ?? null,
   };
@@ -144,7 +145,7 @@ export const EditHookDialog: React.FC<EditHookDialogProps> = ({
                           className="items-center justify-start gap-2 px-2"
                         >
                           <IconSelector className="h-4 w-4" />
-                          {value === "" ? "Select action..." : value}
+                          {value}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent align="start" className="w-[462px] p-0">
