@@ -84,7 +84,7 @@ export const openapi: Swagger.SwaggerV3 = {
                           additionalProperties: true,
                         },
                       },
-                      required: ["id", "systemId"],
+                      required: ["id", "name", "systemId"],
                     },
                   },
                 },
