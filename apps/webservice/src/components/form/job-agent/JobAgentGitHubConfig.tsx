@@ -75,7 +75,7 @@ export const JobAgentGitHubConfig: React.FC<{
   return (
     <div className={cn("flex items-center gap-3", styleConfig?.className)}>
       <div>
-        <Popover open={repoOpen} onOpenChange={setRepoOpen}>
+        <Popover open={repoOpen} onOpenChange={setRepoOpen} modal>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
@@ -122,7 +122,7 @@ export const JobAgentGitHubConfig: React.FC<{
         </Popover>
       </div>
       <div>
-        <Popover open={workflowOpen} onOpenChange={setWorkflowOpen}>
+        <Popover open={workflowOpen} onOpenChange={setWorkflowOpen} modal>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
