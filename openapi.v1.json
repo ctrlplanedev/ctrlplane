@@ -1696,6 +1696,37 @@
         }
       }
     },
+    "/v1/systems/{systemId}/environments/{name}": {
+      "delete": {
+        "summary": "Delete an environment",
+        "operationId": "deleteEnvironmentByName",
+        "parameters": [
+          {
+            "name": "systemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "UUID of the system"
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Name of the environment"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Environment deleted successfully"
+          }
+        }
+      }
+    },
     "/v1/systems/{systemId}": {
       "get": {
         "summary": "Get a system",
