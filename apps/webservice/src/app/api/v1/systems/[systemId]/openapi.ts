@@ -10,6 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
     "/v1/systems/{systemId}": {
       get: {
         summary: "Get a system",
+        operationId: "getSystem",
         parameters: [
           {
             name: "systemId",
