@@ -37,18 +37,20 @@ export const GET = request()
         { status: 404 },
       );
 
-    const metadata = Object.fromEntries(
-      data.metadata.map((t) => [t.key, t.value]),
-    );
-    const variables = Object.fromEntries(
-      data.variables.map((v) => {
+    const { variables, metadata, ...resource } = data;
+    const variable = Object.fromEntries(
+      variables.map((v) => {
         const strval = String(v.value);
         const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
         return [v.key, value];
       }),
     );
 
-    return NextResponse.json({ ...data, variables, metadata });
+    return NextResponse.json({
+      ...resource,
+      variable,
+      metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
+    });
   });
 
 const patchSchema = z.object({

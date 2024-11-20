@@ -79,7 +79,7 @@ export const openapi: Swagger.SwaggerV3 = {
                         type: "string",
                       },
                     },
-                    variables: {
+                    variable: {
                       type: "object",
                       additionalProperties: {
                         type: "string",
