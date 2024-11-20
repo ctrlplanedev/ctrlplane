@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS "runhook_hook_id_runbook_id_index" ON "runhook" USING btree ("hook_id","runbook_id");
