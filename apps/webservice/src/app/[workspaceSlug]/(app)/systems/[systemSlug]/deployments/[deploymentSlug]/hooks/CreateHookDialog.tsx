@@ -53,7 +53,7 @@ type CreateHookDialogProps = {
 
 const schema = z.object({
   name: z.string().min(1),
-  action: hookActions,
+  action: hookActions.or(z.string()),
   jobAgentId: z.string().nullable(),
   jobAgentConfig: z.record(z.any()).nullable(),
 });

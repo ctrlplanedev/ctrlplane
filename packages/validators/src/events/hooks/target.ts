@@ -24,7 +24,7 @@ const resourceVar: RunbookVariable = {
 const deploymentVar: RunbookVariable = {
   key: "deploymentId",
   name: "Deployment Id",
-  config: { type: "string", inputType: "text" },
+  config: { type: "deployment" },
 };
 
-export const ResourceRemovedVariables = [resourceVar, deploymentVar];
+export const DeploymentResourceRemovedVariables = [resourceVar, deploymentVar];
