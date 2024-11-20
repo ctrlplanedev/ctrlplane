@@ -1,6 +1,6 @@
 "use client";
 
-import type { Runbook, RunbookVariable } from "@ctrlplane/db/schema";
+import type { RouterOutputs } from "@ctrlplane/api";
 import type { ReactNode } from "react";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -28,7 +28,7 @@ import {
 import { api } from "~/trpc/react";
 
 export type TriggerRunbookDialogProps = {
-  runbook: Runbook & { variables: RunbookVariable[] };
+  runbook: RouterOutputs["runbook"]["bySystemId"][number];
   onSuccess: () => void;
   children: ReactNode;
 };

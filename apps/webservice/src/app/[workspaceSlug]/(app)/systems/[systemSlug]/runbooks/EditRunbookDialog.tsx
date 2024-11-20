@@ -1,11 +1,7 @@
 "use client";
 
-import type {
-  JobAgent,
-  Runbook,
-  RunbookVariable,
-  Workspace,
-} from "@ctrlplane/db/schema";
+import type { RouterOutputs } from "@ctrlplane/api";
+import type { JobAgent, Workspace } from "@ctrlplane/db/schema";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
@@ -48,7 +44,7 @@ const updateRunbookSchema = z.object({
 export const EditRunbookDialog: React.FC<{
   workspace: Workspace;
   jobAgents: JobAgent[];
-  runbook: Runbook & { variables: RunbookVariable[] };
+  runbook: RouterOutputs["runbook"]["bySystemId"][number];
   children: React.ReactNode;
 }> = ({ workspace, jobAgents, runbook, children }) => {
   const [open, setOpen] = useState(false);

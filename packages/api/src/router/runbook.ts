@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { eq, takeFirst } from "@ctrlplane/db";
@@ -36,30 +35,43 @@ export const runbookRouter = createTRPCRouter({
           .on({ type: "system", id: input }),
     })
     .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(SCHEMA.runbook)
-        .leftJoin(
-          SCHEMA.runbookVariable,
-          eq(SCHEMA.runbookVariable.runbookId, SCHEMA.runbook.id),
-        )
-        .leftJoin(
-          SCHEMA.jobAgent,
-          eq(SCHEMA.runbook.jobAgentId, SCHEMA.jobAgent.id),
-        )
-        .where(eq(SCHEMA.runbook.systemId, input))
-        .then((rbs) =>
-          _.chain(rbs)
-            .groupBy((rb) => rb.runbook.id)
-            .map((rb) => ({
-              ...rb[0]!.runbook,
-              variables: rb.map((v) => v.runbook_variable).filter(isPresent),
-              jobAgent: rb[0]!.job_agent,
-            }))
-            .value(),
-        ),
-    ),
+    .query(({ ctx, input }) => {
+      return ctx.db.query.runbook.findMany({
+        where: eq(SCHEMA.runbook.systemId, input),
+        with: {
+          runhooks: { with: { hook: true } },
+          jobAgent: true,
+          variables: true,
+        },
+      });
+      // return ctx.db
+      //   .select()
+      //   .from(SCHEMA.runbook)
+      //   .leftJoin(
+      //     SCHEMA.runbookVariable,
+      //     eq(SCHEMA.runbookVariable.runbookId, SCHEMA.runbook.id),
+      //   )
+      //   .leftJoin(
+      //     SCHEMA.jobAgent,
+      //     eq(SCHEMA.runbook.jobAgentId, SCHEMA.jobAgent.id),
+      //   )
+      //   .leftJoin(
+      //     SCHEMA.runbookJobTrigger,
+      //     eq(SCHEMA.runbook.id, SCHEMA.runbookJobTrigger.runbookId),
+      //   )
+      //   .leftJoin(SCHEMA.job, eq(SCHEMA.runbookJobTrigger.jobId, SCHEMA.job.id))
+      //   .where(eq(SCHEMA.runbook.systemId, input))
+      //   .then((rbs) =>
+      //     _.chain(rbs)
+      //       .groupBy((rb) => rb.runbook.id)
+      //       .map((rb) => ({
+      //         ...rb[0]!.runbook,
+      //         variables: rb.map((v) => v.runbook_variable).filter(isPresent),
+      //         jobAgent: rb[0]!.job_agent,
+      //       }))
+      //       .value(),
+      //   );
+    }),
 
   create: protectedProcedure
     .meta({
