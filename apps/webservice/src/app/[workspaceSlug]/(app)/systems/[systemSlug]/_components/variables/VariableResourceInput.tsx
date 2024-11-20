@@ -53,7 +53,7 @@ const useResourcesFromEnvironment = (
     { enabled: system != null, placeholderData: (prev) => prev },
   );
 
-  return { filter, resources: data?.items ?? [], isLoading: isLoading };
+  return { filter, resources: data?.items ?? [], isLoading };
 };
 
 const useResourcesWithSearch = (

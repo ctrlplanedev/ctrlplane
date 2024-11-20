@@ -38,16 +38,34 @@ export const ResourceVariableConfig = z.object({
 });
 export type ResourceVariableConfigType = z.infer<typeof ResourceVariableConfig>;
 
+export const EnvironmentVariableConfig = z.object({
+  type: z.literal("environment"),
+});
+export type EnvironmentVariableConfigType = z.infer<
+  typeof EnvironmentVariableConfig
+>;
+
+export const DeploymentVariableConfig = z.object({
+  type: z.literal("deployment"),
+});
+export type DeploymentVariableConfigType = z.infer<
+  typeof DeploymentVariableConfig
+>;
+
 export const VariableConfig = z.union([
   StringVariableConfig,
   NumberVariableConfig,
   BooleanVariableConfig,
   ChoiceVariableConfig,
 ]);
-
 export type VariableConfigType = z.infer<typeof VariableConfig>;
 
-export const RunbookVariableConfig = VariableConfig.or(ResourceVariableConfig);
+export const RunbookVariableConfig = z.union([
+  VariableConfig,
+  ResourceVariableConfig,
+  EnvironmentVariableConfig,
+  DeploymentVariableConfig,
+]);
 export type RunbookVariableConfigType = z.infer<typeof RunbookVariableConfig>;
 
 export function validateJSONSchema(

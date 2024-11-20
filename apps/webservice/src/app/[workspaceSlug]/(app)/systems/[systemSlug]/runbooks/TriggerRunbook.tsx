@@ -20,6 +20,8 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
 import { api } from "~/trpc/react";
+import { VariableDeploymentInput } from "../_components/variables/VariableDeploymentInput";
+import { VariableEnvironmentInput } from "../_components/variables/VariableEnvironmentInput";
 import {
   VariableBooleanInput,
   VariableChoiceSelect,
@@ -103,6 +105,22 @@ export const TriggerRunbookDialog: React.FC<TriggerRunbookDialogProps> = ({
 
               {v.config?.type === "resource" && (
                 <VariableResourceInput
+                  {...v.config}
+                  value={getValue(v.key) ?? ""}
+                  onChange={onChange(v.key)}
+                />
+              )}
+
+              {v.config?.type === "environment" && (
+                <VariableEnvironmentInput
+                  {...v.config}
+                  value={getValue(v.key) ?? ""}
+                  onChange={onChange(v.key)}
+                />
+              )}
+
+              {v.config?.type === "deployment" && (
+                <VariableDeploymentInput
                   {...v.config}
                   value={getValue(v.key) ?? ""}
                   onChange={onChange(v.key)}

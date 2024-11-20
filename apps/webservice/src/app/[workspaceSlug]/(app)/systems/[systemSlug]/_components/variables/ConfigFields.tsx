@@ -4,6 +4,8 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type {
   BooleanVariableConfigType,
   ChoiceVariableConfigType,
+  DeploymentVariableConfigType,
+  EnvironmentVariableConfigType,
   NumberVariableConfigType,
   ResourceVariableConfigType,
   RunbookVariableConfigType,
@@ -71,6 +73,7 @@ export const RunbookConfigTypeSelector: React.FC<{
       <SelectItem value="boolean">Boolean</SelectItem>
       <SelectItem value="choice">Choice</SelectItem>
       <SelectItem value="resource">Resource</SelectItem>
+      <SelectItem value="environment">Environment</SelectItem>
     </SelectContent>
   </Select>
 );
@@ -86,14 +89,14 @@ export const StringConfigFields: ConfigFieldsFC<StringVariableConfigType> = ({
 }) => (
   <>
     <FormItem>
-      <FormLabel>Input Type</FormLabel>
+      <FormLabel>Input Display</FormLabel>
       <FormControl>
         <Select
           value={config.inputType}
           onValueChange={(value) => updateConfig({ inputType: value as any })}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select input type" />
+            <SelectValue placeholder="Select input display" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="text">Text</SelectItem>
@@ -289,4 +292,16 @@ export const ResourceConfigFields: RunbookConfigFieldsFC<
       </TargetConditionDialog>
     </>
   );
+};
+
+export const EnvironmentConfigFields: RunbookConfigFieldsFC<
+  EnvironmentVariableConfigType
+> = () => {
+  return <></>;
+};
+
+export const DeploymentConfigFields: RunbookConfigFieldsFC<
+  DeploymentVariableConfigType
+> = () => {
+  return <></>;
 };
