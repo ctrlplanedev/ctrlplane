@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { authn } from "../../auth";
@@ -27,6 +27,7 @@ export const POST = request()
           and(
             eq(SCHEMA.resource.identifier, body.resourceIdentifier),
             eq(SCHEMA.resource.workspaceId, body.workspaceId),
+            isNull(SCHEMA.resource.deletedAt),
           ),
         )
         .then(takeFirstOrNull);

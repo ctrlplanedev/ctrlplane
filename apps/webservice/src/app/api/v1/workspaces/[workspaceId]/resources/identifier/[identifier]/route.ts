@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { and, eq } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -14,17 +14,18 @@ export const GET = request()
     authz(async ({ can, extra }) => {
       const { workspaceId, identifier } = extra;
 
-      const target = await db.query.resource.findFirst({
+      const resource = await db.query.resource.findFirst({
         where: and(
           eq(schema.resource.workspaceId, workspaceId),
           eq(schema.resource.identifier, identifier),
+          isNull(schema.resource.deletedAt),
         ),
       });
 
-      if (target == null) return false;
+      if (resource == null) return false;
       return can
         .perform(Permission.ResourceGet)
-        .on({ type: "resource", id: target.id });
+        .on({ type: "resource", id: resource.id });
     }),
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
@@ -33,6 +34,7 @@ export const GET = request()
         where: and(
           eq(schema.resource.workspaceId, params.workspaceId),
           eq(schema.resource.identifier, params.identifier),
+          isNull(schema.resource.deletedAt),
         ),
         with: {
           metadata: true,
@@ -66,6 +68,7 @@ export const DELETE = request()
         where: and(
           eq(schema.resource.workspaceId, workspaceId),
           eq(schema.resource.identifier, identifier),
+          isNull(schema.resource.deletedAt),
         ),
       });
 
@@ -77,21 +80,24 @@ export const DELETE = request()
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
     async (_, { params }) => {
-      const target = await db.query.resource.findFirst({
+      const resource = await db.query.resource.findFirst({
         where: and(
           eq(schema.resource.workspaceId, params.workspaceId),
           eq(schema.resource.identifier, params.identifier),
+          isNull(schema.resource.deletedAt),
         ),
       });
 
-      if (target == null) {
+      if (resource == null) {
         return NextResponse.json(
           { error: `Target not found for identifier: ${params.identifier}` },
           { status: 404 },
         );
       }
 
-      await db.delete(schema.resource).where(eq(schema.resource.id, target.id));
+      await db
+        .delete(schema.resource)
+        .where(eq(schema.resource.id, resource.id));
 
       return NextResponse.json({ success: true });
     },

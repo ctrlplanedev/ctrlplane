@@ -18,6 +18,7 @@ export const isPassingLockingPolicy: ReleaseIdPolicyChecker = (
           releaseJobTriggers.map((t) => t.id),
         ),
         isNull(resource.lockedAt),
+        isNull(resource.deletedAt),
       ),
     )
     .then((data) => data.map((d) => d.release_job_trigger));

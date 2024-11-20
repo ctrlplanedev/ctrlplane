@@ -3,7 +3,14 @@ import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, eq, inArray, notInArray, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  isNull,
+  notInArray,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   environment,
   job,
@@ -123,7 +130,9 @@ export const releaseDeployRouter = createTRPCRouter({
       const t = await ctx.db
         .select()
         .from(resource)
-        .where(eq(resource.id, input.resourceId))
+        .where(
+          and(eq(resource.id, input.resourceId), isNull(resource.deletedAt)),
+        )
         .then(takeFirstOrNull);
       if (!t) throw new Error("Resource not found");
 

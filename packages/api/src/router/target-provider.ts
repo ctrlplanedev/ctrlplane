@@ -224,7 +224,8 @@ export const resourceProviderRouter = createTRPCRouter({
       ctx.db.transaction(async (tx) => {
         if (input.deleteResources)
           await tx
-            .delete(resource)
+            .update(resource)
+            .set({ deletedAt: new Date() })
             .where(eq(resource.providerId, input.providerId));
 
         const deletedProvider = await tx

@@ -25,6 +25,7 @@ import {
   desc,
   eq,
   inArray,
+  isNull,
   notInArray,
   sql,
   takeFirst,
@@ -162,6 +163,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .where(
             and(
               eq(system.workspaceId, input.workspaceId),
+              isNull(resource.deletedAt),
               jobMatchesCondition(ctx.db, input.filter),
             ),
           )
@@ -196,6 +198,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .where(
             and(
               eq(system.workspaceId, input.workspaceId),
+              isNull(resource.deletedAt),
               jobMatchesCondition(ctx.db, input.filter),
             ),
           )
@@ -284,6 +287,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           and(
             eq(deployment.id, input.deploymentId),
             eq(environment.id, input.environmentId),
+            isNull(resource.deletedAt),
           ),
         )
         .then((data) =>
@@ -327,6 +331,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .where(
           and(
             eq(release.id, input.releaseId),
+            isNull(resource.deletedAt),
             jobMatchesCondition(ctx.db, input.filter),
           ),
         )
@@ -371,7 +376,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           deploymentName,
           eq(deploymentName.deploymentId, releaseDependency.deploymentId),
         )
-        .where(eq(job.id, input))
+        .where(and(eq(job.id, input), isNull(resource.deletedAt)))
         .then(processReleaseJobTriggerWithAdditionalDataRows)
         .then(takeFirst);
 
@@ -435,7 +440,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
       const resources = await ctx.db
         .select()
         .from(resource)
-        .where(inArray(resource.id, allIds));
+        .where(and(inArray(resource.id, allIds), isNull(resource.deletedAt)));
 
       const releaseDependenciesWithResourcePromises = releaseDependencies.map(
         async (rd) => {
@@ -467,7 +472,10 @@ const releaseJobTriggerRouter = createTRPCRouter({
               and(
                 releaseMatchesCondition(ctx.db, rd.releaseFilter),
                 eq(deployment.id, rd.deploymentId),
-                inArray(latestJobSubquery.resourceId, allIds),
+                inArray(
+                  latestJobSubquery.resourceId,
+                  resources.map((r) => r.id),
+                ),
                 eq(latestJobSubquery.rank, 1),
                 eq(latestJobSubquery.status, JobStatus.Completed),
               ),
@@ -622,7 +630,7 @@ export const jobRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
-        .where(eq(resource.id, input))
+        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
         .limit(1_000)
         .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
         .then((data) =>

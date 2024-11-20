@@ -1,7 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, desc, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
@@ -44,6 +44,7 @@ export const createJobsForNewEnvironment = async (
       and(
         eq(SCHEMA.resource.workspaceId, workspaceId),
         SCHEMA.resourceMatchesMetadata(db, resourceFilter),
+        isNull(SCHEMA.resource.deletedAt),
       ),
     );
   if (resources.length === 0) return;

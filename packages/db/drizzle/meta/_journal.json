@@ -288,6 +288,13 @@
       "when": 1732077031948,
       "tag": "0040_whole_layla_miller",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1732139824120,
+      "tag": "0041_smooth_tarantula",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  isNull,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -417,6 +418,7 @@ export const deploymentRouter = createTRPCRouter({
           and(
             eq(release.deploymentId, input),
             eq(latestJobsPerResource.rank, 1),
+            isNull(resource.deletedAt),
           ),
         )
         .then((r) =>
@@ -620,7 +622,7 @@ export const deploymentRouter = createTRPCRouter({
       const tg = await ctx.db
         .select()
         .from(resource)
-        .where(eq(resource.id, input))
+        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
         .then(takeFirst);
 
       const envs = await ctx.db
@@ -659,6 +661,7 @@ export const deploymentRouter = createTRPCRouter({
             .where(
               and(
                 eq(resource.id, input),
+                isNull(resource.deletedAt),
                 inArray(job.status, [
                   JobStatus.Completed,
                   JobStatus.Pending,
