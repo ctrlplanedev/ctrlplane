@@ -11,6 +11,17 @@ export const openapi: Swagger.SwaggerV3 = {
       get: {
         summary: "Get an environment",
         operationId: "getEnvironment",
+        parameters: [
+          {
+            name: "environmentId",
+            in: "path",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            description: "UUID of the environment",
+          },
+        ],
         responses: {
           "200": {
             description: "Successful response",
@@ -102,6 +113,18 @@ export const openapi: Swagger.SwaggerV3 = {
 
       delete: {
         summary: "Delete an environment",
+        operationId: "deleteEnvironment",
+        parameters: [
+          {
+            name: "environmentId",
+            in: "path",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            description: "UUID of the environment",
+          },
+        ],
         responses: {
           "200": {
             description: "Environment deleted successfully",

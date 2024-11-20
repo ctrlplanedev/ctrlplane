@@ -9,6 +9,17 @@
       "get": {
         "summary": "Get an environment",
         "operationId": "getEnvironment",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "UUID of the environment"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful response",
@@ -158,6 +169,18 @@
       },
       "delete": {
         "summary": "Delete an environment",
+        "operationId": "deleteEnvironment",
+        "parameters": [
+          {
+            "name": "environmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "UUID of the environment"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Environment deleted successfully"
@@ -1673,13 +1696,23 @@
         }
       }
     },
-    "/v1/systems/{systemId}/environment/name/{name}": {
+    "/v1/systems/{systemId}": {
       "get": {
-        "summary": "Get an environment by name",
-        "operationId": "getEnvironmentByName",
+        "summary": "Get a system",
+        "parameters": [
+          {
+            "name": "systemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "UUID of the system"
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Successful response",
+            "description": "System retrieved successfully",
             "content": {
               "application/json": {
                 "schema": {
@@ -1688,33 +1721,19 @@
                     "id": {
                       "type": "string"
                     },
-                    "systemId": {
-                      "type": "string"
-                    },
                     "name": {
                       "type": "string"
                     },
+                    "slug": {
+                      "type": "string"
+                    },
                     "description": {
-                      "type": "string",
-                      "nullable": true
+                      "type": "string"
                     },
-                    "resourceFilter": {
-                      "type": "object",
-                      "additionalProperties": true
+                    "workspaceId": {
+                      "type": "string"
                     },
-                    "policyId": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "expiresAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "releaseChannels": {
+                    "environments": {
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -1722,128 +1741,77 @@
                           "id": {
                             "type": "string"
                           },
-                          "deploymentId": {
+                          "name": {
                             "type": "string"
                           },
-                          "channelId": {
+                          "description": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "systemId": {
                             "type": "string"
                           },
-                          "environmentId": {
-                            "type": "string"
+                          "policyId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "resourceFilter": {
+                            "type": "object",
+                            "additionalProperties": true,
+                            "nullable": true
                           }
                         }
                       }
                     },
-                    "policy": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "systemId": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "description": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "approvalRequirement": {
-                          "type": "string",
-                          "enum": [
-                            "manual",
-                            "automatic"
-                          ]
-                        },
-                        "successType": {
-                          "type": "string",
-                          "enum": [
-                            "some",
-                            "all",
-                            "optional"
-                          ]
-                        },
-                        "successMinimum": {
-                          "type": "number"
-                        },
-                        "concurrencyType": {
-                          "type": "string",
-                          "enum": [
-                            "some",
-                            "all"
-                          ]
-                        },
-                        "concurrencyLimit": {
-                          "type": "number"
-                        },
-                        "rolloutDuration": {
-                          "type": "number"
-                        },
-                        "releaseSequencing": {
-                          "type": "string",
-                          "enum": [
-                            "wait",
-                            "cancel"
-                          ]
+                    "deployments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "systemId": {
+                            "type": "string"
+                          },
+                          "jobAgentId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "jobAgentConfig": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
                         }
                       }
                     }
                   },
                   "required": [
-                    "systemId",
-                    "name",
                     "id",
-                    "createdAt",
-                    "releaseChannels"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Environment not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Environment not found"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Delete an environment",
-        "responses": {
-          "200": {
-            "description": "Environment deleted successfully"
-          },
-          "404": {
-            "description": "Environment not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Environment not found"
-                    }
-                  },
-                  "required": [
-                    "error"
+                    "name",
+                    "slug",
+                    "description",
+                    "workspaceId",
+                    "environments",
+                    "deployments"
                   ]
                 }
               }
