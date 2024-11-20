@@ -96,6 +96,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     "workspaceId",
                     "updatedAt",
                     "metadata",
+                    "variable",
                   ],
                 },
               },

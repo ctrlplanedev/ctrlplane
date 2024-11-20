@@ -15,7 +15,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["systemId", "name"],
+                "required": [
+                  "systemId",
+                  "name"
+                ],
                 "properties": {
                   "systemId": {
                     "type": "string"
@@ -78,7 +81,9 @@
                           "additionalProperties": true
                         }
                       },
-                      "required": ["systemId"]
+                      "required": [
+                        "systemId"
+                      ]
                     }
                   }
                 }
@@ -114,7 +119,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -354,7 +361,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["type", "name", "workspaceId"]
+                "required": [
+                  "type",
+                  "name",
+                  "workspaceId"
+                ]
               }
             }
           }
@@ -377,7 +388,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -415,7 +430,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["sucess"]
+                  "required": [
+                    "sucess"
+                  ]
                 }
               }
             }
@@ -431,7 +448,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -501,7 +520,12 @@
                           "type": "object"
                         }
                       },
-                      "required": ["id", "version", "metadata", "config"]
+                      "required": [
+                        "id",
+                        "version",
+                        "metadata",
+                        "config"
+                      ]
                     },
                     "deployment": {
                       "type": "object",
@@ -546,7 +570,12 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId", "jobAgentId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId",
+                        "jobAgentId"
+                      ]
                     },
                     "resource": {
                       "type": "object",
@@ -600,7 +629,11 @@
                           "type": "string"
                         }
                       },
-                      "required": ["id", "name", "systemId"]
+                      "required": [
+                        "id",
+                        "name",
+                        "systemId"
+                      ]
                     },
                     "variables": {
                       "type": "object"
@@ -614,7 +647,11 @@
                         },
                         "status": {
                           "type": "string",
-                          "enum": ["pending", "approved", "rejected"]
+                          "enum": [
+                            "pending",
+                            "approved",
+                            "rejected"
+                          ]
                         },
                         "approver": {
                           "type": "object",
@@ -628,10 +665,16 @@
                               "type": "string"
                             }
                           },
-                          "required": ["id", "name"]
+                          "required": [
+                            "id",
+                            "name"
+                          ]
                         }
                       },
-                      "required": ["id", "status"]
+                      "required": [
+                        "id",
+                        "status"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -726,7 +769,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 }
               }
             }
@@ -744,7 +789,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["deploymentId", "name", "releaseFilter"],
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "releaseFilter"
+                ],
                 "properties": {
                   "deploymentId": {
                     "type": "string"
@@ -795,7 +844,12 @@
                       "additionalProperties": true
                     }
                   },
-                  "required": ["id", "deploymentId", "name", "createdAt"]
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
                 }
               }
             }
@@ -811,7 +865,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -827,7 +883,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -846,7 +904,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error", "id"]
+                  "required": [
+                    "error",
+                    "id"
+                  ]
                 }
               }
             }
@@ -862,7 +923,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -910,7 +973,10 @@
                     }
                   }
                 },
-                "required": ["version", "deploymentId"]
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
               }
             }
           }
@@ -982,7 +1048,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["resources"],
+                "required": [
+                  "resources"
+                ],
                 "properties": {
                   "resources": {
                     "type": "array",
@@ -1115,10 +1183,10 @@
                         "type": "string"
                       }
                     },
-                    "variables": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Variable"
+                    "variable": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
                       }
                     }
                   },
@@ -1131,7 +1199,8 @@
                     "config",
                     "workspaceId",
                     "updatedAt",
-                    "metadata"
+                    "metadata",
+                    "variable"
                   ]
                 }
               }
@@ -1155,7 +1224,9 @@
                       "example": "Resource not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1282,7 +1353,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1310,7 +1383,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["success"],
+                  "required": [
+                    "success"
+                  ],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -1337,7 +1412,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1355,7 +1432,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "resources"],
+                "required": [
+                  "workspaceId",
+                  "resources"
+                ],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -1469,7 +1549,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -1571,7 +1655,12 @@
                       }
                     }
                   },
-                  "required": ["id", "identifier", "workspaceId", "providerId"]
+                  "required": [
+                    "id",
+                    "identifier",
+                    "workspaceId",
+                    "providerId"
+                  ]
                 }
               }
             }
@@ -1676,7 +1765,10 @@
     "schemas": {
       "Variable": {
         "type": "object",
-        "required": ["key", "value"],
+        "required": [
+          "key",
+          "value"
+        ],
         "properties": {
           "key": {
             "type": "string"

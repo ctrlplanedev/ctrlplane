@@ -902,7 +902,9 @@ export interface operations {
             metadata: {
               [key: string]: string;
             };
-            variables?: components["schemas"]["Variable"][];
+            variable: {
+              [key: string]: string;
+            };
           };
         };
       };
