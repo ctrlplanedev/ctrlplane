@@ -61,6 +61,9 @@ export const openapi: Swagger.SwaggerV3 = {
                     environment: {
                       type: "object",
                       properties: {
+                        id: {
+                          type: "string",
+                        },
                         systemId: {
                           type: "string",
                         },
@@ -69,6 +72,7 @@ export const openapi: Swagger.SwaggerV3 = {
                         },
                         description: {
                           type: "string",
+                          nullable: true,
                         },
                         expiresAt: {
                           type: "string",
@@ -80,7 +84,7 @@ export const openapi: Swagger.SwaggerV3 = {
                           additionalProperties: true,
                         },
                       },
-                      required: ["systemId"],
+                      required: ["id", "systemId"],
                     },
                   },
                 },
