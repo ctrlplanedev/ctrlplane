@@ -19,13 +19,13 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
+import { api } from "~/trpc/react";
 import {
   VariableBooleanInput,
   VariableChoiceSelect,
-  VariableResourceInput,
   VariableStringInput,
-} from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/variables/VariableInputs";
-import { api } from "~/trpc/react";
+} from "../_components/variables/VariableInputs";
+import { VariableResourceInput } from "../_components/variables/VariableResourceInput";
 
 export type TriggerRunbookDialogProps = {
   runbook: RouterOutputs["runbook"]["bySystemId"][number];
