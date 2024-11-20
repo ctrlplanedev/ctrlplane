@@ -5,6 +5,7 @@ import { z } from "zod";
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { upsertResources } from "@ctrlplane/job-dispatch";
+import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
@@ -36,12 +37,18 @@ export const GET = request()
         { status: 404 },
       );
 
-    const { metadata, ...resource } = data;
+    const metadata = Object.fromEntries(
+      data.metadata.map((t) => [t.key, t.value]),
+    );
+    const variables = Object.fromEntries(
+      data.variables.map((v) => {
+        const strval = String(v.value);
+        const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
+        return [v.key, value];
+      }),
+    );
 
-    return NextResponse.json({
-      ...resource,
-      metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
-    });
+    return NextResponse.json({ ...data, variables, metadata });
   });
 
 const patchSchema = z.object({

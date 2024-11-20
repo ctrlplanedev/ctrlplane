@@ -80,9 +80,9 @@ export const openapi: Swagger.SwaggerV3 = {
                       },
                     },
                     variables: {
-                      type: "array",
-                      items: {
-                        $ref: "#/components/schemas/Variable",
+                      type: "object",
+                      additionalProperties: {
+                        type: "string",
                       },
                     },
                   },
