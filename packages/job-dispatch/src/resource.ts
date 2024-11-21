@@ -55,6 +55,8 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
       ),
     );
 
+  log.info("workspaceEnvs", { workspaceEnvs });
+
   const resourceIds = newResources.map((r) => r.id);
   for (const env of workspaceEnvs) {
     db.select()
@@ -67,6 +69,7 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
         ),
       )
       .then((tgs) => {
+        log.info("tgs + env", { tgs, env });
         if (tgs.length === 0) return;
         dispatchJobsForNewResources(
           db,
@@ -304,6 +307,11 @@ export const upsertResources = async (
       (r) =>
         !resourcesBeforeInsert.some((er) => er.identifier === r.identifier),
     );
+
+    log.info("newResources and providerId", {
+      providerId: resourcesToInsert[0]?.providerId,
+      newResources,
+    });
 
     if (newResources.length > 0)
       await dispatchNewResources(db, newResources).catch((err) => {
