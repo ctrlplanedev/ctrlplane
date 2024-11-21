@@ -21,12 +21,8 @@ export const resourceMetadataGroup = pgTable("resource_metadata_group", {
 export const createResourceMetadataGroup = createInsertSchema(
   resourceMetadataGroup,
 )
-  .omit({
-    id: true,
-  })
-  .extend({
-    keys: z.array(z.string()),
-  });
+  .omit({ id: true })
+  .extend({ keys: z.array(z.string()) });
 export const updateResourceMetadataGroup =
   createResourceMetadataGroup.partial();
 export type ResourceMetadataGroup = InferSelectModel<

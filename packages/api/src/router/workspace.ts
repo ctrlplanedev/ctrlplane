@@ -230,7 +230,7 @@ export const workspaceRouter = createTRPCRouter({
           count: sql`count(*)`.mapWith(Number),
         })
         .from(resource)
-        .where(eq(resource.workspaceId, input))
+        .where(and(eq(resource.workspaceId, input), isNull(resource.deletedAt)))
         .groupBy(resource.version, resource.kind)
         .orderBy(asc(resource.kind));
 

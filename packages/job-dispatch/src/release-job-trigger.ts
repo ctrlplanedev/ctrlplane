@@ -145,6 +145,7 @@ class ReleaseJobTriggerBuilder {
               resourceMatchesMetadata(this.tx, resourceFilter),
               eq(resource.workspaceId, workspaceId),
               isNull(resource.lockedAt),
+              isNull(resource.deletedAt),
               this.resourceIds && inArray(resource.id, this.resourceIds),
             ),
           );

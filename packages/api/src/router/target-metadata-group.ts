@@ -7,6 +7,7 @@ import {
   count,
   eq,
   inArray,
+  isNull,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -49,6 +50,7 @@ export const resourceMetadataGroupRouter = createTRPCRouter({
         )
         .where(
           and(
+            isNull(resource.deletedAt),
             eq(resource.workspaceId, resourceMetadataGroup.workspaceId),
             sql`${resourceMetadata.key} = ANY(${resourceMetadataGroup.keys})`,
           ),
@@ -81,7 +83,7 @@ export const resourceMetadataGroupRouter = createTRPCRouter({
           resources: count(),
         })
         .from(resource)
-        .where(eq(resource.workspaceId, input))
+        .where(and(eq(resource.workspaceId, input), isNull(resource.deletedAt)))
         .then(takeFirst)
         .then((row) => row.resources);
 
@@ -151,7 +153,12 @@ export const resourceMetadataGroupRouter = createTRPCRouter({
             inArray(resourceMetadata.key, group.keys),
           ),
         )
-        .where(eq(resource.workspaceId, group.workspaceId))
+        .where(
+          and(
+            eq(resource.workspaceId, group.workspaceId),
+            isNull(resource.deletedAt),
+          ),
+        )
         .groupBy(resource.id);
 
       const resourceMetadataAgg = group.includeNullCombinations

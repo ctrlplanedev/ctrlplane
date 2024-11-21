@@ -2,7 +2,7 @@ import type { HookEvent } from "@ctrlplane/validators/events";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNotNull, ne } from "@ctrlplane/db";
+import { and, eq, inArray, isNotNull, isNull, ne } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
@@ -15,7 +15,12 @@ export const getEventsForEnvironmentDeleted = async (
   const resources = await db
     .select()
     .from(SCHEMA.resource)
-    .where(SCHEMA.resourceMatchesMetadata(db, environment.resourceFilter));
+    .where(
+      and(
+        SCHEMA.resourceMatchesMetadata(db, environment.resourceFilter),
+        isNull(SCHEMA.resource.deletedAt),
+      ),
+    );
   if (resources.length === 0) return [];
 
   const checks = and(
@@ -47,6 +52,7 @@ export const getEventsForEnvironmentDeleted = async (
           .where(
             and(
               SCHEMA.resourceMatchesMetadata(db, removedFromSystemFilter),
+              isNull(SCHEMA.resource.deletedAt),
               inArray(
                 SCHEMA.resource.id,
                 resources.map((r) => r.id),

@@ -2,7 +2,7 @@ import type { HookEvent } from "@ctrlplane/validators/events";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import { eq, isNotNull } from "@ctrlplane/db";
+import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
@@ -37,7 +37,10 @@ export const getEventsForResourceDeleted = async (
     };
 
     const matchedResource = await db.query.resource.findFirst({
-      where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
+      where: and(
+        SCHEMA.resourceMatchesMetadata(db, systemFilter),
+        isNull(SCHEMA.resource.deletedAt),
+      ),
     });
     if (matchedResource == null) return [];
 

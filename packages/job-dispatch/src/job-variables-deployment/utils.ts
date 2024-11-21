@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 export const getJob = (tx: Tx, jobId: string) =>
@@ -30,7 +30,9 @@ export const getTarget = (tx: Tx, targetId: string) =>
   tx
     .select()
     .from(SCHEMA.resource)
-    .where(eq(SCHEMA.resource.id, targetId))
+    .where(
+      and(eq(SCHEMA.resource.id, targetId), isNull(SCHEMA.resource.deletedAt)),
+    )
     .then(takeFirstOrNull);
 
 export const getEnvironment = (tx: Tx, environmentId: string) =>
@@ -72,6 +74,7 @@ export const getMatchedTarget = (
       and(
         eq(SCHEMA.resource.id, targetId),
         SCHEMA.resourceMatchesMetadata(tx, targetFilter),
+        isNull(SCHEMA.resource.deletedAt),
       ),
     )
     .then(takeFirstOrNull);

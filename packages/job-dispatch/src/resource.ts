@@ -8,14 +8,17 @@ import {
   eq,
   inArray,
   isNotNull,
+  isNull,
   or,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
+  deploymentResourceRelationship,
   environment,
   resource,
   resourceMatchesMetadata,
   resourceMetadata,
+  resourceRelationship,
   resourceVariable,
   system,
 } from "@ctrlplane/db/schema";
@@ -27,8 +30,13 @@ import { dispatchJobsForNewResources } from "./new-resource.js";
 
 const log = logger.child({ label: "upsert-resources" });
 
+const isNotDeleted = isNull(resource.deletedAt);
+
 const getExistingResourcesForProvider = (db: Tx, providerId: string) =>
-  db.select().from(resource).where(eq(resource.providerId, providerId));
+  db
+    .select()
+    .from(resource)
+    .where(and(eq(resource.providerId, providerId), isNotDeleted));
 
 const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
   const [firstResource] = newResources;
@@ -55,6 +63,7 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
         and(
           inArray(resource.id, resourceIds),
           resourceMatchesMetadata(db, env.resourceFilter),
+          isNotDeleted,
         ),
       )
       .then((tgs) => {
@@ -240,6 +249,7 @@ export const upsertResources = async (
                     and(
                       eq(resource.workspaceId, r.workspaceId),
                       eq(resource.identifier, r.identifier),
+                      isNotDeleted,
                     ),
                   ),
                 ),
@@ -263,8 +273,10 @@ export const upsertResources = async (
             "version",
             "kind",
             "config",
+            "providerId",
           ]),
           updatedAt: new Date(),
+          deletedAt: null,
         },
       })
       .returning()
@@ -338,6 +350,26 @@ export const upsertResources = async (
   }
 };
 
+const deleteObjectsAssociatedWithResource = (tx: Tx, resource: Resource) =>
+  Promise.all([
+    tx
+      .delete(resourceRelationship)
+      .where(
+        or(
+          eq(resourceRelationship.sourceId, resource.id),
+          eq(resourceRelationship.targetId, resource.id),
+        ),
+      ),
+    tx
+      .delete(deploymentResourceRelationship)
+      .where(
+        eq(
+          deploymentResourceRelationship.resourceIdentifier,
+          resource.identifier,
+        ),
+      ),
+  ]);
+
 /**
  * Delete resources from the database.
  *
@@ -351,5 +383,14 @@ export const deleteResources = async (tx: Tx, resources: Resource[]) => {
   const events = await eventsPromises.then((res) => res.flat());
   await Promise.all(events.map(handleEvent));
   const resourceIds = resources.map((r) => r.id);
-  await tx.delete(resource).where(inArray(resource.id, resourceIds));
+  const deleteAssociatedObjects = Promise.all(
+    resources.map((r) => deleteObjectsAssociatedWithResource(tx, r)),
+  );
+  await Promise.all([
+    deleteAssociatedObjects,
+    tx
+      .update(resource)
+      .set({ deletedAt: new Date() })
+      .where(inArray(resource.id, resourceIds)),
+  ]);
 };
