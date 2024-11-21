@@ -80,39 +80,87 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
   }
 };
 
+type ResourceWithVariables = Resource & {
+  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+};
+
+/**
+ * Upserts resource variables for a list of resources. Updates existing
+ * variables, adds new ones, and removes deleted ones. Encrypts sensitive
+ * variable values before storing.
+ *
+ * @param tx - Database transaction
+ * @param resources - Array of resources with their variables
+ * @returns Array of resources that had their variables changed
+ */
 const upsertResourceVariables = async (
   tx: Tx,
-  resources: Array<
-    Resource & {
-      variables?: Array<{ key: string; value: any; sensitive: boolean }>;
-    }
-  >,
-) => {
+  resources: Array<ResourceWithVariables>,
+): Promise<Resource[]> => {
+  const resourceIds = resources.map((r) => r.id);
   const existingResourceVariables = await tx
     .select()
     .from(resourceVariable)
-    .where(
-      inArray(
-        resourceVariable.resourceId,
-        resources.map((r) => r.id),
-      ),
-    )
-    .catch((err) => {
-      log.error("Error fetching existing resource variables", { error: err });
-      throw err;
-    });
+    .where(inArray(resourceVariable.resourceId, resourceIds));
 
-  const resourceVariablesValues = resources.flatMap((resource) => {
-    const { id, variables = [] } = resource;
-    return variables.map(({ key, value, sensitive }) => ({
+  const resourceVariablesValues = resources.flatMap(({ id, variables = [] }) =>
+    variables.map(({ key, value, sensitive }) => ({
       resourceId: id,
       key,
       value: sensitive
         ? variablesAES256().encrypt(JSON.stringify(value))
         : value,
       sensitive,
-    }));
-  });
+    })),
+  );
+
+  // Track resources with added variables
+  const resourcesWithAddedVars = new Set(
+    resourceVariablesValues
+      .filter(
+        (newVar) =>
+          !existingResourceVariables.some(
+            (existing) =>
+              existing.resourceId === newVar.resourceId &&
+              existing.key === newVar.key,
+          ),
+      )
+      .map((newVar) => newVar.resourceId),
+  );
+
+  // Track resources with modified variables
+  const resourcesWithModifiedVars = new Set(
+    resourceVariablesValues
+      .filter((newVar) => {
+        const existingVar = existingResourceVariables.find(
+          (existing) =>
+            existing.resourceId === newVar.resourceId &&
+            existing.key === newVar.key,
+        );
+        return existingVar && existingVar.value !== newVar.value;
+      })
+      .map((newVar) => newVar.resourceId),
+  );
+
+  // Track resources with deleted variables
+  const resourcesWithDeletedVars = new Set(
+    existingResourceVariables
+      .filter(
+        (existingVar) =>
+          !resourceVariablesValues.some(
+            (newVar) =>
+              newVar.resourceId === existingVar.resourceId &&
+              newVar.key === existingVar.key,
+          ),
+      )
+      .map((existingVar) => existingVar.resourceId),
+  );
+
+  const changedResources = new Set<string>([
+    ...resourcesWithAddedVars,
+    ...resourcesWithModifiedVars,
+    ...resourcesWithDeletedVars,
+  ]);
 
   if (resourceVariablesValues.length > 0)
     await tx
@@ -152,25 +200,21 @@ const upsertResourceVariables = async (
         log.error("Error deleting resource variables", { error: err });
         throw err;
       });
+
+  return resources.filter((resource) => changedResources.has(resource.id));
 };
+
+type ResourceWithMetadata = Resource & { metadata?: Record<string, string> };
 
 const upsertResourceMetadata = async (
   tx: Tx,
-  resources: Array<Resource & { metadata?: Record<string, string> }>,
+  resources: Array<ResourceWithMetadata>,
 ) => {
+  const resourceIds = resources.map((r) => r.id);
   const existingResourceMetadata = await tx
     .select()
     .from(resourceMetadata)
-    .where(
-      inArray(
-        resourceMetadata.resourceId,
-        resources.map((r) => r.id),
-      ),
-    )
-    .catch((err) => {
-      log.error("Error fetching existing resource metadata", { error: err });
-      throw err;
-    });
+    .where(inArray(resourceMetadata.resourceId, resourceIds));
 
   const resourceMetadataValues = resources.flatMap((resource) => {
     const { id, metadata = {} } = resource;
@@ -181,6 +225,51 @@ const upsertResourceMetadata = async (
       value,
     }));
   });
+
+  const resourcesWithAddedMetadata = new Set(
+    resourceMetadataValues
+      .filter(
+        (newMetadata) =>
+          !existingResourceMetadata.some(
+            (metadata) =>
+              metadata.resourceId === newMetadata.resourceId &&
+              metadata.key === newMetadata.key,
+          ),
+      )
+      .map((metadata) => metadata.resourceId),
+  );
+
+  const resourcesWithDeletedMetadata = new Set(
+    existingResourceMetadata
+      .filter(
+        (metadata) =>
+          !resourceMetadataValues.some(
+            (newMetadata) =>
+              newMetadata.resourceId === metadata.resourceId &&
+              newMetadata.key === metadata.key,
+          ),
+      )
+      .map((metadata) => metadata.resourceId),
+  );
+
+  const resourcesWithUpdatedMetadata = new Set(
+    resourceMetadataValues
+      .filter((newMetadata) =>
+        existingResourceMetadata.some(
+          (metadata) =>
+            metadata.resourceId === newMetadata.resourceId &&
+            metadata.key === newMetadata.key &&
+            metadata.value !== newMetadata.value,
+        ),
+      )
+      .map((metadata) => metadata.resourceId),
+  );
+
+  const changedResources = new Set([
+    ...resourcesWithAddedMetadata,
+    ...resourcesWithUpdatedMetadata,
+    ...resourcesWithDeletedMetadata,
+  ]);
 
   if (resourceMetadataValues.length > 0)
     await tx
@@ -217,6 +306,8 @@ const upsertResourceMetadata = async (
         log.error("Error deleting resource metadata", { error: err });
         throw err;
       });
+
+  return resources.filter((resource) => changedResources.has(resource.id));
 };
 
 export type ResourceToInsert = InsertResource & {
@@ -308,7 +399,7 @@ export const upsertResources = async (
         !resourcesBeforeInsert.some((er) => er.identifier === r.identifier),
     );
 
-    log.info("newResources and providerId", {
+    log.info("new resources and providerId", {
       providerId: resourcesToInsert[0]?.providerId,
       newResources,
     });
