@@ -172,10 +172,6 @@ const upsertResourceVariables = async (
           "value",
           "sensitive",
         ]),
-      })
-      .catch((err) => {
-        log.error("Error inserting resource variables", { error: err });
-        throw err;
       });
 
   const variablesToDelete = existingResourceVariables.filter(
@@ -294,18 +290,12 @@ const upsertResourceMetadata = async (
   );
 
   if (metadataToDelete.length > 0)
-    await tx
-      .delete(resourceMetadata)
-      .where(
-        inArray(
-          resourceMetadata.id,
-          metadataToDelete.map((m) => m.id),
-        ),
-      )
-      .catch((err) => {
-        log.error("Error deleting resource metadata", { error: err });
-        throw err;
-      });
+    await tx.delete(resourceMetadata).where(
+      inArray(
+        resourceMetadata.id,
+        metadataToDelete.map((m) => m.id),
+      ),
+    );
 
   return resources.filter((resource) => changedResources.has(resource.id));
 };
@@ -383,11 +373,7 @@ export const upsertResources = async (
               ri.workspaceId === r.workspaceId,
           ),
         })),
-      )
-      .catch((err) => {
-        log.error("Error inserting resources", { error: err });
-        throw err;
-      });
+      );
 
     await Promise.all([
       upsertResourceMetadata(tx, resources),
