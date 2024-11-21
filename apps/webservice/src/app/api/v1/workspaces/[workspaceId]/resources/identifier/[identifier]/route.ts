@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { and, eq, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { deleteResources } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "~/app/api/v1/auth";
@@ -14,11 +15,11 @@ export const GET = request()
     authz(async ({ can, extra }) => {
       const { workspaceId, identifier } = extra;
 
+      // we don't check deletedAt as we may be querying for soft-deleted resources
       const resource = await db.query.resource.findFirst({
         where: and(
           eq(schema.resource.workspaceId, workspaceId),
           eq(schema.resource.identifier, identifier),
-          isNull(schema.resource.deletedAt),
         ),
       });
 
@@ -30,11 +31,11 @@ export const GET = request()
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
     async (_, { params }) => {
+      // we don't check deletedAt as we may be querying for soft-deleted resources
       const data = await db.query.resource.findFirst({
         where: and(
           eq(schema.resource.workspaceId, params.workspaceId),
           eq(schema.resource.identifier, params.identifier),
-          isNull(schema.resource.deletedAt),
         ),
         with: {
           metadata: true,
@@ -95,9 +96,7 @@ export const DELETE = request()
         );
       }
 
-      await db
-        .delete(schema.resource)
-        .where(eq(schema.resource.id, resource.id));
+      await deleteResources(db, [resource]);
 
       return NextResponse.json({ success: true });
     },

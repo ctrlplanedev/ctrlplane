@@ -22,10 +22,9 @@ export const GET = request()
     }),
   )
   .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
-    const isResource = eq(schema.resource.id, params.resourceId);
-    const isNotDeleted = isNull(schema.resource.deletedAt);
+    // we don't check deletedAt as we may be querying for soft-deleted resources
     const data = await db.query.resource.findFirst({
-      where: and(isResource, isNotDeleted),
+      where: eq(schema.resource.id, params.resourceId),
       with: { metadata: true, variables: true, provider: true },
     });
 

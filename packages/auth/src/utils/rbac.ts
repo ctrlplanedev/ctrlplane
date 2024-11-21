@@ -197,10 +197,8 @@ const getResourceScopes = async (id: string) => {
     .select()
     .from(workspace)
     .innerJoin(resource, eq(resource.workspaceId, workspace.id))
-    .where(and(eq(resource.id, id), isNull(resource.deletedAt)))
-    .then(takeFirstOrNull);
-
-  if (result == null) return [];
+    .where(eq(resource.id, id))
+    .then(takeFirst);
 
   return [
     { type: "resource" as const, id: result.resource.id },
