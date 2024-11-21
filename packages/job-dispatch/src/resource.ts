@@ -256,6 +256,10 @@ const upsertResourceMetadata = async (
       .map((metadata) => metadata.resourceId),
   );
 
+  log.info("resourcesWithAddedMetadata", { resourcesWithAddedMetadata });
+  log.info("resourcesWithUpdatedMetadata", { resourcesWithUpdatedMetadata });
+  log.info("resourcesWithDeletedMetadata", { resourcesWithDeletedMetadata });
+
   const changedResources = new Set([
     ...resourcesWithAddedMetadata,
     ...resourcesWithUpdatedMetadata,
@@ -310,6 +314,10 @@ export const upsertResources = async (
     throw new Error("All resources must belong to the same workspace");
   }
 
+  log.info("upsertResources", {
+    resourcesToInsert: resourcesToInsert.map((r) => r.identifier),
+  });
+
   try {
     // Get existing resources from the database, grouped by providerId.
     // - For resources without a providerId, look them up by workspaceId and
@@ -345,6 +353,10 @@ export const upsertResources = async (
     const resourcesBeforeInsert = await Promise.all(
       resourcesBeforeInsertPromises,
     ).then((r) => r.flat());
+
+    log.info("resourcesBeforeInsert", {
+      resourcesBeforeInsert: resourcesBeforeInsert.map((r) => r.identifier),
+    });
 
     const resources = await tx
       .insert(resource)
@@ -386,10 +398,13 @@ export const upsertResources = async (
       ...Array.from(changedResourcesVariables),
     ]);
 
+    log.info("changedResourceIds", { changedResourceIds });
+
     const newResources = resources.filter(
       (r) =>
         !resourcesBeforeInsert.some((er) => er.identifier === r.identifier),
     );
+    log.info("new resources", { newResources });
     for (const resource of newResources) changedResourceIds.add(resource.id);
 
     log.info("new resources and providerId", {
