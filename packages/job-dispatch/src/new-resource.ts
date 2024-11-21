@@ -3,7 +3,6 @@ import { isPresent } from "ts-is-present";
 
 import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
@@ -32,15 +31,12 @@ export async function dispatchJobsForNewResources(
   });
   if (releaseChannels == null) return;
 
-  logger.info("releaseChannels", { releaseChannels });
-
   const envReleaseChannels = releaseChannels.releaseChannels;
   const policyReleaseChannels =
     releaseChannels.policy?.environmentPolicyReleaseChannels ?? [];
   const { deployments } = releaseChannels.system;
 
   const releasePromises = deployments.map(async (deployment) => {
-    logger.info("finding release for deployment", { deployment });
     const envReleaseChannel = envReleaseChannels.find(
       (erc) => erc.deploymentId === deployment.id,
     );
@@ -51,7 +47,6 @@ export async function dispatchJobsForNewResources(
       envReleaseChannel?.releaseChannel ??
       policyReleaseChannel?.releaseChannel ??
       {};
-    logger.info("releaseFilter", { releaseFilter });
     return db
       .select()
       .from(SCHEMA.release)
@@ -68,7 +63,6 @@ export async function dispatchJobsForNewResources(
   const releases = await Promise.all(releasePromises).then((rows) =>
     rows.filter(isPresent),
   );
-  logger.info("releases found for new resources", { releases });
   if (releases.length === 0) return;
 
   const releaseJobTriggers = await createReleaseJobTriggers(db, "new_resource")

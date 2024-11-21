@@ -54,8 +54,6 @@ const dispatchChangedResources = async (
       ),
     );
 
-  log.info("workspaceEnvs", { workspaceEnvs });
-
   for (const env of workspaceEnvs) {
     db.select()
       .from(resource)
@@ -67,7 +65,6 @@ const dispatchChangedResources = async (
         ),
       )
       .then((tgs) => {
-        log.info("tgs + env", { tgs, env });
         if (tgs.length === 0) return;
         dispatchJobsForNewResources(
           db,
@@ -323,7 +320,6 @@ export const upsertResources = async (
     });
     const resourcesBeforeInsertPromises = _.chain(resourcesToInsert)
       .groupBy((r) => r.providerId)
-      .filter((r) => r[0]?.providerId != null)
       .map(async (resources) => {
         const providerId = resources[0]?.providerId;
 
