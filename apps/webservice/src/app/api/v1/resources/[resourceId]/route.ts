@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import _ from "lodash";
 import { z } from "zod";
 
-import { eq } from "@ctrlplane/db";
+import { and, eq, isNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
-import { upsertResources } from "@ctrlplane/job-dispatch";
+import { deleteResources, upsertResources } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -22,13 +22,10 @@ export const GET = request()
     }),
   )
   .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
+    // we don't check deletedAt as we may be querying for soft-deleted resources
     const data = await db.query.resource.findFirst({
       where: eq(schema.resource.id, params.resourceId),
-      with: {
-        metadata: true,
-        variables: true,
-        provider: true,
-      },
+      with: { metadata: true, variables: true, provider: true },
     });
 
     if (data == null)
@@ -85,9 +82,10 @@ export const PATCH = request()
     { body: z.infer<typeof patchSchema> },
     { params: { resourceId: string } }
   >(async ({ db, body }, { params }) => {
-    const resource = await db.query.resource.findFirst({
-      where: eq(schema.resource.id, params.resourceId),
-    });
+    const isResource = eq(schema.resource.id, params.resourceId);
+    const isNotDeleted = isNull(schema.resource.deletedAt);
+    const where = and(isResource, isNotDeleted);
+    const resource = await db.query.resource.findFirst({ where });
 
     if (resource == null)
       return NextResponse.json(
@@ -110,9 +108,10 @@ export const DELETE = request()
     ),
   )
   .handle(async ({ db }, { params }: { params: { resourceId: string } }) => {
-    const resource = await db.query.resource.findFirst({
-      where: eq(schema.resource.id, params.resourceId),
-    });
+    const isResource = eq(schema.resource.id, params.resourceId);
+    const isNotDeleted = isNull(schema.resource.deletedAt);
+    const where = and(isResource, isNotDeleted);
+    const resource = await db.query.resource.findFirst({ where });
 
     if (resource == null)
       return NextResponse.json(
@@ -120,9 +119,6 @@ export const DELETE = request()
         { status: 404 },
       );
 
-    await db
-      .delete(schema.resource)
-      .where(eq(schema.resource.id, params.resourceId));
-
+    await deleteResources(db, [resource]);
     return NextResponse.json({ success: true });
   });

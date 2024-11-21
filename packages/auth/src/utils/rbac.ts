@@ -1,6 +1,13 @@
 import type { EntityType, ScopeType } from "@ctrlplane/db/schema";
 
-import { and, eq, inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  isNull,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -185,7 +192,7 @@ const getTargetMetadataGroupScopes = async (id: string) => {
   ];
 };
 
-const getTargetScopes = async (id: string) => {
+const getResourceScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
@@ -347,7 +354,7 @@ const getJobScopes = async (id: string) => {
     .innerJoin(deployment, eq(release.deploymentId, deployment.id))
     .innerJoin(system, eq(deployment.systemId, system.id))
     .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-    .where(eq(job.id, id))
+    .where(and(eq(job.id, id), isNull(resource.deletedAt)))
     .then(takeFirstOrNull);
 
   if (result == null) return [];
@@ -369,7 +376,7 @@ export const scopeHandlers: Record<
   ScopeType,
   (id: string) => Promise<Array<Scope>>
 > = {
-  resource: getTargetScopes,
+  resource: getResourceScopes,
   resourceView: getTargetViewScopes,
   resourceProvider: getTargetProviderScopes,
   deployment: getDeploymentScopes,

@@ -1,7 +1,15 @@
 import ms from "ms";
 import { z } from "zod";
 
-import { eq, inArray, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  isNull,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   createResourceProvider,
   createResourceProviderGoogle,
@@ -43,9 +51,12 @@ export const resourceProviderRouter = createTRPCRouter({
         })
         .from(resource)
         .where(
-          inArray(
-            resource.providerId,
-            providers.map((p) => p.resource_provider.id),
+          and(
+            inArray(
+              resource.providerId,
+              providers.map((p) => p.resource_provider.id),
+            ),
+            isNull(resource.deletedAt),
           ),
         )
         .groupBy(resource.providerId);
@@ -59,9 +70,12 @@ export const resourceProviderRouter = createTRPCRouter({
         })
         .from(resource)
         .where(
-          inArray(
-            resource.providerId,
-            providers.map((p) => p.resource_provider.id),
+          and(
+            inArray(
+              resource.providerId,
+              providers.map((p) => p.resource_provider.id),
+            ),
+            isNull(resource.deletedAt),
           ),
         )
         .groupBy(resource.providerId, resource.kind, resource.version)
@@ -224,7 +238,8 @@ export const resourceProviderRouter = createTRPCRouter({
       ctx.db.transaction(async (tx) => {
         if (input.deleteResources)
           await tx
-            .delete(resource)
+            .update(resource)
+            .set({ deletedAt: new Date() })
             .where(eq(resource.providerId, input.providerId));
 
         const deletedProvider = await tx

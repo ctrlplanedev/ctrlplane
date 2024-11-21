@@ -11,6 +11,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  isNull,
   not,
   sql,
   takeFirst,
@@ -35,10 +36,17 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { resourceMetadataGroupRouter } from "./target-metadata-group";
 import { resourceProviderRouter } from "./target-provider";
 
+const isNotDeleted = isNull(schema.resource.deletedAt);
+
 const resourceRelations = createTRPCRouter({
   hierarchy: protectedProcedure
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
+      const isResource = eq(schema.resource.id, input);
+      const where = and(isResource, isNotDeleted);
+      const r = await ctx.db.query.resource.findFirst({ where });
+      if (r == null) return null;
+
       const results = await ctx.db.execute(
         sql`
           WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
@@ -96,7 +104,7 @@ const resourceRelations = createTRPCRouter({
       const resources = await ctx.db
         .select()
         .from(schema.resource)
-        .where(inArray(schema.resource.id, allIds));
+        .where(and(inArray(schema.resource.id, allIds), isNotDeleted));
 
       return { relationships, resources };
     }),
@@ -186,14 +194,16 @@ const resourceViews = createTRPCRouter({
           const total = await ctx.db
             .select({ count: count() })
             .from(schema.resource)
-            .where(schema.resourceMatchesMetadata(ctx.db, view.filter))
+            .where(
+              and(
+                schema.resourceMatchesMetadata(ctx.db, view.filter),
+                isNotDeleted,
+              ),
+            )
             .then(takeFirst)
             .then((t) => t.count);
 
-          return {
-            ...view,
-            total,
-          };
+          return { ...view, total };
         }),
       );
     }),
@@ -322,7 +332,7 @@ export const resourceRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db.query.resource
         .findFirst({
-          where: eq(schema.resource.id, input),
+          where: and(eq(schema.resource.id, input), isNotDeleted),
           with: { metadata: true, variables: true, provider: true },
         })
         .then((t) => {
@@ -338,16 +348,13 @@ export const resourceRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const hasFilter = isNotNull(schema.environment.resourceFilter);
       const resource = await ctx.db.query.resource.findFirst({
-        where: eq(schema.resource.id, input),
+        where: and(eq(schema.resource.id, input), isNotDeleted),
         with: {
           provider: { with: { google: true } },
           workspace: {
             with: {
               systems: {
-                with: {
-                  environments: { where: hasFilter },
-                  deployments: true,
-                },
+                with: { environments: { where: hasFilter }, deployments: true },
               },
             },
           },
@@ -363,6 +370,7 @@ export const resourceRouter = createTRPCRouter({
             where: and(
               eq(schema.resource.id, resource.id),
               schema.resourceMatchesMetadata(ctx.db, e.resourceFilter),
+              isNotDeleted,
             ),
           });
 
@@ -428,7 +436,11 @@ export const resourceRouter = createTRPCRouter({
           ctx.db,
           input.filter,
         );
-        const checks = [workspaceIdCheck, resourceConditions].filter(isPresent);
+        const checks = [
+          workspaceIdCheck,
+          resourceConditions,
+          isNotDeleted,
+        ].filter(isPresent);
 
         const properties = {
           kind: schema.resource.kind,
@@ -524,9 +536,10 @@ export const resourceRouter = createTRPCRouter({
         const updatedResource = await tx
           .update(schema.resource)
           .set(data)
-          .where(eq(schema.resource.id, id))
+          .where(and(eq(schema.resource.id, id), isNotDeleted))
           .returning()
-          .then(takeFirst);
+          .then(takeFirstOrNull);
+        if (updatedResource == null) return null;
 
         const metadataEntries = Object.entries(data.metadata).map(
           ([key, value]) => ({
@@ -579,7 +592,9 @@ export const resourceRouter = createTRPCRouter({
     .input(z.array(z.string().uuid()))
     .mutation(async ({ ctx, input }) =>
       ctx.db.query.resource
-        .findMany({ where: inArray(schema.resource.id, input) })
+        .findMany({
+          where: and(inArray(schema.resource.id, input), isNotDeleted),
+        })
         .then((resources) => deleteResources(ctx.db, resources)),
     ),
 
@@ -599,7 +614,7 @@ export const resourceRouter = createTRPCRouter({
           schema.resourceMetadata,
           eq(schema.resourceMetadata.resourceId, schema.resource.id),
         )
-        .where(eq(schema.resource.workspaceId, input))
+        .where(and(eq(schema.resource.workspaceId, input), isNotDeleted))
         .then((r) => r.map((row) => row.key)),
     ),
 
@@ -615,7 +630,7 @@ export const resourceRouter = createTRPCRouter({
       ctx.db
         .update(schema.resource)
         .set({ lockedAt: new Date() })
-        .where(eq(schema.resource.id, input))
+        .where(and(eq(schema.resource.id, input), isNotDeleted))
         .returning()
         .then(takeFirst),
     ),
@@ -632,7 +647,7 @@ export const resourceRouter = createTRPCRouter({
       ctx.db
         .update(schema.resource)
         .set({ lockedAt: null })
-        .where(eq(schema.resource.id, input))
+        .where(and(eq(schema.resource.id, input), isNotDeleted))
         .returning()
         .then(takeFirst),
     ),
@@ -645,8 +660,13 @@ export const resourceRouter = createTRPCRouter({
           .perform(Permission.ResourceUpdate)
           .on({ type: "resource", id: input }),
     })
-    .mutation(({ ctx, input }) =>
-      createReleaseJobTriggers(ctx.db, "redeploy")
+    .mutation(async ({ ctx, input }) => {
+      const resource = await ctx.db.query.resource.findFirst({
+        where: and(eq(schema.resource.id, input), isNotDeleted),
+      });
+      if (resource == null) return null;
+
+      return createReleaseJobTriggers(ctx.db, "redeploy")
         .causedById(ctx.session.user.id)
         .resources([input])
         .filter(isPassingReleaseStringCheckPolicy)
@@ -659,6 +679,6 @@ export const resourceRouter = createTRPCRouter({
             .filter(isPassingAllPoliciesExceptNewerThanLastActive)
             .then(cancelOldReleaseJobTriggersOnJobDispatch)
             .dispatch(),
-        ),
-    ),
+        );
+    }),
 });

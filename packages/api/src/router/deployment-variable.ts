@@ -9,6 +9,7 @@ import {
   asc,
   eq,
   isNotNull,
+  isNull,
   ne,
   sql,
   takeFirst,
@@ -214,11 +215,17 @@ const valueRouter = createTRPCRouter({
       };
 
       const oldTargets = await ctx.db.query.resource.findMany({
-        where: resourceMatchesMetadata(ctx.db, oldTargetFilter),
+        where: and(
+          resourceMatchesMetadata(ctx.db, oldTargetFilter),
+          isNull(resource.deletedAt),
+        ),
       });
 
       const newTargets = await ctx.db.query.resource.findMany({
-        where: resourceMatchesMetadata(ctx.db, newTargetFilter),
+        where: and(
+          resourceMatchesMetadata(ctx.db, newTargetFilter),
+          isNull(resource.deletedAt),
+        ),
       });
 
       const oldTargetIds = new Set(oldTargets.map((t) => t.id));
@@ -299,7 +306,6 @@ export const deploymentVariableRouter = createTRPCRouter({
       const deploymentVariables = await ctx.db
         .select()
         .from(resource)
-        .where(eq(resource.id, input))
         .innerJoin(system, eq(resource.workspaceId, system.workspaceId))
         .innerJoin(deployment, eq(deployment.systemId, system.id))
         .innerJoin(
@@ -310,6 +316,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           deploymentVariableValue,
           eq(deploymentVariableValue.variableId, deploymentVariable.id),
         )
+        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
         .then((rows) =>
           _.chain(rows)
             .groupBy((r) => r.deployment_variable.id)
@@ -331,6 +338,7 @@ export const deploymentVariableRouter = createTRPCRouter({
             .where(
               and(
                 eq(resource.id, input),
+                isNull(resource.deletedAt),
                 resourceMatchesMetadata(ctx.db, targetFilter),
               ),
             )

@@ -8,6 +8,7 @@ import {
   desc,
   eq,
   inArray,
+  isNull,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -104,7 +105,13 @@ export const releaseRouter = createTRPCRouter({
           .select()
           .from(releaseJobTrigger)
           .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
+          .innerJoin(
+            resource,
+            and(
+              eq(releaseJobTrigger.resourceId, resource.id),
+              isNull(resource.deletedAt),
+            ),
+          )
           .where(
             inArray(
               releaseJobTrigger.releaseId,

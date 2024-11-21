@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -83,7 +83,7 @@ export const GET = request()
       .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
       .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
       .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-      .where(eq(job.id, params.jobId))
+      .where(and(eq(job.id, params.jobId), isNull(resource.deletedAt)))
       .then(takeFirstOrNull);
 
     if (row == null)

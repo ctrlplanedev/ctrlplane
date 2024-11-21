@@ -2,7 +2,7 @@ import type { HookEvent } from "@ctrlplane/validators/events";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import { eq, isNotNull } from "@ctrlplane/db";
+import { and, eq, isNotNull, isNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
@@ -31,7 +31,10 @@ export const getEventsForDeploymentDeleted = async (
   };
 
   const resources = await db.query.resource.findMany({
-    where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
+    where: and(
+      SCHEMA.resourceMatchesMetadata(db, systemFilter),
+      isNull(SCHEMA.resource.deletedAt),
+    ),
   });
 
   return resources.map((resource) => ({

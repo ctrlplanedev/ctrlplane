@@ -10,6 +10,7 @@ import {
   eq,
   inArray,
   isNotNull,
+  isNull,
   ne,
   not,
   takeFirst,
@@ -170,9 +171,12 @@ export const environmentRouter = createTRPCRouter({
                   .select()
                   .from(resource)
                   .where(
-                    resourceMatchesMetadata(
-                      ctx.db,
-                      e.environment.resourceFilter,
+                    and(
+                      isNull(resource.deletedAt),
+                      resourceMatchesMetadata(
+                        ctx.db,
+                        e.environment.resourceFilter,
+                      ),
                     ),
                   )
               : [],
@@ -269,6 +273,7 @@ export const environmentRouter = createTRPCRouter({
             .where(
               and(
                 eq(resource.workspaceId, oldEnv.system.workspaceId),
+                isNull(resource.deletedAt),
                 newQuery,
                 oldQuery && not(oldQuery),
               ),
@@ -277,6 +282,7 @@ export const environmentRouter = createTRPCRouter({
           const removedResources = await ctx.db.query.resource.findMany({
             where: and(
               eq(resource.workspaceId, oldEnv.system.workspaceId),
+              isNull(resource.deletedAt),
               oldQuery,
               newQuery && not(newQuery),
             ),
@@ -299,10 +305,11 @@ export const environmentRouter = createTRPCRouter({
               otherEnvFilters.length > 0
                 ? resourceMatchesMetadata(ctx.db, sysFilter)
                 : undefined;
+            const isNotDeleted = isNull(resource.deletedAt);
 
             const removedFromSystemResources =
               await ctx.db.query.resource.findMany({
-                where: and(isRemovedFromEnv, isRemovedFromSystem),
+                where: and(isRemovedFromEnv, isRemovedFromSystem, isNotDeleted),
               });
 
             const events = removedFromSystemResources.flatMap((resource) =>
