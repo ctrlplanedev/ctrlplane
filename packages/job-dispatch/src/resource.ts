@@ -380,9 +380,19 @@ export const upsertResources = async (
       resourcesBeforeInsertPromises,
     ).then((r) => r.flat());
 
+    log.info("resourcesBeforeInsert", {
+      resourcesBeforeInsert: resourcesBeforeInsert.map((r) => r.identifier),
+    });
+
     const deletedResourcesBeforeInsert = await Promise.all(
       deletedResourcesBeforeInsertPromises,
     ).then((r) => r.flat());
+
+    log.info("deletedResourcesBeforeInsert", {
+      deletedResourcesBeforeInsert: deletedResourcesBeforeInsert.map(
+        (r) => r.identifier,
+      ),
+    });
 
     const resources = await tx
       .insert(resource)
