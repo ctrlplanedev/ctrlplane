@@ -38,6 +38,14 @@ const getExistingResourcesForProvider = (db: Tx, providerId: string) =>
     .from(resource)
     .where(and(eq(resource.providerId, providerId), isNotDeleted));
 
+const getDeletedResourcesForProvider = (db: Tx, providerId: string) =>
+  db
+    .select()
+    .from(resource)
+    .where(
+      and(eq(resource.providerId, providerId), isNotNull(resource.deletedAt)),
+    );
+
 const dispatchChangedResources = async (
   db: Tx,
   workspaceId: string,
@@ -317,8 +325,6 @@ export const upsertResources = async (
   log.info("upsertResources", {
     resourcesToInsert: resourcesToInsert.map((r) => r.identifier),
   });
-  if (resourcesToInsert.length < 5)
-    log.info("resourcesToInsert", { resourcesToInsert });
 
   try {
     // Get existing resources from the database, grouped by providerId.
@@ -352,13 +358,31 @@ export const upsertResources = async (
       })
       .value();
 
+    const deletedResourcesBeforeInsertPromises = _.chain(resourcesToInsert)
+      .groupBy((r) => r.providerId)
+      .map(async (resources) => {
+        const providerId = resources[0]?.providerId;
+        return providerId == null
+          ? db
+              .select()
+              .from(resource)
+              .where(
+                and(
+                  eq(resource.workspaceId, workspaceId),
+                  isNotNull(resource.deletedAt),
+                ),
+              )
+          : getDeletedResourcesForProvider(tx, providerId);
+      })
+      .value();
+
     const resourcesBeforeInsert = await Promise.all(
       resourcesBeforeInsertPromises,
     ).then((r) => r.flat());
 
-    log.info("resourcesBeforeInsert", {
-      resourcesBeforeInsert: resourcesBeforeInsert.map((r) => r.identifier),
-    });
+    const deletedResourcesBeforeInsert = await Promise.all(
+      deletedResourcesBeforeInsertPromises,
+    ).then((r) => r.flat());
 
     const resources = await tx
       .insert(resource)
@@ -409,12 +433,21 @@ export const upsertResources = async (
     log.info("new resources", { newResources });
     for (const resource of newResources) changedResourceIds.add(resource.id);
 
+    const previouslySoftDeletedResources = resources.filter((r) =>
+      deletedResourcesBeforeInsert.some((er) => er.identifier === r.identifier),
+    );
+    for (const resource of previouslySoftDeletedResources)
+      changedResourceIds.add(resource.id);
+    log.info("previouslySoftDeletedResources", {
+      previouslySoftDeletedResources,
+    });
+
     log.info("new resources and providerId", {
       providerId: resourcesToInsert[0]?.providerId,
       newResources,
     });
 
-    if (newResources.length > 0)
+    if (changedResourceIds.size > 0)
       await dispatchChangedResources(
         db,
         workspaceId,
