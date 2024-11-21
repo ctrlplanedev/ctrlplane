@@ -273,6 +273,7 @@ export const upsertResources = async (
             "version",
             "kind",
             "config",
+            "providerId",
           ]),
           updatedAt: new Date(),
           deletedAt: null,
