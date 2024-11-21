@@ -1,21 +1,23 @@
 import { z } from "zod";
 
-import type { TargetDeleted, TargetRemoved } from "./target.js";
-import { targetDeleted, targetRemoved } from "./target.js";
+import type { RunbookVariable } from "./runbook-variable.js";
+import {
+  DeploymentResourceRemovedVariables,
+  resourceRemoved,
+} from "./target.js";
 
 export * from "./target.js";
 
-export const hookEvent = z.union([targetRemoved, targetDeleted]);
+export const hookEvent = resourceRemoved;
 export type HookEvent = z.infer<typeof hookEvent>;
 
-// typeguards
-export const isTargetRemoved = (event: HookEvent): event is TargetRemoved =>
-  event.action === "deployment.target.removed";
-export const isTargetDeleted = (event: HookEvent): event is TargetDeleted =>
-  event.action === "deployment.target.deleted";
+export enum HookAction {
+  DeploymentResourceRemoved = "deployment.resource.removed",
+}
 
-// action
-export const hookActionsList = hookEvent.options.map(
-  (schema) => schema.shape.action.value,
-);
-export const hookActions = z.enum(hookActionsList as [string, ...string[]]);
+export const hookActionsList = Object.values(HookAction);
+export const hookActions = z.nativeEnum(HookAction);
+
+export const RunhookVariables: Record<HookAction, Array<RunbookVariable>> = {
+  [HookAction.DeploymentResourceRemoved]: DeploymentResourceRemovedVariables,
+};

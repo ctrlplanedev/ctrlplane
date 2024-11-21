@@ -28,6 +28,8 @@ import {
   releaseMatchesCondition,
   resource,
   resourceMatchesMetadata,
+  runbook,
+  runbookVariable,
   runhook,
   system,
   updateDeployment,
@@ -35,7 +37,10 @@ import {
   updateReleaseChannel,
   workspace,
 } from "@ctrlplane/db/schema";
-import { getEventsForDeploymentDeleted, handleEvent } from "@ctrlplane/events";
+import {
+  getEventsForDeploymentDeleted,
+  handleEvent,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -174,10 +179,17 @@ const hookRouter = createTRPCRouter({
         }),
     })
     .query(({ ctx, input }) =>
-      ctx.db.query.hook.findMany({
-        where: and(eq(hook.scopeId, input), eq(hook.scopeType, "deployment")),
-        with: { runhooks: { with: { runbook: true } } },
-      }),
+      ctx.db.query.hook
+        .findMany({
+          where: and(eq(hook.scopeId, input), eq(hook.scopeType, "deployment")),
+          with: { runhooks: { with: { runbook: true } } },
+        })
+        .then((rows) =>
+          rows.map((row) => ({
+            ...row,
+            runhook: row.runhooks[0] ?? null,
+          })),
+        ),
     ),
 
   byId: protectedProcedure
@@ -211,22 +223,43 @@ const hookRouter = createTRPCRouter({
     })
     .mutation(async ({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
+        const dep = await tx
+          .select()
+          .from(deployment)
+          .where(eq(deployment.id, input.scopeId))
+          .then(takeFirst);
         const h = await tx
           .insert(hook)
           .values(input)
           .returning()
           .then(takeFirst);
-        if (input.runbookIds.length === 0) return h;
-        const rhInserts = input.runbookIds.map((id) => ({
-          hookId: h.id,
-          runbookId: id,
-        }));
-        const runhooks = await tx
-          .insert(runhook)
-          .values(rhInserts)
+        const { jobAgentId, jobAgentConfig } = input;
+        if (jobAgentId == null || jobAgentConfig == null)
+          return { ...h, runhook: null };
+
+        const rb = await tx
+          .insert(runbook)
+          .values({
+            name: h.name,
+            systemId: dep.systemId,
+            jobAgentId,
+            jobAgentConfig,
+          })
           .returning()
-          .then((r) => r.map((rh) => rh.runbookId));
-        return { ...h, runhooks };
+          .then(takeFirst);
+
+        if (input.variables.length > 0)
+          await tx
+            .insert(runbookVariable)
+            .values(input.variables.map((v) => ({ ...v, runbookId: rb.id })))
+            .returning();
+
+        const rh = await tx
+          .insert(runhook)
+          .values({ hookId: h.id, runbookId: rb.id })
+          .returning()
+          .then(takeFirst);
+        return { ...h, runhook: rh };
       }),
     ),
 
@@ -256,16 +289,51 @@ const hookRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-        if (input.data.runbookIds == null) return h;
+        const dep = await tx
+          .select()
+          .from(deployment)
+          .where(eq(deployment.id, h.scopeId))
+          .then(takeFirst);
 
-        await tx.delete(runhook).where(eq(runhook.hookId, input.id));
-        if (input.data.runbookIds.length === 0) return h;
-        const rhInserts = input.data.runbookIds.map((id) => ({
-          hookId: h.id,
-          runbookId: id,
-        }));
-        const runhooks = await tx.insert(runhook).values(rhInserts).returning();
-        return { ...h, runhooks };
+        const rh = await tx
+          .select()
+          .from(runhook)
+          .where(eq(runhook.hookId, h.id))
+          .then(takeFirstOrNull);
+
+        if (rh != null)
+          await tx.delete(runbook).where(eq(runbook.id, rh.runbookId));
+
+        const { jobAgentId, jobAgentConfig } = input.data;
+        if (jobAgentId == null || jobAgentConfig == null) {
+          return { ...h, runhook: null };
+        }
+
+        const rb = await tx
+          .insert(runbook)
+          .values({
+            name: h.name,
+            systemId: dep.systemId,
+            jobAgentId,
+            jobAgentConfig,
+          })
+          .returning()
+          .then(takeFirst);
+
+        if (input.data.variables != null && input.data.variables.length > 0)
+          await tx
+            .insert(runbookVariable)
+            .values(
+              input.data.variables.map((v) => ({ ...v, runbookId: rb.id })),
+            )
+            .returning();
+
+        const updatedRh = await tx
+          .insert(runhook)
+          .values({ hookId: h.id, runbookId: rb.id })
+          .returning()
+          .then(takeFirst);
+        return { ...h, runhook: updatedRh };
       }),
     ),
 

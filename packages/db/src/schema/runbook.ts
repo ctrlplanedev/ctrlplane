@@ -7,6 +7,7 @@ import { z } from "zod";
 import { runhook } from "./event.js";
 import { jobAgent } from "./job-agent.js";
 import { job } from "./job.js";
+import { runbookVariable } from "./runbook-variables.js";
 import { system } from "./system.js";
 
 export const runbook = pgTable("runbook", {
@@ -34,8 +35,13 @@ export const createRunbook = runbookInsert;
 export const updateRunbook = runbookInsert.partial();
 export type Runbook = InferSelectModel<typeof runbook>;
 
-export const runbookRelations = relations(runbook, ({ many }) => ({
+export const runbookRelations = relations(runbook, ({ many, one }) => ({
   runhooks: many(runhook),
+  jobAgent: one(jobAgent, {
+    fields: [runbook.jobAgentId],
+    references: [jobAgent.id],
+  }),
+  variables: many(runbookVariable),
 }));
 
 export const runbookJobTrigger = pgTable(

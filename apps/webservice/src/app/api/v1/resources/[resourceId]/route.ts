@@ -5,6 +5,7 @@ import { z } from "zod";
 import { eq } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { upsertResources } from "@ctrlplane/job-dispatch";
+import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
@@ -36,10 +37,18 @@ export const GET = request()
         { status: 404 },
       );
 
-    const { metadata, ...resource } = data;
+    const { variables, metadata, ...resource } = data;
+    const variable = Object.fromEntries(
+      variables.map((v) => {
+        const strval = String(v.value);
+        const value = v.sensitive ? variablesAES256().decrypt(strval) : strval;
+        return [v.key, value];
+      }),
+    );
 
     return NextResponse.json({
       ...resource,
+      variable,
       metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
     });
   });

@@ -7,6 +7,7 @@ import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
 import {
   boolean,
+  foreignKey,
   json,
   jsonb,
   pgEnum,
@@ -31,6 +32,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
+import { deployment } from "./deployment.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -52,6 +54,9 @@ export const resource = pgTable(
       .notNull()
       .default("{}")
       .$type<Record<string, any>>(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
     lockedAt: timestamp("locked_at", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true }).$onUpdate(
       () => new Date(),
@@ -66,6 +71,10 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
   provider: one(resourceProvider, {
     fields: [resource.providerId],
     references: [resourceProvider.id],
+  }),
+  workspace: one(workspace, {
+    fields: [resource.workspaceId],
+    references: [workspace.id],
   }),
 }));
 
@@ -262,6 +271,27 @@ export const updateResourceRelationship = createResourceRelationship.partial();
 export type ResourceRelationship = InferSelectModel<
   typeof resourceRelationship
 >;
+
+export const deploymentResourceRelationship = pgTable(
+  "deployment_resource_relationship",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id").notNull(),
+    deploymentId: uuid("deployment_id")
+      .references(() => deployment.id, { onDelete: "cascade" })
+      .notNull(),
+    resourceIdentifier: text("resource_identifier").notNull(),
+  },
+  (t) => ({
+    // Must use composite foreign key (workspace_id, identifier) instead of simple FK to identifier, as identifiers
+    // are only unique per workspace. Simple FK would fail with "no unique constraint" error
+    resourceFk: foreignKey({
+      columns: [t.resourceIdentifier, t.workspaceId],
+      foreignColumns: [resource.identifier, resource.workspaceId],
+    }).onDelete("cascade"),
+    uniq: uniqueIndex().on(t.workspaceId, t.resourceIdentifier),
+  }),
+);
 
 export const resourceVariable = pgTable(
   "resource_variable",

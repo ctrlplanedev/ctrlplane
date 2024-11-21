@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -8,6 +9,8 @@ import {
   buildConflictUpdateColumns,
   eq,
   inArray,
+  isNotNull,
+  ne,
   not,
   takeFirst,
 } from "@ctrlplane/db";
@@ -23,9 +26,16 @@ import {
   system,
   updateEnvironment,
 } from "@ctrlplane/db/schema";
-import { getEventsForEnvironmentDeleted, handleEvent } from "@ctrlplane/events";
-import { dispatchJobsForNewResources } from "@ctrlplane/job-dispatch";
+import {
+  dispatchJobsForNewResources,
+  getEventsForEnvironmentDeleted,
+  handleEvent,
+} from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { policyRouter } from "./environment-policy";
@@ -234,20 +244,77 @@ export const environmentRouter = createTRPCRouter({
         );
 
         if (hasResourceFiltersChanged) {
+          const isOtherEnv = and(
+            isNotNull(environment.resourceFilter),
+            ne(environment.id, input.id),
+          );
+          const sys = await ctx.db.query.system.findFirst({
+            where: eq(system.id, oldEnv.system.id),
+            with: { environments: { where: isOtherEnv }, deployments: true },
+          });
+
+          const otherEnvFilters =
+            sys?.environments.map((e) => e.resourceFilter).filter(isPresent) ??
+            [];
+
           const oldQuery = resourceMatchesMetadata(
             ctx.db,
             oldEnv.environment.resourceFilter,
           );
+          const newQuery = resourceMatchesMetadata(ctx.db, resourceFilter);
+
           const newResources = await ctx.db
             .select({ id: resource.id })
             .from(resource)
             .where(
               and(
                 eq(resource.workspaceId, oldEnv.system.workspaceId),
-                resourceMatchesMetadata(ctx.db, resourceFilter),
+                newQuery,
                 oldQuery && not(oldQuery),
               ),
             );
+
+          const removedResources = await ctx.db.query.resource.findMany({
+            where: and(
+              eq(resource.workspaceId, oldEnv.system.workspaceId),
+              oldQuery,
+              newQuery && not(newQuery),
+            ),
+          });
+
+          if (removedResources.length > 0) {
+            const sysFilter: ResourceCondition = {
+              type: FilterType.Comparison,
+              operator: ComparisonOperator.Or,
+              not: true,
+              conditions: otherEnvFilters,
+            };
+
+            const isRemovedFromEnv = inArray(
+              resource.id,
+              removedResources.map((r) => r.id),
+            );
+
+            const isRemovedFromSystem =
+              otherEnvFilters.length > 0
+                ? resourceMatchesMetadata(ctx.db, sysFilter)
+                : undefined;
+
+            const removedFromSystemResources =
+              await ctx.db.query.resource.findMany({
+                where: and(isRemovedFromEnv, isRemovedFromSystem),
+              });
+
+            const events = removedFromSystemResources.flatMap((resource) =>
+              (sys?.deployments ?? []).map((deployment) => ({
+                action: "deployment.resource.removed" as const,
+                payload: { deployment, resource },
+              })),
+            );
+
+            const handleEventPromises = events.map(handleEvent);
+            await Promise.allSettled(handleEventPromises);
+          }
 
           if (newResources.length > 0) {
             await dispatchJobsForNewResources(

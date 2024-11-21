@@ -79,10 +79,10 @@ export const openapi: Swagger.SwaggerV3 = {
                         type: "string",
                       },
                     },
-                    variables: {
-                      type: "array",
-                      items: {
-                        $ref: "#/components/schemas/Variable",
+                    variable: {
+                      type: "object",
+                      additionalProperties: {
+                        type: "string",
                       },
                     },
                   },
@@ -96,6 +96,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     "workspaceId",
                     "updatedAt",
                     "metadata",
+                    "variable",
                   ],
                 },
               },

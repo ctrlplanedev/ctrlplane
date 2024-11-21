@@ -1,6 +1,8 @@
 import ms from "ms";
 
+import { eq } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { deleteResources } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 
@@ -26,9 +28,10 @@ setInterval(() => {
 
       agent.socket.close(1000, "Agent connection timed out");
       agents.delete(agentId);
-      deleteResources(db, [agentId]).then(() => {
-        logger.info("Deleted stale agent resource", { agentId });
-      });
+      db.query.resource
+        .findFirst({ where: eq(SCHEMA.resource.id, agentId) })
+        .then((resource) => resource && deleteResources(db, [resource]))
+        .then(() => logger.info("Deleted stale agent resource", { agentId }));
     }
   }
 }, ms("1m"));

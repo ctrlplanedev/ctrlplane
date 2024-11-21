@@ -1,9 +1,17 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
-import { jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+import { createRunbookVariable } from "./runbook-variables.js";
 import { runbook } from "./runbook.js";
 
 export const event = pgTable("event", {
@@ -25,7 +33,11 @@ export const hook = pgTable("hook", {
 
 export const createHook = createInsertSchema(hook)
   .omit({ id: true })
-  .extend({ runbookIds: z.array(z.string().uuid()) });
+  .extend({
+    jobAgentId: z.string().optional(),
+    jobAgentConfig: z.record(z.any()).optional(),
+    variables: z.array(createRunbookVariable),
+  });
 
 export const updateHook = createHook.partial();
 export type Hook = InferSelectModel<typeof hook>;
@@ -33,15 +45,19 @@ export const hookRelations = relations(hook, ({ many }) => ({
   runhooks: many(runhook),
 }));
 
-export const runhook = pgTable("runhook", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  hookId: uuid("hook_id")
-    .notNull()
-    .references(() => hook.id, { onDelete: "cascade" }),
-  runbookId: uuid("runbook_id")
-    .notNull()
-    .references(() => runbook.id, { onDelete: "cascade" }),
-});
+export const runhook = pgTable(
+  "runhook",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    hookId: uuid("hook_id")
+      .notNull()
+      .references(() => hook.id, { onDelete: "cascade" }),
+    runbookId: uuid("runbook_id")
+      .notNull()
+      .references(() => runbook.id, { onDelete: "cascade" }),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.hookId, t.runbookId) }),
+);
 
 export const runhookRelations = relations(runhook, ({ one }) => ({
   hook: one(hook, { fields: [runhook.hookId], references: [hook.id] }),

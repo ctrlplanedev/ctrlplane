@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   deployment,
@@ -63,14 +63,14 @@ const mapApprovalResponse = (row: ApprovalJoinResult | null) =>
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra }) => {
+    authz(({ can, extra: { params } }) => {
       return can
         .perform(Permission.JobGet)
-        .on({ type: "job", id: extra.params.jobId });
+        .on({ type: "job", id: params.jobId });
     }),
   )
-  .handle(async ({ db }, { params }: { params: { jobId: string } }) => {
-    const je = await db
+  .handle<object, { params: { jobId: string } }>(async ({ db }, { params }) => {
+    const row = await db
       .select()
       .from(job)
       .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
@@ -84,22 +84,29 @@ export const GET = request()
       .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
       .leftJoin(deployment, eq(deployment.id, release.deploymentId))
       .where(eq(job.id, params.jobId))
-      .then(takeFirst)
-      .then((row) => ({
-        job: row.job,
-        runbook: row.runbook,
-        environment: row.environment,
-        resource: row.resource,
-        deployment: row.deployment,
-        release: row.release,
-      }));
+      .then(takeFirstOrNull);
+
+    if (row == null)
+      return NextResponse.json(
+        { error: "Job execution not found." },
+        { status: 404 },
+      );
+
+    const je = {
+      job: row.job,
+      runbook: row.runbook,
+      environment: row.environment,
+      resource: row.resource,
+      deployment: row.deployment,
+      release: row.release,
+    };
 
     const policyId = je.environment?.policyId;
 
     const approval =
       je.release?.id && policyId
         ? await getApprovalDetails(je.release.id, policyId)
-        : null;
+        : undefined;
 
     const jobVariableRows = await db
       .select()
@@ -114,22 +121,18 @@ export const GET = request()
       }),
     );
 
-    const jobResourceMetadataRows = await db
+    const jobWithVariables = { ...je, variables };
+    if (je.resource == null) return NextResponse.json(jobWithVariables);
+
+    const metadata = await db
       .select()
       .from(resourceMetadata)
-      .where(eq(resourceMetadata.resourceId, je.resource?.id ?? ""));
-
-    const metadata = Object.fromEntries(
-      jobResourceMetadataRows.map((m) => [m.key, m.value]),
-    );
-
-    const resourceWithMetadata = { ...je.resource, metadata };
+      .where(eq(resourceMetadata.resourceId, je.resource.id))
+      .then((rows) => Object.fromEntries(rows.map((m) => [m.key, m.value])));
 
     return NextResponse.json({
-      ...je.job,
-      ...je,
-      variables,
-      resource: resourceWithMetadata,
+      ...jobWithVariables,
+      resource: { ...jobWithVariables.resource, metadata },
       approval,
     });
   });

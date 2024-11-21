@@ -11,11 +11,13 @@ export const env = createEnv({
       .enum(["development", "production", "test"])
       .default("development"),
   },
+
   /**
    * Specify your server-side environment variables schema here.
    * This way you can ensure the app isn't built with invalid env vars.
    */
   server: {
+    OPENAI_API_KEY: z.string().optional(),
     GITHUB_URL: z.string().optional(),
     GITHUB_BOT_NAME: z.string().optional(),
     GITHUB_BOT_CLIENT_ID: z.string().optional(),
@@ -25,6 +27,8 @@ export const env = createEnv({
     GITHUB_WEBHOOK_SECRET: z.string().optional(),
     BASE_URL: z.string(),
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
+    OPENREPLAY_PROJECT_KEY: z.string().optional(),
+    OPENREPLAY_INGEST_POINT: z.string().optional(),
   },
 
   /**

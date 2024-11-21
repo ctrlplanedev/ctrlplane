@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
 import { eq, takeFirst } from "@ctrlplane/db";
@@ -37,28 +36,14 @@ export const runbookRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(SCHEMA.runbook)
-        .leftJoin(
-          SCHEMA.runbookVariable,
-          eq(SCHEMA.runbookVariable.runbookId, SCHEMA.runbook.id),
-        )
-        .leftJoin(
-          SCHEMA.jobAgent,
-          eq(SCHEMA.runbook.jobAgentId, SCHEMA.jobAgent.id),
-        )
-        .where(eq(SCHEMA.runbook.systemId, input))
-        .then((rbs) =>
-          _.chain(rbs)
-            .groupBy((rb) => rb.runbook.id)
-            .map((rb) => ({
-              ...rb[0]!.runbook,
-              variables: rb.map((v) => v.runbook_variable).filter(isPresent),
-              jobAgent: rb[0]!.job_agent,
-            }))
-            .value(),
-        ),
+      ctx.db.query.runbook.findMany({
+        where: eq(SCHEMA.runbook.systemId, input),
+        with: {
+          runhooks: { with: { hook: true } },
+          jobAgent: true,
+          variables: true,
+        },
+      }),
     ),
 
   create: protectedProcedure
@@ -101,7 +86,7 @@ export const runbookRouter = createTRPCRouter({
       z.object({
         id: z.string().uuid(),
         data: SCHEMA.updateRunbook.extend({
-          variables: z.array(createRunbookVariable),
+          variables: z.array(createRunbookVariable).optional(),
         }),
       }),
     )
@@ -113,19 +98,32 @@ export const runbookRouter = createTRPCRouter({
           .where(eq(SCHEMA.runbook.id, input.id))
           .returning()
           .then(takeFirst)
-          .then((rb) =>
-            tx
+          .then((rb) => {
+            const vars = input.data.variables;
+            if (vars == null || vars.length === 0) return rb;
+            return tx
               .delete(SCHEMA.runbookVariable)
               .where(eq(SCHEMA.runbookVariable.runbookId, rb.id))
               .then(() =>
-                tx.insert(SCHEMA.runbookVariable).values(
-                  input.data.variables.map((v) => ({
-                    ...v,
-                    runbookId: rb.id,
-                  })),
-                ),
-              ),
-          ),
+                tx
+                  .insert(SCHEMA.runbookVariable)
+                  .values(vars.map((v) => ({ ...v, runbookId: rb.id }))),
+              )
+              .then(() => rb);
+          }),
       ),
+    ),
+
+  delete: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.RunbookDelete).on({
+          type: "runbook",
+          id: input,
+        }),
+    })
+    .mutation(({ ctx, input }) =>
+      ctx.db.delete(SCHEMA.runbook).where(eq(SCHEMA.runbook.id, input)),
     ),
 });

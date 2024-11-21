@@ -7,6 +7,8 @@ import {
   githubOrganization,
   job,
   releaseJobTrigger,
+  runbook,
+  runbookJobTrigger,
   system,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -25,14 +27,17 @@ export const dispatchGithubJob = async (je: Job) => {
     logger.error(
       `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
     );
-    await db.update(job).set({
-      status: JobStatus.InvalidJobAgent,
-      message: `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
-    });
+    await db
+      .update(job)
+      .set({
+        status: JobStatus.InvalidJobAgent,
+        message: `Invalid job agent config for job ${je.id}: ${parsed.error.message}`,
+      })
+      .where(eq(job.id, je.id));
     return;
   }
 
-  const ghOrgResult = await db
+  const releaseGhOrgResult = await db
     .select()
     .from(githubOrganization)
     .innerJoin(workspace, eq(githubOrganization.workspaceId, workspace.id))
@@ -51,23 +56,45 @@ export const dispatchGithubJob = async (je: Job) => {
     )
     .then(takeFirstOrNull);
 
+  const runbookGhOrgResult = await db
+    .select()
+    .from(githubOrganization)
+    .innerJoin(workspace, eq(githubOrganization.workspaceId, workspace.id))
+    .innerJoin(system, eq(system.workspaceId, workspace.id))
+    .innerJoin(runbook, eq(runbook.systemId, system.id))
+    .innerJoin(runbookJobTrigger, eq(runbookJobTrigger.runbookId, runbook.id))
+    .where(
+      and(
+        eq(githubOrganization.installationId, parsed.data.installationId),
+        eq(githubOrganization.organizationName, parsed.data.owner),
+        eq(runbookJobTrigger.jobId, je.id),
+      ),
+    )
+    .then(takeFirstOrNull);
+  const ghOrgResult = releaseGhOrgResult ?? runbookGhOrgResult;
+
   if (ghOrgResult == null) {
-    await db.update(job).set({
-      status: JobStatus.InvalidIntegration,
-      message: `GitHub organization not found for job ${je.id}`,
-    });
+    await db
+      .update(job)
+      .set({
+        status: JobStatus.InvalidIntegration,
+        message: `GitHub organization not found for job ${je.id}`,
+      })
+      .where(eq(job.id, je.id));
     return;
   }
-
   const ghOrg = ghOrgResult.github_organization;
 
   const octokit = getInstallationOctokit(parsed.data.installationId);
   if (octokit == null) {
     logger.error(`GitHub bot not configured for job ${je.id}`);
-    await db.update(job).set({
-      status: JobStatus.InvalidJobAgent,
-      message: "GitHub bot not configured",
-    });
+    await db
+      .update(job)
+      .set({
+        status: JobStatus.InvalidJobAgent,
+        message: "GitHub bot not configured",
+      })
+      .where(eq(job.id, je.id));
     return;
   }
 
@@ -91,9 +118,7 @@ export const dispatchGithubJob = async (je: Job) => {
     repo: parsed.data.repo,
     workflow_id: parsed.data.workflowId,
     ref: ghOrg.branch,
-    inputs: {
-      job_id: je.id,
-    },
+    inputs: { job_id: je.id },
     headers: {
       "X-GitHub-Api-Version": "2022-11-28",
       authorization: `Bearer ${installationToken.token}`,

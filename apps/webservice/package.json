@@ -15,6 +15,7 @@
     "openapi": "ts-node tooling/openapi/merge.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^0.0.72",
     "@ctrlplane/api": "workspace:*",
     "@ctrlplane/auth": "workspace:*",
     "@ctrlplane/db": "workspace:*",
@@ -32,6 +33,7 @@
     "@octokit/rest": "catalog:",
     "@octokit/webhooks": "^13.3.0",
     "@octokit/webhooks-types": "^7.5.1",
+    "@openreplay/tracker": "^14.0.14",
     "@opentelemetry/auto-instrumentations-node": "^0.52.1",
     "@opentelemetry/sdk-node": "^0.54.2",
     "@t3-oss/env-nextjs": "catalog:",
@@ -50,6 +52,7 @@
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
     "add": "^2.0.6",
+    "ai": "^3.4.33",
     "change-case": "^5.4.4",
     "dagre": "^0.8.5",
     "date-fns": "catalog:",

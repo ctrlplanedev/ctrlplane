@@ -1,5 +1,6 @@
 import type { RunbookVariableConfigType } from "@ctrlplane/validators/variables";
 import type { InferSelectModel } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import {
   boolean,
   jsonb,
@@ -40,3 +41,13 @@ export const createRunbookVariable = createInsertSchema(runbookVariable, {
 }).omit({ id: true, runbookId: true });
 export const updateRunbookVariable = createRunbookVariable.partial();
 export type InsertRunbookVariable = z.infer<typeof createRunbookVariable>;
+
+export const runbookVariableRelations = relations(
+  runbookVariable,
+  ({ one }) => ({
+    runbook: one(runbook, {
+      fields: [runbookVariable.runbookId],
+      references: [runbook.id],
+    }),
+  }),
+);

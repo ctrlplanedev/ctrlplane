@@ -22,6 +22,7 @@ import {
 import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
+import { getEventsForResourceDeleted, handleEvent } from "./events/index.js";
 import { dispatchJobsForNewResources } from "./new-resource.js";
 
 const log = logger.child({ label: "upsert-resources" });
@@ -320,10 +321,7 @@ export const upsertResources = async (
     );
 
     if (resourcesToDelete.length > 0) {
-      await deleteResources(
-        tx,
-        resourcesToDelete.map((r) => r.id),
-      ).catch((err) => {
+      await deleteResources(tx, resourcesToDelete).catch((err) => {
         log.error("Error deleting resources", { error: err });
         throw err;
       });
@@ -346,6 +344,12 @@ export const upsertResources = async (
  * @param tx - The transaction to use.
  * @param resourceIds - The ids of the resources to delete.
  */
-export const deleteResources = async (tx: Tx, resourceIds: string[]) => {
+export const deleteResources = async (tx: Tx, resources: Resource[]) => {
+  const eventsPromises = Promise.all(
+    resources.map(getEventsForResourceDeleted),
+  );
+  const events = await eventsPromises.then((res) => res.flat());
+  await Promise.all(events.map(handleEvent));
+  const resourceIds = resources.map((r) => r.id);
   await tx.delete(resource).where(inArray(resource.id, resourceIds));
 };

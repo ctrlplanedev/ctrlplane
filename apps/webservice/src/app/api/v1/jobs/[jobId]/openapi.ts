@@ -9,17 +9,15 @@ export const openapi: Swagger.SwaggerV3 = {
   paths: {
     "/v1/jobs/{jobId}": {
       get: {
-        summary: "Get a job",
+        summary: "Get a Job",
         operationId: "getJob",
         parameters: [
           {
             name: "jobId",
             in: "path",
             required: true,
-            schema: {
-              type: "string",
-            },
-            description: "The execution ID",
+            schema: { type: "string" },
+            description: "The job ID",
           },
         ],
         responses: {
@@ -225,6 +223,22 @@ export const openapi: Swagger.SwaggerV3 = {
                     "variables",
                     "jobAgentConfig",
                   ],
+                },
+              },
+            },
+          },
+          "404": {
+            description: "Not Found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: {
+                      type: "string",
+                      example: "Job not found.",
+                    },
+                  },
                 },
               },
             },
