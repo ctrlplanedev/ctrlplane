@@ -98,7 +98,7 @@ export const POST = request()
         }
 
         await createJobsForNewEnvironment(ctx.db, environment);
-        return NextResponse.json({ environment });
+        return NextResponse.json(environment);
       } catch (error) {
         logger.error("Failed to create environment", { error });
         return NextResponse.json(
