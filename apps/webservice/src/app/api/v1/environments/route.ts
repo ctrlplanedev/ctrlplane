@@ -6,7 +6,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { inArray, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { createJobsForNewEnvironment } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
@@ -49,20 +49,15 @@ export const POST = request()
   )
   .handle<{ user: User; can: PermissionChecker; body: z.infer<typeof body> }>(
     async (ctx) => {
-      const environment = await ctx.db
-        .insert(schema.environment)
-        .values({
-          ...ctx.body,
-          expiresAt: isPresent(ctx.body.expiresAt)
-            ? new Date(ctx.body.expiresAt)
-            : undefined,
-        })
-        .returning()
-        .then(takeFirstOrNull);
+      const isInSystem = eq(schema.environment.systemId, ctx.body.systemId);
+      const isSameName = eq(schema.environment.name, ctx.body.name);
+      const existingEnvironment = await ctx.db.query.environment.findFirst({
+        where: and(isInSystem, isSameName),
+      });
 
-      if (environment)
+      if (existingEnvironment != null)
         return NextResponse.json(
-          { error: "Environment already exists", id: environment.id },
+          { error: "Environment already exists", id: existingEnvironment.id },
           { status: 409 },
         );
 
