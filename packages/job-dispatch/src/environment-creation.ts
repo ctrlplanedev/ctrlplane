@@ -3,6 +3,7 @@ import { isPresent } from "ts-is-present";
 
 import { and, desc, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
@@ -30,6 +31,8 @@ export const createJobsForNewEnvironment = async (
     },
   });
 
+  logger.info("releaseChannels", { releaseChannels });
+
   if (releaseChannels == null) return;
 
   const { releaseChannels: envReleaseChannels, system } = releaseChannels;
@@ -47,9 +50,11 @@ export const createJobsForNewEnvironment = async (
         isNull(SCHEMA.resource.deletedAt),
       ),
     );
+  logger.info("resources", { resources });
   if (resources.length === 0) return;
 
   const releasePromises = deployments.map(async (deployment) => {
+    logger.info("finding release for deployment", { deployment });
     const envReleaseChannel = envReleaseChannels.find(
       (erc) => erc.deploymentId === deployment.id,
     );
@@ -60,7 +65,7 @@ export const createJobsForNewEnvironment = async (
       envReleaseChannel?.releaseChannel ??
       policyReleaseChannel?.releaseChannel ??
       {};
-
+    logger.info("releaseFilter", { releaseFilter });
     return db
       .select()
       .from(SCHEMA.release)
@@ -77,6 +82,7 @@ export const createJobsForNewEnvironment = async (
   const releases = await Promise.all(releasePromises).then((rows) =>
     rows.filter(isPresent),
   );
+  logger.info("releases found for new environment", { releases });
   if (releases.length === 0) return;
 
   const releaseJobTriggers = await createReleaseJobTriggers(
