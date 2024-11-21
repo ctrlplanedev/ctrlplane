@@ -10,10 +10,10 @@ import { request } from "~/app/api/v1/middleware";
 export const DELETE = request()
   .use(authn)
   .use(
-    authz(async ({ can, extra: { deploymentId } }) =>
+    authz(async ({ can, extra: { params } }) =>
       can
         .perform(Permission.ReleaseChannelDelete)
-        .on({ type: "deployment", id: deploymentId }),
+        .on({ type: "deployment", id: params.deploymentId }),
     ),
   )
   .handle<unknown, { params: { deploymentId: string; name: string } }>(
