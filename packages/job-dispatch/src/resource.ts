@@ -317,6 +317,8 @@ export const upsertResources = async (
   log.info("upsertResources", {
     resourcesToInsert: resourcesToInsert.map((r) => r.identifier),
   });
+  if (resourcesToInsert.length < 5)
+    log.info("resourcesToInsert", { resourcesToInsert });
 
   try {
     // Get existing resources from the database, grouped by providerId.
