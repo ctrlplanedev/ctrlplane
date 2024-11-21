@@ -58,35 +58,30 @@ export const openapi: Swagger.SwaggerV3 = {
                 schema: {
                   type: "object",
                   properties: {
-                    environment: {
+                    id: {
+                      type: "string",
+                    },
+                    systemId: {
+                      type: "string",
+                    },
+                    name: {
+                      type: "string",
+                    },
+                    description: {
+                      type: "string",
+                      nullable: true,
+                    },
+                    expiresAt: {
+                      type: "string",
+                      format: "date-time",
+                      nullable: true,
+                    },
+                    resourceFilter: {
                       type: "object",
-                      properties: {
-                        id: {
-                          type: "string",
-                        },
-                        systemId: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
-                        description: {
-                          type: "string",
-                          nullable: true,
-                        },
-                        expiresAt: {
-                          type: "string",
-                          format: "date-time",
-                          nullable: true,
-                        },
-                        resourceFilter: {
-                          type: "object",
-                          additionalProperties: true,
-                        },
-                      },
-                      required: ["id", "name", "systemId"],
+                      additionalProperties: true,
                     },
                   },
+                  required: ["id", "name", "systemId"],
                 },
               },
             },

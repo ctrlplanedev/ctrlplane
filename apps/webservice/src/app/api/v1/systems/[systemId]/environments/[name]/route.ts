@@ -23,6 +23,9 @@ export const DELETE = request()
           eq(schema.environment.systemId, params.systemId),
           eq(schema.environment.name, params.name),
         ),
+        with: {
+          releaseChannels: true,
+        },
       });
       if (environment == null)
         return NextResponse.json(
@@ -30,15 +33,14 @@ export const DELETE = request()
           { status: 404 },
         );
 
-      const env = await ctx.db
+      await ctx.db
         .delete(schema.environment)
         .where(
           and(
             eq(schema.environment.systemId, params.systemId),
             eq(schema.environment.name, params.name),
           ),
-        )
-        .returning();
-      return NextResponse.json(env);
+        );
+      return NextResponse.json(environment);
     },
   );

@@ -29,7 +29,6 @@ export const createJobsForNewEnvironment = async (
       system: { with: { deployments: true } },
     },
   });
-
   if (releaseChannels == null) return;
 
   const { releaseChannels: envReleaseChannels, system } = releaseChannels;
@@ -60,7 +59,6 @@ export const createJobsForNewEnvironment = async (
       envReleaseChannel?.releaseChannel ??
       policyReleaseChannel?.releaseChannel ??
       {};
-
     return db
       .select()
       .from(SCHEMA.release)
