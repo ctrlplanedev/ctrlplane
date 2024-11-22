@@ -10,8 +10,6 @@ import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 /**
  * Get events for a resource that has been deleted.
- * NOTE: Because we may need to do inner joins on resource metadata for the filter,
- * this actually needs to be called before the resource is actually deleted.
  * @param resource
  */
 export const getEventsForResourceDeleted = async (
