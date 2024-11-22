@@ -60,12 +60,20 @@ export const getResourcesByWorkspaceIdAndIdentifier = (
       ),
     );
 
+/**
+ * Groups provided resources by workspace environments matching them
+ *
+ * @param tx - Database transaction
+ * @param workspaceId - ID of the workspace to get environments for
+ * @param resourceIdentifiers - Array of resource identifiers to look up
+ * @returns Promise resolving to array of environments
+ */
 export const getEnvironmentsByResourceWithIdentifiers = (
   tx: Tx,
   workspaceId: string,
   resourceIdentifiers: string[],
-) => {
-  return tx
+) =>
+  tx
     .select({
       id: schema.environment.id,
       resourceFilter: schema.environment.resourceFilter,
@@ -90,10 +98,9 @@ export const getEnvironmentsByResourceWithIdentifiers = (
                 inArray(schema.resource.identifier, resourceIdentifiers),
                 eq(schema.resource.workspaceId, workspaceId),
                 schema.resourceMatchesMetadata(tx, env.resourceFilter),
-                isNotNull(schema.resource.deletedAt),
+                isNull(schema.resource.deletedAt),
               ),
             ),
         })),
       ),
     );
-};

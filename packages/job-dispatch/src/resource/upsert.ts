@@ -44,6 +44,13 @@ export const upsertResources = async (
       resourceIdentifiers,
     );
 
+    log.debug("Envs before insert", {
+      envs: envsBeforeInsert.map((e) => ({
+        id: e.id,
+        resources: e.resources.map((r) => r.identifier),
+      })),
+    });
+
     log.debug("Inserting resources");
     const resources = await insertResources(tx, resourcesToInsert);
     const resourcesWithId = resources.all.map((r) => ({
@@ -67,6 +74,12 @@ export const upsertResources = async (
       resourceIdentifiers,
     );
 
+    log.debug("Envs after insert", {
+      envs: envsAfterInsert.map((e) => ({
+        id: e.id,
+        resources: e.resources.map((r) => r.identifier),
+      })),
+    });
     const changedEnvs = envsAfterInsert.map((env) => {
       const beforeEnv = envsBeforeInsert.find((e) => e.id === env.id);
       const beforeResources = beforeEnv?.resources ?? [];

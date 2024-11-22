@@ -181,9 +181,8 @@ export const dispatchEventsForRemovedResources = async (
   const results = await Promise.allSettled(handleEventPromises);
 
   const failures = results.filter((r) => r.status === "rejected").length;
-  if (failures > 0) {
+  if (failures > 0)
     log.warn("Some removal events failed", { failureCount: failures });
-  }
 
   log.info("Finished dispatching removal events", {
     total: events.length,

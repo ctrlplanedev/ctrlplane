@@ -63,6 +63,6 @@ export const POST = request()
         })),
       );
 
-      return NextResponse.json({ count: resources.length });
+      return NextResponse.json({ count: resources.all.length });
     },
   );

@@ -31,6 +31,8 @@ export const insertResourceVariables = async (
     })),
   );
 
+  if (resourceVariablesValues.length === 0) return;
+
   const updatedVariables = await tx
     .insert(schema.resourceVariable)
     .values(resourceVariablesValues)
