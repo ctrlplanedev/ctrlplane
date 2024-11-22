@@ -125,7 +125,7 @@ export const upsertResources = async (
             envId: env.id,
             count: removedIds.length,
           });
-          await dispatchEventsForRemovedResources(tx, removedIds, env.id);
+          await dispatchEventsForRemovedResources(tx, removedIds, env);
         }
       }
     }
