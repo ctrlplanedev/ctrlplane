@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { buildConflictUpdateColumns } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { variablesAES256 } from "@ctrlplane/secrets";
 
@@ -14,6 +14,12 @@ export const insertResourceVariables = async (
   tx: Tx,
   resources: ResourceWithVariables[],
 ) => {
+  const resourceIds = resources.map(({ id }) => id);
+  const existingVariables = await tx
+    .select()
+    .from(schema.resourceVariable)
+    .where(inArray(schema.resourceVariable.resourceId, resourceIds));
+
   const resourceVariablesValues = resources.flatMap(({ id, variables = [] }) =>
     variables.map(({ key, value, sensitive }) => ({
       resourceId: id,
@@ -25,7 +31,7 @@ export const insertResourceVariables = async (
     })),
   );
 
-  return tx
+  const updatedVariables = await tx
     .insert(schema.resourceVariable)
     .values(resourceVariablesValues)
     .onConflictDoUpdate({
@@ -34,5 +40,29 @@ export const insertResourceVariables = async (
         "value",
         "sensitive",
       ]),
-    });
+    })
+    .returning();
+
+  const created = _.differenceWith(
+    updatedVariables,
+    existingVariables,
+    (a, b) => a.resourceId === b.resourceId && a.key === b.key,
+  );
+
+  const deleted = _.differenceWith(
+    existingVariables,
+    updatedVariables,
+    (a, b) => a.resourceId === b.resourceId && a.key === b.key,
+  );
+
+  const updated = _.intersectionWith(
+    updatedVariables,
+    existingVariables,
+    (a, b) =>
+      a.resourceId === b.resourceId &&
+      a.key === b.key &&
+      (a.value !== b.value || a.sensitive !== b.sensitive),
+  );
+
+  return { created, deleted, updated };
 };
