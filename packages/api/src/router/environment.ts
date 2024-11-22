@@ -28,7 +28,7 @@ import {
   updateEnvironment,
 } from "@ctrlplane/db/schema";
 import {
-  dispatchJobsForNewResources,
+  dispatchJobsForAddedResources,
   getEventsForEnvironmentDeleted,
   handleEvent,
 } from "@ctrlplane/job-dispatch";
@@ -324,7 +324,7 @@ export const environmentRouter = createTRPCRouter({
           }
 
           if (newResources.length > 0) {
-            await dispatchJobsForNewResources(
+            await dispatchJobsForAddedResources(
               ctx.db,
               newResources.map((r) => r.id),
               input.id,
