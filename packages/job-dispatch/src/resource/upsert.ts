@@ -6,8 +6,8 @@ import { logger } from "@ctrlplane/logger";
 
 import { deleteResources } from "./delete.js";
 import {
+  dispatchEventsForRemovedResources,
   dispatchJobsForAddedResources,
-  dispatchJobsForRemovedResources,
 } from "./dispatch-resource.js";
 import { insertResourceMetadata } from "./insert-resource-metadata.js";
 import { insertResourceVariables } from "./insert-resource-variables.js";
@@ -25,6 +25,11 @@ export const upsertResources = async (
   tx: Tx,
   resourcesToInsert: ResourceToInsert[],
 ) => {
+  log.info("Starting resource upsert", {
+    count: resourcesToInsert.length,
+    identifiers: resourcesToInsert.map((r) => r.identifier),
+  });
+
   const workspaceId = resourcesToInsert[0]?.workspaceId;
   if (workspaceId == null) throw new Error("Workspace ID is required");
   if (!resourcesToInsert.every((r) => r.workspaceId === workspaceId))
@@ -32,12 +37,14 @@ export const upsertResources = async (
 
   try {
     const resourceIdentifiers = resourcesToInsert.map((r) => r.identifier);
+    log.info("Getting environments before insert", { resourceIdentifiers });
     const envsBeforeInsert = await getEnvironmentsByResourceWithIdentifiers(
       tx,
       workspaceId,
       resourceIdentifiers,
     );
 
+    log.debug("Inserting resources");
     const resources = await insertResources(tx, resourcesToInsert);
     const resourcesWithId = resources.all.map((r) => ({
       ...r,
@@ -47,11 +54,13 @@ export const upsertResources = async (
       ),
     }));
 
+    log.debug("Inserting resource metadata and variables");
     await Promise.all([
       insertResourceMetadata(tx, resourcesWithId),
       insertResourceVariables(tx, resourcesWithId),
     ]);
 
+    log.debug("Getting environments after insert");
     const envsAfterInsert = await getEnvironmentsByResourceWithIdentifiers(
       tx,
       workspaceId,
@@ -72,14 +81,20 @@ export const upsertResources = async (
     });
 
     const deletedResourceIds = new Set(resources.deleted.map((r) => r.id));
-    if (resources.deleted.length > 0)
+    if (resources.deleted.length > 0) {
+      log.info("Deleting resources", { count: resources.deleted.length });
       await deleteResources(tx, resources.deleted).catch((err) => {
         log.error("Error deleting resources", { error: err });
         throw err;
       });
+    }
 
     for (const env of changedEnvs) {
       if (env.addedResources.length > 0) {
+        log.info("Dispatching jobs for added resources", {
+          envId: env.id,
+          count: env.addedResources.length,
+        });
         await dispatchJobsForAddedResources(
           tx,
           env.addedResources.map((r) => r.id),
@@ -87,16 +102,25 @@ export const upsertResources = async (
         );
       }
 
-      if (env.removedResources.length > 0)
-        await dispatchJobsForRemovedResources(
-          tx,
-          env.removedResources
-            .map((r) => r.id)
-            .filter((id) => !deletedResourceIds.has(id)),
-          env.id,
-        );
+      if (env.removedResources.length > 0) {
+        const removedIds = env.removedResources
+          .map((r) => r.id)
+          .filter((id) => !deletedResourceIds.has(id));
+
+        if (removedIds.length > 0) {
+          log.info("Dispatching hook events for removed resources", {
+            envId: env.id,
+            count: removedIds.length,
+          });
+          await dispatchEventsForRemovedResources(tx, removedIds, env.id);
+        }
+      }
     }
 
+    log.info("Resource upsert completed successfully", {
+      added: resources.all.length,
+      deleted: resources.deleted.length,
+    });
     return resources;
   } catch (err) {
     log.error("Error upserting resources", { error: err });

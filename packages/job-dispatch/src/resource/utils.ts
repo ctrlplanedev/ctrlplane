@@ -80,22 +80,20 @@ export const getEnvironmentsByResourceWithIdentifiers = (
     )
     .then((envs) =>
       Promise.all(
-        envs.map(async (env) => {
-          return {
-            ...env,
-            resources: await tx
-              .select()
-              .from(schema.resource)
-              .where(
-                and(
-                  inArray(schema.resource.identifier, resourceIdentifiers),
-                  eq(schema.resource.workspaceId, workspaceId),
-                  schema.resourceMatchesMetadata(tx, env.resourceFilter),
-                  isNotNull(schema.resource.deletedAt),
-                ),
+        envs.map(async (env) => ({
+          ...env,
+          resources: await tx
+            .select()
+            .from(schema.resource)
+            .where(
+              and(
+                inArray(schema.resource.identifier, resourceIdentifiers),
+                eq(schema.resource.workspaceId, workspaceId),
+                schema.resourceMatchesMetadata(tx, env.resourceFilter),
+                isNotNull(schema.resource.deletedAt),
               ),
-          };
-        }),
+            ),
+        })),
       ),
     );
 };
