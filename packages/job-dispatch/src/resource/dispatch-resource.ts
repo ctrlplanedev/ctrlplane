@@ -1,9 +1,20 @@
 import type { Tx } from "@ctrlplane/db";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import { and, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
+import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
+import { ComparisonOperator } from "@ctrlplane/validators/conditions";
+import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { handleEvent } from "../events/index.js";
 import { dispatchReleaseJobTriggers } from "../job-dispatch.js";
@@ -143,16 +154,45 @@ const getEnvironmentDeployments = (db: Tx, envId: string) =>
     .then((rows) => rows.map((r) => r.deployment));
 
 /**
+ * Gets the not in system filter for a system
+ * @param systemId - System ID to get the not in system filter for
+ * @returns Promise resolving to the not in system filter or null if not found
+ */
+const getNotInSystemFilter = async (
+  systemId: string,
+): Promise<ResourceCondition | null> => {
+  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
+  const system = await db.query.system.findFirst({
+    where: eq(SCHEMA.system.id, systemId),
+    with: { environments: { where: hasFilter } },
+  });
+  if (system == null) return null;
+
+  const filters = system.environments
+    .map((e) => e.resourceFilter)
+    .filter(isPresent);
+  if (filters.length === 0) return null;
+
+  return {
+    type: ResourceFilterType.Comparison,
+    operator: ComparisonOperator.Or,
+    not: true,
+    conditions: filters,
+  };
+};
+
+/**
  * Dispatches hook events for resources that were removed from an environment
  * @param db - Database transaction
  * @param resourceIds - IDs of the resources that were removed
- * @param envId - ID of the environment the resources were removed from
+ * @param env - Environment the resources were removed from
  */
 export const dispatchEventsForRemovedResources = async (
   db: Tx,
   resourceIds: string[],
-  envId: string,
+  env: { id: string; systemId: string },
 ): Promise<void> => {
+  const { id: envId, systemId } = env;
   log.info("Dispatching events for removed resources", { resourceIds, envId });
 
   const deployments = await getEnvironmentDeployments(db, envId);
@@ -161,8 +201,19 @@ export const dispatchEventsForRemovedResources = async (
     return;
   }
 
+  const notInSystemFilter = await getNotInSystemFilter(systemId);
+  if (notInSystemFilter == null) {
+    log.warn("No system found for environment", { envId });
+    return;
+  }
+
+  const matchesResources = inArray(SCHEMA.resource.id, resourceIds);
+  const isRemovedFromSystem = SCHEMA.resourceMatchesMetadata(
+    db,
+    notInSystemFilter,
+  );
   const resources = await db.query.resource.findMany({
-    where: inArray(SCHEMA.resource.id, resourceIds),
+    where: and(matchesResources, isRemovedFromSystem),
   });
 
   log.debug("Creating removal events", {

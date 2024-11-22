@@ -77,6 +77,7 @@ export const getEnvironmentsByResourceWithIdentifiers = (
     .select({
       id: schema.environment.id,
       resourceFilter: schema.environment.resourceFilter,
+      systemId: schema.environment.systemId,
     })
     .from(schema.environment)
     .innerJoin(schema.system, eq(schema.environment.systemId, schema.system.id))
