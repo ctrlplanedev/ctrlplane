@@ -38,12 +38,19 @@ const getExistingResourcesForProvider = (db: Tx, providerId: string) =>
     .from(resource)
     .where(and(eq(resource.providerId, providerId), isNotDeleted));
 
-const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
-  const [firstResource] = newResources;
-  if (firstResource == null) return;
+const getDeletedResourcesForProvider = (db: Tx, providerId: string) =>
+  db
+    .select()
+    .from(resource)
+    .where(
+      and(eq(resource.providerId, providerId), isNotNull(resource.deletedAt)),
+    );
 
-  const workspaceId = firstResource.workspaceId;
-
+const dispatchChangedResources = async (
+  db: Tx,
+  workspaceId: string,
+  resourceIds: string[],
+) => {
   const workspaceEnvs = await db
     .select({ id: environment.id, resourceFilter: environment.resourceFilter })
     .from(environment)
@@ -55,9 +62,6 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
       ),
     );
 
-  log.info("workspaceEnvs", { workspaceEnvs });
-
-  const resourceIds = newResources.map((r) => r.id);
   for (const env of workspaceEnvs) {
     db.select()
       .from(resource)
@@ -69,7 +73,6 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
         ),
       )
       .then((tgs) => {
-        log.info("tgs + env", { tgs, env });
         if (tgs.length === 0) return;
         dispatchJobsForNewResources(
           db,
@@ -80,39 +83,87 @@ const dispatchNewResources = async (db: Tx, newResources: Resource[]) => {
   }
 };
 
+type ResourceWithVariables = Resource & {
+  variables?: Array<{ key: string; value: any; sensitive: boolean }>;
+};
+
+/**
+ * Upserts resource variables for a list of resources. Updates existing
+ * variables, adds new ones, and removes deleted ones. Encrypts sensitive
+ * variable values before storing.
+ *
+ * @param tx - Database transaction
+ * @param resources - Array of resources with their variables
+ * @returns Array of resources that had their variables changed
+ */
 const upsertResourceVariables = async (
   tx: Tx,
-  resources: Array<
-    Resource & {
-      variables?: Array<{ key: string; value: any; sensitive: boolean }>;
-    }
-  >,
+  resources: Array<ResourceWithVariables>,
 ) => {
+  const resourceIds = resources.map((r) => r.id);
   const existingResourceVariables = await tx
     .select()
     .from(resourceVariable)
-    .where(
-      inArray(
-        resourceVariable.resourceId,
-        resources.map((r) => r.id),
-      ),
-    )
-    .catch((err) => {
-      log.error("Error fetching existing resource variables", { error: err });
-      throw err;
-    });
+    .where(inArray(resourceVariable.resourceId, resourceIds));
 
-  const resourceVariablesValues = resources.flatMap((resource) => {
-    const { id, variables = [] } = resource;
-    return variables.map(({ key, value, sensitive }) => ({
+  const resourceVariablesValues = resources.flatMap(({ id, variables = [] }) =>
+    variables.map(({ key, value, sensitive }) => ({
       resourceId: id,
       key,
       value: sensitive
         ? variablesAES256().encrypt(JSON.stringify(value))
         : value,
       sensitive,
-    }));
-  });
+    })),
+  );
+
+  // Track resources with added variables
+  const resourcesWithAddedVars = new Set(
+    resourceVariablesValues
+      .filter(
+        (newVar) =>
+          !existingResourceVariables.some(
+            (existing) =>
+              existing.resourceId === newVar.resourceId &&
+              existing.key === newVar.key,
+          ),
+      )
+      .map((newVar) => newVar.resourceId),
+  );
+
+  // Track resources with modified variables
+  const resourcesWithModifiedVars = new Set(
+    resourceVariablesValues
+      .filter((newVar) => {
+        const existingVar = existingResourceVariables.find(
+          (existing) =>
+            existing.resourceId === newVar.resourceId &&
+            existing.key === newVar.key,
+        );
+        return existingVar && existingVar.value !== newVar.value;
+      })
+      .map((newVar) => newVar.resourceId),
+  );
+
+  // Track resources with deleted variables
+  const resourcesWithDeletedVars = new Set(
+    existingResourceVariables
+      .filter(
+        (existingVar) =>
+          !resourceVariablesValues.some(
+            (newVar) =>
+              newVar.resourceId === existingVar.resourceId &&
+              newVar.key === existingVar.key,
+          ),
+      )
+      .map((v) => v.resourceId),
+  );
+
+  const changedResources = new Set<string>([
+    ...resourcesWithAddedVars,
+    ...resourcesWithModifiedVars,
+    ...resourcesWithDeletedVars,
+  ]);
 
   if (resourceVariablesValues.length > 0)
     await tx
@@ -124,10 +175,6 @@ const upsertResourceVariables = async (
           "value",
           "sensitive",
         ]),
-      })
-      .catch((err) => {
-        log.error("Error inserting resource variables", { error: err });
-        throw err;
       });
 
   const variablesToDelete = existingResourceVariables.filter(
@@ -152,25 +199,21 @@ const upsertResourceVariables = async (
         log.error("Error deleting resource variables", { error: err });
         throw err;
       });
+
+  return changedResources;
 };
+
+type ResourceWithMetadata = Resource & { metadata?: Record<string, string> };
 
 const upsertResourceMetadata = async (
   tx: Tx,
-  resources: Array<Resource & { metadata?: Record<string, string> }>,
+  resources: Array<ResourceWithMetadata>,
 ) => {
+  const resourceIds = resources.map((r) => r.id);
   const existingResourceMetadata = await tx
     .select()
     .from(resourceMetadata)
-    .where(
-      inArray(
-        resourceMetadata.resourceId,
-        resources.map((r) => r.id),
-      ),
-    )
-    .catch((err) => {
-      log.error("Error fetching existing resource metadata", { error: err });
-      throw err;
-    });
+    .where(inArray(resourceMetadata.resourceId, resourceIds));
 
   const resourceMetadataValues = resources.flatMap((resource) => {
     const { id, metadata = {} } = resource;
@@ -181,6 +224,55 @@ const upsertResourceMetadata = async (
       value,
     }));
   });
+
+  const resourcesWithAddedMetadata = new Set(
+    resourceMetadataValues
+      .filter(
+        (newMetadata) =>
+          !existingResourceMetadata.some(
+            (metadata) =>
+              metadata.resourceId === newMetadata.resourceId &&
+              metadata.key === newMetadata.key,
+          ),
+      )
+      .map((metadata) => metadata.resourceId),
+  );
+
+  const resourcesWithDeletedMetadata = new Set(
+    existingResourceMetadata
+      .filter(
+        (metadata) =>
+          !resourceMetadataValues.some(
+            (newMetadata) =>
+              newMetadata.resourceId === metadata.resourceId &&
+              newMetadata.key === metadata.key,
+          ),
+      )
+      .map((metadata) => metadata.resourceId),
+  );
+
+  const resourcesWithUpdatedMetadata = new Set(
+    resourceMetadataValues
+      .filter((newMetadata) =>
+        existingResourceMetadata.some(
+          (metadata) =>
+            metadata.resourceId === newMetadata.resourceId &&
+            metadata.key === newMetadata.key &&
+            metadata.value !== newMetadata.value,
+        ),
+      )
+      .map((metadata) => metadata.resourceId),
+  );
+
+  log.info("resourcesWithAddedMetadata", { resourcesWithAddedMetadata });
+  log.info("resourcesWithUpdatedMetadata", { resourcesWithUpdatedMetadata });
+  log.info("resourcesWithDeletedMetadata", { resourcesWithDeletedMetadata });
+
+  const changedResources = new Set([
+    ...resourcesWithAddedMetadata,
+    ...resourcesWithUpdatedMetadata,
+    ...resourcesWithDeletedMetadata,
+  ]);
 
   if (resourceMetadataValues.length > 0)
     await tx
@@ -205,18 +297,14 @@ const upsertResourceMetadata = async (
   );
 
   if (metadataToDelete.length > 0)
-    await tx
-      .delete(resourceMetadata)
-      .where(
-        inArray(
-          resourceMetadata.id,
-          metadataToDelete.map((m) => m.id),
-        ),
-      )
-      .catch((err) => {
-        log.error("Error deleting resource metadata", { error: err });
-        throw err;
-      });
+    await tx.delete(resourceMetadata).where(
+      inArray(
+        resourceMetadata.id,
+        metadataToDelete.map((m) => m.id),
+      ),
+    );
+
+  return changedResources;
 };
 
 export type ResourceToInsert = InsertResource & {
@@ -228,6 +316,16 @@ export const upsertResources = async (
   tx: Tx,
   resourcesToInsert: ResourceToInsert[],
 ) => {
+  const workspaceId = resourcesToInsert[0]?.workspaceId;
+  if (workspaceId == null) throw new Error("Workspace ID is required");
+  if (!resourcesToInsert.every((r) => r.workspaceId === workspaceId)) {
+    throw new Error("All resources must belong to the same workspace");
+  }
+
+  log.info("upsertResources", {
+    resourcesToInsert: resourcesToInsert.map((r) => r.identifier),
+  });
+
   try {
     // Get existing resources from the database, grouped by providerId.
     // - For resources without a providerId, look them up by workspaceId and
@@ -238,7 +336,6 @@ export const upsertResources = async (
     });
     const resourcesBeforeInsertPromises = _.chain(resourcesToInsert)
       .groupBy((r) => r.providerId)
-      .filter((r) => r[0]?.providerId != null)
       .map(async (resources) => {
         const providerId = resources[0]?.providerId;
 
@@ -261,9 +358,41 @@ export const upsertResources = async (
       })
       .value();
 
+    const deletedResourcesBeforeInsertPromises = _.chain(resourcesToInsert)
+      .groupBy((r) => r.providerId)
+      .map(async (resources) => {
+        const providerId = resources[0]?.providerId;
+        return providerId == null
+          ? db
+              .select()
+              .from(resource)
+              .where(
+                and(
+                  eq(resource.workspaceId, workspaceId),
+                  isNotNull(resource.deletedAt),
+                ),
+              )
+          : getDeletedResourcesForProvider(tx, providerId);
+      })
+      .value();
+
     const resourcesBeforeInsert = await Promise.all(
       resourcesBeforeInsertPromises,
     ).then((r) => r.flat());
+
+    log.info("resourcesBeforeInsert", {
+      resourcesBeforeInsert: resourcesBeforeInsert.map((r) => r.identifier),
+    });
+
+    const deletedResourcesBeforeInsert = await Promise.all(
+      deletedResourcesBeforeInsertPromises,
+    ).then((r) => r.flat());
+
+    log.info("deletedResourcesBeforeInsert", {
+      deletedResourcesBeforeInsert: deletedResourcesBeforeInsert.map(
+        (r) => r.identifier,
+      ),
+    });
 
     const resources = await tx
       .insert(resource)
@@ -292,32 +421,48 @@ export const upsertResources = async (
               ri.workspaceId === r.workspaceId,
           ),
         })),
-      )
-      .catch((err) => {
-        log.error("Error inserting resources", { error: err });
-        throw err;
-      });
+      );
 
-    await Promise.all([
-      upsertResourceMetadata(tx, resources),
-      upsertResourceVariables(tx, resources),
+    const [changedResourcesMetadata, changedResourcesVariables] =
+      await Promise.all([
+        upsertResourceMetadata(tx, resources),
+        upsertResourceVariables(tx, resources),
+      ]);
+
+    const changedResourceIds = new Set([
+      ...Array.from(changedResourcesMetadata),
+      ...Array.from(changedResourcesVariables),
     ]);
+
+    log.info("changedResourceIds", { changedResourceIds });
 
     const newResources = resources.filter(
       (r) =>
         !resourcesBeforeInsert.some((er) => er.identifier === r.identifier),
     );
+    log.info("new resources", { newResources });
+    for (const resource of newResources) changedResourceIds.add(resource.id);
 
-    log.info("newResources and providerId", {
+    const previouslySoftDeletedResources = resources.filter((r) =>
+      deletedResourcesBeforeInsert.some((er) => er.identifier === r.identifier),
+    );
+    for (const resource of previouslySoftDeletedResources)
+      changedResourceIds.add(resource.id);
+    log.info("previouslySoftDeletedResources", {
+      previouslySoftDeletedResources,
+    });
+
+    log.info("new resources and providerId", {
       providerId: resourcesToInsert[0]?.providerId,
       newResources,
     });
 
-    if (newResources.length > 0)
-      await dispatchNewResources(db, newResources).catch((err) => {
-        log.error("Error dispatching new resources", { error: err });
-        throw err;
-      });
+    if (changedResourceIds.size > 0)
+      await dispatchChangedResources(
+        db,
+        workspaceId,
+        Array.from(changedResourceIds),
+      );
 
     const resourcesToDelete = resourcesBeforeInsert.filter(
       (r) =>
