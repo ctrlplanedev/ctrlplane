@@ -31,7 +31,7 @@ export const insertResourceVariables = async (
     })),
   );
 
-  if (resourceVariablesValues.length === 0) return;
+  if (resourceVariablesValues.length === 0) return [];
 
   const updatedVariables = await tx
     .insert(schema.resourceVariable)
@@ -66,5 +66,11 @@ export const insertResourceVariables = async (
       (a.value !== b.value || a.sensitive !== b.sensitive),
   );
 
-  return { created, deleted, updated };
+  const updatedResourceIds = _.uniq([
+    ...created.map((r) => r.resourceId),
+    ...deleted.map((r) => r.resourceId),
+    ...updated.map((r) => r.resourceId),
+  ]);
+
+  return updatedResourceIds;
 };

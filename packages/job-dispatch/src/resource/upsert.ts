@@ -62,7 +62,7 @@ export const upsertResources = async (
     }));
 
     log.debug("Inserting resource metadata and variables");
-    await Promise.all([
+    const [, updatedVariableResourceIds] = await Promise.all([
       insertResourceMetadata(tx, resourcesWithId),
       insertResourceVariables(tx, resourcesWithId),
     ]);

@@ -1,4 +1,6 @@
 import type { Tx } from "@ctrlplane/db";
+import type { Deployment } from "@ctrlplane/db/schema";
+import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
@@ -44,6 +46,65 @@ const getEnvironmentWithReleaseChannels = (db: Tx, envId: string) =>
     },
   });
 
+export const getDeploymentsWithReleaseFilter = async (
+  db: Tx,
+  envId: string,
+) => {
+  const environment = await db.query.environment.findFirst({
+    where: eq(SCHEMA.environment.id, envId),
+    with: {
+      releaseChannels: { with: { releaseChannel: true } },
+      policy: {
+        with: {
+          environmentPolicyReleaseChannels: { with: { releaseChannel: true } },
+        },
+      },
+      system: { with: { deployments: true } },
+    },
+  });
+  if (environment == null) return [];
+
+  const { releaseChannels, policy, system } = environment;
+  const { deployments } = system;
+  const policyReleaseChannels = policy?.environmentPolicyReleaseChannels ?? [];
+
+  return deployments.map((deployment) => {
+    const envReleaseChannel = releaseChannels.find(
+      (erc) => erc.deploymentId === deployment.id,
+    );
+    const policyReleaseChannel = policyReleaseChannels.find(
+      (prc) => prc.deploymentId === deployment.id,
+    );
+    const { releaseFilter } =
+      envReleaseChannel?.releaseChannel ??
+      policyReleaseChannel?.releaseChannel ??
+      {};
+    return { ...deployment, releaseFilter };
+  });
+};
+
+const getReleasesForEnv = async (db: Tx, envId: string) => {
+  const deployments = await getDeploymentsWithReleaseFilter(db, envId);
+  const releasePromises = deployments.map((deployment) =>
+    db
+      .select()
+      .from(SCHEMA.release)
+      .where(
+        and(
+          eq(SCHEMA.release.deploymentId, deployment.id),
+          SCHEMA.releaseMatchesCondition(
+            db,
+            deployment.releaseFilter ?? undefined,
+          ),
+        ),
+      )
+      .orderBy(desc(SCHEMA.release.createdAt))
+      .limit(1)
+      .then(takeFirstOrNull),
+  );
+  return (await Promise.all(releasePromises)).filter(isPresent);
+};
+
 /**
  * Dispatches jobs for newly added resources in an environment
  * @param db - Database transaction
@@ -57,52 +118,7 @@ export async function dispatchJobsForAddedResources(
 ): Promise<void> {
   log.info("Dispatching jobs for added resources", { resourceIds, envId });
 
-  const environment = await getEnvironmentWithReleaseChannels(db, envId);
-  if (environment == null) {
-    log.warn("Environment not found", { envId });
-    return;
-  }
-
-  const { releaseChannels, policy, system } = environment;
-  const { deployments } = system;
-  const policyReleaseChannels = policy?.environmentPolicyReleaseChannels ?? [];
-  const deploymentsWithReleaseFilter = deployments.map((deployment) => {
-    const envReleaseChannel = releaseChannels.find(
-      (erc) => erc.deploymentId === deployment.id,
-    );
-    const policyReleaseChannel = policyReleaseChannels.find(
-      (prc) => prc.deploymentId === deployment.id,
-    );
-
-    const { releaseFilter } =
-      envReleaseChannel?.releaseChannel ??
-      policyReleaseChannel?.releaseChannel ??
-      {};
-    return { ...deployment, releaseFilter };
-  });
-
-  log.debug("Fetching latest releases", {
-    deploymentCount: deployments.length,
-  });
-  const releasePromises = deploymentsWithReleaseFilter.map(
-    ({ id, releaseFilter }) =>
-      db
-        .select()
-        .from(SCHEMA.release)
-        .where(
-          and(
-            eq(SCHEMA.release.deploymentId, id),
-            SCHEMA.releaseMatchesCondition(db, releaseFilter ?? undefined),
-          ),
-        )
-        .orderBy(desc(SCHEMA.release.createdAt))
-        .limit(1)
-        .then(takeFirstOrNull),
-  );
-
-  const releases = await Promise.all(releasePromises).then((rows) =>
-    rows.filter(isPresent),
-  );
+  const releases = await getReleasesForEnv(db, envId);
   if (releases.length === 0) {
     log.info("No releases found for deployments");
     return;
