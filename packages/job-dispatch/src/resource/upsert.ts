@@ -120,7 +120,9 @@ export const upsertResources = async (
         });
         await dispatchJobsForAddedResources(
           tx,
-          env.addedResources.map((r) => r.id),
+          env.addedResources
+            .map((r) => r.id)
+            .filter((r) => !updatedVariableResourceIds.has(r)),
           env.id,
         );
       }
@@ -128,11 +130,7 @@ export const upsertResources = async (
       if (env.removedResources.length > 0) {
         const removedIds = env.removedResources
           .map((r) => r.id)
-          .filter(
-            (id) =>
-              !deletedResourceIds.has(id) &&
-              !updatedVariableResourceIds.has(id),
-          );
+          .filter((id) => !deletedResourceIds.has(id));
 
         if (removedIds.length > 0) {
           log.info("Dispatching hook events for removed resources", {
