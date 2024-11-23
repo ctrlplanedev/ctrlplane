@@ -2,7 +2,7 @@ import type { Tx } from "@ctrlplane/db";
 import type { InsertResource, Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { and, buildConflictUpdateColumns, eq, or } from "@ctrlplane/db";
+import { and, buildConflictUpdateColumns, eq, isNull, or } from "@ctrlplane/db";
 import { resource } from "@ctrlplane/db/schema";
 
 /**
@@ -13,7 +13,12 @@ import { resource } from "@ctrlplane/db/schema";
  * @returns Promise resolving to array of resources
  */
 const getResourcesByProvider = (tx: Tx, providerId: string) =>
-  tx.select().from(resource).where(eq(resource.providerId, providerId));
+  tx
+    .select()
+    .from(resource)
+    .where(
+      and(eq(resource.providerId, providerId), isNull(resource.deletedAt)),
+    );
 
 const getResourcesByWorkspaceIdAndIdentifier = (
   tx: Tx,
@@ -28,6 +33,7 @@ const getResourcesByWorkspaceIdAndIdentifier = (
           and(
             eq(resource.workspaceId, r.workspaceId),
             eq(resource.identifier, r.identifier),
+            isNull(resource.deletedAt),
           ),
         ),
       ),
@@ -80,8 +86,15 @@ export const insertResources = async (
   resourcesToInsert: InsertResource[],
 ) => {
   const existingResources = await findExistingResources(tx, resourcesToInsert);
-
-  const resources = await tx
+  const deleted = existingResources.filter(
+    (existing) =>
+      !resourcesToInsert.some(
+        (inserted) =>
+          inserted.identifier === existing.identifier &&
+          inserted.workspaceId === existing.workspaceId,
+      ),
+  );
+  const insertedResources = await tx
     .insert(resource)
     .values(resourcesToInsert)
     .onConflictDoUpdate({
@@ -100,21 +113,5 @@ export const insertResources = async (
     })
     .returning();
 
-  const created = _.differenceBy(
-    resources,
-    existingResources,
-    (t) => t.identifier,
-  );
-  const deleted = _.differenceBy(
-    existingResources,
-    resources,
-    (t) => t.identifier,
-  );
-  const updated = _.intersectionBy(
-    resources,
-    existingResources,
-    (t) => t.identifier,
-  );
-
-  return { all: resources, created, deleted, updated };
+  return { all: insertedResources, deleted };
 };
