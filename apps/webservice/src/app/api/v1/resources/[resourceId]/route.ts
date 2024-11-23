@@ -93,8 +93,8 @@ export const PATCH = request()
         { status: 404 },
       );
 
-    const { updated } = await upsertResources(db, [_.merge(resource, body)]);
-    const res = updated.at(0);
+    const { all } = await upsertResources(db, [_.merge(resource, body)]);
+    const res = all.at(0);
     if (res == null) throw new Error("Failed to update resource");
     return NextResponse.json(res);
   });
