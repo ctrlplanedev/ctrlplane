@@ -42,7 +42,10 @@ wss.on("connection", (ws, request) => {
   logger.debug("WebSocket connection established");
   onConnect(ws, request).catch((error) => {
     logger.error("Error handling connection", { error });
-    ws.close();
+    ws.close(
+      1011,
+      error instanceof Error ? error.message : "Internal server error",
+    );
   });
 });
 

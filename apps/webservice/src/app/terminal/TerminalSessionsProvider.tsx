@@ -1,17 +1,15 @@
 "use client";
 
-import type {
-  SessionCreate,
-  SessionResize,
-} from "@ctrlplane/validators/session";
+import type { ReadyState } from "react-use-websocket";
 import React, { createContext, useCallback, useContext, useState } from "react";
-import useWebSocket from "react-use-websocket";
-import { v4 as uuidv4 } from "uuid";
+
+import { useControllerWebsocket } from "~/app/terminal/useControllerWebsocket";
 
 type SessionContextType = {
   activeSessionId: string | null;
   setActiveSessionId: (id: string | null) => void;
   isDrawerOpen: boolean;
+  controllerReadyState: ReadyState;
   setIsDrawerOpen: (open: boolean) => void;
   sessionIds: { sessionId: string; targetId: string }[];
   createSession: (targetId: string) => void;
@@ -34,7 +32,6 @@ export const useTerminalSessions = () => {
   return context;
 };
 
-const url = "/api/v1/resources/proxy/controller";
 export const TerminalSessionsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
@@ -43,41 +40,22 @@ export const TerminalSessionsProvider: React.FC<{
   >([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { sendJsonMessage } = useWebSocket(url, {
-    shouldReconnect: () => true,
-  });
 
-  const resizeSession = useCallback(
-    (sessionId: string, targetId: string, cols: number, rows: number) => {
-      const resizePayload: SessionResize = {
-        type: "session.resize",
-        sessionId,
-        targetId,
-        cols,
-        rows,
-      };
-      sendJsonMessage(resizePayload);
-    },
-    [sendJsonMessage],
-  );
+  const { resizeSession, createSession, readyState } = useControllerWebsocket();
 
-  const createSession = useCallback(
-    (targetId: string) => {
-      const sessionId = uuidv4();
-      const sessionCreatePayload: SessionCreate = {
-        type: "session.create",
-        targetId,
-        sessionId,
-        cols: 80,
-        rows: 24,
-      };
-      sendJsonMessage(sessionCreatePayload);
+  const createTabSession = useCallback(
+    (resourceId: string) => {
+      const session = createSession(resourceId);
+      console.log("session", session);
       window.requestAnimationFrame(() => {
-        setSessionIds((prev) => [...prev, { sessionId, targetId }]);
-        setActiveSessionId(sessionId);
+        setSessionIds((prev) => [
+          ...prev,
+          { sessionId: session.sessionId, targetId: resourceId },
+        ]);
+        setActiveSessionId(session.sessionId);
       });
     },
-    [sendJsonMessage, setSessionIds],
+    [createSession, setSessionIds],
   );
 
   const removeSession = useCallback(
@@ -95,13 +73,14 @@ export const TerminalSessionsProvider: React.FC<{
     <SessionContext.Provider
       value={{
         sessionIds,
-        createSession,
+        createSession: createTabSession,
         removeSession,
         resizeSession,
         activeSessionId,
         setActiveSessionId,
         isDrawerOpen,
         setIsDrawerOpen,
+        controllerReadyState: readyState,
       }}
     >
       {children}
