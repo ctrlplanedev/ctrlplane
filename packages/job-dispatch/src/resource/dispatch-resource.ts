@@ -55,6 +55,7 @@ export async function dispatchJobsForAddedResources(
   resourceIds: string[],
   envId: string,
 ): Promise<void> {
+  if (resourceIds.length === 0) return;
   log.info("Dispatching jobs for added resources", { resourceIds, envId });
 
   const environment = await getEnvironmentWithReleaseChannels(db, envId);
