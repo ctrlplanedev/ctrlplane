@@ -31,7 +31,7 @@ import { VariableResourceInput } from "../_components/variables/VariableResource
 
 export type TriggerRunbookDialogProps = {
   runbook: RouterOutputs["runbook"]["bySystemId"][number];
-  onSuccess: () => void;
+  onSuccess?: () => void;
   children: ReactNode;
 };
 
@@ -50,7 +50,7 @@ export const TriggerRunbookDialog: React.FC<TriggerRunbookDialogProps> = ({
       .mutateAsync({ runbookId: runbook.id, variables })
       .then(() => setVariables({}))
       .then(() => router.refresh())
-      .then(() => onSuccess())
+      .then(() => onSuccess?.())
       .then(() => setOpen(false));
 
   const getValue = (k: string) => variables[k];
@@ -60,7 +60,7 @@ export const TriggerRunbookDialog: React.FC<TriggerRunbookDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Trigger Runbook: {runbook.name}</DialogTitle>
           <DialogDescription>

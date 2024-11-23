@@ -1,11 +1,12 @@
 import _ from "lodash";
 import { z } from "zod";
 
-import { eq, takeFirst } from "@ctrlplane/db";
+import { and, countDistinct, desc, eq, takeFirst } from "@ctrlplane/db";
 import { createRunbook, createRunbookVariable } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { dispatchRunbook } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { jobCondition } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -42,6 +43,26 @@ export const runbookRouter = createTRPCRouter({
           runhooks: { with: { hook: true } },
           jobAgent: true,
           variables: true,
+        },
+      }),
+    ),
+
+  byId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.RunbookGet).on({
+          type: "runbook",
+          id: input,
+        }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db.query.runbook.findFirst({
+        where: eq(SCHEMA.runbook.id, input),
+        with: {
+          runhooks: { with: { hook: true } },
+          variables: true,
+          jobAgent: true,
         },
       }),
     ),
@@ -126,4 +147,52 @@ export const runbookRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       ctx.db.delete(SCHEMA.runbook).where(eq(SCHEMA.runbook.id, input)),
     ),
+
+  jobs: protectedProcedure
+    .input(
+      z.object({
+        runbookId: z.string().uuid(),
+        filter: jobCondition.optional(),
+        limit: z.number().int().nonnegative().max(1000).default(30),
+        offset: z.number().int().nonnegative().default(0),
+      }),
+    )
+    .meta({
+      authorizationCheck: async ({ canUser, input }) =>
+        canUser.perform(Permission.JobList).on({
+          type: "runbook",
+          id: input.runbookId,
+        }),
+    })
+    .query(async ({ ctx, input }) => {
+      const { runbookId, filter, limit, offset } = input;
+      const isInRunbook = eq(SCHEMA.runbookJobTrigger.runbookId, runbookId);
+      const matchesFilter = SCHEMA.jobMatchesCondition(ctx.db, filter);
+      const isAssociatedJob = eq(SCHEMA.runbookJobTrigger.jobId, SCHEMA.job.id);
+      const items = await ctx.db
+        .select()
+        .from(SCHEMA.runbookJobTrigger)
+        .innerJoin(SCHEMA.job, isAssociatedJob)
+        .where(and(isInRunbook, matchesFilter))
+        .orderBy(desc(SCHEMA.runbookJobTrigger.createdAt))
+        .limit(limit)
+        .offset(offset)
+        .then((data) =>
+          data.map((t) => ({
+            ...t.runbook_job_trigger,
+            job: t.job,
+          })),
+        );
+
+      const count = countDistinct(SCHEMA.runbookJobTrigger.id);
+      const total = await ctx.db
+        .select({ count })
+        .from(SCHEMA.runbookJobTrigger)
+        .innerJoin(SCHEMA.job, isAssociatedJob)
+        .where(and(isInRunbook, matchesFilter))
+        .then(takeFirst)
+        .then((t) => t.count);
+
+      return { items, total };
+    }),
 });
