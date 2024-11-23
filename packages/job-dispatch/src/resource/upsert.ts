@@ -62,7 +62,7 @@ export const upsertResources = async (
     }));
 
     log.debug("Inserting resource metadata and variables");
-    await Promise.all([
+    const [, updatedVariableResourceIds] = await Promise.all([
       insertResourceMetadata(tx, resourcesWithId),
       insertResourceVariables(tx, resourcesWithId),
     ]);
@@ -80,6 +80,16 @@ export const upsertResources = async (
         resources: e.resources.map((r) => r.identifier),
       })),
     });
+    const envVariableChangePromises = envsAfterInsert.map((env) =>
+      dispatchJobsForAddedResources(
+        tx,
+        env.resources
+          .filter((r) => updatedVariableResourceIds.has(r.id))
+          .map((r) => r.id),
+        env.id,
+      ),
+    );
+    await Promise.all(envVariableChangePromises);
     const changedEnvs = envsAfterInsert.map((env) => {
       const beforeEnv = envsBeforeInsert.find((e) => e.id === env.id);
       const beforeResources = beforeEnv?.resources ?? [];
@@ -118,7 +128,11 @@ export const upsertResources = async (
       if (env.removedResources.length > 0) {
         const removedIds = env.removedResources
           .map((r) => r.id)
-          .filter((id) => !deletedResourceIds.has(id));
+          .filter(
+            (id) =>
+              !deletedResourceIds.has(id) &&
+              !updatedVariableResourceIds.has(id),
+          );
 
         if (removedIds.length > 0) {
           log.info("Dispatching hook events for removed resources", {

@@ -13,7 +13,7 @@ export type ResourceWithVariables = Resource & {
 export const insertResourceVariables = async (
   tx: Tx,
   resources: ResourceWithVariables[],
-) => {
+): Promise<Set<string>> => {
   const resourceIds = resources.map(({ id }) => id);
   const existingVariables = await tx
     .select()
@@ -31,7 +31,7 @@ export const insertResourceVariables = async (
     })),
   );
 
-  if (resourceVariablesValues.length === 0) return;
+  if (resourceVariablesValues.length === 0) return new Set();
 
   const updatedVariables = await tx
     .insert(schema.resourceVariable)
@@ -66,5 +66,11 @@ export const insertResourceVariables = async (
       (a.value !== b.value || a.sensitive !== b.sensitive),
   );
 
-  return { created, deleted, updated };
+  const updatedResourceIds = [
+    ...created.map((r) => r.resourceId),
+    ...deleted.map((r) => r.resourceId),
+    ...updated.map((r) => r.resourceId),
+  ];
+
+  return new Set(updatedResourceIds);
 };
