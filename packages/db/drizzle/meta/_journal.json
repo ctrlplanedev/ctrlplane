@@ -295,6 +295,13 @@
       "when": 1732139824120,
       "tag": "0041_smooth_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1732482986183,
+      "tag": "0042_lonely_warstar",
+      "breakpoints": true
     }
   ]
 }

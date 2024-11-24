@@ -10,6 +10,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  lte,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -655,6 +656,17 @@ export const deploymentRouter = createTRPCRouter({
           ),
         );
 
+      const rankSubquery = ctx.db
+        .select({
+          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId} ORDER BY ${release.createdAt} DESC)`.as(
+            "rank",
+          ),
+          rankReleaseId: release.id,
+          rankDeploymentId: release.deploymentId,
+        })
+        .from(release)
+        .as("rank_subquery");
+
       return Promise.all(
         envs.map((env) =>
           ctx.db
@@ -663,6 +675,13 @@ export const deploymentRouter = createTRPCRouter({
             .innerJoin(system, eq(system.id, deployment.systemId))
             .innerJoin(environment, eq(environment.systemId, system.id))
             .leftJoin(release, eq(release.deploymentId, deployment.id))
+            .leftJoin(
+              rankSubquery,
+              and(
+                eq(rankSubquery.rankDeploymentId, release.deploymentId),
+                eq(rankSubquery.rankReleaseId, release.id),
+              ),
+            )
             .innerJoin(
               resource,
               resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
@@ -676,10 +695,10 @@ export const deploymentRouter = createTRPCRouter({
               ),
             )
             .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
-
             .where(
               and(
                 eq(resource.id, resourceId),
+                eq(environment.id, env.environment.id),
                 isNull(resource.deletedAt),
                 showAllStatuses
                   ? undefined
@@ -691,9 +710,9 @@ export const deploymentRouter = createTRPCRouter({
                 deploymentIds != null
                   ? inArray(deployment.id, deploymentIds)
                   : undefined,
+                lte(rankSubquery.rank, jobsPerDeployment),
               ),
             )
-            .limit(jobsPerDeployment)
             .orderBy(deployment.id, releaseJobTrigger.createdAt)
             .then((r) =>
               r.map((row) => ({

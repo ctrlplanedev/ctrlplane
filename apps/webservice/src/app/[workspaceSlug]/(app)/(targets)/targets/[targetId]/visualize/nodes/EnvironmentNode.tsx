@@ -6,8 +6,11 @@ import React from "react";
 import { IconPlant } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
 
+import { cn } from "@ctrlplane/ui";
+import { JobStatus, JobStatusReadable } from "@ctrlplane/validators/jobs";
+
 import { api } from "~/trpc/react";
-import { ReleaseCell } from "../../ReleaseCell";
+import { ReleaseIcon } from "../../ReleaseCell";
 
 type Environment = SCHEMA.Environment & {
   deployments: SCHEMA.Deployment[];
@@ -20,56 +23,95 @@ type EnvironmentNodeProps = NodeProps<{
 }>;
 
 const DeploymentCard: React.FC<{
-  environment: Environment;
-  deployment: SCHEMA.Deployment;
-  resource: SCHEMA.Resource;
-}> = ({ deployment, resource, environment }) => {
-  const latestActiveReleaseQ = api.deployment.byTargetId.useQuery({
-    resourceId: resource.id,
-    environmentIds: [environment.id],
-    deploymentIds: [deployment.id],
-    jobsPerDeployment: 1,
-    showAllStatuses: true,
-  });
-
-  const latestActiveRelease = latestActiveReleaseQ.data?.at(0);
-  if (latestActiveReleaseQ.isLoading)
-    return (
-      <div className="h-4 w-full animate-pulse rounded-md bg-neutral-800" />
-    );
-
-  if (latestActiveRelease?.releaseJobTrigger == null)
-    return <div className="text-xs text-neutral-500">No active release</div>;
-
-  return (
-    <div className="flex flex-grow items-center gap-4">
-      <div className=" text-neutral-500">{deployment.name}</div>
-      <ReleaseCell
-        deployment={deployment}
-        releaseJobTrigger={latestActiveRelease.releaseJobTrigger}
-      />
-    </div>
-  );
-};
+  deploymentName: string;
+  job?: SCHEMA.Job;
+  releaseVersion: string;
+}> = ({ deploymentName, job, releaseVersion }) => (
+  <div className="flex flex-grow items-center gap-12">
+    <div>{deploymentName}</div>
+    {job != null && (
+      <div className="flex items-center gap-2">
+        <ReleaseIcon job={job} />
+        <div className="py-2 text-sm">
+          <div>{releaseVersion}</div>
+          <div>{JobStatusReadable[job.status]}</div>
+        </div>
+      </div>
+    )}
+    {job == null && (
+      <div className="flex flex-grow justify-end py-2 pr-4 text-sm text-muted-foreground">
+        No active job
+      </div>
+    )}
+  </div>
+);
 
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const { data } = node;
+
+  const latestActiveReleasesQ = api.deployment.byTargetId.useQuery(
+    {
+      resourceId: data.environment.resource.id,
+      environmentIds: [data.environment.id],
+      deploymentIds: data.environment.deployments.map((d) => d.id),
+      jobsPerDeployment: 1,
+      showAllStatuses: true,
+    },
+    { refetchInterval: 5_000 },
+  );
+
+  const latestActiveReleases = latestActiveReleasesQ.data ?? [];
+
+  const isInProgress = latestActiveReleases.some(
+    (r) => r.releaseJobTrigger?.job.status === JobStatus.InProgress,
+  );
+  const isPending = latestActiveReleases.some(
+    (r) => r.releaseJobTrigger?.job.status === JobStatus.Pending,
+  );
+  const isCompleted = latestActiveReleases.every(
+    (r) => r.releaseJobTrigger?.job.status === JobStatus.Completed,
+  );
+
   return (
     <>
-      <div className="relative flex min-w-[250px] flex-col gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4 py-3">
+      <div
+        className={cn(
+          "relative flex min-w-[250px] flex-col gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4 py-3",
+          isInProgress && "border-blue-500",
+          isPending && "border-neutral-500",
+          isCompleted && "border-green-500",
+        )}
+      >
         <div className="flex items-center gap-2">
           <IconPlant className="h-4 w-4 text-green-500" />
           <span>{data.label}</span>
         </div>
         <div className="flex flex-col gap-4">
-          {data.environment.deployments.map((deployment) => (
-            <DeploymentCard
-              key={deployment.id}
-              deployment={deployment}
-              resource={data.environment.resource}
-              environment={data.environment}
-            />
-          ))}
+          {latestActiveReleasesQ.isLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-8 w-full animate-pulse bg-neutral-800"
+              />
+            ))}
+          {!latestActiveReleasesQ.isLoading &&
+            data.environment.deployments.map((deployment) => {
+              const latestActiveRelease = latestActiveReleases.find(
+                (r) =>
+                  r.releaseJobTrigger?.release.deploymentId === deployment.id,
+              );
+              return (
+                <DeploymentCard
+                  key={deployment.id}
+                  deploymentName={deployment.name}
+                  job={latestActiveRelease?.releaseJobTrigger?.job}
+                  releaseVersion={
+                    latestActiveRelease?.releaseJobTrigger?.release.version ??
+                    ""
+                  }
+                />
+              );
+            })}
         </div>
       </div>
       <Handle

@@ -15,15 +15,11 @@ import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/rea
 import { DepEdge } from "./DepEdge";
 import {
   createEdgeFromProviderToResource,
-  createEdgesFromEnvironmentsToSystems,
   createEdgesFromResourceToEnvironments,
-  createEdgesFromSystemsToDeployments,
 } from "./edges";
-import { DeploymentNode } from "./nodes/DeploymentNode";
 import { EnvironmentNode } from "./nodes/EnvironmentNode";
 import { ProviderNode } from "./nodes/ProviderNode";
 import { ResourceNode } from "./nodes/ResourceNode";
-import { SystemNode } from "./nodes/SystemNode";
 
 type Relationships = NonNullable<RouterOutputs["resource"]["relationships"]>;
 
@@ -36,16 +32,12 @@ enum NodeType {
   Resource = "resource",
   Environment = "environment",
   Provider = "provider",
-  System = "system",
-  Deployment = "deployment",
 }
 
 const nodeTypes: NodeTypes = {
   [NodeType.Resource]: ResourceNode,
   [NodeType.Environment]: EnvironmentNode,
   [NodeType.Provider]: ProviderNode,
-  [NodeType.System]: SystemNode,
-  [NodeType.Deployment]: DeploymentNode,
 };
 const edgeTypes: EdgeTypes = { default: DepEdge };
 
@@ -76,20 +68,6 @@ export const ResourceVisualizationDiagram: React.FC<
           position: { x: 0, y: 0 },
         })),
       ),
-      // ...systems.map((system) => ({
-      //   id: system.id,
-      //   type: NodeType.System,
-      //   data: { ...system, label: system.name },
-      //   position: { x: 0, y: 0 },
-      // })),
-      // ...systems.flatMap((system) =>
-      //   system.deployments.map((deployment) => ({
-      //     id: deployment.id,
-      //     type: NodeType.Deployment,
-      //     data: { ...deployment, label: deployment.name },
-      //     position: { x: 0, y: 0 },
-      //   })),
-      // ),
       provider != null && {
         id: provider.id,
         type: NodeType.Provider,
@@ -103,17 +81,10 @@ export const ResourceVisualizationDiagram: React.FC<
     resource,
     systems.flatMap((s) => s.environments),
   );
-  // const envToSystemEdges = createEdgesFromEnvironmentsToSystems(systems);
-  // const systemToDeploymentsEdges = createEdgesFromSystemsToDeployments(systems);
   const providerEdge = createEdgeFromProviderToResource(provider, resource);
 
   const [edges, __, onEdgesChange] = useEdgesState(
-    compact([
-      ...resourceToEnvEdges,
-      // ...envToSystemEdges,
-      // ...systemToDeploymentsEdges,
-      providerEdge,
-    ]),
+    compact([...resourceToEnvEdges, providerEdge]),
   );
 
   const setReactFlowInstance = useLayoutAndFitView(nodes, { direction: "LR" });

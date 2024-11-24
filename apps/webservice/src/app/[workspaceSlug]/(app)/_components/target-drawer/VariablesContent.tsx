@@ -104,8 +104,9 @@ export const VariableContent: React.FC<{
   targetId: string;
   targetVariables: SCHEMA.ResourceVariable[];
 }> = ({ targetId, targetVariables }) => {
-  const deployments = api.deployment.byTargetId.useQuery(targetId);
-  const variables = api.deployment.variable.byTargetId.useQuery(targetId);
+  const resourceId = targetId;
+  const deployments = api.deployment.byTargetId.useQuery({ resourceId });
+  const variables = api.deployment.variable.byTargetId.useQuery(resourceId);
   return (
     <div className="space-y-8 overflow-y-auto">
       <TargetVariableSection

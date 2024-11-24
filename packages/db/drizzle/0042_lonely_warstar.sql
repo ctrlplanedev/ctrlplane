@@ -1,0 +1,1 @@
+DROP TABLE "deployment_resource_relationship";

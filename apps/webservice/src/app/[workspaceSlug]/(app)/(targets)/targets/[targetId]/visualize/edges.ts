@@ -24,35 +24,6 @@ export const createEdgesFromResourceToEnvironments = (
     label: "in",
   }));
 
-type System = SCHEMA.System & {
-  environments: SCHEMA.Environment[];
-  deployments: SCHEMA.Deployment[];
-};
-
-export const createEdgesFromEnvironmentsToSystems = (systems: System[]) =>
-  systems.flatMap((system) =>
-    system.environments.map((environment) => ({
-      id: `${environment.id}-${system.id}`,
-      source: environment.id,
-      target: system.id,
-      style: { stroke: colors.neutral[700] },
-      markerEnd,
-      label: "part of",
-    })),
-  );
-
-export const createEdgesFromSystemsToDeployments = (systems: System[]) =>
-  systems.flatMap((system) =>
-    system.deployments.map((deployment) => ({
-      id: `${system.id}-${deployment.id}`,
-      source: system.id,
-      target: deployment.id,
-      style: { stroke: colors.neutral[700] },
-      markerEnd,
-      label: "deploys",
-    })),
-  );
-
 export const createEdgeFromProviderToResource = (
   provider: Provider | null,
   resource: SCHEMA.Resource,
