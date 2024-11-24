@@ -44,7 +44,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
           isTerraform && "border-purple-500/70",
           isSharedCluster && "border-blue-500/70",
         )}
-        position={Position.Top}
+        position={Position.Left}
       />
       <Handle
         type="source"
@@ -54,7 +54,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
           isTerraform && "border-purple-500/70",
           isSharedCluster && "border-blue-500/70",
         )}
-        position={Position.Bottom}
+        position={Position.Right}
       />
     </>
   );

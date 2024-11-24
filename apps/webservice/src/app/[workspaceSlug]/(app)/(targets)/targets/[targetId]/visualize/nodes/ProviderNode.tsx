@@ -52,7 +52,7 @@ export const ProviderNode: React.FC<ProviderNodeProps> = (node) => {
           "h-2 w-2 rounded-full border border-green-500 bg-neutral-800",
           data.google != null && "border-red-500 bg-red-800",
         )}
-        position={Position.Top}
+        position={Position.Left}
       />
       <Handle
         type="source"
@@ -60,12 +60,7 @@ export const ProviderNode: React.FC<ProviderNodeProps> = (node) => {
           "h-2 w-2 rounded-full border border-green-500 bg-neutral-800",
           data.google != null && "border-red-500 bg-red-800",
         )}
-        style={{
-          bottom: "0",
-          left: "50%",
-          transform: "translate(-50%, 50%)",
-        }}
-        position={Position.Bottom}
+        position={Position.Right}
       />
     </>
   );

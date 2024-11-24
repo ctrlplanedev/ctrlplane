@@ -370,6 +370,7 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
       name: release.name,
       config: release.config,
       environmentId: releaseJobTrigger.environmentId,
+      resourceId: releaseJobTrigger.resourceId,
 
       rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId}, ${releaseJobTrigger.environmentId} ORDER BY ${release.createdAt} DESC)`.as(
         "rank",
@@ -611,18 +612,33 @@ export const deploymentRouter = createTRPCRouter({
     }),
 
   byTargetId: protectedProcedure
-    .input(z.string().uuid())
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+        environmentIds: z.array(z.string().uuid()).optional(),
+        deploymentIds: z.array(z.string().uuid()).optional(),
+        jobsPerDeployment: z.number().optional().default(30),
+        showAllStatuses: z.boolean().optional().default(false),
+      }),
+    )
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentList)
-          .on({ type: "resource", id: input }),
+          .on({ type: "resource", id: input.resourceId }),
     })
     .query(async ({ ctx, input }) => {
+      const {
+        resourceId,
+        environmentIds,
+        deploymentIds,
+        jobsPerDeployment,
+        showAllStatuses,
+      } = input;
       const tg = await ctx.db
         .select()
         .from(resource)
-        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
+        .where(and(eq(resource.id, resourceId), isNull(resource.deletedAt)))
         .then(takeFirst);
 
       const envs = await ctx.db
@@ -633,6 +649,9 @@ export const deploymentRouter = createTRPCRouter({
           and(
             eq(system.workspaceId, tg.workspaceId),
             isNotNull(environment.resourceFilter),
+            environmentIds != null
+              ? inArray(environment.id, environmentIds)
+              : undefined,
           ),
         );
 
@@ -660,31 +679,83 @@ export const deploymentRouter = createTRPCRouter({
 
             .where(
               and(
-                eq(resource.id, input),
+                eq(resource.id, resourceId),
                 isNull(resource.deletedAt),
-                inArray(job.status, [
-                  JobStatus.Completed,
-                  JobStatus.Pending,
-                  JobStatus.InProgress,
-                ]),
+                showAllStatuses
+                  ? undefined
+                  : inArray(job.status, [
+                      JobStatus.Completed,
+                      JobStatus.Pending,
+                      JobStatus.InProgress,
+                    ]),
+                deploymentIds != null
+                  ? inArray(deployment.id, deploymentIds)
+                  : undefined,
               ),
             )
+            .limit(jobsPerDeployment)
             .orderBy(deployment.id, releaseJobTrigger.createdAt)
             .then((r) =>
               r.map((row) => ({
                 ...row.deployment,
                 environment: row.environment,
                 system: row.system,
-                releaseJobTrigger: {
-                  ...row.release_job_trigger,
-                  job: row.job,
-                  release: row.release,
-                  resourceId: row.resource.id,
-                },
+                releaseJobTrigger:
+                  row.release_job_trigger != null
+                    ? {
+                        ...row.release_job_trigger,
+                        job: row.job!,
+                        release: row.release!,
+                        resourceId: row.resource.id,
+                      }
+                    : null,
               })),
             ),
         ),
       ).then((r) => r.flat());
+    }),
+
+  byResourceAndDeploymentId: protectedProcedure
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+        deploymentId: z.string().uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: async ({ canUser, input }) => {
+        const { resourceId, deploymentId } = input;
+        const canGetDeploymentPromise = canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: deploymentId });
+        const canGetResourcePromise = canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "resource", id: resourceId });
+        const [canGetDeployment, canGetResource] = await Promise.all([
+          canGetDeploymentPromise,
+          canGetResourcePromise,
+        ]);
+        return canGetDeployment && canGetResource;
+      },
+    })
+    .query(async ({ ctx, input }) => {
+      const { resourceId, deploymentId } = input;
+      const activeRelease = latestActiveReleaseSubQuery(ctx.db);
+      return ctx.db
+        .select()
+        .from(deployment)
+        .innerJoin(activeRelease, eq(activeRelease.deploymentId, deployment.id))
+        .where(
+          and(
+            eq(activeRelease.resourceId, resourceId),
+            eq(deployment.id, deploymentId),
+          ),
+        )
+        .then(takeFirst)
+        .then((row) => ({
+          ...row.deployment,
+          latestActiveRelease: row.active_releases,
+        }));
     }),
 
   byWorkspaceId: protectedProcedure

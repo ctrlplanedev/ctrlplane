@@ -394,11 +394,57 @@ export const resourceRouter = createTRPCRouter({
           ? null
           : {
               ...resource.provider,
-              google:
-                resource.provider.google.length > 0
-                  ? resource.provider.google[0]!
-                  : null,
+              google: resource.provider.google[0] ?? null,
             };
+
+      // const latestJobsForDeploymentsPromises = matchedSystems.flatMap((sys) =>
+      //   sys.deployments.map(async (d) => {
+      //     const latestReleaseSubquery = ctx.db
+      //       .select({
+      //         id: schema.release.id,
+      //         deploymentId: schema.release.deploymentId,
+      //         version: schema.release.version,
+      //         createdAt: schema.release.createdAt,
+      //         environmentId: schema.releaseJobTrigger.environmentId,
+      //         status: schema.job.status,
+      //         rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId}, ${schema.releaseJobTrigger.environmentId} ORDER BY ${schema.release.createdAt} DESC)`.as(
+      //           "rank",
+      //         ),
+      //       })
+      //       .from(schema.release)
+      //       .innerJoin(
+      //         schema.releaseJobTrigger,
+      //         eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      //       )
+      //       .innerJoin(
+      //         schema.job,
+      //         eq(schema.releaseJobTrigger.jobId, schema.job.id),
+      //       )
+      //       .as("latest_releases");
+
+      //     const latestReleases = await ctx.db
+      //       .select()
+      //       .from(latestReleaseSubquery)
+      //       .where(
+      //         and(
+      //           eq(latestReleaseSubquery.deploymentId, d.id),
+      //           eq(latestReleaseSubquery.rank, 1),
+      //         ),
+      //       );
+
+      //     return { ...d, latestReleases };
+      //   }),
+      // );
+      // const latestJobsForDeployments = await Promise.all(
+      //   latestJobsForDeploymentsPromises,
+      // );
+
+      // const matchedSystemsWithDeployments = matchedSystems.map((sys) => ({
+      //   ...sys,
+      //   deployments: latestJobsForDeployments.filter(
+      //     (d) => d.systemId === sys.id,
+      //   ),
+      // }));
 
       return { systems: matchedSystems, provider };
     }),

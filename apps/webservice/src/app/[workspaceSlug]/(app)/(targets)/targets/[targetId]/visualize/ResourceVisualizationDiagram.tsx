@@ -65,24 +65,31 @@ export const ResourceVisualizationDiagram: React.FC<
         system.environments.map((env) => ({
           id: env.id,
           type: NodeType.Environment,
-          data: { ...env, label: env.name },
+          data: {
+            environment: {
+              ...env,
+              deployments: system.deployments,
+              resource,
+            },
+            label: `${system.name}/${env.name}`,
+          },
           position: { x: 0, y: 0 },
         })),
       ),
-      ...systems.map((system) => ({
-        id: system.id,
-        type: NodeType.System,
-        data: { ...system, label: system.name },
-        position: { x: 0, y: 0 },
-      })),
-      ...systems.flatMap((system) =>
-        system.deployments.map((deployment) => ({
-          id: deployment.id,
-          type: NodeType.Deployment,
-          data: { ...deployment, label: deployment.name },
-          position: { x: 0, y: 0 },
-        })),
-      ),
+      // ...systems.map((system) => ({
+      //   id: system.id,
+      //   type: NodeType.System,
+      //   data: { ...system, label: system.name },
+      //   position: { x: 0, y: 0 },
+      // })),
+      // ...systems.flatMap((system) =>
+      //   system.deployments.map((deployment) => ({
+      //     id: deployment.id,
+      //     type: NodeType.Deployment,
+      //     data: { ...deployment, label: deployment.name },
+      //     position: { x: 0, y: 0 },
+      //   })),
+      // ),
       provider != null && {
         id: provider.id,
         type: NodeType.Provider,
@@ -96,20 +103,20 @@ export const ResourceVisualizationDiagram: React.FC<
     resource,
     systems.flatMap((s) => s.environments),
   );
-  const envToSystemEdges = createEdgesFromEnvironmentsToSystems(systems);
-  const systemToDeploymentsEdges = createEdgesFromSystemsToDeployments(systems);
+  // const envToSystemEdges = createEdgesFromEnvironmentsToSystems(systems);
+  // const systemToDeploymentsEdges = createEdgesFromSystemsToDeployments(systems);
   const providerEdge = createEdgeFromProviderToResource(provider, resource);
 
   const [edges, __, onEdgesChange] = useEdgesState(
     compact([
       ...resourceToEnvEdges,
-      ...envToSystemEdges,
-      ...systemToDeploymentsEdges,
+      // ...envToSystemEdges,
+      // ...systemToDeploymentsEdges,
       providerEdge,
     ]),
   );
 
-  const setReactFlowInstance = useLayoutAndFitView(nodes);
+  const setReactFlowInstance = useLayoutAndFitView(nodes, { direction: "LR" });
 
   return (
     <ReactFlow

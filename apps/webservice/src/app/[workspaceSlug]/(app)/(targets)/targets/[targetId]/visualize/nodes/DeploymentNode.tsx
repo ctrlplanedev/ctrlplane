@@ -1,7 +1,6 @@
 import type { NodeProps } from "reactflow";
 import { IconShip } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
-import colors from "tailwindcss/colors";
 
 export const DeploymentNode: React.FC<NodeProps> = (node) => {
   const { data } = node;
@@ -16,22 +15,13 @@ export const DeploymentNode: React.FC<NodeProps> = (node) => {
       </div>
       <Handle
         type="target"
-        className="h-2 w-2 rounded-full border border-amber-500"
-        style={{
-          background: colors.neutral[800],
-        }}
-        position={Position.Top}
+        className="h-2 w-2 rounded-full border border-amber-500 bg-neutral-800"
+        position={Position.Left}
       />
       <Handle
         type="source"
-        className="h-2 w-2 rounded-full border border-amber-500"
-        style={{
-          bottom: "0",
-          left: "50%",
-          transform: "translate(-50%, 50%)",
-          background: colors.neutral[800],
-        }}
-        position={Position.Bottom}
+        className="h-2 w-2 rounded-full border border-amber-500 bg-neutral-800"
+        position={Position.Right}
       />
     </>
   );
