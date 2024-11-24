@@ -93,7 +93,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
             _.range(3).map((i) => (
               <Skeleton
                 key={i}
-                className="h-10 w-full"
+                className="h-9 w-full"
                 style={{ opacity: 1 * (1 - i / 3) }}
               />
             ))}
