@@ -22,6 +22,7 @@ import { ProviderNode } from "./nodes/ProviderNode";
 import { ResourceNode } from "./nodes/ResourceNode";
 
 type Relationships = NonNullable<RouterOutputs["resource"]["relationships"]>;
+type System = Relationships["systems"][number];
 
 type ResourceVisualizationDiagramProps = {
   resource: SCHEMA.Resource;
@@ -53,7 +54,7 @@ export const ResourceVisualizationDiagram: React.FC<
         data: { ...resource, label: resource.identifier },
         position: { x: 0, y: 0 },
       },
-      ...systems.flatMap((system) =>
+      ...systems.flatMap((system: System) =>
         system.environments.map((env) => ({
           id: env.id,
           type: NodeType.Environment,
