@@ -1,4 +1,5 @@
 import type { SQL, Tx } from "@ctrlplane/db";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -314,6 +315,21 @@ const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
       schema.workspace.id,
     );
 
+const environmentHasResource = (
+  db: Tx,
+  resourceId: string,
+  resourceFilter: ResourceCondition,
+) =>
+  db.query.resource
+    .findFirst({
+      where: and(
+        eq(schema.resource.id, resourceId),
+        schema.resourceMatchesMetadata(db, resourceFilter),
+        isNotDeleted,
+      ),
+    })
+    .then((matchedResource) => matchedResource != null);
+
 export const resourceRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
   provider: resourceProviderRouter,
@@ -344,6 +360,12 @@ export const resourceRouter = createTRPCRouter({
     ),
 
   relationships: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "resource", id: input }),
+    })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
       const hasFilter = isNotNull(schema.environment.resourceFilter);
@@ -363,44 +385,36 @@ export const resourceRouter = createTRPCRouter({
       if (resource == null) return null;
 
       const { systems } = resource.workspace;
-
-      const matchedSystemsPromises = systems.map(async (s) => {
-        const matchedEnvironmentsPromises = s.environments.map(async (e) => {
-          const matchedResource = await ctx.db.query.resource.findFirst({
-            where: and(
-              eq(schema.resource.id, resource.id),
-              schema.resourceMatchesMetadata(ctx.db, e.resourceFilter),
-              isNotDeleted,
-            ),
-          });
-
-          return matchedResource != null ? e : null;
-        });
-
-        const matchedEnvironments = await Promise.all(
-          matchedEnvironmentsPromises,
-        ).then((t) => t.filter(isPresent));
-        if (matchedEnvironments.length === 0) return null;
-
-        return { ...s, environments: matchedEnvironments };
-      });
-
-      const matchedSystems = await Promise.all(matchedSystemsPromises).then(
-        (t) => t.filter(isPresent),
-      );
+      const systemsWithResource = await _.chain(
+        systems.map(async (s) =>
+          _.chain(s.environments)
+            .filter((e) => isPresent(e.resourceFilter))
+            .map((e) =>
+              environmentHasResource(ctx.db, resource.id, e.resourceFilter!),
+            )
+            .thru((promises) => Promise.all(promises))
+            .value()
+            .then((t) => t.filter(isPresent))
+            .then((t) => (t.length > 0 ? { ...s, environments: t } : null)),
+        ),
+      )
+        .thru((promises) => Promise.all(promises))
+        .value()
+        .then((t) => t.filter(isPresent));
 
       const provider =
         resource.provider == null
           ? null
           : {
               ...resource.provider,
-              google:
-                resource.provider.google.length > 0
-                  ? resource.provider.google[0]!
-                  : null,
+              google: resource.provider.google[0] ?? null,
             };
 
-      return { systems: matchedSystems, provider };
+      return {
+        ...resource,
+        workspace: { ...resource.workspace, systems: systemsWithResource },
+        provider,
+      };
     }),
 
   byWorkspaceId: createTRPCRouter({

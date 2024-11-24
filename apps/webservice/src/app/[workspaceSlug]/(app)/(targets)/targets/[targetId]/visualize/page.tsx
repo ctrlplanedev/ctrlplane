@@ -8,12 +8,9 @@ export default async function VisualizePage({
 }: {
   params: { targetId: string };
 }) {
-  const resourceId = targetId;
-  const resourcePromise = api.resource.byId(resourceId);
-  const relationshipsPromise = api.resource.relationships(resourceId);
   const [resource, relationships] = await Promise.all([
-    resourcePromise,
-    relationshipsPromise,
+    api.resource.byId(targetId),
+    api.resource.relationships(targetId),
   ]);
   if (resource == null || relationships == null) return notFound();
 
