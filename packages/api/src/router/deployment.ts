@@ -734,49 +734,6 @@ export const deploymentRouter = createTRPCRouter({
       ).then((r) => r.flat());
     }),
 
-  byResourceAndDeploymentId: protectedProcedure
-    .input(
-      z.object({
-        resourceId: z.string().uuid(),
-        deploymentId: z.string().uuid(),
-      }),
-    )
-    .meta({
-      authorizationCheck: async ({ canUser, input }) => {
-        const { resourceId, deploymentId } = input;
-        const canGetDeploymentPromise = canUser
-          .perform(Permission.DeploymentGet)
-          .on({ type: "deployment", id: deploymentId });
-        const canGetResourcePromise = canUser
-          .perform(Permission.ResourceGet)
-          .on({ type: "resource", id: resourceId });
-        const [canGetDeployment, canGetResource] = await Promise.all([
-          canGetDeploymentPromise,
-          canGetResourcePromise,
-        ]);
-        return canGetDeployment && canGetResource;
-      },
-    })
-    .query(async ({ ctx, input }) => {
-      const { resourceId, deploymentId } = input;
-      const activeRelease = latestActiveReleaseSubQuery(ctx.db);
-      return ctx.db
-        .select()
-        .from(deployment)
-        .innerJoin(activeRelease, eq(activeRelease.deploymentId, deployment.id))
-        .where(
-          and(
-            eq(activeRelease.resourceId, resourceId),
-            eq(deployment.id, deploymentId),
-          ),
-        )
-        .then(takeFirst)
-        .then((row) => ({
-          ...row.deployment,
-          latestActiveRelease: row.active_releases,
-        }));
-    }),
-
   byWorkspaceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

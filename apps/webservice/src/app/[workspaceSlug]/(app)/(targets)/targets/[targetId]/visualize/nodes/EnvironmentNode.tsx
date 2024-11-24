@@ -4,9 +4,11 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import React from "react";
 import { IconPlant } from "@tabler/icons-react";
+import _ from "lodash";
 import { Handle, Position } from "reactflow";
 
 import { cn } from "@ctrlplane/ui";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { JobStatus, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
@@ -88,10 +90,11 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
         </div>
         <div className="flex flex-col gap-4">
           {latestActiveReleasesQ.isLoading &&
-            Array.from({ length: 3 }).map((_, i) => (
-              <div
+            _.range(3).map((i) => (
+              <Skeleton
                 key={i}
-                className="h-8 w-full animate-pulse bg-neutral-800"
+                className="h-10 w-full"
+                style={{ opacity: 1 * (1 - i / 3) }}
               />
             ))}
           {!latestActiveReleasesQ.isLoading &&
