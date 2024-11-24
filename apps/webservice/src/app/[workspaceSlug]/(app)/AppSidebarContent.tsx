@@ -22,6 +22,11 @@ const navMain = (prefix: string) => [
     popoverId: "systems",
     items: [
       {
+        title: "List",
+        url: `${prefix}/systems`,
+        isActive: true,
+      },
+      {
         title: "Dependencies",
         url: `${prefix}/dependencies`,
         isActive: true,
