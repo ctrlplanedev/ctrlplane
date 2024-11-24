@@ -1,6 +1,11 @@
-import { SiKubernetes, SiTerraform } from "@icons-pack/react-simple-icons";
+import {
+  SiGit,
+  SiKubernetes,
+  SiTerraform,
+} from "@icons-pack/react-simple-icons";
 import {
   IconBraces,
+  IconCloud,
   IconServer,
   IconTerminal,
   IconUserDollar,
@@ -23,5 +28,10 @@ export const TargetIcon: React.FC<{ version: string; kind?: string }> = ({
     return <SiTerraform className="h-4 w-4 shrink-0 text-purple-300" />;
   if (version.includes("ctrlplane.access"))
     return <IconTerminal className="h-4 w-4 shrink-0 text-neutral-300" />;
+  if (kind?.toLowerCase().includes("git"))
+    return <SiGit className="h-4 w-4 shrink-0 text-red-300" />;
+  if (kind?.toLowerCase().includes("cloud"))
+    return <IconCloud className="h-4 w-4 shrink-0 text-white" />;
+
   return <IconBraces className="h-4 w-4 shrink-0 text-neutral-300" />;
 };
