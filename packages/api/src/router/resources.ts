@@ -390,7 +390,11 @@ export const resourceRouter = createTRPCRouter({
           _.chain(s.environments)
             .filter((e) => isPresent(e.resourceFilter))
             .map((e) =>
-              environmentHasResource(ctx.db, resource.id, e.resourceFilter!),
+              environmentHasResource(
+                ctx.db,
+                resource.id,
+                e.resourceFilter!,
+              ).then((t) => (t ? { ...e, resource } : null)),
             )
             .thru((promises) => Promise.all(promises))
             .value()
