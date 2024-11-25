@@ -26,202 +26,53 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "string",
-                    },
-                    status: {
-                      type: "string",
-                      enum: [
-                        "completed",
-                        "cancelled",
-                        "skipped",
-                        "in_progress",
-                        "action_required",
-                        "pending",
-                        "failure",
-                        "invalid_job_agent",
-                        "invalid_integration",
-                        "external_run_not_found",
-                      ],
-                    },
-                    externalId: {
-                      type: "string",
-                      nullable: true,
-                      description:
-                        "External job identifier (e.g. GitHub workflow run ID)",
-                    },
-                    release: {
+                  allOf: [
+                    { $ref: "#/components/schemas/Job" },
+                    {
                       type: "object",
                       properties: {
-                        id: {
-                          type: "string",
+                        release: { $ref: "#/components/schemas/Release" },
+                        deployment: { $ref: "#/components/schemas/Deployment" },
+                        runbook: { $ref: "#/components/schemas/Runbook" },
+                        resource: { $ref: "#/components/schemas/Resource" },
+                        environment: {
+                          $ref: "#/components/schemas/Environment",
                         },
-                        version: {
-                          type: "string",
-                        },
-                        metadata: {
+                        variables: {
                           type: "object",
                         },
-                        config: {
-                          type: "object",
-                        },
-                      },
-                      required: ["id", "version", "metadata", "config"],
-                    },
-                    deployment: {
-                      type: "object",
-                      properties: {
-                        id: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
-                        slug: {
-                          type: "string",
-                        },
-                        systemId: {
-                          type: "string",
-                        },
-                        jobAgentId: {
-                          type: "string",
-                        },
-                      },
-                      required: [
-                        "id",
-                        "version",
-                        "slug",
-                        "systemId",
-                        "jobAgentId",
-                      ],
-                    },
-                    runbook: {
-                      type: "object",
-                      properties: {
-                        id: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
-                        systemId: {
-                          type: "string",
-                        },
-                        jobAgentId: {
-                          type: "string",
-                        },
-                      },
-                      required: ["id", "name", "systemId", "jobAgentId"],
-                    },
-                    resource: {
-                      type: "object",
-                      properties: {
-                        id: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
-                        version: {
-                          type: "string",
-                        },
-                        kind: {
-                          type: "string",
-                        },
-                        identifier: {
-                          type: "string",
-                        },
-                        workspaceId: {
-                          type: "string",
-                        },
-                        config: {
-                          type: "object",
-                        },
-                        metadata: {
-                          type: "object",
-                        },
-                      },
-                      required: [
-                        "id",
-                        "name",
-                        "version",
-                        "kind",
-                        "identifier",
-                        "workspaceId",
-                        "config",
-                        "metadata",
-                      ],
-                    },
-                    environment: {
-                      type: "object",
-                      properties: {
-                        id: {
-                          type: "string",
-                        },
-                        name: {
-                          type: "string",
-                        },
-                        systemId: {
-                          type: "string",
-                        },
-                      },
-                      required: ["id", "name", "systemId"],
-                    },
-                    variables: {
-                      type: "object",
-                    },
-                    approval: {
-                      type: "object",
-                      nullable: true,
-                      properties: {
-                        id: {
-                          type: "string",
-                        },
-                        status: {
-                          type: "string",
-                          enum: ["pending", "approved", "rejected"],
-                        },
-                        approver: {
+                        approval: {
                           type: "object",
                           nullable: true,
-                          description:
-                            "Null when status is pending, contains approver details when approved or rejected",
                           properties: {
                             id: {
                               type: "string",
                             },
-                            name: {
+                            status: {
                               type: "string",
+                              enum: ["pending", "approved", "rejected"],
+                            },
+                            approver: {
+                              type: "object",
+                              nullable: true,
+                              description:
+                                "Null when status is pending, contains approver details when approved or rejected",
+                              properties: {
+                                id: {
+                                  type: "string",
+                                },
+                                name: {
+                                  type: "string",
+                                },
+                              },
+                              required: ["id", "name"],
                             },
                           },
-                          required: ["id", "name"],
+                          required: ["id", "status"],
                         },
                       },
-                      required: ["id", "status"],
+                      required: ["variables"],
                     },
-                    createdAt: {
-                      type: "string",
-                      format: "date-time",
-                    },
-                    updatedAt: {
-                      type: "string",
-                      format: "date-time",
-                    },
-                    jobAgentConfig: {
-                      type: "object",
-                      description: "Configuration for the Job Agent",
-                      additionalProperties: true,
-                    },
-                  },
-                  required: [
-                    "id",
-                    "status",
-                    "createdAt",
-                    "updatedAt",
-                    "variables",
-                    "jobAgentConfig",
                   ],
                 },
               },
