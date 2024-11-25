@@ -78,6 +78,7 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
     references: [workspace.id],
   }),
   releaseTrigger: many(releaseJobTrigger),
+  jobRelationships: many(jobResourceRelationship),
 }));
 
 export type Resource = InferSelectModel<typeof resource>;
@@ -283,8 +284,20 @@ export const jobResourceRelationship = pgTable(
       .notNull(),
     resourceIdentifier: text("resource_identifier").notNull(),
   },
-  (t) => ({
-    uniq: uniqueIndex().on(t.jobId, t.resourceIdentifier),
+  (t) => ({ uniq: uniqueIndex().on(t.jobId, t.resourceIdentifier) }),
+);
+
+export const jobResourceRelationshipRelations = relations(
+  jobResourceRelationship,
+  ({ one }) => ({
+    job: one(job, {
+      fields: [jobResourceRelationship.jobId],
+      references: [job.id],
+    }),
+    resource: one(resource, {
+      fields: [jobResourceRelationship.resourceIdentifier],
+      references: [resource.identifier],
+    }),
   }),
 );
 

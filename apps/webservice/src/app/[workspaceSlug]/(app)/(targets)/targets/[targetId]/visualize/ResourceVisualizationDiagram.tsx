@@ -1,7 +1,6 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { EdgeTypes, NodeTypes } from "reactflow";
 import React from "react";
 import { compact } from "lodash";
@@ -15,6 +14,7 @@ import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/rea
 import { DepEdge } from "./DepEdge";
 import {
   createEdgeFromProviderToResource,
+  createEdgesFromDeploymentsToResources,
   createEdgesFromResourceToEnvironments,
 } from "./edges";
 import { EnvironmentNode } from "./nodes/EnvironmentNode";
@@ -24,7 +24,6 @@ import { ResourceNode } from "./nodes/ResourceNode";
 type Relationships = NonNullable<RouterOutputs["resource"]["relationships"]>;
 
 type ResourceVisualizationDiagramProps = {
-  resource: SCHEMA.Resource;
   relationships: Relationships;
 };
 
@@ -43,49 +42,59 @@ const edgeTypes: EdgeTypes = { default: DepEdge };
 
 export const ResourceVisualizationDiagram: React.FC<
   ResourceVisualizationDiagramProps
-> = ({ resource, relationships }) => {
-  const { workspace, provider } = relationships;
-  const { systems } = workspace;
+> = ({ relationships }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>(
     compact([
-      {
-        id: resource.id,
+      ...relationships.map((r) => ({
+        id: r.id,
         type: NodeType.Resource,
-        data: { ...resource, label: resource.identifier },
+        data: { ...r, label: r.identifier },
         position: { x: 0, y: 0 },
-      },
-      ...systems.flatMap((system) =>
-        system.environments.map((env) => ({
-          id: env.id,
-          type: NodeType.Environment,
-          data: {
-            environment: {
-              ...env,
-              deployments: system.deployments,
-              resource,
-            },
-            label: `${system.name}/${env.name}`,
-          },
-          position: { x: 0, y: 0 },
-        })),
+      })),
+      ...relationships.flatMap((r) =>
+        r.provider != null
+          ? [
+              {
+                id: `${r.provider.id}-${r.id}`,
+                type: NodeType.Provider,
+                data: { ...r.provider, label: r.provider.name },
+                position: { x: 0, y: 0 },
+              },
+            ]
+          : [],
       ),
-      provider != null && {
-        id: provider.id,
-        type: NodeType.Provider,
-        data: { ...provider, label: provider.name },
-        position: { x: 0, y: 0 },
-      },
+      ...relationships.flatMap((r) =>
+        r.workspace.systems.flatMap((s) =>
+          s.environments.map((e) => ({
+            id: e.id,
+            type: NodeType.Environment,
+            data: {
+              environment: {
+                ...e,
+                deployments: s.deployments,
+                resource: r,
+              },
+              label: `${s.name}/${e.name}`,
+            },
+            position: { x: 0, y: 0 },
+          })),
+        ),
+      ),
     ]),
   );
 
-  const resourceToEnvEdges = createEdgesFromResourceToEnvironments(
-    resource,
-    systems.flatMap((s) => s.environments),
+  const resourceToEnvEdges = relationships.flatMap((r) =>
+    createEdgesFromResourceToEnvironments(
+      r,
+      r.workspace.systems.flatMap((s) => s.environments),
+    ),
   );
-  const providerEdge = createEdgeFromProviderToResource(provider, resource);
-
+  const providerEdges = relationships.flatMap((r) =>
+    r.provider != null ? [createEdgeFromProviderToResource(r.provider, r)] : [],
+  );
+  const deploymentEdges = createEdgesFromDeploymentsToResources(relationships);
   const [edges, __, onEdgesChange] = useEdgesState(
-    compact([...resourceToEnvEdges, providerEdge]),
+    compact([...resourceToEnvEdges, ...providerEdges, ...deploymentEdges]),
   );
 
   const setReactFlowInstance = useLayoutAndFitView(nodes, { direction: "LR" });

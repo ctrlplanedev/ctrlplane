@@ -330,6 +330,193 @@ const environmentHasResource = (
     })
     .then((matchedResource) => matchedResource != null);
 
+const latestActiveReleaseByResourceAndEnvironmentId = (
+  db: Tx,
+  resourceId: string,
+  environmentId: string,
+) => {
+  const rankSubquery = db
+    .select({
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId} ORDER BY ${schema.release.createdAt} DESC)`.as(
+        "rank",
+      ),
+      rankReleaseId: schema.release.id,
+      rankDeploymentId: schema.release.deploymentId,
+    })
+    .from(schema.release)
+    .as("rank_subquery");
+
+  return db
+    .select()
+    .from(schema.deployment)
+    .innerJoin(schema.system, eq(schema.system.id, schema.deployment.systemId))
+    .innerJoin(
+      schema.environment,
+      eq(schema.environment.systemId, schema.system.id),
+    )
+    .innerJoin(
+      schema.release,
+      eq(schema.release.deploymentId, schema.deployment.id),
+    )
+    .innerJoin(
+      rankSubquery,
+      and(
+        eq(rankSubquery.rankDeploymentId, schema.release.deploymentId),
+        eq(rankSubquery.rankReleaseId, schema.release.id),
+      ),
+    )
+    .innerJoin(
+      schema.releaseJobTrigger,
+      and(
+        eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+        eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+      ),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.resource.id, schema.releaseJobTrigger.resourceId),
+    )
+    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
+    .where(
+      and(
+        eq(schema.resource.id, resourceId),
+        eq(schema.environment.id, environmentId),
+        isNull(schema.resource.deletedAt),
+        eq(rankSubquery.rank, 1),
+      ),
+    )
+    .orderBy(schema.deployment.id, schema.releaseJobTrigger.createdAt)
+    .then((r) =>
+      r.map((row) => ({
+        ...row.deployment,
+        environment: row.environment,
+        system: row.system,
+        releaseJobTrigger: {
+          ...row.release_job_trigger,
+          job: row.job,
+          release: row.release,
+          resourceId: row.resource.id,
+        },
+      })),
+    );
+};
+
+const getNodeDataForResource = async (db: Tx, resourceId: string) => {
+  const hasFilter = isNotNull(schema.environment.resourceFilter);
+  const resource = await db.query.resource.findFirst({
+    where: and(eq(schema.resource.id, resourceId), isNotDeleted),
+    with: {
+      provider: { with: { google: true } },
+      workspace: {
+        with: {
+          systems: {
+            with: { environments: { where: hasFilter }, deployments: true },
+          },
+        },
+      },
+    },
+  });
+  if (resource == null) return null;
+
+  const matchesIdentifier = eq(
+    schema.jobResourceRelationship.resourceIdentifier,
+    resource.identifier,
+  );
+  const parent = await db.query.jobResourceRelationship.findFirst({
+    where: matchesIdentifier,
+    with: { job: { with: { releaseTrigger: true } } },
+  });
+
+  const { systems } = resource.workspace;
+  const systemsWithResource = await _.chain(
+    systems.map(async (s) =>
+      _.chain(s.environments)
+        .filter((e) => isPresent(e.resourceFilter))
+        .map((e) =>
+          environmentHasResource(db, resource.id, e.resourceFilter!).then(
+            async (t) =>
+              t
+                ? {
+                    ...e,
+                    resource,
+                    latestActiveRelease:
+                      await latestActiveReleaseByResourceAndEnvironmentId(
+                        db,
+                        resource.id,
+                        e.id,
+                      ),
+                  }
+                : null,
+          ),
+        )
+        .thru((promises) => Promise.all(promises))
+        .thru((results) => {
+          return results;
+        })
+        .value()
+        .then((t) => t.filter(isPresent))
+        .then((t) => (t.length > 0 ? { ...s, environments: t } : null)),
+    ),
+  )
+    .thru((promises) => Promise.all(promises))
+    .value()
+    .then((t) => t.filter(isPresent));
+
+  const provider =
+    resource.provider == null
+      ? null
+      : {
+          ...resource.provider,
+          google: resource.provider.google[0] ?? null,
+        };
+
+  return {
+    ...resource,
+    workspace: { ...resource.workspace, systems: systemsWithResource },
+    provider,
+    parent: parent ?? null,
+  };
+};
+
+type Node = Awaited<ReturnType<typeof getNodeDataForResource>>;
+
+const getNodesRecursivelyHelper = async (
+  db: Tx,
+  node: Node,
+  nodes: NonNullable<Node>[],
+): Promise<NonNullable<Node>[]> => {
+  if (node == null) return nodes;
+  const activeReleaseJobs = node.workspace.systems.flatMap((s) =>
+    s.environments.flatMap((e) =>
+      e.latestActiveRelease.map((r) => r.releaseJobTrigger.job),
+    ),
+  );
+
+  const relationships = await db.query.jobResourceRelationship.findMany({
+    where: inArray(
+      schema.jobResourceRelationship.jobId,
+      activeReleaseJobs.map((j) => j.id),
+    ),
+    with: { resource: true },
+  });
+
+  const childrenPromises = relationships.map((r) =>
+    getNodeDataForResource(db, r.resource.id),
+  );
+  const children = await Promise.all(childrenPromises);
+
+  const childrenNodesPromises = children.map((c) =>
+    getNodesRecursivelyHelper(db, c, []),
+  );
+  const childrenNodes = (await Promise.all(childrenNodesPromises)).flat();
+  return [...nodes, node, ...childrenNodes].filter(isPresent);
+};
+
+const getNodesRecursively = async (db: Tx, resourceId: string) => {
+  const baseNode = await getNodeDataForResource(db, resourceId);
+  return getNodesRecursivelyHelper(db, baseNode, []);
+};
+
 export const resourceRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
   provider: resourceProviderRouter,
@@ -456,59 +643,7 @@ export const resourceRouter = createTRPCRouter({
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const hasFilter = isNotNull(schema.environment.resourceFilter);
-      const resource = await ctx.db.query.resource.findFirst({
-        where: and(eq(schema.resource.id, input), isNotDeleted),
-        with: {
-          provider: { with: { google: true } },
-          workspace: {
-            with: {
-              systems: {
-                with: { environments: { where: hasFilter }, deployments: true },
-              },
-            },
-          },
-        },
-      });
-      if (resource == null) return null;
-
-      const { systems } = resource.workspace;
-      const systemsWithResource = await _.chain(
-        systems.map(async (s) =>
-          _.chain(s.environments)
-            .filter((e) => isPresent(e.resourceFilter))
-            .map((e) =>
-              environmentHasResource(
-                ctx.db,
-                resource.id,
-                e.resourceFilter!,
-              ).then((t) => (t ? { ...e, resource } : null)),
-            )
-            .thru((promises) => Promise.all(promises))
-            .value()
-            .then((t) => t.filter(isPresent))
-            .then((t) => (t.length > 0 ? { ...s, environments: t } : null)),
-        ),
-      )
-        .thru((promises) => Promise.all(promises))
-        .value()
-        .then((t) => t.filter(isPresent));
-
-      const provider =
-        resource.provider == null
-          ? null
-          : {
-              ...resource.provider,
-              google: resource.provider.google[0] ?? null,
-            };
-
-      return {
-        ...resource,
-        workspace: { ...resource.workspace, systems: systemsWithResource },
-        provider,
-      };
-    }),
+    .query(async ({ ctx, input }) => getNodesRecursively(ctx.db, input)),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure
