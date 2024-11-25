@@ -29,13 +29,13 @@ export const POST = request()
 
     const { workspaceId } = releaseTrigger.resource;
 
-    const matchesIdentifer = eq(
+    const matchesIdentifier = eq(
       SCHEMA.resource.identifier,
       body.resourceIdentifier,
     );
     const isSameWorkspace = eq(SCHEMA.resource.workspaceId, workspaceId);
     const resource = await db.query.resource.findFirst({
-      where: and(matchesIdentifer, isSameWorkspace),
+      where: and(matchesIdentifier, isSameWorkspace),
     });
 
     if (resource == null)
