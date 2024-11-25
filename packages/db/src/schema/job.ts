@@ -18,6 +18,7 @@ import {
   not,
   notExists,
   or,
+  relations,
   sql,
 } from "drizzle-orm";
 import {
@@ -45,7 +46,7 @@ import type { Tx } from "../common.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
-import { release } from "./release.js";
+import { release, releaseJobTrigger } from "./release.js";
 import { resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
@@ -93,6 +94,10 @@ export const job = pgTable("job", {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+export const jobRelations = relations(job, ({ many }) => ({
+  releaseTrigger: many(releaseJobTrigger),
+}));
 
 export const jobMetadata = pgTable(
   "job_metadata",

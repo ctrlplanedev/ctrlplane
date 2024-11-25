@@ -202,6 +202,19 @@ export type ReleaseJobTriggerType = ReleaseJobTrigger["type"];
 export type ReleaseJobTriggerInsert = InferInsertModel<
   typeof releaseJobTrigger
 >;
+export const releaseJobTriggerRelations = relations(
+  releaseJobTrigger,
+  ({ one }) => ({
+    job: one(job, {
+      fields: [releaseJobTrigger.jobId],
+      references: [job.id],
+    }),
+    resource: one(resource, {
+      fields: [releaseJobTrigger.resourceId],
+      references: [resource.id],
+    }),
+  }),
+);
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)

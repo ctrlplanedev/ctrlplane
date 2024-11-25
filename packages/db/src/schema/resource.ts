@@ -32,6 +32,7 @@ import {
 
 import type { Tx } from "../common.js";
 import { job } from "./job.js";
+import { releaseJobTrigger } from "./release.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -76,6 +77,7 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
     fields: [resource.workspaceId],
     references: [workspace.id],
   }),
+  releaseTrigger: many(releaseJobTrigger),
 }));
 
 export type Resource = InferSelectModel<typeof resource>;

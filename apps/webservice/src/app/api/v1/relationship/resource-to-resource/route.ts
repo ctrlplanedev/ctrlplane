@@ -69,7 +69,7 @@ export const POST = request()
       if (error instanceof Error && error.message.includes("duplicate key"))
         return Response.json(
           { error: "Relationship already exists" },
-          { status: 400 },
+          { status: 409 },
         );
       return Response.json(
         { error: "Failed to create relationship" },
