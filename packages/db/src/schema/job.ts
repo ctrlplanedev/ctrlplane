@@ -47,7 +47,7 @@ import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
 import { release, releaseJobTrigger } from "./release.js";
-import { resource } from "./resource.js";
+import { jobResourceRelationship, resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -97,6 +97,7 @@ export const job = pgTable("job", {
 
 export const jobRelations = relations(job, ({ many }) => ({
   releaseTrigger: many(releaseJobTrigger),
+  jobRelationships: many(jobResourceRelationship),
 }));
 
 export const jobMetadata = pgTable(
