@@ -51,27 +51,24 @@ const DeploymentCard: React.FC<{
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const { data } = node;
 
-  const latestActiveReleasesQ = api.deployment.byTargetId.useQuery(
-    {
-      resourceId: data.environment.resource.id,
-      environmentIds: [data.environment.id],
-      deploymentIds: data.environment.deployments.map((d) => d.id),
-      jobsPerDeployment: 1,
-      showAllStatuses: true,
-    },
-    { refetchInterval: 5_000 },
-  );
+  const resourceId = data.environment.resource.id;
+  const environmentId = data.environment.id;
+  const latestActiveReleasesQ =
+    api.resource.activeReleases.byResourceAndEnvironmentId.useQuery(
+      { resourceId, environmentId },
+      { refetchInterval: 5_000 },
+    );
 
   const latestActiveReleases = latestActiveReleasesQ.data ?? [];
 
   const isInProgress = latestActiveReleases.some(
-    (r) => r.releaseJobTrigger?.job.status === JobStatus.InProgress,
+    (r) => r.releaseJobTrigger.job.status === JobStatus.InProgress,
   );
   const isPending = latestActiveReleases.some(
-    (r) => r.releaseJobTrigger?.job.status === JobStatus.Pending,
+    (r) => r.releaseJobTrigger.job.status === JobStatus.Pending,
   );
   const isCompleted = latestActiveReleases.every(
-    (r) => r.releaseJobTrigger?.job.status === JobStatus.Completed,
+    (r) => r.releaseJobTrigger.job.status === JobStatus.Completed,
   );
 
   return (
@@ -101,16 +98,15 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
             data.environment.deployments.map((deployment) => {
               const latestActiveRelease = latestActiveReleases.find(
                 (r) =>
-                  r.releaseJobTrigger?.release.deploymentId === deployment.id,
+                  r.releaseJobTrigger.release.deploymentId === deployment.id,
               );
               return (
                 <DeploymentCard
                   key={deployment.id}
                   deploymentName={deployment.name}
-                  job={latestActiveRelease?.releaseJobTrigger?.job}
+                  job={latestActiveRelease?.releaseJobTrigger.job}
                   releaseVersion={
-                    latestActiveRelease?.releaseJobTrigger?.release.version ??
-                    ""
+                    latestActiveRelease?.releaseJobTrigger.release.version ?? ""
                   }
                 />
               );

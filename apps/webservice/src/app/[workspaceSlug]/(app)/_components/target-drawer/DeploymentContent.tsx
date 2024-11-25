@@ -10,7 +10,7 @@ export const DeploymentsContent: React.FC<{ targetId: string }> = ({
   targetId,
 }) => {
   const resourceId = targetId;
-  const deployments = api.deployment.byTargetId.useQuery({ resourceId });
+  const deployments = api.deployment.byTargetId.useQuery(resourceId);
   const targetValues = api.deployment.variable.byTargetId.useQuery(resourceId);
 
   if (!deployments.data || deployments.data.length === 0) {

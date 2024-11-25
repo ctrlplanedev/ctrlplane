@@ -10,7 +10,6 @@ import {
   inArray,
   isNotNull,
   isNull,
-  lte,
   sql,
   takeFirst,
   takeFirstOrNull,
@@ -613,33 +612,18 @@ export const deploymentRouter = createTRPCRouter({
     }),
 
   byTargetId: protectedProcedure
-    .input(
-      z.object({
-        resourceId: z.string().uuid(),
-        environmentIds: z.array(z.string().uuid()).optional(),
-        deploymentIds: z.array(z.string().uuid()).optional(),
-        jobsPerDeployment: z.number().optional().default(30),
-        showAllStatuses: z.boolean().optional().default(false),
-      }),
-    )
+    .input(z.string().uuid())
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentList)
-          .on({ type: "resource", id: input.resourceId }),
+          .on({ type: "resource", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const {
-        resourceId,
-        environmentIds,
-        deploymentIds,
-        jobsPerDeployment,
-        showAllStatuses,
-      } = input;
       const tg = await ctx.db
         .select()
         .from(resource)
-        .where(and(eq(resource.id, resourceId), isNull(resource.deletedAt)))
+        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
         .then(takeFirst);
 
       const envs = await ctx.db
@@ -650,22 +634,8 @@ export const deploymentRouter = createTRPCRouter({
           and(
             eq(system.workspaceId, tg.workspaceId),
             isNotNull(environment.resourceFilter),
-            environmentIds != null
-              ? inArray(environment.id, environmentIds)
-              : undefined,
           ),
         );
-
-      const rankSubquery = ctx.db
-        .select({
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId} ORDER BY ${release.createdAt} DESC)`.as(
-            "rank",
-          ),
-          rankReleaseId: release.id,
-          rankDeploymentId: release.deploymentId,
-        })
-        .from(release)
-        .as("rank_subquery");
 
       return Promise.all(
         envs.map((env) =>
@@ -675,13 +645,6 @@ export const deploymentRouter = createTRPCRouter({
             .innerJoin(system, eq(system.id, deployment.systemId))
             .innerJoin(environment, eq(environment.systemId, system.id))
             .leftJoin(release, eq(release.deploymentId, deployment.id))
-            .leftJoin(
-              rankSubquery,
-              and(
-                eq(rankSubquery.rankDeploymentId, release.deploymentId),
-                eq(rankSubquery.rankReleaseId, release.id),
-              ),
-            )
             .innerJoin(
               resource,
               resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
@@ -697,23 +660,18 @@ export const deploymentRouter = createTRPCRouter({
             .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
             .where(
               and(
-                eq(resource.id, resourceId),
+                eq(resource.id, input),
                 eq(environment.id, env.environment.id),
                 isNull(resource.deletedAt),
-                showAllStatuses
-                  ? undefined
-                  : inArray(job.status, [
-                      JobStatus.Completed,
-                      JobStatus.Pending,
-                      JobStatus.InProgress,
-                    ]),
-                deploymentIds != null
-                  ? inArray(deployment.id, deploymentIds)
-                  : undefined,
-                lte(rankSubquery.rank, jobsPerDeployment),
+                inArray(job.status, [
+                  JobStatus.Completed,
+                  JobStatus.Pending,
+                  JobStatus.InProgress,
+                ]),
               ),
             )
             .orderBy(deployment.id, releaseJobTrigger.createdAt)
+            .limit(500)
             .then((r) =>
               r.map((row) => ({
                 ...row.deployment,

@@ -27,7 +27,7 @@ import { ReleaseCell } from "./ReleaseCell";
 const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
   const resourceId = targetId;
   const jobs = api.job.byResourceId.useQuery(resourceId);
-  const deployments = api.deployment.byTargetId.useQuery({ resourceId });
+  const deployments = api.deployment.byTargetId.useQuery(resourceId);
   return (
     <Table className="w-full min-w-max border-separate border-spacing-0">
       <TableBody>
@@ -110,7 +110,7 @@ export default function TargetPage({
   const resourceId = params.targetId;
   const target = api.resource.byId.useQuery(resourceId);
   const jobs = api.job.byResourceId.useQuery(resourceId);
-  const deployments = api.deployment.byTargetId.useQuery({ resourceId });
+  const deployments = api.deployment.byTargetId.useQuery(resourceId);
 
   const unlockTarget = api.resource.unlock.useMutation();
   const lockTarget = api.resource.lock.useMutation();

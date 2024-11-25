@@ -35,7 +35,7 @@ export default function VariablePage({
   params: { targetId: string };
 }) {
   const resourceId = params.targetId;
-  const deployments = api.deployment.byTargetId.useQuery({ resourceId });
+  const deployments = api.deployment.byTargetId.useQuery(resourceId);
   const variables = api.deployment.variable.byTargetId.useQuery(resourceId);
   return (
     <div className="">
