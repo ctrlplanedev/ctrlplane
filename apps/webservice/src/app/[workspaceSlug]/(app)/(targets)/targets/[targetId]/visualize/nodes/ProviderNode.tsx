@@ -36,7 +36,7 @@ export const ProviderNode: React.FC<ProviderNodeProps> = (node) => {
           <ProviderIcon node={node} />
           <ProviderLabel node={node} />
         </div>
-        <div className="text-sm">{data.label}</div>
+        <span className="truncate text-sm">{data.label}</span>
       </div>
       <Handle
         type="target"

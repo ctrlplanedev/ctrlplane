@@ -20,7 +20,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
           <ResourceIcon version={data.version} kind={data.kind} />
           <span className="text-xs">{data.kind}</span>
         </div>
-        <div className="text-sm">{data.name}</div>
+        <span className="truncate text-sm">{data.name}</span>
       </div>
 
       <Handle

@@ -24,7 +24,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
           <IconPlant className="h-4 w-4 text-green-500" />
           <span className="text-xs">Environment</span>
         </div>
-        <div className="text-sm">{data.label}</div>
+        <span className="truncate text-sm">{data.label}</span>
       </div>
       <Handle
         type="target"
