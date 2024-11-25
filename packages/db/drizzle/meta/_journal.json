@@ -295,6 +295,13 @@
       "when": 1732139824120,
       "tag": "0041_smooth_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1732497310450,
+      "tag": "0042_absent_cerebro",
+      "breakpoints": true
     }
   ]
 }

@@ -8,12 +8,19 @@ import type {
 } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconCircleCheck, IconClock, IconLoader2 } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconCircleX,
+  IconClock,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { format } from "date-fns";
 
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-const ReleaseIcon: React.FC<{
+export const ReleaseIcon: React.FC<{
   job?: Job;
 }> = ({ job }) => {
   if (job?.status === JobStatus.Pending)
@@ -34,6 +41,37 @@ const ReleaseIcon: React.FC<{
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
         <IconCircleCheck strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Cancelled)
+    return (
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+        <IconCircleX strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Failure)
+    return (
+      <div className="rounded-full bg-red-400 p-1 dark:text-black">
+        <IconCircleX strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Skipped)
+    return (
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+        <IconCircleDashed strokeWidth={2} />
+      </div>
+    );
+
+  if (
+    job?.status === JobStatus.InvalidJobAgent ||
+    job?.status === JobStatus.InvalidIntegration
+  )
+    return (
+      <div className="rounded-full bg-orange-500 p-1 dark:text-black">
+        <IconAlertCircle strokeWidth={2} />
       </div>
     );
 

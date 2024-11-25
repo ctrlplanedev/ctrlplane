@@ -3,33 +3,19 @@ import type { Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
 import { eq, inArray, or } from "@ctrlplane/db";
-import {
-  deploymentResourceRelationship,
-  resource,
-  resourceRelationship,
-} from "@ctrlplane/db/schema";
+import { resource, resourceRelationship } from "@ctrlplane/db/schema";
 
 import { getEventsForResourceDeleted, handleEvent } from "../events/index.js";
 
 const deleteObjectsAssociatedWithResource = (tx: Tx, resource: Resource) =>
-  Promise.all([
-    tx
-      .delete(resourceRelationship)
-      .where(
-        or(
-          eq(resourceRelationship.sourceId, resource.id),
-          eq(resourceRelationship.targetId, resource.id),
-        ),
+  tx
+    .delete(resourceRelationship)
+    .where(
+      or(
+        eq(resourceRelationship.sourceId, resource.id),
+        eq(resourceRelationship.targetId, resource.id),
       ),
-    tx
-      .delete(deploymentResourceRelationship)
-      .where(
-        eq(
-          deploymentResourceRelationship.resourceIdentifier,
-          resource.identifier,
-        ),
-      ),
-  ]);
+    );
 
 /**
  * Delete resources from the database.

@@ -359,6 +359,95 @@ export const resourceRouter = createTRPCRouter({
         }),
     ),
 
+  activeReleases: createTRPCRouter({
+    byResourceAndEnvironmentId: protectedProcedure
+      .input(
+        z.object({
+          resourceId: z.string().uuid(),
+          environmentId: z.string().uuid(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.ResourceGet)
+            .on({ type: "resource", id: input.resourceId }),
+      })
+      .query(async ({ ctx, input }) => {
+        const { resourceId, environmentId } = input;
+        const rankSubquery = ctx.db
+          .select({
+            rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId} ORDER BY ${schema.release.createdAt} DESC)`.as(
+              "rank",
+            ),
+            rankReleaseId: schema.release.id,
+            rankDeploymentId: schema.release.deploymentId,
+          })
+          .from(schema.release)
+          .as("rank_subquery");
+
+        return ctx.db
+          .select()
+          .from(schema.deployment)
+          .innerJoin(
+            schema.system,
+            eq(schema.system.id, schema.deployment.systemId),
+          )
+          .innerJoin(
+            schema.environment,
+            eq(schema.environment.systemId, schema.system.id),
+          )
+          .innerJoin(
+            schema.release,
+            eq(schema.release.deploymentId, schema.deployment.id),
+          )
+          .innerJoin(
+            rankSubquery,
+            and(
+              eq(rankSubquery.rankDeploymentId, schema.release.deploymentId),
+              eq(rankSubquery.rankReleaseId, schema.release.id),
+            ),
+          )
+          .innerJoin(
+            schema.releaseJobTrigger,
+            and(
+              eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+              eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+            ),
+          )
+          .innerJoin(
+            schema.resource,
+            eq(schema.resource.id, schema.releaseJobTrigger.resourceId),
+          )
+          .innerJoin(
+            schema.job,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          )
+          .where(
+            and(
+              eq(schema.resource.id, resourceId),
+              eq(schema.environment.id, environmentId),
+              isNull(schema.resource.deletedAt),
+              eq(rankSubquery.rank, 1),
+            ),
+          )
+          .orderBy(schema.deployment.id, schema.releaseJobTrigger.createdAt)
+          .then((r) =>
+            r.map((row) => ({
+              ...row.deployment,
+              environment: row.environment,
+              system: row.system,
+              releaseJobTrigger: {
+                ...row.release_job_trigger,
+                job: row.job,
+                release: row.release,
+                resourceId: row.resource.id,
+              },
+            })),
+          );
+      }),
+  }),
+
   relationships: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -390,7 +479,11 @@ export const resourceRouter = createTRPCRouter({
           _.chain(s.environments)
             .filter((e) => isPresent(e.resourceFilter))
             .map((e) =>
-              environmentHasResource(ctx.db, resource.id, e.resourceFilter!),
+              environmentHasResource(
+                ctx.db,
+                resource.id,
+                e.resourceFilter!,
+              ).then((t) => (t ? { ...e, resource } : null)),
             )
             .thru((promises) => Promise.all(promises))
             .value()
