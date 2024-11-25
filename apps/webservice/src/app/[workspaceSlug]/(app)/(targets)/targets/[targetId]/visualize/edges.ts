@@ -1,9 +1,9 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { EdgeTypes } from "reactflow";
-import _ from "lodash";
 import { MarkerType } from "reactflow";
 import colors from "tailwindcss/colors";
+import { isPresent } from "ts-is-present";
 
 import { DepEdge } from "./DepEdge";
 
@@ -52,7 +52,7 @@ const createEdgesFromEnvironmentToDeployments = (
   environments: SCHEMA.Environment[],
   deployments: SCHEMA.Deployment[],
 ) =>
-  _.chain(environments)
+  environments
     .flatMap((e) => deployments.map((d) => ({ e, d })))
     .map(({ e, d }) => ({
       id: `${e.id}-${d.id}`,
@@ -61,20 +61,18 @@ const createEdgesFromEnvironmentToDeployments = (
       label: "deploys",
       style: { stroke: colors.neutral[800] },
       markerEnd,
-    }))
-    .value();
+    }));
 
 const createEdgesFromDeploymentsToResources = (relationships: Relationships) =>
   relationships.map((resource) => {
     const { parent } = resource;
     if (parent == null) return null;
 
-    const allReleaseJobTriggers = _.chain(relationships)
+    const allReleaseJobTriggers = relationships
       .flatMap((r) => r.workspace.systems)
       .flatMap((s) => s.environments)
       .flatMap((e) => e.latestActiveReleases)
-      .map((rel) => rel.releaseJobTrigger)
-      .value();
+      .map((rel) => rel.releaseJobTrigger);
 
     const releaseJobTrigger = allReleaseJobTriggers.find(
       (j) => j.jobId === parent.jobId,
@@ -111,10 +109,10 @@ export const getEdges = (relationships: Relationships) => {
   );
   const deploymentEdges = createEdgesFromDeploymentsToResources(relationships);
 
-  return _.compact([
+  return [
     ...resourceToEnvEdges,
     ...environmentToDeploymentEdges,
     ...providerEdges,
     ...deploymentEdges,
-  ]);
+  ].filter(isPresent);
 };

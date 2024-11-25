@@ -485,11 +485,10 @@ const getNodesRecursivelyHelper = async (
   nodes: NonNullable<Node>[],
 ): Promise<NonNullable<Node>[]> => {
   if (node == null) return nodes;
-  const activeReleaseJobs = _.chain(node.workspace.systems)
+  const activeReleaseJobs = node.workspace.systems
     .flatMap((s) => s.environments)
     .flatMap((e) => e.latestActiveReleases)
-    .map((r) => r.releaseJobTrigger.job)
-    .value();
+    .map((r) => r.releaseJobTrigger.job);
 
   const relationships = await db.query.jobResourceRelationship.findMany({
     where: inArray(

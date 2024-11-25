@@ -1,6 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { NodeTypes } from "reactflow";
-import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { DeploymentNode } from "./DeploymentNode";
@@ -47,7 +46,7 @@ const getProviderNodes = (relationships: Relationships) =>
     .filter(isPresent);
 
 const getEnvironmentNodes = (relationships: Relationships) =>
-  _.chain(relationships)
+  relationships
     .flatMap((r) => r.workspace.systems)
     .flatMap((s) => s.environments.map((e) => ({ s, e })))
     .map(({ s, e }) => ({
@@ -55,8 +54,7 @@ const getEnvironmentNodes = (relationships: Relationships) =>
       type: NodeType.Environment,
       data: { environment: e, label: `${s.name}/${e.name}` },
       position: { x: 0, y: 0 },
-    }))
-    .value();
+    }));
 
 const getDeploymentNodes = (relationships: Relationships) =>
   relationships.flatMap((r) =>
@@ -78,9 +76,9 @@ const getDeploymentNodes = (relationships: Relationships) =>
   );
 
 export const getNodes = (relationships: Relationships) =>
-  _.compact([
+  [
     ...getResourceNodes(relationships),
     ...getProviderNodes(relationships),
     ...getEnvironmentNodes(relationships),
     ...getDeploymentNodes(relationships),
-  ]);
+  ].filter(isPresent);
