@@ -15,18 +15,18 @@ type ResourceNodeProps = NodeProps<{
 export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node;
 
-  const isKubernetes = data.version.includes("kubernetes");
-  const isTerraform = data.version.includes("terraform");
-  const isSharedCluster = data.kind.toLowerCase().includes("sharedcluster");
+  // const isKubernetes = data.version.includes("kubernetes");
+  // const isTerraform = data.version.includes("terraform");
+  // const isSharedCluster = data.kind.toLowerCase().includes("sharedcluster");
 
   return (
     <>
       <div
         className={cn(
-          "flex w-[250px] flex-col gap-2 rounded-md border bg-neutral-900 px-4 py-3",
-          isKubernetes && "border-blue-500/70 bg-blue-500/20",
-          isTerraform && "border-purple-500/70 bg-purple-500/20",
-          isSharedCluster && "border-blue-500/70 bg-blue-500/20",
+          "flex w-[250px] flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3",
+          // isKubernetes && "border-blue-500/70 bg-blue-500/20",
+          // isTerraform && "border-purple-500/70 bg-purple-500/20",
+          // isSharedCluster && "border-blue-500/70 bg-blue-500/20",
         )}
       >
         <div className="flex items-center gap-2">
@@ -39,22 +39,22 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
       <Handle
         type="target"
         className={cn(
-          "h-2 w-2 rounded-full border border-neutral-500 bg-neutral-800",
-          isKubernetes && "border-blue-500/70",
-          isTerraform && "border-purple-500/70",
-          isSharedCluster && "border-blue-500/70",
+          "h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800",
+          // isKubernetes && "border-blue-500/70",
+          // isTerraform && "border-purple-500/70",
+          // isSharedCluster && "border-blue-500/70",
         )}
-        position={Position.Left}
+        position={Position.Top}
       />
       <Handle
         type="source"
         className={cn(
-          "h-2 w-2 rounded-full border border-neutral-500 bg-neutral-800",
-          isKubernetes && "border-blue-500/70",
-          isTerraform && "border-purple-500/70",
-          isSharedCluster && "border-blue-500/70",
+          "h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800",
+          // isKubernetes && "border-blue-500/70",
+          // isTerraform && "border-purple-500/70",
+          // isSharedCluster && "border-blue-500/70",
         )}
-        position={Position.Right}
+        position={Position.Bottom}
       />
     </>
   );
