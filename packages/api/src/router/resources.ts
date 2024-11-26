@@ -337,13 +337,18 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
 ) => {
   const rankSubquery = db
     .select({
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId} ORDER BY ${schema.release.createdAt} DESC)`.as(
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId}, ${schema.releaseJobTrigger.resourceId} ORDER BY ${schema.releaseJobTrigger.createdAt} DESC)`.as(
         "rank",
       ),
-      rankReleaseId: schema.release.id,
       rankDeploymentId: schema.release.deploymentId,
+      rankResourceId: schema.releaseJobTrigger.resourceId,
+      rankTriggerId: schema.releaseJobTrigger.id,
     })
     .from(schema.release)
+    .innerJoin(
+      schema.releaseJobTrigger,
+      eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+    )
     .as("rank_subquery");
 
   return db
@@ -359,13 +364,6 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
       eq(schema.release.deploymentId, schema.deployment.id),
     )
     .innerJoin(
-      rankSubquery,
-      and(
-        eq(rankSubquery.rankDeploymentId, schema.release.deploymentId),
-        eq(rankSubquery.rankReleaseId, schema.release.id),
-      ),
-    )
-    .innerJoin(
       schema.releaseJobTrigger,
       and(
         eq(schema.releaseJobTrigger.releaseId, schema.release.id),
@@ -375,6 +373,14 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
     .innerJoin(
       schema.resource,
       eq(schema.resource.id, schema.releaseJobTrigger.resourceId),
+    )
+    .innerJoin(
+      rankSubquery,
+      and(
+        eq(rankSubquery.rankDeploymentId, schema.release.deploymentId),
+        eq(rankSubquery.rankResourceId, resourceId),
+        eq(rankSubquery.rankTriggerId, schema.releaseJobTrigger.id),
+      ),
     )
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
     .where(
