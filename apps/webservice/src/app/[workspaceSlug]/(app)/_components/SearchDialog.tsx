@@ -48,7 +48,10 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
             }
           : undefined,
     },
-    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
+    {
+      enabled: workspace.isSuccess && workspace.data?.id !== "",
+      placeholderData: (prev) => prev,
+    },
   );
 
   return (
