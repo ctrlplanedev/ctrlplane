@@ -407,7 +407,11 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
     );
 };
 
-const getNodeDataForResource = async (db: Tx, resourceId: string) => {
+const getNodeDataForResource = async (
+  db: Tx,
+  resourceId: string,
+  jobId?: string,
+) => {
   const hasFilter = isNotNull(schema.environment.resourceFilter);
   const resource = await db.query.resource.findFirst({
     where: and(eq(schema.resource.id, resourceId), isNotDeleted),
@@ -428,8 +432,10 @@ const getNodeDataForResource = async (db: Tx, resourceId: string) => {
     schema.jobResourceRelationship.resourceIdentifier,
     resource.identifier,
   );
+  const matchesJobId =
+    jobId == null ? undefined : eq(schema.jobResourceRelationship.jobId, jobId);
   const parent = await db.query.jobResourceRelationship.findFirst({
-    where: matchesIdentifier,
+    where: and(matchesIdentifier, matchesJobId),
   });
 
   const { systems } = resource.workspace;
@@ -519,7 +525,7 @@ const getNodesRecursivelyHelper = async (
     );
 
   const childrenPromises = relationships.map((r) =>
-    getNodeDataForResource(db, r.resource.id),
+    getNodeDataForResource(db, r.resource.id, r.jobId),
   );
   const children = await Promise.all(childrenPromises);
 
