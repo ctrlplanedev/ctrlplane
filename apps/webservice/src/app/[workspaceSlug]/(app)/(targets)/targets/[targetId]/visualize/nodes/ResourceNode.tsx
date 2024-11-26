@@ -1,6 +1,7 @@
 import type { NodeProps } from "reactflow";
 import { Handle, Position } from "reactflow";
 
+import { useTargetDrawer } from "~/app/[workspaceSlug]/(app)/_components/target-drawer/useTargetDrawer";
 import { TargetIcon as ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/TargetIcon";
 
 type ResourceNodeProps = NodeProps<{
@@ -12,10 +13,13 @@ type ResourceNodeProps = NodeProps<{
 }>;
 export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node;
-
+  const { setTargetId: setResourceId } = useTargetDrawer();
   return (
     <>
-      <div className="flex w-[250px] flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3">
+      <div
+        className="flex w-[250px] cursor-pointer flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3"
+        onClick={() => setResourceId(data.id)}
+      >
         <div className="flex items-center gap-2">
           <ResourceIcon version={data.version} kind={data.kind} />
           <span className="text-xs">{data.kind}</span>
