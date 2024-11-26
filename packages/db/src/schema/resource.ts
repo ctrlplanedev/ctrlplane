@@ -5,7 +5,16 @@ import type {
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
-import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
+import {
+  exists,
+  ilike,
+  like,
+  not,
+  notExists,
+  or,
+  relations,
+  sql,
+} from "drizzle-orm";
 import {
   boolean,
   json,
@@ -214,11 +223,11 @@ const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
     return eq(resource.identifier, cond.value);
   if (cond.operator === ColumnOperator.StartsWith)
-    return like(resource.identifier, `${cond.value}%`);
+    return ilike(resource.identifier, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
-    return like(resource.identifier, `%${cond.value}`);
+    return ilike(resource.identifier, `%${cond.value}`);
   if (cond.operator === ColumnOperator.Contains)
-    return like(resource.identifier, `%${cond.value}%`);
+    return ilike(resource.identifier, `%${cond.value}%`);
   return sql`${resource.identifier} ~ ${cond.value}`;
 };
 
@@ -226,11 +235,11 @@ const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
     return eq(resource.name, cond.value);
   if (cond.operator === ColumnOperator.StartsWith)
-    return like(resource.name, `${cond.value}%`);
+    return ilike(resource.name, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
-    return like(resource.name, `%${cond.value}`);
+    return ilike(resource.name, `%${cond.value}`);
   if (cond.operator === ColumnOperator.Contains)
-    return like(resource.name, `%${cond.value}%`);
+    return ilike(resource.name, `%${cond.value}%`);
   return sql`${resource.name} ~ ${cond.value}`;
 };
 
