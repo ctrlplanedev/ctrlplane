@@ -2,13 +2,20 @@
 
 import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import React from "react";
-import { IconDots, IconFilter, IconLoader2 } from "@tabler/icons-react";
+import React, { useEffect } from "react";
+import {
+  IconDots,
+  IconFilter,
+  IconLoader2,
+  IconSearch,
+} from "@tabler/icons-react";
 import range from "lodash/range";
+import { useDebounce, useKey } from "react-use";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
   isEmptyCondition,
@@ -27,11 +34,72 @@ import { api } from "~/trpc/react";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
+export const SearchInput: React.FC<{
+  value: string;
+  onChange: (v: string) => void;
+}> = ({ value, onChange }) => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  useKey("Escape", () => setIsExpanded(false));
+
+  useEffect(() => {
+    if (isExpanded) inputRef.current?.focus();
+  }, [isExpanded]);
+
+  return (
+    <div className="flex items-center">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setIsExpanded((e) => !e)}
+        className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+      >
+        <IconSearch className="h-4 w-4" />
+      </Button>
+
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        ref={inputRef}
+        type="text"
+        className={`ml-1 bg-transparent outline-none transition-all duration-200 ${
+          isExpanded ? "w-[150px]" : "w-0"
+        }`}
+        placeholder="Search..."
+        onBlur={() => setIsExpanded(false)}
+        hidden={!isExpanded}
+      />
+    </div>
+  );
+};
+
 export const TargetPageContent: React.FC<{
   workspace: schema.Workspace;
   view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
+  const [search, setSearch] = React.useState("");
   const { filter, setFilter, setView } = useTargetFilter();
+
+  useDebounce(
+    () => {
+      if (search === "") return;
+      setFilter({
+        type: "comparison",
+        operator: "and",
+        conditions: [
+          ...(filter != null ? [filter] : []),
+          {
+            type: "name",
+            operator: ColumnOperator.Contains,
+            value: search,
+          },
+        ],
+      });
+    },
+    2000,
+    [search],
+  );
+
   const workspaceId = workspace.id;
   const targetsAll = api.resource.byWorkspaceId.list.useQuery({
     workspaceId,
@@ -55,7 +123,8 @@ export const TargetPageContent: React.FC<{
   return (
     <div className="h-full text-sm">
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 pl-1">
+          <SearchInput value={search} onChange={setSearch} />
           <TargetConditionDialog condition={filter} onChange={onFilterChange}>
             <div className="flex items-center gap-2">
               {view == null && (
