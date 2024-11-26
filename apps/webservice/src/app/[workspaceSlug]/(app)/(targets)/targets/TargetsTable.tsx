@@ -50,7 +50,7 @@ const columns: ColumnDef<Resource>[] = [
         onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
         aria-label="Select all"
         className={cn(
-          "opacity-0 transition-opacity hover:opacity-100",
+          "opacity-0 transition-opacity group-hover:opacity-100",
           (table.getIsAllPageRowsSelected() ||
             table.getIsSomePageRowsSelected()) &&
             "opacity-100",
@@ -64,14 +64,15 @@ const columns: ColumnDef<Resource>[] = [
         onClick={(e) => e.stopPropagation()}
         aria-label="Select row"
         className={cn(
-          "opacity-0 transition-opacity hover:opacity-100",
+          "opacity-0 transition-opacity group-hover:opacity-100",
           row.getIsSelected() && "opacity-100",
         )}
       />
     ),
     enableSorting: false,
     enableHiding: false,
-    size: 40, // Set a fixed width for the checkbox column
+    size: 10,
+    enableResizing: false,
   },
   {
     id: "name",
@@ -120,6 +121,11 @@ export const TargetsTable: React.FC<{
   const table = useReactTable({
     data: targets,
     columns,
+    defaultColumn: {
+      minSize: 0,
+      size: Number.MAX_SAFE_INTEGER,
+      maxSize: Number.MAX_SAFE_INTEGER,
+    },
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -138,9 +144,18 @@ export const TargetsTable: React.FC<{
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id} className="group">
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  colSpan={header.colSpan}
+                  style={{
+                    width:
+                      header.getSize() === Number.MAX_SAFE_INTEGER
+                        ? "auto"
+                        : header.getSize(),
+                  }}
+                >
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -156,7 +171,7 @@ export const TargetsTable: React.FC<{
           {table.getRowModel().rows.map((row) => (
             <TableRow
               className={cn(
-                "cursor-pointer border-b-neutral-800/50",
+                "group cursor-pointer border-b-neutral-800/50",
                 activeTargetIds?.includes(row.original.id) &&
                   "bg-neutral-800/50",
                 row.getIsSelected() && "bg-blue-500/20",
@@ -166,7 +181,15 @@ export const TargetsTable: React.FC<{
               onClick={() => onTableRowClick?.(row.original)}
             >
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
+                <TableCell
+                  key={cell.id}
+                  style={{
+                    width:
+                      cell.column.getSize() === Number.MAX_SAFE_INTEGER
+                        ? "auto"
+                        : cell.column.getSize(),
+                  }}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
