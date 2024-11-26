@@ -38,7 +38,7 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const { removeReleaseChannelId } = useReleaseChannelDrawer();
-  const { removeReleaseChannel } = useReleaseFilter();
+  const { setFilter } = useReleaseFilter();
   const router = useRouter();
   const deleteReleaseChannel =
     api.deployment.releaseChannel.delete.useMutation();
@@ -46,7 +46,7 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
     deleteReleaseChannel
       .mutateAsync(releaseChannelId)
       .then(() => removeReleaseChannelId())
-      .then(() => removeReleaseChannel())
+      .then(() => setFilter(undefined, null))
       .then(() => router.refresh())
       .then(() => setOpen(false));
 
