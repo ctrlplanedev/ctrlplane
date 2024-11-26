@@ -5,14 +5,13 @@ export * from "./date-condition.js";
 
 export enum ColumnOperator {
   Equals = "equals",
-  Like = "like",
   Regex = "regex",
+  StartsWith = "starts-with",
+  EndsWith = "ends-with",
+  Contains = "contains",
 }
 
-export const columnOperator = z
-  .literal(ColumnOperator.Equals)
-  .or(z.literal(ColumnOperator.Like))
-  .or(z.literal(ColumnOperator.Regex));
+export const columnOperator = z.nativeEnum(ColumnOperator);
 
 export type ColumnOperatorType = z.infer<typeof columnOperator>;
 

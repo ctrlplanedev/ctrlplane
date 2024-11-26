@@ -17,6 +17,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
   isIdentifierCondition,
@@ -40,6 +41,9 @@ const operatorVerbs = {
   ),
   [ResourceOperator.Regex]: "matches",
   [ResourceOperator.Like]: "contains",
+  [ColumnOperator.StartsWith]: "starts with",
+  [ColumnOperator.EndsWith]: "ends with",
+  [ColumnOperator.Contains]: "contains",
 };
 
 const ConditionBadge: React.FC<{

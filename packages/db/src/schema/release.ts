@@ -11,6 +11,7 @@ import {
   exists,
   gt,
   gte,
+  ilike,
   like,
   lt,
   lte,
@@ -284,8 +285,12 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 const buildVersionCondition = (cond: VersionCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
     return eq(release.version, cond.value);
-  if (cond.operator === ColumnOperator.Like)
-    return like(release.version, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(release.version, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(release.version, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return ilike(release.version, `%${cond.value}%`);
   return sql`${release.version} ~ ${cond.value}`;
 };
 
