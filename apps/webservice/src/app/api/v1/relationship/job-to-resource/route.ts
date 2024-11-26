@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { and, eq, takeFirst } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { authn } from "~/app/api/v1/auth";
@@ -27,25 +27,8 @@ export const POST = request()
     if (job == null || releaseTrigger == null)
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-    const { workspaceId } = releaseTrigger.resource;
-
-    const matchesIdentifier = eq(
-      SCHEMA.resource.identifier,
-      body.resourceIdentifier,
-    );
-    const isSameWorkspace = eq(SCHEMA.resource.workspaceId, workspaceId);
-    const resource = await db.query.resource.findFirst({
-      where: and(matchesIdentifier, isSameWorkspace),
-    });
-
-    if (resource == null)
-      return NextResponse.json(
-        { error: "Resource not found" },
-        { status: 404 },
-      );
-
     const jobId = job.id;
-    const resourceIdentifier = resource.identifier;
+    const resourceIdentifier = body.resourceIdentifier;
     return db
       .insert(SCHEMA.jobResourceRelationship)
       .values({ jobId, resourceIdentifier })
