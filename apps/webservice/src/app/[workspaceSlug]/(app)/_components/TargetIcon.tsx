@@ -4,8 +4,8 @@ import {
   SiTerraform,
 } from "@icons-pack/react-simple-icons";
 import {
-  IconBraces,
   IconCloud,
+  IconCube,
   IconServer,
   IconTerminal,
   IconUserDollar,
@@ -33,5 +33,5 @@ export const TargetIcon: React.FC<{ version: string; kind?: string }> = ({
   if (kind?.toLowerCase().includes("cloud"))
     return <IconCloud className="h-4 w-4 shrink-0 text-white" />;
 
-  return <IconBraces className="h-4 w-4 shrink-0 text-neutral-300" />;
+  return <IconCube className="h-4 w-4 shrink-0 text-neutral-300" />;
 };
