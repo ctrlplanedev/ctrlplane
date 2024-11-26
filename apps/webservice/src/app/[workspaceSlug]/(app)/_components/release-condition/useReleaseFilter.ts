@@ -29,7 +29,7 @@ export const useReleaseFilter = () => {
         query.delete("filter");
         if (releaseChannelId === null) query.delete("release-channel");
         if (releaseChannelId != null)
-          query.set("release-channel", releaseChannelId);
+          query.set("release_channel_id", releaseChannelId);
         router.replace(`?${query.toString()}`);
         return;
       }
@@ -40,8 +40,8 @@ export const useReleaseFilter = () => {
       const query = new URLSearchParams(window.location.search);
       query.set("filter", filterJsonHash);
       if (releaseChannelId != null)
-        query.set("release-channel", releaseChannelId);
-      if (releaseChannelId === null) query.delete("release-channel");
+        query.set("release_channel_id", releaseChannelId);
+      if (releaseChannelId === null) query.delete("release_channel_id");
       router.replace(`?${query.toString()}`);
     },
     [router],
