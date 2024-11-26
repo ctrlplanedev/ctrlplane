@@ -41,12 +41,12 @@ export const ProviderNode: React.FC<ProviderNodeProps> = (node) => {
       <Handle
         type="target"
         className="h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800"
-        position={Position.Top}
+        position={Position.Left}
       />
       <Handle
         type="source"
         className="h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800"
-        position={Position.Bottom}
+        position={Position.Right}
       />
     </>
   );
