@@ -62,15 +62,14 @@ export const SearchInput: React.FC<{
         onChange={(e) => onChange(e.target.value)}
         ref={inputRef}
         type="text"
-        className={`ml-1 bg-transparent outline-none transition-all duration-200 ${
-          isExpanded ? "w-[150px]" : "w-0"
+        className={`bg-transparent outline-none transition-all duration-200 ${
+          isExpanded ? "w-[150px] pl-1" : "w-0"
         }`}
         placeholder="Search..."
         onBlur={() => setIsExpanded(false)}
         onKeyDown={(e) => {
           if (e.key === "Enter") setIsExpanded(false);
         }}
-        hidden={!isExpanded}
       />
     </div>
   );
