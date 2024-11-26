@@ -288,7 +288,7 @@ export const ComparisonConditionRender: React.FC<
               onClick={() =>
                 addCondition({
                   type: ResourceFilterType.Name,
-                  operator: ResourceOperator.Like,
+                  operator: ColumnOperator.Equals,
                   value: "",
                 })
               }
@@ -299,7 +299,7 @@ export const ComparisonConditionRender: React.FC<
               onClick={() =>
                 addCondition({
                   type: ResourceFilterType.Identifier,
-                  operator: ColumnOperator.Like,
+                  operator: ColumnOperator.Equals,
                   value: "",
                 })
               }

@@ -20,10 +20,10 @@ import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
+// import { useTerminalSessions } from "~/app/terminal/TerminalSessionsProvider";
 import { api } from "~/trpc/react";
 import { EditTargetDialog } from "../EditTarget";
 import { TabButton } from "../TabButton";
-import { useTerminalSessions } from "../terminal/TerminalSessionsProvider";
 import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
@@ -43,7 +43,7 @@ export const TargetDrawer: React.FC = () => {
     refetchInterval: 10_000,
   });
 
-  const target = targetQ.data;
+  const resource = targetQ.data;
 
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -53,14 +53,14 @@ export const TargetDrawer: React.FC = () => {
   const utils = api.useUtils();
 
   const links =
-    target?.metadata[ReservedMetadataKey.Links] != null
-      ? (JSON.parse(target.metadata[ReservedMetadataKey.Links]) as Record<
+    resource?.metadata[ReservedMetadataKey.Links] != null
+      ? (JSON.parse(resource.metadata[ReservedMetadataKey.Links]) as Record<
           string,
           string
         >)
       : null;
 
-  const { createSession, setIsDrawerOpen } = useTerminalSessions();
+  // const { createSession, setIsDrawerOpen } = useTerminalSessions();
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -71,9 +71,9 @@ export const TargetDrawer: React.FC = () => {
         <div className="border-b p-6">
           <div className="flex items-center">
             <DrawerTitle className="flex items-center gap-2">
-              {target?.name}
-              {target != null && (
-                <TargetActionsDropdown target={target}>
+              {resource?.name}
+              {resource != null && (
+                <TargetActionsDropdown target={resource}>
                   <Button variant="ghost" size="icon" className="h-6 w-6">
                     <IconDotsVertical className="h-4 w-4" />
                   </Button>
@@ -81,7 +81,7 @@ export const TargetDrawer: React.FC = () => {
               )}
             </DrawerTitle>
           </div>
-          {target != null && (
+          {resource != null && (
             <div className="mt-3 flex flex-wrap gap-2">
               {links != null && (
                 <>
@@ -109,12 +109,12 @@ export const TargetDrawer: React.FC = () => {
                 className="gap-1"
                 size="sm"
                 onClick={() =>
-                  (target.lockedAt != null ? unlockTarget : lockTarget)
-                    .mutateAsync(target.id)
+                  (resource.lockedAt != null ? unlockTarget : lockTarget)
+                    .mutateAsync(resource.id)
                     .then(() => router.refresh())
                 }
               >
-                {target.lockedAt != null ? (
+                {resource.lockedAt != null ? (
                   <>
                     <IconLockOpen className="h-3 w-3" /> Unlock
                   </>
@@ -126,7 +126,7 @@ export const TargetDrawer: React.FC = () => {
               </Button>
 
               <Link
-                href={`/${workspaceSlug}/targets/${target.id}/visualize`}
+                href={`/${workspaceSlug}/targets/${resource.id}/visualize`}
                 className={buttonVariants({
                   variant: "outline",
                   size: "sm",
@@ -136,30 +136,32 @@ export const TargetDrawer: React.FC = () => {
                 <IconTopologyStar3 className="h-3 w-3" /> Visualize
               </Link>
 
-              {target.kind === "AccessNode" && (
+              {resource.kind === "AccessNode" && (
                 <Button
                   variant="outline"
                   size="sm"
                   className="gap-1"
                   onClick={() => {
-                    createSession(target.id);
-                    setIsDrawerOpen(true);
-                    removeTargetId();
+                    window.open(
+                      `/terminal?resource=${resource.id}`,
+                      "_blank",
+                      "menubar=no,toolbar=no,location=no,status=no",
+                    );
                   }}
                 >
                   <IconTerminal className="h-3 w-3" /> Connect
                 </Button>
               )}
 
-              {target.provider == null && (
+              {resource.provider == null && (
                 <EditTargetDialog
-                  target={target}
-                  onSuccess={() => utils.resource.byId.invalidate(target.id)}
+                  target={resource}
+                  onSuccess={() => utils.resource.byId.invalidate(resource.id)}
                 >
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={target.lockedAt != null}
+                    disabled={resource.lockedAt != null}
                   >
                     Edit Target
                   </Button>
@@ -169,7 +171,7 @@ export const TargetDrawer: React.FC = () => {
           )}
         </div>
 
-        {target != null && (
+        {resource != null && (
           <div className="flex h-full w-full gap-6 p-6">
             <div className="space-y-1">
               <TabButton
@@ -205,17 +207,19 @@ export const TargetDrawer: React.FC = () => {
             </div>
             <div className="h-full w-full overflow-auto">
               {activeTab === "deployments" && (
-                <DeploymentsContent targetId={target.id} />
+                <DeploymentsContent targetId={resource.id} />
               )}
-              {activeTab === "overview" && <OverviewContent target={target} />}
+              {activeTab === "overview" && (
+                <OverviewContent target={resource} />
+              )}
               {activeTab === "relationships" && (
-                <RelationshipsContent target={target} />
+                <RelationshipsContent target={resource} />
               )}
-              {activeTab === "jobs" && <JobsContent targetId={target.id} />}
+              {activeTab === "jobs" && <JobsContent targetId={resource.id} />}
               {activeTab === "variables" && (
                 <VariableContent
-                  targetId={target.id}
-                  targetVariables={target.variables}
+                  targetId={resource.id}
+                  targetVariables={resource.variables}
                 />
               )}
             </div>

@@ -370,6 +370,7 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
       name: release.name,
       config: release.config,
       environmentId: releaseJobTrigger.environmentId,
+      resourceId: releaseJobTrigger.resourceId,
 
       rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId}, ${releaseJobTrigger.environmentId} ORDER BY ${release.createdAt} DESC)`.as(
         "rank",
@@ -657,10 +658,10 @@ export const deploymentRouter = createTRPCRouter({
               ),
             )
             .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
-
             .where(
               and(
                 eq(resource.id, input),
+                eq(environment.id, env.environment.id),
                 isNull(resource.deletedAt),
                 inArray(job.status, [
                   JobStatus.Completed,
@@ -670,17 +671,21 @@ export const deploymentRouter = createTRPCRouter({
               ),
             )
             .orderBy(deployment.id, releaseJobTrigger.createdAt)
+            .limit(500)
             .then((r) =>
               r.map((row) => ({
                 ...row.deployment,
                 environment: row.environment,
                 system: row.system,
-                releaseJobTrigger: {
-                  ...row.release_job_trigger,
-                  job: row.job,
-                  release: row.release,
-                  resourceId: row.resource.id,
-                },
+                releaseJobTrigger:
+                  row.release_job_trigger != null
+                    ? {
+                        ...row.release_job_trigger,
+                        job: row.job!,
+                        release: row.release!,
+                        resourceId: row.resource.id,
+                      }
+                    : null,
               })),
             ),
         ),

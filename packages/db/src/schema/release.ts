@@ -11,6 +11,7 @@ import {
   exists,
   gt,
   gte,
+  ilike,
   like,
   lt,
   lte,
@@ -202,6 +203,19 @@ export type ReleaseJobTriggerType = ReleaseJobTrigger["type"];
 export type ReleaseJobTriggerInsert = InferInsertModel<
   typeof releaseJobTrigger
 >;
+export const releaseJobTriggerRelations = relations(
+  releaseJobTrigger,
+  ({ one }) => ({
+    job: one(job, {
+      fields: [releaseJobTrigger.jobId],
+      references: [job.id],
+    }),
+    resource: one(resource, {
+      fields: [releaseJobTrigger.resourceId],
+      references: [resource.id],
+    }),
+  }),
+);
 
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
@@ -271,8 +285,12 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 const buildVersionCondition = (cond: VersionCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
     return eq(release.version, cond.value);
-  if (cond.operator === ColumnOperator.Like)
-    return like(release.version, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(release.version, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(release.version, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return ilike(release.version, `%${cond.value}%`);
   return sql`${release.version} ~ ${cond.value}`;
 };
 

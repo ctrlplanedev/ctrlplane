@@ -25,8 +25,9 @@ import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ReleaseCell } from "./ReleaseCell";
 
 const DeploymentsTable: React.FC<{ targetId: string }> = ({ targetId }) => {
-  const jobs = api.job.byResourceId.useQuery(targetId);
-  const deployments = api.deployment.byTargetId.useQuery(targetId);
+  const resourceId = targetId;
+  const jobs = api.job.byResourceId.useQuery(resourceId);
+  const deployments = api.deployment.byTargetId.useQuery(resourceId);
   return (
     <Table className="w-full min-w-max border-separate border-spacing-0">
       <TableBody>
@@ -106,9 +107,10 @@ export default function TargetPage({
 }: {
   params: { targetId: string };
 }) {
-  const target = api.resource.byId.useQuery(params.targetId);
-  const jobs = api.job.byResourceId.useQuery(params.targetId);
-  const deployments = api.deployment.byTargetId.useQuery(params.targetId);
+  const resourceId = params.targetId;
+  const target = api.resource.byId.useQuery(resourceId);
+  const jobs = api.job.byResourceId.useQuery(resourceId);
+  const deployments = api.deployment.byTargetId.useQuery(resourceId);
 
   const unlockTarget = api.resource.unlock.useMutation();
   const lockTarget = api.resource.lock.useMutation();

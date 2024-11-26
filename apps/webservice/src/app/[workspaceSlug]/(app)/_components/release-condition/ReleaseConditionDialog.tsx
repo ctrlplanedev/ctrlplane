@@ -38,7 +38,10 @@ import { useReleaseFilter } from "./useReleaseFilter";
 type ReleaseConditionDialogProps = {
   condition?: ReleaseCondition;
   deploymentId?: string;
-  onChange: (condition: ReleaseCondition | undefined) => void;
+  onChange: (
+    condition: ReleaseCondition | undefined,
+    releaseChannelId?: string | null,
+  ) => void;
   releaseChannels?: SCHEMA.ReleaseChannel[];
   children: React.ReactNode;
 };
@@ -52,8 +55,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { releaseChannelId, setReleaseChannel, removeReleaseChannel } =
-    useReleaseFilter();
+  const { setFilter, releaseChannelId } = useReleaseFilter();
 
   const [localReleaseChannelId, setLocalReleaseChannelId] = useState<
     string | undefined
@@ -79,14 +81,14 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
       >
         <Tabs
           defaultValue={
-            releaseChannels.length > 0 ? "release-channels" : "new-filter"
+            releaseChannelId != null ? "release-channels" : "new-filter"
           }
           className="space-y-4"
           onValueChange={(value) => {
-            if (value === "new-filter") {
-              setLocalCondition(defaultCondition);
-              setLocalReleaseChannelId(undefined);
-            }
+            if (value === "new-filter")
+              setLocalCondition(localCondition ?? defaultCondition);
+            if (value === "release-channels")
+              setLocalReleaseChannelId(releaseChannelId);
           }}
         >
           {releaseChannels.length > 0 && (
@@ -138,7 +140,10 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
                     (rc) => rc.id === localReleaseChannelId,
                   );
                   if (releaseChannel == null) return;
-                  setReleaseChannel(releaseChannel);
+                  setFilter(
+                    releaseChannel.releaseFilter ?? undefined,
+                    localReleaseChannelId,
+                  );
                   setOpen(false);
                   setError(null);
                 }}
@@ -175,7 +180,6 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
               <div className="flex-grow" />
               <Button
                 onClick={() => {
-                  console.log(">>> localCondition", localCondition);
                   if (
                     localCondition != null &&
                     !isValidReleaseCondition(localCondition)
@@ -185,8 +189,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
                     );
                     return;
                   }
-                  removeReleaseChannel();
-                  onChange(localCondition);
+                  onChange(localCondition, null);
                   setOpen(false);
                   setError(null);
                 }}

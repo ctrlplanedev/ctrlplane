@@ -24,6 +24,7 @@ import {
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
 import {
+  ColumnOperator,
   ComparisonOperator,
   DateOperator,
   MetadataOperator,
@@ -57,6 +58,9 @@ const operatorVerbs = {
   [DateOperator.Before]: "before",
   [DateOperator.AfterOrOn]: "after or on",
   [DateOperator.BeforeOrOn]: "before or on",
+  [ColumnOperator.StartsWith]: "starts with",
+  [ColumnOperator.EndsWith]: "ends with",
+  [ColumnOperator.Contains]: "contains",
 };
 
 const ConditionBadge: React.FC<{

@@ -9,5 +9,3 @@ export const identifierCondition = z.object({
 });
 
 export type IdentifierCondition = z.infer<typeof identifierCondition>;
-
-export type IdentifierOperator = IdentifierCondition["operator"];

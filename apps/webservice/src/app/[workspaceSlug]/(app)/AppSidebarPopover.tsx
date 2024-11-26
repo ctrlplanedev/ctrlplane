@@ -24,7 +24,7 @@ export const AppSidebarPopover: React.FC<{ workspace: Workspace }> = ({
         side="right"
         align="start"
         sideOffset={1}
-        className="-mt-1 h-[100vh] w-[340px] rounded-none border-y-0 border-l-0 bg-black p-0"
+        className="-mt-1 h-[100vh] w-[340px] overflow-auto rounded-none border-y-0 border-l-0 bg-black p-0"
       >
         {activeSidebarItem === "resources" && (
           <AppSidebarResourcesPopover workspace={workspace} />

@@ -125,7 +125,7 @@ export class AgentSocket {
       "name" | "version" | "kind" | "identifier" | "workspaceId"
     >,
   ) {
-    const [res] = await upsertResources(db, [
+    const { all } = await upsertResources(db, [
       {
         ...resource,
         name: this.name,
@@ -136,6 +136,7 @@ export class AgentSocket {
         updatedAt: new Date(),
       },
     ]);
+    const res = all.at(0);
     if (res == null) throw new Error("Failed to create resource");
     this.resource = res;
     agents.set(res.id, { lastSync: new Date(), agent: this });

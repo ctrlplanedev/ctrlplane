@@ -11,6 +11,7 @@ import {
   exists,
   gt,
   gte,
+  ilike,
   isNull,
   like,
   lt,
@@ -18,6 +19,7 @@ import {
   not,
   notExists,
   or,
+  relations,
   sql,
 } from "drizzle-orm";
 import {
@@ -45,8 +47,8 @@ import type { Tx } from "../common.js";
 import { deployment } from "./deployment.js";
 import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
-import { release } from "./release.js";
-import { resource } from "./resource.js";
+import { release, releaseJobTrigger } from "./release.js";
+import { jobResourceRelationship, resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
@@ -93,6 +95,11 @@ export const job = pgTable("job", {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+export const jobRelations = relations(job, ({ many }) => ({
+  releaseTrigger: many(releaseJobTrigger),
+  jobRelationships: many(jobResourceRelationship),
+}));
 
 export const jobMetadata = pgTable(
   "job_metadata",
@@ -202,11 +209,15 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === ColumnOperator.Like)
-    return like(release.version, cond.value);
-  if (cond.operator === ColumnOperator.Regex)
-    return sql`${release.version} ~ ${cond.value}`;
-  return eq(release.version, cond.value);
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(release.version, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(release.version, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(release.version, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return ilike(release.version, `%${cond.value}%`);
+  return sql`${release.version} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {

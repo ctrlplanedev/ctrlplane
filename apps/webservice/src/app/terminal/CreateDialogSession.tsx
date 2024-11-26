@@ -34,14 +34,19 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
   const [isModalOpen, setModelOpen] = useState(false);
   const { createSession, setIsDrawerOpen } = useTerminalSessions();
 
+  const workspaces = api.workspace.list.useQuery();
   const [targetId, setTargetId] = React.useState("");
 
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
+  const workspace = api.workspace.bySlug.useQuery(workspaceSlug ?? "", {
+    enabled: workspaceSlug != null,
+  });
+
+  const [workspaceId, setWorkspaceId] = useState("");
 
   const targets = api.resource.byWorkspaceId.list.useQuery(
     {
-      workspaceId: workspace.data?.id ?? "",
+      workspaceId: workspace.data?.id ?? workspaceId,
       limit: 500,
       filter: {
         type: "kind",
@@ -49,11 +54,11 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
         value: "AccessNode",
       },
     },
-    { enabled: workspace.data != null },
+    { enabled: workspace.data != null || workspaceId != "" },
   );
 
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-
+  const [isTargetPopoverOpen, setIsTargetPopoverOpen] = useState(false);
+  const [isWorkspacePopoverOpen, setIsWorkspacePopoverOpen] = useState(false);
   return (
     <Dialog open={isModalOpen} onOpenChange={setModelOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -62,19 +67,86 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
           <DialogTitle>Create Remote Session</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {workspaceSlug == null && (
+            <div className="grid w-full items-center gap-1.5">
+              <Label htmlFor="picture">Workspace</Label>
+
+              <Popover
+                open={isWorkspacePopoverOpen}
+                onOpenChange={setIsWorkspacePopoverOpen}
+                modal={true}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isWorkspacePopoverOpen}
+                    className="w-full items-center justify-start gap-2 bg-transparent px-2 hover:bg-neutral-800/50"
+                  >
+                    <IconSelector className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">
+                      {workspaceId === ""
+                        ? "Select workspace..."
+                        : workspaces.data?.find((t) => t.id === workspaceId)
+                            ?.name}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search resource..."
+                      className="h-9"
+                    />
+
+                    <CommandList>
+                      <CommandEmpty>Workspaces not found.</CommandEmpty>
+
+                      <CommandGroup>
+                        {workspaces.data?.map((workspace) => (
+                          <CommandItem
+                            key={workspace.id}
+                            value={workspace.id}
+                            onSelect={(currentValue) => {
+                              setWorkspaceId(
+                                currentValue === workspaceId
+                                  ? ""
+                                  : currentValue,
+                              );
+                              setIsWorkspacePopoverOpen(false);
+                            }}
+                          >
+                            {workspace.name}
+                            <IconCheck
+                              className={cn(
+                                "ml-auto",
+                                workspaceId === workspace.id
+                                  ? "opacity-100"
+                                  : "opacity-0",
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
           <div className="grid w-full items-center gap-1.5">
             <Label htmlFor="picture">Targets</Label>
 
             <Popover
-              open={isPopoverOpen}
-              onOpenChange={setIsPopoverOpen}
+              open={isTargetPopoverOpen}
+              onOpenChange={setIsTargetPopoverOpen}
               modal={true}
             >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={isPopoverOpen}
+                  aria-expanded={isTargetPopoverOpen}
                   className="w-full items-center justify-start gap-2 bg-transparent px-2 hover:bg-neutral-800/50"
                 >
                   <IconSelector className="h-4 w-4 text-muted-foreground" />
@@ -105,7 +177,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
                             setTargetId(
                               currentValue === targetId ? "" : currentValue,
                             );
-                            setIsPopoverOpen(false);
+                            setIsTargetPopoverOpen(false);
                           }}
                         >
                           {target.name}
@@ -133,7 +205,9 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
               setModelOpen(false);
               setIsDrawerOpen(true);
             }}
-            disabled={targetId === ""}
+            disabled={
+              targetId === "" || (workspaceId === "" && workspaceSlug == null)
+            }
           >
             Create Session
           </Button>

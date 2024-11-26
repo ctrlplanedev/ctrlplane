@@ -15,10 +15,9 @@ import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSet
 import { AppSidebar } from "./AppSidebar";
 import { AppSidebarPopoverProvider } from "./AppSidebarPopoverContext";
 
-const TerminalDrawer = dynamic(
-  () => import("./_components/terminal/TerminalSessionsDrawer"),
-  { ssr: false },
-);
+const TerminalDrawer = dynamic(() => import("./TerminalSessionsDrawer"), {
+  ssr: false,
+});
 
 type Props = {
   children: React.ReactNode;

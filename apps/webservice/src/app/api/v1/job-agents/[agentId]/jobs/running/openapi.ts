@@ -51,24 +51,14 @@ export const openapi: Swagger.SwaggerV3 = {
                         type: "string",
                         nullable: true,
                       },
-                      release: {
-                        type: "object",
-                      },
-                      deployment: {
-                        type: "object",
-                      },
+                      release: { $ref: "#/components/schemas/Release" },
+                      deployment: { $ref: "#/components/schemas/Deployment" },
                       config: {
                         type: "object",
                       },
-                      runbook: {
-                        type: "object",
-                      },
-                      target: {
-                        type: "object",
-                      },
-                      environment: {
-                        type: "object",
-                      },
+                      runbook: { $ref: "#/components/schemas/Runbook" },
+                      resource: { $ref: "#/components/schemas/Resource" },
+                      environment: { $ref: "#/components/schemas/Environment" },
                     },
                     required: [
                       "id",

@@ -64,7 +64,7 @@ export const useSessionTerminal = (
   return { terminalRef, divRef, fitAddon, reloadTerminal };
 };
 
-export const SocketTerminal: React.FC<{
+const SocketTerminal: React.FC<{
   terminalRef: MutableRefObject<Terminal | null>;
   getWebSocket: () => WebSocketLike | null;
   onResize?: (size: {
@@ -121,3 +121,5 @@ export const SocketTerminal: React.FC<{
 
   return sized;
 };
+
+export default SocketTerminal;

@@ -1,13 +1,22 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type {
   IdentifierCondition,
+  NameCondition,
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
-import { exists, like, not, notExists, or, relations, sql } from "drizzle-orm";
+import {
+  exists,
+  ilike,
+  like,
+  not,
+  notExists,
+  or,
+  relations,
+  sql,
+} from "drizzle-orm";
 import {
   boolean,
-  foreignKey,
   json,
   jsonb,
   pgEnum,
@@ -32,7 +41,8 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { Tx } from "../common.js";
-import { deployment } from "./deployment.js";
+import { job } from "./job.js";
+import { releaseJobTrigger } from "./release.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 
@@ -77,6 +87,8 @@ export const resourceRelations = relations(resource, ({ one, many }) => ({
     fields: [resource.workspaceId],
     references: [workspace.id],
   }),
+  releaseTrigger: many(releaseJobTrigger),
+  jobRelationships: many(jobResourceRelationship),
 }));
 
 export type Resource = InferSelectModel<typeof resource>;
@@ -208,11 +220,27 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 };
 
 const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
-  if (cond.operator === ColumnOperator.Like)
-    return like(resource.identifier, cond.value);
   if (cond.operator === ColumnOperator.Equals)
     return eq(resource.identifier, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(resource.identifier, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(resource.identifier, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return ilike(resource.identifier, `%${cond.value}%`);
   return sql`${resource.identifier} ~ ${cond.value}`;
+};
+
+const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(resource.name, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return ilike(resource.name, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return ilike(resource.name, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return ilike(resource.name, `%${cond.value}%`);
+  return sql`${resource.name} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
@@ -221,7 +249,7 @@ const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
   if (cond.type === ResourceFilterType.Kind)
     return eq(resource.kind, cond.value);
   if (cond.type === ResourceFilterType.Name)
-    return like(resource.name, cond.value);
+    return buildNameCondition(tx, cond);
   if (cond.type === ResourceFilterType.Provider)
     return eq(resource.providerId, cond.value);
   if (cond.type === ResourceFilterType.Identifier)
@@ -273,24 +301,29 @@ export type ResourceRelationship = InferSelectModel<
   typeof resourceRelationship
 >;
 
-export const deploymentResourceRelationship = pgTable(
-  "deployment_resource_relationship",
+export const jobResourceRelationship = pgTable(
+  "job_resource_relationship",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    workspaceId: uuid("workspace_id").notNull(),
-    deploymentId: uuid("deployment_id")
-      .references(() => deployment.id, { onDelete: "cascade" })
+    jobId: uuid("job_id")
+      .references(() => job.id, { onDelete: "cascade" })
       .notNull(),
     resourceIdentifier: text("resource_identifier").notNull(),
   },
-  (t) => ({
-    // Must use composite foreign key (workspace_id, identifier) instead of simple FK to identifier, as identifiers
-    // are only unique per workspace. Simple FK would fail with "no unique constraint" error
-    resourceFk: foreignKey({
-      columns: [t.resourceIdentifier, t.workspaceId],
-      foreignColumns: [resource.identifier, resource.workspaceId],
-    }).onDelete("cascade"),
-    uniq: uniqueIndex().on(t.workspaceId, t.resourceIdentifier),
+  (t) => ({ uniq: uniqueIndex().on(t.jobId, t.resourceIdentifier) }),
+);
+
+export const jobResourceRelationshipRelations = relations(
+  jobResourceRelationship,
+  ({ one }) => ({
+    job: one(job, {
+      fields: [jobResourceRelationship.jobId],
+      references: [job.id],
+    }),
+    resource: one(resource, {
+      fields: [jobResourceRelationship.resourceIdentifier],
+      references: [resource.identifier],
+    }),
   }),
 );
 

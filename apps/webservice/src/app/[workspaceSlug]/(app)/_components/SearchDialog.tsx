@@ -15,6 +15,7 @@ import {
   CommandSeparator,
 } from "@ctrlplane/ui/command";
 import { Dialog, DialogContent, DialogTrigger } from "@ctrlplane/ui/dialog";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
 import { api } from "~/trpc/react";
 
@@ -40,14 +41,17 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
               conditions: [
                 {
                   type: "name",
-                  operator: "like",
-                  value: `%${search}%`,
+                  operator: ColumnOperator.Contains,
+                  value: search,
                 },
               ],
             }
           : undefined,
     },
-    { enabled: workspace.isSuccess && workspace.data?.id !== "" },
+    {
+      enabled: workspace.isSuccess && workspace.data?.id !== "",
+      placeholderData: (prev) => prev,
+    },
   );
 
   return (

@@ -6,8 +6,6 @@ export * from "./policy-checker.js";
 export * from "./policy-create.js";
 export * from "./release-sequencing.js";
 export * from "./gradual-rollout.js";
-export * from "./new-resource.js";
-export * from "./resource.js";
 export * from "./lock-checker.js";
 export * from "./queue.js";
 
@@ -24,3 +22,4 @@ export * from "./policies/release-window.js";
 export * from "./environment-creation.js";
 export * from "./pending-job-checker.js";
 export * from "./events/index.js";
+export * from "./resource/index.js";

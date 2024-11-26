@@ -16,6 +16,7 @@ import {
   CommandList,
 } from "@ctrlplane/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
   ResourceFilterType,
   ResourceOperator,
@@ -74,8 +75,8 @@ const useResourcesWithSearch = (
       environmentFilters,
       {
         type: ResourceFilterType.Name,
-        operator: ResourceOperator.Like,
-        value: `%${search}%`,
+        operator: ColumnOperator.Contains,
+        value: search,
       },
     ],
   };
