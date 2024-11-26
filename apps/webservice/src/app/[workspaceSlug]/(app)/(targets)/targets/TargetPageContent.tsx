@@ -67,6 +67,9 @@ export const SearchInput: React.FC<{
         }`}
         placeholder="Search..."
         onBlur={() => setIsExpanded(false)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") setIsExpanded(false);
+        }}
         hidden={!isExpanded}
       />
     </div>
@@ -87,7 +90,12 @@ export const TargetPageContent: React.FC<{
         type: "comparison",
         operator: "and",
         conditions: [
-          ...(filter != null ? [filter] : []),
+          // Keep any non-name conditions from existing filter
+          ...(filter && "conditions" in filter
+            ? filter.conditions.filter(
+                (c: ResourceCondition) => c.type !== "name",
+              )
+            : []),
           {
             type: "name",
             operator: ColumnOperator.Contains,
@@ -96,7 +104,7 @@ export const TargetPageContent: React.FC<{
         ],
       });
     },
-    2000,
+    500,
     [search],
   );
 
@@ -120,6 +128,7 @@ export const TargetPageContent: React.FC<{
 
   if (targetsAll.isSuccess && targetsAll.data.total === 0)
     return <TargetGettingStarted workspace={workspace} />;
+
   return (
     <div className="h-full text-sm">
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">
