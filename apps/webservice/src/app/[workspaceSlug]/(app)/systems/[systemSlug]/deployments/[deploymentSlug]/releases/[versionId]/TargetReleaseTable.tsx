@@ -2,7 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { JobStatus } from "@ctrlplane/validators/jobs";
+import type { JobCondition, JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
 import {
@@ -31,9 +31,9 @@ import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
-import { useJobFilter } from "~/app/[workspaceSlug]/(app)/_components/job-condition/useJobFilter";
 import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
+import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "./JobDropdownMenu";
 import { PolicyApprovalRow } from "./PolicyApprovalRow";
@@ -411,9 +411,9 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   deployment,
   environments,
 }) => {
-  const { filter, setFilter } = useJobFilter();
+  const { filter, setFilter } = useFilter<JobCondition>();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
-    { releaseId: release.id, filter },
+    { releaseId: release.id, filter: filter ?? undefined },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];

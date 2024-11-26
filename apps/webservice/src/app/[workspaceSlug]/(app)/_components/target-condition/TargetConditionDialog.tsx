@@ -26,8 +26,8 @@ import { TargetConditionRender } from "./TargetConditionRender";
 import { TargetViewForm, targetViewFormSchema } from "./TargetViewForm";
 
 type TargetConditionDialogProps = {
-  condition?: ResourceCondition;
-  onChange: (condition: ResourceCondition | undefined) => void;
+  condition: ResourceCondition | null;
+  onChange: (condition: ResourceCondition | null) => void;
   children: React.ReactNode;
 };
 
@@ -94,7 +94,7 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
 
 type CreateTargetViewDialogProps = {
   workspaceId: string;
-  filter?: ResourceCondition;
+  filter: ResourceCondition | null;
   onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };

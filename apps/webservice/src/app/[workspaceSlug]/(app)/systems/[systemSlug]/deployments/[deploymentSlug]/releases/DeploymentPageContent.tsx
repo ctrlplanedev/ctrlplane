@@ -51,7 +51,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   }>();
 
   const releases = api.release.list.useQuery(
-    { deploymentId: deployment.id, filter, limit: 30 },
+    { deploymentId: deployment.id, filter: filter ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
 

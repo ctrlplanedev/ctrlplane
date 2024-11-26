@@ -22,8 +22,7 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
-import { useReleaseFilter } from "../release-condition/useReleaseFilter";
-import { useReleaseChannelDrawer } from "./useReleaseChannelDrawer";
+import { useQueryParams } from "../useQueryParams";
 
 type DeleteReleaseChannelDialogProps = {
   releaseChannelId: string;
@@ -37,16 +36,22 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
   children,
 }) => {
   const [open, setOpen] = useState(false);
-  const { removeReleaseChannelId } = useReleaseChannelDrawer();
-  const { setFilter } = useReleaseFilter();
+  const { setParams } = useQueryParams();
   const router = useRouter();
   const deleteReleaseChannel =
     api.deployment.releaseChannel.delete.useMutation();
   const onDelete = () =>
     deleteReleaseChannel
       .mutateAsync(releaseChannelId)
-      .then(() => removeReleaseChannelId())
-      .then(() => setFilter(undefined, null))
+      .then(() =>
+        // setting params one at a time does not work and only makes one change
+        // so we directly set all params to null at once
+        setParams({
+          "release-channel-id": null,
+          release_channel_id: null,
+          filter: null,
+        }),
+      )
       .then(() => router.refresh())
       .then(() => setOpen(false));
 

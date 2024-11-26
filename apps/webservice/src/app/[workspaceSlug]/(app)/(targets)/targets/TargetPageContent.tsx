@@ -80,7 +80,7 @@ export const TargetPageContent: React.FC<{
   view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
   const [search, setSearch] = React.useState("");
-  const { filter, setFilter, setView } = useTargetFilter();
+  const { filter, setFilter } = useTargetFilter();
 
   useDebounce(
     () => {
@@ -113,13 +113,13 @@ export const TargetPageContent: React.FC<{
     limit: 0,
   });
   const targets = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter },
+    { workspaceId, filter: filter ?? undefined },
     { placeholderData: (prev) => prev },
   );
 
-  const onFilterChange = (condition: ResourceCondition | undefined) => {
+  const onFilterChange = (condition: ResourceCondition | null) => {
     const cond = condition ?? defaultCondition;
-    if (isEmptyCondition(cond)) setFilter(undefined);
+    if (isEmptyCondition(cond)) setFilter(null);
     if (!isEmptyCondition(cond)) setFilter(cond);
   };
 
@@ -173,7 +173,7 @@ export const TargetPageContent: React.FC<{
             <CreateTargetViewDialog
               workspaceId={workspace.id}
               filter={filter}
-              onSubmit={setView}
+              onSubmit={(v) => setFilter(v.filter, v.id)}
             >
               <Button className="h-7">Save view</Button>
             </CreateTargetViewDialog>
@@ -207,7 +207,7 @@ export const TargetPageContent: React.FC<{
         <NoFilterMatch
           numItems={targetsAll.data?.total ?? 0}
           itemType="target"
-          onClear={() => setFilter(undefined)}
+          onClear={() => setFilter(null)}
         />
       )}
       {targets.data != null && targets.data.total > 0 && (

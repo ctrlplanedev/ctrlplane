@@ -8,7 +8,7 @@ import { DeploymentPageContent } from "./DeploymentPageContent";
 
 type PageProps = {
   params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
-  searchParams: { "release-channel"?: string };
+  searchParams: { "release-channel-id"?: string };
 };
 
 export async function generateMetadata({
@@ -30,8 +30,10 @@ export default async function DeploymentPage({
   if (deployment == null) return notFound();
   const { system } = deployment;
   const environments = await api.environment.bySystemId(system.id);
-  const releaseChannel = searchParams["release-channel"]
-    ? await api.deployment.releaseChannel.byId(searchParams["release-channel"])
+  const releaseChannel = searchParams["release-channel-id"]
+    ? await api.deployment.releaseChannel.byId(
+        searchParams["release-channel-id"],
+      )
     : null;
   return (
     <DeploymentPageContent

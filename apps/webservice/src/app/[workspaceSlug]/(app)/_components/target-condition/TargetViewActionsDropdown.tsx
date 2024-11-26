@@ -34,7 +34,7 @@ const DeleteTargetViewDialog: React.FC<{
 }> = ({ viewId, onClose, children }) => {
   const [open, setOpen] = useState(false);
   const deleteTargetView = api.resource.view.delete.useMutation();
-  const { removeView } = useTargetFilter();
+  const { setFilter } = useTargetFilter();
 
   return (
     <AlertDialog
@@ -63,7 +63,7 @@ const DeleteTargetViewDialog: React.FC<{
             onClick={() =>
               deleteTargetView
                 .mutateAsync(viewId)
-                .then(removeView)
+                .then(() => setFilter(null, null))
                 .then(onClose)
             }
           >
@@ -82,7 +82,8 @@ export const TargetViewActionsDropdown: React.FC<{
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isTargetPage = pathname.includes("/targets");
-  const { setView } = useTargetFilter();
+  const { setFilter } = useTargetFilter();
+  const setView = (v: schema.ResourceView) => setFilter(v.filter, v.id);
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
