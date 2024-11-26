@@ -29,7 +29,6 @@ import {
   isPassingNoPendingJobsPolicy,
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
-import { logger } from "@ctrlplane/logger";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
@@ -491,41 +490,44 @@ const getNodesRecursivelyHelper = async (
   node: Node,
   nodes: NonNullable<Node>[],
 ): Promise<NonNullable<Node>[]> => {
-  try {
-    if (node == null) return nodes;
-    logger.info("node", { node });
-    const activeReleaseJobs = node.workspace.systems
-      .flatMap((s) => s.environments)
-      .flatMap((e) => e.latestActiveReleases)
-      .map((r) => r.releaseJobTrigger.job);
+  if (node == null) return nodes;
+  const activeReleaseJobs = node.workspace.systems
+    .flatMap((s) => s.environments)
+    .flatMap((e) => e.latestActiveReleases)
+    .map((r) => r.releaseJobTrigger.job);
 
-    const jobIds = activeReleaseJobs.map((j) => j.id);
-    logger.info("jobIds", { jobIds });
-
-    const relationships = await db.query.jobResourceRelationship.findMany({
-      where: inArray(
-        schema.jobResourceRelationship.jobId,
-        activeReleaseJobs.map((j) => j.id).filter(isPresent),
+  const jobIds = activeReleaseJobs.map((j) => j.id);
+  const relationships = await db
+    .select()
+    .from(schema.jobResourceRelationship)
+    .leftJoin(
+      schema.resource,
+      eq(
+        schema.jobResourceRelationship.resourceIdentifier,
+        schema.resource.identifier,
       ),
-      with: { resource: true },
-    });
-
-    logger.info("relationships", { relationships });
-
-    const childrenPromises = relationships.map((r) =>
-      getNodeDataForResource(db, r.resource.id),
+    )
+    .where(inArray(schema.jobResourceRelationship.jobId, jobIds))
+    .then((rows) =>
+      rows
+        .map((r) =>
+          r.resource != null
+            ? { ...r.job_resource_relationship, resource: r.resource }
+            : null,
+        )
+        .filter(isPresent),
     );
-    const children = await Promise.all(childrenPromises);
 
-    const childrenNodesPromises = children.map((c) =>
-      getNodesRecursivelyHelper(db, c, []),
-    );
-    const childrenNodes = (await Promise.all(childrenNodesPromises)).flat();
-    return [...nodes, node, ...childrenNodes].filter(isPresent);
-  } catch (error) {
-    logger.error("error", { error });
-    return nodes;
-  }
+  const childrenPromises = relationships.map((r) =>
+    getNodeDataForResource(db, r.resource.id),
+  );
+  const children = await Promise.all(childrenPromises);
+
+  const childrenNodesPromises = children.map((c) =>
+    getNodesRecursivelyHelper(db, c, []),
+  );
+  const childrenNodes = (await Promise.all(childrenNodesPromises)).flat();
+  return [...nodes, node, ...childrenNodes].filter(isPresent);
 };
 
 const getNodesRecursively = async (db: Tx, resourceId: string) => {
