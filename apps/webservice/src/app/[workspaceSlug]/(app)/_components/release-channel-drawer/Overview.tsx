@@ -46,6 +46,7 @@ const getFinalFilter = (filter: ReleaseCondition | null) =>
 
 const getReleaseFilterUrl = (
   workspaceSlug: string,
+  releaseChannelId: string,
   systemSlug?: string,
   deploymentSlug?: string,
   filter?: ReleaseCondition,
@@ -56,7 +57,7 @@ const getReleaseFilterUrl = (
   const filterHash = LZString.compressToEncodedURIComponent(
     JSON.stringify(filter),
   );
-  return `${baseUrl}/releases?filter=${filterHash}`;
+  return `${baseUrl}/releases?filter=${filterHash}&release-channel-id=${releaseChannelId}`;
 };
 
 const schema = z.object({
@@ -108,9 +109,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
       .then(() =>
         utils.deployment.releaseChannel.byId.invalidate(releaseChannel.id),
       )
-      .then(() => {
-        if (paramFilter != null) setFilter(releaseFilter);
-      })
+      .then(() => paramFilter != null && setFilter(releaseFilter ?? null))
       .then(() => router.refresh());
   });
 
@@ -125,6 +124,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const releases = releasesQ.data;
   const releaseFilterUrl = getReleaseFilterUrl(
     workspaceSlug,
+    releaseChannel.id,
     systemSlug,
     deploymentSlug,
     filter,

@@ -2,7 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { JobStatus } from "@ctrlplane/validators/jobs";
+import type { JobCondition, JobStatus } from "@ctrlplane/validators/jobs";
 import React, { Fragment, useState } from "react";
 import Link from "next/link";
 import {
@@ -31,10 +31,10 @@ import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
-import { useJobFilter } from "~/app/[workspaceSlug]/(app)/_components/job-condition/useJobFilter";
 import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { api } from "~/trpc/react";
+import { useFilter } from "../../../../../../_components/useFilter";
 import { JobDropdownMenu } from "./JobDropdownMenu";
 import { PolicyApprovalRow } from "./PolicyApprovalRow";
 import { useReleaseChannel } from "./useReleaseChannel";
@@ -411,9 +411,9 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   deployment,
   environments,
 }) => {
-  const { filter, setFilter } = useJobFilter();
+  const { filter, setFilter } = useFilter<JobCondition>();
   const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
-    { releaseId: release.id, filter },
+    { releaseId: release.id, filter: filter ?? undefined },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];
@@ -431,7 +431,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   return (
     <>
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-        <JobConditionDialog condition={filter} onChange={setFilter}>
+        <JobConditionDialog condition={filter ?? null} onChange={setFilter}>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <IconFilter className="h-4 w-4" />
