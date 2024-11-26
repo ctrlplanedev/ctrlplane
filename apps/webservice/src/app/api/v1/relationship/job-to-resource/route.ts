@@ -18,8 +18,9 @@ export const POST = request()
   .use(parseBody(bodySchema))
   .handle<{ body: z.infer<typeof bodySchema> }>(async (ctx) => {
     const { body, db } = ctx;
+    const { jobId, resourceIdentifier } = body;
     const job = await db.query.job.findFirst({
-      where: eq(SCHEMA.job.id, body.jobId),
+      where: eq(SCHEMA.job.id, jobId),
       with: { releaseTrigger: { with: { resource: true } } },
     });
 
@@ -27,8 +28,6 @@ export const POST = request()
     if (job == null || releaseTrigger == null)
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
 
-    const jobId = job.id;
-    const resourceIdentifier = body.resourceIdentifier;
     return db
       .insert(SCHEMA.jobResourceRelationship)
       .values({ jobId, resourceIdentifier })
