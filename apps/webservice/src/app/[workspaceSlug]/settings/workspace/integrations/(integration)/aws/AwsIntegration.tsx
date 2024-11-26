@@ -3,7 +3,7 @@
 import type { Workspace } from "@ctrlplane/db/schema";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { SiGooglecloud } from "@icons-pack/react-simple-icons";
+import { SiAmazonwebservices } from "@icons-pack/react-simple-icons";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
 
@@ -13,32 +13,32 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
-export const GoogleIntegration: React.FC<{
+export const AwsIntegration: React.FC<{
   workspace: Workspace;
 }> = ({ workspace }) => {
-  const createServiceAccount =
-    api.workspace.integrations.google.createServiceAccount.useMutation();
-  const deleteServiceAccount =
-    api.workspace.integrations.google.deleteServiceAccount.useMutation();
+  const createAwsRole =
+    api.workspace.integrations.aws.createAwsRole.useMutation();
+  const deleteAwsRole =
+    api.workspace.integrations.aws.deleteAwsRole.useMutation();
   const router = useRouter();
   const [isCopied, setIsCopied] = useState(false);
   const [, copy] = useCopyToClipboard();
   const handleCopy = () => {
-    copy(workspace.googleServiceAccountEmail ?? "");
+    copy(workspace.awsRole ?? "");
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1000);
   };
 
-  const isIntegrationEnabled = workspace.googleServiceAccountEmail != null;
+  const isIntegrationEnabled = workspace.awsRole != null;
 
   return (
     <div className="flex flex-col gap-12">
       <div className="flex items-center gap-4">
-        <SiGooglecloud className="h-14 w-14 text-red-400" />
+        <SiAmazonwebservices className="h-14 w-14 text-orange-400" />
         <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-bold">Google</h1>
+          <h1 className="text-3xl font-bold">Aws</h1>
           <p className="text-sm text-muted-foreground">
-            Sync deployment targets, trigger google workflows and more.
+            Sync deployment resources, trigger AWS workflows and more.
           </p>
         </div>
       </div>
@@ -46,27 +46,25 @@ export const GoogleIntegration: React.FC<{
       <Card className="flex flex-col rounded-md">
         <div className="flex items-center justify-between gap-5 rounded-md p-4">
           <div className="flex flex-grow flex-col gap-1">
-            <h2 className="text-lg font-semibold">Service Account</h2>
+            <h2 className="text-lg font-semibold">Role</h2>
 
             <p className="text-sm text-muted-foreground">
-              This integration creates a service account that can be invited to
-              your google projects.
+              This integration creates a role that can be configured in your AWS
+              accounts.
             </p>
           </div>
 
           {isIntegrationEnabled ? (
             <Button
               variant="outline"
-              disabled={deleteServiceAccount.isPending}
+              disabled={deleteAwsRole.isPending}
               onClick={() =>
-                deleteServiceAccount
+                deleteAwsRole
                   .mutateAsync(workspace.id)
-                  .then(() => toast.success("Google Service Account deleted"))
+                  .then(() => toast.success("AWS Role deleted"))
                   .then(() => router.refresh())
                   .catch((error) => {
-                    toast.error(
-                      `Failed to delete service account. ${error.message}`,
-                    );
+                    toast.error(`Failed to delete AWS role. ${error.message}`);
                   })
               }
             >
@@ -75,16 +73,14 @@ export const GoogleIntegration: React.FC<{
           ) : (
             <Button
               variant="outline"
-              disabled={createServiceAccount.isPending}
+              disabled={createAwsRole.isPending}
               onClick={() =>
-                createServiceAccount
+                createAwsRole
                   .mutateAsync(workspace.id)
-                  .then(() => toast.success("Google Service Account created"))
+                  .then(() => toast.success("AWS Role created"))
                   .then(() => router.refresh())
                   .catch((error) => {
-                    toast.error(
-                      `Failed to create service account. ${error.message}`,
-                    );
+                    toast.error(`Failed to create AWS role. ${error.message}`);
                   })
               }
             >
@@ -100,7 +96,7 @@ export const GoogleIntegration: React.FC<{
             <div className="flex items-center justify-between p-4 text-sm text-neutral-200">
               <div className="flex items-center gap-2">
                 <span className="truncate font-mono text-xs">
-                  {workspace.googleServiceAccountEmail}
+                  {workspace.awsRole}
                 </span>
                 <Button variant="ghost" size="sm" onClick={handleCopy}>
                   {isCopied ? (

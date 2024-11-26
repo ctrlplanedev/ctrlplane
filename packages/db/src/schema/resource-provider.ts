@@ -74,3 +74,37 @@ export const resourceProviderGoogleRelations = relations(
     }),
   }),
 );
+
+export const resourceProviderAws = pgTable("resource_provider_aws", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  resourceProviderId: uuid("resource_provider_id")
+    .notNull()
+    .references(() => resourceProvider.id, { onDelete: "cascade" }),
+
+  accountIds: text("account_ids").array().notNull(),
+
+  importEks: boolean("import_eks").notNull().default(false),
+  importNamespaces: boolean("import_namespaces").notNull().default(false),
+  importVCluster: boolean("import_vcluster").notNull().default(false),
+});
+
+export const createResourceProviderAws = createInsertSchema(
+  resourceProviderAws,
+  {
+    accountIds: z.array(z.string().length(12).min(1)).min(1),
+  },
+).omit({ id: true });
+
+export const updateResourceProviderAws = createResourceProviderAws.partial();
+
+export type ResourceProviderAws = InferSelectModel<typeof resourceProviderAws>;
+
+export const resourceProviderAwsRelations = relations(
+  resourceProviderAws,
+  ({ one }) => ({
+    provider: one(resourceProvider, {
+      fields: [resourceProviderAws.resourceProviderId],
+      references: [resourceProvider.id],
+    }),
+  }),
+);

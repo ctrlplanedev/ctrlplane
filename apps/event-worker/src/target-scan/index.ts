@@ -7,6 +7,7 @@ import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import {
   resourceProvider,
+  resourceProviderAws,
   resourceProviderGoogle,
   workspace,
 } from "@ctrlplane/db/schema";
@@ -15,17 +16,23 @@ import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
 import { redis } from "../redis.js";
+import { getEksResources } from "./eks.js";
 import { getGkeResources } from "./gke.js";
+
+const log = logger.child({ label: "resource-scan" });
 
 const resourceScanQueue = new Queue(Channel.ResourceScan, {
   connection: redis,
 });
+
 const removeResourceJob = (job: Job) =>
   job.repeatJobKey != null
     ? resourceScanQueue.removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-export const createResourceScanWorker = () =>
+const createResourceScanWorker = (
+  scanResources: (rp: any) => Promise<InsertResource[]>,
+) =>
   new Worker<ResourceScanEvent>(
     Channel.ResourceScan,
     async (job) => {
@@ -40,51 +47,39 @@ export const createResourceScanWorker = () =>
           resourceProviderGoogle,
           eq(resourceProvider.id, resourceProviderGoogle.resourceProviderId),
         )
+        .leftJoin(
+          resourceProviderAws,
+          eq(resourceProvider.id, resourceProviderAws.resourceProviderId),
+        )
         .then(takeFirstOrNull);
 
       if (rp == null) {
-        logger.error(
-          `Resource provider with ID ${resourceProviderId} not found.`,
-        );
+        log.error(`Resource provider with ID ${resourceProviderId} not found.`);
         await removeResourceJob(job);
         return;
       }
 
-      logger.info(
+      log.info(
         `Received scanning request for "${rp.resource_provider.name}" (${resourceProviderId}).`,
       );
 
-      const resources: InsertResource[] = [];
-
-      if (rp.resource_provider_google != null) {
-        logger.info("Found Google config, scanning for GKE resources");
-        try {
-          const gkeResources = await getGkeResources(
-            rp.workspace,
-            rp.resource_provider_google,
-          );
-          resources.push(...gkeResources);
-        } catch (error: any) {
-          logger.error(`Error scanning GKE resources: ${error.message}`, {
-            error,
-          });
-        }
-      }
-
       try {
-        logger.info(
+        const resources = await scanResources(rp);
+
+        log.info(
           `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
         );
+
         if (resources.length > 0) {
           await upsertResources(db, resources);
         } else {
-          logger.info(
+          log.info(
             `No resources found for provider ${rp.resource_provider.id}, skipping upsert.`,
           );
         }
       } catch (error: any) {
-        logger.error(
-          `Error upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,
+        log.error(
+          `Error scanning/upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,
           { error },
         );
       }
@@ -96,3 +91,47 @@ export const createResourceScanWorker = () =>
       concurrency: 10,
     },
   );
+
+export const createGoogleResourceScanWorker = () =>
+  createResourceScanWorker(async (rp) => {
+    const resources: InsertResource[] = [];
+
+    if (rp.resource_provider_google != null) {
+      log.info("Found Google config, scanning for GKE resources");
+      try {
+        const gkeResources = await getGkeResources(
+          rp.workspace,
+          rp.resource_provider_google,
+        );
+        resources.push(...gkeResources);
+      } catch (error: any) {
+        log.error(`Error scanning GKE resources: ${error.message}`, {
+          error,
+        });
+      }
+    }
+
+    return resources;
+  });
+
+export const createAwsResourceScanWorker = () =>
+  createResourceScanWorker(async (rp) => {
+    const resources: InsertResource[] = [];
+
+    if (rp.resource_provider_aws != null) {
+      log.info("Found AWS config, scanning for EKS resources");
+      try {
+        const eksResources = await getEksResources(
+          rp.workspace,
+          rp.resource_provider_aws,
+        );
+        resources.push(...eksResources);
+      } catch (error: any) {
+        log.error(`Error scanning EKS resources: ${error.message}`, {
+          error,
+        });
+      }
+    }
+
+    return resources;
+  });

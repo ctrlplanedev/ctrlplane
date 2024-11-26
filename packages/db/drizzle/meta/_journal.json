@@ -302,6 +302,13 @@
       "when": 1732497310450,
       "tag": "0042_absent_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1732649249644,
+      "tag": "0043_perpetual_lorna_dane",
+      "breakpoints": true
     }
   ]
 }

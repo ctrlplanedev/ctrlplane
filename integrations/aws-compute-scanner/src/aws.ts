@@ -74,67 +74,64 @@ export const getKubernetesClusters = async (): Promise<
   eksLogger.info("Scanning AWS EKS clusters");
   const clusters = await getClusters();
 
-  return Promise.all(
-    clusters.map(async ({ name, region }) => {
-      const eksClient = createEksClient(region);
-      const cluster = await eksClient.send(
-        new DescribeClusterCommand({ name }),
-      );
+  const clusterDetails = [];
+  for (const { name, region } of clusters) {
+    const eksClient = createEksClient(region);
+    const cluster = await eksClient.send(new DescribeClusterCommand({ name }));
+    if (cluster.cluster) {
+      clusterDetails.push({ cluster: cluster.cluster, name, region });
+    }
+  }
 
-      if (!cluster.cluster) {
-        throw new Error(`Could not get details for cluster ${name}`);
-      }
+  return clusterDetails.map(({ cluster: clusterInfo, name, region }) => {
+    const appUrl = `https://console.aws.amazon.com/eks/home?region=${env.AWS_REGION}#/clusters/${name}`;
+    const version = clusterInfo.version ?? "0";
+    const [major, minor] = version.split(".");
 
-      const clusterInfo = cluster.cluster;
-      const appUrl = `https://console.aws.amazon.com/eks/home?region=${env.AWS_REGION}#/clusters/${name}`;
-
-      return {
-        cluster: clusterInfo,
-        region: region,
-        resource: {
-          version: "kubernetes/v1",
-          kind: "ClusterAPI",
+    return {
+      cluster: clusterInfo,
+      region: region,
+      resource: {
+        version: "kubernetes/v1",
+        kind: "ClusterAPI",
+        name: name,
+        identifier: `${env.AWS_ACCOUNT_ID}/${name}`,
+        config: {
           name: name,
-          identifier: `${env.AWS_ACCOUNT_ID}/${name}`,
-          config: {
-            name: name,
-            auth: {
-              method: "aws/eks",
-              region: region,
-              project: env.AWS_ACCOUNT_ID,
-              location: clusterInfo.endpoint,
-              clusterName: name,
-            },
-            status: clusterInfo.status ?? "UNKNOWN",
-            server: {
-              certificateAuthorityData: clusterInfo.certificateAuthority?.data,
-              endpoint: clusterInfo.endpoint ?? "",
-            },
+          auth: {
+            method: "aws/eks",
+            region: region,
+            project: env.AWS_ACCOUNT_ID,
+            location: clusterInfo.endpoint,
+            clusterName: name,
           },
-          metadata: omitNullUndefined({
-            [ReservedMetadataKey.Links]: JSON.stringify({
-              "AWS Console": appUrl,
-            }),
-            [ReservedMetadataKey.ExternalId]: clusterInfo.arn ?? "",
-            [ReservedMetadataKey.KubernetesFlavor]: "eks",
-            [ReservedMetadataKey.KubernetesVersion]: clusterInfo.version,
-
-            "aws/arn": clusterInfo.arn,
-            "aws/region": region,
-            "aws/platform-version": clusterInfo.platformVersion,
-
-            "kubernetes/status": clusterInfo.status,
-            "kubernetes/version-major":
-              clusterInfo.version?.split(".")[0] ?? "",
-            "kubernetes/version-minor":
-              clusterInfo.version?.split(".")[1] ?? "",
-
-            ...(clusterInfo.tags ?? {}),
-          }),
+          status: clusterInfo.status ?? "UNKNOWN",
+          server: {
+            certificateAuthorityData: clusterInfo.certificateAuthority?.data,
+            endpoint: clusterInfo.endpoint ?? "",
+          },
         },
-      };
-    }),
-  );
+        metadata: omitNullUndefined({
+          [ReservedMetadataKey.Links]: JSON.stringify({
+            "AWS Console": appUrl,
+          }),
+          [ReservedMetadataKey.ExternalId]: clusterInfo.arn ?? "",
+          [ReservedMetadataKey.KubernetesFlavor]: "eks",
+          [ReservedMetadataKey.KubernetesVersion]: clusterInfo.version,
+
+          "aws/arn": clusterInfo.arn,
+          "aws/region": region,
+          "aws/platform-version": clusterInfo.platformVersion,
+
+          "kubernetes/status": clusterInfo.status,
+          "kubernetes/version-major": major ?? "",
+          "kubernetes/version-minor": minor ?? "",
+
+          ...(clusterInfo.tags ?? {}),
+        }),
+      },
+    };
+  });
 };
 
 export const getKubernetesNamespace = async (

@@ -1,3 +1,4 @@
+import type { Cluster } from "@aws-sdk/client-eks";
 import type { InsertResource } from "@ctrlplane/db/schema";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import _ from "lodash";
@@ -33,11 +34,18 @@ export const getKubeConfig = async (
   }
 };
 
+type Namespace = {
+  metadata?: {
+    name?: string;
+    labels?: Record<string, string>;
+  };
+};
+
 export const createNamespaceResource = (
   clusterResource: InsertResource,
-  namespace: any,
+  namespace: Namespace,
   project: string,
-  cluster: google.container.v1.ICluster,
+  cluster: Cluster | google.container.v1.ICluster,
 ) => {
   return _.merge(_.cloneDeep(clusterResource), {
     name: `${cluster.name ?? cluster.id ?? ""}/${namespace.metadata!.name}`,

@@ -1,3 +1,12 @@
+import {
+  CreateRoleCommand,
+  DeleteRoleCommand,
+  DeleteRolePolicyCommand,
+  IAMClient,
+  PutRolePolicyCommand,
+} from "@aws-sdk/client-iam";
+import { GetCallerIdentityCommand, STSClient } from "@aws-sdk/client-sts";
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
 import { TRPCError } from "@trpc/server";
 import { auth } from "google-auth-library";
 import { google } from "googleapis";
@@ -123,6 +132,179 @@ export const integrationsRouter = createTRPCRouter({
           .update(workspace)
           .set({
             googleServiceAccountEmail: null,
+          })
+          .where(eq(workspace.id, input))
+          .returning()
+          .then(takeFirst);
+      }),
+  }),
+
+  aws: createTRPCRouter({
+    createAwsRole: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.WorkspaceUpdate)
+            .on({ type: "workspace", id: input }),
+      })
+      .input(z.string().uuid())
+      .mutation(async ({ ctx, input }) => {
+        const ws = await ctx.db
+          .select()
+          .from(workspace)
+          .where(eq(workspace.id, input))
+          .then(takeFirstOrNull);
+
+        if (ws == null)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Workspace not found",
+          });
+
+        if (ws.awsRole !== null)
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "AWS Role already defined.",
+          });
+
+        const iamClient = new IAMClient({
+          region: "us-east-1",
+          credentials: defaultProvider(),
+        });
+
+        const stsClient = new STSClient({
+          region: "us-east-1",
+          credentials: defaultProvider(),
+        });
+
+        const { Account: accountId } = await stsClient.send(
+          new GetCallerIdentityCommand({}),
+        );
+
+        if (accountId == null)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to get AWS account ID",
+          });
+
+        const roleName = `ctrlplane-${ws.slug}`;
+
+        const assumeRolePolicyDocument = {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Principal: {
+                AWS: `arn:aws:iam::${accountId}:root`,
+              },
+              Action: "sts:AssumeRole",
+            },
+          ],
+        };
+
+        const createRoleResponse = await iamClient.send(
+          new CreateRoleCommand({
+            RoleName: roleName,
+            Description: `Role for ${ws.slug} (${ws.id})`,
+            AssumeRolePolicyDocument: JSON.stringify(assumeRolePolicyDocument),
+          }),
+        );
+
+        if (
+          createRoleResponse.Role?.Arn == null ||
+          createRoleResponse.$metadata.httpStatusCode !== 200
+        )
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create AWS role",
+          });
+
+        const policyDocument = {
+          Version: "2012-10-17",
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: ["eks:*", "ec2:*"],
+              Resource: "*",
+            },
+          ],
+        };
+
+        const putPolicyResponse = await iamClient.send(
+          new PutRolePolicyCommand({
+            RoleName: roleName,
+            PolicyName: `${roleName}-ctrlplane-policy`,
+            PolicyDocument: JSON.stringify(policyDocument),
+          }),
+        );
+
+        if (putPolicyResponse.$metadata.httpStatusCode !== 200)
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create AWS role policy",
+          });
+
+        return ctx.db
+          .update(workspace)
+          .set({
+            awsRole: createRoleResponse.Role.Arn,
+          })
+          .where(eq(workspace.id, input))
+          .returning()
+          .then(takeFirst);
+      }),
+
+    deleteAwsRole: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.WorkspaceUpdate)
+            .on({ type: "workspace", id: input }),
+      })
+      .input(z.string().uuid())
+      .mutation(async ({ ctx, input }) => {
+        const ws = await ctx.db
+          .select()
+          .from(workspace)
+          .where(eq(workspace.id, input))
+          .then(takeFirstOrNull);
+
+        if (ws == null)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Workspace not found",
+          });
+
+        if (ws.awsRole == null)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "AWS Role does not exist.",
+          });
+
+        const iamClient = new IAMClient({
+          region: "us-east-1",
+          credentials: defaultProvider(),
+        });
+
+        const roleName = `ctrlplane-${ws.slug}`;
+
+        await iamClient.send(
+          new DeleteRolePolicyCommand({
+            RoleName: roleName,
+            PolicyName: `${roleName}-ctrlplane-policy`,
+          }),
+        );
+
+        await iamClient.send(
+          new DeleteRoleCommand({
+            RoleName: roleName,
+          }),
+        );
+
+        return ctx.db
+          .update(workspace)
+          .set({
+            awsRole: null,
           })
           .where(eq(workspace.id, input))
           .returning()

@@ -12,6 +12,7 @@
     "with-env": "dotenv -e ../../.env --"
   },
   "dependencies": {
+    "@aws-sdk/client-eks": "^3.688.0",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",

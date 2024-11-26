@@ -20,6 +20,7 @@ export const workspace = pgTable("workspace", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   googleServiceAccountEmail: text("google_service_account_email"),
+  awsRole: text("aws_role"),
 });
 
 export const workspaceSchema = z.object({

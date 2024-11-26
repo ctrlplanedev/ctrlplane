@@ -8,26 +8,26 @@ import { Button } from "@ctrlplane/ui/button";
 import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
-import { GoogleDialog } from "./google/GoogleDialog";
+import { AwsDialog } from "./aws/AwsDialog";
 
-type GoogleActionButtonProps = {
+type AwsActionButtonProps = {
   workspace: Workspace;
 };
 
-export const GoogleActionButton: React.FC<GoogleActionButtonProps> = ({
+export const AwsActionButton: React.FC<AwsActionButtonProps> = ({
   workspace,
 }) => {
-  const createServiceAccount =
-    api.workspace.integrations.google.createServiceAccount.useMutation();
+  const createAwsRole =
+    api.workspace.integrations.aws.createAwsRole.useMutation();
 
   const router = useRouter();
-  if (workspace.googleServiceAccountEmail != null)
+  if (workspace.awsRole != null)
     return (
-      <GoogleDialog workspace={workspace}>
+      <AwsDialog workspace={workspace}>
         <Button variant="outline" size="sm" className="w-full">
           Configure
         </Button>
-      </GoogleDialog>
+      </AwsDialog>
     );
 
   return (
@@ -35,20 +35,14 @@ export const GoogleActionButton: React.FC<GoogleActionButtonProps> = ({
       variant="outline"
       size="sm"
       className="w-full"
-      disabled={createServiceAccount.isPending}
+      disabled={createAwsRole.isPending}
       onClick={async () =>
-        createServiceAccount
+        createAwsRole
           .mutateAsync(workspace.id)
-          .then((result) =>
-            toast.success(
-              `Google Service Account ${result.googleServiceAccountEmail} created for ${result.name}`,
-            ),
-          )
+          .then(() => toast.success(`AWS User created`))
           .then(() => router.refresh())
           .catch((error) => {
-            toast.error(
-              `Failed to create Google Service Account. ${error.message}`,
-            );
+            toast.error(`Failed to create aws user. ${error.message}`);
           })
       }
     >
