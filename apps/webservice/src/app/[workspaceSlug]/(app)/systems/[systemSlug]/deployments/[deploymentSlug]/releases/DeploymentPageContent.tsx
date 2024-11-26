@@ -87,7 +87,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                 )}
               </div>
             </ReleaseConditionDialog>
-            {filter != null && releaseChannel != null && (
+            {releaseChannel != null && (
               <div className="flex items-center gap-2">
                 <span>{releaseChannel.name}</span>
                 <Button
@@ -222,6 +222,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                               "border-b",
                           )}
                           onClick={(e) => e.stopPropagation()}
+                          key={env.id}
                         >
                           <div className="flex h-full w-full items-center justify-center">
                             {showRelease && (

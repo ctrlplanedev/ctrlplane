@@ -1,4 +1,3 @@
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,54 +23,33 @@ export const useReleaseFilter = () => {
   );
 
   const setFilter = useCallback(
-    (filter: ReleaseCondition | undefined) => {
+    (filter?: ReleaseCondition, releaseChannelId?: string | null) => {
       if (filter == null) {
         const query = new URLSearchParams(window.location.search);
         query.delete("filter");
+        if (releaseChannelId === null) query.delete("release-channel");
+        if (releaseChannelId != null)
+          query.set("release_channel_id", releaseChannelId);
         router.replace(`?${query.toString()}`);
         return;
       }
 
-      const filterJson = LZString.compressToEncodedURIComponent(
+      const filterJsonHash = LZString.compressToEncodedURIComponent(
         JSON.stringify(filter),
       );
       const query = new URLSearchParams(window.location.search);
-      query.set("filter", filterJson);
+      query.set("filter", filterJsonHash);
+      if (releaseChannelId != null)
+        query.set("release_channel_id", releaseChannelId);
+      if (releaseChannelId === null) query.delete("release_channel_id");
       router.replace(`?${query.toString()}`);
     },
     [router],
   );
-
-  const setReleaseChannel = useCallback(
-    (releaseChannel: SCHEMA.ReleaseChannel) => {
-      const query = new URLSearchParams(window.location.search);
-      query.set("release-channel", releaseChannel.id);
-      if (releaseChannel.releaseFilter != null) {
-        const filterJson = LZString.compressToEncodedURIComponent(
-          JSON.stringify(releaseChannel.releaseFilter),
-        );
-        query.set("filter", filterJson);
-      }
-
-      router.replace(`?${query.toString()}`);
-      router.refresh();
-    },
-    [router],
-  );
-
-  const removeReleaseChannel = useCallback(() => {
-    const query = new URLSearchParams(window.location.search);
-    query.delete("release-channel");
-    query.delete("filter");
-    router.replace(`?${query.toString()}`);
-    router.refresh();
-  }, [router]);
 
   return {
     filter,
     setFilter,
     releaseChannelId,
-    setReleaseChannel,
-    removeReleaseChannel,
   };
 };
