@@ -208,11 +208,15 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
-  if (cond.operator === ColumnOperator.Like)
-    return like(release.version, cond.value);
-  if (cond.operator === ColumnOperator.Regex)
-    return sql`${release.version} ~ ${cond.value}`;
-  return eq(release.version, cond.value);
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(release.version, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return like(release.version, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return like(release.version, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return like(release.version, `%${cond.value}%`);
+  return sql`${release.version} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {

@@ -1,8 +1,10 @@
 import { z } from "zod";
 
+import { columnOperator } from "../../conditions/index.js";
+
 export const nameCondition = z.object({
   type: z.literal("name"),
-  operator: z.literal("like"),
+  operator: columnOperator,
   value: z.string().min(1),
 });
 

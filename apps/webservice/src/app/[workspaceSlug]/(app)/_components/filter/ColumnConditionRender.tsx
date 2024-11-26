@@ -40,7 +40,11 @@ export const ColumnConditionRender: React.FC<ColumnConditionRenderProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ColumnOperator.Equals}>Equals</SelectItem>
-            <SelectItem value={ColumnOperator.Like}>Like</SelectItem>
+            <SelectItem value={ColumnOperator.Contains}>Contains</SelectItem>
+            <SelectItem value={ColumnOperator.StartsWith}>
+              Starts with
+            </SelectItem>
+            <SelectItem value={ColumnOperator.EndsWith}>Ends with</SelectItem>
             <SelectItem value={ColumnOperator.Regex}>Regex</SelectItem>
           </SelectContent>
         </Select>
@@ -48,11 +52,7 @@ export const ColumnConditionRender: React.FC<ColumnConditionRenderProps> = ({
       <div className="col-span-7">
         <Input
           placeholder={
-            operator === ColumnOperator.Regex
-              ? "^[a-zA-Z]+$"
-              : operator === ColumnOperator.Like
-                ? "%value%"
-                : "Value"
+            operator === ColumnOperator.Regex ? "^[a-zA-Z]+$" : "Value"
           }
           value={value}
           onChange={(e) => setValue(e.target.value)}

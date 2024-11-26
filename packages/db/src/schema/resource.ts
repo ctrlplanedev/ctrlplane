@@ -1,6 +1,7 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import type {
   IdentifierCondition,
+  NameCondition,
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
@@ -210,11 +211,27 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 };
 
 const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
-  if (cond.operator === ColumnOperator.Like)
-    return like(resource.identifier, cond.value);
   if (cond.operator === ColumnOperator.Equals)
     return eq(resource.identifier, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return like(resource.identifier, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return like(resource.identifier, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return like(resource.identifier, `%${cond.value}%`);
   return sql`${resource.identifier} ~ ${cond.value}`;
+};
+
+const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
+  if (cond.operator === ColumnOperator.Equals)
+    return eq(resource.name, cond.value);
+  if (cond.operator === ColumnOperator.StartsWith)
+    return like(resource.name, `${cond.value}%`);
+  if (cond.operator === ColumnOperator.EndsWith)
+    return like(resource.name, `%${cond.value}`);
+  if (cond.operator === ColumnOperator.Contains)
+    return like(resource.name, `%${cond.value}%`);
+  return sql`${resource.name} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
@@ -223,7 +240,7 @@ const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
   if (cond.type === ResourceFilterType.Kind)
     return eq(resource.kind, cond.value);
   if (cond.type === ResourceFilterType.Name)
-    return like(resource.name, cond.value);
+    return buildNameCondition(tx, cond);
   if (cond.type === ResourceFilterType.Provider)
     return eq(resource.providerId, cond.value);
   if (cond.type === ResourceFilterType.Identifier)

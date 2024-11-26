@@ -17,13 +17,11 @@ import {
 } from "@ctrlplane/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
+  ColumnOperator,
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
-import {
-  ResourceFilterType,
-  ResourceOperator,
-} from "@ctrlplane/validators/resources";
+import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import type { JobConditionRenderProps } from "./job-condition-props";
 import { api } from "~/trpc/react";
@@ -49,8 +47,8 @@ export const JobTargetConditionRender: React.FC<
 
   const searchFilter: ResourceCondition = {
     type: ResourceFilterType.Name,
-    operator: ResourceOperator.Like,
-    value: `%${searchDebounced}%`,
+    operator: ColumnOperator.Contains,
+    value: searchDebounced,
   };
 
   const systemQ = api.system.bySlug.useQuery(

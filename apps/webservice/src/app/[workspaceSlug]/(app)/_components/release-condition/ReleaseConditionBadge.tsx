@@ -18,7 +18,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
-import { DateOperator } from "@ctrlplane/validators/conditions";
+import { ColumnOperator, DateOperator } from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
   isCreatedAtCondition,
@@ -42,6 +42,9 @@ const operatorVerbs = {
   [DateOperator.Before]: "before",
   [DateOperator.AfterOrOn]: "after or on",
   [DateOperator.BeforeOrOn]: "before or on",
+  [ColumnOperator.StartsWith]: "starts with",
+  [ColumnOperator.EndsWith]: "ends with",
+  [ColumnOperator.Contains]: "contains",
 };
 
 const ConditionBadge: React.FC<{
