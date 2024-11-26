@@ -8,7 +8,7 @@ import ReactFlow, {
   useNodesState,
 } from "reactflow";
 
-import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+import { useElkLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/elk";
 import { edgeTypes, getEdges } from "./edges";
 import { getNodes, nodeTypes } from "./nodes/nodes";
 
@@ -27,7 +27,8 @@ export const ResourceVisualizationDiagram: React.FC<
 
   const [edges, __, onEdgesChange] = useEdgesState(getEdges(relationships));
 
-  const setReactFlowInstance = useLayoutAndFitView(nodes, { direction: "TB" });
+  // const setReactFlowInstance = useLayoutAndFitView(nodes, { direction: "TB" });
+  const setReactFlowInstance = useElkLayoutAndFitView(nodes, edges);
 
   return (
     <ReactFlow
