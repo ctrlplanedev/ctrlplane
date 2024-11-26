@@ -47,7 +47,7 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
     <div className="h-full text-sm">
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex items-center gap-2">
-          <JobConditionDialog condition={filter ?? null} onChange={setFilter}>
+          <JobConditionDialog condition={filter} onChange={setFilter}>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"

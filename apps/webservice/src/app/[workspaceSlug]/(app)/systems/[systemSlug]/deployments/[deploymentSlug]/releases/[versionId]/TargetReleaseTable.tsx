@@ -33,8 +33,8 @@ import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-c
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
 import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
+import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
-import { useFilter } from "../../../../../../_components/useFilter";
 import { JobDropdownMenu } from "./JobDropdownMenu";
 import { PolicyApprovalRow } from "./PolicyApprovalRow";
 import { useReleaseChannel } from "./useReleaseChannel";
@@ -431,7 +431,7 @@ export const TargetReleaseTable: React.FC<TargetReleaseTableProps> = ({
   return (
     <>
       <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
-        <JobConditionDialog condition={filter ?? null} onChange={setFilter}>
+        <JobConditionDialog condition={filter} onChange={setFilter}>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7">
               <IconFilter className="h-4 w-4" />
