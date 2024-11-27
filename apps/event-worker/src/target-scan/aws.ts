@@ -7,6 +7,18 @@ import { logger } from "@ctrlplane/logger";
 
 const log = logger.child({ label: "resource-scan/aws" });
 
+let workspaceCredentials: Credentials | undefined;
+const initializeWorkspaceCredentials = async (roleArn: string) => {
+  const { Credentials } = await sourceClient.send(
+    new AssumeRoleCommand({
+      RoleArn: roleArn,
+      RoleSessionName: "CtrlplaneScanner",
+    }),
+  );
+  if (!Credentials) throw new Error("Failed to assume AWS role");
+  workspaceCredentials = Credentials;
+};
+
 export type AwsClient = {
   eksClient: EKSClient;
   credentials: Credentials;
@@ -28,32 +40,55 @@ export const createEksClient = (
   });
 };
 
-export const getAssumedClient = async (roleArn: string): Promise<AwsClient> => {
-  const { Credentials } = await sourceClient.send(
+export const getAssumedClient = async (
+  workspaceRoleArn: string,
+  customerRoleArn: string,
+): Promise<AwsClient> => {
+  if (workspaceCredentials == null)
+    await initializeWorkspaceCredentials(workspaceRoleArn);
+
+  const finalClient = new STSClient({
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: workspaceCredentials!.AccessKeyId!,
+      secretAccessKey: workspaceCredentials!.SecretAccessKey!,
+      sessionToken: workspaceCredentials!.SessionToken,
+    },
+  });
+
+  const { Credentials: CustomerCredentials } = await finalClient.send(
     new AssumeRoleCommand({
-      RoleArn: roleArn,
+      RoleArn: customerRoleArn,
       RoleSessionName: "CtrlplaneScanner",
     }),
   );
 
-  if (!Credentials) throw new Error("Failed to assume AWS role");
+  if (CustomerCredentials == null)
+    throw new Error(`Failed to assume AWS role ${customerRoleArn}`);
 
   return {
-    credentials: Credentials,
-    eksClient: createEksClient("us-east-1", Credentials),
+    credentials: CustomerCredentials,
+    eksClient: createEksClient("us-east-1", CustomerCredentials),
   };
 };
 
-export const getClient = async (
-  targetRole?: string | null,
+export const createAwsClient = async (
+  workspaceRoleArn?: string | null,
+  customerRoleArn?: string,
 ): Promise<AwsClient> => {
   try {
-    if (targetRole == null) throw new Error("AWS Role ARN is required");
+    if (workspaceRoleArn == null)
+      throw new Error(
+        "AWS workspace role arn is required, please configure it at the workspace.",
+      );
+    if (customerRoleArn == null)
+      throw new Error("AWS customer role arn is required");
 
-    return await getAssumedClient(targetRole);
+    return await getAssumedClient(workspaceRoleArn, customerRoleArn);
   } catch (error: any) {
     log.error(`Failed to get AWS Client: ${error.message}`, {
       error,
+      customerRoleArn,
     });
     throw error;
   }

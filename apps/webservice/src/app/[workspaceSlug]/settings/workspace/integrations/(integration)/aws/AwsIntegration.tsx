@@ -24,12 +24,12 @@ export const AwsIntegration: React.FC<{
   const [isCopied, setIsCopied] = useState(false);
   const [, copy] = useCopyToClipboard();
   const handleCopy = () => {
-    copy(workspace.awsRole ?? "");
+    copy(workspace.awsRoleArn ?? "");
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1000);
   };
 
-  const isIntegrationEnabled = workspace.awsRole != null;
+  const isIntegrationEnabled = workspace.awsRoleArn != null;
 
   return (
     <div className="flex flex-col gap-12">
@@ -96,7 +96,7 @@ export const AwsIntegration: React.FC<{
             <div className="flex items-center justify-between p-4 text-sm text-neutral-200">
               <div className="flex items-center gap-2">
                 <span className="truncate font-mono text-xs">
-                  {workspace.awsRole}
+                  {workspace.awsRoleArn}
                 </span>
                 <Button variant="ghost" size="sm" onClick={handleCopy}>
                   {isCopied ? (

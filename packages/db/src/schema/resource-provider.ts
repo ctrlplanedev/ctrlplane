@@ -81,7 +81,7 @@ export const resourceProviderAws = pgTable("resource_provider_aws", {
     .notNull()
     .references(() => resourceProvider.id, { onDelete: "cascade" }),
 
-  accountIds: text("account_ids").array().notNull(),
+  awsRoleArns: text("aws_role_arns").array().notNull(),
 
   importEks: boolean("import_eks").notNull().default(false),
   importNamespaces: boolean("import_namespaces").notNull().default(false),
@@ -91,7 +91,17 @@ export const resourceProviderAws = pgTable("resource_provider_aws", {
 export const createResourceProviderAws = createInsertSchema(
   resourceProviderAws,
   {
-    accountIds: z.array(z.string().length(12).min(1)).min(1),
+    awsRoleArns: z
+      .array(
+        z
+          .string()
+          .regex(
+            /^arn:aws:iam::[0-9]{12}:role\/[a-zA-Z0-9+=,.@\-_/]+$/,
+            "Invalid AWS Role ARN format. Expected format: arn:aws:iam::<account-id>:role/<role-name>",
+          )
+          .min(1),
+      )
+      .min(1),
   },
 ).omit({ id: true });
 

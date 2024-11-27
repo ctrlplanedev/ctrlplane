@@ -39,9 +39,14 @@ import { api } from "~/trpc/react";
 
 export const createAwsSchema = z.object({
   name: z.string(),
-  awsAccountIds: z.array(
+  awsRoleArns: z.array(
     z.object({
-      value: z.string().length(12, "AWS Account ID must be exactly 12 digits"),
+      value: z
+        .string()
+        .regex(
+          /^arn:aws:iam::[0-9]{12}:role\/[a-zA-Z0-9+=,.@\-_/]+$/,
+          "Invalid AWS Role ARN format. Expected format: arn:aws:iam::<account-id>:role/<role-name>",
+        ),
     }),
   ),
   importEks: z.boolean().default(false),
@@ -57,7 +62,7 @@ export const AwsDialog: React.FC<{
     schema: createAwsSchema,
     defaultValues: {
       name: "",
-      awsAccountIds: [{ value: "" }],
+      awsRoleArns: [{ value: "" }],
       importEks: true,
       importNamespaces: false,
       importVCluster: false,
@@ -65,14 +70,14 @@ export const AwsDialog: React.FC<{
     mode: "onSubmit",
   });
   const { fields, append } = useFieldArray({
-    name: "awsAccountIds",
+    name: "awsRoleArns",
     control: form.control,
   });
 
   const [isCopied, setIsCopied] = useState(false);
   const [, copy] = useCopyToClipboard();
   const handleCopy = () => {
-    copy(workspace.awsRole ?? "");
+    copy(workspace.awsRoleArn ?? "");
     setIsCopied(true);
     setTimeout(() => {
       setIsCopied(false);
@@ -87,7 +92,7 @@ export const AwsDialog: React.FC<{
       ...data,
       workspaceId: workspace.id,
       config: {
-        accountIds: data.awsAccountIds.map((a) => a.value),
+        awsRoleArns: data.awsRoleArns.map((a) => a.value),
         importEks: data.importEks,
         importVCluster: data.importVCluster,
         importNamespaces: data.importNamespaces,
@@ -133,7 +138,7 @@ export const AwsDialog: React.FC<{
               <Label>AWS Role</Label>
               <div className="relative flex items-center">
                 <Input
-                  value={workspace.awsRole ?? ""}
+                  value={workspace.awsRoleArn ?? ""}
                   className="disabled:cursor-default"
                   disabled
                 />
@@ -172,14 +177,17 @@ export const AwsDialog: React.FC<{
                 <FormField
                   control={form.control}
                   key={field.id}
-                  name={`awsAccountIds.${index}.value`}
+                  name={`awsRoleArns.${index}.value`}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className={cn(index !== 0 && "sr-only")}>
                         AWS Account IDs
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="123456789012" {...field} />
+                        <Input
+                          placeholder="arn:aws:iam::<account-id>:role/<role-name>"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -207,48 +215,6 @@ export const AwsDialog: React.FC<{
                     <FormDescription>
                       Enable importing of Amazon Elastic Kubernetes Service
                       (EKS) clusters
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="importNamespaces"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel>Import Namespaces</FormLabel>
-                    <FormDescription>
-                      Enable importing of Kubernetes namespaces clusters
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="importVCluster"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel>Import vClusters</FormLabel>
-                    <FormDescription>
-                      Enable importing of vClusters
                     </FormDescription>
                   </div>
                   <FormControl>

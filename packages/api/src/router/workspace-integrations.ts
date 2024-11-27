@@ -161,10 +161,10 @@ export const integrationsRouter = createTRPCRouter({
             message: "Workspace not found",
           });
 
-        if (ws.awsRole !== null)
+        if (ws.awsRoleArn !== null)
           throw new TRPCError({
             code: "CONFLICT",
-            message: "AWS Role already defined.",
+            message: "AWS Role Arn already defined.",
           });
 
         const iamClient = new IAMClient({
@@ -224,7 +224,7 @@ export const integrationsRouter = createTRPCRouter({
           Statement: [
             {
               Effect: "Allow",
-              Action: ["eks:*", "ec2:*"],
+              Action: ["sts:*"],
               Resource: "*",
             },
           ],
@@ -247,7 +247,7 @@ export const integrationsRouter = createTRPCRouter({
         return ctx.db
           .update(workspace)
           .set({
-            awsRole: createRoleResponse.Role.Arn,
+            awsRoleArn: createRoleResponse.Role.Arn,
           })
           .where(eq(workspace.id, input))
           .returning()
@@ -275,7 +275,7 @@ export const integrationsRouter = createTRPCRouter({
             message: "Workspace not found",
           });
 
-        if (ws.awsRole == null)
+        if (ws.awsRoleArn == null)
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "AWS Role does not exist.",
@@ -304,7 +304,7 @@ export const integrationsRouter = createTRPCRouter({
         return ctx.db
           .update(workspace)
           .set({
-            awsRole: null,
+            awsRoleArn: null,
           })
           .where(eq(workspace.id, input))
           .returning()

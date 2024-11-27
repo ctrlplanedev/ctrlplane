@@ -1,5 +1,5 @@
 {
-  "id": "66ece180-7416-4c6a-b041-a450f8b6f88d",
+  "id": "6e1544c3-baed-4c6d-a891-e9656699be06",
   "prevId": "07566894-1001-4173-a3ce-f46e5b2b625e",
   "version": "7",
   "dialect": "postgresql",
@@ -2601,8 +2601,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "account_ids": {
-          "name": "account_ids",
+        "aws_role_arns": {
+          "name": "aws_role_arns",
           "type": "text[]",
           "primaryKey": false,
           "notNull": true
@@ -3776,8 +3776,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "aws_role": {
-          "name": "aws_role",
+        "aws_role_arn": {
+          "name": "aws_role_arn",
           "type": "text",
           "primaryKey": false,
           "notNull": false

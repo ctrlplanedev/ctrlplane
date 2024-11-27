@@ -21,7 +21,7 @@ export const AwsActionButton: React.FC<AwsActionButtonProps> = ({
     api.workspace.integrations.aws.createAwsRole.useMutation();
 
   const router = useRouter();
-  if (workspace.awsRole != null)
+  if (workspace.awsRoleArn != null)
     return (
       <AwsDialog workspace={workspace}>
         <Button variant="outline" size="sm" className="w-full">
@@ -39,10 +39,10 @@ export const AwsActionButton: React.FC<AwsActionButtonProps> = ({
       onClick={async () =>
         createAwsRole
           .mutateAsync(workspace.id)
-          .then(() => toast.success(`AWS User created`))
+          .then(() => toast.success(`AWS role arn created`))
           .then(() => router.refresh())
           .catch((error) => {
-            toast.error(`Failed to create aws user. ${error.message}`);
+            toast.error(`Failed to create role arn. ${error.message}`);
           })
       }
     >
