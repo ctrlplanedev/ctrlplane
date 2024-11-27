@@ -315,23 +315,18 @@ const releaseJobTriggerRouter = createTRPCRouter({
       }),
     )
     .meta({
-      authorizationCheck: ({ canUser, input }) => {
-        const { deploymentId, environmentId, resourceId } = input;
-        const canUserGetDeploymentPromise = canUser
-          .perform(Permission.DeploymentGet)
-          .on({ type: "deployment", id: deploymentId });
-        const canUserGetEnvironmentPromise = canUser
-          .perform(Permission.EnvironmentGet)
-          .on({ type: "environment", id: environmentId });
-        const canUserGetResourcePromise = canUser
-          .perform(Permission.ResourceGet)
-          .on({ type: "resource", id: resourceId });
-        return Promise.all([
-          canUserGetDeploymentPromise,
-          canUserGetEnvironmentPromise,
-          canUserGetResourcePromise,
-        ]).then((results) => results.every(Boolean));
-      },
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(
+            Permission.DeploymentGet,
+            Permission.EnvironmentGet,
+            Permission.ResourceGet,
+          )
+          .on(
+            { type: "deployment", id: input.deploymentId },
+            { type: "environment", id: input.environmentId },
+            { type: "resource", id: input.resourceId },
+          ),
     })
     .query(async ({ ctx, input }) => {
       const { deploymentId, environmentId, resourceId } = input;

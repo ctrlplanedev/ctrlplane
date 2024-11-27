@@ -40,17 +40,15 @@ export const ReleaseTable: React.FC<ReleaseTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {releasesWithTriggers.map((release) => {
-          return (
-            <ReleaseRows
-              release={release}
-              environment={environment}
-              deployment={deployment}
-              resource={resource}
-              key={release.id}
-            />
-          );
-        })}
+        {releasesWithTriggers.map((release) => (
+          <ReleaseRows
+            release={release}
+            environment={environment}
+            deployment={deployment}
+            resource={resource}
+            key={release.id}
+          />
+        ))}
         {releasesWithTriggers.length === 0 && (
           <TableRow>
             <TableCell
