@@ -57,7 +57,7 @@ export const useDeploymentEnvResourceDrawer = () => {
         deploymentId == null || environmentId == null || resourceId == null
           ? null
           : encodeURIComponent(
-              `${deploymentId}${DELIMITER}${environmentId}${DELIMITER}${resourceId}`,
+              [deploymentId, environmentId, resourceId].join(DELIMITER),
             ),
     });
   return {

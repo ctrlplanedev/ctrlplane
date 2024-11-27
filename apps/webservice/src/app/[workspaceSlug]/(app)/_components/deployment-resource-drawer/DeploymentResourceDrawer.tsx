@@ -24,22 +24,22 @@ export const DeploymentResourceDrawer: React.FC = () => {
     deploymentId != null && environmentId != null && resourceId != null;
   const setIsOpen = () => setDeploymentEnvResourceId(null, null, null);
 
-  const deploymentQ = api.deployment.byId.useQuery(deploymentId ?? "", {
-    enabled: isOpen,
-  });
-  const deployment = deploymentQ.data;
+  const { data: deployment, ...deploymentQ } = api.deployment.byId.useQuery(
+    deploymentId ?? "",
+    { enabled: isOpen },
+  );
 
-  const resourceQ = api.resource.byId.useQuery(resourceId ?? "", {
-    enabled: isOpen,
-  });
-  const resource = resourceQ.data;
+  const { data: resource, ...resourceQ } = api.resource.byId.useQuery(
+    resourceId ?? "",
+    { enabled: isOpen },
+  );
 
-  const environmentQ = api.environment.byId.useQuery(environmentId ?? "", {
-    enabled: isOpen,
-  });
-  const environment = environmentQ.data;
+  const { data: environment, ...environmentQ } = api.environment.byId.useQuery(
+    environmentId ?? "",
+    { enabled: isOpen },
+  );
 
-  const releaseWithTriggersQ =
+  const { data: releaseWithTriggersData, ...releaseWithTriggersQ } =
     api.job.config.byDeploymentEnvAndResource.useQuery(
       {
         deploymentId: deploymentId ?? "",
@@ -48,7 +48,7 @@ export const DeploymentResourceDrawer: React.FC = () => {
       },
       { enabled: isOpen, refetchInterval: 5_000 },
     );
-  const releaseWithTriggers = releaseWithTriggersQ.data ?? [];
+  const releaseWithTriggers = releaseWithTriggersData ?? [];
 
   const loading =
     deploymentQ.isLoading ||
