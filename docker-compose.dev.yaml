@@ -33,21 +33,21 @@ services:
     volumes:
       - redisinsight-data:/data
 
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
-    container_name: ctrlplane-otel-collector
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    environment:
-      - DD_API_KEY=${DD_API_KEY}
-      - DD_SITE=${DD_SITE}
-    volumes:
-      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "8125:8125" # StatsD
-      - "8888:8888" # Telemetry
-      - "9109:9109" # Prometheus endpoint
+  # otel-collector:
+  #   image: otel/opentelemetry-collector-contrib:latest
+  #   container_name: ctrlplane-otel-collector
+  #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   environment:
+  #     - DD_API_KEY=${DD_API_KEY}
+  #     - DD_SITE=${DD_SITE}
+  #   volumes:
+  #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+  #   ports:
+  #     - "4317:4317" # OTLP gRPC
+  #     - "4318:4318" # OTLP HTTP
+  #     - "8125:8125" # StatsD
+  #     - "8888:8888" # Telemetry
+  #     - "9109:9109" # Prometheus endpoint
 
 volumes:
   db-data:

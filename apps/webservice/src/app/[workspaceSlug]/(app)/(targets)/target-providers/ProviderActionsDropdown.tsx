@@ -68,7 +68,7 @@ export const ProviderActionsDropdown: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {provider.googleConfig && (
+        {provider.googleConfig != null && (
           <UpdateGoogleProviderDialog
             providerId={provider.id}
             name={provider.name}
@@ -80,7 +80,7 @@ export const ProviderActionsDropdown: React.FC<{
             </DropdownMenuItem>
           </UpdateGoogleProviderDialog>
         )}
-        {provider.awsConfig && (
+        {provider.awsConfig != null && (
           <UpdateAwsProviderDialog
             providerId={provider.id}
             name={provider.name}
