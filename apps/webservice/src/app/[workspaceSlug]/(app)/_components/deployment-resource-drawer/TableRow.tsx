@@ -273,27 +273,24 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
       className="cursor-pointer"
     >
       <TableCell>
-        <div
-          className="flex items-center gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {isExpandable && (
+        {isExpandable && (
+          <div onClick={(e) => e.stopPropagation()}>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-5 w-5">
-                <IconChevronRight
-                  className={cn(
-                    "h-3 w-3 text-muted-foreground transition-all",
-                    isExpanded && "rotate-90",
-                  )}
-                />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" className="h-5 w-5">
+                  <IconChevronRight
+                    className={cn(
+                      "h-3 w-3 text-muted-foreground transition-all",
+                      isExpanded && "rotate-90",
+                    )}
+                  />
+                </Button>
+                <span className="truncate">{release.name}</span>
+              </div>
             </CollapsibleTrigger>
-          )}
-
-          <span className={cn("truncate", !isExpandable && "pl-7")}>
-            {release.name}
-          </span>
-        </div>
+          </div>
+        )}
+        {!isExpandable && <span className="truncate pl-7">{release.name}</span>}
       </TableCell>
       <StatusCell
         releaseJobTrigger={releaseJobTrigger}
