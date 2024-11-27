@@ -157,7 +157,14 @@ export const getEksResources = async (
     )
     .thru((promises) => Promise.all(promises))
     .value()
-    .then((results) => results.flat());
+    .then((results) => results.flat())
+    .then((resources) =>
+      resources.map((resource) => ({
+        ...resource,
+        workspaceId: workspace.id,
+        providerId: config.resourceProviderId,
+      })),
+    );
 
   const resourceTypes = _.countBy(resources, (resource) =>
     [resource.kind, resource.version].join("/"),

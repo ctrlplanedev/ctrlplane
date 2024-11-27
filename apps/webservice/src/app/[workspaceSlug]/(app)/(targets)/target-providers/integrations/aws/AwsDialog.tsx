@@ -24,7 +24,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,7 +32,6 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
-import { Switch } from "@ctrlplane/ui/switch";
 
 import { api } from "~/trpc/react";
 
@@ -49,9 +47,6 @@ export const createAwsSchema = z.object({
         ),
     }),
   ),
-  importEks: z.boolean().default(false),
-  importNamespaces: z.boolean().default(false),
-  importVCluster: z.boolean().default(false),
 });
 
 export const AwsDialog: React.FC<{
@@ -63,9 +58,6 @@ export const AwsDialog: React.FC<{
     defaultValues: {
       name: "",
       awsRoleArns: [{ value: "" }],
-      importEks: true,
-      importNamespaces: false,
-      importVCluster: false,
     },
     mode: "onSubmit",
   });
@@ -93,9 +85,6 @@ export const AwsDialog: React.FC<{
       workspaceId: workspace.id,
       config: {
         awsRoleArns: data.awsRoleArns.map((a) => a.value),
-        importEks: data.importEks,
-        importVCluster: data.importVCluster,
-        importNamespaces: data.importNamespaces,
       },
     });
     await utils.resource.provider.byWorkspaceId.invalidate();
@@ -181,7 +170,7 @@ export const AwsDialog: React.FC<{
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className={cn(index !== 0 && "sr-only")}>
-                        AWS Account IDs
+                        AWS Role ARNs
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -201,31 +190,9 @@ export const AwsDialog: React.FC<{
                 className="mt-4"
                 onClick={() => append({ value: "" })}
               >
-                Add Project
+                Add Role ARN
               </Button>
             </div>
-
-            <FormField
-              control={form.control}
-              name="importEks"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel>Import EKS Clusters</FormLabel>
-                    <FormDescription>
-                      Enable importing of Amazon Elastic Kubernetes Service
-                      (EKS) clusters
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
 
             <DialogFooter>
               <Button type="submit">Create</Button>

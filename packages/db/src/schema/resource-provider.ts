@@ -82,10 +82,6 @@ export const resourceProviderAws = pgTable("resource_provider_aws", {
     .references(() => resourceProvider.id, { onDelete: "cascade" }),
 
   awsRoleArns: text("aws_role_arns").array().notNull(),
-
-  importEks: boolean("import_eks").notNull().default(false),
-  importNamespaces: boolean("import_namespaces").notNull().default(false),
-  importVCluster: boolean("import_vcluster").notNull().default(false),
 });
 
 export const createResourceProviderAws = createInsertSchema(

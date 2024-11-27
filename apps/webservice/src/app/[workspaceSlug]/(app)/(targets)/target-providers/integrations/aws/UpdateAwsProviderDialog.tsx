@@ -23,7 +23,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,7 +32,6 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
-import { Switch } from "@ctrlplane/ui/switch";
 
 import { api } from "~/trpc/react";
 import { createAwsSchema } from "./AwsDialog";
@@ -73,9 +71,6 @@ export const UpdateAwsProviderDialog: React.FC<{
       resourceProviderId: providerId,
       config: {
         awsRoleArns: data.awsRoleArns.map((a) => a.value),
-        importEks: data.importEks,
-        importVCluster: data.importVCluster,
-        importNamespaces: data.importNamespaces,
       },
       repeatSeconds: data.repeatSeconds === 0 ? null : data.repeatSeconds,
     });
@@ -226,28 +221,6 @@ export const UpdateAwsProviderDialog: React.FC<{
                 Add Account
               </Button>
             </div>
-
-            <FormField
-              control={form.control}
-              name="importEks"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel>Import EKS Clusters</FormLabel>
-                    <FormDescription>
-                      Enable importing of Amazon Elastic Kubernetes Service
-                      (EKS) clusters
-                    </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}
