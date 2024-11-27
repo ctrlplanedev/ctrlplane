@@ -1,95 +1,59 @@
-import type { EKSClient } from "@aws-sdk/client-eks";
 import type { Credentials } from "@aws-sdk/client-sts";
-import { EKSClient as EKSClientImpl } from "@aws-sdk/client-eks";
+import type { AwsCredentialIdentity } from "@smithy/types";
+import { EC2Client } from "@aws-sdk/client-ec2";
+import { EKSClient } from "@aws-sdk/client-eks";
 import { AssumeRoleCommand, STSClient } from "@aws-sdk/client-sts";
 
-import { logger } from "@ctrlplane/logger";
+const sourceClient = new STSClient({ region: "us-east-1" });
 
-const log = logger.child({ label: "resource-scan/aws" });
+export class AwsCredentials {
+  static from(credentials: Credentials) {
+    return new AwsCredentials(credentials);
+  }
 
-let workspaceCredentials: Credentials | undefined;
-const initializeWorkspaceCredentials = async (roleArn: string) => {
-  const { Credentials } = await sourceClient.send(
+  private constructor(private readonly credentials: Credentials) {}
+
+  toIdentity(): AwsCredentialIdentity {
+    if (
+      this.credentials.AccessKeyId == null ||
+      this.credentials.SecretAccessKey == null
+    )
+      throw new Error("Missing required AWS credentials");
+
+    return {
+      accessKeyId: this.credentials.AccessKeyId,
+      secretAccessKey: this.credentials.SecretAccessKey,
+      sessionToken: this.credentials.SessionToken ?? undefined,
+    };
+  }
+
+  ec2(region?: string) {
+    return new EC2Client({ region, credentials: this.toIdentity() });
+  }
+
+  eks(region?: string) {
+    return new EKSClient({ region, credentials: this.toIdentity() });
+  }
+
+  sts(region?: string) {
+    return new STSClient({ region, credentials: this.toIdentity() });
+  }
+}
+
+export const assumeWorkspaceRole = async (roleArn: string) =>
+  assumeRole(sourceClient, roleArn);
+
+export const assumeRole = async (
+  client: STSClient,
+  roleArn: string,
+): Promise<AwsCredentials> => {
+  const { Credentials: CustomerCredentials } = await client.send(
     new AssumeRoleCommand({
       RoleArn: roleArn,
       RoleSessionName: "CtrlplaneScanner",
     }),
   );
-  if (!Credentials) throw new Error("Failed to assume AWS role");
-  workspaceCredentials = Credentials;
-};
-
-export type AwsClient = {
-  eksClient: EKSClient;
-  credentials: Credentials;
-};
-
-const sourceClient = new STSClient({ region: "us-east-1" });
-
-export const createEksClient = (
-  region: string,
-  credentials: Credentials,
-): EKSClient => {
-  return new EKSClientImpl({
-    region,
-    credentials: {
-      accessKeyId: credentials.AccessKeyId!,
-      secretAccessKey: credentials.SecretAccessKey!,
-      sessionToken: credentials.SessionToken,
-    },
-  });
-};
-
-export const getAssumedClient = async (
-  workspaceRoleArn: string,
-  customerRoleArn: string,
-): Promise<AwsClient> => {
-  if (workspaceCredentials == null)
-    await initializeWorkspaceCredentials(workspaceRoleArn);
-
-  const finalClient = new STSClient({
-    region: "us-east-1",
-    credentials: {
-      accessKeyId: workspaceCredentials!.AccessKeyId!,
-      secretAccessKey: workspaceCredentials!.SecretAccessKey!,
-      sessionToken: workspaceCredentials!.SessionToken,
-    },
-  });
-
-  const { Credentials: CustomerCredentials } = await finalClient.send(
-    new AssumeRoleCommand({
-      RoleArn: customerRoleArn,
-      RoleSessionName: "CtrlplaneScanner",
-    }),
-  );
-
   if (CustomerCredentials == null)
-    throw new Error(`Failed to assume AWS role ${customerRoleArn}`);
-
-  return {
-    credentials: CustomerCredentials,
-    eksClient: createEksClient("us-east-1", CustomerCredentials),
-  };
-};
-
-export const createAwsClient = async (
-  workspaceRoleArn?: string | null,
-  customerRoleArn?: string,
-): Promise<AwsClient> => {
-  try {
-    if (workspaceRoleArn == null)
-      throw new Error(
-        "AWS workspace role arn is required, please configure it at the workspace.",
-      );
-    if (customerRoleArn == null)
-      throw new Error("AWS customer role arn is required");
-
-    return await getAssumedClient(workspaceRoleArn, customerRoleArn);
-  } catch (error: any) {
-    log.error(`Failed to get AWS Client: ${error.message}`, {
-      error,
-      customerRoleArn,
-    });
-    throw error;
-  }
+    throw new Error(`Failed to assume AWS role ${roleArn}`);
+  return AwsCredentials.from(CustomerCredentials);
 };

@@ -1,7 +1,8 @@
-import type { Cluster } from "@aws-sdk/client-eks";
+import type { Cluster, EKSClient } from "@aws-sdk/client-eks";
+import type { STSClient } from "@aws-sdk/client-sts";
 import type { ResourceProviderAws, Workspace } from "@ctrlplane/db/schema";
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
-import { DescribeRegionsCommand, EC2Client } from "@aws-sdk/client-ec2";
+import { DescribeRegionsCommand } from "@aws-sdk/client-ec2";
 import {
   DescribeClusterCommand,
   ListClustersCommand,
@@ -12,28 +13,24 @@ import { isPresent } from "ts-is-present";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import type { AwsClient } from "./aws.js";
+import type { AwsCredentials } from "./aws.js";
 import { omitNullUndefined } from "../utils.js";
-import { createAwsClient, createEksClient } from "./aws.js";
+import { assumeRole, assumeWorkspaceRole } from "./aws.js";
 
 const log = logger.child({ label: "resource-scan/eks" });
 
-export const clusterToResource = (
-  workspaceId: string,
-  providerId: string,
+const convertEksClusterToKubernetesResource = (
   accountId: string,
   cluster: Cluster,
-): KubernetesClusterAPIV1 & { workspaceId: string; providerId: string } => {
+): KubernetesClusterAPIV1 => {
   const region = cluster.endpoint?.split(".")[2];
   const appUrl = `https://console.aws.amazon.com/eks/home?region=${region}#/clusters/${cluster.name}`;
   const version = cluster.version!;
   const [major, minor] = version.split(".");
 
   return {
-    workspaceId,
-    providerId,
     name: cluster.name ?? "",
-    identifier: `${accountId}/${cluster.name}`,
+    identifier: `aws/${accountId}/eks/${cluster.name}`,
     version: "kubernetes/v1" as const,
     kind: "ClusterAPI" as const,
     config: {
@@ -68,88 +65,67 @@ export const clusterToResource = (
   };
 };
 
-const getAwsRegions = async (client: AwsClient) => {
-  const ec2Client = new EC2Client({
-    region: "us-east-1",
-    credentials: {
-      accessKeyId: client.credentials.AccessKeyId!,
-      secretAccessKey: client.credentials.SecretAccessKey!,
-      sessionToken: client.credentials.SessionToken,
-    },
-  });
+const getAwsRegions = async (credentials: AwsCredentials) =>
+  credentials
+    .ec2()
+    .send(new DescribeRegionsCommand({}))
+    .then(({ Regions = [] }) => Regions.map((region) => region.RegionName));
 
-  const response = await ec2Client.send(new DescribeRegionsCommand({}));
-  return response.Regions?.map((region) => region.RegionName) ?? [];
-};
+const getClusters = async (client: EKSClient) =>
+  client
+    .send(new ListClustersCommand({}))
+    .then((response) => response.clusters ?? []);
 
-export const getClusters = async (client: AwsClient) => {
-  const response = await client.eksClient.send(new ListClustersCommand({}));
-  return response.clusters ?? [];
-};
-
-const createRegionalClusterScanner = (
-  client: AwsClient,
+const createEksClusterScannerForRegion = (
+  client: AwsCredentials,
   customerRoleArn: string,
-  workspace: Workspace,
-  config: ResourceProviderAws,
-  accountId: string,
 ) => {
-  return async (region: string) => {
-    const regionalClient: AwsClient = {
-      credentials: client.credentials,
-      eksClient: createEksClient(region, client.credentials),
-    };
+  const accountId = /arn:aws:iam::(\d+):/.exec(customerRoleArn)?.[1];
+  if (accountId == null) throw new Error("Missing account ID");
 
-    const clusters = await getClusters(regionalClient);
+  return async (region: string) => {
+    const eksClient = client.eks(region);
+    const clusters = await getClusters(eksClient);
     log.info(
       `Found ${clusters.length} clusters for ${customerRoleArn} in region ${region}`,
     );
 
-    const clusterDetails = await Promise.all(
-      clusters.map(async (clusterName) => {
-        const response = await regionalClient.eksClient.send(
-          new DescribeClusterCommand({ name: clusterName }),
-        );
-        return response.cluster;
-      }),
-    );
-
-    return clusterDetails
-      .filter(isPresent)
-      .map((cluster) =>
-        clusterToResource(
-          workspace.id,
-          config.resourceProviderId,
-          accountId,
-          cluster,
-        ),
+    return _.chain(clusters)
+      .map((name) =>
+        eksClient
+          .send(new DescribeClusterCommand({ name }))
+          .then(({ cluster }) => cluster),
+      )
+      .thru((promises) => Promise.all(promises))
+      .value()
+      .then((clusterDetails) =>
+        clusterDetails
+          .filter(isPresent)
+          .map((cluster) =>
+            convertEksClusterToKubernetesResource(accountId, cluster),
+          ),
       );
   };
 };
 
-const scanRegionalClusters = async (
-  workspaceRoleArn: string,
+const scanEksClustersByAssumedRole = async (
+  workspaceClient: STSClient,
   customerRoleArn: string,
-  workspace: Workspace,
-  config: ResourceProviderAws,
 ) => {
-  const client = await createAwsClient(workspaceRoleArn, customerRoleArn);
-  const accountId = customerRoleArn.split(":")[4];
+  const client = await assumeRole(workspaceClient, customerRoleArn);
   const regions = await getAwsRegions(client);
 
   log.info(
     `Scanning ${regions.length} AWS regions for EKS clusters in account ${customerRoleArn}`,
   );
 
-  const regionalClusterScanner = createRegionalClusterScanner(
+  const regionalClusterScanner = createEksClusterScannerForRegion(
     client,
     customerRoleArn,
-    workspace,
-    config,
-    accountId!,
   );
 
   return _.chain(regions)
+    .filter(isPresent)
     .map(regionalClusterScanner)
     .thru((promises) => Promise.all(promises))
     .value()
@@ -161,6 +137,8 @@ export const getEksResources = async (
   config: ResourceProviderAws,
 ) => {
   const { awsRoleArn: workspaceRoleArn } = workspace;
+  if (workspaceRoleArn == null) return [];
+
   log.info(
     `Scanning for EKS cluters with assumed role arns ${config.awsRoleArns.join(", ")} using role ${workspaceRoleArn}`,
     {
@@ -170,28 +148,22 @@ export const getEksResources = async (
     },
   );
 
-  if (workspaceRoleArn == null) return [];
+  const credentials = await assumeWorkspaceRole(workspaceRoleArn);
+  const workspaceStsClient = credentials.sts();
 
-  const resources = await Promise.all(
-    config.awsRoleArns.map((customerRoleArn) =>
-      scanRegionalClusters(
-        workspaceRoleArn,
-        customerRoleArn,
-        workspace,
-        config,
-      ),
-    ),
-  ).then((results) => results.flat());
+  const resources = await _.chain(config.awsRoleArns)
+    .map((customerRoleArn) =>
+      scanEksClustersByAssumedRole(workspaceStsClient, customerRoleArn),
+    )
+    .thru((promises) => Promise.all(promises))
+    .value()
+    .then((results) => results.flat());
 
-  const resourceCounts = _.countBy(resources, (resource) =>
+  const resourceTypes = _.countBy(resources, (resource) =>
     [resource.kind, resource.version].join("/"),
   );
 
-  log.info(`Found ${resources.length} resources`, {
-    resourceCounts: Object.entries(resourceCounts)
-      .map(([key, count]) => `${key}: ${count}`)
-      .join(", "),
-  });
+  log.info(`Found ${resources.length} resources`, { resourceTypes });
 
   return resources;
 };
