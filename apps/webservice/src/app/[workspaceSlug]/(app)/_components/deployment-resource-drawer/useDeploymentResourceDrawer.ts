@@ -1,14 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { z } from "zod";
 
 import { useQueryParams } from "../useQueryParams";
 
 const param = "deployment_env_resource_id";
 
 const DELIMITER = "--";
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const useDeploymentEnvResourceDrawer = () => {
   const { getParam, setParams } = useQueryParams();
@@ -28,9 +27,9 @@ export const useDeploymentEnvResourceDrawer = () => {
       return { deploymentId: null, environmentId: null, resourceId: null };
 
     if (
-      !UUID_REGEX.test(rawDeploymentId) ||
-      !UUID_REGEX.test(rawEnvironmentId) ||
-      !UUID_REGEX.test(rawResourceId)
+      !z.string().uuid().safeParse(rawDeploymentId).success ||
+      !z.string().uuid().safeParse(rawEnvironmentId).success ||
+      !z.string().uuid().safeParse(rawResourceId).success
     )
       return { deploymentId: null, environmentId: null, resourceId: null };
 
