@@ -27,6 +27,7 @@ import {
   inArray,
   isNull,
   notInArray,
+  or,
   sql,
   takeFirst,
 } from "@ctrlplane/db";
@@ -35,13 +36,16 @@ import {
   deployment,
   environment,
   environmentPolicy,
+  environmentPolicyReleaseChannel,
   environmentPolicyReleaseWindow,
+  environmentReleaseChannel,
   job,
   jobAgent,
   jobMatchesCondition,
   jobMetadata,
   jobVariable,
   release,
+  releaseChannel,
   releaseDependency,
   releaseJobTrigger,
   releaseMatchesCondition,
@@ -302,6 +306,108 @@ const releaseJobTriggerRouter = createTRPCRouter({
         ),
     ),
 
+  byDeploymentEnvAndResource: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+        resourceId: z.string().uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) => {
+        const { deploymentId, environmentId, resourceId } = input;
+        const canUserGetDeploymentPromise = canUser
+          .perform(Permission.DeploymentGet)
+          .on({ type: "deployment", id: deploymentId });
+        const canUserGetEnvironmentPromise = canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "environment", id: environmentId });
+        const canUserGetResourcePromise = canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "resource", id: resourceId });
+        return Promise.all([
+          canUserGetDeploymentPromise,
+          canUserGetEnvironmentPromise,
+          canUserGetResourcePromise,
+        ]).then(
+          ([deployment, environment, resource]) =>
+            deployment && environment && resource,
+        );
+      },
+    })
+    .query(async ({ ctx, input }) => {
+      const { deploymentId, environmentId, resourceId } = input;
+
+      const channelMatchesDeployment = eq(
+        environmentReleaseChannel.deploymentId,
+        deploymentId,
+      );
+      const policyChannelMatchesDeployment = eq(
+        environmentPolicyReleaseChannel.deploymentId,
+        deploymentId,
+      );
+      const env = await ctx.db.query.environment.findFirst({
+        where: eq(environment.id, environmentId),
+        with: {
+          releaseChannels: { where: channelMatchesDeployment },
+          policy: {
+            with: {
+              environmentPolicyReleaseChannels: {
+                where: policyChannelMatchesDeployment,
+              },
+            },
+          },
+        },
+      });
+
+      if (env == null) return [];
+      const releaseChannelId =
+        env.releaseChannels.at(0)?.channelId ??
+        env.policy?.environmentPolicyReleaseChannels.at(0)?.channelId;
+
+      const rc = releaseChannelId
+        ? await ctx.db.query.releaseChannel.findFirst({
+            where: eq(releaseChannel.id, releaseChannelId),
+          })
+        : undefined;
+      const filter = rc?.releaseFilter;
+
+      return ctx.db
+        .select()
+        .from(release)
+        .leftJoin(
+          releaseJobTrigger,
+          eq(release.id, releaseJobTrigger.releaseId),
+        )
+        .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
+        .where(
+          and(
+            releaseMatchesCondition(ctx.db, filter),
+            eq(release.deploymentId, deploymentId),
+            or(
+              isNull(releaseJobTrigger.id),
+              eq(releaseJobTrigger.resourceId, resourceId),
+            ),
+          ),
+        )
+        .limit(50)
+        .orderBy(desc(release.createdAt), desc(releaseJobTrigger.createdAt))
+        .then((rows) =>
+          _.chain(rows)
+            .groupBy((r) => r.release.id)
+            .map((r) => ({
+              ...r[0]!.release,
+              releaseJobTriggers: r
+                .filter((r) => r.release_job_trigger != null)
+                .map((r) => ({
+                  ...r.release_job_trigger!,
+                  job: r.job!,
+                })),
+            }))
+            .value(),
+        );
+    }),
   byReleaseId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

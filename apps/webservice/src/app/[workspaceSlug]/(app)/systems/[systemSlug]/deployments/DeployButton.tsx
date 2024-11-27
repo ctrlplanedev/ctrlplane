@@ -10,7 +10,8 @@ import { api } from "~/trpc/react";
 export const DeployButton: React.FC<{
   releaseId: string;
   environmentId: string;
-}> = ({ releaseId, environmentId }) => {
+  className?: string;
+}> = ({ releaseId, environmentId, className }) => {
   const deploy = api.release.deploy.toEnvironment.useMutation();
   const router = useRouter();
 
@@ -18,6 +19,7 @@ export const DeployButton: React.FC<{
     <Button
       className={cn(
         "w-full border-dashed border-neutral-800/50 bg-transparent text-center text-neutral-800 hover:border-blue-400 hover:bg-transparent hover:text-blue-400",
+        className,
       )}
       variant="outline"
       size="sm"
