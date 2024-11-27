@@ -171,7 +171,10 @@ export default function TargetLayout({
           )}
 
           {pathname.includes(`/${params.workspaceSlug}/target-views`) && (
-            <CreateTargetViewDialog workspaceId={workspace.data?.id ?? ""}>
+            <CreateTargetViewDialog
+              workspaceId={workspace.data?.id ?? ""}
+              filter={null}
+            >
               <Button variant="outline" size="sm" className="gap-1.5">
                 <IconPlus className="h-4 w-4" /> Add View
               </Button>

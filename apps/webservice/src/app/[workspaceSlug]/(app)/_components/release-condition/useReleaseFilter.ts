@@ -1,50 +1,40 @@
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import { useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
 
+import { useQueryParams } from "../useQueryParams";
+
 export const useReleaseFilter = () => {
-  const urlParams = useSearchParams();
-  const router = useRouter();
+  const { getParam, setParams } = useQueryParams();
 
-  const filter = useMemo<ReleaseCondition | undefined>(() => {
-    const filterJson = urlParams.get("filter");
-    if (filterJson == null) return undefined;
+  const filterHash = getParam("filter");
+  const filter = useMemo<ReleaseCondition | null>(() => {
+    if (filterHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterJson));
+      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterHash));
     } catch {
-      return undefined;
+      return null;
     }
-  }, [urlParams]);
+  }, [filterHash]);
 
-  const releaseChannelId = useMemo<string | undefined>(
-    () => urlParams.get("release-channel") ?? undefined,
-    [urlParams],
-  );
+  const releaseChannelId = getParam("release-channel-id");
 
   const setFilter = useCallback(
-    (filter?: ReleaseCondition, releaseChannelId?: string | null) => {
-      if (filter == null) {
-        const query = new URLSearchParams(window.location.search);
-        query.delete("filter");
-        if (releaseChannelId === null) query.delete("release-channel");
-        if (releaseChannelId != null)
-          query.set("release_channel_id", releaseChannelId);
-        router.replace(`?${query.toString()}`);
+    (filter: ReleaseCondition | null, releaseChannelId?: string | null) => {
+      const filterJsonHash =
+        filter != null
+          ? LZString.compressToEncodedURIComponent(JSON.stringify(filter))
+          : null;
+      if (releaseChannelId === undefined) {
+        setParams({ filter: filterJsonHash });
         return;
       }
-
-      const filterJsonHash = LZString.compressToEncodedURIComponent(
-        JSON.stringify(filter),
-      );
-      const query = new URLSearchParams(window.location.search);
-      query.set("filter", filterJsonHash);
-      if (releaseChannelId != null)
-        query.set("release_channel_id", releaseChannelId);
-      if (releaseChannelId === null) query.delete("release_channel_id");
-      router.replace(`?${query.toString()}`);
+      setParams({
+        filter: filterJsonHash,
+        "release-channel-id": releaseChannelId,
+      });
     },
-    [router],
+    [setParams],
   );
 
   return {

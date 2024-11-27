@@ -21,7 +21,7 @@
   "dependencies": {
     "@colors/colors": "^1.6.0",
     "@opentelemetry/winston-transport": "^0.7.0",
-    "winston": "^3.14.2",
+    "winston": "^3.17.0",
     "zod": "catalog:"
   },
   "devDependencies": {

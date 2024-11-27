@@ -1,61 +1,38 @@
-import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useCallback, useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
 
-export const useTargetFilter = () => {
-  const urlParams = useSearchParams();
-  const router = useRouter();
+import { useQueryParams } from "../useQueryParams";
 
-  const filter = useMemo<ResourceCondition | undefined>(() => {
-    const filterJson = urlParams.get("filter");
-    if (filterJson == null) return undefined;
+export const useTargetFilter = () => {
+  const { getParam, setParams } = useQueryParams();
+
+  const filterHash = getParam("filter");
+  const filter = useMemo<ResourceCondition | null>(() => {
+    if (filterHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterJson));
+      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterHash));
     } catch {
-      return undefined;
+      return null;
     }
-  }, [urlParams]);
+  }, [filterHash]);
+
+  const viewId = getParam("view");
 
   const setFilter = useCallback(
-    (filter: ResourceCondition | undefined) => {
-      if (filter == null) {
-        const query = new URLSearchParams(window.location.search);
-        query.delete("filter");
-        router.replace(`?${query.toString()}`);
+    (filter: ResourceCondition | null, viewId?: string | null) => {
+      const filterJsonHash =
+        filter != null
+          ? LZString.compressToEncodedURIComponent(JSON.stringify(filter))
+          : null;
+      if (viewId === undefined) {
+        setParams({ filter: filterJsonHash });
         return;
       }
-
-      const filterJson = LZString.compressToEncodedURIComponent(
-        JSON.stringify(filter),
-      );
-      const query = new URLSearchParams(window.location.search);
-      query.set("filter", filterJson);
-      router.replace(`?${query.toString()}`);
+      setParams({ filter: filterJsonHash, view: viewId });
     },
-    [router],
+    [setParams],
   );
 
-  const setView = useCallback(
-    (view: schema.ResourceView) => {
-      const query = new URLSearchParams(window.location.search);
-      const filterJson = LZString.compressToEncodedURIComponent(
-        JSON.stringify(view.filter),
-      );
-      query.set("filter", filterJson);
-      query.set("view", view.id);
-      router.replace(`?${query.toString()}`);
-    },
-    [router],
-  );
-
-  const removeView = () => {
-    const query = new URLSearchParams(window.location.search);
-    query.delete("view");
-    query.delete("filter");
-    router.replace(`?${query.toString()}`);
-  };
-
-  return { filter, setFilter, setView, removeView };
+  return { filter, setFilter, viewId };
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import React from "react";
 import { IconFilter, IconLoader2 } from "@tabler/icons-react";
 import _ from "lodash";
@@ -20,9 +21,9 @@ import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
-import { useJobFilter } from "~/app/[workspaceSlug]/(app)/_components/job-condition/useJobFilter";
 import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
+import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
 
 type JobTableProps = {
@@ -30,7 +31,7 @@ type JobTableProps = {
 };
 
 export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
-  const { filter, setFilter } = useJobFilter();
+  const { filter, setFilter } = useFilter<JobCondition>();
   const { setJobId } = useJobDrawer();
   const allReleaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
     { workspaceId },
@@ -38,7 +39,7 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
   );
 
   const releaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
-    { workspaceId, filter, limit: 100 },
+    { workspaceId, filter: filter ?? undefined, limit: 100 },
     { refetchInterval: 10_000, placeholderData: (prev) => prev },
   );
 
@@ -91,7 +92,7 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
         <NoFilterMatch
           numItems={allReleaseJobTriggers.data?.total ?? 0}
           itemType="job"
-          onClear={() => setFilter(undefined)}
+          onClear={() => setFilter(null)}
         />
       )}
 

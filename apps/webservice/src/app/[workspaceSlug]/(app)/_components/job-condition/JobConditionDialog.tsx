@@ -14,14 +14,15 @@ import {
 import { MAX_DEPTH_ALLOWED } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
+  isEmptyCondition,
   isValidJobCondition,
 } from "@ctrlplane/validators/jobs";
 
 import { JobConditionRender } from "./JobConditionRender";
 
 type JobConditionDialogProps = {
-  condition?: JobCondition;
-  onChange: (condition: JobCondition | undefined) => void;
+  condition: JobCondition | null;
+  onChange: (condition: JobCondition | null) => void;
   children: React.ReactNode;
 };
 
@@ -73,9 +74,13 @@ export const JobConditionDialog: React.FC<JobConditionDialogProps> = ({
                 );
                 return;
               }
-              onChange(localCondition);
               setOpen(false);
               setError(null);
+              if (isEmptyCondition(localCondition)) {
+                onChange(null);
+                return;
+              }
+              onChange(localCondition);
             }}
           >
             Save

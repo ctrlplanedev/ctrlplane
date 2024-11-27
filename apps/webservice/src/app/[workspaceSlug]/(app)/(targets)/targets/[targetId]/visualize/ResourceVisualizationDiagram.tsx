@@ -27,7 +27,10 @@ export const ResourceVisualizationDiagram: React.FC<
 
   const [edges, __, onEdgesChange] = useEdgesState(getEdges(relationships));
 
-  const setReactFlowInstance = useLayoutAndFitView(nodes, { direction: "TB" });
+  const setReactFlowInstance = useLayoutAndFitView(nodes, {
+    direction: "LR",
+    extraEdgeLength: 50,
+  });
 
   return (
     <ReactFlow

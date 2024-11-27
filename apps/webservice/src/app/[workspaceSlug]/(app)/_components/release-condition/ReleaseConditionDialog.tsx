@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 import {
   defaultCondition,
+  isEmptyCondition,
   isValidReleaseCondition,
   MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/releases";
@@ -36,10 +37,10 @@ import { ReleaseConditionRender } from "./ReleaseConditionRender";
 import { useReleaseFilter } from "./useReleaseFilter";
 
 type ReleaseConditionDialogProps = {
-  condition?: ReleaseCondition;
+  condition: ReleaseCondition | null;
   deploymentId?: string;
   onChange: (
-    condition: ReleaseCondition | undefined,
+    condition: ReleaseCondition | null,
     releaseChannelId?: string | null,
   ) => void;
   releaseChannels?: SCHEMA.ReleaseChannel[];
@@ -58,16 +59,17 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   const { setFilter, releaseChannelId } = useReleaseFilter();
 
   const [localReleaseChannelId, setLocalReleaseChannelId] = useState<
-    string | undefined
+    string | null
   >(releaseChannelId);
 
-  const [localCondition, setLocalCondition] = useState<
-    ReleaseCondition | undefined
-  >(condition ?? defaultCondition);
+  const [localCondition, setLocalCondition] = useState<ReleaseCondition | null>(
+    condition ?? defaultCondition,
+  );
   const isLocalConditionValid =
     localCondition == null || isValidReleaseCondition(localCondition);
+  const filter = localCondition ?? undefined;
   const releasesQ = api.release.list.useQuery(
-    { deploymentId: deploymentId ?? "", filter: localCondition, limit: 5 },
+    { deploymentId: deploymentId ?? "", filter, limit: 5 },
     { enabled: deploymentId != null && isLocalConditionValid },
   );
   const releases = releasesQ.data;
@@ -107,14 +109,14 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
             <Select
-              value={localReleaseChannelId}
+              value={localReleaseChannelId ?? undefined}
               onValueChange={(value) => {
                 const releaseChannel = releaseChannels.find(
                   (rc) => rc.id === value,
                 );
                 if (releaseChannel == null) return;
                 setLocalReleaseChannelId(value);
-                setLocalCondition(releaseChannel.releaseFilter ?? undefined);
+                setLocalCondition(releaseChannel.releaseFilter);
               }}
             >
               <SelectTrigger>
@@ -141,7 +143,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
                   );
                   if (releaseChannel == null) return;
                   setFilter(
-                    releaseChannel.releaseFilter ?? undefined,
+                    releaseChannel.releaseFilter,
                     localReleaseChannelId,
                   );
                   setOpen(false);
@@ -189,9 +191,17 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
                     );
                     return;
                   }
-                  onChange(localCondition, null);
                   setOpen(false);
                   setError(null);
+
+                  if (
+                    localCondition != null &&
+                    isEmptyCondition(localCondition)
+                  ) {
+                    onChange(null, null);
+                    return;
+                  }
+                  onChange(localCondition, null);
                 }}
               >
                 Save

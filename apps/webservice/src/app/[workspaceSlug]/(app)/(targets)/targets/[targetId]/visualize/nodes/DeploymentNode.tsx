@@ -89,11 +89,11 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
           isCompleted && "border-green-500",
           releaseJobTrigger == null && "border-neutral-800",
         )}
-        position={Position.Top}
+        position={Position.Left}
       />
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         className={cn(
           "h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800",
           isInProgress && "border-blue-500",

@@ -10,17 +10,24 @@ function createLogger(level: string) {
     winston.format.timestamp(),
     winston.format.align(),
     winston.format.printf((info) => {
-      const { timestamp, level, message, durationMs, ...other } = info;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      const { timestamp, level, message, durationMs, label, ...other } =
+        info as {
+          timestamp: string | undefined;
+          durationMs: number | undefined;
+          label: string | undefined;
+          level: string;
+          message: string;
+        };
+
       const ts = timestamp?.slice(0, 19).replace("T", " ");
       const duration = durationMs != null ? `(${durationMs}ms)` : "";
-      const hasLabel = info.label != null;
-      const appendLabel = info.label?.length < 5 ? "    " : "";
-      const label = hasLabel ? `\t[${info.label}]${appendLabel} ` : "\t";
+      const hasLabel = label != null && label !== "";
+      const appendLabel = hasLabel && label.length < 5 ? "    " : "";
+      const labelPrint = hasLabel ? `\t[${label}]${appendLabel} ` : "\t";
 
       return NODE_ENV === "production"
-        ? `${ts} [${level}]: ${label} ${message} ${duration} [${JSON.stringify(other)}]`
-        : `[${level}]: ${colors.gray(label)}${message} ${duration} [${JSON.stringify(other)}]`;
+        ? `${ts} [${level}]: ${labelPrint} ${message} ${duration} [${JSON.stringify(other)}]`
+        : `[${level}]: ${colors.gray(labelPrint)}${message} ${duration} [${JSON.stringify(other)}]`;
     }),
   ];
 
