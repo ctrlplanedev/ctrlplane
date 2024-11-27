@@ -19,6 +19,11 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@ctrlplane/ui/collapsible";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@ctrlplane/ui/hover-card";
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatusReadable } from "@ctrlplane/validators/jobs";
@@ -140,7 +145,58 @@ const LinksCell: React.FC<LinksCellProps> = ({ releaseJobTrigger }) => {
       </TableCell>
     );
 
-  return <TableCell />;
+  const firstThreeLinks = Object.entries(links).slice(0, 3);
+  const remainingLinks = Object.entries(links).slice(3);
+
+  return (
+    <TableCell className="py-0">
+      <div
+        className="flex flex-wrap gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {firstThreeLinks.map(([label, url]) => (
+          <Link
+            key={label}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              buttonVariants({
+                variant: "secondary",
+                size: "sm",
+              }),
+            )}
+          >
+            <IconExternalLink className="h-4 w-4" />
+            {label}
+          </Link>
+        ))}
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <Button variant="secondary" size="sm" className="h-6">
+              +{remainingLinks.length} more
+            </Button>
+          </HoverCardTrigger>
+          <HoverCardContent
+            className="flex max-w-40 flex-col gap-1 p-2"
+            align="start"
+          >
+            {remainingLinks.map(([label, url]) => (
+              <Link
+                key={label}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate text-sm underline-offset-1 hover:underline"
+              >
+                {label}
+              </Link>
+            ))}
+          </HoverCardContent>
+        </HoverCard>
+      </div>
+    </TableCell>
+  );
 };
 
 type DropdownCellProps = {
