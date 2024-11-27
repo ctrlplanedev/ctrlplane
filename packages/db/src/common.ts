@@ -17,7 +17,7 @@ export const takeFirstOrNull = <T extends any[]>(
   return values[0]!;
 };
 
-export type Tx = typeof db;
+export type Tx = Omit<typeof db, "$client">;
 
 export const buildConflictUpdateColumns = <
   T extends PgTable,
