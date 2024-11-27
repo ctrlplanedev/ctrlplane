@@ -49,7 +49,7 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
     <>
       <div
         className={cn(
-          "relative flex w-[250px] flex-col gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4 py-1",
+          "relative flex h-[70px] w-[250px] items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4",
           isInProgress && "border-blue-500",
           isPending && "border-neutral-500",
           isCompleted && "border-green-500",
@@ -60,23 +60,19 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
           if (releaseJobTrigger != null) setJobId(releaseJobTrigger.job.id);
         }}
       >
-        <div className="flex h-14 items-center">
-          <div className="flex min-w-0 flex-1 flex-grow items-center gap-2">
-            <span className="truncate">{deployment.name}</span>
-          </div>
+        <ReleaseIcon job={releaseJobTrigger?.job} />
+        <div className="flex min-w-0 flex-1 flex-col items-start">
+          <span className="w-full truncate">{deployment.name}</span>
           {releaseJobTrigger != null && (
-            <div className="flex flex-shrink-0 items-center gap-2">
-              <ReleaseIcon job={releaseJobTrigger.job} />
-              <div className="text-sm">
-                <div>{releaseJobTrigger.release.version}</div>
-                <div>{JobStatusReadable[releaseJobTrigger.job.status]}</div>
-              </div>
-            </div>
+            <span className="w-full truncate text-sm">
+              {releaseJobTrigger.release.name} -{" "}
+              {JobStatusReadable[releaseJobTrigger.job.status]}
+            </span>
           )}
           {releaseJobTrigger == null && (
-            <div className="flex flex-shrink-0 justify-end pr-4 text-sm text-muted-foreground">
-              No active job
-            </div>
+            <span className="w-full truncate text-sm text-muted-foreground">
+              No active release
+            </span>
           )}
         </div>
       </div>
