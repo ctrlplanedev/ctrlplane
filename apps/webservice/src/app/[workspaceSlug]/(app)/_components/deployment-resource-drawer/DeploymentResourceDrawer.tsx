@@ -1,5 +1,6 @@
 "use client";
 
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { IconLoader2, IconShip } from "@tabler/icons-react";
 
 import {
@@ -8,6 +9,12 @@ import {
   DrawerDescription,
   DrawerTitle,
 } from "@ctrlplane/ui/drawer";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { ReleaseTable } from "./ReleaseTable";
@@ -39,16 +46,44 @@ export const DeploymentResourceDrawer: React.FC = () => {
     { enabled: isOpen },
   );
 
-  const { data: releaseWithTriggersData, ...releaseWithTriggersQ } =
-    api.job.config.byDeploymentEnvAndResource.useQuery(
+  const releaseFilter =
+    environment?.releaseChannels.find((rc) => rc.deploymentId === deploymentId)
+      ?.filter ??
+    environment?.policy?.releaseChannels.find(
+      (rc) => rc.deploymentId === deploymentId,
+    )?.filter ??
+    undefined;
+
+  const jobFilter: JobCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [
       {
-        deploymentId: deploymentId ?? "",
-        environmentId: environmentId ?? "",
-        resourceId: resourceId ?? "",
+        type: JobFilterType.JobTarget,
+        operator: ColumnOperator.Equals,
+        value: resourceId ?? "",
       },
-      { enabled: isOpen, refetchInterval: 5_000 },
-    );
-  const releaseWithTriggers = releaseWithTriggersData ?? [];
+      {
+        type: JobFilterType.Environment,
+        operator: ColumnOperator.Equals,
+        value: environmentId ?? "",
+      },
+      {
+        type: JobFilterType.Deployment,
+        operator: ColumnOperator.Equals,
+        value: deploymentId ?? "",
+      },
+    ],
+  };
+
+  const { data: releaseWithTriggersData, ...releaseWithTriggersQ } =
+    api.release.list.useQuery({
+      deploymentId: deploymentId ?? "",
+      filter: releaseFilter,
+      jobFilter,
+      limit: 100,
+    });
+  const releaseWithTriggers = releaseWithTriggersData?.items ?? [];
 
   const loading =
     deploymentQ.isLoading ||
