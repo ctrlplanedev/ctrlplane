@@ -91,6 +91,7 @@ const OverrideJobStatusDialog: React.FC<{
       })
       .then(() => utils.job.config.byReleaseId.invalidate())
       .then(() => utils.job.config.byId.invalidate(job.id))
+      .then(() => utils.job.config.byDeploymentEnvAndResource.invalidate())
       .then(() => setOpen(false))
       .then(() => onClose()),
   );
@@ -104,7 +105,7 @@ const OverrideJobStatusDialog: React.FC<{
       }}
     >
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
             <DialogHeader>
@@ -183,13 +184,14 @@ const ForceReleaseTargetDialog: React.FC<{
   children,
 }) => {
   const forceRelease = api.release.deploy.toResource.useMutation();
+  const utils = api.useUtils();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>
             Are you sure you want to force release?
@@ -218,6 +220,9 @@ const ForceReleaseTargetDialog: React.FC<{
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
+                .then(() =>
+                  utils.job.config.byDeploymentEnvAndResource.invalidate(),
+                )
                 .then(() => router.refresh())
                 .then(() => setOpen(false))
                 .then(() => onClose())
@@ -238,12 +243,13 @@ const RedeployReleaseDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ release, environmentId, target, children }) => {
   const router = useRouter();
+  const utils = api.useUtils();
   const redeploy = api.release.deploy.toResource.useMutation();
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>
             Redeploy{" "}
@@ -267,6 +273,9 @@ const RedeployReleaseDialog: React.FC<{
                   resourceId: target.id,
                   releaseId: release.id,
                 })
+                .then(() =>
+                  utils.job.config.byDeploymentEnvAndResource.invalidate(),
+                )
                 .then(() => router.refresh())
                 .then(() => setIsOpen(false))
             }
@@ -302,7 +311,7 @@ export const JobDropdownMenu: React.FC<{
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       {target != null && (
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           {isActive && (
             <TooltipProvider>
               <Tooltip>
