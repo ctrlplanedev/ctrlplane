@@ -3,6 +3,7 @@ import React from "react";
 
 import {
   isComparisonCondition,
+  isCreatedAtCondition,
   isIdentifierCondition,
   isKindCondition,
   isMetadataCondition,
@@ -16,6 +17,7 @@ import { IdentifierConditionRender } from "./IdentifierConditionRender";
 import { KindConditionRender } from "./KindConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
 import { ProviderConditionRender } from "./ProviderConditionRender";
+import { ResourceCreatedAtConditionRender } from "./ResourceCreatedAtConditionRender";
 import { TargetMetadataConditionRender } from "./TargetMetadataConditionRender";
 
 /**
@@ -74,6 +76,15 @@ export const TargetConditionRender: React.FC<
   if (isIdentifierCondition(condition))
     return (
       <IdentifierConditionRender
+        condition={condition}
+        onChange={onChange}
+        className={className}
+      />
+    );
+
+  if (isCreatedAtCondition(condition))
+    return (
+      <ResourceCreatedAtConditionRender
         condition={condition}
         onChange={onChange}
         className={className}

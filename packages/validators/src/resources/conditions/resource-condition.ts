@@ -1,12 +1,19 @@
 import { z } from "zod";
 
-import type { MetadataCondition } from "../../conditions/index.js";
+import type {
+  CreatedAtCondition,
+  MetadataCondition,
+} from "../../conditions/index.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
 import type { IdentifierCondition } from "./identifier-condition.js";
 import type { KindCondition } from "./kind-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
-import { metadataCondition } from "../../conditions/index.js";
+import {
+  createdAtCondition,
+  FilterType,
+  metadataCondition,
+} from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
 import { identifierCondition } from "./identifier-condition.js";
 import { kindCondition } from "./kind-condition.js";
@@ -19,7 +26,8 @@ export type ResourceCondition =
   | KindCondition
   | NameCondition
   | ProviderCondition
-  | IdentifierCondition;
+  | IdentifierCondition
+  | CreatedAtCondition;
 
 export const resourceCondition = z.union([
   comparisonCondition,
@@ -28,6 +36,7 @@ export const resourceCondition = z.union([
   nameCondition,
   providerCondition,
   identifierCondition,
+  createdAtCondition,
 ]);
 
 export enum ResourceOperator {
@@ -103,6 +112,10 @@ export const isIdentifierCondition = (
   condition: ResourceCondition,
 ): condition is IdentifierCondition =>
   condition.type === ResourceFilterType.Identifier;
+
+export const isCreatedAtCondition = (
+  condition: ResourceCondition,
+): condition is CreatedAtCondition => condition.type === FilterType.CreatedAt;
 
 export const isValidTargetCondition = (
   condition: ResourceCondition,

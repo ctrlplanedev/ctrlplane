@@ -1,4 +1,7 @@
-import type { MetadataCondition } from "@ctrlplane/validators/conditions";
+import type {
+  CreatedAtCondition,
+  MetadataCondition,
+} from "@ctrlplane/validators/conditions";
 import type {
   IdentifierCondition,
   NameCondition,
@@ -7,8 +10,12 @@ import type {
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import {
   exists,
+  gt,
+  gte,
   ilike,
   like,
+  lt,
+  lte,
   not,
   notExists,
   or,
@@ -33,6 +40,8 @@ import { z } from "zod";
 import {
   ColumnOperator,
   ComparisonOperator,
+  DateOperator,
+  FilterType,
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
@@ -243,6 +252,16 @@ const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
   return sql`${resource.name} ~ ${cond.value}`;
 };
 
+const buildCreatedAtCondition = (tx: Tx, cond: CreatedAtCondition): SQL => {
+  const date = new Date(cond.value);
+  if (cond.operator === DateOperator.Before)
+    return lt(resource.createdAt, date);
+  if (cond.operator === DateOperator.After) return gt(resource.createdAt, date);
+  if (cond.operator === DateOperator.BeforeOrOn)
+    return lte(resource.createdAt, date);
+  return gte(resource.createdAt, date);
+};
+
 const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
   if (cond.type === ResourceFilterType.Metadata)
     return buildMetadataCondition(tx, cond);
@@ -254,6 +273,8 @@ const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
     return eq(resource.providerId, cond.value);
   if (cond.type === ResourceFilterType.Identifier)
     return buildIdentifierCondition(tx, cond);
+  if (cond.type === FilterType.CreatedAt)
+    return buildCreatedAtCondition(tx, cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 

@@ -30,7 +30,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { ColumnOperator } from "@ctrlplane/validators/conditions";
+import {
+  ColumnOperator,
+  DateOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
@@ -317,6 +321,18 @@ export const ComparisonConditionRender: React.FC<
             >
               Provider
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                addCondition({
+                  type: FilterType.CreatedAt,
+                  operator: DateOperator.Before,
+                  value: new Date().toISOString(),
+                })
+              }
+            >
+              Created at
+            </DropdownMenuItem>
+
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
