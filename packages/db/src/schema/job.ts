@@ -44,8 +44,6 @@ import {
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../common.js";
-import { deployment } from "./deployment.js";
-import { environment } from "./environment.js";
 import { jobAgent } from "./job-agent.js";
 import { release, releaseJobTrigger } from "./release.js";
 import { jobResourceRelationship, resource } from "./resource.js";
@@ -226,13 +224,66 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
   if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
   if (cond.type === JobFilterType.Deployment)
-    return eq(deployment.id, cond.value);
+    return exists(
+      tx
+        .select()
+        .from(releaseJobTrigger)
+        .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+        .where(
+          and(
+            eq(release.deploymentId, cond.value),
+            eq(releaseJobTrigger.jobId, job.id),
+          ),
+        ),
+    );
   if (cond.type === JobFilterType.Environment)
-    return eq(environment.id, cond.value);
-  if (cond.type === FilterType.Version) return buildVersionCondition(cond);
+    return exists(
+      tx
+        .select()
+        .from(releaseJobTrigger)
+        .where(
+          and(
+            eq(releaseJobTrigger.environmentId, cond.value),
+            eq(releaseJobTrigger.jobId, job.id),
+          ),
+        ),
+    );
+  if (cond.type === FilterType.Version)
+    return exists(
+      tx
+        .select()
+        .from(releaseJobTrigger)
+        .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+        .where(
+          and(eq(releaseJobTrigger.jobId, job.id), buildVersionCondition(cond)),
+        ),
+    );
   if (cond.type === JobFilterType.JobTarget)
-    return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
-  if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
+    return exists(
+      tx
+        .select()
+        .from(releaseJobTrigger)
+        .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
+        .where(
+          and(
+            eq(releaseJobTrigger.jobId, job.id),
+            eq(releaseJobTrigger.resourceId, cond.value),
+            isNull(resource.deletedAt),
+          ),
+        ),
+    );
+  if (cond.type === JobFilterType.Release)
+    return exists(
+      tx
+        .select()
+        .from(releaseJobTrigger)
+        .where(
+          and(
+            eq(releaseJobTrigger.jobId, job.id),
+            eq(releaseJobTrigger.releaseId, cond.value),
+          ),
+        ),
+    );
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =
