@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@aws-sdk/client-ec2": "^3.701.0",
-    "@aws-sdk/client-eks": "^3.688.0",
+    "@aws-sdk/client-eks": "^3.699.0",
+    "@aws-sdk/client-sts": "^3.699.0",
     "@ctrlplane/db": "workspace:*",
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
@@ -22,6 +23,7 @@
     "@kubernetes/client-node": "^0.22.0",
     "@octokit/auth-app": "^7.1.0",
     "@octokit/rest": "catalog:",
+    "@smithy/types": "^3.7.1",
     "@t3-oss/env-core": "catalog:",
     "bullmq": "catalog:",
     "cron": "^3.1.7",
