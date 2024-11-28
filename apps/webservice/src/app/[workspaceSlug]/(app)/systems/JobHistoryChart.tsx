@@ -329,7 +329,7 @@ export const JobHistoryChart: React.FC<{
                   const hash = LZString.compressToEncodedURIComponent(
                     JSON.stringify(filter),
                   );
-                  const filterLink = `/${workspace.slug}/jobs?job-filter=${hash}`;
+                  const filterLink = `/${workspace.slug}/jobs?filter=${hash}`;
                   router.push(filterLink);
                 }}
               />
