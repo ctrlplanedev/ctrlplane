@@ -277,7 +277,11 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
           <div onClick={(e) => e.stopPropagation()}>
             <CollapsibleTrigger asChild>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-5 w-5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 flex-shrink-0"
+                >
                   <IconChevronRight
                     className={cn(
                       "h-3 w-3 text-muted-foreground transition-all",
@@ -290,7 +294,11 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
             </CollapsibleTrigger>
           </div>
         )}
-        {!isExpandable && <span className="truncate pl-7">{release.name}</span>}
+        {!isExpandable && (
+          <div className="flex">
+            <span className="truncate pl-7">{release.name}</span>
+          </div>
+        )}
       </TableCell>
       <StatusCell
         releaseJobTrigger={releaseJobTrigger}
