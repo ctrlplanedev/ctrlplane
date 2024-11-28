@@ -91,7 +91,7 @@ const OverrideJobStatusDialog: React.FC<{
       })
       .then(() => utils.job.config.byReleaseId.invalidate())
       .then(() => utils.job.config.byId.invalidate(job.id))
-      .then(() => utils.job.config.byDeploymentEnvAndResource.invalidate())
+      .then(() => utils.release.list.invalidate())
       .then(() => setOpen(false))
       .then(() => onClose()),
   );
@@ -220,9 +220,7 @@ const ForceReleaseTargetDialog: React.FC<{
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
-                .then(() =>
-                  utils.job.config.byDeploymentEnvAndResource.invalidate(),
-                )
+                .then(() => utils.release.list.invalidate())
                 .then(() => router.refresh())
                 .then(() => setOpen(false))
                 .then(() => onClose())
@@ -273,9 +271,7 @@ const RedeployReleaseDialog: React.FC<{
                   resourceId: target.id,
                   releaseId: release.id,
                 })
-                .then(() =>
-                  utils.job.config.byDeploymentEnvAndResource.invalidate(),
-                )
+                .then(() => utils.release.list.invalidate())
                 .then(() => router.refresh())
                 .then(() => setIsOpen(false))
             }

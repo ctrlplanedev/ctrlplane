@@ -349,8 +349,7 @@ const ReleaseJobTriggerChildRow: React.FC<ReleaseJobTriggerRowProps> = ({
   );
 };
 
-type Release =
-  RouterOutputs["job"]["config"]["byDeploymentEnvAndResource"][number];
+type Release = RouterOutputs["release"]["list"]["items"][number];
 
 type ReleaseRowsProps = {
   release: Release;

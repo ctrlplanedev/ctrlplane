@@ -21,6 +21,7 @@ import {
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
   job,
+  jobMatchesCondition,
   release,
   releaseChannel,
   releaseDependency,
@@ -38,6 +39,7 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import { jobCondition } from "@ctrlplane/validators/jobs";
 import { releaseCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -56,6 +58,7 @@ export const releaseRouter = createTRPCRouter({
       z.object({
         deploymentId: z.string(),
         filter: releaseCondition.optional(),
+        jobFilter: jobCondition.optional(),
         limit: z.number().nonnegative().default(100),
         offset: z.number().nonnegative().default(0),
       }),
@@ -110,6 +113,7 @@ export const releaseRouter = createTRPCRouter({
             and(
               eq(releaseJobTrigger.resourceId, resource.id),
               isNull(resource.deletedAt),
+              jobMatchesCondition(ctx.db, input.jobFilter),
             ),
           )
           .where(
@@ -117,7 +121,8 @@ export const releaseRouter = createTRPCRouter({
               releaseJobTrigger.releaseId,
               items.map((r) => r.id),
             ),
-          );
+          )
+          .orderBy(desc(releaseJobTrigger.createdAt));
 
         return items.map((r) => ({
           ...r,
