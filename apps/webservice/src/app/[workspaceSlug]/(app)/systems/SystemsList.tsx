@@ -29,7 +29,7 @@ export const SystemsList: React.FC<{
     { placeholderData: (prev) => prev },
   );
   return (
-    <div className="h-full">
+    <div>
       <div className="border-b border-neutral-800/50 px-2 py-1 text-sm">
         <SearchInput value={query ?? ""} onChange={setQuery} />
       </div>
@@ -46,7 +46,7 @@ export const SystemsList: React.FC<{
       )}
 
       {systems.data != null && systems.data.total > 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-90px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-390px)] overflow-auto">
           <SystemsTable
             systems={systems.data.items}
             workspaceSlug={workspace.slug}

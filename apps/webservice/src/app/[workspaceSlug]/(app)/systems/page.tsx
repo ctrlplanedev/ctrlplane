@@ -36,12 +36,7 @@ export default async function SystemsPage({
         <>
           <JobHistoryChart workspace={workspace} />
           <Separator />
-          <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-110px)] overflow-auto">
-            <SystemsList
-              workspace={workspace}
-              systemsCount={systemsAll.total}
-            />
-          </div>
+          <SystemsList workspace={workspace} systemsCount={systemsAll.total} />
         </>
       )}
     </>
