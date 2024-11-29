@@ -77,12 +77,15 @@ export const DeploymentResourceDrawer: React.FC = () => {
   };
 
   const { data: releaseWithTriggersData, ...releaseWithTriggersQ } =
-    api.release.list.useQuery({
-      deploymentId: deploymentId ?? "",
-      filter: releaseFilter,
-      jobFilter,
-      limit: 100,
-    });
+    api.release.list.useQuery(
+      {
+        deploymentId: deploymentId ?? "",
+        filter: releaseFilter,
+        jobFilter,
+        limit: 100,
+      },
+      { enabled: deploymentId != null },
+    );
   const releaseWithTriggers = releaseWithTriggersData?.items ?? [];
 
   const loading =

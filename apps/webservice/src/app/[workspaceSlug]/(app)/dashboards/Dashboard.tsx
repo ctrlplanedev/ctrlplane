@@ -1,11 +1,14 @@
 "use client";
 
 /* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+import type { Workspace } from "@ctrlplane/db/schema";
 import type { Layout } from "react-grid-layout";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { produce } from "immer";
 import { clamp } from "lodash";
 import { v4 as uuidv4 } from "uuid";
+
+import { cn } from "@ctrlplane/ui";
 
 import type { WidgetLayout } from "./DashboardContext";
 import type { Widget } from "./widgets";
@@ -40,11 +43,12 @@ type DashboardEvents = {
 };
 
 const RenderWidget: React.FC<{
+  workspace: Workspace;
   id: string;
   spec: Widget;
   config: any;
   events?: DashboardEvents;
-}> = ({ id, spec, config, events }) => {
+}> = ({ id, spec, config, events, workspace }) => {
   const { editMode } = useDashboardContext();
   const { deleteWidget, updateConfig } = useDashboardLayout(events);
   const { Component } = spec;
@@ -54,6 +58,7 @@ const RenderWidget: React.FC<{
       isEditMode={editMode}
       config={config}
       updateConfig={(c) => updateConfig(id, c)}
+      workspace={workspace}
     />
   );
 };
@@ -191,8 +196,10 @@ export const useDashboardGrid = (events?: DashboardEvents) => {
   };
 };
 
-export const Dashboard: React.FC = () => {
-  const { dashboardId, setEditMode, layout } = useDashboardContext();
+export const Dashboard: React.FC<{ workspace: Workspace }> = ({
+  workspace,
+}) => {
+  const { dashboardId, setEditMode, editMode, layout } = useDashboardContext();
 
   const create = api.dashboard.widget.create.useMutation();
   const del = api.dashboard.widget.delete.useMutation();
@@ -263,7 +270,13 @@ export const Dashboard: React.FC = () => {
   const grid = useDashboardGrid(events);
 
   return (
-    <DashboardGrid {...grid} className="m-10 mb-16">
+    <DashboardGrid
+      {...grid}
+      className={cn(
+        "m-10 mb-16 rounded-md border border-dotted",
+        editMode ? "border-neutral-800" : "border-transparent",
+      )}
+    >
       {layout.map((item) => {
         const { i, widget } = item;
         const spec = widgets[widget];
@@ -272,6 +285,7 @@ export const Dashboard: React.FC = () => {
           <div key={i} className="relative h-full w-full">
             <RenderWidget
               id={i}
+              workspace={workspace}
               spec={spec}
               config={item.config ?? {}}
               events={events}

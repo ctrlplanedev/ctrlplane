@@ -27,6 +27,15 @@ export const dashboard = pgTable("dashboard", {
   ),
 });
 
+const dashboardInsert = createInsertSchema(dashboard).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const createDashboard = dashboardInsert;
+export const updateDashboard = dashboardInsert.partial();
+
 export const dashboardWidget = pgTable("dashboard_widget", {
   id: uuid("id").primaryKey().defaultRandom(),
 

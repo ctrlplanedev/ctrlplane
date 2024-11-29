@@ -30,6 +30,7 @@
   "dependencies": {
     "@auth/drizzle-adapter": "1.4.1",
     "@ctrlplane/db": "workspace:*",
+    "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "bcryptjs": "^2.4.3",

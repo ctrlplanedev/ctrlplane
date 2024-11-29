@@ -14,16 +14,7 @@ export const WidgetHeading: Widget<{
     maxH: 1,
     minW: 2,
   },
-  ComponentPreview: () => {
-    return (
-      <>
-        <IconTextPlus className="m-auto mt-1 h-20 w-20" />
-        <div className="absolute bottom-0 left-0 right-0 text-center">
-          <p className="pb-2 text-neutral-400">Heading</p>
-        </div>
-      </>
-    );
-  },
+  Icon: () => <IconTextPlus className="h-10 w-10" />,
   Component: ({ config, isEditMode, onDelete, updateConfig }) => {
     return (
       <div className="flex h-full w-full flex-col px-2 py-2">
