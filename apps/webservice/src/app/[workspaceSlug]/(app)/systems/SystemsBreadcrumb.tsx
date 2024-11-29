@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import {
+  IconBook,
   IconCategory,
   IconDotsVertical,
   IconServer,
@@ -28,13 +29,17 @@ export const SystemBreadcrumbNavbar = async ({
     systemSlug?: string;
     deploymentSlug?: string;
     versionId?: string;
+    runbookId?: string;
   };
 }) => {
-  const { workspaceSlug, systemSlug, deploymentSlug, versionId } = params;
+  const { workspaceSlug, systemSlug, deploymentSlug, versionId, runbookId } =
+    params;
 
   const system = systemSlug
     ? await api.system.bySlug({ workspaceSlug, systemSlug })
     : null;
+
+  const runbook = runbookId ? await api.runbook.byId(runbookId) : null;
 
   const deployment =
     deploymentSlug && systemSlug
@@ -83,6 +88,15 @@ export const SystemBreadcrumbNavbar = async ({
         </>
       ),
       path: `/${workspaceSlug}/systems/${systemSlug}/releases/${versionId}`,
+    },
+    {
+      isSet: runbook != null,
+      name: (
+        <>
+          <IconBook className="h-4 w-4" /> {runbook?.name}
+        </>
+      ),
+      path: `/${workspaceSlug}/systems/${systemSlug}/runbooks/${runbookId}`,
     },
   ].filter((t) => t.isSet);
 
