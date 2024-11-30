@@ -21,7 +21,10 @@ export const runbookRouter = createTRPCRouter({
         }),
     })
     .query(({ ctx, input }) =>
-      ctx.db.query.runbook.findFirst({ where: eq(SCHEMA.runbook.id, input) }),
+      ctx.db.query.runbook.findFirst({
+        where: eq(SCHEMA.runbook.id, input),
+        with: { variables: true, runhooks: true },
+      }),
     ),
 
   trigger: protectedProcedure
