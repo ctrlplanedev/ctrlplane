@@ -43,7 +43,7 @@ export default async function RunbookLayout({
           <SystemBreadcrumbNavbar params={params} />
         </div>
       </TopNav>
-      <RunbookNavBar totalJobs={total} />
+      <RunbookNavBar totalJobs={total} runbook={runbook} />
 
       <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-53px-49px)] overflow-auto">
         {children}
