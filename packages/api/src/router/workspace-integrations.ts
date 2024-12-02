@@ -177,15 +177,22 @@ export const integrationsRouter = createTRPCRouter({
           credentials: defaultProvider(),
         });
 
-        const { Account: accountId } = await stsClient.send(
+        const { Arn: currentArn, Account: accountId } = await stsClient.send(
           new GetCallerIdentityCommand({}),
         );
 
-        if (accountId == null)
+        if (currentArn == null || accountId == null) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Failed to get AWS account ID",
+            message: "Failed to get AWS account details",
           });
+        }
+
+        const isSSORole = currentArn.includes("AWSReservedSSO");
+
+        const sanitizedRoleArn = isSSORole
+          ? `arn:aws:iam::${accountId}:role/aws-reserved/sso.amazonaws.com/*/${currentArn.split("/")[1]}`
+          : `arn:aws:iam::${accountId}:role/${currentArn.split("/")[1]}`;
 
         const roleName = `ctrlplane-${ws.slug}`;
 
@@ -195,9 +202,18 @@ export const integrationsRouter = createTRPCRouter({
             {
               Effect: "Allow",
               Principal: {
-                AWS: `arn:aws:iam::${accountId}:root`,
+                AWS: isSSORole
+                  ? `arn:aws:iam::${accountId}:root`
+                  : sanitizedRoleArn,
               },
               Action: "sts:AssumeRole",
+              ...(isSSORole && {
+                Condition: {
+                  ArnLike: {
+                    "aws:PrincipalArn": [sanitizedRoleArn],
+                  },
+                },
+              }),
             },
           ],
         };
@@ -224,7 +240,7 @@ export const integrationsRouter = createTRPCRouter({
           Statement: [
             {
               Effect: "Allow",
-              Action: ["sts:*"],
+              Action: ["sts:AssumeRole"],
               Resource: "*",
             },
           ],
