@@ -24,7 +24,7 @@ export const nodeTypes: NodeTypes = {
 };
 
 const getResourceNodes = (relationships: Relationships) =>
-  relationships.map((r) => ({
+  relationships.nodes.map((r) => ({
     id: r.id,
     type: NodeType.Resource,
     data: { ...r, label: r.identifier },
@@ -32,7 +32,7 @@ const getResourceNodes = (relationships: Relationships) =>
   }));
 
 const getProviderNodes = (relationships: Relationships) =>
-  relationships
+  relationships.nodes
     .map((r) =>
       r.provider != null
         ? {
@@ -46,7 +46,7 @@ const getProviderNodes = (relationships: Relationships) =>
     .filter(isPresent);
 
 const getEnvironmentNodes = (relationships: Relationships) =>
-  relationships
+  relationships.nodes
     .flatMap((r) => r.workspace.systems)
     .flatMap((s) => s.environments.map((e) => ({ s, e })))
     .map(({ s, e }) => ({
@@ -57,7 +57,7 @@ const getEnvironmentNodes = (relationships: Relationships) =>
     }));
 
 const getDeploymentNodes = (relationships: Relationships) =>
-  relationships.flatMap((r) =>
+  relationships.nodes.flatMap((r) =>
     r.workspace.systems.flatMap((system) =>
       system.environments.flatMap((environment) =>
         system.deployments.map((deployment) => ({

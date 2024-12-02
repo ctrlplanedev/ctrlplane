@@ -27,7 +27,6 @@ import { TabButton } from "../TabButton";
 import { DeploymentsContent } from "./DeploymentContent";
 import { JobsContent } from "./JobsContent";
 import { OverviewContent } from "./OverviewContent";
-import { RelationshipsContent } from "./relationships/RelationshipContent";
 import { TargetActionsDropdown } from "./TargetActionsDropdown";
 import { useTargetDrawer } from "./useTargetDrawer";
 import { VariableContent } from "./VariablesContent";
@@ -198,12 +197,6 @@ export const TargetDrawer: React.FC = () => {
                 icon={<IconVariable className="h-4 w-4" />}
                 label="Variables"
               />
-              <TabButton
-                active={activeTab === "relationships"}
-                onClick={() => setActiveTab("relationships")}
-                icon={<IconTopologyStar3 className="h-4 w-4" />}
-                label="Relationships"
-              />
             </div>
             <div className="h-full w-full overflow-auto">
               {activeTab === "deployments" && (
@@ -211,9 +204,6 @@ export const TargetDrawer: React.FC = () => {
               )}
               {activeTab === "overview" && (
                 <OverviewContent target={resource} />
-              )}
-              {activeTab === "relationships" && (
-                <RelationshipsContent target={resource} />
               )}
               {activeTab === "jobs" && <JobsContent targetId={resource.id} />}
               {activeTab === "variables" && (

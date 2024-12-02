@@ -64,11 +64,11 @@ const createEdgesFromEnvironmentToDeployments = (
     }));
 
 const createEdgesFromDeploymentsToResources = (relationships: Relationships) =>
-  relationships.map((resource) => {
+  relationships.nodes.map((resource) => {
     const { parent } = resource;
     if (parent == null) return null;
 
-    const allReleaseJobTriggers = relationships
+    const allReleaseJobTriggers = relationships.nodes
       .flatMap((r) => r.workspace.systems)
       .flatMap((s) => s.environments)
       .flatMap((e) => e.latestActiveReleases)
@@ -93,26 +93,48 @@ const createEdgesFromDeploymentsToResources = (relationships: Relationships) =>
   });
 
 export const getEdges = (relationships: Relationships) => {
-  const resourceToEnvEdges = relationships.flatMap((r) =>
+  const resourceToEnvEdges = relationships.nodes.flatMap((r) =>
     createEdgesFromResourceToEnvironments(
       r,
       r.workspace.systems.flatMap((s) => s.environments),
     ),
   );
-  const environmentToDeploymentEdges = relationships.flatMap((r) =>
+  const environmentToDeploymentEdges = relationships.nodes.flatMap((r) =>
     r.workspace.systems.flatMap((s) =>
       createEdgesFromEnvironmentToDeployments(s.environments, s.deployments),
     ),
   );
-  const providerEdges = relationships.flatMap((r) =>
+  const providerEdges = relationships.nodes.flatMap((r) =>
     r.provider != null ? [createEdgeFromProviderToResource(r.provider, r)] : [],
   );
   const deploymentEdges = createEdgesFromDeploymentsToResources(relationships);
+
+  const { resource } = relationships;
+
+  const fromEdges = relationships.associations.from.map((r) => ({
+    id: `${r.resource.id}-${resource.id}`,
+    source: r.resource.id,
+    target: resource.id,
+    style: { stroke: colors.neutral[800] },
+    markerEnd,
+    label: r.type,
+  }));
+
+  const toEdges = relationships.associations.to.map((r) => ({
+    id: `${resource.id}-${r.resource.id}`,
+    source: resource.id,
+    target: r.resource.id,
+    style: { stroke: colors.neutral[800] },
+    markerEnd,
+    label: r.type,
+  }));
 
   return [
     ...resourceToEnvEdges,
     ...environmentToDeploymentEdges,
     ...providerEdges,
     ...deploymentEdges,
+    ...fromEdges,
+    ...toEdges,
   ].filter(isPresent);
 };
