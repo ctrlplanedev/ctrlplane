@@ -38,7 +38,7 @@
     "murmurhash": "^2.0.1",
     "redis": "^4.6.15",
     "semver": "^7.6.2",
-    "ts-is-present": "^1.2.2",
+    "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -10,7 +10,7 @@ export const env = createEnv({
     CTRLPLANE_API_KEY: z.string(),
     CTRLPLANE_WORKSPACE_ID: z.string().uuid(),
     CTRLPLANE_SCANNER_NAME: z.string().default("terraform-cloud-scanner"),
-    CTRLPLANE_WORKSPACE_TARGET_NAME: z
+    CTRLPLANE_WORKSPACE_RESOURCE_NAME: z
       .string()
       .default("tfc-{{ workspace.attributes.name }}"),
 
