@@ -25,7 +25,7 @@ vi.mock("../config.js", () => ({
     CTRLPLANE_API_URL: "https://mock.ctrlplane.url",
     CTRLPLANE_API_KEY: "mock-api-key",
     CTRLPLANE_WORKSPACE_ID: "36427c59-e2bd-4b3f-bf54-54404ef6aa0e",
-    CTRLPLANE_WORKSPACE_TARGET_NAME: "mock-workspace-target-name",
+    CTRLPLANE_WORKSPACE_RESOURCE_NAME: "mock-workspace-resource-name",
     CTRLPLANE_SCANNER_NAME: "mock-scanner-name",
     CRON_ENABLED: false,
     CRON_TIME: "*/5 * * * *",
@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 describe("Scanner Module", () => {
-  it("should successfully scan and register targets", async () => {
+  it("should successfully scan and register resources", async () => {
     vi.spyOn(env, "TFE_ORGANIZATION", "get").mockReturnValue("mock-org");
     vi.spyOn(env, "CTRLPLANE_WORKSPACE_ID", "get").mockReturnValue(
       "36427c59-e2bd-4b3f-bf54-54404ef6aa0e",
@@ -46,7 +46,7 @@ describe("Scanner Module", () => {
     vi.spyOn(env, "CTRLPLANE_SCANNER_NAME", "get").mockReturnValue(
       "mock-scanner",
     );
-    vi.spyOn(env, "CTRLPLANE_WORKSPACE_TARGET_NAME", "get").mockReturnValue(
+    vi.spyOn(env, "CTRLPLANE_WORKSPACE_RESOURCE_NAME", "get").mockReturnValue(
       "{{workspace.attributes.name}}",
     );
 
@@ -119,14 +119,14 @@ describe("Scanner Module", () => {
     expect(listVariables).toHaveBeenCalledWith("workspace-1");
 
     expect(patchMock).toHaveBeenCalledWith(
-      "/v1/target-providers/{providerId}/set",
+      "/v1/resource-providers/{providerId}/set",
       expect.objectContaining({
         body: {
-          targets: [
+          resources: [
             {
               version: "terraform/v1",
               kind: "Workspace",
-              name: "mock-workspace-target-name",
+              name: "mock-workspace-resource-name",
               identifier: "workspace-1",
               config: {
                 workspaceId: "workspace-1",
@@ -158,7 +158,9 @@ describe("Scanner Module", () => {
       }),
     );
 
-    expect(logger.info).toHaveBeenCalledWith("Successfully registered targets");
+    expect(logger.info).toHaveBeenCalledWith(
+      "Successfully registered resources",
+    );
   });
 
   it("should handle scan errors gracefully", async () => {

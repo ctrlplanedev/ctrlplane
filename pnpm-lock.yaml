@@ -42,6 +42,9 @@ catalogs:
     tailwindcss:
       specifier: ^3.4.11
       version: 3.4.13
+    ts-is-present:
+      specifier: ^1.2.2
+      version: 1.2.2
     tsx:
       specifier: ^4.19.1
       version: 4.19.1
@@ -311,7 +314,7 @@ importers:
         specifier: ^4.17.21
         version: 4.17.21
       ts-is-present:
-        specifier: ^1.2.2
+        specifier: 'catalog:'
         version: 1.2.2
       zod:
         specifier: 'catalog:'
@@ -643,7 +646,7 @@ importers:
         specifier: ^3.1.0
         version: 3.1.0(tailwindcss@3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.6.3)))
       ts-is-present:
-        specifier: ^1.2.2
+        specifier: 'catalog:'
         version: 1.2.2
       uuid:
         specifier: ^10.0.0
@@ -904,6 +907,9 @@ importers:
       p-retry:
         specifier: ^6.2.0
         version: 6.2.1
+      ts-is-present:
+        specifier: 'catalog:'
+        version: 1.2.2
       zod:
         specifier: 'catalog:'
         version: 3.23.8
@@ -1218,7 +1224,7 @@ importers:
         specifier: ^7.6.2
         version: 7.6.3
       ts-is-present:
-        specifier: ^1.2.2
+        specifier: 'catalog:'
         version: 1.2.2
       zod:
         specifier: 'catalog:'
