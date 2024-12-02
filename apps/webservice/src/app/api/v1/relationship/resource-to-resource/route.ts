@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 
 import { authn } from "../../auth";
@@ -21,48 +21,29 @@ export const POST = request()
     try {
       const { body, db } = ctx;
 
-      const fromResource = await db
-        .select()
-        .from(SCHEMA.resource)
-        .where(
-          and(
-            eq(SCHEMA.resource.identifier, body.fromIdentifier),
-            eq(SCHEMA.resource.workspaceId, body.workspaceId),
-            isNull(SCHEMA.resource.deletedAt),
-          ),
-        )
-        .then(takeFirstOrNull);
-      if (!fromResource)
-        return Response.json(
-          { error: `${body.fromIdentifier} not found` },
-          { status: 404 },
-        );
+      const inWorkspace = eq(SCHEMA.resource.workspaceId, body.workspaceId);
+      const fromResource = await db.query.resource.findFirst({
+        where: and(
+          inWorkspace,
+          eq(SCHEMA.resource.identifier, body.fromIdentifier),
+        ),
+      });
 
-      const toResource = await db
-        .select()
-        .from(SCHEMA.resource)
-        .where(
-          and(
-            eq(SCHEMA.resource.identifier, body.toIdentifier),
-            eq(SCHEMA.resource.workspaceId, body.workspaceId),
-            isNull(SCHEMA.resource.deletedAt),
-          ),
-        )
-        .then(takeFirstOrNull);
-      if (!toResource)
-        return Response.json(
-          { error: `${body.toIdentifier} not found` },
-          { status: 404 },
-        );
+      const toResource = await db.query.resource.findFirst({
+        where: and(
+          inWorkspace,
+          eq(SCHEMA.resource.identifier, body.toIdentifier),
+        ),
+      });
 
-      await db.insert(SCHEMA.resourceRelationship).values({
-        sourceId: fromResource.id,
-        targetId: toResource.id,
-        type: body.type,
+      const relationship = await db.insert(SCHEMA.resourceRelationship).values({
+        ...body,
+        fromIdentifier: fromResource?.identifier ?? body.fromIdentifier,
+        toIdentifier: toResource?.identifier ?? body.toIdentifier,
       });
 
       return Response.json(
-        { message: "Relationship created" },
+        { message: "Relationship created", relationship },
         { status: 200 },
       );
     } catch (error) {

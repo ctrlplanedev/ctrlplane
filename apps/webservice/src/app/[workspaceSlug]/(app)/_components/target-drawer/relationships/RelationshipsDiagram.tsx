@@ -44,23 +44,25 @@ const TargetDiagram: React.FC<{
 }> = ({ relationships, targets, targetId }) => {
   const [nodes, _, onNodesChange] = useNodesState(
     targets.map((t) => ({
-      id: t.id,
+      id: t.identifier,
       type: "target",
       position: { x: 100, y: 100 },
       data: {
         ...t,
         targetId,
         isOrphanNode: !relationships.some(
-          (r) => r.targetId === t.id || r.sourceId === t.id,
+          (r) =>
+            r.toIdentifier === t.identifier ||
+            r.fromIdentifier === t.identifier,
         ),
       },
     })),
   );
   const [edges, __, onEdgesChange] = useEdgesState(
     relationships.map((t) => ({
-      id: `${t.sourceId}-${t.targetId}`,
-      source: t.sourceId,
-      target: t.targetId,
+      id: `${t.fromIdentifier}-${t.toIdentifier}`,
+      source: t.fromIdentifier,
+      target: t.toIdentifier,
       markerEnd: { type: MarkerType.Arrow, color: colors.neutral[700] },
       style: { stroke: colors.neutral[700] },
       label: t.type,

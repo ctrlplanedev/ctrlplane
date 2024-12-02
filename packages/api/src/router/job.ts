@@ -348,6 +348,13 @@ const releaseJobTriggerRouter = createTRPCRouter({
         canUser.perform(Permission.JobGet).on({ type: "job", id: input }),
     })
     .query(async ({ ctx, input }) => {
+      const rel = await ctx.db
+        .select()
+        .from(release)
+        .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+        .innerJoin(system, eq(deployment.systemId, system.id))
+        .then(takeFirst);
+
       const deploymentName = ctx.db
         .select({
           deploymentName: deployment.name,
@@ -387,17 +394,17 @@ const releaseJobTriggerRouter = createTRPCRouter({
           WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
             -- Base case: start with the given ID and no relationship
             SELECT 
-                ${data.resource.id}::uuid AS id, 
-                ARRAY[${data.resource.id}::uuid] AS visited,
+                ${data.resource.identifier}::uuid AS identifier, 
+                ARRAY[${data.resource.identifier}::uuid] AS visited,
                 NULL::uuid AS tr_id,
-                NULL::uuid AS source_id,
-                NULL::uuid AS target_id,
+                NULL::uuid AS source_identifier,
+                NULL::uuid AS target_identifier,
                 NULL::resource_relationship_type AS type
             UNION ALL
             -- Recursive case: find all relationships connected to the current set of IDs
             SELECT
                 CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
+                    WHEN tr.source_identifier = rr.identifier THEN tr.target_identifier
                     ELSE tr.source_id
                 END AS id,
                 rr.visited || CASE
@@ -405,19 +412,19 @@ const releaseJobTriggerRouter = createTRPCRouter({
                     ELSE tr.source_id
                 END,
                 tr.id AS tr_id,
-                tr.source_id,
-                tr.target_id,
+                tr.source_identifier,
+                tr.target_identifier,
                 tr.type
             FROM reachable_relationships rr
-            JOIN resource_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
+            JOIN resource_relationship tr ON tr.source_identifier = rr.identifier OR tr.target_identifier = rr.identifier
             WHERE
                 NOT CASE
                     WHEN tr.source_id = rr.id THEN tr.target_id
                     ELSE tr.source_id
                 END = ANY(rr.visited)                
-                AND tr.target_id != ${data.resource.id}
+                AND tr.target_identifier != ${data.resource.identifier}
         )
-        SELECT DISTINCT tr_id AS id, source_id, target_id, type
+        SELECT DISTINCT tr_id AS id, source_identifier, target_identifier, type
         FROM reachable_relationships
         WHERE tr_id IS NOT NULL;
         `,
@@ -427,20 +434,30 @@ const releaseJobTriggerRouter = createTRPCRouter({
       // so we need to cast them here
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
-        sourceId: String(r.source_id),
-        targetId: String(r.target_id),
+        workspaceId: rel.system.workspaceId,
+        fromIdentifier: String(r.source_identifier),
+        toIdentifier: String(r.target_identifier),
         type: r.type as "associated_with" | "depends_on",
       }));
 
-      const sourceIds = relationships.map((r) => r.sourceId);
-      const targetIds = relationships.map((r) => r.targetId);
+      const fromIdentifiers = relationships.map((r) => r.fromIdentifier);
+      const toIdentifiers = relationships.map((r) => r.toIdentifier);
 
-      const allIds = _.uniq([...sourceIds, ...targetIds, data.resource.id]);
+      const allIdentifiers = _.uniq([
+        ...fromIdentifiers,
+        ...toIdentifiers,
+        data.resource.identifier,
+      ]);
 
       const resources = await ctx.db
         .select()
         .from(resource)
-        .where(and(inArray(resource.id, allIds), isNull(resource.deletedAt)));
+        .where(
+          and(
+            inArray(resource.identifier, allIdentifiers),
+            isNull(resource.deletedAt),
+          ),
+        );
 
       const releaseDependenciesWithResourcePromises = releaseDependencies.map(
         async (rd) => {

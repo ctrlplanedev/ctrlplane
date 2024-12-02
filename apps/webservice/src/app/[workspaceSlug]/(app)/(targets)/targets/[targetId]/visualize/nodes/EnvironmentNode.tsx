@@ -9,8 +9,8 @@ import { Handle, Position } from "reactflow";
 import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment-drawer/EnvironmentDrawer";
 
 type Environment = NonNullable<
-  RouterOutputs["resource"]["relationships"][number]
->["workspace"]["systems"][number]["environments"][number];
+  RouterOutputs["resource"]["relationships"]
+>["nodes"][number]["workspace"]["systems"][number]["environments"][number];
 
 type EnvironmentNodeProps = NodeProps<{
   label: string;

@@ -50,39 +50,39 @@ const resourceRelations = createTRPCRouter({
 
       const results = await ctx.db.execute(
         sql`
-          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
+          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_identifier, target_identifier, type) AS (
             -- Base case: start with the given ID and no relationship
             SELECT 
                 ${input}::uuid AS id, 
                 ARRAY[${input}::uuid] AS visited,
                 NULL::uuid AS tr_id,
-                NULL::uuid AS source_id,
-                NULL::uuid AS target_id,
+                NULL::uuid AS source_identifier,
+                NULL::uuid AS target_identifier,
                 NULL::resource_relationship_type AS type
             UNION ALL
             -- Recursive case: find all relationships connected to the current set of IDs
             SELECT
                 CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
-                    ELSE tr.source_id
+                    WHEN tr.source_identifier = rr.id THEN tr.target_identifier
+                    ELSE tr.source_identifier
                 END AS id,
                 rr.visited || CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
-                    ELSE tr.source_id
+                    WHEN tr.source_identifier = rr.id THEN tr.target_identifier
+                    ELSE tr.source_identifier
                 END,
                 tr.id AS tr_id,
-                tr.source_id,
-                tr.target_id,
+                tr.source_identifier,
+                tr.target_identifier,
                 tr.type
             FROM reachable_relationships rr
             JOIN resource_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
             WHERE
                 NOT CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
-                    ELSE tr.source_id
+                    WHEN tr.source_identifier = rr.id THEN tr.target_identifier
+                    ELSE tr.source_identifier
                 END = ANY(rr.visited)
         )
-        SELECT DISTINCT tr_id AS id, source_id, target_id, type
+        SELECT DISTINCT tr_id AS id, source_identifier, target_identifier, type
         FROM reachable_relationships
         WHERE tr_id IS NOT NULL;
         `,
@@ -92,20 +92,30 @@ const resourceRelations = createTRPCRouter({
       // so we need to cast them here
       const relationships = results.rows.map((r) => ({
         id: String(r.id),
-        sourceId: String(r.source_id),
-        targetId: String(r.target_id),
+        fromIdentifier: String(r.source_identifier),
+        toIdentifier: String(r.target_identifier),
+        workspaceId: String(r.workspace_id),
         type: r.type as "associated_with" | "depends_on",
       }));
 
-      const sourceIds = relationships.map((r) => r.sourceId);
-      const targetIds = relationships.map((r) => r.targetId);
+      const fromIdentifiers = relationships.map((r) => r.fromIdentifier);
+      const toIdentifiers = relationships.map((r) => r.toIdentifier);
 
-      const allIds = _.uniq([...sourceIds, ...targetIds, input]);
+      const allIdentifiers = _.uniq([
+        ...fromIdentifiers,
+        ...toIdentifiers,
+        input,
+      ]);
 
       const resources = await ctx.db
         .select()
         .from(schema.resource)
-        .where(and(inArray(schema.resource.id, allIds), isNotDeleted));
+        .where(
+          and(
+            inArray(schema.resource.identifier, allIdentifiers),
+            isNotDeleted,
+          ),
+        );
 
       return { relationships, resources };
     }),
@@ -429,7 +439,89 @@ export const resourceRouter = createTRPCRouter({
           .on({ type: "resource", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) => getNodesRecursively(ctx.db, input)),
+    .query(async ({ ctx, input }) => {
+      const resource = await ctx.db.query.resource.findFirst({
+        where: eq(schema.resource.id, input),
+      });
+      if (resource == null) return null;
+      const childrenNodes = await getNodesRecursively(ctx.db, input);
+
+      const fromNodesPromises = ctx.db
+        .select()
+        .from(schema.resourceRelationship)
+        .innerJoin(
+          schema.resource,
+          eq(
+            schema.resourceRelationship.fromIdentifier,
+            schema.resource.identifier,
+          ),
+        )
+        .where(
+          and(
+            eq(schema.resourceRelationship.workspaceId, resource.workspaceId),
+            eq(schema.resourceRelationship.toIdentifier, resource.identifier),
+          ),
+        )
+        .then((rows) =>
+          rows.map(async (row) => ({
+            ...row,
+            node: await getNodeDataForResource(ctx.db, row.resource.id),
+          })),
+        )
+        .then((promises) => Promise.all(promises));
+
+      const toNodesPromises = ctx.db
+        .select()
+        .from(schema.resourceRelationship)
+        .innerJoin(
+          schema.resource,
+          eq(
+            schema.resourceRelationship.toIdentifier,
+            schema.resource.identifier,
+          ),
+        )
+        .where(
+          and(
+            eq(schema.resourceRelationship.workspaceId, resource.workspaceId),
+            eq(schema.resourceRelationship.fromIdentifier, resource.identifier),
+          ),
+        )
+        .then((rows) =>
+          rows.map(async (row) => ({
+            ...row,
+            node: await getNodeDataForResource(ctx.db, row.resource.id),
+          })),
+        )
+        .then((promises) => Promise.all(promises));
+
+      const [fromNodes, toNodes] = await Promise.all([
+        fromNodesPromises,
+        toNodesPromises,
+      ]);
+
+      return {
+        resource,
+        nodes: [
+          ...childrenNodes,
+          ...fromNodes.map((n) => n.node),
+          ...toNodes.map((n) => n.node),
+        ].filter(isPresent),
+        associations: {
+          from: fromNodes
+            .filter((n) => n.node != null)
+            .map((n) => ({
+              ...n.resource_relationship,
+              resource: n.node!,
+            })),
+          to: toNodes
+            .filter((n) => n.node != null)
+            .map((n) => ({
+              ...n.resource_relationship,
+              resource: n.node!,
+            })),
+        },
+      };
+    }),
 
   byWorkspaceId: createTRPCRouter({
     list: protectedProcedure

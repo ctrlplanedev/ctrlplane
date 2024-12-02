@@ -73,10 +73,12 @@ const getUndirectedGraph = (
   const graph: Record<string, Set<string>> = {};
 
   for (const relationship of relationships) {
-    if (!graph[relationship.sourceId]) graph[relationship.sourceId] = new Set();
-    if (!graph[relationship.targetId]) graph[relationship.targetId] = new Set();
-    graph[relationship.sourceId]!.add(relationship.targetId);
-    graph[relationship.targetId]!.add(relationship.sourceId);
+    if (!graph[relationship.fromIdentifier])
+      graph[relationship.fromIdentifier] = new Set();
+    if (!graph[relationship.toIdentifier])
+      graph[relationship.toIdentifier] = new Set();
+    graph[relationship.fromIdentifier]!.add(relationship.toIdentifier);
+    graph[relationship.toIdentifier]!.add(relationship.fromIdentifier);
   }
   return Object.fromEntries(
     Object.entries(graph).map(([key, value]) => [key, Array.from(value)]),
@@ -101,23 +103,25 @@ const TargetDiagramDependencies: React.FC<DependenciesDiagramProps> = ({
 }) => {
   const [nodes, _, onNodesChange] = useNodesState(
     targets.map((t) => ({
-      id: t.id,
+      id: t.identifier,
       type: "target",
       position: { x: 100, y: 100 },
       data: {
         ...t,
         targetId,
         isOrphanNode: !relationships.some(
-          (r) => r.targetId === t.id || r.sourceId === t.id,
+          (r) =>
+            r.toIdentifier === t.identifier ||
+            r.fromIdentifier === t.identifier,
         ),
       },
     })),
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(
     relationships.map((t) => ({
-      id: `${t.sourceId}-${t.targetId}`,
-      source: t.sourceId,
-      target: t.targetId,
+      id: `${t.fromIdentifier}-${t.toIdentifier}`,
+      source: t.fromIdentifier,
+      target: t.toIdentifier,
       markerEnd: {
         type: MarkerType.Arrow,
         color: colors.neutral[700],
@@ -135,9 +139,9 @@ const TargetDiagramDependencies: React.FC<DependenciesDiagramProps> = ({
   const resetEdges = () =>
     setEdges(
       relationships.map((t) => ({
-        id: `${t.sourceId}-${t.targetId}`,
-        source: t.sourceId,
-        target: t.targetId,
+        id: `${t.fromIdentifier}-${t.toIdentifier}`,
+        source: t.fromIdentifier,
+        target: t.toIdentifier,
         markerEnd: {
           type: MarkerType.Arrow,
           color: colors.neutral[700],
@@ -174,14 +178,14 @@ const TargetDiagramDependencies: React.FC<DependenciesDiagramProps> = ({
     const highlightedEdges = getHighlightedEdgesFromPath(nodesInPath);
     const newEdges = relationships.map((t) => {
       const isHighlighted = highlightedEdges.includes(
-        `${t.sourceId}-${t.targetId}`,
+        `${t.fromIdentifier}-${t.toIdentifier}`,
       );
       const color = isHighlighted ? colors.blue[500] : colors.neutral[700];
 
       return {
-        id: `${t.sourceId}-${t.targetId}`,
-        source: t.sourceId,
-        target: t.targetId,
+        id: `${t.fromIdentifier}-${t.toIdentifier}`,
+        source: t.fromIdentifier,
+        target: t.toIdentifier,
         markerEnd: { type: MarkerType.Arrow, color },
         style: { stroke: color },
         label: t.type,
