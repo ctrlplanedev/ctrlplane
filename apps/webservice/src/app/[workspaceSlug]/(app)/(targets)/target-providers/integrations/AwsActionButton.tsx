@@ -39,11 +39,11 @@ export const AwsActionButton: React.FC<AwsActionButtonProps> = ({
       onClick={async () =>
         createAwsRole
           .mutateAsync(workspace.id)
-          .then(() => toast.success(`AWS role arn created`))
+          .then(() => toast.success(`AWS role ARN created`))
           .then(() => router.refresh())
-          .catch((error) => {
-            toast.error(`Failed to create role arn. ${error.message}`);
-          })
+          .catch((error) =>
+            toast.error(`Failed to create role ARN. ${error.message}`),
+          )
       }
     >
       Enable

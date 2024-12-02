@@ -55,7 +55,6 @@ export const PATCH = request()
     { body: z.infer<typeof bodySchema> },
     { params: { providerId: string } }
   >(async (ctx, { params }) => {
-    console.log({ ctx });
     const { body } = ctx;
 
     const query = await db

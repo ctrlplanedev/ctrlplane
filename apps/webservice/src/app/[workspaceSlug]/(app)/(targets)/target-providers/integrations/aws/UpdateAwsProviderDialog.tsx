@@ -38,7 +38,7 @@ import { createAwsSchema } from "./AwsDialog";
 
 const formSchema = createAwsSchema.and(
   z.object({
-    repeatSeconds: z.number(),
+    repeatSeconds: z.number().min(0),
   }),
 );
 
@@ -151,6 +151,7 @@ export const UpdateAwsProviderDialog: React.FC<{
                   type="button"
                   onClick={handleCopy}
                   className="absolute right-2 h-4 w-4 bg-neutral-950 backdrop-blur-sm transition-all hover:bg-neutral-950 focus-visible:ring-0"
+                  aria-label="Copy AWS Role ARN"
                 >
                   {isCopied ? (
                     <IconCheck className="h-4 w-4 bg-neutral-950 text-green-500" />
@@ -200,6 +201,7 @@ export const UpdateAwsProviderDialog: React.FC<{
                               size="icon"
                               className="absolute right-2 h-4 w-4 bg-neutral-950 hover:bg-neutral-950"
                               onClick={() => remove(index)}
+                              aria-label="Remove AWS Account Role ARN"
                             >
                               <IconX className="h-4 w-4" />
                             </Button>

@@ -94,44 +94,42 @@ const createResourceScanWorker = (
 
 export const createGoogleResourceScanWorker = () =>
   createResourceScanWorker(async (rp) => {
-    const resources: InsertResource[] = [];
-
-    if (rp.resource_provider_google != null) {
-      log.info("Found Google config, scanning for GKE resources");
-      try {
-        const gkeResources = await getGkeResources(
-          rp.workspace,
-          rp.resource_provider_google,
-        );
-        resources.push(...gkeResources);
-      } catch (error: any) {
-        log.error(`Error scanning GKE resources: ${error.message}`, {
-          error,
-        });
-      }
+    if (rp.resource_provider_google == null) {
+      log.info(
+        `No Google provider found for resource provider ${rp.resource_provider.id}, skipping scan`,
+      );
+      return [];
     }
+
+    const resources: InsertResource[] = [];
+    log.info("Found Google config, scanning for GKE resources");
+
+    const gkeResources = await getGkeResources(
+      rp.workspace,
+      rp.resource_provider_google,
+    );
+    resources.push(...gkeResources);
 
     return resources;
   });
 
 export const createAwsResourceScanWorker = () =>
   createResourceScanWorker(async (rp) => {
-    const resources: InsertResource[] = [];
-
-    if (rp.resource_provider_aws != null) {
-      log.info("Found AWS config, scanning for EKS resources");
-      try {
-        const eksResources = await getEksResources(
-          rp.workspace,
-          rp.resource_provider_aws,
-        );
-        resources.push(...eksResources);
-      } catch (error: any) {
-        log.error(`Error scanning EKS resources: ${error.message}`, {
-          error,
-        });
-      }
+    if (rp.resource_provider_aws == null) {
+      log.info(
+        `No AWS provider found for resource provider ${rp.resource_provider.id}, skipping scan`,
+      );
+      return [];
     }
+
+    const resources: InsertResource[] = [];
+    log.info("Found AWS config, scanning for EKS resources");
+
+    const eksResources = await getEksResources(
+      rp.workspace,
+      rp.resource_provider_aws,
+    );
+    resources.push(...eksResources);
 
     return resources;
   });

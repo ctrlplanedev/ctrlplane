@@ -24,7 +24,17 @@ const convertEksClusterToKubernetesResource = (
   cluster: Cluster,
 ): KubernetesClusterAPIV1 => {
   const region = cluster.endpoint?.split(".")[2];
-  const appUrl = `https://console.aws.amazon.com/eks/home?region=${region}#/clusters/${cluster.name}`;
+
+  const partition =
+    cluster.arn?.split(":")[1] ??
+    (region?.startsWith("us-gov-") ? "aws-us-gov" : "aws");
+
+  const appUrl = `https://${
+    partition === "aws-us-gov"
+      ? `console.${region}.${partition}`
+      : "console.aws.amazon"
+  }.com/eks/home?region=${region}#/clusters/${cluster.name}`;
+
   const version = cluster.version!;
   const [major, minor] = version.split(".");
 
