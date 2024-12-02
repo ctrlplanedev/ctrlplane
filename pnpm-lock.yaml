@@ -1224,7 +1224,7 @@ importers:
         specifier: ^5.4.1
         version: 5.4.1
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       ms:
         specifier: ^2.1.3

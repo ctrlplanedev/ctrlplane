@@ -33,7 +33,7 @@
     "bullmq": "catalog:",
     "date-fns": "catalog:",
     "ioredis": "^5.4.1",
-    "lodash": "^4.17.21",
+    "lodash": "catalog:",
     "ms": "^2.1.3",
     "murmurhash": "^2.0.1",
     "redis": "^4.6.15",
