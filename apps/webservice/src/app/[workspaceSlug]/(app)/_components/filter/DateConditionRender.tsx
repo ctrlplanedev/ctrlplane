@@ -82,7 +82,7 @@ export const DateConditionRender: React.FC<DateConditionRenderProps> = ({
       <div className="col-span-7">
         <DateTimePicker
           value={toZonedDateTime(new Date(value))}
-          onChange={setDate}
+          onChange={(value) => value != null && setDate(value)}
           aria-label={type}
           variant="filter"
         />

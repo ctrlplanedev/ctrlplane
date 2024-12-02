@@ -1,4 +1,3 @@
-/* eslint-disable  @typescript-eslint/unbound-method */
 "use client";
 
 import type { DateValue } from "react-aria";
@@ -71,7 +70,7 @@ const DateTimePicker = React.forwardRef<
               <TimeField
                 aria-label="time-field"
                 value={state.timeValue}
-                onChange={state.setTimeValue}
+                onChange={(value) => value != null && state.setTimeValue(value)}
               />
             )}
           </div>
