@@ -34,7 +34,7 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
   const { filter, setFilter } = useFilter<JobCondition>();
   const { setJobId } = useJobDrawer();
   const allReleaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
-    { workspaceId },
+    { workspaceId, limit: 0 },
     { refetchInterval: 60_000, placeholderData: (prev) => prev },
   );
 

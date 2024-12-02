@@ -1,7 +1,8 @@
 import type {
   ComparisonCondition,
-  ResourceCondition,
-} from "@ctrlplane/validators/resources";
+  JobCondition,
+} from "@ctrlplane/validators/jobs";
+import type React from "react";
 import {
   IconChevronDown,
   IconCopy,
@@ -32,29 +33,29 @@ import {
 } from "@ctrlplane/ui/select";
 import {
   ColumnOperator,
+  ComparisonOperator,
   DateOperator,
   FilterType,
+  MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
-  ResourceFilterType,
-  ResourceOperator,
-} from "@ctrlplane/validators/resources";
+  JobFilterType,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
-import { TargetConditionRender } from "./TargetConditionRender";
+import type { JobConditionRenderProps } from "./job-condition-props";
+import { JobConditionRender } from "./JobConditionRender";
 
-export const ComparisonConditionRender: React.FC<
-  TargetConditionRenderProps<ComparisonCondition>
+export const RunbookJobComparisonConditionRender: React.FC<
+  JobConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
-  const setOperator = (operator: ResourceOperator.And | ResourceOperator.Or) =>
-    onChange({ ...condition, operator });
+  const setOperator = (
+    operator: ComparisonOperator.And | ComparisonOperator.Or,
+  ) => onChange({ ...condition, operator });
 
-  const updateCondition = (
-    index: number,
-    changedCondition: ResourceCondition,
-  ) =>
+  const updateCondition = (index: number, changedCondition: JobCondition) =>
     onChange({
       ...condition,
       conditions: condition.conditions.map((c, i) =>
@@ -62,7 +63,7 @@ export const ComparisonConditionRender: React.FC<
       ),
     });
 
-  const addCondition = (changedCondition: ResourceCondition) =>
+  const addCondition = (changedCondition: JobCondition) =>
     onChange({
       ...condition,
       conditions: [...condition.conditions, changedCondition],
@@ -78,9 +79,11 @@ export const ComparisonConditionRender: React.FC<
     const cond = condition.conditions[index];
     if (!cond) return;
 
+    if (!doesConvertingToComparisonRespectMaxDepth(depth + 1, cond)) return;
+
     const newComparisonCondition: ComparisonCondition = {
-      type: ResourceFilterType.Comparison,
-      operator: ResourceOperator.And,
+      type: FilterType.Comparison,
+      operator: ComparisonOperator.And,
       conditions: [cond],
     };
 
@@ -114,8 +117,8 @@ export const ComparisonConditionRender: React.FC<
     }
 
     const newNotComparisonCondition: ComparisonCondition = {
-      type: ResourceFilterType.Comparison,
-      operator: ResourceOperator.And,
+      type: FilterType.Comparison,
+      operator: ComparisonOperator.And,
       not: true,
       conditions: [cond],
     };
@@ -128,6 +131,8 @@ export const ComparisonConditionRender: React.FC<
     };
     onChange(newCondition);
   };
+
+  const clear = () => onChange({ ...condition, conditions: [] });
 
   const not = condition.not ?? false;
 
@@ -172,13 +177,15 @@ export const ComparisonConditionRender: React.FC<
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      <SelectItem value={ResourceOperator.And}>And</SelectItem>
-                      <SelectItem value={ResourceOperator.Or}>Or</SelectItem>
+                      <SelectItem value={ComparisonOperator.And}>
+                        And
+                      </SelectItem>
+                      <SelectItem value={ComparisonOperator.Or}>Or</SelectItem>
                     </SelectGroup>
                   </SelectContent>
                 </Select>
               )}
-              <TargetConditionRender
+              <JobConditionRender
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}
@@ -246,124 +253,96 @@ export const ComparisonConditionRender: React.FC<
         ))}
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="w-max focus-visible:outline-none"
-          asChild
-        >
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(
-              "flex items-center gap-1 bg-inherit px-2 text-muted-foreground hover:bg-neutral-800/50",
-              depth === 0 && "border-neutral-800/70",
-            )}
+      <div className="flex">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="w-max focus-visible:outline-none"
+            asChild
           >
-            <IconPlus className="h-4 w-4" /> Add Condition{" "}
-            <IconChevronDown className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="text-muted-foreground">
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ResourceFilterType.Metadata,
-                  operator: ResourceOperator.Equals,
-                  key: "",
-                  value: "",
-                })
-              }
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(
+                "flex items-center gap-1 bg-inherit px-2 text-muted-foreground hover:bg-neutral-800/50",
+                depth === 0 && "border-neutral-800/70",
+              )}
             >
-              Metadata
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ResourceFilterType.Kind,
-                  operator: ResourceOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Kind
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ResourceFilterType.Name,
-                  operator: ColumnOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Name
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ResourceFilterType.Identifier,
-                  operator: ColumnOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Identifier
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: ResourceFilterType.Provider,
-                  operator: ResourceOperator.Equals,
-                  value: "",
-                })
-              }
-            >
-              Provider
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                addCondition({
-                  type: FilterType.CreatedAt,
-                  operator: DateOperator.Before,
-                  value: new Date().toISOString(),
-                })
-              }
-            >
-              Created at
-            </DropdownMenuItem>
-
-            {depth < 2 && (
+              <IconPlus className="h-4 w-4" /> Add Condition{" "}
+              <IconChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="text-muted-foreground">
+            <DropdownMenuGroup>
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: ResourceFilterType.Comparison,
-                    operator: ResourceOperator.And,
-                    conditions: [],
-                    not: false,
+                    type: FilterType.Metadata,
+                    operator: MetadataOperator.Equals,
+                    key: "",
+                    value: "",
                   })
                 }
               >
-                Filter group
+                Metadata
               </DropdownMenuItem>
-            )}
-            {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: ResourceFilterType.Comparison,
-                    operator: ResourceOperator.And,
-                    not: true,
-                    conditions: [],
+                    type: FilterType.CreatedAt,
+                    operator: DateOperator.Before,
+                    value: new Date().toISOString(),
                   })
                 }
               >
-                Not group
+                Created at
               </DropdownMenuItem>
-            )}
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
+              <DropdownMenuItem
+                onClick={() =>
+                  addCondition({
+                    type: JobFilterType.Status,
+                    operator: ColumnOperator.Equals,
+                    value: JobStatus.Completed,
+                  })
+                }
+              >
+                Status
+              </DropdownMenuItem>
+              {depth < 2 && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    addCondition({
+                      type: FilterType.Comparison,
+                      operator: ComparisonOperator.And,
+                      conditions: [],
+                      not: false,
+                    })
+                  }
+                >
+                  Filter group
+                </DropdownMenuItem>
+              )}
+              {depth < 2 && (
+                <DropdownMenuItem
+                  onClick={() =>
+                    addCondition({
+                      type: FilterType.Comparison,
+                      operator: ComparisonOperator.And,
+                      not: true,
+                      conditions: [],
+                    })
+                  }
+                >
+                  Not group
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="flex-grow" />
+        <Button variant="outline" type="button" onClick={clear}>
+          Clear
+        </Button>
+      </div>
     </div>
   );
 };

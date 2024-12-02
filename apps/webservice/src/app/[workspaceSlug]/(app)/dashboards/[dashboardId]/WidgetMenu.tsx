@@ -1,5 +1,8 @@
 "use client";
 
+import { IconX } from "@tabler/icons-react";
+
+import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
 
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
@@ -7,14 +10,24 @@ import { useDashboardContext } from "../DashboardContext";
 import { widgets } from "../widgets";
 
 export const WidgetMenu: React.FC = () => {
-  const { setDroppingItem, editMode } = useDashboardContext();
+  const { setDroppingItem, editMode, setEditMode } = useDashboardContext();
   const { search, setSearch, result } = useMatchSorterWithSearch(
     Object.entries(widgets),
     { keys: ["0", "1.displayName"] },
   );
   if (!editMode) return null;
   return (
-    <div className="z-10 shrink-0 space-y-6 border-b py-6">
+    <div className="fixed bottom-0 right-0 top-[56px] z-10 m-2 w-[400px] space-y-6 rounded-md border bg-background/70 py-6 drop-shadow-2xl backdrop-blur-lg">
+      <div className="absolute right-4 top-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 p-0"
+          onClick={() => setEditMode(false)}
+        >
+          <IconX className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+        </Button>
+      </div>
       <div className="px-6">
         <p className="mb-2 text-sm text-muted-foreground">
           Drag and Drop new widgets onto your dashboard.
@@ -26,9 +39,9 @@ export const WidgetMenu: React.FC = () => {
         />
       </div>
 
-      <div className="flex items-center gap-4 overflow-x-auto px-6">
+      <div className="grid grid-cols-3 gap-2 px-4">
         {result.map(([name, widget]) => {
-          const { ComponentPreview } = widget;
+          const { Icon, displayName } = widget;
           return (
             <div
               key={name}
@@ -48,9 +61,17 @@ export const WidgetMenu: React.FC = () => {
                 setDroppingItem(item);
                 e.dataTransfer.setData("text/plain", "");
               }}
-              className="relative h-[130px] w-[160px] shrink-0 cursor-grab select-none rounded-md border px-4 py-1.5"
+              className="group relative w-full cursor-grab select-none space-y-1"
             >
-              <ComponentPreview />
+              <div className="h-[110px] w-full rounded-md border group-hover:bg-neutral-500/5">
+                <div className="flex h-full items-center justify-center">
+                  <Icon />
+                </div>
+              </div>
+
+              <div className="text-center text-xs text-muted-foreground group-hover:text-white">
+                {displayName}
+              </div>
             </div>
           );
         })}

@@ -2,7 +2,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, count, eq, like, or, takeFirst } from "@ctrlplane/db";
+import { and, asc, count, eq, like, takeFirst } from "@ctrlplane/db";
 import {
   createSystem,
   environment,
@@ -26,32 +26,17 @@ export const systemRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
-        filters: z
-          .array(
-            z.object({
-              key: z.enum(["name", "slug"]),
-              value: z.string(),
-            }),
-          )
-          .optional(),
+        query: z.string().optional(),
         limit: z.number().default(500),
         offset: z.number().default(0),
       }),
     )
     .query(({ ctx, input }) => {
       const workspaceIdCheck = eq(system.workspaceId, input.workspaceId);
-      const nameFilters = (input.filters ?? [])
-        .filter((f) => f.key === "name")
-        .map((f) => like(system.name, `%${f.value}%`));
-
-      const slugFilters = (input.filters ?? [])
-        .filter((f) => f.key === "slug")
-        .map((f) => like(system.slug, `%${f.value}%`));
 
       const checks = and(
         workspaceIdCheck,
-        or(...nameFilters),
-        or(...slugFilters),
+        input.query ? like(system.name, `%${input.query}%`) : undefined,
       );
 
       const items = ctx.db

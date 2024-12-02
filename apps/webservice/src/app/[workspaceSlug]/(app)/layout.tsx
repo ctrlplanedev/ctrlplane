@@ -5,6 +5,7 @@ import { auth } from "@ctrlplane/auth";
 import { SidebarInset } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
+import { DeploymentResourceDrawer } from "./_components/deployment-resource-drawer/DeploymentResourceDrawer";
 import { EnvironmentDrawer } from "./_components/environment-drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { JobDrawer } from "./_components/job-drawer/JobDrawer";
@@ -46,7 +47,7 @@ export default async function WorkspaceLayout({
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
       <JobDrawer />
-
+      <DeploymentResourceDrawer />
       <TerminalDrawer />
     </AppSidebarPopoverProvider>
   );

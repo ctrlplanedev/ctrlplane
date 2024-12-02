@@ -7,7 +7,6 @@ import { z } from "zod";
 import {
   and,
   asc,
-  count,
   desc,
   eq,
   inArray,
@@ -29,11 +28,12 @@ import {
   isPassingNoPendingJobsPolicy,
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
-import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { resourceVariables } from "./resource-variables";
+import { resourceViews } from "./resource-views";
 import { resourceMetadataGroupRouter } from "./target-metadata-group";
 import { resourceProviderRouter } from "./target-provider";
 
@@ -109,178 +109,6 @@ const resourceRelations = createTRPCRouter({
 
       return { relationships, resources };
     }),
-});
-
-const resourceViews = createTRPCRouter({
-  create: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceViewCreate)
-          .on({ type: "workspace", id: input.workspaceId }),
-    })
-    .input(schema.createResourceView)
-    .mutation(async ({ ctx, input }) =>
-      ctx.db
-        .insert(schema.resourceView)
-        .values(input)
-        .returning()
-        .then(takeFirst),
-    ),
-
-  update: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceViewUpdate)
-          .on({ type: "resourceView", id: input.id }),
-    })
-    .input(z.object({ id: z.string().uuid(), data: schema.updateResourceView }))
-    .mutation(async ({ ctx, input }) =>
-      ctx.db
-        .update(schema.resourceView)
-        .set(input.data)
-        .where(eq(schema.resourceView.id, input.id))
-        .returning()
-        .then(takeFirst),
-    ),
-
-  delete: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceViewDelete)
-          .on({ type: "resourceView", id: input }),
-    })
-    .input(z.string().uuid())
-    .mutation(async ({ ctx, input }) =>
-      ctx.db
-        .delete(schema.resourceView)
-        .where(eq(schema.resourceView.id, input)),
-    ),
-
-  byId: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceViewGet)
-          .on({ type: "resourceView", id: input }),
-    })
-    .input(z.string().uuid())
-    .query(({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(schema.resourceView)
-        .where(eq(schema.resourceView.id, input))
-        .then(takeFirst),
-    ),
-
-  list: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceViewList)
-          .on({ type: "workspace", id: input }),
-    })
-    .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const views = await ctx.db
-        .select()
-        .from(schema.resourceView)
-        .orderBy(schema.resourceView.name)
-        .where(eq(schema.resourceView.workspaceId, input));
-
-      return Promise.all(
-        views.map(async (view) => {
-          const total = await ctx.db
-            .select({ count: count() })
-            .from(schema.resource)
-            .where(
-              and(
-                schema.resourceMatchesMetadata(ctx.db, view.filter),
-                isNotDeleted,
-              ),
-            )
-            .then(takeFirst)
-            .then((t) => t.count);
-
-          return { ...view, total };
-        }),
-      );
-    }),
-});
-
-const resourceVariables = createTRPCRouter({
-  create: protectedProcedure
-    .input(schema.createResourceVariable)
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.ResourceUpdate)
-          .on({ type: "resource", id: input.resourceId }),
-    })
-    .mutation(async ({ ctx, input }) => {
-      const { sensitive } = input;
-      const value = sensitive
-        ? variablesAES256().encrypt(String(input.value))
-        : input.value;
-      const data = { ...input, value };
-      return ctx.db.insert(schema.resourceVariable).values(data).returning();
-    }),
-
-  update: protectedProcedure
-    .input(
-      z.object({ id: z.string().uuid(), data: schema.updateResourceVariable }),
-    )
-    .meta({
-      authorizationCheck: async ({ ctx, canUser, input }) => {
-        const variable = await ctx.db
-          .select()
-          .from(schema.resourceVariable)
-          .where(eq(schema.resourceVariable.id, input.id))
-          .then(takeFirstOrNull);
-        if (!variable) return false;
-
-        return canUser
-          .perform(Permission.ResourceUpdate)
-          .on({ type: "resource", id: variable.resourceId });
-      },
-    })
-    .mutation(async ({ ctx, input }) => {
-      const { sensitive } = input.data;
-      const value = sensitive
-        ? variablesAES256().encrypt(String(input.data.value))
-        : input.data.value;
-      const data = { ...input.data, value };
-      return ctx.db
-        .update(schema.resourceVariable)
-        .set(data)
-        .where(eq(schema.resourceVariable.id, input.id))
-        .returning()
-        .then(takeFirst);
-    }),
-
-  delete: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: async ({ ctx, canUser, input }) => {
-        const variable = await ctx.db
-          .select()
-          .from(schema.resourceVariable)
-          .where(eq(schema.resourceVariable.id, input))
-          .then(takeFirstOrNull);
-        if (!variable) return false;
-
-        return canUser
-          .perform(Permission.ResourceUpdate)
-          .on({ type: "resource", id: variable.resourceId });
-      },
-    })
-    .mutation(async ({ ctx, input }) =>
-      ctx.db
-        .delete(schema.resourceVariable)
-        .where(eq(schema.resourceVariable.id, input)),
-    ),
 });
 
 type _StringStringRecord = Record<string, string>;

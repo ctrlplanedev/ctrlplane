@@ -1,4 +1,7 @@
-import type { MetadataCondition } from "@ctrlplane/validators/conditions";
+import type {
+  CreatedAtCondition,
+  MetadataCondition,
+} from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
   IdentifierCondition,
@@ -8,6 +11,7 @@ import type {
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
 import React from "react";
+import { format } from "date-fns";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
@@ -17,9 +21,10 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
-import { ColumnOperator } from "@ctrlplane/validators/conditions";
+import { ColumnOperator, DateOperator } from "@ctrlplane/validators/conditions";
 import {
   isComparisonCondition,
+  isCreatedAtCondition,
   isIdentifierCondition,
   isKindCondition,
   isMetadataCondition,
@@ -44,6 +49,10 @@ const operatorVerbs = {
   [ColumnOperator.StartsWith]: "starts with",
   [ColumnOperator.EndsWith]: "ends with",
   [ColumnOperator.Contains]: "contains",
+  [DateOperator.Before]: "before",
+  [DateOperator.After]: "after",
+  [DateOperator.BeforeOrOn]: "before or on",
+  [DateOperator.AfterOrOn]: "after or on",
 };
 
 const ConditionBadge: React.FC<{
@@ -208,6 +217,20 @@ const StringifiedProviderCondition: React.FC<{
   );
 };
 
+const StringifiedCreatedAtCondition: React.FC<{
+  condition: CreatedAtCondition;
+}> = ({ condition }) => (
+  <ConditionBadge>
+    <span className="text-white">created</span>
+    <span className="text-muted-foreground">
+      {operatorVerbs[condition.operator]}
+    </span>
+    <span className="text-white">
+      {format(condition.value, "MMM d, yyyy, h:mma")}
+    </span>
+  </ConditionBadge>
+);
+
 const StringifiedTargetCondition: React.FC<{
   condition: ResourceCondition;
   depth?: number;
@@ -242,6 +265,9 @@ const StringifiedTargetCondition: React.FC<{
 
   if (isProviderCondition(condition))
     return <StringifiedProviderCondition condition={condition} />;
+
+  if (isCreatedAtCondition(condition))
+    return <StringifiedCreatedAtCondition condition={condition} />;
 };
 
 export const TargetConditionBadge: React.FC<{

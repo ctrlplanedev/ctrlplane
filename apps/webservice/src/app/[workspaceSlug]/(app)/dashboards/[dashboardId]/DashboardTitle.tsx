@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { IconAlertSmall, IconDashboard, IconEdit } from "@tabler/icons-react";
+import { IconLayout, IconX } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import {
@@ -11,6 +11,7 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
+import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
 import { useDashboardContext } from "../DashboardContext";
@@ -18,24 +19,20 @@ import { useDashboardContext } from "../DashboardContext";
 const EditButton: React.FC = () => {
   const { editMode, setEditMode } = useDashboardContext();
   return (
-    <button
+    <Button
+      size="sm"
+      variant={editMode ? "outline" : "default"}
       onClick={() => setEditMode(!editMode)}
+      aria-label={editMode ? "Disable editing mode" : "Enable editing mode"}
       className={cn(
-        "shrink-0 rounded-full p-1 text-xs",
-        editMode
-          ? "bg-yellow-400/20 text-yellow-300 hover:bg-yellow-400/25"
-          : "text-neutral-300 hover:bg-neutral-800 hover:text-white",
+        "flex shrink-0 items-center gap-1 rounded-full p-1 px-2 pr-2 text-xs",
       )}
     >
-      {editMode ? (
-        <div className="flex items-center gap-1 pr-2">
-          <IconAlertSmall className="h-4 w-4" />
-          <span className="grow">Editing mode enabled</span>
-        </div>
-      ) : (
-        <IconEdit className="h-4 w-4" />
-      )}
-    </button>
+      <IconX
+        className={cn("h-4 w-4 transition-transform", !editMode && "rotate-45")}
+      />
+      <span className="grow">Add widgets</span>
+    </Button>
   );
 };
 
@@ -54,7 +51,7 @@ export const DashboardTitle: React.FC = () => {
               href={`/${workspaceSlug}/systems`}
               className="flex items-center gap-2 text-white"
             >
-              <IconDashboard className="text-muted-foreground" />
+              <IconLayout className="text-muted-foreground" />
               Dashboard
             </BreadcrumbLink>
           </BreadcrumbItem>

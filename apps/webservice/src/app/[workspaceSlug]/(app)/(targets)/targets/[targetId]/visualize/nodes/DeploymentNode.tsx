@@ -6,7 +6,7 @@ import { Handle, Position } from "reactflow";
 import { cn } from "@ctrlplane/ui";
 import { JobStatus, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
-import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
+import { useDeploymentEnvResourceDrawer } from "~/app/[workspaceSlug]/(app)/_components/deployment-resource-drawer/useDeploymentResourceDrawer";
 import { api } from "~/trpc/react";
 import { ReleaseIcon } from "../../ReleaseCell";
 
@@ -19,7 +19,7 @@ type DeploymentNodeProps = NodeProps<{
 
 export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
   const { deployment, environment, resource } = data;
-  const { setJobId } = useJobDrawer();
+  const { setDeploymentEnvResourceId } = useDeploymentEnvResourceDrawer();
 
   const resourceId = resource.id;
   const environmentId = environment.id;
@@ -49,34 +49,29 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
     <>
       <div
         className={cn(
-          "relative flex w-[250px] flex-col gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4 py-1",
+          "relative flex h-[70px] w-[250px] cursor-pointer items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4",
           isInProgress && "border-blue-500",
           isPending && "border-neutral-500",
           isCompleted && "border-green-500",
           releaseJobTrigger == null && "border-neutral-800",
-          releaseJobTrigger != null && "cursor-pointer",
         )}
-        onClick={() => {
-          if (releaseJobTrigger != null) setJobId(releaseJobTrigger.job.id);
-        }}
+        onClick={() =>
+          setDeploymentEnvResourceId(deployment.id, environment.id, resource.id)
+        }
       >
-        <div className="flex h-14 items-center">
-          <div className="flex min-w-0 flex-1 flex-grow items-center gap-2">
-            <span className="truncate">{deployment.name}</span>
-          </div>
+        <ReleaseIcon job={releaseJobTrigger?.job} />
+        <div className="flex min-w-0 flex-1 flex-col items-start">
+          <span className="w-full truncate">{deployment.name}</span>
           {releaseJobTrigger != null && (
-            <div className="flex flex-shrink-0 items-center gap-2">
-              <ReleaseIcon job={releaseJobTrigger.job} />
-              <div className="text-sm">
-                <div>{releaseJobTrigger.release.version}</div>
-                <div>{JobStatusReadable[releaseJobTrigger.job.status]}</div>
-              </div>
-            </div>
+            <span className="w-full truncate text-sm">
+              {releaseJobTrigger.release.name} -{" "}
+              {JobStatusReadable[releaseJobTrigger.job.status]}
+            </span>
           )}
           {releaseJobTrigger == null && (
-            <div className="flex flex-shrink-0 justify-end pr-4 text-sm text-muted-foreground">
-              No active job
-            </div>
+            <span className="w-full truncate text-sm text-muted-foreground">
+              No active release
+            </span>
           )}
         </div>
       </div>

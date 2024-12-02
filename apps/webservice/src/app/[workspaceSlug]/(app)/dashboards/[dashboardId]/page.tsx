@@ -13,6 +13,11 @@ export default async function DashboardPage({
 }: {
   params: { workspaceSlug: string; dashboardId: string };
 }) {
+  const workspace = await api.workspace
+    .bySlug(params.workspaceSlug)
+    .catch(() => null);
+  if (workspace == null) notFound();
+
   const dashboard = await api.dashboard.get(params.dashboardId);
   if (dashboard == null) notFound();
   return (
@@ -22,7 +27,7 @@ export default async function DashboardPage({
         <WidgetMenu />
 
         <ScrollArea className="flex-grow">
-          <Dashboard />
+          <Dashboard workspace={workspace} />
         </ScrollArea>
       </div>
     </DashboardProvider>

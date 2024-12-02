@@ -1,3 +1,5 @@
+import type { Workspace } from "@ctrlplane/db/schema";
+
 export type Dimensions = { width: number; height: number };
 
 export interface WidgetProps<Config> {
@@ -6,7 +8,11 @@ export interface WidgetProps<Config> {
 }
 
 export type WidgetFC<Config = any> = React.FC<
-  WidgetProps<Config> & { isEditMode: boolean; onDelete: () => void }
+  WidgetProps<Config> & {
+    isEditMode: boolean;
+    onDelete: () => void;
+    workspace: Workspace;
+  }
 >;
 
 export type Widget<Config = any> = {
@@ -21,6 +27,7 @@ export type Widget<Config = any> = {
     maxH?: number;
     maxW?: number;
   };
-  ComponentPreview: React.FC;
+
+  Icon: React.FC;
   Component: WidgetFC<Config>;
 };
