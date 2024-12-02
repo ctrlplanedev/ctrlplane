@@ -122,14 +122,10 @@ export const createAwsResourceScanWorker = () =>
       return [];
     }
 
-    const resources: InsertResource[] = [];
-    log.info("Found AWS config, scanning for EKS resources");
-
-    const eksResources = await getEksResources(
+    const resources = await getEksResources(
       rp.workspace,
       rp.resource_provider_aws,
     );
-    resources.push(...eksResources);
 
     return resources;
   });
