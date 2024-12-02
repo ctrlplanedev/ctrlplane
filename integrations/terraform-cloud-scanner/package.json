@@ -38,7 +38,7 @@
     "@ctrlplane/eslint-config": "workspace:*",
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
-    "@types/lodash": "^4.17.5",
+    "@types/lodash": "catalog:",
     "@types/node": "catalog:node22",
     "@vitest/coverage-v8": "^2.1.1",
     "eslint": "catalog:",
