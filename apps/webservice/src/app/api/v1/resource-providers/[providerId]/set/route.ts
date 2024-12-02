@@ -17,7 +17,7 @@ import { parseBody } from "../../../body-parser";
 import { request } from "../../../middleware";
 
 const bodySchema = z.object({
-  targets: z.array(
+  resources: z.array(
     createResource
       .omit({ lockedAt: true, providerId: true, workspaceId: true })
       .extend({
@@ -71,22 +71,22 @@ export const PATCH = request()
         { status: 404 },
       );
 
-    const targetsToInsert = body.targets.map((t) => ({
-      ...t,
+    const resourcesToInsert = body.resources.map((r) => ({
+      ...r,
       providerId: provider.id,
       workspaceId: provider.workspaceId,
     }));
 
-    const targets = await upsertResources(
+    const resources = await upsertResources(
       db,
-      targetsToInsert.map((t) => ({
-        ...t,
-        variables: t.variables?.map((v) => ({
+      resourcesToInsert.map((r) => ({
+        ...r,
+        variables: r.variables?.map((v) => ({
           ...v,
           value: v.value ?? null,
         })),
       })),
     );
 
-    return NextResponse.json({ targets });
+    return NextResponse.json({ resources });
   });
