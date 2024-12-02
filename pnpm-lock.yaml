@@ -1126,6 +1126,9 @@ importers:
       '@types/bcryptjs':
         specifier: ^2.4.6
         version: 2.4.6
+      '@types/lodash':
+        specifier: 'catalog:'
+        version: 4.17.13
       '@types/react':
         specifier: catalog:react18
         version: 18.3.12
