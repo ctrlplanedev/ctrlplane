@@ -101,14 +101,10 @@ export const createGoogleResourceScanWorker = () =>
       return [];
     }
 
-    const resources: InsertResource[] = [];
-    log.info("Found Google config, scanning for GKE resources");
-
-    const gkeResources = await getGkeResources(
+    const resources = await getGkeResources(
       rp.workspace,
       rp.resource_provider_google,
     );
-    resources.push(...gkeResources);
 
     return resources;
   });
