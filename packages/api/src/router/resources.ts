@@ -428,13 +428,13 @@ export const resourceRouter = createTRPCRouter({
             .filter((n) => isPresent(n.node))
             .map((n) => ({
               ...n.resource_relationship,
-              resource: n.node,
+              resource: n.node!,
             })),
           to: toNodes
             .filter((n) => isPresent(n.node))
             .map((n) => ({
               ...n.resource_relationship,
-              resource: n.node,
+              resource: n.node!,
             })),
         },
       };
