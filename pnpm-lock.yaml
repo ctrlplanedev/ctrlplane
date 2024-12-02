@@ -30,6 +30,9 @@ catalogs:
     eslint-plugin-vitest:
       specifier: ^0.5.4
       version: 0.5.4
+    lodash:
+      specifier: ^4.17.21
+      version: 4.17.21
     next:
       specifier: ^14.2.17
       version: 14.2.17
@@ -311,7 +314,7 @@ importers:
         specifier: ^3.1.7
         version: 3.2.1
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       ts-is-present:
         specifier: 'catalog:'
@@ -780,7 +783,7 @@ importers:
         specifier: ^4.7.8
         version: 4.7.8
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       p-retry:
         specifier: ^6.2.0
@@ -847,7 +850,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       p-retry:
         specifier: ^6.2.0
@@ -902,7 +905,7 @@ importers:
         specifier: ^4.7.8
         version: 4.7.8
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       p-retry:
         specifier: ^6.2.0
@@ -1008,7 +1011,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       lodash:
-        specifier: ^4.17.21
+        specifier: 'catalog:'
         version: 4.17.21
       ms:
         specifier: ^2.1.3
@@ -1017,7 +1020,7 @@ importers:
         specifier: 2.2.1
         version: 2.2.1
       ts-is-present:
-        specifier: ^1.2.2
+        specifier: 'catalog:'
         version: 1.2.2
       uuid:
         specifier: ^10.0.0
@@ -1086,6 +1089,9 @@ importers:
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
+      lodash:
+        specifier: 'catalog:'
+        version: 4.17.21
       next:
         specifier: 'catalog:'
         version: 14.2.17(@opentelemetry/api@1.9.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
