@@ -37,7 +37,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/js-yaml": "^4.0.9",
-    "@types/lodash": "^4.17.5",
+    "@types/lodash": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"
