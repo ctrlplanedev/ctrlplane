@@ -39,88 +39,6 @@ import { resourceProviderRouter } from "./target-provider";
 
 const isNotDeleted = isNull(schema.resource.deletedAt);
 
-const resourceRelations = createTRPCRouter({
-  hierarchy: protectedProcedure
-    .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const isResource = eq(schema.resource.id, input);
-      const where = and(isResource, isNotDeleted);
-      const r = await ctx.db.query.resource.findFirst({ where });
-      if (r == null) return null;
-
-      const results = await ctx.db.execute(
-        sql`
-          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_identifier, target_identifier, type) AS (
-            -- Base case: start with the given ID and no relationship
-            SELECT 
-                ${input}::uuid AS id, 
-                ARRAY[${input}::uuid] AS visited,
-                NULL::uuid AS tr_id,
-                NULL::uuid AS source_identifier,
-                NULL::uuid AS target_identifier,
-                NULL::resource_relationship_type AS type
-            UNION ALL
-            -- Recursive case: find all relationships connected to the current set of IDs
-            SELECT
-                CASE
-                    WHEN tr.source_identifier = rr.id THEN tr.target_identifier
-                    ELSE tr.source_identifier
-                END AS id,
-                rr.visited || CASE
-                    WHEN tr.source_identifier = rr.id THEN tr.target_identifier
-                    ELSE tr.source_identifier
-                END,
-                tr.id AS tr_id,
-                tr.source_identifier,
-                tr.target_identifier,
-                tr.type
-            FROM reachable_relationships rr
-            JOIN resource_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
-            WHERE
-                NOT CASE
-                    WHEN tr.source_identifier = rr.id THEN tr.target_identifier
-                    ELSE tr.source_identifier
-                END = ANY(rr.visited)
-        )
-        SELECT DISTINCT tr_id AS id, source_identifier, target_identifier, type
-        FROM reachable_relationships
-        WHERE tr_id IS NOT NULL;
-        `,
-      );
-
-      // db.execute does not return the types even if the sql`` is annotated with the type
-      // so we need to cast them here
-      const relationships = results.rows.map((r) => ({
-        id: String(r.id),
-        fromIdentifier: String(r.source_identifier),
-        toIdentifier: String(r.target_identifier),
-        workspaceId: String(r.workspace_id),
-        type: r.type as "associated_with" | "depends_on",
-      }));
-
-      const fromIdentifiers = relationships.map((r) => r.fromIdentifier);
-      const toIdentifiers = relationships.map((r) => r.toIdentifier);
-
-      const allIdentifiers = _.uniq([
-        ...fromIdentifiers,
-        ...toIdentifiers,
-        input,
-      ]);
-
-      const resources = await ctx.db
-        .select()
-        .from(schema.resource)
-        .where(
-          and(
-            inArray(schema.resource.identifier, allIdentifiers),
-            isNotDeleted,
-          ),
-        );
-
-      return { relationships, resources };
-    }),
-});
-
 type _StringStringRecord = Record<string, string>;
 const resourceQuery = (db: Tx, checks: Array<SQL<unknown>>) =>
   db
@@ -382,7 +300,6 @@ const getNodesRecursively = async (db: Tx, resourceId: string) => {
 export const resourceRouter = createTRPCRouter({
   metadataGroup: resourceMetadataGroupRouter,
   provider: resourceProviderRouter,
-  relations: resourceRelations,
   view: resourceViews,
   variable: resourceVariables,
 
@@ -508,16 +425,16 @@ export const resourceRouter = createTRPCRouter({
         ].filter(isPresent),
         associations: {
           from: fromNodes
-            .filter((n) => n.node != null)
+            .filter((n) => isPresent(n.node))
             .map((n) => ({
               ...n.resource_relationship,
-              resource: n.node!,
+              resource: n.node,
             })),
           to: toNodes
-            .filter((n) => n.node != null)
+            .filter((n) => isPresent(n.node))
             .map((n) => ({
               ...n.resource_relationship,
-              resource: n.node!,
+              resource: n.node,
             })),
         },
       };

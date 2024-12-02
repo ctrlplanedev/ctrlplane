@@ -20,7 +20,6 @@ import { JobAgent } from "./JobAgent";
 import { JobMetadata } from "./JobMetadata";
 import { JobPropertiesTable } from "./JobProperties";
 import { JobVariables } from "./JobVariables";
-import { DependenciesDiagram } from "./RelationshipsDiagramDependencies";
 import { useJobDrawer } from "./useJobDrawer";
 
 export const JobDrawer: React.FC = () => {
@@ -128,13 +127,6 @@ export const JobDrawer: React.FC = () => {
                     <JobMetadata job={job} />
                   </div>
                 </div>
-
-                <DependenciesDiagram
-                  targetId={job.resource.id}
-                  relationships={job.relationships}
-                  targets={job.relatedResources}
-                  releaseDependencies={job.releaseDependencies}
-                />
               </div>
             )}
           </>
