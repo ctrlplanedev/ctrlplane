@@ -1,6 +1,8 @@
 import type { NodeProps } from "reactflow";
 import { Handle, Position } from "reactflow";
 
+import { cn } from "@ctrlplane/ui";
+
 import { useTargetDrawer } from "~/app/[workspaceSlug]/(app)/_components/target-drawer/useTargetDrawer";
 import { TargetIcon as ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/TargetIcon";
 
@@ -10,6 +12,7 @@ type ResourceNodeProps = NodeProps<{
   id: string;
   kind: string;
   version: string;
+  isBaseNode: boolean;
 }>;
 export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   const { data } = node;
@@ -17,7 +20,10 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
   return (
     <>
       <div
-        className="flex w-[250px] cursor-pointer flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3"
+        className={cn(
+          "flex w-[250px] cursor-pointer flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3",
+          data.isBaseNode && "border-2 border-neutral-600",
+        )}
         onClick={() => setResourceId(data.id)}
       >
         <div className="flex items-center gap-2">

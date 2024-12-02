@@ -247,7 +247,7 @@ const getNodeDataForResource = async (
 
 type Node = Awaited<ReturnType<typeof getNodeDataForResource>>;
 
-const getNodesRecursivelyHelper = async (
+const getChildrenNodesRecursivelyHelper = async (
   db: Tx,
   node: Node,
   nodes: NonNullable<Node>[],
@@ -286,15 +286,76 @@ const getNodesRecursivelyHelper = async (
   const children = await Promise.all(childrenPromises);
 
   const childrenNodesPromises = children.map((c) =>
-    getNodesRecursivelyHelper(db, c, []),
+    getChildrenNodesRecursivelyHelper(db, c, []),
   );
   const childrenNodes = (await Promise.all(childrenNodesPromises)).flat();
   return [...nodes, node, ...childrenNodes].filter(isPresent);
 };
 
-const getNodesRecursively = async (db: Tx, resourceId: string) => {
+const getChildrenNodesRecursively = async (db: Tx, resourceId: string) => {
   const baseNode = await getNodeDataForResource(db, resourceId);
-  return getNodesRecursivelyHelper(db, baseNode, []);
+  return getChildrenNodesRecursivelyHelper(db, baseNode, []);
+};
+
+type ParentNodesResult = {
+  parentNodes: NonNullable<Node>[];
+  node: Node;
+};
+
+const getParentNodesRecursivelyHelper = async (
+  db: Tx,
+  node: Node,
+  nodes: NonNullable<Node>[],
+): Promise<ParentNodesResult> => {
+  if (node == null) return { parentNodes: nodes, node };
+
+  const parentJob = await db
+    .select()
+    .from(schema.jobResourceRelationship)
+    .innerJoin(
+      schema.job,
+      eq(schema.jobResourceRelationship.jobId, schema.job.id),
+    )
+    .innerJoin(
+      schema.releaseJobTrigger,
+      eq(schema.releaseJobTrigger.jobId, schema.job.id),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+    )
+    .where(
+      and(
+        eq(schema.jobResourceRelationship.resourceIdentifier, node.identifier),
+        isNull(schema.resource.deletedAt),
+        eq(schema.resource.workspaceId, node.workspaceId),
+      ),
+    )
+    .orderBy(desc(schema.releaseJobTrigger.createdAt))
+    .limit(1)
+    .then(takeFirstOrNull);
+
+  if (parentJob == null) return { parentNodes: nodes, node };
+
+  const parentNode = await getNodeDataForResource(db, parentJob.resource.id);
+  if (parentNode == null) return { parentNodes: nodes, node };
+
+  const { job_resource_relationship: parentRelationship } = parentJob;
+
+  const { parentNodes, node: parentNodeWithData } =
+    await getParentNodesRecursivelyHelper(db, parentNode, []);
+
+  const nodeWithParent = { ...node, parent: parentRelationship };
+
+  return {
+    parentNodes: [...parentNodes, parentNodeWithData].filter(isPresent),
+    node: nodeWithParent,
+  };
+};
+
+const getParentNodesRecursively = async (db: Tx, resourceId: string) => {
+  const baseNode = await getNodeDataForResource(db, resourceId);
+  return getParentNodesRecursivelyHelper(db, baseNode, []);
 };
 
 export const resourceRouter = createTRPCRouter({
@@ -361,9 +422,17 @@ export const resourceRouter = createTRPCRouter({
         where: eq(schema.resource.id, input),
       });
       if (resource == null) return null;
-      const childrenNodes = await getNodesRecursively(ctx.db, input);
+      const childrenNodes = await getChildrenNodesRecursively(ctx.db, input);
+      const { parentNodes, node } = await getParentNodesRecursively(
+        ctx.db,
+        input,
+      );
 
-      const fromNodesPromises = ctx.db
+      const childrenNodesUpdated = childrenNodes.map((n) =>
+        n.id === node?.id ? node : n,
+      );
+
+      const nodesQuery = ctx.db
         .select()
         .from(schema.resourceRelationship)
         .innerJoin(
@@ -372,7 +441,9 @@ export const resourceRouter = createTRPCRouter({
             schema.resourceRelationship.fromIdentifier,
             schema.resource.identifier,
           ),
-        )
+        );
+
+      const fromNodesPromises = nodesQuery
         .where(
           and(
             eq(schema.resourceRelationship.workspaceId, resource.workspaceId),
@@ -387,16 +458,7 @@ export const resourceRouter = createTRPCRouter({
         )
         .then((promises) => Promise.all(promises));
 
-      const toNodesPromises = ctx.db
-        .select()
-        .from(schema.resourceRelationship)
-        .innerJoin(
-          schema.resource,
-          eq(
-            schema.resourceRelationship.toIdentifier,
-            schema.resource.identifier,
-          ),
-        )
+      const toNodesPromises = nodesQuery
         .where(
           and(
             eq(schema.resourceRelationship.workspaceId, resource.workspaceId),
@@ -419,7 +481,8 @@ export const resourceRouter = createTRPCRouter({
       return {
         resource,
         nodes: [
-          ...childrenNodes,
+          ...parentNodes,
+          ...childrenNodesUpdated,
           ...fromNodes.map((n) => n.node),
           ...toNodes.map((n) => n.node),
         ].filter(isPresent),
