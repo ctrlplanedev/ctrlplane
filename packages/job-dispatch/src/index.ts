@@ -1,6 +1,7 @@
 export * from "./config.js";
 export * from "./release-job-trigger.js";
 export * from "./job-creation.js";
+export * from "./job-failure.js";
 export * from "./job-dispatch.js";
 export * from "./policy-checker.js";
 export * from "./policy-create.js";

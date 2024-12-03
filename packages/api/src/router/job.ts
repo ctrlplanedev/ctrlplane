@@ -54,6 +54,7 @@ import {
   getRolloutDateForReleaseJobTrigger,
   isDateInTimeWindow,
   onJobCompletion,
+  onJobFailure,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { jobCondition, JobStatus } from "@ctrlplane/validators/jobs";
@@ -548,6 +549,13 @@ export const jobRouter = createTRPCRouter({
             job.status === JobStatus.Completed
           )
             onJobCompletion(job);
+
+          if (
+            input.data.status === JobStatus.Failure &&
+            job.status === JobStatus.Failure
+          )
+            onJobFailure(job);
+
           return job;
         }),
     ),

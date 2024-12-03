@@ -18,7 +18,7 @@ import {
   updateJob,
   user,
 } from "@ctrlplane/db/schema";
-import { onJobCompletion } from "@ctrlplane/job-dispatch";
+import { onJobCompletion, onJobFailure } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -161,6 +161,8 @@ export const PATCH = async (
 
   if (je.status === JobStatus.Completed)
     onJobCompletion(je).catch(console.error);
+
+  if (je.status === JobStatus.Failure) onJobFailure(je).catch(console.error);
 
   return NextResponse.json(je);
 };
