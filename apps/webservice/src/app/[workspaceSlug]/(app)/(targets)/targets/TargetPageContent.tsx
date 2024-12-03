@@ -5,6 +5,7 @@ import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React, { useEffect } from "react";
 import {
   IconDots,
+  IconDownload,
   IconFilter,
   IconLoader2,
   IconSearch,
@@ -31,6 +32,7 @@ import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_componen
 import { useTargetFilter } from "~/app/[workspaceSlug]/(app)/_components/target-condition/useTargetFilter";
 import { useTargetDrawer } from "~/app/[workspaceSlug]/(app)/_components/target-drawer/useTargetDrawer";
 import { api } from "~/trpc/react";
+import { exportResources } from "./exportResources";
 import { TargetGettingStarted } from "./TargetGettingStarted";
 import { TargetsTable } from "./TargetsTable";
 
@@ -113,7 +115,7 @@ export const TargetPageContent: React.FC<{
     limit: 0,
   });
   const targets = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter: filter ?? undefined },
+    { workspaceId, filter: filter ?? undefined, limit: 500 },
     { placeholderData: (prev) => prev },
   );
 
@@ -188,6 +190,17 @@ export const TargetPageContent: React.FC<{
                 {targets.data.total}
               </Badge>
             </div>
+          )}
+          {targets.data != null && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportResources(targets.data.items)}
+              className="flex items-center gap-2"
+            >
+              Export CSV
+              <IconDownload className="h-3 w-3" />
+            </Button>
           )}
         </div>
       </div>
