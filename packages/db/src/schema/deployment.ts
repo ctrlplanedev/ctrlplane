@@ -1,6 +1,13 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { relations } from "drizzle-orm";
-import { jsonb, pgTable, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import {
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -26,6 +33,12 @@ export const deploymentSchema = z.object({
     .refine((val) => !val || val.length >= 3, {
       message: "Description must be at least 3 characters long if provided.",
     }),
+  retryCount: z
+    .number()
+    .default(0)
+    .refine((val) => val >= 0, {
+      message: "Retry count must be a non-negative number.",
+    }),
 });
 
 export const deployment = pgTable(
@@ -45,6 +58,7 @@ export const deployment = pgTable(
       .default("{}")
       .$type<Record<string, any>>()
       .notNull(),
+    retryCount: integer("retry_count").notNull().default(0),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );

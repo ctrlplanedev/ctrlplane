@@ -63,6 +63,7 @@ export const CreateDeploymentDialog: React.FC<{
       name: "",
       slug: "",
       description: "",
+      retryCount: 0,
     },
     mode: "onSubmit",
   });
@@ -178,6 +179,19 @@ export const CreateDeploymentDialog: React.FC<{
                   <FormLabel>Description</FormLabel>
                   <FormControl>
                     <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="retryCount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Retry Count</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
