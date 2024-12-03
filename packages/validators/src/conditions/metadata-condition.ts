@@ -12,7 +12,7 @@ export type NullCondition = z.infer<typeof nullCondition>;
 export const equalsCondition = z.object({
   type: z.literal("metadata"),
   key: z.string().min(1),
-  value: z.string().min(1),
+  value: z.string(),
   operator: z.literal("equals").optional(),
 });
 
@@ -21,7 +21,7 @@ export type EqualCondition = z.infer<typeof equalsCondition>;
 export const regexCondition = z.object({
   type: z.literal("metadata"),
   key: z.string().min(1),
-  value: z.string().min(1),
+  value: z.string(),
   operator: z.literal("regex"),
 });
 
@@ -30,7 +30,7 @@ export type RegexCondition = z.infer<typeof regexCondition>;
 export const likeCondition = z.object({
   type: z.literal("metadata"),
   key: z.string().min(1),
-  value: z.string().min(1),
+  value: z.string(),
   operator: z.literal("like"),
 });
 

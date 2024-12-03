@@ -125,7 +125,7 @@ export const isValidJobCondition = (condition: JobCondition): boolean => {
   if (isMetadataCondition(condition)) {
     if (condition.operator === MetadataOperator.Null)
       return condition.value == null && condition.key.length > 0;
-    return condition.value.length > 0 && condition.key.length > 0;
+    return condition.key.length > 0;
   }
   return condition.value.length > 0;
 };
