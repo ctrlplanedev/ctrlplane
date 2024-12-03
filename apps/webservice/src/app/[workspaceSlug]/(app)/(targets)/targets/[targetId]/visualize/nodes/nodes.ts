@@ -27,7 +27,11 @@ const getResourceNodes = (relationships: Relationships) =>
   relationships.nodes.map((r) => ({
     id: r.id,
     type: NodeType.Resource,
-    data: { ...r, label: r.identifier },
+    data: {
+      ...r,
+      label: r.identifier,
+      isBaseNode: r.id === relationships.resource.id,
+    },
     position: { x: 0, y: 0 },
   }));
 

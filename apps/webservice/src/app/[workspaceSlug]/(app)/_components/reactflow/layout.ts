@@ -70,6 +70,7 @@ type LayoutConfig = {
   nodesep?: number;
   padding?: number;
   maxZoom?: number;
+  focusedNodeId?: string;
 };
 
 export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
@@ -99,6 +100,14 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reactFlowInstance]);
 
+  const setDefaultView = useCallback(() => {
+    reactFlowInstance?.fitView({
+      padding: config?.padding ?? 0.12,
+      maxZoom: config?.maxZoom ?? 1,
+    });
+    setIsViewFitted(true);
+  }, [reactFlowInstance, config]);
+
   useEffect(() => {
     if (
       reactFlowInstance != null &&
@@ -106,13 +115,36 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
       isLayouted &&
       !isViewFitted
     ) {
+      if (config?.focusedNodeId == null) {
+        setDefaultView();
+        return;
+      }
+
+      const focusedNode = nodes.find((n) => n.id === config.focusedNodeId);
+      if (focusedNode == null) {
+        setDefaultView();
+        return;
+      }
+
       reactFlowInstance.fitView({
-        padding: config?.padding ?? 0.12,
-        maxZoom: config?.maxZoom ?? 1,
+        padding: config.padding ?? 0.12,
+        maxZoom: config.maxZoom ?? 2,
       });
+      reactFlowInstance.setCenter(
+        focusedNode.position.x + 100,
+        focusedNode.position.y + 100,
+        { zoom: 1.5, duration: 500 },
+      );
       setIsViewFitted(true);
     }
-  }, [reactFlowInstance, nodes, isLayouted, isViewFitted, config]);
+  }, [
+    reactFlowInstance,
+    nodes,
+    isLayouted,
+    isViewFitted,
+    config,
+    setDefaultView,
+  ]);
 
   return setReactFlowInstance;
 };
