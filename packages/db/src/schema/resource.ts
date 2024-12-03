@@ -302,15 +302,14 @@ export const resourceRelationship = pgTable(
   "resource_relationship",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    sourceId: uuid("source_id")
-      .references(() => resource.id, { onDelete: "cascade" })
-      .notNull(),
-    targetId: uuid("target_id")
-      .references(() => resource.id, { onDelete: "cascade" })
-      .notNull(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id, { onDelete: "cascade" }),
+    fromIdentifier: text("from_identifier").notNull(),
+    toIdentifier: text("to_identifier").notNull(),
     type: resourceRelationshipType("type").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.targetId, t.sourceId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.toIdentifier, t.fromIdentifier) }),
 );
 
 export const createResourceRelationship = createInsertSchema(

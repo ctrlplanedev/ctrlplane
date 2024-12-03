@@ -24,7 +24,6 @@ import {
   countDistinct,
   desc,
   eq,
-  inArray,
   isNull,
   notInArray,
   sql,
@@ -44,7 +43,6 @@ import {
   release,
   releaseDependency,
   releaseJobTrigger,
-  releaseMatchesCondition,
   resource,
   system,
   updateJob,
@@ -380,122 +378,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .then(processReleaseJobTriggerWithAdditionalDataRows)
         .then(takeFirst);
 
-      const { releaseDependencies } = data;
-
-      const results = await ctx.db.execute(
-        sql`
-          WITH RECURSIVE reachable_relationships(id, visited, tr_id, source_id, target_id, type) AS (
-            -- Base case: start with the given ID and no relationship
-            SELECT 
-                ${data.resource.id}::uuid AS id, 
-                ARRAY[${data.resource.id}::uuid] AS visited,
-                NULL::uuid AS tr_id,
-                NULL::uuid AS source_id,
-                NULL::uuid AS target_id,
-                NULL::resource_relationship_type AS type
-            UNION ALL
-            -- Recursive case: find all relationships connected to the current set of IDs
-            SELECT
-                CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
-                    ELSE tr.source_id
-                END AS id,
-                rr.visited || CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
-                    ELSE tr.source_id
-                END,
-                tr.id AS tr_id,
-                tr.source_id,
-                tr.target_id,
-                tr.type
-            FROM reachable_relationships rr
-            JOIN resource_relationship tr ON tr.source_id = rr.id OR tr.target_id = rr.id
-            WHERE
-                NOT CASE
-                    WHEN tr.source_id = rr.id THEN tr.target_id
-                    ELSE tr.source_id
-                END = ANY(rr.visited)                
-                AND tr.target_id != ${data.resource.id}
-        )
-        SELECT DISTINCT tr_id AS id, source_id, target_id, type
-        FROM reachable_relationships
-        WHERE tr_id IS NOT NULL;
-        `,
-      );
-
-      // db.execute does not return the types even if the sql`` is annotated with the type
-      // so we need to cast them here
-      const relationships = results.rows.map((r) => ({
-        id: String(r.id),
-        sourceId: String(r.source_id),
-        targetId: String(r.target_id),
-        type: r.type as "associated_with" | "depends_on",
-      }));
-
-      const sourceIds = relationships.map((r) => r.sourceId);
-      const targetIds = relationships.map((r) => r.targetId);
-
-      const allIds = _.uniq([...sourceIds, ...targetIds, data.resource.id]);
-
-      const resources = await ctx.db
-        .select()
-        .from(resource)
-        .where(and(inArray(resource.id, allIds), isNull(resource.deletedAt)));
-
-      const releaseDependenciesWithResourcePromises = releaseDependencies.map(
-        async (rd) => {
-          const latestJobSubquery = ctx.db
-            .select({
-              id: releaseJobTrigger.id,
-              resourceId: releaseJobTrigger.resourceId,
-              releaseId: releaseJobTrigger.releaseId,
-              status: job.status,
-              createdAt: job.createdAt,
-              rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY ${releaseJobTrigger.resourceId}, ${releaseJobTrigger.releaseId}
-              ORDER BY ${job.createdAt} DESC
-            )`.as("rank"),
-            })
-            .from(job)
-            .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-            .as("latest_job");
-
-          const resourceFulfillingDependency = await ctx.db
-            .select()
-            .from(release)
-            .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-            .innerJoin(
-              latestJobSubquery,
-              eq(latestJobSubquery.releaseId, release.id),
-            )
-            .where(
-              and(
-                releaseMatchesCondition(ctx.db, rd.releaseFilter),
-                eq(deployment.id, rd.deploymentId),
-                inArray(
-                  latestJobSubquery.resourceId,
-                  resources.map((r) => r.id),
-                ),
-                eq(latestJobSubquery.rank, 1),
-                eq(latestJobSubquery.status, JobStatus.Completed),
-              ),
-            );
-
-          return {
-            ...rd,
-            resource: resourceFulfillingDependency.at(0)?.latest_job.resourceId,
-          };
-        },
-      );
-
-      return {
-        ...data,
-        releaseDependencies: await Promise.all(
-          releaseDependenciesWithResourcePromises,
-        ),
-        relationships,
-        relatedResources: resources,
-      };
+      return data;
     }),
 });
 

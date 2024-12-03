@@ -7,7 +7,6 @@ import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingConcurrencyPolicy } from "./policies/concurrency-policy.js";
 import { isPassingJobRolloutPolicy } from "./policies/gradual-rollout.js";
 import { isPassingApprovalPolicy } from "./policies/manual-approval.js";
-import { isPassingReleaseDependencyPolicy } from "./policies/release-dependency.js";
 import {
   isPassingNewerThanLastActiveReleasePolicy,
   isPassingNoActiveJobsPolicy,
@@ -25,7 +24,6 @@ export const isPassingAllPolicies = async (
     isPassingApprovalPolicy,
     isPassingCriteriaPolicy,
     isPassingConcurrencyPolicy,
-    isPassingReleaseDependencyPolicy,
     isPassingJobRolloutPolicy,
     isPassingNoActiveJobsPolicy,
     isPassingNewerThanLastActiveReleasePolicy,
@@ -48,7 +46,6 @@ export const isPassingAllPoliciesExceptNewerThanLastActive = async (
     isPassingApprovalPolicy,
     isPassingCriteriaPolicy,
     isPassingConcurrencyPolicy,
-    isPassingReleaseDependencyPolicy,
     isPassingJobRolloutPolicy,
     isPassingNoActiveJobsPolicy,
     isPassingReleaseWindowPolicy,

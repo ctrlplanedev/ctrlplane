@@ -83,7 +83,7 @@
     "superjson": "2.2.1",
     "swagger-ui-react": "^5.17.14",
     "tailwind-scrollbar": "^3.1.0",
-    "ts-is-present": "^1.2.2",
+    "ts-is-present": "catalog:",
     "uuid": "^10.0.0",
     "zod": "catalog:"
   },

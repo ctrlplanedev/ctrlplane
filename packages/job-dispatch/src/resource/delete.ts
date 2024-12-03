@@ -12,8 +12,8 @@ const deleteObjectsAssociatedWithResource = (tx: Tx, resource: Resource) =>
     .delete(resourceRelationship)
     .where(
       or(
-        eq(resourceRelationship.sourceId, resource.id),
-        eq(resourceRelationship.targetId, resource.id),
+        eq(resourceRelationship.fromIdentifier, resource.identifier),
+        eq(resourceRelationship.toIdentifier, resource.identifier),
       ),
     );
 

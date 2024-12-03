@@ -28,12 +28,12 @@ export const openapi: Swagger.SwaggerV3 = {
             schema: {
               type: "string",
             },
-            description: "Identifier of the target",
+            description: "Identifier of the resource",
           },
         ],
         responses: {
           "200": {
-            description: "Successfully retrieved the target",
+            description: "Successfully retrieved the resource",
             content: {
               "application/json": {
                 schema: {
@@ -89,7 +89,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "Permission denied",
           },
           "404": {
-            description: "Target not found",
+            description: "Resource not found",
             content: {
               "application/json": {
                 schema: {
@@ -97,7 +97,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   properties: {
                     error: {
                       type: "string",
-                      example: "Target not found",
+                      example: "Resource not found",
                     },
                   },
                 },
@@ -134,7 +134,7 @@ export const openapi: Swagger.SwaggerV3 = {
         ],
         responses: {
           "200": {
-            description: "Successfully deleted the target",
+            description: "Successfully deleted the resource",
             content: {
               "application/json": {
                 schema: {
@@ -156,7 +156,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "Permission denied",
           },
           "404": {
-            description: "Target not found",
+            description: "Resource not found",
             content: {
               "application/json": {
                 schema: {
@@ -164,7 +164,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   properties: {
                     error: {
                       type: "string",
-                      example: "Target not found",
+                      example: "Resource not found",
                     },
                   },
                 },

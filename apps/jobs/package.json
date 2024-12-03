@@ -18,15 +18,15 @@
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
     "cron": "^3.1.7",
-    "lodash": "^4.17.21",
-    "ts-is-present": "^1.2.2",
+    "lodash": "catalog:",
+    "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@ctrlplane/eslint-config": "workspace:^",
     "@ctrlplane/prettier-config": "workspace:^",
     "@ctrlplane/tsconfig": "workspace:*",
-    "@types/lodash": "^4.17.5",
+    "@types/lodash": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsx": "catalog:",

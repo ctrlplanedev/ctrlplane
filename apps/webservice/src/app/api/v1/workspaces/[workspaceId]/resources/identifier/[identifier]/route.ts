@@ -46,14 +46,14 @@ export const GET = request()
 
       if (data == null)
         return NextResponse.json(
-          { error: "Target not found" },
+          { error: "Resource not found" },
           { status: 404 },
         );
 
-      const { metadata, ...target } = data;
+      const { metadata, ...resource } = data;
 
       return NextResponse.json({
-        ...target,
+        ...resource,
         metadata: Object.fromEntries(metadata.map((t) => [t.key, t.value])),
       });
     },
@@ -65,7 +65,7 @@ export const DELETE = request()
     authz(async ({ can, extra }) => {
       const { workspaceId, identifier } = extra.params;
 
-      const target = await db.query.resource.findFirst({
+      const resource = await db.query.resource.findFirst({
         where: and(
           eq(schema.resource.workspaceId, workspaceId),
           eq(schema.resource.identifier, identifier),
@@ -73,10 +73,10 @@ export const DELETE = request()
         ),
       });
 
-      if (target == null) return false;
+      if (resource == null) return false;
       return can
         .perform(Permission.ResourceDelete)
-        .on({ type: "resource", id: target.id });
+        .on({ type: "resource", id: resource.id });
     }),
   )
   .handle<unknown, { params: { workspaceId: string; identifier: string } }>(
@@ -91,7 +91,7 @@ export const DELETE = request()
 
       if (resource == null) {
         return NextResponse.json(
-          { error: `Target not found for identifier: ${params.identifier}` },
+          { error: `Resource not found for identifier: ${params.identifier}` },
           { status: 404 },
         );
       }
