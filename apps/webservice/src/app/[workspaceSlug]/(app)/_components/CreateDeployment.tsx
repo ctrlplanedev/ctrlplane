@@ -197,6 +197,7 @@ export const CreateDeploymentDialog: React.FC<{
                       step={1}
                       value={value}
                       onChange={(e) => onChange(e.target.valueAsNumber)}
+                      className="w-16"
                     />
                   </FormControl>
                   <FormMessage />
