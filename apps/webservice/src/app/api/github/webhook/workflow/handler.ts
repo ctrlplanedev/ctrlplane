@@ -110,9 +110,7 @@ const maybeRetryJob = async (job: schema.Job) => {
     return dispatchJobsForNewerRelease(latestRelease.id);
 
   const releaseJobTriggers = await db
-    .select({
-      count: count(),
-    })
+    .select({ count: count() })
     .from(schema.releaseJobTrigger)
     .where(eq(schema.releaseJobTrigger.releaseId, jobInfo.release.id))
     .then(takeFirst);
@@ -136,11 +134,11 @@ const maybeRetryJob = async (job: schema.Job) => {
     .releaseTriggers(trigger)
     .then(cancelOldReleaseJobTriggersOnJobDispatch)
     .dispatch()
-    .then(() => {
+    .then(() =>
       logger.info(
         `Retry job for release ${jobInfo.release.id} and resource ${jobInfo.release_job_trigger.resourceId} created and dispatched.`,
-      );
-    });
+      ),
+    );
 };
 
 export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
