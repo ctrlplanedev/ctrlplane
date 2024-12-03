@@ -192,6 +192,8 @@ export const integrationsRouter = createTRPCRouter({
 
         const roleName = `ctrlplane-${ws.slug}`;
 
+        const [, currentRoleName] = currentArn.split("/");
+
         const assumeRolePolicyDocument = isSSORole
           ? {
               Version: "2012-10-17",
@@ -205,7 +207,7 @@ export const integrationsRouter = createTRPCRouter({
                   Condition: {
                     ArnLike: {
                       "aws:PrincipalArn": [
-                        `arn:aws:iam::${accountId}:role/aws-reserved/sso.amazonaws.com/*/${currentArn.split("/")[1]}`,
+                        `arn:aws:iam::${accountId}:role/aws-reserved/sso.amazonaws.com/*/${currentRoleName}`,
                       ],
                     },
                   },
@@ -218,7 +220,7 @@ export const integrationsRouter = createTRPCRouter({
                 {
                   Effect: "Allow",
                   Principal: {
-                    AWS: `arn:aws:iam::${accountId}:role/${currentArn.split("/")[1]}`,
+                    AWS: `arn:aws:iam::${accountId}:role/${currentRoleName}`,
                   },
                   Action: "sts:AssumeRole",
                 },

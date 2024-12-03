@@ -272,7 +272,7 @@ export const JobHistoryChart: React.FC<{
                 animationDuration={animationDuration}
                 fill={color}
                 onClick={(e) => {
-                  const start = new Date((e as any).date);
+                  const start = new Date(e.date);
                   const end = addDays(start, 1);
 
                   const afterStartCondition: JobCondition = {
