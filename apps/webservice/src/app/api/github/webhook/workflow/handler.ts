@@ -14,6 +14,7 @@ import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
+  isPassingAllPolicies,
   onJobCompletion,
 } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
@@ -60,6 +61,26 @@ const getJob = async (externalId: number, name: string) => {
     .then(takeFirstOrNull);
 };
 
+const dispatchJobsForNewerRelease = async (releaseId: string) => {
+  const releaseJobTriggers = await db
+    .select()
+    .from(schema.releaseJobTrigger)
+    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
+    .where(
+      and(
+        eq(schema.releaseJobTrigger.releaseId, releaseId),
+        eq(schema.job.status, JobStatus.Pending),
+      ),
+    )
+    .then((rows) => rows.map((r) => r.release_job_trigger));
+
+  return dispatchReleaseJobTriggers(db)
+    .releaseTriggers(releaseJobTriggers)
+    .filter(isPassingAllPolicies)
+    .then(cancelOldReleaseJobTriggersOnJobDispatch)
+    .dispatch();
+};
+
 const maybeRetryJob = async (job: schema.Job) => {
   const jobInfo = await db
     .select()
@@ -85,7 +106,8 @@ const maybeRetryJob = async (job: schema.Job) => {
     .limit(1)
     .then(takeFirst);
 
-  if (latestRelease.id !== jobInfo.release.id) return;
+  if (latestRelease.id !== jobInfo.release.id)
+    return dispatchJobsForNewerRelease(latestRelease.id);
 
   const releaseJobTriggers = await db
     .select({
@@ -99,7 +121,7 @@ const maybeRetryJob = async (job: schema.Job) => {
 
   if (releaseJobTriggerCount >= jobInfo.deployment.retryCount) return;
 
-  const createTrigger = createReleaseJobTriggers(db, "new_release")
+  const createTrigger = createReleaseJobTriggers(db, "retry")
     .releases([jobInfo.release.id])
     .environments([jobInfo.release_job_trigger.environmentId]);
 
@@ -168,6 +190,6 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
       set: { value: links },
     });
 
-  if (job.status === JobStatus.Failure) await maybeRetryJob(job);
-  if (job.status === JobStatus.Completed) return onJobCompletion(job);
+  if (status === JobStatus.Failure) await maybeRetryJob(job);
+  if (status === JobStatus.Completed) return onJobCompletion(job);
 };

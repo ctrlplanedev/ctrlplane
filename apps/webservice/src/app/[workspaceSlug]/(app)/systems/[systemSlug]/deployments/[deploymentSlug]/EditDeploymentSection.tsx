@@ -121,7 +121,7 @@ export const EditDeploymentSection: React.FC<{
             control={form.control}
             name="retryCount"
             render={({ field: { value, onChange } }) => (
-              <FormItem className="w-16">
+              <FormItem>
                 <FormLabel>Retry Count</FormLabel>
                 <FormControl>
                   <Input
@@ -130,6 +130,7 @@ export const EditDeploymentSection: React.FC<{
                     onChange={(e) => onChange(e.target.valueAsNumber)}
                     min={0}
                     step={1}
+                    className="w-16"
                   />
                 </FormControl>
                 <FormMessage />

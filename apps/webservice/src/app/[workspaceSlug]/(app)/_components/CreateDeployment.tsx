@@ -187,11 +187,17 @@ export const CreateDeploymentDialog: React.FC<{
             <FormField
               control={form.control}
               name="retryCount"
-              render={({ field }) => (
+              render={({ field: { value, onChange } }) => (
                 <FormItem>
                   <FormLabel>Retry Count</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} />
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={value}
+                      onChange={(e) => onChange(e.target.valueAsNumber)}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
