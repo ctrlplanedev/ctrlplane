@@ -22,6 +22,16 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
+const iamClient = new IAMClient({
+  region: "us-east-1",
+  credentials: defaultProvider(),
+});
+
+const stsClient = new STSClient({
+  region: "us-east-1",
+  credentials: defaultProvider(),
+});
+
 export const integrationsRouter = createTRPCRouter({
   google: createTRPCRouter({
     createServiceAccount: protectedProcedure
@@ -167,16 +177,6 @@ export const integrationsRouter = createTRPCRouter({
             message: "AWS Role Arn already defined.",
           });
 
-        const iamClient = new IAMClient({
-          region: "us-east-1",
-          credentials: defaultProvider(),
-        });
-
-        const stsClient = new STSClient({
-          region: "us-east-1",
-          credentials: defaultProvider(),
-        });
-
         const { Arn: currentArn, Account: accountId } = await stsClient.send(
           new GetCallerIdentityCommand({}),
         );
@@ -190,33 +190,40 @@ export const integrationsRouter = createTRPCRouter({
 
         const isSSORole = currentArn.includes("AWSReservedSSO");
 
-        const sanitizedRoleArn = isSSORole
-          ? `arn:aws:iam::${accountId}:role/aws-reserved/sso.amazonaws.com/*/${currentArn.split("/")[1]}`
-          : `arn:aws:iam::${accountId}:role/${currentArn.split("/")[1]}`;
-
         const roleName = `ctrlplane-${ws.slug}`;
 
-        const assumeRolePolicyDocument = {
-          Version: "2012-10-17",
-          Statement: [
-            {
-              Effect: "Allow",
-              Principal: {
-                AWS: isSSORole
-                  ? `arn:aws:iam::${accountId}:root`
-                  : sanitizedRoleArn,
-              },
-              Action: "sts:AssumeRole",
-              ...(isSSORole && {
-                Condition: {
-                  ArnLike: {
-                    "aws:PrincipalArn": [sanitizedRoleArn],
+        const assumeRolePolicyDocument = isSSORole
+          ? {
+              Version: "2012-10-17",
+              Statement: [
+                {
+                  Effect: "Allow",
+                  Principal: {
+                    AWS: `arn:aws:iam::${accountId}:root`,
+                  },
+                  Action: "sts:AssumeRole",
+                  Condition: {
+                    ArnLike: {
+                      "aws:PrincipalArn": [
+                        `arn:aws:iam::${accountId}:role/aws-reserved/sso.amazonaws.com/*/${currentArn.split("/")[1]}`,
+                      ],
+                    },
                   },
                 },
-              }),
-            },
-          ],
-        };
+              ],
+            }
+          : {
+              Version: "2012-10-17",
+              Statement: [
+                {
+                  Effect: "Allow",
+                  Principal: {
+                    AWS: `arn:aws:iam::${accountId}:role/${currentArn.split("/")[1]}`,
+                  },
+                  Action: "sts:AssumeRole",
+                },
+              ],
+            };
 
         const createRoleResponse = await iamClient.send(
           new CreateRoleCommand({
@@ -296,11 +303,6 @@ export const integrationsRouter = createTRPCRouter({
             code: "NOT_FOUND",
             message: "AWS Role does not exist.",
           });
-
-        const iamClient = new IAMClient({
-          region: "us-east-1",
-          credentials: defaultProvider(),
-        });
 
         const roleName = `ctrlplane-${ws.slug}`;
 
