@@ -30,6 +30,7 @@ export const ResourceVisualizationDiagram: React.FC<
   const setReactFlowInstance = useLayoutAndFitView(nodes, {
     direction: "LR",
     extraEdgeLength: 50,
+    focusedNodeId: relationships.resource.id,
   });
 
   return (

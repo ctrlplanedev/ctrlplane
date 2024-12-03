@@ -22,7 +22,7 @@ export const ResourceNode: React.FC<ResourceNodeProps> = (node) => {
       <div
         className={cn(
           "flex w-[250px] cursor-pointer flex-col gap-2 rounded-md border bg-neutral-900/30 px-4 py-3",
-          data.isBaseNode && "border-2 border-neutral-600",
+          data.isBaseNode && "bg-neutral-800/60",
         )}
         onClick={() => setResourceId(data.id)}
       >
