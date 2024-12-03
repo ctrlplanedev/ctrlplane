@@ -70,8 +70,9 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     job.id,
     { status, externalId },
     {
-      [String(ReservedMetadataKey.Links)]:
-        `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`,
+      [String(ReservedMetadataKey.Links)]: {
+        GitHub: `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`,
+      },
     },
   );
 };

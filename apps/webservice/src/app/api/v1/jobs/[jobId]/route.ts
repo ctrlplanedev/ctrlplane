@@ -3,43 +3,31 @@ import { NextResponse } from "next/server";
 
 import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  deployment,
-  environment,
-  environmentPolicyApproval,
-  job,
-  jobVariable,
-  release,
-  releaseJobTrigger,
-  resource,
-  resourceMetadata,
-  runbook,
-  runbookJobTrigger,
-  updateJob,
-  user,
-} from "@ctrlplane/db/schema";
-import { onJobCompletion, onJobFailure } from "@ctrlplane/job-dispatch";
+import * as schema from "@ctrlplane/db/schema";
+import { updateJob } from "@ctrlplane/job-dispatch";
 import { variablesAES256 } from "@ctrlplane/secrets";
 import { Permission } from "@ctrlplane/validators/auth";
-import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { authn, authz } from "~/app/api/v1/auth";
 import { request } from "~/app/api/v1/middleware";
 
 type ApprovalJoinResult = {
-  environment_policy_approval: typeof environmentPolicyApproval.$inferSelect;
-  user: typeof user.$inferSelect | null;
+  environment_policy_approval: typeof schema.environmentPolicyApproval.$inferSelect;
+  user: typeof schema.user.$inferSelect | null;
 };
 
 const getApprovalDetails = async (releaseId: string, policyId: string) =>
   db
     .select()
-    .from(environmentPolicyApproval)
-    .leftJoin(user, eq(environmentPolicyApproval.userId, user.id))
+    .from(schema.environmentPolicyApproval)
+    .leftJoin(
+      schema.user,
+      eq(schema.environmentPolicyApproval.userId, schema.user.id),
+    )
     .where(
       and(
-        eq(environmentPolicyApproval.releaseId, releaseId),
-        eq(environmentPolicyApproval.policyId, policyId),
+        eq(schema.environmentPolicyApproval.releaseId, releaseId),
+        eq(schema.environmentPolicyApproval.policyId, policyId),
       ),
     )
     .then(takeFirstOrNull)
@@ -72,18 +60,38 @@ export const GET = request()
   .handle<object, { params: { jobId: string } }>(async ({ db }, { params }) => {
     const row = await db
       .select()
-      .from(job)
-      .leftJoin(runbookJobTrigger, eq(runbookJobTrigger.jobId, job.id))
-      .leftJoin(runbook, eq(runbookJobTrigger.runbookId, runbook.id))
-      .leftJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+      .from(schema.job)
       .leftJoin(
-        environment,
-        eq(environment.id, releaseJobTrigger.environmentId),
+        schema.runbookJobTrigger,
+        eq(schema.runbookJobTrigger.jobId, schema.job.id),
       )
-      .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
-      .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
-      .leftJoin(deployment, eq(deployment.id, release.deploymentId))
-      .where(and(eq(job.id, params.jobId), isNull(resource.deletedAt)))
+      .leftJoin(
+        schema.runbook,
+        eq(schema.runbookJobTrigger.runbookId, schema.runbook.id),
+      )
+      .leftJoin(
+        schema.releaseJobTrigger,
+        eq(schema.releaseJobTrigger.jobId, schema.job.id),
+      )
+      .leftJoin(
+        schema.environment,
+        eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+      )
+      .leftJoin(
+        schema.resource,
+        eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+      )
+      .leftJoin(
+        schema.release,
+        eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      )
+      .leftJoin(
+        schema.deployment,
+        eq(schema.release.deploymentId, schema.deployment.id),
+      )
+      .where(
+        and(eq(schema.job.id, params.jobId), isNull(schema.resource.deletedAt)),
+      )
       .then(takeFirstOrNull);
 
     if (row == null)
@@ -110,8 +118,8 @@ export const GET = request()
 
     const jobVariableRows = await db
       .select()
-      .from(jobVariable)
-      .where(eq(jobVariable.jobId, params.jobId));
+      .from(schema.jobVariable)
+      .where(eq(schema.jobVariable.jobId, params.jobId));
 
     const variables = Object.fromEntries(
       jobVariableRows.map((v) => {
@@ -126,8 +134,8 @@ export const GET = request()
 
     const metadata = await db
       .select()
-      .from(resourceMetadata)
-      .where(eq(resourceMetadata.resourceId, je.resource.id))
+      .from(schema.resourceMetadata)
+      .where(eq(schema.resourceMetadata.resourceId, je.resource.id))
       .then((rows) => Object.fromEntries(rows.map((m) => [m.key, m.value])));
 
     return NextResponse.json({
@@ -137,7 +145,7 @@ export const GET = request()
     });
   });
 
-const bodySchema = updateJob;
+const bodySchema = schema.updateJob;
 
 export const PATCH = async (
   req: NextRequest,
@@ -146,23 +154,7 @@ export const PATCH = async (
   const response = await req.json();
   const body = bodySchema.parse(response);
 
-  const je = await db
-    .update(job)
-    .set(body)
-    .where(and(eq(job.id, params.jobId)))
-    .returning()
-    .then(takeFirstOrNull);
+  const job = await updateJob(params.jobId, body);
 
-  if (je == null)
-    return NextResponse.json(
-      { error: "Job execution not found" },
-      { status: 404 },
-    );
-
-  if (je.status === JobStatus.Completed)
-    onJobCompletion(je).catch(console.error);
-
-  if (je.status === JobStatus.Failure) onJobFailure(je).catch(console.error);
-
-  return NextResponse.json(je);
+  return NextResponse.json(job);
 };

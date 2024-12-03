@@ -52,7 +52,7 @@ const updateJobMetadata = async (
 export const updateJob = async (
   jobId: string,
   data: schema.UpdateJob,
-  metadata: Record<string, any>,
+  metadata?: Record<string, any>,
 ) => {
   const jobBeforeUpdate = await db.query.job.findFirst({
     where: eq(schema.job.id, jobId),
@@ -68,7 +68,8 @@ export const updateJob = async (
     .returning()
     .then(takeFirst);
 
-  await updateJobMetadata(jobId, jobBeforeUpdate.metadata, metadata);
+  if (metadata != null)
+    await updateJobMetadata(jobId, jobBeforeUpdate.metadata, metadata);
 
   const isJobFailure =
     data.status === JobStatus.Failure &&
@@ -79,4 +80,6 @@ export const updateJob = async (
     data.status === JobStatus.Completed &&
     jobBeforeUpdate.status !== JobStatus.Completed;
   if (isJobCompletion) await onJobCompletion(updatedJob);
+
+  return updatedJob;
 };
