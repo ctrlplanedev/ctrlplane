@@ -45,8 +45,9 @@ export const CombinationsTable: React.FC<{
                       ([key, value]) => ({
                         type: "metadata",
                         key,
-                        value,
-                        operator: "equals",
+                        ...(value != null
+                          ? { value, operator: "equals" }
+                          : { operator: "null" }),
                       }),
                     ),
                   }),
