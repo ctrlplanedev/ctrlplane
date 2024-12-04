@@ -3,7 +3,7 @@ import pRetry from "p-retry";
 
 import { logger } from "@ctrlplane/logger";
 
-import type { ApiResponse, Variable, Workspace } from "./types.js";
+import type { ApiError, ApiResponse, Variable, Workspace } from "./types.js";
 import { env } from "./config.js";
 
 const COMMON_HEADERS = {
@@ -29,6 +29,19 @@ async function fetchRetry<T>(
       const response = await fetch(url, {
         ...options,
       });
+      if (!response.ok) {
+        const errorData = (await response.json()) as ApiError;
+        if (response.status === 429)
+          throw new Error(
+            `Rate limit exceeded: ${errorData.errors[0]?.detail}`,
+          );
+        throw new Error(
+          `API error: ${errorData.errors[0]?.title} - ${
+            errorData.errors[0]?.detail ?? ""
+          }`,
+        );
+      }
+
       return response.json() as Promise<ApiResponse<T>>;
     },
     {
@@ -37,6 +50,8 @@ async function fetchRetry<T>(
       minTimeout: 4000,
       maxTimeout: 32000,
       onFailedAttempt: (error: FailedAttemptError) => {
+        if (!error.message.includes("Rate limit exceeded"))
+          logger.error("Non-retryable error occurred", { error });
         logger.warn(
           `Fetch attempt ${error.attemptNumber} failed. There are ${
             error.retriesLeft
