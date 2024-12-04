@@ -158,7 +158,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .from(jobMetadata)
         .where(
           and(eq(jobMetadata.jobId, job.id), eq(jobMetadata.key, cond.key)),
-        ),
+        )
+        .limit(1),
     );
 
   if (cond.operator === MetadataOperator.Regex)
@@ -172,7 +173,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
             eq(jobMetadata.key, cond.key),
             sql`${jobMetadata.value} ~ ${cond.value}`,
           ),
-        ),
+        )
+        .limit(1),
     );
 
   if (cond.operator === MetadataOperator.Like)
@@ -186,7 +188,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
             eq(jobMetadata.key, cond.key),
             like(jobMetadata.value, cond.value),
           ),
-        ),
+        )
+        .limit(1),
     );
 
   return exists(
@@ -199,7 +202,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
           eq(jobMetadata.key, cond.key),
           eq(jobMetadata.value, cond.value),
         ),
-      ),
+      )
+      .limit(1),
   );
 };
 
@@ -223,7 +227,6 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
     return ilike(release.version, `%${cond.value}%`);
   return sql`${release.version} ~ ${cond.value}`;
 };
-
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.Metadata)
     return buildMetadataCondition(tx, cond);
@@ -232,7 +235,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.Deployment)
     return exists(
       tx
-        .select({ id: releaseJobTrigger.jobId })
+        .select({ value: sql<number>`1` })
         .from(releaseJobTrigger)
         .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
         .where(
@@ -246,7 +249,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.Environment)
     return exists(
       tx
-        .select({ id: releaseJobTrigger.jobId })
+        .select({ value: sql<number>`1` })
         .from(releaseJobTrigger)
         .where(
           and(
@@ -259,7 +262,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.Version)
     return exists(
       tx
-        .select({ id: releaseJobTrigger.jobId })
+        .select({ value: sql<number>`1` })
         .from(releaseJobTrigger)
         .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
         .where(
@@ -270,7 +273,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.JobTarget)
     return exists(
       tx
-        .select({ id: releaseJobTrigger.jobId })
+        .select({ value: sql<number>`1` })
         .from(releaseJobTrigger)
         .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
         .where(
@@ -285,7 +288,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.Release)
     return exists(
       tx
-        .select({ id: releaseJobTrigger.jobId })
+        .select({ value: sql<number>`1` })
         .from(releaseJobTrigger)
         .where(
           and(
