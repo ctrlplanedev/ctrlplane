@@ -5,6 +5,7 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
+import type { z } from "zod";
 import {
   and,
   eq,
@@ -97,6 +98,7 @@ export const job = pgTable("job", {
 export const jobRelations = relations(job, ({ many }) => ({
   releaseTrigger: many(releaseJobTrigger),
   jobRelationships: many(jobResourceRelationship),
+  metadata: many(jobMetadata),
 }));
 
 export const jobMetadata = pgTable(
@@ -113,6 +115,9 @@ export const jobMetadata = pgTable(
 );
 
 export type JobMetadata = InferSelectModel<typeof jobMetadata>;
+export const jobMetadataRelations = relations(jobMetadata, ({ one }) => ({
+  job: one(job, { fields: [jobMetadata.jobId], references: [job.id] }),
+}));
 export type Job = InferSelectModel<typeof job>;
 export type JobStatus = Job["status"];
 export const updateJob = createInsertSchema(job)
@@ -123,6 +128,7 @@ export const updateJob = createInsertSchema(job)
     updatedAt: true,
   })
   .partial();
+export type UpdateJob = z.infer<typeof updateJob>;
 
 export const jobVariable = pgTable(
   "job_variable",

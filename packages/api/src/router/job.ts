@@ -1,19 +1,4 @@
 import type { Tx } from "@ctrlplane/db";
-import type {
-  Deployment,
-  Environment,
-  EnvironmentPolicy,
-  EnvironmentPolicyReleaseWindow,
-  Job,
-  JobAgent,
-  JobMetadata,
-  JobVariable,
-  Release,
-  ReleaseDependency,
-  ReleaseJobTrigger,
-  Resource,
-  User,
-} from "@ctrlplane/db/schema";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -29,31 +14,13 @@ import {
   sql,
   takeFirst,
 } from "@ctrlplane/db";
-import {
-  createJobAgent,
-  deployment,
-  environment,
-  environmentPolicy,
-  environmentPolicyReleaseWindow,
-  job,
-  jobAgent,
-  jobMatchesCondition,
-  jobMetadata,
-  jobVariable,
-  release,
-  releaseDependency,
-  releaseJobTrigger,
-  resource,
-  system,
-  updateJob,
-  user,
-} from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   dispatchReleaseJobTriggers,
   getRolloutDateForReleaseJobTrigger,
   isDateInTimeWindow,
-  onJobCompletion,
+  updateJob,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { jobCondition, JobStatus } from "@ctrlplane/validators/jobs";
@@ -63,30 +30,45 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 const releaseJobTriggerQuery = (tx: Tx) =>
   tx
     .select()
-    .from(releaseJobTrigger)
-    .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-    .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId));
+    .from(schema.releaseJobTrigger)
+    .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+    )
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .innerJoin(
+      schema.deployment,
+      eq(schema.release.deploymentId, schema.deployment.id),
+    )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.jobAgent,
+      eq(schema.jobAgent.id, schema.deployment.jobAgentId),
+    );
 
 const processReleaseJobTriggerWithAdditionalDataRows = (
   rows: Array<{
-    release_job_trigger: ReleaseJobTrigger;
-    job: Job;
-    resource: Resource;
-    release: Release;
-    deployment: Deployment;
-    environment: Environment;
-    job_agent: JobAgent;
-    job_metadata: JobMetadata | null;
-    environment_policy: EnvironmentPolicy | null;
-    environment_policy_release_window: EnvironmentPolicyReleaseWindow | null;
-    user?: User | null;
-    release_dependency?: ReleaseDependency | null;
+    release_job_trigger: schema.ReleaseJobTrigger;
+    job: schema.Job;
+    resource: schema.Resource;
+    release: schema.Release;
+    deployment: schema.Deployment;
+    environment: schema.Environment;
+    job_agent: schema.JobAgent;
+    job_metadata: schema.JobMetadata | null;
+    environment_policy: schema.EnvironmentPolicy | null;
+    environment_policy_release_window: schema.EnvironmentPolicyReleaseWindow | null;
+    user?: schema.User | null;
+    release_dependency?: schema.ReleaseDependency | null;
     deployment_name?: { deploymentName: string; deploymentId: string } | null;
-    job_variable?: JobVariable | null;
+    job_variable?: schema.JobVariable | null;
   }>,
 ) =>
   _.chain(rows)
@@ -157,15 +139,18 @@ const releaseJobTriggerRouter = createTRPCRouter({
       })
       .query(async ({ ctx, input }) => {
         const items = await releaseJobTriggerQuery(ctx.db)
-          .leftJoin(system, eq(system.id, deployment.systemId))
+          .leftJoin(
+            schema.system,
+            eq(schema.system.id, schema.deployment.systemId),
+          )
           .where(
             and(
-              eq(system.workspaceId, input.workspaceId),
-              isNull(resource.deletedAt),
-              jobMatchesCondition(ctx.db, input.filter),
+              eq(schema.system.workspaceId, input.workspaceId),
+              isNull(schema.resource.deletedAt),
+              schema.jobMatchesCondition(ctx.db, input.filter),
             ),
           )
-          .orderBy(asc(releaseJobTrigger.createdAt))
+          .orderBy(asc(schema.releaseJobTrigger.createdAt))
           .limit(input.limit)
           .offset(input.offset)
           .then((data) =>
@@ -181,23 +166,38 @@ const releaseJobTriggerRouter = createTRPCRouter({
 
         const total = await ctx.db
           .select({
-            count: countDistinct(releaseJobTrigger.id),
+            count: countDistinct(schema.releaseJobTrigger.id),
           })
-          .from(releaseJobTrigger)
-          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-          .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+          .from(schema.releaseJobTrigger)
           .innerJoin(
-            environment,
-            eq(releaseJobTrigger.environmentId, environment.id),
+            schema.job,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
           )
-          .innerJoin(system, eq(environment.systemId, system.id))
+          .innerJoin(
+            schema.resource,
+            eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+          )
+          .innerJoin(
+            schema.release,
+            eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+          )
+          .innerJoin(
+            schema.deployment,
+            eq(schema.release.deploymentId, schema.deployment.id),
+          )
+          .innerJoin(
+            schema.environment,
+            eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+          )
+          .innerJoin(
+            schema.system,
+            eq(schema.environment.systemId, schema.system.id),
+          )
           .where(
             and(
-              eq(system.workspaceId, input.workspaceId),
-              isNull(resource.deletedAt),
-              jobMatchesCondition(ctx.db, input.filter),
+              eq(schema.system.workspaceId, input.workspaceId),
+              isNull(schema.resource.deletedAt),
+              schema.jobMatchesCondition(ctx.db, input.filter),
             ),
           )
           .then(takeFirst)
@@ -219,32 +219,38 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .query(async ({ ctx, input }) => {
-        const dateTruncExpr = sql<Date>`date_trunc('day', ${releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
 
         const subquery = ctx.db
           .select({
             date: dateTruncExpr.as("date"),
-            status: job.status,
+            status: schema.job.status,
             countPerStatus: sql<number>`COUNT(*)`.as("countPerStatus"),
           })
-          .from(releaseJobTrigger)
-          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+          .from(schema.releaseJobTrigger)
           .innerJoin(
-            environment,
-            eq(releaseJobTrigger.environmentId, environment.id),
+            schema.job,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
           )
-          .innerJoin(system, eq(environment.systemId, system.id))
+          .innerJoin(
+            schema.environment,
+            eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+          )
+          .innerJoin(
+            schema.system,
+            eq(schema.environment.systemId, schema.system.id),
+          )
           .where(
             and(
-              eq(system.workspaceId, input.workspaceId),
-              notInArray(job.status, [
+              eq(schema.system.workspaceId, input.workspaceId),
+              notInArray(schema.job.status, [
                 JobStatus.Pending,
                 JobStatus.Cancelled,
                 JobStatus.Skipped,
               ]),
             ),
           )
-          .groupBy(dateTruncExpr, job.status)
+          .groupBy(dateTruncExpr, schema.job.status)
           .as("sub");
 
         return ctx.db
@@ -283,9 +289,9 @@ const releaseJobTriggerRouter = createTRPCRouter({
       releaseJobTriggerQuery(ctx.db)
         .where(
           and(
-            eq(deployment.id, input.deploymentId),
-            eq(environment.id, input.environmentId),
-            isNull(resource.deletedAt),
+            eq(schema.deployment.id, input.deploymentId),
+            eq(schema.environment.id, input.environmentId),
+            isNull(schema.resource.deletedAt),
           ),
         )
         .then((data) =>
@@ -317,23 +323,29 @@ const releaseJobTriggerRouter = createTRPCRouter({
     )
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
-        .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
         .leftJoin(
-          environmentPolicy,
-          eq(environment.policyId, environmentPolicy.id),
+          schema.jobMetadata,
+          eq(schema.jobMetadata.jobId, schema.job.id),
         )
         .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+          schema.environmentPolicy,
+          eq(schema.environment.policyId, schema.environmentPolicy.id),
+        )
+        .leftJoin(
+          schema.environmentPolicyReleaseWindow,
+          eq(
+            schema.environmentPolicyReleaseWindow.policyId,
+            schema.environmentPolicy.id,
+          ),
         )
         .where(
           and(
-            eq(release.id, input.releaseId),
-            isNull(resource.deletedAt),
-            jobMatchesCondition(ctx.db, input.filter),
+            eq(schema.release.id, input.releaseId),
+            isNull(schema.resource.deletedAt),
+            schema.jobMatchesCondition(ctx.db, input.filter),
           ),
         )
-        .orderBy(desc(releaseJobTrigger.createdAt))
+        .orderBy(desc(schema.releaseJobTrigger.createdAt))
         .limit(input.limit)
         .offset(input.offset)
         .then(processReleaseJobTriggerWithAdditionalDataRows),
@@ -348,33 +360,48 @@ const releaseJobTriggerRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const deploymentName = ctx.db
         .select({
-          deploymentName: deployment.name,
-          deploymentId: deployment.id,
+          deploymentName: schema.deployment.name,
+          deploymentId: schema.deployment.id,
         })
-        .from(deployment)
+        .from(schema.deployment)
         .as("deployment_name");
 
       const data = await releaseJobTriggerQuery(ctx.db)
-        .leftJoin(user, eq(releaseJobTrigger.causedById, user.id))
-        .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
-        .leftJoin(jobVariable, eq(jobVariable.jobId, job.id))
         .leftJoin(
-          environmentPolicy,
-          eq(environment.policyId, environmentPolicy.id),
+          schema.user,
+          eq(schema.releaseJobTrigger.causedById, schema.user.id),
         )
         .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+          schema.jobMetadata,
+          eq(schema.jobMetadata.jobId, schema.job.id),
         )
         .leftJoin(
-          releaseDependency,
-          eq(releaseDependency.releaseId, release.id),
+          schema.jobVariable,
+          eq(schema.jobVariable.jobId, schema.job.id),
+        )
+        .leftJoin(
+          schema.environmentPolicy,
+          eq(schema.environment.policyId, schema.environmentPolicy.id),
+        )
+        .leftJoin(
+          schema.environmentPolicyReleaseWindow,
+          eq(
+            schema.environmentPolicyReleaseWindow.policyId,
+            schema.environmentPolicy.id,
+          ),
+        )
+        .leftJoin(
+          schema.releaseDependency,
+          eq(schema.releaseDependency.releaseId, schema.release.id),
         )
         .leftJoin(
           deploymentName,
-          eq(deploymentName.deploymentId, releaseDependency.deploymentId),
+          eq(
+            deploymentName.deploymentId,
+            schema.releaseDependency.deploymentId,
+          ),
         )
-        .where(and(eq(job.id, input), isNull(resource.deletedAt)))
+        .where(and(eq(schema.job.id, input), isNull(schema.resource.deletedAt)))
         .then(processReleaseJobTriggerWithAdditionalDataRows)
         .then(takeFirst);
 
@@ -431,7 +458,10 @@ const jobAgentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
-      ctx.db.select().from(jobAgent).where(eq(jobAgent.workspaceId, input)),
+      ctx.db
+        .select()
+        .from(schema.jobAgent)
+        .where(eq(schema.jobAgent.workspaceId, input)),
     ),
 
   create: protectedProcedure
@@ -441,9 +471,9 @@ const jobAgentRouter = createTRPCRouter({
           .perform(Permission.JobAgentCreate)
           .on({ type: "workspace", id: input.workspaceId }),
     })
-    .input(createJobAgent)
+    .input(schema.createJobAgent)
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(jobAgent).values(input).returning().then(takeFirst),
+      ctx.db.insert(schema.jobAgent).values(input).returning().then(takeFirst),
     ),
 });
 
@@ -460,12 +490,15 @@ const jobTriggerRouter = createTRPCRouter({
       .mutation(({ ctx, input }) =>
         ctx.db
           .select()
-          .from(releaseJobTrigger)
-          .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
+          .from(schema.releaseJobTrigger)
+          .innerJoin(
+            schema.job,
+            eq(schema.job.id, schema.releaseJobTrigger.jobId),
+          )
           .where(
             and(
-              eq(releaseJobTrigger.environmentId, input),
-              eq(job.status, JobStatus.Pending),
+              eq(schema.releaseJobTrigger.environmentId, input),
+              eq(schema.job.status, JobStatus.Pending),
             ),
           )
           .then((jcs) =>
@@ -489,15 +522,21 @@ const metadataKeysRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db
-        .selectDistinct({ key: jobMetadata.key })
-        .from(release)
+        .selectDistinct({ key: schema.jobMetadata.key })
+        .from(schema.release)
         .innerJoin(
-          releaseJobTrigger,
-          eq(releaseJobTrigger.releaseId, release.id),
+          schema.releaseJobTrigger,
+          eq(schema.releaseJobTrigger.releaseId, schema.release.id),
         )
-        .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-        .innerJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
-        .where(eq(release.id, input))
+        .innerJoin(
+          schema.job,
+          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.jobMetadata,
+          eq(schema.jobMetadata.jobId, schema.job.id),
+        )
+        .where(eq(schema.release.id, input))
         .then((r) => r.map((row) => row.key)),
     ),
 });
@@ -513,9 +552,14 @@ export const jobRouter = createTRPCRouter({
     .input(z.string())
     .query(({ ctx, input }) =>
       releaseJobTriggerQuery(ctx.db)
-        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
+        .where(
+          and(eq(schema.resource.id, input), isNull(schema.resource.deletedAt)),
+        )
         .limit(1_000)
-        .orderBy(desc(job.createdAt), desc(releaseJobTrigger.createdAt))
+        .orderBy(
+          desc(schema.job.createdAt),
+          desc(schema.releaseJobTrigger.createdAt),
+        )
         .then((data) =>
           data.map((t) => ({
             ...t.release_job_trigger,
@@ -534,23 +578,8 @@ export const jobRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.JobUpdate).on({ type: "job", id: input.id }),
     })
-    .input(z.object({ id: z.string().uuid(), data: updateJob }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .update(job)
-        .set(input.data)
-        .where(eq(job.id, input.id))
-        .returning()
-        .then(takeFirst)
-        .then((job) => {
-          if (
-            input.data.status === JobStatus.Completed &&
-            job.status === JobStatus.Completed
-          )
-            onJobCompletion(job);
-          return job;
-        }),
-    ),
+    .input(z.object({ id: z.string().uuid(), data: schema.updateJob }))
+    .mutation(({ input }) => updateJob(input.id, input.data)),
 
   config: releaseJobTriggerRouter,
   agent: jobAgentRouter,

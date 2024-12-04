@@ -168,6 +168,7 @@ export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
   "force_deploy", // force deploying a release
   "new_environment",
   "variable_changed",
+  "retry", // retrying a failed job
 ]);
 
 export const releaseJobTrigger = pgTable(

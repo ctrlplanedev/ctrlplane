@@ -117,6 +117,27 @@ export const EditDeploymentSection: React.FC<{
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="retryCount"
+            render={({ field: { value, onChange } }) => (
+              <FormItem>
+                <FormLabel>Retry Count</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    value={value}
+                    onChange={(e) => onChange(e.target.valueAsNumber)}
+                    min={0}
+                    step={1}
+                    className="w-16"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <FormRootError />
 
           <Button

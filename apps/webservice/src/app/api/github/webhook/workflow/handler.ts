@@ -1,9 +1,10 @@
 import type { WorkflowRunEvent } from "@octokit/webhooks-types";
 
-import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
-import { onJobCompletion } from "@ctrlplane/job-dispatch";
+import { updateJob } from "@ctrlplane/job-dispatch";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
@@ -65,34 +66,13 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
       : convertStatus(externalStatus);
 
   const externalId = id.toString();
-  await db
-    .update(schema.job)
-    .set({ status, externalId })
-    .where(eq(schema.job.id, job.id));
-
-  const existingUrlMetadata = await db
-    .select()
-    .from(schema.jobMetadata)
-    .where(
-      and(
-        eq(schema.jobMetadata.jobId, job.id),
-        eq(schema.jobMetadata.key, "ctrlplane/links"),
-      ),
-    )
-    .then(takeFirstOrNull);
-
-  const links = JSON.stringify({
-    ...JSON.parse(existingUrlMetadata?.value ?? "{}"),
-    GitHub: `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`,
-  });
-
-  await db
-    .insert(schema.jobMetadata)
-    .values([{ jobId: job.id, key: "ctrlplane/links", value: links }])
-    .onConflictDoUpdate({
-      target: [schema.jobMetadata.jobId, schema.jobMetadata.key],
-      set: { value: links },
-    });
-
-  if (job.status === JobStatus.Completed) return onJobCompletion(job);
+  await updateJob(
+    job.id,
+    { status, externalId },
+    {
+      [String(ReservedMetadataKey.Links)]: {
+        GitHub: `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`,
+      },
+    },
+  );
 };
