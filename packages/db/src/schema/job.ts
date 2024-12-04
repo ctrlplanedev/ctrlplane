@@ -230,71 +230,33 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
   if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
   if (cond.type === JobFilterType.Deployment)
-    return exists(
-      tx
-        .select({ id: releaseJobTrigger.jobId })
-        .from(releaseJobTrigger)
-        .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-        .where(
-          and(
-            eq(release.deploymentId, cond.value),
-            eq(releaseJobTrigger.jobId, job.id),
-          ),
-        )
-        .limit(1),
-    );
+    return eq(release.deploymentId, cond.value);
   if (cond.type === JobFilterType.Environment)
-    return exists(
-      tx
-        .select({ id: releaseJobTrigger.jobId })
-        .from(releaseJobTrigger)
-        .where(
-          and(
-            eq(releaseJobTrigger.environmentId, cond.value),
-            eq(releaseJobTrigger.jobId, job.id),
-          ),
-        )
-        .limit(1),
-    );
-  if (cond.type === FilterType.Version)
-    return exists(
-      tx
-        .select({ id: releaseJobTrigger.jobId })
-        .from(releaseJobTrigger)
-        .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-        .where(
-          and(eq(releaseJobTrigger.jobId, job.id), buildVersionCondition(cond)),
-        )
-        .limit(1),
-    );
+    return eq(releaseJobTrigger.environmentId, cond.value);
+  if (cond.type === FilterType.Version) return buildVersionCondition(cond);
   if (cond.type === JobFilterType.JobTarget)
-    return exists(
-      tx
-        .select({ id: releaseJobTrigger.jobId })
-        .from(releaseJobTrigger)
-        .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-        .where(
-          and(
-            eq(releaseJobTrigger.jobId, job.id),
-            eq(releaseJobTrigger.resourceId, cond.value),
-            isNull(resource.deletedAt),
-          ),
-        )
-        .limit(1),
-    );
-  if (cond.type === JobFilterType.Release)
-    return exists(
-      tx
-        .select({ id: releaseJobTrigger.jobId })
-        .from(releaseJobTrigger)
-        .where(
-          and(
-            eq(releaseJobTrigger.jobId, job.id),
-            eq(releaseJobTrigger.releaseId, cond.value),
-          ),
-        )
-        .limit(1),
-    );
+    return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
+  if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
+
+  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
+  const con =
+    cond.operator === ComparisonOperator.And ? and(...subCon)! : or(...subCon)!;
+  return cond.not ? not(con) : con;
+};
+
+const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
+  if (
+    cond.type !== FilterType.Metadata &&
+    cond.type !== FilterType.CreatedAt &&
+    cond.type !== JobFilterType.Status &&
+    cond.type !== FilterType.Comparison
+  )
+    return undefined;
+
+  if (cond.type === FilterType.Metadata)
+    return buildMetadataCondition(tx, cond);
+  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =
@@ -309,4 +271,13 @@ export function jobMatchesCondition(
   return condition == null || Object.keys(condition).length === 0
     ? undefined
     : buildCondition(tx, condition);
+}
+
+export function runbookJobMatchesCondition(
+  tx: Tx,
+  condition?: JobCondition,
+): SQL<unknown> | undefined {
+  return condition == null || Object.keys(condition).length === 0
+    ? undefined
+    : buildRunbookCondition(tx, condition);
 }

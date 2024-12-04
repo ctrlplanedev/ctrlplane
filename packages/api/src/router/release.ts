@@ -108,6 +108,7 @@ export const releaseRouter = createTRPCRouter({
           .select()
           .from(releaseJobTrigger)
           .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
           .innerJoin(
             resource,
             and(

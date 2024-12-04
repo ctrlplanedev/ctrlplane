@@ -179,7 +179,7 @@ export const runbookRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.runbookJobTrigger.runbookId, input.runbookId),
-            SCHEMA.jobMatchesCondition(ctx.db, input.filter),
+            SCHEMA.runbookJobMatchesCondition(ctx.db, input.filter),
           ),
         )
         .orderBy(desc(SCHEMA.job.createdAt))
@@ -214,7 +214,7 @@ export const runbookRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.runbookJobTrigger.runbookId, input.runbookId),
-            SCHEMA.jobMatchesCondition(ctx.db, input.filter),
+            SCHEMA.runbookJobMatchesCondition(ctx.db, input.filter),
           ),
         )
         .then(takeFirst)
