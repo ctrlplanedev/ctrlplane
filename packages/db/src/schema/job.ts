@@ -232,7 +232,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.Deployment)
     return exists(
       tx
-        .select()
+        .select({ id: releaseJobTrigger.jobId })
         .from(releaseJobTrigger)
         .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
         .where(
@@ -240,34 +240,37 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
             eq(release.deploymentId, cond.value),
             eq(releaseJobTrigger.jobId, job.id),
           ),
-        ),
+        )
+        .limit(1),
     );
   if (cond.type === JobFilterType.Environment)
     return exists(
       tx
-        .select()
+        .select({ id: releaseJobTrigger.jobId })
         .from(releaseJobTrigger)
         .where(
           and(
             eq(releaseJobTrigger.environmentId, cond.value),
             eq(releaseJobTrigger.jobId, job.id),
           ),
-        ),
+        )
+        .limit(1),
     );
   if (cond.type === FilterType.Version)
     return exists(
       tx
-        .select()
+        .select({ id: releaseJobTrigger.jobId })
         .from(releaseJobTrigger)
         .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
         .where(
           and(eq(releaseJobTrigger.jobId, job.id), buildVersionCondition(cond)),
-        ),
+        )
+        .limit(1),
     );
   if (cond.type === JobFilterType.JobTarget)
     return exists(
       tx
-        .select()
+        .select({ id: releaseJobTrigger.jobId })
         .from(releaseJobTrigger)
         .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
         .where(
@@ -276,19 +279,21 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
             eq(releaseJobTrigger.resourceId, cond.value),
             isNull(resource.deletedAt),
           ),
-        ),
+        )
+        .limit(1),
     );
   if (cond.type === JobFilterType.Release)
     return exists(
       tx
-        .select()
+        .select({ id: releaseJobTrigger.jobId })
         .from(releaseJobTrigger)
         .where(
           and(
             eq(releaseJobTrigger.jobId, job.id),
             eq(releaseJobTrigger.releaseId, cond.value),
           ),
-        ),
+        )
+        .limit(1),
     );
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
