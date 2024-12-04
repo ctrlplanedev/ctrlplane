@@ -10,6 +10,12 @@ import _ from "lodash";
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
+import {
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Table,
@@ -25,6 +31,7 @@ import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/r
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
+import { DailyJobsChart } from "../../../../../_components/DailyJobsChart";
 import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
@@ -60,12 +67,48 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     enabled: releaseIds.length > 0,
   });
 
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const dailyCounts = api.job.config.byDeploymentId.dailyCount.useQuery(
+    { deploymentId: deployment.id, timezone },
+    { enabled: releaseIds.length > 0, refetchInterval: 60_000 },
+  );
+  const totalJobs = (dailyCounts.data ?? []).reduce(
+    (acc, c) => acc + Number(c.totalCount),
+    0,
+  );
+
   const loading = releases.isLoading;
   const router = useRouter();
 
   return (
     <div>
       <div className="h-full text-sm">
+        <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+          <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
+            <CardTitle>Job executions</CardTitle>
+            <CardDescription>
+              Total executions of all jobs in the last 6 weeks
+            </CardDescription>
+          </div>
+          <div className="flex">
+            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
+              <span className="text-xs text-muted-foreground">Jobs</span>
+              <span className="text-lg font-bold leading-none sm:text-3xl">
+                {totalJobs}
+              </span>
+            </div>
+
+            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
+              <span className="text-xs text-muted-foreground">Releases</span>
+              <span className="text-lg font-bold leading-none sm:text-3xl">
+                {releases.data?.total ?? "-"}
+              </span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="flex border-b px-2 sm:p-6">
+          <DailyJobsChart dailyCounts={dailyCounts.data ?? []} />
+        </CardContent>
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
           <div className="flex flex-grow items-center gap-2">
             <ReleaseConditionDialog
