@@ -176,6 +176,10 @@ export const runbookRouter = createTRPCRouter({
           SCHEMA.jobVariable,
           eq(SCHEMA.jobVariable.jobId, SCHEMA.job.id),
         )
+        .leftJoin(
+          SCHEMA.jobMetadata,
+          eq(SCHEMA.jobMetadata.jobId, SCHEMA.job.id),
+        )
         .where(
           and(
             eq(SCHEMA.runbookJobTrigger.runbookId, input.runbookId),
@@ -192,13 +196,20 @@ export const runbookRouter = createTRPCRouter({
               runbookJobTrigger: j[0]!.runbook_job_trigger,
               job: {
                 ...j[0]!.job,
-                variables: j
+                variables: _.chain(j)
                   .map((v) => v.job_variable)
                   .filter(isPresent)
+                  .uniqBy((v) => v.key)
                   .map((v) => ({
                     ...v,
                     value: v.sensitive ? "(sensitive)" : v.value,
-                  })),
+                  }))
+                  .value(),
+                metadata: _.chain(j)
+                  .map((v) => v.job_metadata)
+                  .filter(isPresent)
+                  .uniqBy((v) => v.key)
+                  .value(),
               },
             }))
             .value(),

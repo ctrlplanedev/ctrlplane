@@ -1,6 +1,5 @@
 "use client";
 
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { IconFilter, IconLoader2 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -8,11 +7,6 @@ import _ from "lodash";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@ctrlplane/ui/hover-card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Table,
@@ -22,44 +16,17 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
 import { RunbookJobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/RunbookJobConditionDialog";
+import { JobLinksCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/JobLinksCell";
+import { VariableCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/VariableCell";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
-
-type VariableCellProps = {
-  variables: SCHEMA.JobVariable[];
-};
-
-const VariableCell: React.FC<VariableCellProps> = ({ variables }) => {
-  return (
-    <TableCell className="py-0">
-      {variables.length > 0 && (
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <Button variant="secondary" size="sm" className="h-6 px-2 py-0">
-              {variables.length} variables
-            </Button>
-          </HoverCardTrigger>
-          <HoverCardContent
-            align="center"
-            className="flex max-w-60 flex-col gap-1 p-2"
-          >
-            {variables.map((v) => (
-              <div key={v.id} className="text-xs">
-                {v.key}: {String(v.value)}
-              </div>
-            ))}
-          </HoverCardContent>
-        </HoverCard>
-      )}
-    </TableCell>
-  );
-};
 
 export default function RunbookPage({
   params,
@@ -134,13 +101,14 @@ export default function RunbookPage({
       {runbookJobsQ.isSuccess &&
         runbookJobs != null &&
         runbookJobs.items.length > 0 && (
-          <div className="h-[calc(100%-41px)] overflow-auto">
+          <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100%-41px)] overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Status</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead>Variables</TableHead>
+                  <TableHead>Links</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -158,6 +126,11 @@ export default function RunbookPage({
                       })}
                     </TableCell>
                     <VariableCell variables={job.job.variables} />
+                    <JobLinksCell
+                      linksMetadata={job.job.metadata.find(
+                        (m) => m.key === String(ReservedMetadataKey.Links),
+                      )}
+                    />
                   </TableRow>
                 ))}
               </TableBody>
