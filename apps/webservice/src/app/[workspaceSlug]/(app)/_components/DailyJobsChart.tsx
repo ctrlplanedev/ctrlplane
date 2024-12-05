@@ -53,10 +53,12 @@ type DailyCount = {
 
 type DailyJobsChartProps = {
   dailyCounts: DailyCount[];
+  baseFilter?: JobCondition;
 };
 
 export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
   dailyCounts,
+  baseFilter,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const router = useRouter();
@@ -250,6 +252,7 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
                   afterStartCondition,
                   beforeEndCondition,
                   statusCondition,
+                  ...(baseFilter ? [baseFilter] : []),
                 ],
               };
 

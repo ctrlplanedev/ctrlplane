@@ -35,6 +35,9 @@ import { DailyJobsChart } from "../../../../../_components/DailyJobsChart";
 import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
+import type { JobCondition} from "@ctrlplane/validators/jobs";
+import { JobFilterType } from "@ctrlplane/validators/jobs";
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 
@@ -80,35 +83,46 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const loading = releases.isLoading;
   const router = useRouter();
 
+  const inDeploymentFilter: JobCondition = {
+    type: JobFilterType.Deployment,
+    operator: ColumnOperator.Equals,
+    value: deployment.id,
+  }
+
   return (
     <div>
       <div className="h-full text-sm">
-        <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
-          <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-            <CardTitle>Job executions</CardTitle>
-            <CardDescription>
-              Total executions of all jobs in the last 6 weeks
-            </CardDescription>
-          </div>
-          <div className="flex">
-            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-              <span className="text-xs text-muted-foreground">Jobs</span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {totalJobs}
-              </span>
+        <div className="w-[calc(100vw-267px)]">
+          <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+            <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
+              <CardTitle>Job executions</CardTitle>
+              <CardDescription>
+                Total executions of all jobs in the last 6 weeks
+              </CardDescription>
             </div>
+            <div className="flex">
+              <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
+                <span className="text-xs text-muted-foreground">Jobs</span>
+                <span className="text-lg font-bold leading-none sm:text-3xl">
+                  {totalJobs}
+                </span>
+              </div>
 
-            <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-              <span className="text-xs text-muted-foreground">Releases</span>
-              <span className="text-lg font-bold leading-none sm:text-3xl">
-                {releases.data?.total ?? "-"}
-              </span>
+              <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
+                <span className="text-xs text-muted-foreground">Releases</span>
+                <span className="text-lg font-bold leading-none sm:text-3xl">
+                  {releases.data?.total ?? "-"}
+                </span>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="flex border-b px-2 sm:p-6">
-          <DailyJobsChart dailyCounts={dailyCounts.data ?? []} />
-        </CardContent>
+          </CardHeader>
+          <CardContent className="flex border-b px-2 sm:p-6">
+            <DailyJobsChart
+              dailyCounts={dailyCounts.data ?? []}
+              baseFilter={inDeploymentFilter}
+            />
+          </CardContent>
+        </div>
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
           <div className="flex flex-grow items-center gap-2">
             <ReleaseConditionDialog
