@@ -48,7 +48,7 @@ export default async function DeploymentLayout({
 
   const overviewUrl = `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}`;
   return (
-    <>
+    <div className="flex max-h-screen max-w-[calc(100vw-256px)] flex-col">
       <TopNav>
         <div className="flex items-center">
           <SystemBreadcrumbNavbar params={params} />
@@ -81,9 +81,9 @@ export default async function DeploymentLayout({
         totalReleases={releases.total}
       />
 
-      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-53px-49px)] overflow-auto">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 overflow-auto">
         {children}
       </div>
-    </>
+    </div>
   );
 }

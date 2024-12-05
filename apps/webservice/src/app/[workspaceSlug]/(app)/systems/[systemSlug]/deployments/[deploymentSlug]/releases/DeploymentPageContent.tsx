@@ -63,9 +63,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const loading = releases.isLoading;
   const router = useRouter();
 
+  const numEnvironmentBlocks = Math.min(3, environments.length);
+
   return (
-    <div>
-      <div className="h-full text-sm">
+    <div className="flex flex-col">
+      <div className="text-sm">
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
           <div className="flex flex-grow items-center gap-2">
             <ReleaseConditionDialog
@@ -136,158 +138,166 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           </div>
         )}
         {!loading && releases.data && (
-          <div className="flex flex-col">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
-                    <div className="flex h-[40px] items-center pl-2 backdrop-blur-sm">
-                      Version
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
+                  <div className="flex h-[40px] items-center pl-2 backdrop-blur-sm">
+                    Version
+                  </div>
+                </TableHead>
+                {environments.map((env) => (
+                  <TableHead className="border-l pl-4" key={env.id}>
+                    <div className="flex w-[220px] items-center gap-2">
+                      {env.name}
+                      <Badge
+                        variant="outline"
+                        className="rounded-full px-1.5 font-light text-muted-foreground"
+                      >
+                        {env.resources.length}
+                      </Badge>
                     </div>
                   </TableHead>
-                  {environments.map((env) => (
-                    <TableHead className="border-l pl-4" key={env.id}>
-                      <div className="flex w-[220px] items-center gap-2">
-                        {env.name}
-                        <Badge
-                          variant="outline"
-                          className="rounded-full px-1.5 font-light text-muted-foreground"
-                        >
-                          {env.resources.length}
-                        </Badge>
-                      </div>
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {releases.data.items.map((release, releaseIdx) => (
-                  <TableRow
-                    key={release.id}
-                    className="cursor-pointer hover:bg-transparent"
-                    onClick={() =>
-                      router.push(
-                        `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/releases/${release.id}`,
-                      )
-                    }
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {releases.data.items.map((release, releaseIdx) => (
+                <TableRow
+                  key={release.id}
+                  className="cursor-pointer hover:bg-transparent"
+                  onClick={() =>
+                    router.push(
+                      `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/releases/${release.id}`,
+                    )
+                  }
+                >
+                  <TableCell
+                    className={cn(
+                      "sticky left-0 z-10 min-w-[500px] p-0 text-base",
+                      releaseIdx === releases.data.items.length - 1 &&
+                        "border-b",
+                    )}
                   >
-                    <TableCell
+                    <div
                       className={cn(
-                        "sticky left-0 z-10 min-w-[500px] p-0 text-base",
-                        releaseIdx === releases.data.items.length - 1 &&
-                          "border-b",
+                        "flex h-[60px] items-center gap-2 px-4 backdrop-blur-sm",
+                        numEnvironmentBlocks === 3 &&
+                          "max-w-[calc(100vw-256px-737px)]",
+                        numEnvironmentBlocks === 2 &&
+                          "max-w-[calc(100vw-256px-491px)]",
+                        numEnvironmentBlocks === 1 &&
+                          "max-w-[calc(100vw-256px-246px)]",
                       )}
                     >
-                      <div className="flex h-[60px] w-full items-center gap-2 px-4 backdrop-blur-sm">
-                        <span className="truncate">{release.name}</span>{" "}
-                        <Badge
-                          variant="secondary"
-                          className="flex-shrink-0 text-xs hover:bg-secondary"
-                        >
-                          {formatDistanceToNowStrict(release.createdAt, {
-                            addSuffix: true,
-                          })}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    {environments.map((env) => {
-                      const environmentReleaseReleaseJobTriggers =
-                        release.releaseJobTriggers.filter(
-                          (t) => t.environmentId === env.id,
-                        );
-
-                      const hasResources = env.resources.length > 0;
-                      const isAlreadyDeployed =
-                        environmentReleaseReleaseJobTriggers.length > 0;
-                      const hasJobAgent = deployment.jobAgentId != null;
-                      const blockedEnv = blockedEnvByRelease.data?.find(
-                        (be) =>
-                          be.releaseId === release.id &&
-                          be.environmentId === env.id,
+                      <span className="truncate">{release.name}</span>{" "}
+                      <Badge
+                        variant="secondary"
+                        className="flex-shrink-0 text-xs hover:bg-secondary"
+                      >
+                        {formatDistanceToNowStrict(release.createdAt, {
+                          addSuffix: true,
+                        })}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  {environments.map((env) => {
+                    const environmentReleaseReleaseJobTriggers =
+                      release.releaseJobTriggers.filter(
+                        (t) => t.environmentId === env.id,
                       );
-                      const isBlockedByReleaseChannel = blockedEnv != null;
 
-                      const showRelease = isAlreadyDeployed;
-                      const showDeployButton =
-                        !isAlreadyDeployed &&
-                        hasJobAgent &&
-                        hasResources &&
-                        !isBlockedByReleaseChannel;
+                    const hasResources = env.resources.length > 0;
+                    const isAlreadyDeployed =
+                      environmentReleaseReleaseJobTriggers.length > 0;
+                    const hasJobAgent = deployment.jobAgentId != null;
+                    const blockedEnv = blockedEnvByRelease.data?.find(
+                      (be) =>
+                        be.releaseId === release.id &&
+                        be.environmentId === env.id,
+                    );
+                    const isBlockedByReleaseChannel = blockedEnv != null;
 
-                      return (
-                        <TableCell
-                          className={cn(
-                            "h-[60px] w-[220px] border-l",
-                            releaseIdx === releases.data.items.length - 1 &&
-                              "border-b",
+                    const showRelease = isAlreadyDeployed;
+                    const showDeployButton =
+                      !isAlreadyDeployed &&
+                      hasJobAgent &&
+                      hasResources &&
+                      !isBlockedByReleaseChannel;
+
+                    return (
+                      <TableCell
+                        className={cn(
+                          "h-[60px] w-[220px] border-l",
+                          releaseIdx === releases.data.items.length - 1 &&
+                            "border-b",
+                        )}
+                        onClick={(e) => e.stopPropagation()}
+                        key={env.id}
+                      >
+                        <div className="flex w-full items-center justify-center">
+                          {showRelease && (
+                            <Release
+                              workspaceSlug={workspaceSlug}
+                              systemSlug={systemSlug}
+                              deploymentSlug={deployment.slug}
+                              releaseId={release.id}
+                              version={release.version}
+                              environment={env}
+                              name={release.version}
+                              deployedAt={
+                                environmentReleaseReleaseJobTriggers[0]!
+                                  .createdAt
+                              }
+                              releaseJobTriggers={
+                                environmentReleaseReleaseJobTriggers
+                              }
+                            />
                           )}
-                          onClick={(e) => e.stopPropagation()}
-                          key={env.id}
-                        >
-                          <div className="flex h-full w-full items-center justify-center">
-                            {showRelease && (
-                              <Release
-                                workspaceSlug={workspaceSlug}
-                                systemSlug={systemSlug}
-                                deploymentSlug={deployment.slug}
-                                releaseId={release.id}
-                                version={release.version}
-                                environment={env}
-                                name={release.version}
-                                deployedAt={
-                                  environmentReleaseReleaseJobTriggers[0]!
-                                    .createdAt
-                                }
-                                releaseJobTriggers={
-                                  environmentReleaseReleaseJobTriggers
-                                }
-                              />
-                            )}
 
-                            {showDeployButton && (
-                              <DeployButton
-                                releaseId={release.id}
-                                environmentId={env.id}
-                              />
-                            )}
+                          {showDeployButton && (
+                            <DeployButton
+                              releaseId={release.id}
+                              environmentId={env.id}
+                            />
+                          )}
 
-                            {!isAlreadyDeployed && (
-                              <div className="text-center text-xs text-muted-foreground/70">
-                                {isBlockedByReleaseChannel && (
-                                  <>
-                                    Blocked by{" "}
-                                    <Button
-                                      variant="link"
-                                      size="sm"
-                                      onClick={() =>
-                                        setReleaseChannelId(
-                                          blockedEnv.releaseChannelId ?? null,
-                                        )
-                                      }
-                                      className="px-0 text-muted-foreground/70"
-                                    >
-                                      release channel
-                                    </Button>
-                                  </>
-                                )}
-                                {!isBlockedByReleaseChannel &&
-                                  !hasJobAgent &&
-                                  "No job agent"}
-                                {!isBlockedByReleaseChannel &&
-                                  hasJobAgent &&
-                                  !hasResources &&
-                                  "No resources"}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                          {!isAlreadyDeployed && (
+                            <div className="text-center text-xs text-muted-foreground/70">
+                              {isBlockedByReleaseChannel && (
+                                <>
+                                  Blocked by{" "}
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() =>
+                                      setReleaseChannelId(
+                                        blockedEnv.releaseChannelId ?? null,
+                                      )
+                                    }
+                                    className="px-0 text-muted-foreground/70"
+                                  >
+                                    release channel
+                                  </Button>
+                                </>
+                              )}
+                              {!isBlockedByReleaseChannel &&
+                                !hasJobAgent &&
+                                "No job agent"}
+                              {!isBlockedByReleaseChannel &&
+                                hasJobAgent &&
+                                !hasResources &&
+                                "No resources"}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
     </div>
