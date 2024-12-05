@@ -171,7 +171,7 @@ const DeploymentTable: React.FC<{
   >;
 }> = ({ systemSlug, deployments, environments, workspace }) => {
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-x-auto">
       <table className="w-full min-w-max border-separate border-spacing-0">
         <thead>
           <tr>

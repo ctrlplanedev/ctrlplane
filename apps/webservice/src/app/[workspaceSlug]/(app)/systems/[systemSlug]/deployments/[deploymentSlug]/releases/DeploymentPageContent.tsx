@@ -63,9 +63,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const loading = releases.isLoading;
   const router = useRouter();
 
+  const numEnvironmentBlocks = Math.min(3, environments.length);
+
   return (
     <div>
-      <div className="h-full text-sm">
+      <div className="text-sm">
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
           <div className="flex flex-grow items-center gap-2">
             <ReleaseConditionDialog
@@ -136,8 +138,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           </div>
         )}
         {!loading && releases.data && (
-          <div className="flex flex-col">
-            <Table>
+          <div className="scrollbar-none flex w-[calc(100vw-267px)] flex-col">
+            <Table className="scrollbar-none">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
@@ -178,7 +180,17 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           "border-b",
                       )}
                     >
-                      <div className="flex h-[60px] w-full items-center gap-2 px-4 backdrop-blur-sm">
+                      <div
+                        className={cn(
+                          "flex h-[60px] items-center gap-2 overflow-auto px-4 backdrop-blur-sm",
+                          numEnvironmentBlocks === 3 &&
+                            "max-w-[calc(100vw-256px-737px)]",
+                          numEnvironmentBlocks === 2 &&
+                            "max-w-[calc(100vw-256px-491px)]",
+                          numEnvironmentBlocks === 1 &&
+                            "max-w-[calc(100vw-256px-246px)]",
+                        )}
+                      >
                         <span className="truncate">{release.name}</span>{" "}
                         <Badge
                           variant="secondary"
