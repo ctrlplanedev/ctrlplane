@@ -21,11 +21,11 @@ import {
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
   job,
-  jobMatchesCondition,
   jobMetadata,
   release,
   releaseChannel,
   releaseDependency,
+  releaseJobMatchesCondition,
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
@@ -116,7 +116,7 @@ export const releaseRouter = createTRPCRouter({
             and(
               eq(releaseJobTrigger.resourceId, resource.id),
               isNull(resource.deletedAt),
-              jobMatchesCondition(ctx.db, input.jobFilter),
+              releaseJobMatchesCondition(ctx.db, input.jobFilter),
             ),
           )
           .where(

@@ -227,6 +227,7 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
     return ilike(release.version, `%${cond.value}%`);
   return sql`${release.version} ~ ${cond.value}`;
 };
+
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.Metadata)
     return buildMetadataCondition(tx, cond);
@@ -267,7 +268,7 @@ const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
   return cond.not ? not(con) : con;
 };
 
-export function jobMatchesCondition(
+export function releaseJobMatchesCondition(
   tx: Tx,
   condition?: JobCondition,
 ): SQL<unknown> | undefined {

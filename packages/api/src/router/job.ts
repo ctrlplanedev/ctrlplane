@@ -155,7 +155,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             and(
               eq(schema.system.workspaceId, input.workspaceId),
               isNull(schema.resource.deletedAt),
-              schema.jobMatchesCondition(ctx.db, input.filter),
+              schema.releaseJobMatchesCondition(ctx.db, input.filter),
             ),
           )
           .orderBy(asc(schema.releaseJobTrigger.createdAt))
@@ -220,7 +220,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             and(
               eq(schema.system.workspaceId, input.workspaceId),
               isNull(schema.resource.deletedAt),
-              schema.jobMatchesCondition(ctx.db, input.filter),
+              schema.releaseJobMatchesCondition(ctx.db, input.filter),
             ),
           )
           .then(takeFirst)
@@ -365,7 +365,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           and(
             eq(schema.release.id, input.releaseId),
             isNull(schema.resource.deletedAt),
-            schema.jobMatchesCondition(ctx.db, input.filter),
+            schema.releaseJobMatchesCondition(ctx.db, input.filter),
           ),
         )
         .orderBy(desc(schema.releaseJobTrigger.createdAt))
