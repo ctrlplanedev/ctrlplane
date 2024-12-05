@@ -66,11 +66,11 @@ const DateTimePicker = React.forwardRef<
         <PopoverContent ref={contentRef} className="w-full" align="end">
           <div {...dialogProps} className="space-y-3">
             <Calendar {...calendarProps} />
-            {!!state.hasTime && (
+            {state.hasTime && (
               <TimeField
                 aria-label="time-field"
                 value={state.timeValue}
-                onChange={(value) => value != null && state.setTimeValue(value)}
+                onChange={(value) => state.setTimeValue(value)}
               />
             )}
           </div>

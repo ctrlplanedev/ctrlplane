@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { SiGithub, SiGooglecloud } from "@icons-pack/react-simple-icons";
+import {
+  SiAmazon,
+  SiGithub,
+  SiGooglecloud,
+} from "@icons-pack/react-simple-icons";
 
 import { Card } from "@ctrlplane/ui/card";
 
@@ -58,6 +62,18 @@ export default function IntegrationsPage({
           </IntegrationContent>
         </IntegrationCard>
 
+        <IntegrationCard integration="aws" workspaceSlug={workspaceSlug}>
+          <IntegrationContent>
+            <IntegrationHeading>
+              <SiAmazon className="text-4xl text-orange-400" />
+              <span className="font-semibold">AWS</span>
+            </IntegrationHeading>
+            <p className="text-left text-sm text-muted-foreground">
+              Sync deployment resources, trigger AWS workflows and more.
+            </p>
+          </IntegrationContent>
+        </IntegrationCard>
+
         <IntegrationCard integration="google" workspaceSlug={workspaceSlug}>
           <IntegrationContent>
             <IntegrationHeading>
@@ -65,7 +81,7 @@ export default function IntegrationsPage({
               <span className="font-semibold">Google</span>
             </IntegrationHeading>
             <p className="text-left text-sm text-muted-foreground">
-              Sync deployment targets, trigger google workflows and more.
+              Sync deployment resources, trigger google workflows and more.
             </p>
           </IntegrationContent>
         </IntegrationCard>

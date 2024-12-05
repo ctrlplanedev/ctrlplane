@@ -2,6 +2,7 @@
 
 import type {
   ResourceProvider,
+  ResourceProviderAws,
   ResourceProviderGoogle,
 } from "@ctrlplane/db/schema";
 import { useState } from "react";
@@ -28,10 +29,12 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
+import { UpdateAwsProviderDialog } from "./integrations/aws/UpdateAwsProviderDialog";
 import { UpdateGoogleProviderDialog } from "./integrations/google/UpdateGoogleProviderDialog";
 
 type Provider = ResourceProvider & {
   googleConfig: ResourceProviderGoogle | null;
+  awsConfig: ResourceProviderAws | null;
 };
 
 export const ProviderActionsDropdown: React.FC<{
@@ -39,6 +42,8 @@ export const ProviderActionsDropdown: React.FC<{
 }> = ({ provider }) => {
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
+  const isManagedProvider =
+    provider.googleConfig != null || provider.awsConfig != null;
 
   const deleteProvider = api.resource.provider.delete.useMutation({
     onSuccess: () => utils.resource.provider.byWorkspaceId.invalidate(),
@@ -75,7 +80,19 @@ export const ProviderActionsDropdown: React.FC<{
             </DropdownMenuItem>
           </UpdateGoogleProviderDialog>
         )}
-        {provider.googleConfig != null && (
+        {provider.awsConfig != null && (
+          <UpdateAwsProviderDialog
+            providerId={provider.id}
+            name={provider.name}
+            awsConfig={provider.awsConfig}
+            onClose={() => setOpen(false)}
+          >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Edit
+            </DropdownMenuItem>
+          </UpdateAwsProviderDialog>
+        )}
+        {isManagedProvider && (
           <DropdownMenuItem
             onSelect={async () => {
               await sync.mutateAsync(provider.id);

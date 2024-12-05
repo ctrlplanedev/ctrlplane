@@ -28136,6 +28136,8 @@ const trackOutput = (key, value) => {
         outputTracker.add(key);
 };
 const setOutputAndLog = (key, value) => {
+    if (value === undefined || value === null)
+        return;
     const stringValue = typeof value === "string" ? value : JSON.stringify(value);
     core.setOutput(key, stringValue);
     core.info(`${key}: ${stringValue}`);
@@ -28162,7 +28164,7 @@ async function run() {
         params: { path: { jobId } },
     })
         .then(({ data }) => {
-        if (data == undefined) {
+        if (data == null) {
             core.error(`Invalid Job data`);
             return;
         }

@@ -33,9 +33,16 @@ export const getKubeConfig = async (
   }
 };
 
+type Namespace = {
+  metadata?: {
+    name?: string;
+    labels?: Record<string, string>;
+  };
+};
+
 export const createNamespaceResource = (
   clusterResource: InsertResource,
-  namespace: any,
+  namespace: Namespace,
   project: string,
   cluster: google.container.v1.ICluster,
 ) => {

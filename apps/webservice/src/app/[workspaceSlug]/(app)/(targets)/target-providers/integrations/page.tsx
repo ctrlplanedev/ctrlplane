@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import React from "react";
 import { notFound } from "next/navigation";
 import {
+  SiAmazon,
   SiGooglecloud,
   SiKubernetes,
   SiTerraform,
@@ -13,6 +14,7 @@ import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
 import { api } from "~/trpc/server";
+import { AwsActionButton } from "./AwsActionButton";
 import { GoogleActionButton } from "./GoogleActionButton";
 
 export const metadata: Metadata = {
@@ -79,7 +81,7 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
           anything.
         </p>
         <div className="mt-8 grid grid-cols-3 gap-6">
-          {/* <TargetProviderCard>
+          <TargetProviderCard>
             <TargetProviderContent>
               <TargetProviderHeading>
                 <SiAmazon className="mx-auto text-4xl text-orange-300" />
@@ -95,8 +97,8 @@ const TargetProviders: React.FC<{ workspaceSlug: string }> = async ({
               </TargetProviderBadges>
             </TargetProviderContent>
 
-            <TargetProviderActionButton>Configure</TargetProviderActionButton>
-          </TargetProviderCard> */}
+            <AwsActionButton workspace={workspace} />
+          </TargetProviderCard>
 
           <TargetProviderCard>
             <TargetProviderContent>

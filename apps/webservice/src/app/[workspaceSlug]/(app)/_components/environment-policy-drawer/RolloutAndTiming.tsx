@@ -148,13 +148,10 @@ export const RolloutAndTiming: React.FC<{
                             onChange={(t) => {
                               onChange({
                                 ...value,
-                                startTime:
-                                  t != null
-                                    ? t.toDate(
-                                        Intl.DateTimeFormat().resolvedOptions()
-                                          .timeZone,
-                                      )
-                                    : new Date(),
+                                startTime: t.toDate(
+                                  Intl.DateTimeFormat().resolvedOptions()
+                                    .timeZone,
+                                ),
                               });
                             }}
                           />{" "}
@@ -164,13 +161,10 @@ export const RolloutAndTiming: React.FC<{
                             onChange={(t) => {
                               onChange({
                                 ...value,
-                                endTime:
-                                  t != null
-                                    ? t.toDate(
-                                        Intl.DateTimeFormat().resolvedOptions()
-                                          .timeZone,
-                                      )
-                                    : new Date(),
+                                endTime: t.toDate(
+                                  Intl.DateTimeFormat().resolvedOptions()
+                                    .timeZone,
+                                ),
                               });
                             }}
                             aria-label="End Time"

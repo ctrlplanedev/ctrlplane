@@ -37,6 +37,9 @@ services:
   #   image: otel/opentelemetry-collector-contrib:latest
   #   container_name: ctrlplane-otel-collector
   #   command: ["--config=/etc/otel-collector-config.yaml"]
+  #   environment:
+  #     - DD_API_KEY=${DD_API_KEY}
+  #     - DD_SITE=${DD_SITE}
   #   volumes:
   #     - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
   #   ports:
