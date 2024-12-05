@@ -30,7 +30,7 @@ export const JobMetadata: React.FC<JobMetadataProps> = ({ job }) => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 max-h-[250px] overflow-auto rounded-b-lg border-x border-b p-1.5">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 max-h-[250px] overflow-auto rounded-b-lg border-x border-b p-1.5">
           {result.length === 0 && (
             <div className="text-center text-muted-foreground">
               No matching metadata found

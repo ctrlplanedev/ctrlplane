@@ -59,7 +59,7 @@ export const EditRunbookDialog: React.FC<{
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 max-h-[95vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 max-h-[95vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Runbook</DialogTitle>
         </DialogHeader>

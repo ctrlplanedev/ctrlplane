@@ -224,7 +224,7 @@ export const TargetPageContent: React.FC<{
         />
       )}
       {targets.data != null && targets.data.total > 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-90px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-90px)] overflow-auto">
           <TargetsTable
             targets={targets.data.items}
             activeTargetIds={targetId ? [targetId] : []}

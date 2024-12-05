@@ -39,7 +39,7 @@ export const ReleaseChannelDrawer: React.FC = () => {
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
         showBar={false}
-        className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 left-auto right-0 top-0 mt-0 h-screen w-2/3 max-w-6xl overflow-auto rounded-none focus-visible:outline-none"
+        className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 left-auto right-0 top-0 mt-0 h-screen w-2/3 max-w-6xl overflow-auto rounded-none focus-visible:outline-none"
       >
         {loading && (
           <div className="flex h-full w-full items-center justify-center">

@@ -58,7 +58,7 @@ export const MetadataConditionRender: React.FC<
             </PopoverTrigger>
             <PopoverContent
               align="start"
-              className="scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 max-h-[300px] overflow-y-auto p-0 text-sm"
+              className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 max-h-[300px] overflow-y-auto p-0 text-sm"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               {filteredMetadataKeys.map((k) => (

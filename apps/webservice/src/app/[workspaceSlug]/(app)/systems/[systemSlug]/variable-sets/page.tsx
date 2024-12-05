@@ -36,7 +36,7 @@ export default async function SystemVariableSetsPage({
         />
       )}
       {variableSets.length !== 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-110px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-110px)] overflow-auto">
           <div className="flex items-center gap-4 border-b p-2 pl-4">
             <h1 className="flex-grow">Variable Sets</h1>
             <CreateVariableSetDialog

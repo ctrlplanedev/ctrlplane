@@ -27,7 +27,7 @@ export default async function AccountSettingProfilePage({
   const { image, name, email } = user;
   const githubUser = await api.github.user.byUserId(session.user.id);
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-120px)] overflow-auto">
       <div className="container mx-auto max-w-2xl space-y-8 py-8">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">Profile</h1>
