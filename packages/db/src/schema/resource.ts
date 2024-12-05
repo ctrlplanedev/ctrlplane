@@ -13,7 +13,6 @@ import {
   gt,
   gte,
   ilike,
-  like,
   lt,
   lte,
   not,
@@ -199,7 +198,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .limit(1),
     );
 
-  if (cond.operator === MetadataOperator.Like)
+  if (cond.operator === MetadataOperator.StartsWith)
     return exists(
       tx
         .select({ value: sql<number>`1` })
@@ -208,7 +207,37 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
           and(
             eq(resourceMetadata.resourceId, resource.id),
             eq(resourceMetadata.key, cond.key),
-            like(resourceMetadata.value, cond.value),
+            ilike(resourceMetadata.value, `${cond.value}%`),
+          ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.EndsWith)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(resourceMetadata)
+        .where(
+          and(
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            ilike(resourceMetadata.value, `%${cond.value}`),
+          ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.Contains)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(resourceMetadata)
+        .where(
+          and(
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            ilike(resourceMetadata.value, `%${cond.value}%`),
           ),
         )
         .limit(1),

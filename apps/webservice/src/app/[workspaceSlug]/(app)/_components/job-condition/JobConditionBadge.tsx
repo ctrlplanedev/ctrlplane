@@ -53,7 +53,6 @@ const operatorVerbs = {
     </span>
   ),
   [MetadataOperator.Regex]: "matches",
-  [MetadataOperator.Like]: "contains",
   [DateOperator.After]: "after",
   [DateOperator.Before]: "before",
   [DateOperator.AfterOrOn]: "after or on",

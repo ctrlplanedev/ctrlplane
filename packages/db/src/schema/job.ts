@@ -14,7 +14,6 @@ import {
   gte,
   ilike,
   isNull,
-  like,
   lt,
   lte,
   not,
@@ -154,7 +153,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(jobMetadata)
         .where(
           and(eq(jobMetadata.jobId, job.id), eq(jobMetadata.key, cond.key)),
@@ -165,7 +164,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(jobMetadata)
         .where(
           and(
@@ -177,16 +176,46 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .limit(1),
     );
 
-  if (cond.operator === MetadataOperator.Like)
+  if (cond.operator === MetadataOperator.StartsWith)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(jobMetadata)
         .where(
           and(
             eq(jobMetadata.jobId, job.id),
             eq(jobMetadata.key, cond.key),
-            like(jobMetadata.value, cond.value),
+            ilike(jobMetadata.value, `${cond.value}%`),
+          ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.EndsWith)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(jobMetadata)
+        .where(
+          and(
+            eq(jobMetadata.jobId, job.id),
+            eq(jobMetadata.key, cond.key),
+            ilike(jobMetadata.value, `%${cond.value}`),
+          ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.Contains)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(jobMetadata)
+        .where(
+          and(
+            eq(jobMetadata.jobId, job.id),
+            eq(jobMetadata.key, cond.key),
+            ilike(jobMetadata.value, `%${cond.value}%`),
           ),
         )
         .limit(1),
@@ -194,7 +223,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 
   return exists(
     tx
-      .select()
+      .select({ value: sql<number>`1` })
       .from(jobMetadata)
       .where(
         and(
