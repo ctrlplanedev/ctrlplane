@@ -147,9 +147,11 @@ export default async function DeploymentPage({
 }) {
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
+  const workspaceId = workspace.id;
+  const { items: systems } = await api.system.list({ workspaceId });
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
-  const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
+  const jobAgents = await api.job.agent.byWorkspaceId(workspaceId);
   const jobAgent = jobAgents.find((a) => a.id === deployment.jobAgentId);
 
   return (
@@ -162,7 +164,7 @@ export default async function DeploymentPage({
         </div>
       </div>
       <div className="mb-16 flex-grow space-y-10">
-        <EditDeploymentSection deployment={deployment} />
+        <EditDeploymentSection deployment={deployment} systems={systems} />
 
         <JobAgentSection
           jobAgents={jobAgents}
@@ -172,7 +174,7 @@ export default async function DeploymentPage({
           deploymentId={deployment.id}
         />
 
-        <Variables workspaceId={workspace.id} deployment={deployment} />
+        <Variables workspaceId={workspaceId} deployment={deployment} />
       </div>
     </div>
   );

@@ -20,6 +20,9 @@ export const handleResourceRemoved = async (event: ResourceRemoved) => {
     .innerJoin(SCHEMA.hook, eq(SCHEMA.runhook.hookId, SCHEMA.hook.id))
     .where(isSubscribedToResourceRemoved);
 
+  if (runhooks.length === 0) return;
+  await db.insert(SCHEMA.event).values(event);
+
   const resourceId = resource.id;
   const deploymentId = deployment.id;
   const handleRunhooksPromises = runhooks.map(({ runhook }) =>
