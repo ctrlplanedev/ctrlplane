@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import React from "react";
+import { IconLoader2, IconNetworkOff } from "@tabler/icons-react";
 import ReactFlow, {
   ReactFlowProvider,
   useEdgesState,
@@ -9,6 +10,7 @@ import ReactFlow, {
 } from "reactflow";
 
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+import { api } from "~/trpc/react";
 import { edgeTypes, getEdges } from "./edges";
 import { getNodes, nodeTypes } from "./nodes/nodes";
 
@@ -50,10 +52,35 @@ export const ResourceVisualizationDiagram: React.FC<
   );
 };
 
+type ResourceVisualizationDiagramProviderProps = {
+  resourceId: string;
+};
+
 export const ResourceVisualizationDiagramProvider: React.FC<
-  ResourceVisualizationDiagramProps
-> = (props) => (
-  <ReactFlowProvider>
-    <ResourceVisualizationDiagram {...props} />
-  </ReactFlowProvider>
-);
+  ResourceVisualizationDiagramProviderProps
+> = ({ resourceId }) => {
+  const { data: relationships, isLoading } =
+    api.resource.relationships.useQuery(resourceId, {
+      refetchInterval: 60_000,
+    });
+
+  if (isLoading)
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <IconLoader2 className="animate-spin" />
+      </div>
+    );
+
+  if (!relationships)
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <IconNetworkOff className="h-4 w-4" /> No relationships found
+      </div>
+    );
+
+  return (
+    <ReactFlowProvider>
+      <ResourceVisualizationDiagram relationships={relationships} />
+    </ReactFlowProvider>
+  );
+};
