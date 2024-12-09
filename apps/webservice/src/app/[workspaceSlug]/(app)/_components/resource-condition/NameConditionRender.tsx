@@ -1,11 +1,11 @@
 import type { ColumnOperatorType } from "@ctrlplane/validators/conditions";
-import type { IdentifierCondition } from "@ctrlplane/validators/resources";
+import type { NameCondition } from "@ctrlplane/validators/resources";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
+import type { ResourceConditionRenderProps } from "./resource-condition-props";
 import { ColumnConditionRender } from "../filter/ColumnConditionRender";
 
-export const IdentifierConditionRender: React.FC<
-  TargetConditionRenderProps<IdentifierCondition>
+export const NameConditionRender: React.FC<
+  ResourceConditionRenderProps<NameCondition>
 > = ({ condition, onChange, className }) => {
   const setOperator = (operator: ColumnOperatorType) =>
     onChange({ ...condition, operator });
@@ -18,7 +18,7 @@ export const IdentifierConditionRender: React.FC<
       setOperator={setOperator}
       setValue={setValue}
       className={className}
-      title="Identifier"
+      title="Name"
     />
   );
 };

@@ -14,8 +14,8 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { TargetConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionBadge";
-import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetViewActionsDropdown";
+import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionBadge";
+import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceViewActionsDropdown";
 
 export const TargetViewsTable: React.FC<{
   workspace: schema.Workspace;
@@ -47,16 +47,16 @@ export const TargetViewsTable: React.FC<{
             <TableCell>{view.name}</TableCell>
             <TableCell>
               <div className="w-fit">
-                <TargetConditionBadge condition={view.filter} />
+                <ResourceConditionBadge condition={view.filter} />
               </div>
             </TableCell>
             <TableCell>{view.total}</TableCell>
             <TableCell className="flex justify-end">
-              <TargetViewActionsDropdown view={view}>
+              <ResourceViewActionsDropdown view={view}>
                 <Button variant="ghost" size="icon">
                   <IconDotsVertical className="h-4 w-4" />
                 </Button>
-              </TargetViewActionsDropdown>
+              </ResourceViewActionsDropdown>
             </TableCell>
           </TableRow>
         ))}

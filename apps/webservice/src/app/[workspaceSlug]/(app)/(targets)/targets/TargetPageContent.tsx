@@ -23,13 +23,13 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
-import { TargetConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionBadge";
+import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionBadge";
 import {
-  CreateTargetViewDialog,
-  TargetConditionDialog,
-} from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
-import { TargetViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetViewActionsDropdown";
-import { useTargetFilter } from "~/app/[workspaceSlug]/(app)/_components/target-condition/useTargetFilter";
+  CreateResourceViewDialog,
+  ResourceConditionDialog,
+} from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
+import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceViewActionsDropdown";
+import { useResourceFilter } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/useResourceFilter";
 import { useTargetDrawer } from "~/app/[workspaceSlug]/(app)/_components/target-drawer/useTargetDrawer";
 import { api } from "~/trpc/react";
 import { exportResources } from "./exportResources";
@@ -82,7 +82,7 @@ export const TargetPageContent: React.FC<{
   view: schema.ResourceView | null;
 }> = ({ workspace, view }) => {
   const [search, setSearch] = React.useState("");
-  const { filter, setFilter } = useTargetFilter();
+  const { filter, setFilter } = useResourceFilter();
 
   useDebounce(
     () => {
@@ -135,7 +135,7 @@ export const TargetPageContent: React.FC<{
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex items-center gap-1 pl-1">
           <SearchInput value={search} onChange={setSearch} />
-          <TargetConditionDialog condition={filter} onChange={onFilterChange}>
+          <ResourceConditionDialog condition={filter} onChange={onFilterChange}>
             <div className="flex items-center gap-2">
               {view == null && (
                 <Button
@@ -148,12 +148,12 @@ export const TargetPageContent: React.FC<{
               )}
 
               {filter != null && view == null && (
-                <TargetConditionBadge condition={filter} />
+                <ResourceConditionBadge condition={filter} />
               )}
               {view != null && (
                 <>
                   <span>{view.name}</span>
-                  <TargetViewActionsDropdown view={view}>
+                  <ResourceViewActionsDropdown view={view}>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -161,24 +161,24 @@ export const TargetPageContent: React.FC<{
                     >
                       <IconDots className="h-4 w-4" />
                     </Button>
-                  </TargetViewActionsDropdown>
+                  </ResourceViewActionsDropdown>
                 </>
               )}
             </div>
-          </TargetConditionDialog>
+          </ResourceConditionDialog>
           {!targets.isLoading && targets.isFetching && (
             <IconLoader2 className="h-4 w-4 animate-spin" />
           )}
         </div>
         <div className="flex items-center gap-2">
           {filter != null && view == null && (
-            <CreateTargetViewDialog
+            <CreateResourceViewDialog
               workspaceId={workspace.id}
               filter={filter}
               onSubmit={(v) => setFilter(v.filter, v.id)}
             >
               <Button className="h-7">Save view</Button>
-            </CreateTargetViewDialog>
+            </CreateResourceViewDialog>
           )}
           {targets.data?.total != null && (
             <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">

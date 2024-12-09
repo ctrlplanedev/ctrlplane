@@ -4,7 +4,7 @@ import LZString from "lz-string";
 
 import { useQueryParams } from "../useQueryParams";
 
-export const useTargetFilter = () => {
+export const useResourceFilter = () => {
   const { getParam, setParams } = useQueryParams();
 
   const filterHash = getParam("filter");

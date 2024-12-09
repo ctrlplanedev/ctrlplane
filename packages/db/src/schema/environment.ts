@@ -16,7 +16,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import {
-  isValidTargetCondition,
+  isValidResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
@@ -56,7 +56,7 @@ export type Environment = InferSelectModel<typeof environment>;
 export const createEnvironment = createInsertSchema(environment, {
   resourceFilter: resourceCondition
     .optional()
-    .refine((filter) => filter == null || isValidTargetCondition(filter)),
+    .refine((filter) => filter == null || isValidResourceCondition(filter)),
 })
   .omit({ id: true })
   .extend({

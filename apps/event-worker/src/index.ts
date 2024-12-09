@@ -5,7 +5,7 @@ import { redis } from "./redis.js";
 import {
   createAwsResourceScanWorker,
   createGoogleResourceScanWorker,
-} from "./target-scan/index.js";
+} from "./resource-scan/index.js";
 
 const resourceGoogleScanWorker = createGoogleResourceScanWorker();
 const resourceAwsScanWorker = createAwsResourceScanWorker();

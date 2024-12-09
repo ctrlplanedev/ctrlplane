@@ -43,12 +43,12 @@ import { Input } from "@ctrlplane/ui/input";
 import { Switch } from "@ctrlplane/ui/switch";
 import {
   defaultCondition,
-  isValidTargetCondition,
+  isValidResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
-import { TargetConditionRender } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionRender";
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionRender";
 import {
   VariableBooleanInput,
   VariableChoiceSelect,
@@ -60,7 +60,7 @@ const editVariableValueFormSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
   targetFilter: resourceCondition
     .nullish()
-    .refine((data) => data == null || isValidTargetCondition(data), {
+    .refine((data) => data == null || isValidResourceCondition(data), {
       message: "Invalid target condition",
     }),
   default: z.boolean().optional(),
@@ -160,7 +160,7 @@ const EditVariableValueDialog: React.FC<{
                 <FormItem>
                   <FormLabel>Target filter</FormLabel>
                   <FormControl>
-                    <TargetConditionRender
+                    <ResourceConditionRender
                       condition={value ?? defaultCondition}
                       onChange={onChange}
                     />

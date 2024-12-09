@@ -19,7 +19,7 @@ import {
   NavigationMenuList,
 } from "@ctrlplane/ui/navigation-menu";
 
-import { CreateTargetViewDialog } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
+import { CreateResourceViewDialog } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
 import { api } from "~/trpc/react";
 
 export default function TargetLayout({
@@ -171,14 +171,14 @@ export default function TargetLayout({
           )}
 
           {pathname.includes(`/${params.workspaceSlug}/target-views`) && (
-            <CreateTargetViewDialog
+            <CreateResourceViewDialog
               workspaceId={workspace.data?.id ?? ""}
               filter={null}
             >
               <Button variant="outline" size="sm" className="gap-1.5">
                 <IconPlus className="h-4 w-4" /> Add View
               </Button>
-            </CreateTargetViewDialog>
+            </CreateResourceViewDialog>
           )}
         </div>
       </div>

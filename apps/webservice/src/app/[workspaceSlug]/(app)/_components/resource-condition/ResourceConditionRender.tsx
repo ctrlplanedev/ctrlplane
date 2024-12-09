@@ -11,21 +11,21 @@ import {
   isProviderCondition,
 } from "@ctrlplane/validators/resources";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
+import type { ResourceConditionRenderProps } from "./resource-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
 import { IdentifierConditionRender } from "./IdentifierConditionRender";
 import { KindConditionRender } from "./KindConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
 import { ProviderConditionRender } from "./ProviderConditionRender";
 import { ResourceCreatedAtConditionRender } from "./ResourceCreatedAtConditionRender";
-import { TargetMetadataConditionRender } from "./TargetMetadataConditionRender";
+import { ResourceMetadataConditionRender } from "./ResourceMetadataConditionRender";
 
 /**
  * The parent container should have min width of 1000px
  * to render this component properly.
  */
-export const TargetConditionRender: React.FC<
-  TargetConditionRenderProps<ResourceCondition>
+export const ResourceConditionRender: React.FC<
+  ResourceConditionRenderProps<ResourceCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
   if (isComparisonCondition(condition))
     return (
@@ -39,7 +39,7 @@ export const TargetConditionRender: React.FC<
 
   if (isMetadataCondition(condition))
     return (
-      <TargetMetadataConditionRender
+      <ResourceMetadataConditionRender
         condition={condition}
         onChange={onChange}
         className={className}

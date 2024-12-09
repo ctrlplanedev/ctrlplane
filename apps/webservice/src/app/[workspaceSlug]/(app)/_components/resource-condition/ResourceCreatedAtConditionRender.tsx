@@ -4,11 +4,11 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import type { DateValue } from "@internationalized/date";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
+import type { ResourceConditionRenderProps } from "./resource-condition-props";
 import { DateConditionRender } from "../filter/DateConditionRender";
 
 export const ResourceCreatedAtConditionRender: React.FC<
-  TargetConditionRenderProps<CreatedAtCondition>
+  ResourceConditionRenderProps<CreatedAtCondition>
 > = ({ condition, onChange, className }) => {
   const setDate = (t: DateValue) =>
     onChange({

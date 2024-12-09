@@ -1,12 +1,12 @@
 import type { ProviderCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
+import type { ResourceConditionRenderProps } from "./resource-condition-props";
 import { api } from "~/trpc/react";
 import { ChoiceConditionRender } from "../filter/ChoiceConditionRender";
 
 export const ProviderConditionRender: React.FC<
-  TargetConditionRenderProps<ProviderCondition>
+  ResourceConditionRenderProps<ProviderCondition>
 > = ({ condition, onChange, className }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);

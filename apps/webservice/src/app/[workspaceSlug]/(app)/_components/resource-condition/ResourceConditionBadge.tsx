@@ -93,7 +93,7 @@ const StringifiedComparisonCondition: React.FC<{
               {operatorVerbs[condition.operator]}
             </span>
           )}
-          <StringifiedTargetCondition
+          <StringifiedResourceCondition
             condition={subCondition}
             depth={depth + 1}
             truncate={truncate}
@@ -140,7 +140,7 @@ const StringifiedTabbedComparisonCondition: React.FC<{
               {operatorVerbs[condition.operator]}
             </div>
           )}
-          <StringifiedTargetCondition
+          <StringifiedResourceCondition
             condition={subCondition}
             depth={depth + 1}
             tabbed
@@ -231,7 +231,7 @@ const StringifiedCreatedAtCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedTargetCondition: React.FC<{
+const StringifiedResourceCondition: React.FC<{
   condition: ResourceCondition;
   depth?: number;
   truncate?: boolean;
@@ -270,19 +270,19 @@ const StringifiedTargetCondition: React.FC<{
     return <StringifiedCreatedAtCondition condition={condition} />;
 };
 
-export const TargetConditionBadge: React.FC<{
+export const ResourceConditionBadge: React.FC<{
   condition: ResourceCondition;
   tabbed?: boolean;
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
       <div className="cursor-pointer rounded-lg bg-inherit text-xs text-muted-foreground">
-        <StringifiedTargetCondition condition={condition} truncate />
+        <StringifiedResourceCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>
     <HoverCardContent align="start" className={cn("w-full")}>
       <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
-        <StringifiedTargetCondition condition={condition} tabbed={tabbed} />
+        <StringifiedResourceCondition condition={condition} tabbed={tabbed} />
       </div>
     </HoverCardContent>
   </HoverCard>

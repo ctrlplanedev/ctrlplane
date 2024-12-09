@@ -41,7 +41,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
-import { TargetConditionRender } from "../target-condition/TargetConditionRender";
+import { ResourceConditionRender } from "../resource-condition/ResourceConditionRender";
 import { TargetIcon } from "../TargetIcon";
 
 const TargetViewsCombobox: React.FC<{
@@ -164,7 +164,7 @@ export const EditFilterForm: React.FC<{
                       workspaceId={workspaceId}
                       onChange={onChange}
                     />
-                    <TargetConditionRender
+                    <ResourceConditionRender
                       condition={targetFilter ?? defaultCondition}
                       onChange={onChange}
                     />

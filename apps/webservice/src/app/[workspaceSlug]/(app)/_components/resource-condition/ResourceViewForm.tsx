@@ -14,25 +14,25 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
   defaultCondition,
-  isValidTargetCondition,
+  isValidResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
-import { TargetConditionRender } from "./TargetConditionRender";
+import { ResourceConditionRender } from "./ResourceConditionRender";
 
-export const targetViewFormSchema = z.object({
+export const resourceViewFormSchema = z.object({
   name: z.string().min(1),
-  filter: resourceCondition.refine((data) => isValidTargetCondition(data), {
-    message: "Invalid target condition",
+  filter: resourceCondition.refine((data) => isValidResourceCondition(data), {
+    message: "Invalid resource condition",
   }),
   description: z.string().optional(),
 });
 
-export type TargetViewFormSchema = z.infer<typeof targetViewFormSchema>;
+export type ResourceViewFormSchema = z.infer<typeof resourceViewFormSchema>;
 
-export const TargetViewForm: React.FC<{
-  form: UseFormReturn<TargetViewFormSchema>;
-  onSubmit: (data: TargetViewFormSchema) => void;
+export const ResourceViewForm: React.FC<{
+  form: UseFormReturn<ResourceViewFormSchema>;
+  onSubmit: (data: ResourceViewFormSchema) => void;
 }> = ({ form, onSubmit }) => (
   <Form {...form}>
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -69,7 +69,7 @@ export const TargetViewForm: React.FC<{
           <FormItem>
             <FormLabel>Filter</FormLabel>
             <FormControl>
-              <TargetConditionRender condition={value} onChange={onChange} />
+              <ResourceConditionRender condition={value} onChange={onChange} />
             </FormControl>
           </FormItem>
         )}

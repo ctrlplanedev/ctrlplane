@@ -42,11 +42,11 @@ import {
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
-import { TargetConditionRender } from "./TargetConditionRender";
+import type { ResourceConditionRenderProps } from "./resource-condition-props";
+import { ResourceConditionRender } from "./ResourceConditionRender";
 
 export const ComparisonConditionRender: React.FC<
-  TargetConditionRenderProps<ComparisonCondition>
+  ResourceConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
   const setOperator = (operator: ResourceOperator.And | ResourceOperator.Or) =>
     onChange({ ...condition, operator });
@@ -178,7 +178,7 @@ export const ComparisonConditionRender: React.FC<
                   </SelectContent>
                 </Select>
               )}
-              <TargetConditionRender
+              <ResourceConditionRender
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}

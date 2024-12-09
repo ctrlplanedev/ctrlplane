@@ -1,12 +1,12 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import { useParams } from "next/navigation";
 
-import type { TargetConditionRenderProps } from "./target-condition-props";
+import type { ResourceConditionRenderProps } from "./resource-condition-props";
 import { api } from "~/trpc/react";
 import { MetadataConditionRender } from "../filter/MetadataConditionRender";
 
-export const TargetMetadataConditionRender: React.FC<
-  TargetConditionRenderProps<MetadataCondition>
+export const ResourceMetadataConditionRender: React.FC<
+  ResourceConditionRenderProps<MetadataCondition>
 > = ({ condition, onChange, className }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);

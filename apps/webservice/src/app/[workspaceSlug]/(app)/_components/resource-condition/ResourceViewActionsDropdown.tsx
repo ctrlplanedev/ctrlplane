@@ -23,18 +23,18 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import { EditTargetViewDialog } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
 import { api } from "~/trpc/react";
-import { useTargetFilter } from "./useTargetFilter";
+import { EditResourceViewDialog } from "./ResourceConditionDialog";
+import { useResourceFilter } from "./useResourceFilter";
 
-const DeleteTargetViewDialog: React.FC<{
+const DeleteResourceViewDialog: React.FC<{
   viewId: string;
   onClose: () => void;
   children: React.ReactNode;
 }> = ({ viewId, onClose, children }) => {
   const [open, setOpen] = useState(false);
-  const deleteTargetView = api.resource.view.delete.useMutation();
-  const { setFilter } = useTargetFilter();
+  const deleteResourceView = api.resource.view.delete.useMutation();
+  const { setFilter } = useResourceFilter();
 
   return (
     <AlertDialog
@@ -61,7 +61,7 @@ const DeleteTargetViewDialog: React.FC<{
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
             onClick={() =>
-              deleteTargetView
+              deleteResourceView
                 .mutateAsync(viewId)
                 .then(() => setFilter(null, null))
                 .then(onClose)
@@ -75,14 +75,14 @@ const DeleteTargetViewDialog: React.FC<{
   );
 };
 
-export const TargetViewActionsDropdown: React.FC<{
+export const ResourceViewActionsDropdown: React.FC<{
   view: schema.ResourceView;
   children: React.ReactNode;
 }> = ({ view, children }) => {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const isTargetPage = pathname.includes("/targets");
-  const { setFilter } = useTargetFilter();
+  const { setFilter } = useResourceFilter();
   const setView = (v: schema.ResourceView) => setFilter(v.filter, v.id);
 
   return (
@@ -90,7 +90,7 @@ export const TargetViewActionsDropdown: React.FC<{
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
         <DropdownMenuGroup>
-          <EditTargetViewDialog
+          <EditResourceViewDialog
             view={view}
             onClose={() => setOpen(false)}
             onSubmit={isTargetPage ? setView : undefined}
@@ -102,8 +102,8 @@ export const TargetViewActionsDropdown: React.FC<{
               <IconPencil className="h-4 w-4" />
               Edit
             </DropdownMenuItem>
-          </EditTargetViewDialog>
-          <DeleteTargetViewDialog
+          </EditResourceViewDialog>
+          <DeleteResourceViewDialog
             viewId={view.id}
             onClose={() => setOpen(false)}
           >
@@ -114,7 +114,7 @@ export const TargetViewActionsDropdown: React.FC<{
               <IconTrash className="h-4 w-4 text-red-400" />
               Delete
             </DropdownMenuItem>
-          </DeleteTargetViewDialog>
+          </DeleteResourceViewDialog>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

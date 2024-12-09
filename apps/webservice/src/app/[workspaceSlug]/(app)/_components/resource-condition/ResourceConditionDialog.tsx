@@ -16,26 +16,24 @@ import {
 import { useForm } from "@ctrlplane/ui/form";
 import {
   defaultCondition,
-  isValidTargetCondition,
+  isValidResourceCondition,
   MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/resources";
 
-import type { TargetViewFormSchema } from "./TargetViewForm";
+import type { ResourceViewFormSchema } from "./ResourceViewForm";
 import { api } from "~/trpc/react";
-import { TargetConditionRender } from "./TargetConditionRender";
-import { TargetViewForm, targetViewFormSchema } from "./TargetViewForm";
+import { ResourceConditionRender } from "./ResourceConditionRender";
+import { ResourceViewForm, resourceViewFormSchema } from "./ResourceViewForm";
 
-type TargetConditionDialogProps = {
+type ResourceConditionDialogProps = {
   condition: ResourceCondition | null;
   onChange: (condition: ResourceCondition | null) => void;
   children: React.ReactNode;
 };
 
-export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
-  condition,
-  onChange,
-  children,
-}) => {
+export const ResourceConditionDialog: React.FC<
+  ResourceConditionDialogProps
+> = ({ condition, onChange, children }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cond = condition ?? defaultCondition;
@@ -49,13 +47,13 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader>
-          <DialogTitle>Edit Target Filter</DialogTitle>
+          <DialogTitle>Edit Resource Filter</DialogTitle>
           <DialogDescription>
-            Edit the target filter for this environment, up to a depth of{" "}
+            Edit the resource filter for this environment, up to a depth of{" "}
             {MAX_DEPTH_ALLOWED + 1}.
           </DialogDescription>
         </DialogHeader>
-        <TargetConditionRender
+        <ResourceConditionRender
           condition={localCondition}
           onChange={setLocalCondition}
         />
@@ -73,9 +71,9 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
           <div className="flex-grow" />
           <Button
             onClick={() => {
-              if (!isValidTargetCondition(localCondition)) {
+              if (!isValidResourceCondition(localCondition)) {
                 setError(
-                  "Invalid target condition, ensure all fields are filled out correctly.",
+                  "Invalid resource condition, ensure all fields are filled out correctly.",
                 );
                 return;
               }
@@ -92,22 +90,19 @@ export const TargetConditionDialog: React.FC<TargetConditionDialogProps> = ({
   );
 };
 
-type CreateTargetViewDialogProps = {
+type CreateResourceViewDialogProps = {
   workspaceId: string;
   filter: ResourceCondition | null;
   onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
 
-export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
-  workspaceId,
-  filter,
-  onSubmit,
-  children,
-}) => {
+export const CreateResourceViewDialog: React.FC<
+  CreateResourceViewDialogProps
+> = ({ workspaceId, filter, onSubmit, children }) => {
   const [open, setOpen] = useState(false);
   const form = useForm({
-    schema: targetViewFormSchema,
+    schema: resourceViewFormSchema,
     defaultValues: {
       name: "",
       description: "",
@@ -116,14 +111,11 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
   });
   const router = useRouter();
 
-  const createTargetView = api.resource.view.create.useMutation();
+  const createResourceView = api.resource.view.create.useMutation();
 
-  const onFormSubmit = (data: TargetViewFormSchema) => {
-    createTargetView
-      .mutateAsync({
-        ...data,
-        workspaceId,
-      })
+  const onFormSubmit = (data: ResourceViewFormSchema) => {
+    createResourceView
+      .mutateAsync({ ...data, workspaceId })
       .then((view) => onSubmit?.(view))
       .then(() => form.reset())
       .then(() => setOpen(false))
@@ -138,25 +130,25 @@ export const CreateTargetViewDialog: React.FC<CreateTargetViewDialogProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader>
-          <DialogTitle>Create Target View</DialogTitle>
+          <DialogTitle>Create Resource View</DialogTitle>
           <DialogDescription>
-            Create a target view for this workspace.
+            Create a resource view for this workspace.
           </DialogDescription>
         </DialogHeader>
-        <TargetViewForm form={form} onSubmit={onFormSubmit} />
+        <ResourceViewForm form={form} onSubmit={onFormSubmit} />
       </DialogContent>
     </Dialog>
   );
 };
 
-type EditTargetViewDialogProps = {
+type EditResourceViewDialogProps = {
   view: schema.ResourceView;
   onClose?: () => void;
   onSubmit?: (view: schema.ResourceView) => void;
   children: React.ReactNode;
 };
 
-export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
+export const EditResourceViewDialog: React.FC<EditResourceViewDialogProps> = ({
   view,
   onClose,
   onSubmit,
@@ -164,23 +156,16 @@ export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const form = useForm({
-    schema: targetViewFormSchema,
-    defaultValues: {
-      name: view.name,
-      description: view.description ?? "",
-      filter: view.filter,
-    },
+    schema: resourceViewFormSchema,
+    defaultValues: { ...view, description: view.description ?? "" },
   });
   const router = useRouter();
 
-  const updateTargetView = api.resource.view.update.useMutation();
+  const updateResourceView = api.resource.view.update.useMutation();
 
-  const onFormSubmit = (data: TargetViewFormSchema) => {
-    updateTargetView
-      .mutateAsync({
-        id: view.id,
-        data,
-      })
+  const onFormSubmit = (data: ResourceViewFormSchema) => {
+    updateResourceView
+      .mutateAsync({ id: view.id, data })
       .then((view) => onSubmit?.(view))
       .then(() => setOpen(false))
       .then(onClose)
@@ -201,12 +186,12 @@ export const EditTargetViewDialog: React.FC<EditTargetViewDialogProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <DialogHeader>
-          <DialogTitle>Create Target View</DialogTitle>
+          <DialogTitle>Edit Resource View</DialogTitle>
           <DialogDescription>
-            Create a target view for this workspace.
+            Edit a resource view for this workspace.
           </DialogDescription>
         </DialogHeader>
-        <TargetViewForm form={form} onSubmit={onFormSubmit} />
+        <ResourceViewForm form={form} onSubmit={onFormSubmit} />
       </DialogContent>
     </Dialog>
   );
