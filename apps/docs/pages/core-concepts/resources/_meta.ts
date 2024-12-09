@@ -1,6 +1,6 @@
 export default {
-  "target-providers": "Target Providers",
-  "managing-targets": "Managing Targets",
+  "resource-providers": "Resource Providers",
+  "managing-resources": "Managing Resources",
   schemas: "Schemas",
   metadata: "Metadata",
 };
