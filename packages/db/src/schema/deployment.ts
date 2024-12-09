@@ -70,6 +70,7 @@ const deploymentInsert = createInsertSchema(deployment, {
 
 export const createDeployment = deploymentInsert;
 export const updateDeployment = deploymentInsert.partial();
+export type UpdateDeployment = z.infer<typeof updateDeployment>;
 export type Deployment = InferSelectModel<typeof deployment>;
 
 export const deploymentRelations = relations(deployment, ({ one }) => ({

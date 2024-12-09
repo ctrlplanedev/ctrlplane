@@ -33,14 +33,15 @@ import {
   runbookVariable,
   runhook,
   system,
-  updateDeployment,
+  updateDeployment as updateDeploymentSchema,
   updateHook,
   updateReleaseChannel,
   workspace,
 } from "@ctrlplane/db/schema";
 import {
-  getEventsForDeploymentDeleted,
+  getEventsForDeploymentRemoved,
   handleEvent,
+  updateDeployment,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
@@ -451,13 +452,9 @@ export const deploymentRouter = createTRPCRouter({
           .perform(Permission.DeploymentUpdate)
           .on({ type: "deployment", id: input.id }),
     })
-    .input(z.object({ id: z.string().uuid(), data: updateDeployment }))
+    .input(z.object({ id: z.string().uuid(), data: updateDeploymentSchema }))
     .mutation(({ ctx, input }) =>
-      ctx.db
-        .update(deployment)
-        .set(input.data)
-        .where(eq(deployment.id, input.id))
-        .returning(),
+      updateDeployment(input.id, input.data, ctx.session.user.id),
     ),
 
   delete: protectedProcedure
@@ -474,7 +471,7 @@ export const deploymentRouter = createTRPCRouter({
         .from(deployment)
         .where(eq(deployment.id, input))
         .then(takeFirst);
-      const events = await getEventsForDeploymentDeleted(dep);
+      const events = await getEventsForDeploymentRemoved(dep, dep.systemId);
       await Promise.allSettled(events.map(handleEvent));
       return ctx.db
         .delete(deployment)

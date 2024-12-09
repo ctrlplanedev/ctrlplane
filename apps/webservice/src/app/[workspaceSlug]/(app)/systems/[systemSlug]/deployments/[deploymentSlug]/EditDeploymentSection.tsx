@@ -1,10 +1,9 @@
 "use client";
 
-import type { Deployment } from "@ctrlplane/db/schema";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
-import { deploymentSchema } from "@ctrlplane/db/schema";
+import * as schema from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
@@ -17,15 +16,28 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const deploymentForm = z.object(deploymentSchema.shape);
+const deploymentForm = z.object(schema.deploymentSchema.shape);
 
-export const EditDeploymentSection: React.FC<{
-  deployment: Deployment;
-}> = ({ deployment }) => {
+type EditDeploymentSectionProps = {
+  deployment: schema.Deployment;
+  systems: schema.System[];
+};
+
+export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
+  deployment,
+  systems,
+}) => {
   const form = useForm({
     schema: deploymentForm,
     defaultValues: { ...deployment },
@@ -33,19 +45,19 @@ export const EditDeploymentSection: React.FC<{
   });
   const { handleSubmit, setError } = form;
 
-  const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-  }>();
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const router = useRouter();
   const updateDeployment = api.deployment.update.useMutation();
   const onSubmit = handleSubmit((data) => {
     updateDeployment
       .mutateAsync({ id: deployment.id, data })
-      .then(() => {
-        if (data.slug !== deployment.slug)
+      .then((updatedDeployment) => {
+        if (
+          data.slug !== deployment.slug ||
+          updatedDeployment.systemId !== deployment.systemId
+        )
           router.replace(
-            `/${workspaceSlug}/systems/${systemSlug}/deployments/${data.slug}`,
+            `/${workspaceSlug}/systems/${updatedDeployment.system.slug}/deployments/${data.slug}`,
           );
         router.refresh();
       })
@@ -116,7 +128,30 @@ export const EditDeploymentSection: React.FC<{
               </FormItem>
             )}
           />
-
+          <FormField
+            control={form.control}
+            name="systemId"
+            render={({ field: { value, onChange } }) => (
+              <FormItem>
+                <FormLabel>System</FormLabel>
+                <FormControl>
+                  <Select value={value} onValueChange={onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a system" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {systems.map((system) => (
+                        <SelectItem key={system.id} value={system.id}>
+                          {system.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="retryCount"
