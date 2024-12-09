@@ -1,7 +1,7 @@
 export default {
   overview: "Overview",
   systems: "Systems",
-  targets: "Targets",
+  resources: "Resources",
   environments: "Environments",
   deployments: "Deployments",
   runbooks: "Runbooks",
