@@ -29,7 +29,7 @@ export default async function WorkspaceGeneralSettingsPage({
         <div className="space-y-6">
           <div>General</div>
 
-          <WorkspaceUpdateSection />
+          <WorkspaceUpdateSection workspace={workspace} />
         </div>
 
         <div className="border-b" />
