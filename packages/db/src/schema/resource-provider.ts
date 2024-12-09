@@ -74,3 +74,43 @@ export const resourceProviderGoogleRelations = relations(
     }),
   }),
 );
+
+export const resourceProviderAws = pgTable("resource_provider_aws", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  resourceProviderId: uuid("resource_provider_id")
+    .notNull()
+    .references(() => resourceProvider.id, { onDelete: "cascade" }),
+
+  awsRoleArns: text("aws_role_arns").array().notNull(),
+});
+
+export const createResourceProviderAws = createInsertSchema(
+  resourceProviderAws,
+  {
+    awsRoleArns: z
+      .array(
+        z
+          .string()
+          .regex(
+            /^arn:aws:iam::[0-9]{12}:role\/[a-zA-Z0-9+=,.@\-_/]+$/,
+            "Invalid AWS Role ARN format. Expected format: arn:aws:iam::<account-id>:role/<role-name>",
+          )
+          .min(1),
+      )
+      .min(1),
+  },
+).omit({ id: true });
+
+export const updateResourceProviderAws = createResourceProviderAws.partial();
+
+export type ResourceProviderAws = InferSelectModel<typeof resourceProviderAws>;
+
+export const resourceProviderAwsRelations = relations(
+  resourceProviderAws,
+  ({ one }) => ({
+    provider: one(resourceProvider, {
+      fields: [resourceProviderAws.resourceProviderId],
+      references: [resourceProvider.id],
+    }),
+  }),
+);
