@@ -31,7 +31,10 @@ export const SettingsSidebar: React.FC<{ workspace: Workspace }> = ({
         <SidebarNavMain
           title="Workspace"
           items={[
-            { title: "Overview", url: `/${workspace.slug}/workspace/settings` },
+            {
+              title: "Overview",
+              url: `/${workspace.slug}/settings/workspace/overview`,
+            },
             {
               title: "General",
               url: `/${workspace.slug}/settings/workspace/general`,
