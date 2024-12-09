@@ -24,7 +24,7 @@ export default async function AccountSettingsLayout({
   return (
     <>
       <SettingsSidebar workspace={workspace} />
-      <SidebarInset className="mt-10">{children}</SidebarInset>
+      <SidebarInset className="pt-10">{children}</SidebarInset>
     </>
   );
 }
