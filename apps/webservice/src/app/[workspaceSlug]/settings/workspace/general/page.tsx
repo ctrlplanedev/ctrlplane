@@ -16,7 +16,7 @@ export default async function WorkspaceGeneralSettingsPage({
   if (workspace == null) notFound();
 
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-40px)] overflow-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-40px)] overflow-auto">
       <div className="container mx-auto max-w-2xl space-y-8">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">General</h1>
@@ -29,7 +29,7 @@ export default async function WorkspaceGeneralSettingsPage({
         <div className="space-y-6">
           <div>General</div>
 
-          <WorkspaceUpdateSection />
+          <WorkspaceUpdateSection workspace={workspace} />
         </div>
 
         <div className="border-b" />

@@ -5,6 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 import { GoogleDialog } from "./google/GoogleDialog";
@@ -38,7 +39,17 @@ export const GoogleActionButton: React.FC<GoogleActionButtonProps> = ({
       onClick={async () =>
         createServiceAccount
           .mutateAsync(workspace.id)
+          .then((result) =>
+            toast.success(
+              `Google Service Account ${result.googleServiceAccountEmail} created for ${result.name}`,
+            ),
+          )
           .then(() => router.refresh())
+          .catch((error) => {
+            toast.error(
+              `Failed to create Google Service Account. ${error.message}`,
+            );
+          })
       }
     >
       Enable

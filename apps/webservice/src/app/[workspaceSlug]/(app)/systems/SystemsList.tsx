@@ -46,7 +46,7 @@ export const SystemsList: React.FC<{
       )}
 
       {systems.data != null && systems.data.total > 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-390px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-390px)] overflow-auto">
           <SystemsTable
             systems={systems.data.items}
             workspaceSlug={workspace.slug}

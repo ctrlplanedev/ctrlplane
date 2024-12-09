@@ -27,17 +27,37 @@ export const regexCondition = z.object({
 
 export type RegexCondition = z.infer<typeof regexCondition>;
 
-export const likeCondition = z.object({
+export const startsWithCondition = z.object({
   type: z.literal("metadata"),
   key: z.string().min(1),
   value: z.string(),
-  operator: z.literal("like"),
+  operator: z.literal("starts-with"),
 });
 
-export type LikeCondition = z.infer<typeof likeCondition>;
+export type StartsWithCondition = z.infer<typeof startsWithCondition>;
+
+export const endsWithCondition = z.object({
+  type: z.literal("metadata"),
+  key: z.string().min(1),
+  value: z.string(),
+  operator: z.literal("ends-with"),
+});
+
+export type EndsWithCondition = z.infer<typeof endsWithCondition>;
+
+export const containsCondition = z.object({
+  type: z.literal("metadata"),
+  key: z.string().min(1),
+  value: z.string(),
+  operator: z.literal("contains"),
+});
+
+export type ContainsCondition = z.infer<typeof containsCondition>;
 
 export const metadataCondition = z.union([
-  likeCondition,
+  startsWithCondition,
+  endsWithCondition,
+  containsCondition,
   regexCondition,
   equalsCondition,
   nullCondition,
@@ -47,16 +67,20 @@ export type MetadataCondition = z.infer<typeof metadataCondition>;
 
 export enum MetadataOperator {
   Equals = "equals",
-  Like = "like",
   Regex = "regex",
   Null = "null",
+  StartsWith = "starts-with",
+  EndsWith = "ends-with",
+  Contains = "contains",
 }
 
 export type MetadataOperatorType =
   | MetadataOperator.Equals
-  | MetadataOperator.Like
   | MetadataOperator.Regex
-  | MetadataOperator.Null;
+  | MetadataOperator.Null
+  | MetadataOperator.StartsWith
+  | MetadataOperator.EndsWith
+  | MetadataOperator.Contains;
 
 export enum ReservedMetadataKey {
   ExternalId = "ctrlplane/external-id",

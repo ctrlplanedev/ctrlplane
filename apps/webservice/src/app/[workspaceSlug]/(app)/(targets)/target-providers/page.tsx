@@ -58,7 +58,7 @@ export default async function TargetProvidersPage({
   });
 
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-40px)] overflow-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-40px)] overflow-auto">
       <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
         <TableHeader>
           <TableRow>
@@ -77,26 +77,27 @@ export default async function TargetProvidersPage({
                 <Link href={provider.filterLink} target="_blank">
                   <div className="flex h-full items-center gap-1">
                     <span className="text-base">{provider.name}</span>
-                    {provider.googleConfig == null && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Badge
-                              variant="outline"
-                              className="h-6 gap-1.5 rounded-full border-none bg-blue-500/10 pl-2 pr-3 text-xs text-blue-300"
-                            >
-                              <IconSettings className="h-4 w-4" /> Custom
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[200px]">
-                            A custom provider is when you are running your own
-                            agent instead of using managed agents built inside
-                            Ctrlplane. Your agent directly calls Ctrlplane's API
-                            to create targets.
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
+                    {provider.googleConfig == null &&
+                      provider.awsConfig == null && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <Badge
+                                variant="outline"
+                                className="h-6 gap-1.5 rounded-full border-none bg-blue-500/10 pl-2 pr-3 text-xs text-blue-300"
+                              >
+                                <IconSettings className="h-4 w-4" /> Custom
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-[200px]">
+                              A custom provider is when you are running your own
+                              agent instead of using managed agents built inside
+                              Ctrlplane. Your agent directly calls Ctrlplane's
+                              API to create targets.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
 
                     <Badge
                       variant="outline"

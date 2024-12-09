@@ -21,10 +21,11 @@ import {
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
   job,
-  jobMatchesCondition,
+  jobMetadata,
   release,
   releaseChannel,
   releaseDependency,
+  releaseJobMatchesCondition,
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
@@ -108,12 +109,14 @@ export const releaseRouter = createTRPCRouter({
           .select()
           .from(releaseJobTrigger)
           .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+          .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
+          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
           .innerJoin(
             resource,
             and(
               eq(releaseJobTrigger.resourceId, resource.id),
               isNull(resource.deletedAt),
-              jobMatchesCondition(ctx.db, input.jobFilter),
+              releaseJobMatchesCondition(ctx.db, input.jobFilter),
             ),
           )
           .where(
@@ -122,17 +125,28 @@ export const releaseRouter = createTRPCRouter({
               items.map((r) => r.id),
             ),
           )
-          .orderBy(desc(releaseJobTrigger.createdAt));
+          .orderBy(desc(releaseJobTrigger.createdAt))
+          .then((data) =>
+            _.chain(data)
+              .groupBy((j) => j.release_job_trigger.id)
+              .map((j) => ({
+                ...j[0]!.release_job_trigger,
+                job: {
+                  ...j[0]!.job,
+                  metadata: _.chain(j)
+                    .map((j) => j.job_metadata)
+                    .filter(isPresent)
+                    .uniqBy((j) => j.id)
+                    .value(),
+                },
+                resource: j[0]!.resource,
+              }))
+              .value(),
+          );
 
         return items.map((r) => ({
           ...r,
-          releaseJobTriggers: jobTriggers
-            .filter((j) => j.release_job_trigger.releaseId === r.id)
-            .map((j) => ({
-              ...j.release_job_trigger,
-              job: j.job,
-              resource: j.resource,
-            })),
+          releaseJobTriggers: jobTriggers.filter((j) => j.releaseId === r.id),
         }));
       };
 

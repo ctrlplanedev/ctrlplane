@@ -38,6 +38,7 @@ export const getEventsForResourceDeleted = async (
       where: and(
         SCHEMA.resourceMatchesMetadata(db, systemFilter),
         isNull(SCHEMA.resource.deletedAt),
+        eq(SCHEMA.resource.id, resource.id),
       ),
     });
     if (matchedResource == null) return [];

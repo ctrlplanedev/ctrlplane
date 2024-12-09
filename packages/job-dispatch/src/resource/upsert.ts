@@ -44,14 +44,14 @@ export const upsertResources = async (
       resourceIdentifiers,
     );
 
-    log.debug("Envs before insert", {
+    log.info("Envs before insert", {
       envs: envsBeforeInsert.map((e) => ({
         id: e.id,
         resources: e.resources.map((r) => r.identifier),
       })),
     });
 
-    log.debug("Inserting resources");
+    log.info("Inserting resources");
     const resources = await insertResources(tx, resourcesToInsert);
     const resourcesWithId = resources.all.map((r) => ({
       ...r,
@@ -61,20 +61,20 @@ export const upsertResources = async (
       ),
     }));
 
-    log.debug("Inserting resource metadata and variables");
+    log.info("Inserting resource metadata and variables");
     const [, updatedVariableResourceIds] = await Promise.all([
       insertResourceMetadata(tx, resourcesWithId),
       insertResourceVariables(tx, resourcesWithId),
     ]);
 
-    log.debug("Getting environments after insert");
+    log.info("Getting environments after insert");
     const envsAfterInsert = await getEnvironmentsByResourceWithIdentifiers(
       tx,
       workspaceId,
       resourceIdentifiers,
     );
 
-    log.debug("Envs after insert", {
+    log.info("Envs after insert", {
       envs: envsAfterInsert.map((e) => ({
         id: e.id,
         resources: e.resources.map((r) => r.identifier),

@@ -58,7 +58,7 @@ export const MetadataConditionRender: React.FC<
             </PopoverTrigger>
             <PopoverContent
               align="start"
-              className="scrollbar-thin scrollbar-track-neutral-950 scrollbar-thumb-neutral-800 max-h-[300px] overflow-y-auto p-0 text-sm"
+              className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 max-h-[300px] overflow-y-auto p-0 text-sm"
               onOpenAutoFocus={(e) => e.preventDefault()}
             >
               {filteredMetadataKeys.map((k) => (
@@ -84,9 +84,11 @@ export const MetadataConditionRender: React.FC<
             onValueChange={(
               v:
                 | MetadataOperator.Equals
-                | MetadataOperator.Like
                 | MetadataOperator.Regex
-                | MetadataOperator.Null,
+                | MetadataOperator.Null
+                | MetadataOperator.StartsWith
+                | MetadataOperator.EndsWith
+                | MetadataOperator.Contains,
             ) => setOperator(v)}
           >
             <SelectTrigger className="rounded-none text-muted-foreground hover:bg-neutral-800/50">
@@ -98,7 +100,15 @@ export const MetadataConditionRender: React.FC<
             <SelectContent className="text-muted-foreground">
               <SelectItem value={MetadataOperator.Equals}>Equals</SelectItem>
               <SelectItem value={MetadataOperator.Regex}>Regex</SelectItem>
-              <SelectItem value={MetadataOperator.Like}>Like</SelectItem>
+              <SelectItem value={MetadataOperator.StartsWith}>
+                Starts with
+              </SelectItem>
+              <SelectItem value={MetadataOperator.EndsWith}>
+                Ends with
+              </SelectItem>
+              <SelectItem value={MetadataOperator.Contains}>
+                Contains
+              </SelectItem>
               <SelectItem value={MetadataOperator.Null}>Is Null</SelectItem>
             </SelectContent>
           </Select>
@@ -110,9 +120,7 @@ export const MetadataConditionRender: React.FC<
               placeholder={
                 condition.operator === MetadataOperator.Regex
                   ? "^[a-zA-Z]+$"
-                  : condition.operator === MetadataOperator.Like
-                    ? "%value%"
-                    : "Value"
+                  : "Value"
               }
               value={condition.value}
               onChange={(e) => setValue(e.target.value)}

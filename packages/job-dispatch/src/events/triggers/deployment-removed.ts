@@ -8,14 +8,14 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
-export const getEventsForDeploymentDeleted = async (
+export const getEventsForDeploymentRemoved = async (
   deployment: SCHEMA.Deployment,
+  systemId: string,
 ): Promise<HookEvent[]> => {
+  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
   const system = await db.query.system.findFirst({
-    where: eq(SCHEMA.system.id, deployment.systemId),
-    with: {
-      environments: { where: isNotNull(SCHEMA.environment.resourceFilter) },
-    },
+    where: eq(SCHEMA.system.id, systemId),
+    with: { environments: { where: hasFilter } },
   });
   if (system == null) return [];
 

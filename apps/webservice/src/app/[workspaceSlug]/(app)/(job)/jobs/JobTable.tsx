@@ -16,12 +16,15 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
 import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
+import { JobLinksCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/JobLinksCell";
+import { VariableCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/VariableCell";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
@@ -98,14 +101,16 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
 
       {releaseJobTriggers.isSuccess && releaseJobTriggers.data.total > 0 && (
         <div className="h-[calc(100%-41px)] overflow-auto">
-          <Table>
+          <Table className="table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead>Target</TableHead>
+                <TableHead>Resource</TableHead>
                 <TableHead>Environment</TableHead>
                 <TableHead>Deployment</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Release Version</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Links</TableHead>
+                <TableHead>Variables</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -118,13 +123,19 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
                   <TableCell>{job.resource.name}</TableCell>
                   <TableCell>{job.environment.name}</TableCell>
                   <TableCell>{job.release.deployment.name}</TableCell>
+                  <TableCell>{job.release.version}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <JobTableStatusIcon status={job.job.status} />
                       {JobStatusReadable[job.job.status]}
                     </div>
                   </TableCell>
-                  <TableCell>{job.release.version}</TableCell>
+                  <JobLinksCell
+                    linksMetadata={job.job.metadata.find(
+                      (m) => m.key === String(ReservedMetadataKey.Links),
+                    )}
+                  />
+                  <VariableCell variables={job.job.variables} />
                 </TableRow>
               ))}
             </TableBody>

@@ -45,7 +45,7 @@ export default async function RunbookLayout({
       </TopNav>
       <RunbookNavBar totalJobs={total} runbook={runbook} />
 
-      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-53px-49px)] overflow-auto">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-53px-49px)] overflow-auto">
         {children}
       </div>
     </>

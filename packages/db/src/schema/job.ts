@@ -14,7 +14,6 @@ import {
   gte,
   ilike,
   isNull,
-  like,
   lt,
   lte,
   not,
@@ -154,17 +153,18 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(jobMetadata)
         .where(
           and(eq(jobMetadata.jobId, job.id), eq(jobMetadata.key, cond.key)),
-        ),
+        )
+        .limit(1),
     );
 
   if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(jobMetadata)
         .where(
           and(
@@ -172,26 +172,58 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
             eq(jobMetadata.key, cond.key),
             sql`${jobMetadata.value} ~ ${cond.value}`,
           ),
-        ),
+        )
+        .limit(1),
     );
 
-  if (cond.operator === MetadataOperator.Like)
+  if (cond.operator === MetadataOperator.StartsWith)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(jobMetadata)
         .where(
           and(
             eq(jobMetadata.jobId, job.id),
             eq(jobMetadata.key, cond.key),
-            like(jobMetadata.value, cond.value),
+            ilike(jobMetadata.value, `${cond.value}%`),
           ),
-        ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.EndsWith)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(jobMetadata)
+        .where(
+          and(
+            eq(jobMetadata.jobId, job.id),
+            eq(jobMetadata.key, cond.key),
+            ilike(jobMetadata.value, `%${cond.value}`),
+          ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.Contains)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(jobMetadata)
+        .where(
+          and(
+            eq(jobMetadata.jobId, job.id),
+            eq(jobMetadata.key, cond.key),
+            ilike(jobMetadata.value, `%${cond.value}%`),
+          ),
+        )
+        .limit(1),
     );
 
   return exists(
     tx
-      .select()
+      .select({ value: sql<number>`1` })
       .from(jobMetadata)
       .where(
         and(
@@ -199,7 +231,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
           eq(jobMetadata.key, cond.key),
           eq(jobMetadata.value, cond.value),
         ),
-      ),
+      )
+      .limit(1),
   );
 };
 
@@ -230,66 +263,13 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
   if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
   if (cond.type === JobFilterType.Deployment)
-    return exists(
-      tx
-        .select()
-        .from(releaseJobTrigger)
-        .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-        .where(
-          and(
-            eq(release.deploymentId, cond.value),
-            eq(releaseJobTrigger.jobId, job.id),
-          ),
-        ),
-    );
+    return eq(release.deploymentId, cond.value);
   if (cond.type === JobFilterType.Environment)
-    return exists(
-      tx
-        .select()
-        .from(releaseJobTrigger)
-        .where(
-          and(
-            eq(releaseJobTrigger.environmentId, cond.value),
-            eq(releaseJobTrigger.jobId, job.id),
-          ),
-        ),
-    );
-  if (cond.type === FilterType.Version)
-    return exists(
-      tx
-        .select()
-        .from(releaseJobTrigger)
-        .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-        .where(
-          and(eq(releaseJobTrigger.jobId, job.id), buildVersionCondition(cond)),
-        ),
-    );
+    return eq(releaseJobTrigger.environmentId, cond.value);
+  if (cond.type === FilterType.Version) return buildVersionCondition(cond);
   if (cond.type === JobFilterType.JobTarget)
-    return exists(
-      tx
-        .select()
-        .from(releaseJobTrigger)
-        .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-        .where(
-          and(
-            eq(releaseJobTrigger.jobId, job.id),
-            eq(releaseJobTrigger.resourceId, cond.value),
-            isNull(resource.deletedAt),
-          ),
-        ),
-    );
-  if (cond.type === JobFilterType.Release)
-    return exists(
-      tx
-        .select()
-        .from(releaseJobTrigger)
-        .where(
-          and(
-            eq(releaseJobTrigger.jobId, job.id),
-            eq(releaseJobTrigger.releaseId, cond.value),
-          ),
-        ),
-    );
+    return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
+  if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =
@@ -297,11 +277,40 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   return cond.not ? not(con) : con;
 };
 
-export function jobMatchesCondition(
+const buildRunbookCondition = (tx: Tx, cond: JobCondition): SQL | undefined => {
+  if (
+    cond.type !== FilterType.Metadata &&
+    cond.type !== FilterType.CreatedAt &&
+    cond.type !== JobFilterType.Status &&
+    cond.type !== FilterType.Comparison
+  )
+    return undefined;
+
+  if (cond.type === FilterType.Metadata)
+    return buildMetadataCondition(tx, cond);
+  if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
+  if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
+
+  const subCon = cond.conditions.map((c) => buildCondition(tx, c));
+  const con =
+    cond.operator === ComparisonOperator.And ? and(...subCon)! : or(...subCon)!;
+  return cond.not ? not(con) : con;
+};
+
+export function releaseJobMatchesCondition(
   tx: Tx,
   condition?: JobCondition,
 ): SQL<unknown> | undefined {
   return condition == null || Object.keys(condition).length === 0
     ? undefined
     : buildCondition(tx, condition);
+}
+
+export function runbookJobMatchesCondition(
+  tx: Tx,
+  condition?: JobCondition,
+): SQL<unknown> | undefined {
+  return condition == null || Object.keys(condition).length === 0
+    ? undefined
+    : buildRunbookCondition(tx, condition);
 }

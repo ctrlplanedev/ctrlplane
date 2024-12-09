@@ -47,7 +47,7 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>{children}</DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuGroup>
           <Link href={url}>

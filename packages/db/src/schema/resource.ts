@@ -13,7 +13,6 @@ import {
   gt,
   gte,
   ilike,
-  like,
   lt,
   lte,
   not,
@@ -173,20 +172,21 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
     return notExists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(resourceMetadata)
         .where(
           and(
             eq(resourceMetadata.resourceId, resource.id),
             eq(resourceMetadata.key, cond.key),
           ),
-        ),
+        )
+        .limit(1),
     );
 
   if (cond.operator === MetadataOperator.Regex)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(resourceMetadata)
         .where(
           and(
@@ -194,27 +194,59 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
             eq(resourceMetadata.key, cond.key),
             sql`${resourceMetadata.value} ~ ${cond.value}`,
           ),
-        ),
+        )
+        .limit(1),
     );
 
-  if (cond.operator === MetadataOperator.Like)
+  if (cond.operator === MetadataOperator.StartsWith)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(resourceMetadata)
         .where(
           and(
             eq(resourceMetadata.resourceId, resource.id),
             eq(resourceMetadata.key, cond.key),
-            like(resourceMetadata.value, cond.value),
+            ilike(resourceMetadata.value, `${cond.value}%`),
           ),
-        ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.EndsWith)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(resourceMetadata)
+        .where(
+          and(
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            ilike(resourceMetadata.value, `%${cond.value}`),
+          ),
+        )
+        .limit(1),
+    );
+
+  if (cond.operator === MetadataOperator.Contains)
+    return exists(
+      tx
+        .select({ value: sql<number>`1` })
+        .from(resourceMetadata)
+        .where(
+          and(
+            eq(resourceMetadata.resourceId, resource.id),
+            eq(resourceMetadata.key, cond.key),
+            ilike(resourceMetadata.value, `%${cond.value}%`),
+          ),
+        )
+        .limit(1),
     );
 
   if ("value" in cond)
     return exists(
       tx
-        .select()
+        .select({ value: sql<number>`1` })
         .from(resourceMetadata)
         .where(
           and(
@@ -222,7 +254,8 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
             eq(resourceMetadata.key, cond.key),
             eq(resourceMetadata.value, cond.value),
           ),
-        ),
+        )
+        .limit(1),
     );
 
   throw Error("invalid metadata conditions");

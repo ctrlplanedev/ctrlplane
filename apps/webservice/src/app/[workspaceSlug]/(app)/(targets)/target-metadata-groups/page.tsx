@@ -31,7 +31,7 @@ export default async function TargetMetadataGroupPages({
         </CreateMetadataGroupDialog>
       </div>
 
-      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-120px)] overflow-auto">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-120px)] overflow-auto">
         <TargetGroupsTable
           workspace={workspace}
           metadataGroups={metadataGroups}

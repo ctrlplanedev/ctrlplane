@@ -29,7 +29,7 @@ export default async function WorkspaceSettingMembersPage({
   const roles = await api.workspace.roles(workspace.id);
 
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 container mx-auto h-[calc(100vh-40px)] max-w-2xl space-y-8 overflow-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 container mx-auto h-[calc(100vh-40px)] max-w-2xl space-y-8 overflow-auto">
       <div className="container mx-auto max-w-2xl space-y-8">
         <div className="space-y-1">
           <h1 className="text-xl font-semibold">Members</h1>

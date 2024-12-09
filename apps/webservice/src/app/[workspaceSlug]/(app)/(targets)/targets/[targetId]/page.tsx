@@ -89,7 +89,7 @@ const TargetMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 overflow-auto rounded-b-lg border-x border-b p-1.5">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 overflow-auto rounded-b-lg border-x border-b p-1.5">
           {result.map(([key, value]) => (
             <div className="text-nowrap font-mono">
               <span className="text-red-400">{key}:</span>{" "}

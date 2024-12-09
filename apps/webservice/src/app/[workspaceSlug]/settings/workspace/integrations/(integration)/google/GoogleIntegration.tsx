@@ -9,6 +9,7 @@ import { useCopyToClipboard } from "react-use";
 
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
@@ -60,7 +61,13 @@ export const GoogleIntegration: React.FC<{
               onClick={() =>
                 deleteServiceAccount
                   .mutateAsync(workspace.id)
+                  .then(() => toast.success("Google Service Account deleted"))
                   .then(() => router.refresh())
+                  .catch((error) => {
+                    toast.error(
+                      `Failed to delete service account. ${error.message}`,
+                    );
+                  })
               }
             >
               Disable
@@ -72,7 +79,13 @@ export const GoogleIntegration: React.FC<{
               onClick={() =>
                 createServiceAccount
                   .mutateAsync(workspace.id)
+                  .then(() => toast.success("Google Service Account created"))
                   .then(() => router.refresh())
+                  .catch((error) => {
+                    toast.error(
+                      `Failed to create service account. ${error.message}`,
+                    );
+                  })
               }
             >
               Enable

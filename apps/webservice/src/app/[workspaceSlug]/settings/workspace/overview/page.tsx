@@ -1,8 +1,8 @@
 import Link from "next/link";
 import {
+  SiAmazon,
   SiGithub,
   SiGooglecloud,
-  SiKubernetes,
 } from "@icons-pack/react-simple-icons";
 import {
   IconBook,
@@ -23,7 +23,7 @@ export default function OverviewPage({
 }) {
   const { workspaceSlug } = params;
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 container mx-auto h-[calc(100vh-40px)] max-w-7xl space-y-8 overflow-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 container mx-auto h-[calc(100vh-40px)] max-w-7xl space-y-8 overflow-auto">
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Workspace</h1>
         <p className="text-sm text-muted-foreground">
@@ -154,7 +154,7 @@ export default function OverviewPage({
               <div className="space-y-2">
                 <div>Google Cloud</div>
                 <div className="text-xs text-muted-foreground">
-                  Sync deployment targets, trigger google workflows and more.
+                  Sync deployment resource, trigger google workflows and more.
                 </div>
                 <div>
                   <Link
@@ -170,15 +170,15 @@ export default function OverviewPage({
           </div>
           <div className="space-y-2 border-b pb-2">
             <div className="flex flex-grow gap-3">
-              <SiKubernetes className="h-5 w-5 text-blue-400" />
+              <SiAmazon className="h-5 w-5 text-orange-400" />
               <div className="space-y-2">
-                <div>Kubernetes</div>
+                <div>AWS</div>
                 <div className="text-xs text-muted-foreground">
-                  Sync deployment targets, trigger k8s jobs and more.
+                  Sync deployment resources, trigger AWS workflows and more.
                 </div>
                 <div>
                   <Link
-                    href={"https://docs.ctrlplane.dev/kubernetes/job-agent"}
+                    href={`/${workspaceSlug}/settings/workspace/integrations/aws`}
                   >
                     <Button variant="secondary" size="sm">
                       Open

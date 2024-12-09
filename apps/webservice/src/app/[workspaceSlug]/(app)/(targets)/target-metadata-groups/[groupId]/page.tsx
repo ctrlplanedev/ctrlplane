@@ -23,7 +23,7 @@ export default async function TargetMetadataGroupPages({
         </Badge>
       </div>
 
-      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 h-[calc(100vh-110px)] w-full overflow-auto">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-110px)] w-full overflow-auto">
         <CombinationsTable
           workspaceSlug={workspaceSlug}
           combinations={metadataGroup.combinations}

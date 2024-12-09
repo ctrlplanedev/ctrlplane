@@ -143,25 +143,48 @@ const releaseJobTriggerRouter = createTRPCRouter({
             schema.system,
             eq(schema.system.id, schema.deployment.systemId),
           )
+          .leftJoin(
+            schema.jobMetadata,
+            eq(schema.jobMetadata.jobId, schema.job.id),
+          )
+          .leftJoin(
+            schema.jobVariable,
+            eq(schema.jobVariable.jobId, schema.job.id),
+          )
           .where(
             and(
               eq(schema.system.workspaceId, input.workspaceId),
               isNull(schema.resource.deletedAt),
-              schema.jobMatchesCondition(ctx.db, input.filter),
+              schema.releaseJobMatchesCondition(ctx.db, input.filter),
             ),
           )
           .orderBy(asc(schema.releaseJobTrigger.createdAt))
           .limit(input.limit)
           .offset(input.offset)
           .then((data) =>
-            data.map((t) => ({
-              ...t.release_job_trigger,
-              job: t.job,
-              agent: t.job_agent,
-              resource: t.resource,
-              release: { ...t.release, deployment: t.deployment },
-              environment: t.environment,
-            })),
+            _.chain(data)
+              .groupBy((t) => t.release_job_trigger.id)
+              .map((v) => ({
+                ...v[0]!.release_job_trigger,
+                job: {
+                  ...v[0]!.job,
+                  metadata: _.chain(v)
+                    .map((v) => v.job_metadata)
+                    .filter(isPresent)
+                    .uniqBy((v) => v.id)
+                    .value(),
+                  variables: _.chain(v)
+                    .map((v) => v.job_variable)
+                    .filter(isPresent)
+                    .uniqBy((v) => v.id)
+                    .value(),
+                },
+                jobAgent: v[0]!.job_agent,
+                resource: v[0]!.resource,
+                release: { ...v[0]!.release, deployment: v[0]!.deployment },
+                environment: v[0]!.environment,
+              }))
+              .value(),
           );
 
         const total = await ctx.db
@@ -197,7 +220,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             and(
               eq(schema.system.workspaceId, input.workspaceId),
               isNull(schema.resource.deletedAt),
-              schema.jobMatchesCondition(ctx.db, input.filter),
+              schema.releaseJobMatchesCondition(ctx.db, input.filter),
             ),
           )
           .then(takeFirst)
@@ -395,7 +418,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           and(
             eq(schema.release.id, input.releaseId),
             isNull(schema.resource.deletedAt),
-            schema.jobMatchesCondition(ctx.db, input.filter),
+            schema.releaseJobMatchesCondition(ctx.db, input.filter),
           ),
         )
         .orderBy(desc(schema.releaseJobTrigger.createdAt))

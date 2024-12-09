@@ -73,7 +73,7 @@ export const VariableTable: React.FC<{
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <div className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 overflow-auto border-t bg-neutral-950">
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 overflow-auto border-t bg-neutral-950">
         <Table className="table-fixed">
           <TableBody>
             {result.map((variable) => (

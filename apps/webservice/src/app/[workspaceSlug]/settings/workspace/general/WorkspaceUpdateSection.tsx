@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
@@ -25,40 +26,34 @@ const updateWorkspace = z.object({
   slug: z.string(),
 });
 
-export const WorkspaceUpdateSection: React.FC = () => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+type WorkspaceUpdateSectionProps = {
+  workspace: SCHEMA.Workspace;
+};
 
+export const WorkspaceUpdateSection: React.FC<WorkspaceUpdateSectionProps> = ({
+  workspace,
+}) => {
   const form = useForm({
     schema: updateWorkspace,
-    defaultValues: { name: "", slug: "" },
+    defaultValues: { ...workspace },
   });
-
-  useEffect(() => {
-    const { data } = workspace;
-    if (data == null) return;
-    if (form.getValues("name") !== "") return;
-    form.setValue("name", data.name);
-    form.setValue("slug", data.slug);
-  }, [form, workspace]);
 
   const router = useRouter();
   const update = api.workspace.update.useMutation();
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (workspace.data == null) return;
-    await update.mutateAsync({ id: workspace.data.id, data });
-    router.push(`/${data.slug}/settings/workspace/general`);
-    router.refresh();
-  });
+  const onSubmit = form.handleSubmit((data) =>
+    update
+      .mutateAsync({ id: workspace.id, data })
+      .then(() => form.reset(data))
+      .then(() => router.push(`/${data.slug}/settings/workspace/general`))
+      .then(() => router.refresh()),
+  );
 
   const [isCopied, setIsCopied] = useState(false);
   const [, copy] = useCopyToClipboard();
   const handleCopy = () => {
-    copy(workspace.data?.id ?? "");
+    copy(workspace.id);
     setIsCopied(true);
-    setTimeout(() => {
-      setIsCopied(false);
-    }, 1000);
+    setTimeout(() => setIsCopied(false), 1000);
   };
   return (
     <Form {...form}>
@@ -66,11 +61,7 @@ export const WorkspaceUpdateSection: React.FC = () => {
         <div className="space-y-2">
           <Label>Workspace ID</Label>
           <div className="flex items-center gap-2">
-            <Input
-              value={workspace.data?.id}
-              disabled
-              className="max-w-[350px]"
-            />
+            <Input value={workspace.id} disabled className="max-w-[350px]" />
             <div className="relative">
               <Button
                 variant="ghost"
@@ -113,7 +104,12 @@ export const WorkspaceUpdateSection: React.FC = () => {
           )}
         />
 
-        <Button type="submit">Update</Button>
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting || !form.formState.isDirty}
+        >
+          Update
+        </Button>
       </form>
     </Form>
   );

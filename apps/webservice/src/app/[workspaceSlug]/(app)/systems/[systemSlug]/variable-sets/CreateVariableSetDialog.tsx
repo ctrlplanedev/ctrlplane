@@ -120,7 +120,7 @@ export const CreateVariableSetDialog: React.FC<{
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-neutral-900 max-h-screen max-w-2xl overflow-auto">
+      <DialogContent className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 max-h-screen max-w-2xl overflow-auto">
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-3">
             <DialogHeader>
