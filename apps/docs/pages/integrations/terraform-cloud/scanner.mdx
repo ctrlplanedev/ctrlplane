@@ -3,7 +3,7 @@ import { Callout } from "nextra/components";
 # Terraform Cloud Scanner
 
 The Terraform Cloud Scanner is a standalone tool that can be run in your own
-infrastructure. It imports all Terraform workspaces as ctrlplane targets and
+infrastructure. It imports all Terraform workspaces as ctrlplane resources and
 populates them with configuration and metadata that can be used with the
 [github actions dispatcher](../github/actions-dispatcher) for continuous
 delivery.
@@ -50,20 +50,20 @@ See the [API](../api) docs to set up an api key for the Terraform Cloud Scanner.
 
 ### Properties
 
-The following properties will be populated for each target scanned into
+The following properties will be populated for each resource scanned into
 Ctrlplane:
 
 - **Identifier**: `example-workspace-id`
 - **Name**: `example-workspace-name`
 - **Version**: `terraform/v1`
 - **Kind**: `Workspace`
-- **Target Provider**: `terraform-cloud-scanner`
+- **Resource Provider**: `terraform-cloud-scanner`
 - **Last Sync**: `MM/DD/YYYY HH:MM:SS`
 - **External ID**: `example-external-id`
 
 ### Config
 
-The config for a Terraform Cloud workspace target adheres to the following
+The config for a Terraform Cloud workspace resource adheres to the following
 schema:
 
 ```yaml

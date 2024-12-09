@@ -1,31 +1,31 @@
 # Schemas
 
-In Ctrlplane, schema registration for targets allows you to define and enforce
-consistent structures for the configuration properties of your targets. This
-ensures that all targets of a particular kind adhere to a standardized schema,
-making it easier to manage and consume these targets in your deployment
+In Ctrlplane, schema registration for resources allows you to define and enforce
+consistent structures for the configuration properties of your resources. This
+ensures that all resources of a particular kind adhere to a standardized schema,
+making it easier to manage and consume these resources in your deployment
 pipelines.
 
 ## Key Concepts
 
-- **Kind:** The kind field represents the type of target (e.g., "EKS Cluster,"
-  "Kubernetes Namespace," "Custom Target").
+- **Kind:** The kind field represents the type of resource (e.g., "EKS Cluster,"
+  "Kubernetes Namespace," "Custom Resource").
 - **Version:** The version field indicates the schema version, allowing for
   backward compatibility as your schemas evolve (e.g., "kubernetes/v1",
   "terraform/v2").
 - **Config:** The config section contains the actual configuration properties of
-  your target, adhering to the defined JSON schema.
+  your resource, adhering to the defined JSON schema.
 
 ## Schema Structure
 
-The schema for a target is a standard JSON Schema definition. It outlines the
+The schema for a resource is a standard JSON Schema definition. It outlines the
 required and optional properties, their data types, validation rules, and any
 additional constraints. The schema is specifically applied to the config section
-of your target.
+of your resource.
 
 ## Pre-built Schemas
 
-Ctrlplane comes with a set of pre-built schemas for common target types, saving
+Ctrlplane comes with a set of pre-built schemas for common resource types, saving
 you time and effort in defining your own. These schemas cover widely used
 configurations, ensuring consistency and ease of use across different projects.
 
@@ -33,10 +33,10 @@ configurations, ensuring consistency and ease of use across different projects.
 
 Schema registration offers several benefits:
 
-- **Consistency:** Enforces a uniform structure for targets of the same kind,
+- **Consistency:** Enforces a uniform structure for resources of the same kind,
   ensuring predictable configuration across your deployments.
 - **Validation:** Automatically validates the configuration of new or updated
-  targets against the registered schema, preventing errors and inconsistencies.
+  resources against the registered schema, preventing errors and inconsistencies.
 - **Documentation:** Provides a clear and structured definition of the expected
   configuration, aiding collaboration and understanding among team members.
 - **Versioning:** Allows for gradual evolution of your schemas without breaking
@@ -45,13 +45,13 @@ Schema registration offers several benefits:
 ## How It Works
 
 - **Schema Definition:** Create a JSON Schema that defines the structure of the
-  config section for a specific kind and version of target.
+  config section for a specific kind and version of resource.
 - **Schema Registration:** Register the schema with Ctrlplane using the API or
   UI.
-- **Target Creation/Update:** When creating or updating a deployment target,
+- **Resource Creation/Update:** When creating or updating a deployment resource,
   Ctrlplane automatically validates the config section against the registered
   schema. If the configuration is invalid, an error is raised, preventing the
-  target from being created or updated.
+  resource from being created or updated.
 
 ## Best Practices
 

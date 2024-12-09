@@ -10,15 +10,15 @@ import Youtube from "react-youtube";
   <Youtube videoId="72_6ZtDzmZo" />
 </div>
 
-**Targets** are entities such as Kubernetes clusters, virtual machines, or other
-logical resources, that the system interacts with. These targets can be added
-manually or through **Target Providers**, which automate the process by
-continuously monitoring infrastructure, updating target statuses, and providing
-real-time visibility. Targets are organized into **Environments**, which
-dynamically update based on target filters, ensuring the right infrastructure is
+**Resources** are entities such as Kubernetes clusters, virtual machines, or other
+logical resources, that the system interacts with. These resources can be added
+manually or through **Resource Providers**, which automate the process by
+continuously monitoring infrastructure, updating resource statuses, and providing
+real-time visibility. Resources are organized into **Environments**, which
+dynamically update based on resource filters, ensuring the right infrastructure is
 always in place for deployments.
 
-Once targets and environments are established, **Deployments** come into play. A
+Once resources and environments are established, **Deployments** come into play. A
 deployment is the process of releasing a specific version of a system into an
 environment. Each deployment is governed by **Environment Policies**, which
 manage how software transitions between environments. When a release is created,
