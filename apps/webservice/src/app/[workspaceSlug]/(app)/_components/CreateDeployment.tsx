@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { IconLoader2 } from "@tabler/icons-react";
 import slugify from "slugify";
-import { z } from "zod";
 
-import { deploymentSchema } from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -37,9 +37,9 @@ import {
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
+import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
+import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
 import { api } from "~/trpc/react";
-
-const deploymentForm = z.object(deploymentSchema.omit({ id: true }).shape);
 
 export const CreateDeploymentDialog: React.FC<{
   children?: React.ReactNode;
@@ -48,16 +48,21 @@ export const CreateDeploymentDialog: React.FC<{
 }> = ({ children, onSuccess, ...props }) => {
   const [open, setOpen] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
+  const { data: workspace, ...workspaceQ } =
+    api.workspace.bySlug.useQuery(workspaceSlug);
   const systems = api.system.list.useQuery(
-    { workspaceId: workspace.data?.id ?? "" },
-    { enabled: workspace.isSuccess },
+    { workspaceId: workspace?.id ?? "" },
+    { enabled: workspace != null },
   );
   const createDeployment = api.deployment.create.useMutation();
   const router = useRouter();
+  const jobAgentsQ = api.job.agent.byWorkspaceId.useQuery(workspace?.id ?? "", {
+    enabled: workspace != null,
+  });
+  const jobAgents = jobAgentsQ.data ?? [];
 
   const form = useForm({
-    schema: deploymentForm,
+    schema: SCHEMA.createDeployment,
     defaultValues: {
       systemId: props.systemId ?? systems.data?.items[0]?.id,
       name: "",
@@ -70,6 +75,11 @@ export const CreateDeploymentDialog: React.FC<{
 
   const { handleSubmit, watch, setValue, setError } = form;
 
+  const selectedJobAgentId = watch("jobAgentId");
+  const selectedJobAgent = jobAgents.find(
+    (agent) => agent.id === selectedJobAgentId,
+  );
+
   watch((data, { name: fieldName }) => {
     if (fieldName === "name")
       setValue("slug", slugify(data.name ?? "", { lower: true }));
@@ -80,27 +90,23 @@ export const CreateDeploymentDialog: React.FC<{
       (system) => system.id === form.getValues("systemId"),
     )?.slug;
     await createDeployment
-      .mutateAsync(
-        deployment as {
-          systemId: string;
-          name: string;
-          slug: string;
-          description: string;
-        },
-      )
-      .then(() => {
+      .mutateAsync(deployment)
+      .then(() =>
         router.push(
           `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
-        );
-        setOpen(false);
-        onSuccess?.();
-      })
-      .catch(() => {
+        ),
+      )
+      .then(() => setOpen(false))
+      .then(() => onSuccess?.())
+      .catch(() =>
         setError("root", {
           message: "Deployment with this slug already exists",
-        });
-      });
+        }),
+      );
   });
+
+  const loading =
+    workspaceQ.isLoading || systems.isLoading || jobAgentsQ.isLoading;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -116,98 +122,154 @@ export const CreateDeploymentDialog: React.FC<{
               </DialogDescription>
             </DialogHeader>
 
-            <FormField
-              control={form.control}
-              name="systemId"
-              render={({ field: { value, onChange } }) => (
-                <FormItem>
-                  <FormLabel>System</FormLabel>
-                  <FormControl>
-                    <Select value={value} onValueChange={onChange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          {systems.data?.items.map((system) => (
-                            <SelectItem key={system.id} value={system.id}>
-                              {system.name}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Website, Identity Service..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="slug"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Slug</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="retryCount"
-              render={({ field: { value, onChange } }) => (
-                <FormItem>
-                  <FormLabel>Retry Count</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={value}
-                      onChange={(e) => onChange(e.target.valueAsNumber)}
-                      className="w-16"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormRootError />
-            <DialogFooter>
-              <Button type="submit">Create</Button>
-            </DialogFooter>
+            {loading && (
+              <div className="flex h-full w-full items-center justify-center">
+                <IconLoader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+
+            {!loading && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="systemId"
+                  render={({ field: { value, onChange } }) => (
+                    <FormItem>
+                      <FormLabel>System</FormLabel>
+                      <FormControl>
+                        <Select value={value} onValueChange={onChange}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {systems.data?.items.map((system) => (
+                                <SelectItem key={system.id} value={system.id}>
+                                  {system.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Website, Identity Service..."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="slug"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slug</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {workspace != null && (
+                  <FormField
+                    control={form.control}
+                    name="jobAgentId"
+                    render={({ field: { value, onChange } }) => (
+                      <FormItem>
+                        <FormLabel>Job Agent</FormLabel>
+                        <FormControl>
+                          <JobAgentSelector
+                            className="max-w-[350px]"
+                            jobAgents={jobAgents}
+                            workspace={workspace}
+                            value={value ?? undefined}
+                            onChange={onChange}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {workspace != null && (
+                  <FormField
+                    control={form.control}
+                    name="jobAgentConfig"
+                    render={({ field: { value, onChange } }) => (
+                      <FormItem>
+                        <FormLabel>Config</FormLabel>
+                        <FormControl>
+                          <JobAgentConfig
+                            workspace={workspace}
+                            jobAgent={selectedJobAgent}
+                            value={value ?? {}}
+                            onChange={onChange}
+                            githubFormStyleConfig={{
+                              className:
+                                "flex flex-col gap-2 items-center w-[450px]",
+                              buttonWidth: "w-[450px]",
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                <FormField
+                  control={form.control}
+                  name="retryCount"
+                  render={({ field: { value, onChange } }) => (
+                    <FormItem>
+                      <FormLabel>Retry Count</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={value}
+                          onChange={(e) => onChange(e.target.valueAsNumber)}
+                          className="w-16"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormRootError />
+                <DialogFooter>
+                  <Button type="submit">Create</Button>
+                </DialogFooter>
+              </>
+            )}
           </form>
         </Form>
       </DialogContent>
