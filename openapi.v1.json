@@ -2355,6 +2355,10 @@
             "type": "object",
             "additionalProperties": true
           },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
           "deploymentId": {
             "type": "string",
             "format": "uuid"
@@ -2369,6 +2373,7 @@
           "name",
           "version",
           "config",
+          "metadata",
           "deploymentId",
           "createdAt"
         ]

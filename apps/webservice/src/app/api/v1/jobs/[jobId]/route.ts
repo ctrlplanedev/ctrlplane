@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { isPresent } from "ts-is-present";
 
 import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -58,7 +59,7 @@ export const GET = request()
     }),
   )
   .handle<object, { params: { jobId: string } }>(async ({ db }, { params }) => {
-    const row = await db
+    const rows = await db
       .select()
       .from(schema.job)
       .leftJoin(
@@ -86,13 +87,18 @@ export const GET = request()
         eq(schema.releaseJobTrigger.releaseId, schema.release.id),
       )
       .leftJoin(
+        schema.releaseMetadata,
+        eq(schema.release.id, schema.releaseMetadata.releaseId),
+      )
+      .leftJoin(
         schema.deployment,
         eq(schema.release.deploymentId, schema.deployment.id),
       )
       .where(
         and(eq(schema.job.id, params.jobId), isNull(schema.resource.deletedAt)),
-      )
-      .then(takeFirstOrNull);
+      );
+
+    const row = rows.at(0);
 
     if (row == null)
       return NextResponse.json(
@@ -100,13 +106,21 @@ export const GET = request()
         { status: 404 },
       );
 
+    const release =
+      row.release != null
+        ? {
+            ...row.release,
+            metadata: rows.map((r) => r.release_metadata).filter(isPresent),
+          }
+        : null;
+
     const je = {
       job: row.job,
       runbook: row.runbook,
       environment: row.environment,
       resource: row.resource,
       deployment: row.deployment,
-      release: row.release,
+      release,
     };
 
     const policyId = je.environment?.policyId;
