@@ -309,13 +309,13 @@ export const JobComparisonConditionRender: React.FC<
               <DropdownMenuItem
                 onClick={() =>
                   addCondition({
-                    type: JobFilterType.JobTarget,
+                    type: JobFilterType.JobResource,
                     operator: ColumnOperator.Equals,
                     value: "",
                   })
                 }
               >
-                Target
+                Resource
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>

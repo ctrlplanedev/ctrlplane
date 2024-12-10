@@ -41,8 +41,8 @@ set of resources.
 ## Release Dependencies
 
 Since Ctrlplane is meant for solving the way releases are deployed across
-resources, it's very common to have version dependencies on other deployments. In
-the world of software, this could mean a microservice depends on a specific
+resources, it's very common to have version dependencies on other deployments.
+In the world of software, this could mean a microservice depends on a specific
 version of another microservice to ensure it has the required APIs.
 
 In the case of software and infrastructure interactions, this could require a
@@ -73,13 +73,13 @@ other deployments is required.
 In most cases, a resource has multiple deployments associated with it, making it
 easy to verify if a specific version is deployed on that resource as required by
 another deployment. However, complexities arise when dependencies involve other
-resources, where the deployment version might be present on any of these dependent
-resources.
+resources, where the deployment version might be present on any of these
+dependent resources.
 
-To address this, Ctrlplane uses resource metadata grouping. This mechanism allows
-you to logically group resources based on their metadata attributes. By doing so,
-Ctrlplane can accurately determine which resources to inspect to verify if the
-software has been deployed.
+To address this, Ctrlplane uses resource metadata grouping. This mechanism
+allows you to logically group resources based on their metadata attributes. By
+doing so, Ctrlplane can accurately determine which resources to inspect to
+verify if the software has been deployed.
 
 The idea is to create logical associations between resources that share common
 characteristics, such as being part of the same kubernetes cluster. This is

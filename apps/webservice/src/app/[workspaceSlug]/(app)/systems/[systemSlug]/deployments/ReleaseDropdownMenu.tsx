@@ -61,7 +61,7 @@ const RedeployReleaseDialog: React.FC<{
             to {environment.name}?
           </DialogTitle>
           <DialogDescription>
-            This will redeploy the release to all targets in the environment.
+            This will redeploy the release to all resources in the environment.
           </DialogDescription>
         </DialogHeader>
 
@@ -104,7 +104,7 @@ const ForceReleaseDialog: React.FC<{
             Force release {release.name} to {environment.name}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This will force the release to be deployed to all targets in the
+            This will force the release to be deployed to all resources in the
             environment regardless of any policies set on the environment.
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -137,7 +137,7 @@ export const CreateReleaseDialog: React.FC<{
     const numOfReleaseJobTriggers = release.releaseJobTriggers.length;
     toast(
       numOfReleaseJobTriggers === 0
-        ? `No targets to deploy release too.`
+        ? `No resources to deploy release too.`
         : `Dispatching ${release.releaseJobTriggers.length} job configuration${release.releaseJobTriggers.length > 1 ? "s" : ""}.`,
       { dismissible: true, duration: 2_000 },
     );
@@ -242,8 +242,8 @@ export const CreateReleaseDialog: React.FC<{
             <div className="flex flex-col space-y-3">
               <Label>Release Dependencies</Label>
               <span className="text-sm text-muted-foreground">
-                Dependencies must be fulfilled for a target before this Release
-                can be applied to that target. Read more about release
+                Dependencies must be fulfilled for a resource before this
+                Release can be applied to that resource. Read more about release
                 dependencies here.
               </span>
 

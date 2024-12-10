@@ -19,8 +19,8 @@ import { CreateSessionDialog } from "~/app/terminal/CreateDialogSession";
 import { api } from "~/trpc/react";
 import { CreateDeploymentDialog } from "./_components/CreateDeployment";
 import { CreateReleaseDialog } from "./_components/CreateRelease";
+import { CreateResourceDialog } from "./_components/CreateResource";
 import { CreateSystemDialog } from "./_components/CreateSystem";
-import { CreateTargetDialog } from "./_components/CreateTarget";
 
 export const AppSidebarCreateMenu: React.FC<{
   workspace: Workspace;
@@ -103,14 +103,14 @@ export const AppSidebarCreateMenu: React.FC<{
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <CreateTargetDialog
+          <CreateResourceDialog
             workspace={workspace}
             onSuccess={() => setOpen(false)}
           >
             <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              Bootstrap Target
+              Bootstrap Resource
             </DropdownMenuItem>
-          </CreateTargetDialog>
+          </CreateResourceDialog>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

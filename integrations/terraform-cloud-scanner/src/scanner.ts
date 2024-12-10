@@ -15,7 +15,7 @@ const workspaceTemplate = handlebars.compile(
 );
 
 /**
- * Scans Terraform Cloud workspaces and registers them as targets with prefixed labels and a link.
+ * Scans Terraform Cloud workspaces and registers them as resources with prefixed labels and a link.
  */
 export async function scan() {
   const workspaceId = env.CTRLPLANE_WORKSPACE_ID;

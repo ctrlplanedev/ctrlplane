@@ -42,16 +42,16 @@ import {
 
 import { api } from "~/trpc/react";
 import { ResourceConditionRender } from "../resource-condition/ResourceConditionRender";
-import { TargetIcon } from "../TargetIcon";
+import { ResourceIcon } from "../ResourceIcon";
 
-const TargetViewsCombobox: React.FC<{
+const ResourceViewsCombobox: React.FC<{
   workspaceId: string;
-  onChange: (targetCondition: ResourceCondition) => void;
+  onChange: (resourceCondition: ResourceCondition) => void;
 }> = ({ workspaceId, onChange }) => {
-  const targetViewsQ = api.resource.view.list.useQuery(workspaceId, {
+  const resourceViewsQ = api.resource.view.list.useQuery(workspaceId, {
     enabled: workspaceId !== "",
   });
-  const targetViews = targetViewsQ.data ?? [];
+  const resourceViews = resourceViewsQ.data ?? [];
   const [open, setOpen] = useState(false);
 
   return (
@@ -64,30 +64,30 @@ const TargetViewsCombobox: React.FC<{
           className="flex items-center gap-2"
         >
           <IconSelector className="h-4 w-4 text-muted-foreground" />
-          <span className="text-muted-foreground">From target view...</span>
+          <span className="text-muted-foreground">From resource view...</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[462px] p-0">
         <Command>
-          <CommandInput placeholder="Search target views..." />
+          <CommandInput placeholder="Search resource views..." />
           <CommandGroup>
             <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
-              {targetViewsQ.isLoading && (
+              {resourceViewsQ.isLoading && (
                 <CommandItem disabled>
                   <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading target views...
+                  Loading resource views...
                 </CommandItem>
               )}
-              {targetViews.map((targetView) => (
+              {resourceViews.map((resourceView) => (
                 <CommandItem
-                  key={targetView.id}
+                  key={resourceView.id}
                   onSelect={() => {
-                    onChange(targetView.filter);
+                    onChange(resourceView.filter);
                     setOpen(false);
                   }}
                   className="cursor-pointer"
                 >
-                  {targetView.name} ({targetView.total} targets)
+                  {resourceView.name} ({resourceView.total} resources)
                 </CommandItem>
               ))}
             </CommandList>
@@ -99,21 +99,21 @@ const TargetViewsCombobox: React.FC<{
 };
 
 const filterForm = z.object({
-  targetFilter: resourceCondition.optional(),
+  resourceFilter: resourceCondition.optional(),
 });
 
 const getFilter = (
-  targetFilter: ResourceCondition | null,
+  resourceFilter: ResourceCondition | null,
 ): ResourceCondition | undefined => {
-  if (targetFilter == null) return undefined;
-  if (!isComparisonCondition(targetFilter))
+  if (resourceFilter == null) return undefined;
+  if (!isComparisonCondition(resourceFilter))
     return {
       type: FilterType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
-      conditions: [targetFilter],
+      conditions: [resourceFilter],
     };
-  return targetFilter;
+  return resourceFilter;
 };
 
 export const EditFilterForm: React.FC<{
@@ -124,13 +124,13 @@ export const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: { targetFilter: getFilter(environment.resourceFilter) },
+    defaultValues: { resourceFilter: getFilter(environment.resourceFilter) },
   });
 
-  const { targetFilter } = form.watch();
+  const { resourceFilter } = form.watch();
 
-  const filter = targetFilter ?? undefined;
-  const targets = api.resource.byWorkspaceId.list.useQuery(
+  const filter = resourceFilter ?? undefined;
+  const resources = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter, limit: 10 },
     { enabled: workspaceId !== "" },
   );
@@ -141,7 +141,7 @@ export const EditFilterForm: React.FC<{
     update
       .mutateAsync({
         id: environment.id,
-        data: { ...data, resourceFilter: targetFilter ?? null },
+        data: { ...data, resourceFilter: resourceFilter ?? null },
       })
       .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
@@ -154,18 +154,18 @@ export const EditFilterForm: React.FC<{
         <div className="space-y-2">
           <FormField
             control={form.control}
-            name="targetFilter"
+            name="resourceFilter"
             render={({ field: { onChange } }) => (
               <FormItem>
-                <FormLabel>Target Filter</FormLabel>
+                <FormLabel>Resource Filter</FormLabel>
                 <FormControl>
                   <>
-                    <TargetViewsCombobox
+                    <ResourceViewsCombobox
                       workspaceId={workspaceId}
                       onChange={onChange}
                     />
                     <ResourceConditionRender
-                      condition={targetFilter ?? defaultCondition}
+                      condition={resourceFilter ?? defaultCondition}
                       onChange={onChange}
                     />
                   </>
@@ -187,12 +187,12 @@ export const EditFilterForm: React.FC<{
             >
               Save
             </Button>
-            {targetFilter != null && (
+            {resourceFilter != null && (
               <Button
                 variant="outline"
                 type="button"
                 onClick={() =>
-                  form.setValue("targetFilter", undefined, {
+                  form.setValue("resourceFilter", undefined, {
                     shouldValidate: true,
                     shouldDirty: true,
                     shouldTouch: true,
@@ -205,21 +205,24 @@ export const EditFilterForm: React.FC<{
           </div>
         </div>
 
-        {targetFilter != null &&
-          targets.data != null &&
-          targets.data.total > 0 && (
+        {resourceFilter != null &&
+          resources.data != null &&
+          resources.data.total > 0 && (
             <div className="space-y-4">
-              <Label>Targets ({targets.data.total})</Label>
+              <Label>Resources ({resources.data.total})</Label>
               <div className="space-y-2">
-                {targets.data.items.map((target) => (
-                  <div className="flex items-center gap-2" key={target.id}>
-                    <TargetIcon version={target.version} kind={target.kind} />
+                {resources.data.items.map((resource) => (
+                  <div className="flex items-center gap-2" key={resource.id}>
+                    <ResourceIcon
+                      version={resource.version}
+                      kind={resource.kind}
+                    />
                     <div className="flex flex-col">
                       <span className="overflow-hidden text-nowrap text-sm">
-                        {target.name}
+                        {resource.name}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {target.version}
+                        {resource.version}
                       </span>
                     </div>
                   </div>
@@ -228,9 +231,9 @@ export const EditFilterForm: React.FC<{
 
               <Button variant="outline" size="sm">
                 <Link
-                  href={`/${workspaceSlug}/targets?${new URLSearchParams({
+                  href={`/${workspaceSlug}/resources?${new URLSearchParams({
                     filter: LZString.compressToEncodedURIComponent(
-                      JSON.stringify(form.getValues("targetFilter")),
+                      JSON.stringify(form.getValues("resourceFilter")),
                     ),
                   })}`}
                   className="flex items-center gap-1"
@@ -238,7 +241,7 @@ export const EditFilterForm: React.FC<{
                   rel="noopener noreferrer"
                 >
                   <IconExternalLink className="h-4 w-4" />
-                  View Targets
+                  View Resources
                 </Link>
               </Button>
             </div>

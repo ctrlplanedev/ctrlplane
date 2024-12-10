@@ -40,22 +40,22 @@ export default function OverviewPage({
             <div className="flex flex-grow gap-3">
               <IconTarget className="h-5 w-5 text-purple-400" />
               <div>
-                <div>Sync targets</div>
+                <div>Sync Resources</div>
               </div>
             </div>
 
             <div className="text-xs text-muted-foreground">
-              Targets representing any entity where you might want to run a
+              Resources representing any entity where you might want to run a
               workflow against
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${workspaceSlug}/target-providers`}>
+              <Link href={`/${workspaceSlug}/resource-providers`}>
                 <Button size="sm" variant="secondary">
-                  Sync targets
+                  Sync resources
                 </Button>
               </Link>
-              <Link href="https://docs.ctrlplane.dev/targets">
+              <Link href="https://docs.ctrlplane.dev/resources">
                 <Button size="sm" variant="ghost" className="bg-transparent">
                   Learn more{" "}
                   <IconChevronRight className="ml-0.5 h-4 w-4 text-muted-foreground" />
@@ -101,7 +101,7 @@ export default function OverviewPage({
             </div>
 
             <div className="text-xs text-muted-foreground">
-              Environment serves as a logical grouping of targets.
+              Environment serves as a logical grouping of resources.
             </div>
 
             <div className="flex items-center gap-2">

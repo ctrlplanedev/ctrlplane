@@ -176,7 +176,7 @@ const valueRouter = createTRPCRouter({
           ),
         );
 
-      const getOldTargetFilter = (): ResourceCondition | null => {
+      const getOldResourceFilter = (): ResourceCondition | null => {
         if (value.id !== variable.defaultValueId) return value.resourceFilter;
         const conditions = otherValues
           .map((v) => v.resourceFilter)
@@ -189,7 +189,7 @@ const valueRouter = createTRPCRouter({
         };
       };
 
-      const getNewTargetFilter = (): ResourceCondition | null => {
+      const getNewResourceFilter = (): ResourceCondition | null => {
         if (updatedValue.id !== newDefaultValueId)
           return updatedValue.resourceFilter;
         const conditions = otherValues
@@ -203,48 +203,54 @@ const valueRouter = createTRPCRouter({
         };
       };
 
-      const oldTargetFilter: ResourceCondition = {
+      const oldResourceFilter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.And,
-        conditions: [systemCondition, getOldTargetFilter()].filter(isPresent),
+        conditions: [systemCondition, getOldResourceFilter()].filter(isPresent),
       };
-      const newTargetFilter: ResourceCondition = {
+      const newResourceFilter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.And,
-        conditions: [systemCondition, getNewTargetFilter()].filter(isPresent),
+        conditions: [systemCondition, getNewResourceFilter()].filter(isPresent),
       };
 
-      const oldTargets = await ctx.db.query.resource.findMany({
+      const oldResources = await ctx.db.query.resource.findMany({
         where: and(
-          resourceMatchesMetadata(ctx.db, oldTargetFilter),
+          resourceMatchesMetadata(ctx.db, oldResourceFilter),
           isNull(resource.deletedAt),
         ),
       });
 
-      const newTargets = await ctx.db.query.resource.findMany({
+      const newResources = await ctx.db.query.resource.findMany({
         where: and(
-          resourceMatchesMetadata(ctx.db, newTargetFilter),
+          resourceMatchesMetadata(ctx.db, newResourceFilter),
           isNull(resource.deletedAt),
         ),
       });
 
-      const oldTargetIds = new Set(oldTargets.map((t) => t.id));
-      const newTargetIds = new Set(newTargets.map((t) => t.id));
+      const oldResourceIds = new Set(oldResources.map((t) => t.id));
+      const newResourceIds = new Set(newResources.map((t) => t.id));
 
-      const addedTargets = newTargets.filter((t) => !oldTargetIds.has(t.id));
-      const removedTargets = oldTargets.filter((t) => !newTargetIds.has(t.id));
-      const stagnantTargets = newTargets.filter((t) => oldTargetIds.has(t.id));
+      const addedResources = newResources.filter(
+        (t) => !oldResourceIds.has(t.id),
+      );
+      const removedResources = oldResources.filter(
+        (t) => !newResourceIds.has(t.id),
+      );
+      const stagnantResources = newResources.filter((t) =>
+        oldResourceIds.has(t.id),
+      );
 
-      const targetsToTrigger = [
-        ...addedTargets,
-        ...removedTargets,
-        ...(input.data.value !== null ? stagnantTargets : []),
+      const resourcesToTrigger = [
+        ...addedResources,
+        ...removedResources,
+        ...(input.data.value !== null ? stagnantResources : []),
       ];
 
-      if (targetsToTrigger.length > 0)
+      if (resourcesToTrigger.length > 0)
         await createReleaseJobTriggers(ctx.db, "variable_changed")
           .causedById(ctx.session.user.id)
-          .resources(targetsToTrigger.map((t) => t.id))
+          .resources(resourcesToTrigger.map((t) => t.id))
           .deployments([deploymentId])
           .filter(isPassingNoPendingJobsPolicy)
           .filter(isPassingReleaseStringCheckPolicy)
@@ -280,8 +286,8 @@ const valueRouter = createTRPCRouter({
     .input(z.string().uuid())
     .mutation(async ({ ctx, input }) => {
       // Note: Due to cascading deletes set up in the schema, this will also delete:
-      // - All deploymentVariableValueTarget entries for this value
-      // - All deploymentVariableValueTargetFilter entries for those targets
+      // - All deploymentVariableValueResource entries for this value
+      // - All deploymentVariableValueResourceFilter entries for those resources
 
       return ctx.db
         .delete(deploymentVariableValue)
@@ -294,7 +300,7 @@ const valueRouter = createTRPCRouter({
 export const deploymentVariableRouter = createTRPCRouter({
   value: valueRouter,
 
-  byTargetId: protectedProcedure
+  byResourceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -322,7 +328,7 @@ export const deploymentVariableRouter = createTRPCRouter({
             .groupBy((r) => r.deployment_variable.id)
             .map((r) => ({
               ...r[0]!.deployment_variable,
-              targetFilter: r[0]!.deployment_variable_value.resourceFilter,
+              resourceFilter: r[0]!.deployment_variable_value.resourceFilter,
               value: r[0]!.deployment_variable_value,
             }))
             .value(),
@@ -330,7 +336,7 @@ export const deploymentVariableRouter = createTRPCRouter({
 
       return Promise.all(
         deploymentVariables.map(async (deploymentVariable) => {
-          const { targetFilter } = deploymentVariable;
+          const { resourceFilter } = deploymentVariable;
 
           const tg = await ctx.db
             .select()
@@ -339,7 +345,7 @@ export const deploymentVariableRouter = createTRPCRouter({
               and(
                 eq(resource.id, input),
                 isNull(resource.deletedAt),
-                resourceMatchesMetadata(ctx.db, targetFilter),
+                resourceMatchesMetadata(ctx.db, resourceFilter),
               ),
             )
             .then(takeFirstOrNull);

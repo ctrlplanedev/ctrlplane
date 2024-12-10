@@ -14,11 +14,11 @@ export const useControllerWebsocket = () => {
   });
 
   const resizeSession = useCallback(
-    (sessionId: string, targetId: string, cols: number, rows: number) => {
+    (sessionId: string, resourceId: string, cols: number, rows: number) => {
       const resizePayload: SessionResize = {
         type: "session.resize",
         sessionId,
-        targetId,
+        resourceId,
         cols,
         rows,
       };
@@ -28,11 +28,11 @@ export const useControllerWebsocket = () => {
   );
 
   const createSession = useCallback(
-    (targetId: string, id?: string) => {
+    (resourceId: string, id?: string) => {
       const sessionId = id ?? uuidv4();
       const sessionCreatePayload: SessionCreate = {
         type: "session.create",
-        targetId,
+        resourceId,
         sessionId,
         cols: 80,
         rows: 24,

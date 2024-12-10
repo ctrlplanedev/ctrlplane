@@ -131,7 +131,7 @@ export const AddVariableValueDialog: React.FC<{
                                 <IconInfoCircle className="h-4 w-4 text-muted-foreground" />
                               </TooltipTrigger>
                               <TooltipContent className="text-muted-foreground">
-                                A default value will match all targets in the
+                                A default value will match all resources in the
                                 system that are not matched by other values.
                               </TooltipContent>
                             </Tooltip>

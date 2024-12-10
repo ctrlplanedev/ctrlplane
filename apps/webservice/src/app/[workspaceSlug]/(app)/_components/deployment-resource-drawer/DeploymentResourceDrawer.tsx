@@ -59,7 +59,7 @@ export const DeploymentResourceDrawer: React.FC = () => {
     operator: ComparisonOperator.And,
     conditions: [
       {
-        type: JobFilterType.JobTarget,
+        type: JobFilterType.JobResource,
         operator: ColumnOperator.Equals,
         value: resourceId ?? "",
       },

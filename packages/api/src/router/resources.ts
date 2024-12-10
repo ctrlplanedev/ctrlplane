@@ -32,10 +32,10 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { resourceMetadataGroupRouter } from "./resource-metadata-group";
+import { resourceProviderRouter } from "./resource-provider";
 import { resourceVariables } from "./resource-variables";
 import { resourceViews } from "./resource-views";
-import { resourceMetadataGroupRouter } from "./target-metadata-group";
-import { resourceProviderRouter } from "./target-provider";
 
 const isNotDeleted = isNull(schema.resource.deletedAt);
 

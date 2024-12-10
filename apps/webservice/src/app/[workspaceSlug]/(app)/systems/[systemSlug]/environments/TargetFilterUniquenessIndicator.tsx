@@ -16,10 +16,10 @@ import {
 import { api } from "~/trpc/react";
 
 type UniqueFilterResult = {
-  overlaps: { nodeId: string; overlappingTargetCount: number }[];
+  overlaps: { nodeId: string; overlappingResourceCount: number }[];
 } | null;
 
-const useTargetFilterUniqueness = (
+const useResourceFilterUniqueness = (
   nodes: Node[],
   workspaceId: string,
   currentNode: Node,
@@ -29,10 +29,10 @@ const useTargetFilterUniqueness = (
   const overlappingQueries = useQueries({
     queries: otherNodes.map((node) => ({
       queryKey: [
-        "target",
+        "resource",
         workspaceId,
-        currentNode.data.targetFilter,
-        node.data.targetFilter,
+        currentNode.data.resourceFilter,
+        node.data.resourceFilter,
       ],
       queryFn: () =>
         utils.resource.byWorkspaceId.list
@@ -43,14 +43,15 @@ const useTargetFilterUniqueness = (
               type: "comparison",
               operator: "and",
               conditions: [
-                currentNode.data.targetFilter,
-                node.data.targetFilter,
+                currentNode.data.resourceFilter,
+                node.data.resourceFilter,
               ],
             },
           })
           .then((res) => res.total),
       enabled:
-        currentNode.data.targetFilter != null && node.data.targetFilter != null,
+        currentNode.data.resourceFilter != null &&
+        node.data.resourceFilter != null,
     })),
   });
 
@@ -63,11 +64,11 @@ const useTargetFilterUniqueness = (
       if (count > 0)
         acc.push({
           nodeId: otherNodes[index]!.id,
-          overlappingTargetCount: count,
+          overlappingResourceCount: count,
         });
       return acc;
     },
-    [] as { nodeId: string; overlappingTargetCount: number }[],
+    [] as { nodeId: string; overlappingResourceCount: number }[],
   );
 
   return { overlaps };
@@ -75,31 +76,31 @@ const useTargetFilterUniqueness = (
 
 const StatusMap = {
   loading: {
-    text: "Checking target uniqueness...",
+    text: "Checking resource uniqueness...",
     icon: <IconLoader className="mr-1 h-4 w-4 animate-spin text-blue-500" />,
   },
   unique: {
-    text: "All Environments have unique targets",
+    text: "All Environments have unique resources",
     icon: <IconCheck className="mr-1 h-4 w-4 text-green-400" />,
   },
   overlapping: {
-    text: "Targets overlap Environments for this System",
+    text: "Resources overlap Environments for this System",
     icon: <IconAlertTriangle className="mr-1 h-4 w-4 text-orange-400" />,
   },
 };
 
-export const TargetFilterUniquenessIndicator: FC<{
+export const ResourceFilterUniquenessIndicator: FC<{
   nodes: Node[];
   workspaceId: string;
   workspaceSlug: string;
   currentNode: Node;
 }> = ({ nodes, workspaceId, workspaceSlug, currentNode }) => {
-  const result = useTargetFilterUniqueness(nodes, workspaceId, currentNode);
+  const result = useResourceFilterUniqueness(nodes, workspaceId, currentNode);
 
-  if (!currentNode.data.targetFilter)
+  if (!currentNode.data.resourceFilter)
     return (
       <span className="mt-2 text-sm text-muted-foreground">
-        Please add a target filter to select targets for this environment.
+        Please add a resource filter to select resources for this environment.
       </span>
     );
 
@@ -145,8 +146,8 @@ export const TargetFilterUniquenessIndicator: FC<{
                 type: "comparison",
                 operator: "and",
                 conditions: [
-                  overlappingNode.data.targetFilter,
-                  currentNode.data.targetFilter,
+                  overlappingNode.data.resourceFilter,
+                  currentNode.data.resourceFilter,
                 ],
               }),
             );
@@ -158,26 +159,26 @@ export const TargetFilterUniquenessIndicator: FC<{
                   </span>{" "}
                   <span className="text-muted-foreground">has</span>{" "}
                   <Link
-                    href={`/${workspaceSlug}/targets?${new URLSearchParams({
+                    href={`/${workspaceSlug}/resources?${new URLSearchParams({
                       filter: compressedFilter,
                     })}`}
                     className="text-muted-foreground underline"
                   >
                     <span className="text-white">
-                      {overlap.overlappingTargetCount}
+                      {overlap.overlappingResourceCount}
                     </span>
                   </Link>{" "}
                   <span className="text-muted-foreground">
-                    overlapping target
-                    {overlap.overlappingTargetCount > 1 ? "s" : ""}
+                    overlapping resource
+                    {overlap.overlappingResourceCount > 1 ? "s" : ""}
                   </span>
                 </p>
               </div>
             );
           })}
           <p className="mt-1 text-xs text-gray-300">
-            This may happen if you added new targets that match multiple target
-            filters.
+            This may happen if you added new resources that match multiple
+            resource filters.
           </p>
         </TooltipContent>
       </Tooltip>

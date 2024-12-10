@@ -7,8 +7,8 @@ import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 const variableOptions = [
   { key: "release.version", description: "Release Version" },
   { key: "release.id", description: "Release ID" },
-  { key: "target.name", description: "Target Name" },
-  { key: "target.id", description: "Target ID" },
+  { key: "resource.name", description: "Resource Name" },
+  { key: "resource.id", description: "Resource ID" },
   { key: "environment.name", description: "Environment Name" },
   { key: "environment.id", description: "Environment" },
   { key: "system.name", description: "System Name" },

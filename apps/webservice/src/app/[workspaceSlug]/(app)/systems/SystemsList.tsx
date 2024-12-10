@@ -8,7 +8,7 @@ import { useDebounce } from "react-use";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
-import { SearchInput } from "../(targets)/targets/TargetPageContent";
+import { SearchInput } from "../(resources)/resources/ResourcePageContent";
 import { SystemsTable } from "./SystemsTable";
 
 export const SystemsList: React.FC<{

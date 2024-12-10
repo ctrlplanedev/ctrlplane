@@ -27,13 +27,13 @@ const getClusters = async () => {
 };
 
 const clusterNameTemplate = handlebars.compile(env.CTRLPLANE_GKE_TARGET_NAME);
-const targetClusterName = (cluster: google.container.v1.ICluster) =>
+const resourceClusterName = (cluster: google.container.v1.ICluster) =>
   clusterNameTemplate({ cluster, projectId: env.GOOGLE_PROJECT_ID });
 
 const namespaceNameTemplate = handlebars.compile(
   env.CTRLPLANE_GKE_NAMESPACE_TARGET_NAME,
 );
-const targetNamespaceName = (
+const resourceNamespaceName = (
   namespace: V1Namespace,
   cluster: google.container.v1.ICluster,
 ) =>
@@ -46,7 +46,7 @@ const targetNamespaceName = (
 export const getKubernetesClusters = async (): Promise<
   Array<{
     cluster: google.container.v1.ICluster;
-    target: KubernetesClusterAPIV1;
+    resource: KubernetesClusterAPIV1;
   }>
 > => {
   gkeLogger.info("Scanning Google Cloud GKE clusters");
@@ -62,10 +62,10 @@ export const getKubernetesClusters = async (): Promise<
 
     return {
       cluster,
-      target: {
+      resource: {
         version: "kubernetes/v1",
         kind: "ClusterAPI",
-        name: targetClusterName(cluster),
+        name: resourceClusterName(cluster),
         identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}`,
         config: {
           name: cluster.name!,
@@ -119,12 +119,12 @@ export const getKubernetesClusters = async (): Promise<
 export const getKubernetesNamespace = async (
   clusters: Array<{
     cluster: google.container.v1.ICluster;
-    target: KubernetesClusterAPIV1;
+    resource: KubernetesClusterAPIV1;
   }>,
 ) => {
   gkeLogger.info("Coverting GKE clusters to namespaces");
 
-  const namespaceTargets = clusters.map(async ({ cluster, target }) => {
+  const namespaceResources = clusters.map(async ({ cluster, resource }) => {
     const kubeConfig = await connectToCluster(
       clusterClient,
       env.GOOGLE_PROJECT_ID,
@@ -144,13 +144,13 @@ export const getKubernetesNamespace = async (
       )
       .map((n) =>
         kubernetesNamespaceV1.parse(
-          _.merge(_.cloneDeep(target), {
+          _.merge(_.cloneDeep(resource), {
             kind: "Namespace",
-            name: targetNamespaceName(n, cluster),
+            name: resourceNamespaceName(n, cluster),
             identifier: `${env.GOOGLE_PROJECT_ID}/${cluster.name}/${n.metadata!.name}`,
             config: { namespace: n.metadata!.name },
             metadata: {
-              "ctrlplane/parent-target-identifier": target.identifier,
+              "ctrlplane/parent-resource-identifier": resource.identifier,
               "kubernetes/namespace": n.metadata!.name,
               ...n.metadata?.labels,
             },
@@ -159,5 +159,5 @@ export const getKubernetesNamespace = async (
       );
   });
 
-  return Promise.all(namespaceTargets).then((v) => v.flat());
+  return Promise.all(namespaceResources).then((v) => v.flat());
 };

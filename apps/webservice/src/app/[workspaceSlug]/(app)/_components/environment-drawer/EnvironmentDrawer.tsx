@@ -23,7 +23,7 @@ import { ReleaseChannels } from "./ReleaseChannels";
 
 export enum EnvironmentDrawerTab {
   Overview = "overview",
-  Targets = "targets",
+  Resources = "resources",
   ReleaseChannels = "release-channels",
 }
 
@@ -140,10 +140,10 @@ export const EnvironmentDrawer: React.FC = () => {
                 label="Overview"
               />
               <TabButton
-                active={tab === EnvironmentDrawerTab.Targets}
-                onClick={() => setTab(EnvironmentDrawerTab.Targets)}
+                active={tab === EnvironmentDrawerTab.Resources}
+                onClick={() => setTab(EnvironmentDrawerTab.Resources)}
                 icon={<IconTarget className="h-4 w-4" />}
-                label="Targets"
+                label="Resources"
               />
               <TabButton
                 active={tab === EnvironmentDrawerTab.ReleaseChannels}
@@ -158,12 +158,13 @@ export const EnvironmentDrawer: React.FC = () => {
                 {(tab === EnvironmentDrawerTab.Overview || tab == null) && (
                   <Overview environment={environment} />
                 )}
-                {tab === EnvironmentDrawerTab.Targets && workspace != null && (
-                  <EditFilterForm
-                    environment={environment}
-                    workspaceId={workspace.id}
-                  />
-                )}
+                {tab === EnvironmentDrawerTab.Resources &&
+                  workspace != null && (
+                    <EditFilterForm
+                      environment={environment}
+                      workspaceId={workspace.id}
+                    />
+                  )}
                 {tab === EnvironmentDrawerTab.ReleaseChannels &&
                   deployments != null && (
                     <ReleaseChannels

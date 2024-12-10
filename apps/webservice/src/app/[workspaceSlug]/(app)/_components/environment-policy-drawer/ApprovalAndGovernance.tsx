@@ -100,10 +100,10 @@ export const ApprovalAndGovernance: React.FC<{
               <div className="flex flex-col gap-1">
                 <FormLabel>Previous Deploy Status</FormLabel>
                 <FormDescription>
-                  Specify a minimum number of targets in dependent environments
-                  to successfully be deployed to before triggering a release.
-                  For example, specifying that all targets in QA must be
-                  deployed to before releasing to PROD.
+                  Specify a minimum number of resources in dependent
+                  environments to successfully be deployed to before triggering
+                  a release. For example, specifying that all resources in QA
+                  must be deployed to before releasing to PROD.
                 </FormDescription>
               </div>
               <FormControl>
@@ -113,7 +113,7 @@ export const ApprovalAndGovernance: React.FC<{
                       <RadioGroupItem value="all" />
                     </FormControl>
                     <FormLabel className="flex items-center gap-2 font-normal">
-                      All targets in dependent environments must complete
+                      All resources in dependent environments must complete
                       successfully
                     </FormLabel>
                   </FormItem>
@@ -135,7 +135,7 @@ export const ApprovalAndGovernance: React.FC<{
                         }
                         className="border-b-1 h-6 w-16 text-xs"
                       />
-                      targets must be successfully deployed to
+                      resources must be successfully deployed to
                     </FormLabel>
                   </FormItem>
                   <FormItem className="flex items-center space-x-3 space-y-0">

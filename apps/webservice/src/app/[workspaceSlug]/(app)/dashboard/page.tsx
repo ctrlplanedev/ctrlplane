@@ -5,7 +5,7 @@ import { Card } from "@ctrlplane/ui/card";
 
 import { api } from "../../../../trpc/server";
 import { JobHistoryChart } from "../systems/JobHistoryChart";
-import { TargetAnnotationPieChart } from "./TargetAnnotationPieChart";
+import { ResourceAnnotationPieChart } from "./ResourceAnnotationPieChart";
 
 type PageProps = {
   params: { workspaceSlug: string };
@@ -28,7 +28,7 @@ export default async function Dashboard({
   return (
     <div className="grid grid-cols-3 gap-8 p-8">
       <JobHistoryChart className="col-span-3" workspace={workspace} />
-      <TargetAnnotationPieChart workspaceId={workspace.id} />
+      <ResourceAnnotationPieChart workspaceId={workspace.id} />
       <Card>test</Card>
     </div>
   );

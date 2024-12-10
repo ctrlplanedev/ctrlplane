@@ -7,13 +7,13 @@ import { cn } from "@ctrlplane/ui";
 import { api } from "~/trpc/react";
 import { useTerminalSessions } from "./TerminalSessionsProvider";
 
-export const TerminalTab: React.FC<{ targetId: string; sessionId: string }> = ({
-  targetId,
-  sessionId,
-}) => {
+export const TerminalTab: React.FC<{
+  resourceId: string;
+  sessionId: string;
+}> = ({ resourceId, sessionId }) => {
   const { removeSession, activeSessionId, setActiveSessionId } =
     useTerminalSessions();
-  const resource = api.resource.byId.useQuery(targetId);
+  const resource = api.resource.byId.useQuery(resourceId);
   return (
     <div
       key={sessionId}
@@ -25,11 +25,11 @@ export const TerminalTab: React.FC<{ targetId: string; sessionId: string }> = ({
           : "border-transparent text-neutral-400",
       )}
     >
-      <span>{resource.data?.name ?? targetId}</span>
+      <span>{resource.data?.name ?? resourceId}</span>
 
       <button
         type="button"
-        aria-label={`Close ${targetId} terminal session`}
+        aria-label={`Close ${resourceId} terminal session`}
         className="rounded-full text-xs text-blue-300 hover:text-neutral-300"
         onClick={(e) => {
           e.preventDefault();

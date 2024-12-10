@@ -34,9 +34,12 @@ export const determineVariablesForReleaseJob = async (
 
   if (variables.length === 0) return [];
 
-  const jobTarget = await utils.getTarget(tx, job.releaseJobTrigger.resourceId);
+  const jobResource = await utils.getResource(
+    tx,
+    job.releaseJobTrigger.resourceId,
+  );
 
-  if (!jobTarget) throw new Error(`Target not found for job ${job.id}`);
+  if (!jobResource) throw new Error(`Resource not found for job ${job.id}`);
 
   const jobVariables: schema.JobVariable[] = [];
 
@@ -49,7 +52,7 @@ export const determineVariablesForReleaseJob = async (
         variable.deployment_variable.key,
         variable.deployment_variable.id,
         variable.deployment_variable.defaultValueId,
-        jobTarget,
+        jobResource,
       ).then((value) => {
         if (value == null) return;
 
@@ -111,23 +114,23 @@ export const determineReleaseVariableValue = async (
   variableKey: string,
   variableId: string,
   defaultValueId: string | null,
-  jobTarget: schema.Resource,
+  jobResource: schema.Resource,
 ): Promise<{
   value: schema.DeploymentVariableValue | schema.ResourceVariable;
   directMatch: boolean;
   sensitive: boolean;
 } | null> => {
-  const targetVariableValue = await utils.getTargetVariableValue(
+  const resourceVariableValue = await utils.getResourceVariableValue(
     tx,
-    jobTarget.id,
+    jobResource.id,
     variableKey,
   );
 
-  if (targetVariableValue != null)
+  if (resourceVariableValue != null)
     return {
-      value: targetVariableValue,
+      value: resourceVariableValue,
       directMatch: true,
-      sensitive: targetVariableValue.sensitive,
+      sensitive: resourceVariableValue.sensitive,
     };
 
   const deploymentVariableValues = await utils.getVariableValues(
@@ -145,9 +148,9 @@ export const determineReleaseVariableValue = async (
     isPresent(v.resourceFilter),
   );
 
-  const firstMatchedValue = await utils.getFirstMatchedTarget(
+  const firstMatchedValue = await utils.getFirstMatchedResource(
     tx,
-    jobTarget.id,
+    jobResource.id,
     valuesWithFilter,
   );
 

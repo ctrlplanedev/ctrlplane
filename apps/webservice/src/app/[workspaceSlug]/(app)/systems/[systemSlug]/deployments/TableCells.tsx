@@ -143,7 +143,7 @@ export const Release: React.FC<{
     deploymentSlug,
   } = props;
 
-  const latestJobsByTarget = _.chain(releaseJobTriggers)
+  const latestJobsByResource = _.chain(releaseJobTriggers)
     .groupBy((r) => r.resource.id)
     .mapValues((triggers) =>
       _.maxBy(triggers, (t) => new Date(t.job.createdAt)),
@@ -152,7 +152,7 @@ export const Release: React.FC<{
     .compact()
     .value();
 
-  const data = _.chain(latestJobsByTarget)
+  const data = _.chain(latestJobsByResource)
     .groupBy((r) => r.job.status)
     .entries()
     .map(([name, value]) => ({ name, count: value.length }))
@@ -179,7 +179,7 @@ export const Release: React.FC<{
             href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${props.releaseId}`}
             className="flex w-full items-center gap-2"
           >
-            <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
+            <ReleaseIcon releaseJobTriggers={latestJobsByResource} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">
                 <TooltipProvider>

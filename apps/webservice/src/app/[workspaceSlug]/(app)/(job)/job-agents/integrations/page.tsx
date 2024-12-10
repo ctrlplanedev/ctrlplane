@@ -49,7 +49,7 @@ export default function AgentPage({
               </AgentHeading>
               <p className="text-xs text-muted-foreground">
                 Grant our account the correct permissions and we will manage
-                running the target provider for you.
+                running the resource provider for you.
               </p>
             </AgentContent>
 
@@ -65,8 +65,8 @@ export default function AgentPage({
 
         <h2 className="font-semibold">Self-hosted Agents</h2>
         <p className="text-sm text-muted-foreground">
-          Agents that you run in your own infrastructure, these target providers
-          will automatically register themselves with Ctrlplane.
+          Agents that you run in your own infrastructure, these resource
+          providers will automatically register themselves with Ctrlplane.
         </p>
         <div className="mt-8 grid grid-cols-3 gap-6">
           <AgentCard>
@@ -76,7 +76,7 @@ export default function AgentPage({
                 <div className="font-semibold">Custom</div>
               </AgentHeading>
               <p className="text-xs text-muted-foreground">
-                Create custom target providers to import resources.
+                Create custom resource providers to import resources.
               </p>
             </AgentContent>
 

@@ -14,12 +14,12 @@ vi.mock("../job-variables-deployment", async () => ({
 vi.mock("../job-variables-deployment/utils", async () => ({
   ...(await vi.importActual("../job-variables-deployment/utils")),
   getJob: vi.fn(),
-  getTargetVariableValue: vi.fn(),
+  getResourceVariableValue: vi.fn(),
   getDeploymentVariables: vi.fn(),
-  getTarget: vi.fn(),
+  getResource: vi.fn(),
   getEnvironment: vi.fn(),
   getVariableValues: vi.fn(),
-  getFirstMatchedTarget: vi.fn(),
+  getFirstMatchedResource: vi.fn(),
 }));
 
 type Job = {
@@ -51,7 +51,7 @@ const job: Job = {
   },
 };
 
-const target: SCHEMA.Resource = {
+const resource: SCHEMA.Resource = {
   id: "0",
   name: "test",
   workspaceId: "0",
@@ -120,12 +120,14 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(variableValues[1]);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(
+      variableValues[1],
+    );
     vi.mocked(utils.getEnvironment).mockResolvedValue(undefined);
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
@@ -157,10 +159,10 @@ describe("job-variables-deployment", () => {
       },
     ];
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
     vi.mocked(utils.getEnvironment).mockResolvedValue(undefined);
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
@@ -191,12 +193,12 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
     vi.mocked(utils.getEnvironment).mockResolvedValue(undefined);
 
     const result = await jobVariablesDeployment.determineVariablesForReleaseJob(
@@ -226,12 +228,14 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(variableValues[1]);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(
+      variableValues[1],
+    );
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",
@@ -294,12 +298,14 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(variableValues[1]);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(
+      variableValues[1],
+    );
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",
@@ -361,12 +367,12 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",
@@ -428,12 +434,12 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",
@@ -495,12 +501,12 @@ describe("job-variables-deployment", () => {
         release,
       },
     ];
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(null);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",
@@ -565,10 +571,10 @@ describe("job-variables-deployment", () => {
     expect(result[0]!.value).toEqual("test5");
   });
 
-  it("should prioritize target variable if it exists", async () => {
+  it("should prioritize resource variable if it exists", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const targetVariable: SCHEMA.ResourceVariable = {
+    const resourceVariable: SCHEMA.ResourceVariable = {
       id: "0",
       resourceId: "0",
       key: "test",
@@ -590,12 +596,14 @@ describe("job-variables-deployment", () => {
       },
     ];
 
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(targetVariable);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(
+      resourceVariable,
+    );
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",
@@ -660,10 +668,10 @@ describe("job-variables-deployment", () => {
     expect(result[0]!.value).toEqual("test6");
   });
 
-  it("should prioritize target variable if it exists and return sensitive value if it is", async () => {
+  it("should prioritize resource variable if it exists and return sensitive value if it is", async () => {
     vi.mocked(utils.getJob).mockResolvedValue(job);
 
-    const targetVariable: SCHEMA.ResourceVariable = {
+    const resourceVariable: SCHEMA.ResourceVariable = {
       id: "0",
       resourceId: "0",
       key: "test",
@@ -685,12 +693,14 @@ describe("job-variables-deployment", () => {
       },
     ];
 
-    vi.mocked(utils.getTargetVariableValue).mockResolvedValue(targetVariable);
+    vi.mocked(utils.getResourceVariableValue).mockResolvedValue(
+      resourceVariable,
+    );
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
-    vi.mocked(utils.getTarget).mockResolvedValue(target);
+    vi.mocked(utils.getResource).mockResolvedValue(resource);
 
     vi.mocked(utils.getVariableValues).mockResolvedValue(variableValues);
-    vi.mocked(utils.getFirstMatchedTarget).mockResolvedValue(undefined);
+    vi.mocked(utils.getFirstMatchedResource).mockResolvedValue(undefined);
 
     vi.mocked(utils.getEnvironment).mockResolvedValue({
       id: "0",

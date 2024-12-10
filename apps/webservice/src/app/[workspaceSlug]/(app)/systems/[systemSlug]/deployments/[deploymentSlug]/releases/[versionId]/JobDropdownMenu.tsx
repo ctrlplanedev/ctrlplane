@@ -168,9 +168,9 @@ const OverrideJobStatusDialog: React.FC<{
   );
 };
 
-const ForceReleaseTargetDialog: React.FC<{
+const ForceReleaseResourceDialog: React.FC<{
   release: { id: string; version: string };
-  target: { id: string; name: string };
+  resource: { id: string; name: string };
   deploymentName: string;
   environmentId: string;
   onClose: () => void;
@@ -178,7 +178,7 @@ const ForceReleaseTargetDialog: React.FC<{
 }> = ({
   release,
   deploymentName,
-  target,
+  resource,
   environmentId,
   onClose,
   children,
@@ -198,7 +198,7 @@ const ForceReleaseTargetDialog: React.FC<{
           </AlertDialogTitle>
           <AlertDialogDescription>
             <span>
-              This will force <Badge variant="secondary">{target.name}</Badge>{" "}
+              This will force <Badge variant="secondary">{resource.name}</Badge>{" "}
               onto{" "}
               <strong>
                 {deploymentName} {release.version}
@@ -216,7 +216,7 @@ const ForceReleaseTargetDialog: React.FC<{
               forceRelease
                 .mutateAsync({
                   releaseId: release.id,
-                  resourceId: target.id,
+                  resourceId: resource.id,
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
@@ -237,9 +237,9 @@ const ForceReleaseTargetDialog: React.FC<{
 const RedeployReleaseDialog: React.FC<{
   release: { id: string; name: string };
   environmentId: string;
-  target: { id: string; name: string };
+  resource: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ release, environmentId, target, children }) => {
+}> = ({ release, environmentId, resource, children }) => {
   const router = useRouter();
   const utils = api.useUtils();
   const redeploy = api.release.deploy.toResource.useMutation();
@@ -254,10 +254,10 @@ const RedeployReleaseDialog: React.FC<{
             <Badge variant="secondary" className="h-7 text-lg">
               {release.name}
             </Badge>{" "}
-            to {target.name}?
+            to {resource.name}?
           </DialogTitle>
           <DialogDescription>
-            This will redeploy the release to {target.name}.
+            This will redeploy the release to {resource.name}.
           </DialogDescription>
         </DialogHeader>
 
@@ -268,7 +268,7 @@ const RedeployReleaseDialog: React.FC<{
               redeploy
                 .mutateAsync({
                   environmentId,
-                  resourceId: target.id,
+                  resourceId: resource.id,
                   releaseId: release.id,
                 })
                 .then(() => utils.release.list.invalidate())
@@ -287,7 +287,7 @@ const RedeployReleaseDialog: React.FC<{
 export const JobDropdownMenu: React.FC<{
   release: { id: string; version: string; name: string };
   environmentId: string;
-  target: { id: string; name: string; lockedAt: Date | null } | null;
+  resource: { id: string; name: string; lockedAt: Date | null } | null;
   deployment: SCHEMA.Deployment;
   job: { id: string; status: JobStatus };
   isPassingReleaseChannel: boolean;
@@ -295,7 +295,7 @@ export const JobDropdownMenu: React.FC<{
 }> = ({
   release,
   deployment,
-  target,
+  resource,
   environmentId,
   job,
   isPassingReleaseChannel,
@@ -306,7 +306,7 @@ export const JobDropdownMenu: React.FC<{
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
-      {target != null && (
+      {resource != null && (
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           {isActive && (
             <TooltipProvider>
@@ -350,7 +350,7 @@ export const JobDropdownMenu: React.FC<{
             <RedeployReleaseDialog
               release={release}
               environmentId={environmentId}
-              target={target}
+              resource={resource}
             >
               <DropdownMenuItem
                 onSelect={(e) => e.preventDefault()}
@@ -372,10 +372,10 @@ export const JobDropdownMenu: React.FC<{
             </DropdownMenuItem>
           </OverrideJobStatusDialog>
 
-          <ForceReleaseTargetDialog
+          <ForceReleaseResourceDialog
             release={release}
             deploymentName={deployment.name}
-            target={target}
+            resource={resource}
             environmentId={environmentId}
             onClose={() => setOpen(false)}
           >
@@ -386,7 +386,7 @@ export const JobDropdownMenu: React.FC<{
               <IconAlertTriangle size={16} />
               <p>Force Release</p>
             </DropdownMenuItem>
-          </ForceReleaseTargetDialog>
+          </ForceReleaseResourceDialog>
         </DropdownMenuContent>
       )}
     </DropdownMenu>

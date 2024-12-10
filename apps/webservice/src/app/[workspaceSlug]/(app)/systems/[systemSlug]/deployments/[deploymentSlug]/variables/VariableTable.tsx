@@ -17,8 +17,8 @@ import { Input } from "@ctrlplane/ui/input";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
 import type { VariableData } from "./variable-data";
-import { useTargetDrawer } from "~/app/[workspaceSlug]/(app)/_components/target-drawer/useTargetDrawer";
-import { TargetIcon } from "~/app/[workspaceSlug]/(app)/_components/TargetIcon";
+import { useResourceDrawer } from "~/app/[workspaceSlug]/(app)/_components/resource-drawer/useResourceDrawer";
+import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/ResourceIcon";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
@@ -60,7 +60,7 @@ export const VariableTable: React.FC<{
       return newState;
     });
 
-  const { setTargetId } = useTargetDrawer();
+  const { setResourceId } = useResourceDrawer();
 
   return (
     <>
@@ -205,8 +205,8 @@ export const VariableTable: React.FC<{
                                   variant="secondary"
                                   className="flex justify-center hover:bg-secondary"
                                 >
-                                  {v.targetCount} target
-                                  {v.targetCount === 1 ? "" : "s"}
+                                  {v.resourceCount} resource
+                                  {v.resourceCount === 1 ? "" : "s"}
                                 </Badge>
                                 <VariableValueDropdown
                                   value={v}
@@ -225,25 +225,25 @@ export const VariableTable: React.FC<{
                             </TableRow>
                             <CollapsibleContent asChild className="py-0">
                               <>
-                                {v.targets.map((t) => (
-                                  <TableRow key={t.id} className="border-none">
+                                {v.resources.map((r) => (
+                                  <TableRow key={r.id} className="border-none">
                                     <TableCell
                                       className="h-10 cursor-pointer py-0 pl-[56px]"
                                       colSpan={2}
-                                      onClick={() => setTargetId(t.id)}
+                                      onClick={() => setResourceId(r.id)}
                                     >
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7">
                                         <div className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6">
-                                          <TargetIcon
-                                            version={t.version}
-                                            kind={t.kind}
+                                          <ResourceIcon
+                                            version={r.version}
+                                            kind={r.kind}
                                           />
                                           <div className="flex flex-col">
                                             <span className="overflow-hidden text-nowrap text-sm">
-                                              {t.name}
+                                              {r.name}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                              {t.version}
+                                              {r.version}
                                             </span>
                                           </div>
                                         </div>
@@ -251,7 +251,7 @@ export const VariableTable: React.FC<{
                                     </TableCell>
                                   </TableRow>
                                 ))}
-                                {v.targetCount !== 0 && (
+                                {v.resourceCount !== 0 && (
                                   <TableRow className="border-none">
                                     <TableCell
                                       className="h-10 cursor-pointer py-0 pl-[56px]"
@@ -260,24 +260,24 @@ export const VariableTable: React.FC<{
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground hover:text-white">
                                         <Link
                                           className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6"
-                                          href={`/${workspaceSlug}/targets?filter=${v.filterHash}`}
+                                          href={`/${workspaceSlug}/resources?filter=${v.filterHash}`}
                                           target="_blank"
                                         >
                                           <IconDotsVertical className="h-4 w-4" />
-                                          View {v.targetCount} targets...
+                                          View {v.resourceCount} resources...
                                         </Link>
                                       </div>
                                     </TableCell>
                                   </TableRow>
                                 )}
-                                {v.targetCount === 0 && (
+                                {v.resourceCount === 0 && (
                                   <TableRow className="border-none">
                                     <TableCell
                                       className="h-10 cursor-pointer py-0 pl-[56px]"
                                       colSpan={2}
                                     >
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground">
-                                        No targets are using this variable
+                                        No resources are using this variable
                                       </div>
                                     </TableCell>
                                   </TableRow>

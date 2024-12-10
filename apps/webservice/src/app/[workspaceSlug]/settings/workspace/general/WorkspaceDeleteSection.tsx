@@ -7,8 +7,8 @@ export const WorkspaceDeleteSection: React.FC = () => {
 
       <div className="text-xs text-muted-foreground">
         If you want to permanently delete this workspace and all of its data,
-        including but not limited to users, deployments, targets, you can do so
-        below.
+        including but not limited to users, deployments, resources, you can do
+        so below.
       </div>
 
       <Button variant="destructive" disabled>

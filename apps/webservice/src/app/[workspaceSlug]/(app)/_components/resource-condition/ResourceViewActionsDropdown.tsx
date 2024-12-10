@@ -81,7 +81,7 @@ export const ResourceViewActionsDropdown: React.FC<{
 }> = ({ view, children }) => {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const isTargetPage = pathname.includes("/targets");
+  const isResourcePage = pathname.includes("/resources");
   const { setFilter } = useResourceFilter();
   const setView = (v: schema.ResourceView) => setFilter(v.filter, v.id);
 
@@ -93,7 +93,7 @@ export const ResourceViewActionsDropdown: React.FC<{
           <EditResourceViewDialog
             view={view}
             onClose={() => setOpen(false)}
-            onSubmit={isTargetPage ? setView : undefined}
+            onSubmit={isResourcePage ? setView : undefined}
           >
             <DropdownMenuItem
               className="flex items-center gap-2"

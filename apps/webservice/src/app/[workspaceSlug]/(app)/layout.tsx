@@ -11,7 +11,7 @@ import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer
 import { JobDrawer } from "./_components/job-drawer/JobDrawer";
 import { ReleaseChannelDrawer } from "./_components/release-channel-drawer/ReleaseChannelDrawer";
 import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
-import { TargetDrawer } from "./_components/target-drawer/TargetDrawer";
+import { ResourceDrawer } from "./_components/resource-drawer/ResourceDrawer";
 import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { AppSidebar } from "./AppSidebar";
 import { AppSidebarPopoverProvider } from "./AppSidebarPopoverContext";
@@ -40,7 +40,7 @@ export default async function WorkspaceLayout({
       <AppSidebar workspace={workspace} />
       <SidebarInset>{children}</SidebarInset>
 
-      <TargetDrawer />
+      <ResourceDrawer />
       <ReleaseDrawer />
       <ReleaseChannelDrawer />
       <EnvironmentDrawer />

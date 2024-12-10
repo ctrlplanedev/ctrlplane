@@ -21,7 +21,7 @@ export const ReleaseDistributionGraphPopover: React.FC<{
           <h4 className="font-medium leading-none">Release Distribution</h4>
           <p className="text-sm text-muted-foreground">
             Distribution of the latest {showPreviousReleaseDistro} filtered
-            releases across targets.
+            releases across resources.
           </p>
 
           <ReleaseDistributionBarChart

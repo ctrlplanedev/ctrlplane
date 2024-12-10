@@ -4,9 +4,9 @@ import type { RunbookVariable } from "./runbook-variable.js";
 import {
   DeploymentResourceRemovedVariables,
   resourceRemoved,
-} from "./target.js";
+} from "./resource.js";
 
-export * from "./target.js";
+export * from "./resource.js";
 
 export const hookEvent = resourceRemoved;
 export type HookEvent = z.infer<typeof hookEvent>;

@@ -43,7 +43,7 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
     conditions: envFilters,
   };
   const hash = LZString.compressToEncodedURIComponent(JSON.stringify(filter));
-  const url = `/${workspaceSlug}/targets?filter=${hash}`;
+  const url = `/${workspaceSlug}/resources?filter=${hash}`;
 
   return (
     <DropdownMenu>
@@ -56,7 +56,7 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
               onSelect={(e) => e.preventDefault()}
             >
               <IconTarget className="h-4 w-4 text-muted-foreground" />
-              View targets
+              View resources
             </DropdownMenuItem>
           </Link>
           <EditSystemDialog system={system}>

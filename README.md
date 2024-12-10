@@ -37,7 +37,7 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 
 - **Unified Control:** Centralize management of multi-stage deployment pipelines
   across diverse environments.
-- **Flexible Target Support:** Deploy to Kubernetes, cloud functions, VMs, or
+- **Flexible Resource Support:** Deploy to Kubernetes, cloud functions, VMs, or
   custom infrastructure from a single platform.
 - **Advanced Workflow Orchestration:** Automate sophisticated deployment
   processes including testing, code analysis, security scans, and approval

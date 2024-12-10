@@ -18,7 +18,7 @@ export const RunbookGettingStarted: React.FC<{
           <p>
             Runbooks in Ctrlplane trigger pipelines that you can control and
             manage in one centralized place. They allow you to select specific
-            targets for pipeline execution and can be scheduled to run
+            resources for pipeline execution and can be scheduled to run
             automatically, streamlining your operational processes. This
             centralized approach to pipeline management enhances efficiency and
             provides greater control over your automated workflows.

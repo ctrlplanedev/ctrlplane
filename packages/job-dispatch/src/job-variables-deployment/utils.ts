@@ -26,12 +26,15 @@ export const getDeploymentVariables = (tx: Tx, releaseId: string) =>
     )
     .where(eq(SCHEMA.release.id, releaseId));
 
-export const getTarget = (tx: Tx, targetId: string) =>
+export const getResource = (tx: Tx, resourceId: string) =>
   tx
     .select()
     .from(SCHEMA.resource)
     .where(
-      and(eq(SCHEMA.resource.id, targetId), isNull(SCHEMA.resource.deletedAt)),
+      and(
+        eq(SCHEMA.resource.id, resourceId),
+        isNull(SCHEMA.resource.deletedAt),
+      ),
     )
     .then(takeFirstOrNull);
 
@@ -43,13 +46,17 @@ export const getEnvironment = (tx: Tx, environmentId: string) =>
     },
   });
 
-export const getTargetVariableValue = (tx: Tx, targetId: string, key: string) =>
+export const getResourceVariableValue = (
+  tx: Tx,
+  resourceId: string,
+  key: string,
+) =>
   tx
     .select()
     .from(SCHEMA.resourceVariable)
     .where(
       and(
-        eq(SCHEMA.resourceVariable.resourceId, targetId),
+        eq(SCHEMA.resourceVariable.resourceId, resourceId),
         eq(SCHEMA.resourceVariable.key, key),
       ),
     )
@@ -62,32 +69,32 @@ export const getVariableValues = (tx: Tx, variableId: string) =>
     .orderBy(SCHEMA.deploymentVariableValue.value)
     .where(eq(SCHEMA.deploymentVariableValue.variableId, variableId));
 
-export const getMatchedTarget = (
+export const getMatchedResource = (
   tx: Tx,
-  targetId: string,
-  targetFilter: ResourceCondition | null,
+  resourceId: string,
+  resourceFilter: ResourceCondition | null,
 ) =>
   tx
     .select()
     .from(SCHEMA.resource)
     .where(
       and(
-        eq(SCHEMA.resource.id, targetId),
-        SCHEMA.resourceMatchesMetadata(tx, targetFilter),
+        eq(SCHEMA.resource.id, resourceId),
+        SCHEMA.resourceMatchesMetadata(tx, resourceFilter),
         isNull(SCHEMA.resource.deletedAt),
       ),
     )
     .then(takeFirstOrNull);
 
-export const getFirstMatchedTarget = (
+export const getFirstMatchedResource = (
   tx: Tx,
-  targetId: string,
+  resourceId: string,
   values: SCHEMA.DeploymentVariableValue[],
 ) =>
   Promise.all(
     values.map((value) =>
-      getMatchedTarget(tx, targetId, value.resourceFilter).then(
-        (matchedTarget) => (matchedTarget != null ? value : null),
+      getMatchedResource(tx, resourceId, value.resourceFilter).then(
+        (matchedResource) => (matchedResource != null ? value : null),
       ),
     ),
   ).then((res) => res.find(isPresent));

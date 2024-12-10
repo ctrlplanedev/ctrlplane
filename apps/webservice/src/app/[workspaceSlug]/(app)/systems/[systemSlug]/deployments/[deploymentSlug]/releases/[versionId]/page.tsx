@@ -6,7 +6,7 @@ import { ScrollArea } from "@ctrlplane/ui/scroll-area";
 import { ReactFlowProvider } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ReactFlowProvider";
 import { api } from "~/trpc/server";
 import { FlowDiagram } from "./FlowDiagram";
-import { TargetReleaseTable } from "./TargetReleaseTable";
+import { ResourceReleaseTable } from "./ResourceReleaseTable";
 
 type PageProps = {
   params: {
@@ -65,7 +65,7 @@ export default async function ReleasePage({ params }: PageProps) {
           </ReactFlowProvider>
         </div>
 
-        <TargetReleaseTable
+        <ResourceReleaseTable
           release={release}
           deployment={deployment}
           environments={environments}

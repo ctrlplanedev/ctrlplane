@@ -57,7 +57,7 @@ export default function IntegrationsPage({
             </IntegrationHeading>
             <p className="text-left text-sm text-muted-foreground">
               Grant our account the correct permissions and we will manage
-              running the target provider for you.
+              running the resource provider for you.
             </p>
           </IntegrationContent>
         </IntegrationCard>

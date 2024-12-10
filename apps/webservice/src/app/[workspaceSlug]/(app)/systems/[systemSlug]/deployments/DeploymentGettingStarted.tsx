@@ -18,8 +18,9 @@ export const DeploymentGettingStarted: React.FC<{ systemId: string }> = ({
           <p>
             Deployments are the core component of Ctrlplane, orchestrating the
             delivery of your applications across various environments and
-            targets. They encapsulate the configuration, workflows, and triggers
-            required to automate and manage the entire release lifecycle.
+            resources. They encapsulate the configuration, workflows, and
+            triggers required to automate and manage the entire release
+            lifecycle.
           </p>
         </div>
         <div className="flex items-center gap-2">

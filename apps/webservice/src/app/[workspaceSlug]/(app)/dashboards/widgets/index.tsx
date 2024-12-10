@@ -1,10 +1,10 @@
 import type { Widget } from "./spec";
-import { WidgetTargetMetadataCount } from "./TargetWidgets";
+import { WidgetResourceMetadataCount } from "./ResourceWidgets";
 import { WidgetHeading } from "./TextHeading";
 
 export * from "./spec";
 
 export const widgets: Record<string, Widget> = {
-  "target-annotation-pie": WidgetTargetMetadataCount,
+  "resource-annotation-pie": WidgetResourceMetadataCount,
   heading: WidgetHeading,
 };

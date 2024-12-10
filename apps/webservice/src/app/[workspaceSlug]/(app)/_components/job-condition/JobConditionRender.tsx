@@ -6,7 +6,7 @@ import {
   isCreatedAtCondition,
   isDeploymentCondition,
   isEnvironmentCondition,
-  isJobTargetCondition,
+  isJobResourceCondition,
   isMetadataCondition,
   isStatusCondition,
   isVersionCondition,
@@ -18,7 +18,7 @@ import { EnvironmentConditionRender } from "./EnvironmentConditionRender";
 import { JobComparisonConditionRender } from "./JobComparisonConditionRender";
 import { JobCreatedAtConditionRender } from "./JobCreatedAtConditionRender";
 import { JobMetadataConditionRender } from "./JobMetadataConditionRender";
-import { JobTargetConditionRender } from "./JobTargetConditionRender";
+import { JobResourceConditionRender } from "./JobResourceConditionRender";
 import { StatusConditionRender } from "./StatusConditionRender";
 import { JobReleaseVersionConditionRender } from "./VersionConditionRender";
 
@@ -95,9 +95,9 @@ export const JobConditionRender: React.FC<
       />
     );
 
-  if (isJobTargetCondition(condition))
+  if (isJobResourceCondition(condition))
     return (
-      <JobTargetConditionRender
+      <JobResourceConditionRender
         condition={condition}
         onChange={onChange}
         className={className}

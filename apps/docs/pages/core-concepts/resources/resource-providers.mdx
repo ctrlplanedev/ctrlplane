@@ -10,8 +10,8 @@ up-to-date representation of your deployment landscape.
 Resource Providers offer several key advantages over manual creation and
 management of resources:
 
-1. **Automation:** Resource Providers eliminate the need for manual intervention,
-   saving time and reducing the potential for human error.
+1. **Automation:** Resource Providers eliminate the need for manual
+   intervention, saving time and reducing the potential for human error.
 2. **Dynamic Updates:** As your infrastructure evolves, resource providers
    automatically detect changes (e.g., new clusters, servers, or cloud
    resources) and update the corresponding resources in Ctrlplane.
@@ -24,9 +24,9 @@ management of resources:
 
 ## How Resource Providers Work
 
-1. **Discovery:** Resource Providers periodically scan your defined infrastructure
-   and external systems, identifying potential resources based on configured
-   criteria.
+1. **Discovery:** Resource Providers periodically scan your defined
+   infrastructure and external systems, identifying potential resources based on
+   configured criteria.
 2. **Registration:** When a new resource is discovered, the resource provider
    registers it in Ctrlplane, including relevant metadata such as labels and
    associated information.
@@ -40,11 +40,11 @@ Ctrlplane supports various types of resource providers, including:
 - **Cloud Resource Providers:** These resource providers integrate with cloud
   platforms like AWS, Azure, and Google Cloud, discovering and registering
   resources such as virtual machines, Kubernetes clusters, and databases.
-- **Kubernetes Resource Providers:** These resource providers specifically resource
-  Kubernetes environments, detecting clusters, namespaces, and other relevant
-  objects.
-- **Infrastructure-as-Code Resource Providers:** These resource providers parse your
-  infrastructure-as-code definitions (e.g., Terraform, CloudFormation) to
+- **Kubernetes Resource Providers:** These resource providers specifically
+  resource Kubernetes environments, detecting clusters, namespaces, and other
+  relevant objects.
+- **Infrastructure-as-Code Resource Providers:** These resource providers parse
+  your infrastructure-as-code definitions (e.g., Terraform, CloudFormation) to
   identify and register resources.
 - **Custom Resource Providers:** You can create custom resource providers to
   integrate with any system or platform that exposes information about your
