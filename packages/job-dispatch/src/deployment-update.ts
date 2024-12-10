@@ -9,31 +9,27 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 
-import { handleEvent } from "./events/index.js";
+import { getEventsForDeploymentRemoved, handleEvent } from "./events/index.js";
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingReleaseStringCheckPolicy } from "./policies/release-string-check.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { createJobApprovals } from "./policy-create.js";
 import { createReleaseJobTriggers } from "./release-job-trigger.js";
 
-const getResourcesOnlyInNewSystem = async (
-  newSystemId: string,
-  oldSystemId: string,
+export const handleDeploymentSystemChanged = async (
+  deployment: SCHEMA.Deployment,
+  prevSystemId: string,
+  userId?: string,
 ) => {
   const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
   const newSystem = await db.query.system.findFirst({
-    where: eq(SCHEMA.system.id, newSystemId),
+    where: eq(SCHEMA.system.id, deployment.systemId),
     with: { environments: { where: hasFilter } },
   });
 
-  const oldSystem = await db.query.system.findFirst({
-    where: eq(SCHEMA.system.id, oldSystemId),
-    with: { environments: { where: hasFilter } },
-  });
+  if (newSystem == null) return;
 
-  if (newSystem == null || oldSystem == null) return [];
-
-  const newSystemFilter: ResourceCondition = {
+  const systemFilter: ResourceCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.Or,
     conditions: newSystem.environments
@@ -41,44 +37,16 @@ const getResourcesOnlyInNewSystem = async (
       .filter(isPresent),
   };
 
-  const notInOldSystemFilter: ResourceCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.Or,
-    not: true,
-    conditions: oldSystem.environments
-      .flatMap((env) => env.resourceFilter)
-      .filter(isPresent),
-  };
+  await getEventsForDeploymentRemoved(deployment, prevSystemId).then((events) =>
+    Promise.allSettled(events.map(handleEvent)),
+  );
 
-  const filter: ResourceCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [newSystemFilter, notInOldSystemFilter],
-  };
-
-  return db.query.resource.findMany({
+  const resources = await db.query.resource.findMany({
     where: and(
-      SCHEMA.resourceMatchesMetadata(db, filter),
+      SCHEMA.resourceMatchesMetadata(db, systemFilter),
       isNull(SCHEMA.resource.deletedAt),
     ),
   });
-};
-
-export const handleDeploymentSystemChanged = async (
-  deployment: SCHEMA.Deployment,
-  prevSystemId: string,
-  userId?: string,
-) => {
-  const resourcesOnlyInNewSystem = await getResourcesOnlyInNewSystem(
-    deployment.systemId,
-    prevSystemId,
-  );
-
-  const events = resourcesOnlyInNewSystem.map((resource) => ({
-    action: "deployment.resource.removed" as const,
-    payload: { deployment, resource },
-  }));
-  await Promise.allSettled(events.map(handleEvent));
 
   const isDeploymentHook = and(
     eq(SCHEMA.hook.scopeType, "deployment"),
@@ -105,7 +73,7 @@ export const handleDeploymentSystemChanged = async (
       : createReleaseJobTriggers(db, "new_release");
   await createTriggers
     .deployments([deployment.id])
-    .resources(resourcesOnlyInNewSystem.map((r) => r.id))
+    .resources(resources.map((r) => r.id))
     .filter(isPassingReleaseStringCheckPolicy)
     .then(createJobApprovals)
     .insert()
