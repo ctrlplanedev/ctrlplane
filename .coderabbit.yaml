@@ -3,3 +3,8 @@ language: en-US
 
 reviews:
   poem: false
+  path_instructions:
+    - path: "**/*.ts"
+      instructions: |
+        **Note on Error Handling:**
+        Avoid strict enforcement of try/catch blocks. Code may use early returns, Promise chains (.then().catch()), or other patterns for error handling. These are acceptable as long as they maintain clarity and predictability.
