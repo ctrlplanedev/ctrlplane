@@ -50,21 +50,22 @@ export const CreateDeploymentDialog: React.FC<{
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const { data: workspace, ...workspaceQ } =
     api.workspace.bySlug.useQuery(workspaceSlug);
-  const systems = api.system.list.useQuery(
+  const { data: systems, ...systemsQ } = api.system.list.useQuery(
     { workspaceId: workspace?.id ?? "" },
     { enabled: workspace != null },
   );
   const createDeployment = api.deployment.create.useMutation();
   const router = useRouter();
-  const jobAgentsQ = api.job.agent.byWorkspaceId.useQuery(workspace?.id ?? "", {
-    enabled: workspace != null,
-  });
-  const jobAgents = jobAgentsQ.data ?? [];
+  const { data: jobAgentsResult, ...jobAgentsQ } =
+    api.job.agent.byWorkspaceId.useQuery(workspace?.id ?? "", {
+      enabled: workspace != null,
+    });
+  const jobAgents = jobAgentsResult ?? [];
 
   const form = useForm({
     schema: SCHEMA.createDeployment,
     defaultValues: {
-      systemId: props.systemId ?? systems.data?.items[0]?.id,
+      systemId: props.systemId ?? systems?.items[0]?.id,
       name: "",
       slug: "",
       description: "",
@@ -86,15 +87,17 @@ export const CreateDeploymentDialog: React.FC<{
   });
 
   const onSubmit = handleSubmit(async (deployment) => {
-    const systemSlug = systems.data?.items.find(
-      (system) => system.id === form.getValues("systemId"),
+    const systemSlug = systems?.items.find(
+      (system) => system.id === deployment.systemId,
     )?.slug;
     await createDeployment
       .mutateAsync(deployment)
-      .then(() =>
-        router.push(
-          `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
-        ),
+      .then(
+        () =>
+          systemSlug != null &&
+          router.push(
+            `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
+          ),
       )
       .then(() => setOpen(false))
       .then(() => onSuccess?.())
@@ -106,7 +109,7 @@ export const CreateDeploymentDialog: React.FC<{
   });
 
   const loading =
-    workspaceQ.isLoading || systems.isLoading || jobAgentsQ.isLoading;
+    workspaceQ.isLoading || systemsQ.isLoading || jobAgentsQ.isLoading;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -143,7 +146,7 @@ export const CreateDeploymentDialog: React.FC<{
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              {systems.data?.items.map((system) => (
+                              {systems?.items.map((system) => (
                                 <SelectItem key={system.id} value={system.id}>
                                   {system.name}
                                 </SelectItem>
