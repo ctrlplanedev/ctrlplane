@@ -1,7 +1,7 @@
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNotNull, isNull, takeFirst } from "@ctrlplane/db";
+import { and, eq, inArray, isNotNull, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
@@ -9,82 +9,22 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 
-import { handleEvent } from "./events/index.js";
+import { getEventsForDeploymentRemoved, handleEvent } from "./events/index.js";
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { isPassingReleaseStringCheckPolicy } from "./policies/release-string-check.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { createJobApprovals } from "./policy-create.js";
 import { createReleaseJobTriggers } from "./release-job-trigger.js";
 
-const getResourcesOnlyInNewSystem = async (
-  newSystemId: string,
-  oldSystemId: string,
-) => {
-  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
-  const newSystem = await db.query.system.findFirst({
-    where: eq(SCHEMA.system.id, newSystemId),
-    with: { environments: { where: hasFilter } },
-  });
-
-  const oldSystem = await db.query.system.findFirst({
-    where: eq(SCHEMA.system.id, oldSystemId),
-    with: { environments: { where: hasFilter } },
-  });
-
-  if (newSystem == null || oldSystem == null) return [];
-
-  const newSystemFilter: ResourceCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.Or,
-    conditions: newSystem.environments
-      .flatMap((env) => env.resourceFilter)
-      .filter(isPresent),
-  };
-
-  const notInOldSystemFilter: ResourceCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.Or,
-    not: true,
-    conditions: oldSystem.environments
-      .flatMap((env) => env.resourceFilter)
-      .filter(isPresent),
-  };
-
-  const filter: ResourceCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [newSystemFilter, notInOldSystemFilter],
-  };
-
-  return db.query.resource.findMany({
-    where: and(
-      SCHEMA.resourceMatchesMetadata(db, filter),
-      isNull(SCHEMA.resource.deletedAt),
-    ),
-  });
-};
-
-export const handleDeploymentSystemChanged = async (
+const moveRunbooksLinkedToHooksToNewSystem = async (
   deployment: SCHEMA.Deployment,
-  prevSystemId: string,
-  userId?: string,
 ) => {
-  const resourcesOnlyInNewSystem = await getResourcesOnlyInNewSystem(
-    deployment.systemId,
-    prevSystemId,
-  );
-
-  const events = resourcesOnlyInNewSystem.map((resource) => ({
-    action: "deployment.resource.removed" as const,
-    payload: { deployment, resource },
-  }));
-  await Promise.allSettled(events.map(handleEvent));
-
   const isDeploymentHook = and(
     eq(SCHEMA.hook.scopeType, "deployment"),
     eq(SCHEMA.hook.scopeId, deployment.id),
   );
-  await db.query.hook
+
+  return db.query.hook
     .findMany({
       where: isDeploymentHook,
       with: { runhooks: { with: { runbook: true } } },
@@ -98,6 +38,46 @@ export const handleDeploymentSystemChanged = async (
         .set({ systemId: deployment.systemId })
         .where(inArray(SCHEMA.runbook.id, runbookIds));
     });
+};
+
+const getResourcesInNewSystem = async (deployment: SCHEMA.Deployment) => {
+  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
+  const newSystem = await db.query.system.findFirst({
+    where: eq(SCHEMA.system.id, deployment.systemId),
+    with: { environments: { where: hasFilter } },
+  });
+
+  if (newSystem == null) return [];
+
+  const filters = newSystem.environments
+    .map((env) => env.resourceFilter)
+    .filter(isPresent);
+
+  if (filters.length === 0) return [];
+
+  const systemFilter: ResourceCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.Or,
+    conditions: filters,
+  };
+
+  return db.query.resource.findMany({
+    where: SCHEMA.resourceMatchesMetadata(db, systemFilter),
+  });
+};
+
+export const handleDeploymentSystemChanged = async (
+  deployment: SCHEMA.Deployment,
+  prevSystemId: string,
+  userId?: string,
+) => {
+  await getEventsForDeploymentRemoved(deployment, prevSystemId).then((events) =>
+    Promise.allSettled(events.map(handleEvent)),
+  );
+
+  await moveRunbooksLinkedToHooksToNewSystem(deployment);
+
+  const resources = await getResourcesInNewSystem(deployment);
 
   const createTriggers =
     userId != null
@@ -105,7 +85,7 @@ export const handleDeploymentSystemChanged = async (
       : createReleaseJobTriggers(db, "new_release");
   await createTriggers
     .deployments([deployment.id])
-    .resources(resourcesOnlyInNewSystem.map((r) => r.id))
+    .resources(resources.map((r) => r.id))
     .filter(isPassingReleaseStringCheckPolicy)
     .then(createJobApprovals)
     .insert()
