@@ -1,6 +1,5 @@
 "use client";
 
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -14,6 +13,7 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import {
@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
+import { useForm } from "@ctrlplane/ui/form";
 
 import { api } from "~/trpc/react";
 import { TabButton } from "../TabButton";
@@ -162,6 +163,17 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
     { enabled: isOpen && environmentPolicy != null },
   );
   const deployments = deploymentsQ.data;
+
+  const form = useForm({
+    schema: SCHEMA.updateEnvironmentPolicy,
+    defaultValues: {
+      ...environmentPolicy,
+      releaseChannels: environmentPolicy?.releaseChannels.map((rc) => ({
+        channelId: rc.channelId,
+        deploymentId: rc.deploymentId,
+      })),
+    },
+  });
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>

@@ -141,9 +141,28 @@ export const environmentPolicy = pgTable("environment_policy", {
 
 export type EnvironmentPolicy = InferSelectModel<typeof environmentPolicy>;
 
-export const createEnvironmentPolicy = createInsertSchema(
-  environmentPolicy,
-).omit({ id: true });
+export const createEnvironmentPolicy = createInsertSchema(environmentPolicy)
+  .omit({ id: true })
+  .extend({
+    releaseChannels: z
+      .array(
+        z.object({
+          channelId: z.string().uuid().nullable(),
+          deploymentId: z.string().uuid(),
+        }),
+      )
+      .optional()
+      .refine((channels) => {
+        if (channels == null) return true;
+        const deploymentsWithNonNullChannels = channels.filter(
+          (c) => c.channelId != null,
+        );
+        const deploymentIds = new Set(
+          deploymentsWithNonNullChannels.map((c) => c.deploymentId),
+        );
+        return deploymentIds.size === deploymentsWithNonNullChannels.length;
+      }),
+  });
 
 export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
 

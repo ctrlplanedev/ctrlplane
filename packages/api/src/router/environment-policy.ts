@@ -366,14 +366,21 @@ export const policyRouter = createTRPCRouter({
           .on({ type: "environmentPolicy", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironmentPolicy }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
+    .mutation(async ({ ctx, input }) => {
+      const policy = await ctx.db
         .update(environmentPolicy)
         .set(input.data)
         .where(eq(environmentPolicy.id, input.id))
         .returning()
-        .then(takeFirst),
-    ),
+        .then(takeFirst);
+
+      if (input.data.releaseChannels != null) {
+        const [nulled, set] = _.partition(
+          input.data.releaseChannels,
+          (c) => channelId == null,
+        );
+      }
+    }),
 
   updateReleaseChannels: protectedProcedure
     .input(
