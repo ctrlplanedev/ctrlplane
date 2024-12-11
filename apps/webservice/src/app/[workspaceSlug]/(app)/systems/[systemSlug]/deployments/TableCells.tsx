@@ -33,7 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
+import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
@@ -167,8 +167,8 @@ export const Release: React.FC<{
 
   const firstReleaseJobTrigger = releaseJobTriggers.at(0);
 
-  const isReleaseCompleted = releaseJobTriggers.every((d) =>
-    exitedStatus.includes(d.job.status as JobStatus),
+  const isReleaseActive = releaseJobTriggers.some((d) =>
+    activeStatus.includes(d.job.status as JobStatus),
   );
 
   return (
@@ -231,7 +231,7 @@ export const Release: React.FC<{
       <ReleaseDropdownMenu
         release={{ id: releaseId, name }}
         environment={environment}
-        isReleaseCompleted={isReleaseCompleted}
+        isReleaseActive={isReleaseActive}
       />
     </div>
   );

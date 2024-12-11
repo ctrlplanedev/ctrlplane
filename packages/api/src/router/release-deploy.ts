@@ -1,25 +1,10 @@
-import type { Tx } from "@ctrlplane/db";
-import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
-import _ from "lodash";
 import { z } from "zod";
 
-import {
-  and,
-  eq,
-  inArray,
-  isNull,
-  notInArray,
-  takeFirstOrNull,
-} from "@ctrlplane/db";
-import {
-  environment,
-  job,
-  release,
-  releaseJobTrigger,
-  resource,
-} from "@ctrlplane/db/schema";
+import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
+import { environment, release, resource } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
+  cancelPreviousJobsForRedeployedTriggers,
   createJobApprovals,
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
@@ -50,36 +35,6 @@ export const releaseDeployRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const cancelPreviousJobs = async (
-        tx: Tx,
-        releaseJobTriggers: ReleaseJobTrigger[],
-      ) =>
-        tx
-          .select()
-          .from(releaseJobTrigger)
-          .where(
-            and(
-              eq(releaseJobTrigger.releaseId, input.releaseId),
-              eq(releaseJobTrigger.environmentId, input.environmentId),
-              notInArray(
-                releaseJobTrigger.id,
-                releaseJobTriggers.map((j) => j.id),
-              ),
-            ),
-          )
-          .then((existingReleaseJobTriggers) =>
-            tx
-              .update(job)
-              .set({ status: "cancelled" })
-              .where(
-                inArray(
-                  job.id,
-                  existingReleaseJobTriggers.map((t) => t.jobId),
-                ),
-              )
-              .then(() => {}),
-          );
-
       const releaseJobTriggers = await createReleaseJobTriggers(
         ctx.db,
         "force_deploy",
@@ -92,7 +47,8 @@ export const releaseDeployRouter = createTRPCRouter({
             ? (_, releaseJobTriggers) => releaseJobTriggers
             : isPassingReleaseStringCheckPolicy,
         )
-        .then(input.isForcedRelease ? cancelPreviousJobs : createJobApprovals)
+        .then(cancelPreviousJobsForRedeployedTriggers)
+        .then(input.isForcedRelease ? () => {} : createJobApprovals)
         .insert();
 
       await dispatchReleaseJobTriggers(ctx.db)
@@ -165,6 +121,7 @@ export const releaseDeployRouter = createTRPCRouter({
             ? (_, releaseJobTriggers) => releaseJobTriggers
             : isPassingReleaseStringCheckPolicy,
         )
+        .then(cancelPreviousJobsForRedeployedTriggers)
         .then(input.isForcedRelease ? () => {} : createJobApprovals)
         .insert();
 
