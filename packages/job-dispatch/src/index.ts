@@ -9,6 +9,7 @@ export * from "./release-sequencing.js";
 export * from "./gradual-rollout.js";
 export * from "./lock-checker.js";
 export * from "./queue.js";
+export * from "./cancel-previous-jobs.js";
 
 export { isDateInTimeWindow } from "./utils.js";
 
