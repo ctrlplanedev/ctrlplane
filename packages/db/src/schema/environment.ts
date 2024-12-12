@@ -145,8 +145,6 @@ export const createEnvironmentPolicy = createInsertSchema(
   environmentPolicy,
 ).omit({ id: true });
 
-export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
-
 export const environmentPolicyRelations = relations(
   environmentPolicy,
   ({ many }) => ({
@@ -325,3 +323,24 @@ export const environmentMetadata = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
 );
+
+export const updateEnvironmentPolicy = createEnvironmentPolicy
+  .partial()
+  .extend({
+    releaseChannels: z
+      .record(z.string().uuid(), z.string().uuid().nullable())
+      .optional()
+      .refine((channels) => {
+        if (channels == null) return true;
+        const channelsWithNonNullDeploymentIds = Object.entries(
+          channels,
+        ).filter(([_, channelId]) => channelId != null);
+        const deploymentIds = new Set(
+          channelsWithNonNullDeploymentIds.map(
+            ([deploymentId, _]) => deploymentId,
+          ),
+        );
+        return deploymentIds.size === channelsWithNonNullDeploymentIds.length;
+      }),
+    releaseWindows: z.array(setPolicyReleaseWindow).optional(),
+  });
