@@ -156,6 +156,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
     { enabled: isOpen },
   );
   const environmentPolicy = environmentPolicyQ.data;
+  console.log({ environmentPolicy });
 
   const deploymentsQ = api.deployment.bySystemId.useQuery(
     environmentPolicy?.systemId ?? "",
