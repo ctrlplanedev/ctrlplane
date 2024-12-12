@@ -24,7 +24,6 @@ import {
   release,
   releaseChannel,
   releaseJobTrigger,
-  setPolicyReleaseWindow,
   updateEnvironmentPolicy,
   user,
 } from "@ctrlplane/db/schema";
@@ -374,62 +373,66 @@ export const policyRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
+      const { releaseWindows } = input.data;
+      if (releaseWindows != null)
+        await ctx.db.transaction((tx) =>
+          tx
+            .delete(environmentPolicyReleaseWindow)
+            .where(eq(environmentPolicyReleaseWindow.policyId, input.id))
+            .then(() =>
+              releaseWindows.length === 0
+                ? []
+                : tx
+                    .insert(environmentPolicyReleaseWindow)
+                    .values(releaseWindows)
+                    .returning(),
+            ),
+        );
+
       if (input.data.releaseChannels != null) {
         const [nulled, set] = _.partition(
-          input.data.releaseChannels,
-          (c) => channelId == null,
+          Object.entries(input.data.releaseChannels),
+          ([_, channelId]) => channelId == null,
         );
+
+        const nulledIds = nulled.map(([deploymentId]) => deploymentId);
+        const setChannels = set.map(([deploymentId, channelId]) => ({
+          policyId: input.id,
+          deploymentId,
+          channelId: channelId!,
+        }));
+
+        await ctx.db.transaction(async (tx) => {
+          await tx
+            .delete(environmentPolicyReleaseChannel)
+            .where(
+              and(
+                inArray(
+                  environmentPolicyReleaseChannel.deploymentId,
+                  nulledIds,
+                ),
+                eq(environmentPolicyReleaseChannel.policyId, input.id),
+              ),
+            );
+
+          if (setChannels.length > 0)
+            await tx
+              .insert(environmentPolicyReleaseChannel)
+              .values(setChannels)
+              .onConflictDoUpdate({
+                target: [
+                  environmentPolicyReleaseChannel.policyId,
+                  environmentPolicyReleaseChannel.deploymentId,
+                ],
+                set: buildConflictUpdateColumns(
+                  environmentPolicyReleaseChannel,
+                  ["channelId"],
+                ),
+              });
+        });
+
+        return policy;
       }
-    }),
-
-  updateReleaseChannels: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        releaseChannels: z.record(z.string().uuid().nullable()),
-      }),
-    )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemUpdate)
-          .on({ type: "environmentPolicy", id: input.id }),
-    })
-    .mutation(({ ctx, input }) => {
-      const { id, releaseChannels } = input;
-      const [nulled, set] = _.partition(
-        Object.entries(releaseChannels),
-        ([_, channelId]) => channelId == null,
-      );
-
-      const nulledIds = nulled.map(([deploymentId]) => deploymentId);
-      const setChannels = set.map(([deploymentId, channelId]) => ({
-        policyId: id,
-        deploymentId,
-        channelId: channelId!,
-      }));
-
-      return ctx.db.transaction(async (db) => {
-        await db
-          .delete(environmentPolicyReleaseChannel)
-          .where(
-            inArray(environmentPolicyReleaseChannel.deploymentId, nulledIds),
-          );
-
-        if (setChannels.length > 0)
-          await db
-            .insert(environmentPolicyReleaseChannel)
-            .values(setChannels)
-            .onConflictDoUpdate({
-              target: [
-                environmentPolicyReleaseChannel.policyId,
-                environmentPolicyReleaseChannel.deploymentId,
-              ],
-              set: buildConflictUpdateColumns(environmentPolicyReleaseChannel, [
-                "channelId",
-              ]),
-            });
-      });
     }),
 
   delete: protectedProcedure
@@ -446,32 +449,5 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.id, input))
         .returning()
         .then(takeFirst),
-    ),
-
-  setWindows: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemUpdate)
-          .on({ type: "environmentPolicy", id: input.policyId }),
-    })
-    .input(
-      z.object({
-        policyId: z.string().uuid(),
-        releaseWindows: z.array(setPolicyReleaseWindow),
-      }),
-    )
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .delete(environmentPolicyReleaseWindow)
-        .where(eq(environmentPolicyReleaseWindow.policyId, input.policyId))
-        .then(() =>
-          input.releaseWindows.length === 0
-            ? []
-            : ctx.db
-                .insert(environmentPolicyReleaseWindow)
-                .values(input.releaseWindows)
-                .returning(),
-        ),
     ),
 });

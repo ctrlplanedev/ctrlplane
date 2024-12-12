@@ -1,10 +1,8 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconPlus } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
 import { Label } from "@ctrlplane/ui/label";
 import {
   Select,
@@ -14,17 +12,16 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 
-import { api } from "~/trpc/react";
-
-type Policy = SCHEMA.EnvironmentPolicy & {
-  releaseChannels: SCHEMA.ReleaseChannel[];
-};
+import type { PolicyFormSchema } from "./PolicyFormSchema";
 
 type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
 };
 
-type ReleaseChannelProps = { policy: Policy; deployments: Deployment[] };
+type ReleaseChannelProps = {
+  form: PolicyFormSchema;
+  deployments: Deployment[];
+};
 
 type DeploymentSelectProps = {
   deployment: Deployment;
@@ -90,39 +87,20 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
 };
 
 export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
-  policy,
+  form,
   deployments,
 }) => {
-  const updateReleaseChannels =
-    api.environment.policy.updateReleaseChannels.useMutation();
-  const utils = api.useUtils();
-
-  const deploymentsWithReleaseChannels = deployments.filter(
-    (d) => d.releaseChannels.length > 0,
-  );
-
-  const currReleaseChannels = Object.fromEntries(
-    deploymentsWithReleaseChannels.map((d) => [
-      d.id,
-      policy.releaseChannels.find((rc) => rc.deploymentId === d.id)?.id ?? null,
-    ]),
-  );
-
-  const [releaseChannels, setReleaseChannels] =
-    useState<Record<string, string | null>>(currReleaseChannels);
+  const policyReleaseChannels = form.watch("releaseChannels");
 
   const updateReleaseChannel = (
     deploymentId: string,
     channelId: string | null,
-  ) => setReleaseChannels((prev) => ({ ...prev, [deploymentId]: channelId }));
-
-  const onSubmit = () =>
-    updateReleaseChannels
-      .mutateAsync({
-        id: policy.id,
-        releaseChannels,
-      })
-      .then(() => utils.environment.policy.byId.invalidate(policy.id));
+  ) =>
+    form.setValue(
+      "releaseChannels",
+      { ...policyReleaseChannels, [deploymentId]: channelId },
+      { shouldValidate: true, shouldDirty: true, shouldTouch: true },
+    );
 
   return (
     <div className="space-y-4">
@@ -136,14 +114,11 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
           <DeploymentSelect
             key={d.id}
             deployment={d}
-            releaseChannels={releaseChannels}
+            releaseChannels={policyReleaseChannels ?? {}}
             updateReleaseChannel={updateReleaseChannel}
           />
         ))}
       </div>
-      <Button onClick={onSubmit} disabled={updateReleaseChannels.isPending}>
-        Save
-      </Button>
     </div>
   );
 };

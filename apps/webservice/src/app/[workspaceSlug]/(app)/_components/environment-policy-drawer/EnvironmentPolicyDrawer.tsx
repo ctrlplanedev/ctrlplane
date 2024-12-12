@@ -1,7 +1,7 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type React from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   IconCalendar,
   IconCircuitDiode,
@@ -9,11 +9,14 @@ import {
   IconEye,
   IconFilter,
   IconInfoCircle,
+  IconLoader2,
   IconRocket,
   IconTrash,
 } from "@tabler/icons-react";
+import _ from "lodash";
+import ms from "ms";
+import prettyMilliseconds from "pretty-ms";
 
-import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import {
@@ -22,17 +25,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
-import { useForm } from "@ctrlplane/ui/form";
+import { Form, useForm } from "@ctrlplane/ui/form";
 
+import type { PolicyFormSchema } from "./PolicyFormSchema";
 import { api } from "~/trpc/react";
 import { TabButton } from "../TabButton";
 import { ApprovalAndGovernance } from "./ApprovalAndGovernance";
 import { DeploymentControl } from "./DeploymentControl";
 import { Overview } from "./Overview";
 import { DeleteEnvironmentPolicyDialog } from "./PolicyDeleteDialog";
+import { policyFormSchema } from "./PolicyFormSchema";
 import { ReleaseChannels } from "./ReleaseChannels";
 import { ReleaseManagement } from "./ReleaseManagement";
 import { RolloutAndTiming } from "./RolloutAndTiming";
+import { useEnvironmentPolicyDrawer } from "./useEnvironmentPolicyDrawer";
 
 export enum EnvironmentPolicyDrawerTab {
   Overview = "overview",
@@ -43,88 +49,98 @@ export enum EnvironmentPolicyDrawerTab {
   Rollout = "rollout",
 }
 
-const tabParam = "tab";
-const useEnvironmentPolicyDrawerTab = () => {
-  const router = useRouter();
-  const params = useSearchParams();
-  const tab = params.get(tabParam) as EnvironmentPolicyDrawerTab | null;
-
-  const setTab = (tab: EnvironmentPolicyDrawerTab | null) => {
-    const url = new URL(window.location.href);
-    if (tab === null) {
-      url.searchParams.delete(tabParam);
-      router.replace(`${url.pathname}?${url.searchParams.toString()}`);
-      return;
-    }
-    url.searchParams.set(tabParam, tab);
-    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+type PolicyConfigProps = {
+  activeTab: EnvironmentPolicyDrawerTab;
+  environmentPolicy: SCHEMA.EnvironmentPolicy & {
+    releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
+    releaseChannels: SCHEMA.ReleaseChannel[];
   };
-
-  return { tab, setTab };
-};
-
-const param = "environment_policy_id";
-export const useEnvironmentPolicyDrawer = () => {
-  const router = useRouter();
-  const params = useSearchParams();
-  const environmentPolicyId = params.get(param);
-  const { tab, setTab } = useEnvironmentPolicyDrawerTab();
-
-  const setEnvironmentPolicyId = (id: string | null) => {
-    const url = new URL(window.location.href);
-    if (id === null) {
-      url.searchParams.delete(param);
-      url.searchParams.delete(tabParam);
-      router.replace(`${url.pathname}?${url.searchParams.toString()}`);
-      return;
-    }
-    url.searchParams.set(param, id);
-    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
-  };
-
-  const removeEnvironmentPolicyId = () => setEnvironmentPolicyId(null);
-
-  return {
-    environmentPolicyId,
-    setEnvironmentPolicyId,
-    removeEnvironmentPolicyId,
-    tab,
-    setTab,
-  };
+  deployments: Deployment[];
 };
 
 type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
 };
 
-const View: React.FC<{
-  activeTab: EnvironmentPolicyDrawerTab;
-  environmentPolicy: SCHEMA.EnvironmentPolicy & {
-    releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
-    releaseChannels: SCHEMA.ReleaseChannel[];
-  };
-  deployments?: Deployment[];
-}> = ({ activeTab, environmentPolicy, deployments }) => {
-  return {
-    [EnvironmentPolicyDrawerTab.Overview]: (
-      <Overview environmentPolicy={environmentPolicy} />
+const View: React.FC<
+  PolicyConfigProps & {
+    form: PolicyFormSchema;
+  }
+> = (props) =>
+  ({
+    [EnvironmentPolicyDrawerTab.Overview]: <Overview {...props} />,
+    [EnvironmentPolicyDrawerTab.Approval]: <ApprovalAndGovernance {...props} />,
+    [EnvironmentPolicyDrawerTab.Concurrency]: <DeploymentControl {...props} />,
+    [EnvironmentPolicyDrawerTab.Management]: <ReleaseManagement {...props} />,
+    [EnvironmentPolicyDrawerTab.Rollout]: <RolloutAndTiming {...props} />,
+    [EnvironmentPolicyDrawerTab.ReleaseChannels]: (
+      <ReleaseChannels {...props} />
     ),
-    [EnvironmentPolicyDrawerTab.Approval]: (
-      <ApprovalAndGovernance environmentPolicy={environmentPolicy} />
-    ),
-    [EnvironmentPolicyDrawerTab.Concurrency]: (
-      <DeploymentControl environmentPolicy={environmentPolicy} />
-    ),
-    [EnvironmentPolicyDrawerTab.Management]: (
-      <ReleaseManagement environmentPolicy={environmentPolicy} />
-    ),
-    [EnvironmentPolicyDrawerTab.Rollout]: (
-      <RolloutAndTiming environmentPolicy={environmentPolicy} />
-    ),
-    [EnvironmentPolicyDrawerTab.ReleaseChannels]: deployments != null && (
-      <ReleaseChannels policy={environmentPolicy} deployments={deployments} />
-    ),
-  }[activeTab];
+  })[props.activeTab];
+
+const PolicyConfigForm: React.FC<PolicyConfigProps> = ({
+  activeTab,
+  environmentPolicy,
+  deployments,
+}) => {
+  const updateEnvironmentPolicy = api.environment.policy.update.useMutation();
+  const utils = api.useUtils();
+
+  const form = useForm({
+    schema: policyFormSchema,
+    defaultValues: {
+      ...environmentPolicy,
+      description: environmentPolicy.description ?? "",
+      rolloutDuration: prettyMilliseconds(environmentPolicy.rolloutDuration),
+      releaseChannels: _.chain(deployments)
+        .keyBy((d) => d.id)
+        .mapValues(
+          (d) =>
+            environmentPolicy.releaseChannels.find(
+              (rc) => rc.deploymentId === d.id,
+            )?.id ?? null,
+        )
+        .value(),
+    },
+  });
+
+  const { id, systemId } = environmentPolicy;
+  const onSubmit = form.handleSubmit(async (policy) => {
+    const data = { ...policy, rolloutDuration: ms(policy.rolloutDuration) };
+    await updateEnvironmentPolicy
+      .mutateAsync({ data, id })
+      .then(() => form.reset(policy))
+      .then(() => utils.environment.policy.byId.invalidate(id))
+      .then(() => utils.environment.policy.bySystemId.invalidate(systemId));
+  });
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={onSubmit}
+        className="flex w-full flex-col justify-between overflow-auto"
+      >
+        <View
+          activeTab={activeTab}
+          environmentPolicy={environmentPolicy}
+          deployments={deployments}
+          form={form}
+        />
+
+        <div className="flex justify-end pr-2">
+          <Button
+            onClick={onSubmit}
+            disabled={
+              updateEnvironmentPolicy.isPending || !form.formState.isDirty
+            }
+            className="w-fit"
+          >
+            Save
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
 };
 
 const PolicyDropdownMenu: React.FC<{
@@ -164,16 +180,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
   );
   const deployments = deploymentsQ.data;
 
-  const form = useForm({
-    schema: SCHEMA.updateEnvironmentPolicy,
-    defaultValues: {
-      ...environmentPolicy,
-      releaseChannels: environmentPolicy?.releaseChannels.map((rc) => ({
-        channelId: rc.channelId,
-        deploymentId: rc.deploymentId,
-      })),
-    },
-  });
+  const loading = environmentPolicyQ.isLoading || deploymentsQ.isLoading;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -199,7 +206,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
           )}
         </DrawerTitle>
 
-        <div className="flex w-full gap-6 p-6">
+        <div className="flex h-full w-full gap-6 p-6">
           <div className="space-y-1">
             <TabButton
               active={
@@ -241,14 +248,17 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
             />
           </div>
 
-          {environmentPolicy != null && (
-            <div className="w-full overflow-auto">
-              <View
-                activeTab={tab ?? EnvironmentPolicyDrawerTab.Overview}
-                environmentPolicy={environmentPolicy}
-                deployments={deployments}
-              />
+          {loading && (
+            <div className="flex h-full w-full items-center justify-center">
+              <IconLoader2 className="animate-spin" />
             </div>
+          )}
+          {!loading && environmentPolicy != null && deployments != null && (
+            <PolicyConfigForm
+              activeTab={tab ?? EnvironmentPolicyDrawerTab.Overview}
+              environmentPolicy={environmentPolicy}
+              deployments={deployments}
+            />
           )}
         </div>
       </DrawerContent>

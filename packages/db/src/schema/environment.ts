@@ -141,30 +141,9 @@ export const environmentPolicy = pgTable("environment_policy", {
 
 export type EnvironmentPolicy = InferSelectModel<typeof environmentPolicy>;
 
-export const createEnvironmentPolicy = createInsertSchema(environmentPolicy)
-  .omit({ id: true })
-  .extend({
-    releaseChannels: z
-      .array(
-        z.object({
-          channelId: z.string().uuid().nullable(),
-          deploymentId: z.string().uuid(),
-        }),
-      )
-      .optional()
-      .refine((channels) => {
-        if (channels == null) return true;
-        const deploymentsWithNonNullChannels = channels.filter(
-          (c) => c.channelId != null,
-        );
-        const deploymentIds = new Set(
-          deploymentsWithNonNullChannels.map((c) => c.deploymentId),
-        );
-        return deploymentIds.size === deploymentsWithNonNullChannels.length;
-      }),
-  });
-
-export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
+export const createEnvironmentPolicy = createInsertSchema(
+  environmentPolicy,
+).omit({ id: true });
 
 export const environmentPolicyRelations = relations(
   environmentPolicy,
@@ -344,3 +323,24 @@ export const environmentMetadata = pgTable(
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
 );
+
+export const updateEnvironmentPolicy = createEnvironmentPolicy
+  .partial()
+  .extend({
+    releaseChannels: z
+      .record(z.string().uuid(), z.string().uuid().nullable())
+      .optional()
+      .refine((channels) => {
+        if (channels == null) return true;
+        const channelsWithNonNullDeploymentIds = Object.entries(
+          channels,
+        ).filter(([_, channelId]) => channelId != null);
+        const deploymentIds = new Set(
+          channelsWithNonNullDeploymentIds.map(
+            ([deploymentId, _]) => deploymentId,
+          ),
+        );
+        return deploymentIds.size === channelsWithNonNullDeploymentIds.length;
+      }),
+    releaseWindows: z.array(setPolicyReleaseWindow).optional(),
+  });
