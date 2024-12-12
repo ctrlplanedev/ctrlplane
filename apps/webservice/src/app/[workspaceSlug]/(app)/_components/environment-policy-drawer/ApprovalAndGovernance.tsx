@@ -111,7 +111,7 @@ export const ApprovalAndGovernance: React.FC<{
                       .mutateAsync({ id, data: { successMinimum } })
                       .then(invalidatePolicy);
                   }}
-                  className="border-b-1 h-6 w-16 text-xs"
+                  className="h-6 w-16 text-xs"
                 />
                 resources must be successfully deployed to
               </Label>
