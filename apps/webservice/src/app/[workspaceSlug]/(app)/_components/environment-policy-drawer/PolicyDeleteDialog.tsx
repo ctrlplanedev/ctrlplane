@@ -14,7 +14,7 @@ import {
 import { buttonVariants } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
-import { useEnvironmentPolicyDrawer } from "./EnvironmentPolicyDrawer";
+import { useEnvironmentPolicyDrawer } from "./useEnvironmentPolicyDrawer";
 
 export const DeleteEnvironmentPolicyDialog: React.FC<{
   environmentPolicy: SCHEMA.EnvironmentPolicy;
