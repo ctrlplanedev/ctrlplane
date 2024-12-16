@@ -658,12 +658,21 @@ TimePicker.displayName = "TimePicker";
 
 type Granularity = "day" | "hour" | "minute" | "second";
 
+const getHourCycle = (): 12 | 24 => {
+  const date = new Date();
+  const options: Intl.DateTimeFormatOptions = {
+    hour: "numeric",
+  };
+  const formattedTime = new Intl.DateTimeFormat(undefined, options).format(
+    date,
+  );
+  return formattedTime.includes("AM") || formattedTime.includes("PM") ? 12 : 24;
+};
+
 type DateTimePickerProps = {
   value?: Date;
   onChange?: (date: Date | undefined) => void;
   disabled?: boolean;
-  /** showing `AM/PM` or not. */
-  hourCycle?: 12 | 24;
   placeholder?: string;
   /**
    * The year range will be: `This year + yearRange` and `this year - yearRange`.
@@ -701,7 +710,6 @@ const DateTimePicker = React.forwardRef<
       locale = enUS,
       value,
       onChange,
-      hourCycle = 24,
       yearRange = 50,
       disabled = false,
       displayFormat,
@@ -740,6 +748,8 @@ const DateTimePicker = React.forwardRef<
       }),
       [value],
     );
+
+    const hourCycle = getHourCycle();
 
     const initHourFormat = {
       hour24:

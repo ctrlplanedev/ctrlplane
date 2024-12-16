@@ -26,7 +26,6 @@
     "@ctrlplane/validators": "workspace:*",
     "@hookform/resolvers": "^3.3.4",
     "@icons-pack/react-simple-icons": "^10.0.0",
-    "@internationalized/date": "^3.5.4",
     "@monaco-editor/react": "^4.6.0",
     "@next/bundle-analyzer": "^14.2.13",
     "@octokit/auth-app": "^7.1.0",

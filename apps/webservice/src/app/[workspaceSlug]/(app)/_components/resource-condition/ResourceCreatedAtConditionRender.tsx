@@ -2,7 +2,6 @@ import type {
   CreatedAtCondition,
   DateOperatorType,
 } from "@ctrlplane/validators/conditions";
-import type { DateValue } from "@internationalized/date";
 
 import type { ResourceConditionRenderProps } from "./resource-condition-props";
 import { DateConditionRender } from "../filter/DateConditionRender";
@@ -10,13 +9,8 @@ import { DateConditionRender } from "../filter/DateConditionRender";
 export const ResourceCreatedAtConditionRender: React.FC<
   ResourceConditionRenderProps<CreatedAtCondition>
 > = ({ condition, onChange, className }) => {
-  const setDate = (t: DateValue) =>
-    onChange({
-      ...condition,
-      value: t
-        .toDate(Intl.DateTimeFormat().resolvedOptions().timeZone)
-        .toISOString(),
-    });
+  const setDate = (value: Date) =>
+    onChange({ ...condition, value: value.toISOString() });
 
   const setOperator = (operator: DateOperatorType) =>
     onChange({ ...condition, operator });
