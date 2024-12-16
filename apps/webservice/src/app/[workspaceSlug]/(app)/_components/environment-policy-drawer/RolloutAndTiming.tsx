@@ -1,6 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
-import { ZonedDateTime } from "@internationalized/date";
 import { IconX } from "@tabler/icons-react";
 import _ from "lodash";
 import ms from "ms";
@@ -8,7 +7,7 @@ import prettyMilliseconds from "pretty-ms";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
-import { DateTimePicker } from "@ctrlplane/ui/date-time-picker/date-time-picker";
+import { DateTimePicker } from "@ctrlplane/ui/datetime-picker";
 import {
   Form,
   FormControl,
@@ -32,30 +31,6 @@ import {
 } from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
-
-const toZonedDateTime = (date: Date): ZonedDateTime => {
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const offset = -date.getTimezoneOffset() * ms("1m");
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  const second = date.getSeconds();
-  const millisecond = date.getMilliseconds();
-
-  return new ZonedDateTime(
-    year,
-    month,
-    day,
-    timeZone,
-    offset,
-    hour,
-    minute,
-    second,
-    millisecond,
-  );
-};
 
 const isValidDuration = (str: string) => !isNaN(ms(str));
 
@@ -143,31 +118,17 @@ export const RolloutAndTiming: React.FC<{
                           className="flex w-fit items-center gap-2 rounded-md border p-1 text-sm"
                         >
                           <DateTimePicker
-                            value={toZonedDateTime(value.startTime)}
-                            aria-label="Start Time"
-                            onChange={(t) => {
-                              onChange({
-                                ...value,
-                                startTime: t.toDate(
-                                  Intl.DateTimeFormat().resolvedOptions()
-                                    .timeZone,
-                                ),
-                              });
-                            }}
+                            value={value.startTime}
+                            onChange={onChange}
+                            granularity="minute"
+                            className="w-60"
                           />{" "}
                           <span className="text-muted-foreground">to</span>{" "}
                           <DateTimePicker
-                            value={toZonedDateTime(value.endTime)}
-                            onChange={(t) => {
-                              onChange({
-                                ...value,
-                                endTime: t.toDate(
-                                  Intl.DateTimeFormat().resolvedOptions()
-                                    .timeZone,
-                                ),
-                              });
-                            }}
-                            aria-label="End Time"
+                            value={value.endTime}
+                            onChange={onChange}
+                            granularity="minute"
+                            className="w-60"
                           />
                           <span className="text-muted-foreground">
                             recurring

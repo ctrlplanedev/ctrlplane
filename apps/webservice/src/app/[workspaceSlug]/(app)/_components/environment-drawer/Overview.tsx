@@ -31,17 +31,6 @@ type OverviewProps = {
   environment: SCHEMA.Environment;
 };
 
-const isUsing12HourClock = (): boolean => {
-  const date = new Date();
-  const options: Intl.DateTimeFormatOptions = {
-    hour: "numeric",
-  };
-  const formattedTime = new Intl.DateTimeFormat(undefined, options).format(
-    date,
-  );
-  return formattedTime.includes("AM") || formattedTime.includes("PM");
-};
-
 export const Overview: React.FC<OverviewProps> = ({ environment }) => {
   const expiresAt = environment.expiresAt ?? undefined;
   const defaultValues = { ...environment, expiresAt };
@@ -103,7 +92,6 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
                     value={value}
                     onChange={onChange}
                     granularity="minute"
-                    hourCycle={isUsing12HourClock() ? 12 : 24}
                     className="w-60"
                   />
                   <Button
