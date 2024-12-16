@@ -201,7 +201,7 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
             yAxisId="right"
             fill={color}
             onClick={(e) => {
-              const start = new Date((e as any).date);
+              const start = new Date(e.date);
               const end = addDays(start, 1);
 
               const afterStartCondition: JobCondition = {

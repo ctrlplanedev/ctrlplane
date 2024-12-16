@@ -2,21 +2,19 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
-import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useParams, useRouter } from "next/navigation";
-import { IconFilter, IconGraph, IconSettings } from "@tabler/icons-react";
+import {
+  IconFilter,
+  IconGraph,
+  IconHistory,
+  IconSettings,
+} from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Table,
@@ -26,21 +24,19 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import { ColumnOperator } from "@ctrlplane/validators/conditions";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
-import { DailyJobsChart } from "../../../../../_components/DailyJobsChart";
 import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";
 import {
   EnvironmentColumnSelector,
   useEnvironmentColumnSelector,
 } from "./EnvironmentColumnSelector";
+import { JobHistoryPopover } from "./JobHistoryPopover";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -74,24 +70,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     enabled: releaseIds.length > 0,
   });
 
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const dailyCounts = api.job.config.byDeploymentId.dailyCount.useQuery(
-    { deploymentId: deployment.id, timezone },
-    { enabled: releaseIds.length > 0, refetchInterval: 60_000 },
-  );
-  const totalJobs = (dailyCounts.data ?? []).reduce(
-    (acc, c) => acc + Number(c.totalCount),
-    0,
-  );
-
   const loading = releases.isLoading;
   const router = useRouter();
-
-  const inDeploymentFilter: JobCondition = {
-    type: JobFilterType.Deployment,
-    operator: ColumnOperator.Equals,
-    value: deployment.id,
-  };
 
   const {
     selectedEnvironmentIds,
@@ -108,37 +88,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   return (
     <div>
       <div className="h-full text-sm">
-        <div className="w-[calc(100vw-267px)]">
-          <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
-            <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-              <CardTitle>Job executions</CardTitle>
-              <CardDescription>
-                Total executions of all jobs in the last 6 weeks
-              </CardDescription>
-            </div>
-            <div className="flex">
-              <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-                <span className="text-xs text-muted-foreground">Jobs</span>
-                <span className="text-lg font-bold leading-none sm:text-3xl">
-                  {totalJobs}
-                </span>
-              </div>
-
-              <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
-                <span className="text-xs text-muted-foreground">Releases</span>
-                <span className="text-lg font-bold leading-none sm:text-3xl">
-                  {releases.data?.total ?? "-"}
-                </span>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex border-b px-2 sm:p-6">
-            <DailyJobsChart
-              dailyCounts={dailyCounts.data ?? []}
-              baseFilter={inDeploymentFilter}
-            />
-          </CardContent>
-        </div>
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
           <div className="flex flex-grow items-center gap-2">
             <ReleaseConditionDialog
@@ -192,15 +141,28 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             </Badge>
           </div>
 
-          <ReleaseDistributionGraphPopover deployment={deployment}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-            >
-              <IconGraph className="h-4 w-4" />
-            </Button>
-          </ReleaseDistributionGraphPopover>
+          <div className="flex items-center gap-2">
+            <ReleaseDistributionGraphPopover deployment={deployment}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+              >
+                <IconGraph className="h-4 w-4" />
+              </Button>
+            </ReleaseDistributionGraphPopover>
+            {releaseIds.length > 0 && (
+              <JobHistoryPopover deploymentId={deployment.id}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+                >
+                  <IconHistory className="h-4 w-4" />
+                </Button>
+              </JobHistoryPopover>
+            )}
+          </div>
         </div>
       </div>
       <div className="h-full text-sm">
