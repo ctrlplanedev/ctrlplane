@@ -69,19 +69,23 @@ export const EnvironmentColumnSelector: React.FC<
           Select columns
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="p-1" align="end">
+      <PopoverContent className="p-0" align="end">
         <Command>
           <CommandInput placeholder="Search environment..." />
-          <CommandList>
+          <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
             {selectedEnvironmentIds.length === 0 && (
               <CommandItem
                 onSelect={() => onSetEnvironmentIds(allEnvironmentIds)}
+                className="rounded-none"
               >
                 Select all
               </CommandItem>
             )}
             {selectedEnvironmentIds.length !== 0 && (
-              <CommandItem onSelect={() => onSetEnvironmentIds([])}>
+              <CommandItem
+                onSelect={() => onSetEnvironmentIds([])}
+                className="rounded-none"
+              >
                 Clear all
               </CommandItem>
             )}
@@ -89,7 +93,7 @@ export const EnvironmentColumnSelector: React.FC<
               <CommandItem
                 key={environment.id}
                 onSelect={() => onSelectEnvironment(environment.id)}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between rounded-none"
               >
                 {environment.name}
                 {selectedEnvironmentIds.includes(environment.id) && (
