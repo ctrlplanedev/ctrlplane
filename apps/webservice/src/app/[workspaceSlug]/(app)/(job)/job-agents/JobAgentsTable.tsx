@@ -40,10 +40,10 @@ const columns: ColumnDef<JobAgent>[] = [
 ];
 
 export const JobAgentsTable: React.FC<{
-  activeTargetIds?: string[];
+  activeJobAgentIds?: string[];
   jobAgents: JobAgent[];
-  onTableRowClick?: (target: JobAgent) => void;
-}> = ({ jobAgents, onTableRowClick, activeTargetIds }) => {
+  onTableRowClick?: (jobAgent: JobAgent) => void;
+}> = ({ jobAgents, onTableRowClick, activeJobAgentIds }) => {
   const table = useReactTable({
     data: jobAgents,
     columns,
@@ -73,7 +73,8 @@ export const JobAgentsTable: React.FC<{
           <TableRow
             className={cn(
               "cursor-pointer border-b-neutral-800/50",
-              activeTargetIds?.includes(row.original.id) && "bg-neutral-800/50",
+              activeJobAgentIds?.includes(row.original.id) &&
+                "bg-neutral-800/50",
             )}
             key={row.id}
             onClick={() => onTableRowClick?.(row.original)}

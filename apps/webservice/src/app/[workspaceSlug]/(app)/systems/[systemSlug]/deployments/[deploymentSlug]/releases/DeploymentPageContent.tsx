@@ -37,6 +37,10 @@ import { api } from "~/trpc/react";
 import { DailyJobsChart } from "../../../../../_components/DailyJobsChart";
 import { DeployButton } from "../../DeployButton";
 import { Release } from "../../TableCells";
+import {
+  EnvironmentColumnSelector,
+  useEnvironmentColumnSelector,
+} from "./EnvironmentColumnSelector";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -89,7 +93,17 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     value: deployment.id,
   };
 
-  const numEnvironmentBlocks = Math.min(3, environments.length);
+  const {
+    selectedEnvironmentIds,
+    setEnvironmentIdSelected,
+    setEnvironmentIds,
+  } = useEnvironmentColumnSelector(environments);
+
+  const selectedEnvironments = environments.filter((e) =>
+    selectedEnvironmentIds.includes(e.id),
+  );
+
+  const numEnvironmentBlocks = Math.min(3, selectedEnvironments.length);
 
   return (
     <div>
@@ -161,6 +175,13 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             )}
           </div>
 
+          <EnvironmentColumnSelector
+            environments={environments}
+            selectedEnvironmentIds={selectedEnvironmentIds}
+            onSelectEnvironment={setEnvironmentIdSelected}
+            onSetEnvironmentIds={setEnvironmentIds}
+          />
+
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
             Total:
             <Badge
@@ -203,7 +224,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     Version
                   </div>
                 </TableHead>
-                {environments.map((env) => (
+                {selectedEnvironments.map((env) => (
                   <TableHead className="border-l pl-4" key={env.id}>
                     <div className="flex w-[220px] items-center gap-2">
                       {env.name}
@@ -258,7 +279,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       </Badge>
                     </div>
                   </TableCell>
-                  {environments.map((env) => {
+                  {selectedEnvironments.map((env) => {
                     const environmentReleaseReleaseJobTriggers =
                       release.releaseJobTriggers.filter(
                         (t) => t.environmentId === env.id,

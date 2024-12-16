@@ -30,7 +30,7 @@ on:
 
 To integrate Ctrl Plane's `get-job-inputs` action into a workflow, follow the
 steps below. This action allows you to pass job inputs like `release_version`
-and `target_config_deployment_id` to your workflows.
+and `resource_config_deployment_id` to your workflows.
 
 First, ensure the workflow can be triggered by a dispatch event:
 
@@ -67,11 +67,11 @@ jobs:
           api_key: ${{ secrets.CTRLPLANE_API_KEY }}
           required_outputs: |
             release_version
-            target_config_deployment_id
+            resource_config_deployment_id
 ```
 
 This example shows how the workflow retrieves specific values, such as
-`release_version` and `target_config_deployment_id`, to be used in subsequent
+`release_version` and `resource_config_deployment_id`, to be used in subsequent
 steps. The action integrates seamlessly with Ctrl Plane to ensure the proper
 data is fetched and utilized within your pipeline.
 

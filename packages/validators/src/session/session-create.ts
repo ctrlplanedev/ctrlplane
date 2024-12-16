@@ -10,7 +10,7 @@ export default z.object({
     .string()
     .describe("Optional shell to use for the session")
     .optional(),
-  targetId: z.string().describe("Target ID for the session"),
+  resourceId: z.string().describe("Resource ID for the session"),
   cols: z.number().describe("Number of columns for the session").optional(),
   rows: z.number().describe("Number of rows for the session").optional(),
 });

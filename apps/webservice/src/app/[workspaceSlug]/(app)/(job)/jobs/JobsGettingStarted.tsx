@@ -19,8 +19,8 @@ export const JobsGettingStarted: React.FC = () => {
           </p>
           <p>
             With Ctrlplane, you can define, schedule, and monitor jobs across
-            various environments and targets. Jobs provide a standardized way to
-            manage and track your operations, ensuring consistency and
+            various environments and resources. Jobs provide a standardized way
+            to manage and track your operations, ensuring consistency and
             reliability across your entire infrastructure.
           </p>
         </div>

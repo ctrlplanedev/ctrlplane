@@ -26,8 +26,8 @@ import {
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
-import { TargetIcon } from "./_components/TargetIcon";
-import { SearchInput } from "./(targets)/targets/TargetPageContent";
+import { ResourceIcon } from "./_components/ResourceIcon";
+import { SearchInput } from "./(resources)/resources/ResourcePageContent";
 import { useSidebarPopover } from "./AppSidebarPopoverContext";
 
 export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
@@ -74,7 +74,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
     limit: filter == null ? 10 : undefined,
   });
 
-  const totalTargets =
+  const totalResources =
     (recentlyAdded.data?.total ?? 0) - (recentlyAdded.data?.items.length ?? 0);
 
   return (
@@ -92,13 +92,13 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                 <SidebarMenuButton
                   asChild
                   key={resource.id}
-                  isActive={pathname.includes(`?target_id=${resource.id}`)}
+                  isActive={pathname.includes(`?resource_id=${resource.id}`)}
                 >
                   <Link
-                    href={`${pathname}?target_id=${resource.id}`}
+                    href={`${pathname}?resource_id=${resource.id}`}
                     onClick={() => setActiveSidebarItem(null)}
                   >
-                    <TargetIcon
+                    <ResourceIcon
                       version={resource.version}
                       kind={resource.kind}
                     />
@@ -107,16 +107,16 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                 </SidebarMenuButton>
               ))}
 
-              {totalTargets > 0 && (
+              {totalResources > 0 && (
                 <SidebarMenuButton
                   asChild
                   className="pl-2 text-[0.02em] text-muted-foreground"
                 >
                   <Link
-                    href={`/${workspace.slug}/targets`}
+                    href={`/${workspace.slug}/resources`}
                     onClick={() => setActiveSidebarItem(null)}
                   >
-                    View {totalTargets} other targets
+                    View {totalResources} other resources
                   </Link>
                 </SidebarMenuButton>
               )}
@@ -138,7 +138,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                     {viewsWithHash.map(({ id, name, hash }) => (
                       <SidebarMenuButton asChild key={id}>
                         <Link
-                          href={`/${workspace.slug}/targets?filter=${hash}`}
+                          href={`/${workspace.slug}/resources?filter=${hash}`}
                           onClick={() => setActiveSidebarItem(null)}
                         >
                           <IconBookmark className="h-4 w-4 text-muted-foreground" />
@@ -155,7 +155,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
               <SidebarGroupLabel>Kinds</SidebarGroupLabel>
               <SidebarMenu>
                 {kinds.data?.map(({ version, kind, count }) => {
-                  const url = `/${workspace.slug}/targets?filter=${LZString.compressToEncodedURIComponent(
+                  const url = `/${workspace.slug}/resources?filter=${LZString.compressToEncodedURIComponent(
                     JSON.stringify({
                       type: FilterType.Comparison,
                       operator: ComparisonOperator.And,
@@ -178,7 +178,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                         href={url}
                         onClick={() => setActiveSidebarItem(null)}
                       >
-                        <TargetIcon version={version} kind={kind} />
+                        <ResourceIcon version={version} kind={kind} />
                         <span className="flex-grow">{kind}</span>
                         <Badge
                           variant="secondary"
@@ -200,13 +200,13 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                   <SidebarMenuButton
                     asChild
                     key={resource.id}
-                    isActive={pathname.includes(`?target_id=${resource.id}`)}
+                    isActive={pathname.includes(`?resource_id=${resource.id}`)}
                   >
                     <Link
-                      href={`${pathname}?target_id=${resource.id}`}
+                      href={`${pathname}?resource_id=${resource.id}`}
                       onClick={() => setActiveSidebarItem(null)}
                     >
-                      <TargetIcon
+                      <ResourceIcon
                         version={resource.version}
                         kind={resource.kind}
                       />
@@ -220,10 +220,10 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                   className="pl-2 text-[0.02em] text-muted-foreground"
                 >
                   <Link
-                    href={`/${workspace.slug}/targets`}
+                    href={`/${workspace.slug}/resources`}
                     onClick={() => setActiveSidebarItem(null)}
                   >
-                    View {totalTargets} other targets
+                    View {totalResources} other resources
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenu>

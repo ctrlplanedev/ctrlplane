@@ -171,9 +171,11 @@ const columns: ColumnDef<Member>[] = [
             {info.row.original.user.name?.split(" ").map((n) => n[0]) ?? ""}
           </AvatarFallback>
         </Avatar>
-        <div>
-          <p className="font-semibold">{info.row.original.user.name ?? ""}</p>
-          <p className="text-sm text-muted-foreground">
+        <div className="max-w-44">
+          <p className="truncate font-semibold">
+            {info.row.original.user.name ?? ""}
+          </p>
+          <p className="truncate text-sm text-muted-foreground">
             {info.getValue<string>()}
           </p>
         </div>

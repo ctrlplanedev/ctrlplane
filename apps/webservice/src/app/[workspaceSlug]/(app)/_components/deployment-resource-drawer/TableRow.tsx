@@ -98,7 +98,7 @@ const DropdownCell: React.FC<DropdownCellProps> = ({
         <JobDropdownMenu
           release={release}
           environmentId={environmentId}
-          target={resource}
+          resource={resource}
           deployment={deployment}
           job={{
             id: releaseJobTrigger.job.id,

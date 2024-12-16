@@ -220,7 +220,7 @@ export const integrationsRouter = createTRPCRouter({
                 {
                   Effect: "Allow",
                   Principal: {
-                    AWS: `arn:aws:iam::${accountId}:role/${currentRoleName}`,
+                    AWS: currentArn,
                   },
                   Action: "sts:AssumeRole",
                 },

@@ -33,7 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
+import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
@@ -143,7 +143,7 @@ export const Release: React.FC<{
     deploymentSlug,
   } = props;
 
-  const latestJobsByTarget = _.chain(releaseJobTriggers)
+  const latestJobsByResource = _.chain(releaseJobTriggers)
     .groupBy((r) => r.resource.id)
     .mapValues((triggers) =>
       _.maxBy(triggers, (t) => new Date(t.job.createdAt)),
@@ -152,7 +152,7 @@ export const Release: React.FC<{
     .compact()
     .value();
 
-  const data = _.chain(latestJobsByTarget)
+  const data = _.chain(latestJobsByResource)
     .groupBy((r) => r.job.status)
     .entries()
     .map(([name, value]) => ({ name, count: value.length }))
@@ -167,8 +167,8 @@ export const Release: React.FC<{
 
   const firstReleaseJobTrigger = releaseJobTriggers.at(0);
 
-  const isReleaseCompleted = releaseJobTriggers.every((d) =>
-    exitedStatus.includes(d.job.status as JobStatus),
+  const isReleaseActive = releaseJobTriggers.some((d) =>
+    activeStatus.includes(d.job.status as JobStatus),
   );
 
   return (
@@ -179,7 +179,7 @@ export const Release: React.FC<{
             href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${firstReleaseJobTrigger?.deployment?.slug ?? deploymentSlug}/releases/${props.releaseId}`}
             className="flex w-full items-center gap-2"
           >
-            <ReleaseIcon releaseJobTriggers={latestJobsByTarget} />
+            <ReleaseIcon releaseJobTriggers={latestJobsByResource} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">
                 <TooltipProvider>
@@ -231,7 +231,7 @@ export const Release: React.FC<{
       <ReleaseDropdownMenu
         release={{ id: releaseId, name }}
         environment={environment}
-        isReleaseCompleted={isReleaseCompleted}
+        isReleaseActive={isReleaseActive}
       />
     </div>
   );

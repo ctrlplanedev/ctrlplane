@@ -43,8 +43,8 @@ catalogs:
       specifier: 5.0.0-beta.22
       version: 5.0.0-beta.22
     prettier:
-      specifier: ^3.3.3
-      version: 3.3.3
+      specifier: ^3.4.2
+      version: 3.4.2
     tailwindcss:
       specifier: ^3.4.11
       version: 3.4.13
@@ -97,7 +97,7 @@ importers:
         version: 2.2.3(@types/node@22.8.1)(typescript@5.6.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       turbo:
         specifier: ^2.2.3
         version: 2.2.3
@@ -161,7 +161,7 @@ importers:
         version: 6.0.1(jiti@2.3.3)(postcss@8.4.47)(tsx@4.19.2)(yaml@2.6.0)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       remark:
         specifier: ^15.0.1
         version: 15.0.1
@@ -306,7 +306,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       tsx:
         specifier: 'catalog:'
         version: 4.19.1
@@ -358,7 +358,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       tsx:
         specifier: 'catalog:'
         version: 4.19.1
@@ -455,7 +455,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       tsx:
         specifier: 'catalog:'
         version: 4.19.1
@@ -498,9 +498,6 @@ importers:
       '@icons-pack/react-simple-icons':
         specifier: ^10.0.0
         version: 10.1.0(react@18.3.1)
-      '@internationalized/date':
-        specifier: ^3.5.4
-        version: 3.5.6
       '@monaco-editor/react':
         specifier: ^4.6.0
         version: 4.6.0(monaco-editor@0.52.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -735,7 +732,7 @@ importers:
         version: 1.21.6
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       tailwindcss:
         specifier: 'catalog:'
         version: 3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.6.3))
@@ -836,7 +833,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -900,7 +897,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -967,7 +964,7 @@ importers:
         version: 25.0.1
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1088,7 +1085,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1158,7 +1155,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1210,7 +1207,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1286,7 +1283,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1329,7 +1326,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1360,7 +1357,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       tsup:
         specifier: ^8.2.4
         version: 8.3.5(jiti@2.3.3)(postcss@8.4.49)(tsx@4.19.2)(typescript@5.6.3)(yaml@2.6.0)
@@ -1394,7 +1391,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1440,7 +1437,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1588,7 +1585,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       react:
         specifier: catalog:react18
         version: 18.3.1
@@ -1622,7 +1619,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1665,7 +1662,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1695,7 +1692,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -1704,13 +1701,13 @@ importers:
     dependencies:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: ^4.2.1
-        version: 4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.3.3)
+        version: 4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.4.2)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       prettier-plugin-tailwindcss:
         specifier: ^0.5.14
-        version: 0.5.14(@ianvs/prettier-plugin-sort-imports@4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.3.3))(prettier@3.3.3)
+        version: 0.5.14(@ianvs/prettier-plugin-sort-imports@4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.4.2))(prettier@3.4.2)
     devDependencies:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
@@ -1748,7 +1745,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       prettier:
         specifier: 'catalog:'
-        version: 3.3.3
+        version: 3.4.2
       typescript:
         specifier: 'catalog:'
         version: 5.6.3
@@ -11074,8 +11071,8 @@ packages:
       prettier-plugin-svelte:
         optional: true
 
-  prettier@3.3.3:
-    resolution: {integrity: sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==}
+  prettier@3.4.2:
+    resolution: {integrity: sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -15019,14 +15016,14 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.0': {}
 
-  '@ianvs/prettier-plugin-sort-imports@4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.3.3)':
+  '@ianvs/prettier-plugin-sort-imports@4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.4.2)':
     dependencies:
       '@babel/core': 7.25.2
       '@babel/generator': 7.25.6
       '@babel/parser': 7.25.6
       '@babel/traverse': 7.25.6
       '@babel/types': 7.25.6
-      prettier: 3.3.3
+      prettier: 3.4.2
       semver: 7.6.3
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.13
@@ -25081,13 +25078,13 @@ snapshots:
 
   preserve@0.2.0: {}
 
-  prettier-plugin-tailwindcss@0.5.14(@ianvs/prettier-plugin-sort-imports@4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.3.3))(prettier@3.3.3):
+  prettier-plugin-tailwindcss@0.5.14(@ianvs/prettier-plugin-sort-imports@4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.4.2))(prettier@3.4.2):
     dependencies:
-      prettier: 3.3.3
+      prettier: 3.4.2
     optionalDependencies:
-      '@ianvs/prettier-plugin-sort-imports': 4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.3.3)
+      '@ianvs/prettier-plugin-sort-imports': 4.3.1(@vue/compiler-sfc@3.5.13)(prettier@3.4.2)
 
-  prettier@3.3.3: {}
+  prettier@3.4.2: {}
 
   pretty-format@3.8.0: {}
 

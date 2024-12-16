@@ -41,19 +41,19 @@ const navMain = (prefix: string) => [
     items: [
       {
         title: "List",
-        url: `${prefix}/targets`,
+        url: `${prefix}/resources`,
       },
       {
         title: "Providers",
-        url: `${prefix}/target-providers`,
+        url: `${prefix}/resource-providers`,
       },
       {
         title: "Groups",
-        url: `${prefix}/target-metadata-groups`,
+        url: `${prefix}/resource-metadata-groups`,
       },
       {
         title: "Views",
-        url: `${prefix}/target-views`,
+        url: `${prefix}/resource-views`,
       },
     ],
   },

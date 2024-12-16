@@ -608,7 +608,7 @@ export const deploymentRouter = createTRPCRouter({
         );
     }),
 
-  byTargetId: protectedProcedure
+  byResourceId: protectedProcedure
     .input(z.string().uuid())
     .meta({
       authorizationCheck: ({ canUser, input }) =>

@@ -30,8 +30,8 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
 
-import { TargetConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionBadge";
-import { TargetConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionDialog";
+import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionBadge";
+import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
 
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;
@@ -283,13 +283,13 @@ export const ResourceConfigFields: RunbookConfigFieldsFC<
 
   return (
     <>
-      {config.filter && <TargetConditionBadge condition={config.filter} />}
-      <TargetConditionDialog
+      {config.filter && <ResourceConditionBadge condition={config.filter} />}
+      <ResourceConditionDialog
         condition={config.filter ?? defaultCondition}
         onChange={onFilterChange}
       >
         <Button variant="outline">Edit Filter</Button>
-      </TargetConditionDialog>
+      </ResourceConditionDialog>
     </>
   );
 };

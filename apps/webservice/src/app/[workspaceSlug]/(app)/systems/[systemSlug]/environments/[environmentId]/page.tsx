@@ -5,7 +5,7 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 
 import { api } from "~/trpc/server";
-import { PieTargetsByKind, PieTargetsByProvider } from "./TargetCharts";
+import { PieResourcesByKind, PieResourcesByProvider } from "./ResourceCharts";
 
 export default async function EnvironmentPage({
   params,
@@ -21,7 +21,7 @@ export default async function EnvironmentPage({
 
       <div className="space-y-4 p-8">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
-          Targets{" "}
+          Resources{" "}
           <Badge variant="secondary" className="rounded-full">
             {0}
           </Badge>
@@ -34,7 +34,7 @@ export default async function EnvironmentPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="">
-              <PieTargetsByKind targets={[]} />
+              <PieResourcesByKind resources={[]} />
             </CardContent>
           </Card>
 
@@ -45,31 +45,10 @@ export default async function EnvironmentPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="">
-              <PieTargetsByProvider targets={[]} />
+              <PieResourcesByProvider resources={[]} />
             </CardContent>
           </Card>
         </div>
-        {/* <Card className="">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Provider</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {([]).map((target) => (
-                <TableRow key={target.id}>
-                  <TableCell>{target.name}</TableCell>
-                  <TableCell>
-                    {target.provider?.name} / {target.kind}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </Card> */}
       </div>
     </>
   );

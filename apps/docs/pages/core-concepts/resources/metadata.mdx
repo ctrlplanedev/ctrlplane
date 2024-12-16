@@ -1,0 +1,150 @@
+# Resource Metadata
+
+Resource metadata in Ctrlplane are key-value pairs that provide a flexible way
+to categorize and organize your deployment resources. They play a crucial role
+in defining deployment strategies, filtering resources, and applying
+configurations selectively.
+
+## Configs vs Metadata
+
+In Ctrlplane, it's important to understand the distinction between configs and
+metadata, as they serve different purposes and are used in different contexts.
+This distinction is similar to the difference between the `spec` and `metadata`
+sections in Kubernetes.
+
+### Configs
+
+Configs are essential for interacting with the resource and should be
+standardized across all types of resources. This standardization ensures that if
+the same pipeline is given two different resources of the same kind, it can use
+the properties in the config to interact with them consistently.
+
+In some cases, you might need additional data outside the standard context to
+determine how to interact with the resource. In such scenarios, it is acceptable
+to include this extra data in the config, but it should be limited to variants
+of a given resource and should not impact the primary configuration or behavior.
+
+In Ctrlplane, configs are used within CI/CD pipelines to interact with
+resources. They define how to deploy or provision the resource. It is crucial
+that values in the config are used to guide these interactions and not to store
+arbitrary metadata.
+
+**Examples of Configs:**
+
+This is how the kubernetes schema currently defines interacting to a kubernetes
+cluster. Thes properties are required for a pipeline to connect to clusters.
+
+```yaml
+name: my-kubernetes-cluster
+cluster:
+  endpoint: https://...
+  certificateAuthorityData: ...
+```
+
+For clusters hosted on Google Cloud (or any cloud provider), you might want to
+include metadata about the project associated with the cluster. This metadata
+can then be used in the pipeline to generate the necessary access token for
+authenticating with the cluster.
+
+### Metadata
+
+Metadata in Ctrlplane is used to provide additional information about a
+resource. It consists of key-value pairs that help categorize and organize
+resources. Metadata is not used to define the behavior or configuration of the
+resource but rather to describe it.
+
+**Examples of Metadata:**
+
+- `region: us-west`
+- `role: web-server`
+- `tier: frontend`
+
+**When to Use Metadata:**
+
+- To group resources by specific attributes (e.g., environment, region).
+- To filter and select resources for deployment or management tasks.
+- To apply variable values to specific resources during deployment.
+- To provide descriptive information that helps in organizing and querying
+  resources.
+
+### Summary
+
+- **Metadata**: Descriptive information used for categorization, organization,
+  and filtering. It does not affect the resource's behavior.
+- **Configs**: Operational parameters and desired state definitions that dictate
+  how the resource should function, used in CI/CD pipelines for interacting with
+  resources.
+
+By understanding the difference between metadata and configs, you can
+effectively organize and manage your deployment resources in Ctrlplane, ensuring
+that each resource is properly described and configured according to your
+requirements.
+
+## Understanding Resource Metadata
+
+Metadata is attached to resources, allowing you to group and select resources
+based on various criteria. They are particularly useful for:
+
+- Organizing resources by environment, region, or purpose
+- Applying configurations to specific groups of resources
+- Filtering resources for deployment or management tasks
+- Applying variable values to specific resources during deployment
+
+## How Metadata Works in Ctrlplane
+
+1. **Definition**: Metadata are defined as key-value pairs on individual
+   resources.
+2. **Flexibility**: You can assign multiple key-value pairs to a single
+   resource.
+3. **Querying**: Ctrlplane allows you to query and filter resources based on
+   their metadata.
+4. **Selective Application**: Use metadata to apply configurations or run
+   deployments on specific subsets of resources.
+
+## Examples of Resource Metadata
+
+Here are some common examples of how you might use metadata in Ctrlplane:
+
+```yaml
+environment: production
+region: us-west
+role: web-server
+tier: frontend
+---
+environment: staging
+region: eu-central
+role: database
+tier: backend
+```
+
+## Best Practices for Using Metadata
+
+1. **Consistency**: Establish a consistent metadata scheme across your
+   organization.
+2. **Granularity**: Use metadata that provide the right level of detail for your
+   needs.
+3. **Documentation**: Maintain clear documentation of your metadata taxonomy.
+4. **Avoid Overloading**: Don't try to encode too much information in a single
+   metadata key.
+5. **Regular Review**: Periodically review and update your metadata strategy as
+   your infrastructure evolves.
+
+By effectively using resource metadata in Ctrlplane, you can create more
+flexible, manageable, and scalable deployment strategies that adapt to your
+organization's evolving needs.
+
+## Special Labels
+
+In Ctrlplane, we have special labels that can be added to resources to enhance
+the user experience in the UI. These labels do not change the core functionality
+of Ctrlplane but provide additional features and visual cues for better
+usability.
+
+| Label                          | Description                                                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ctrlplane/links`              | Provides a set of links related to the resource. The value should be a JSON object where the keys are the link names and the values are the URLs. |
+| `ctrlplane/created-by-job-id`  | UUID of the Ctrlplane Job that created the resource.                                                                                              |
+| `ctrlplane/external-id`        | An external identifier for the resource, which can be used to correlate the resource with resources in other systems.                             |
+| `ctrlplane/cloud-platform`     | The cloud platform the resource is running on (e.g., AWS, GCP, Azure).                                                                            |
+| `ctrlplane/region`             | The geographical region or data center location where the resource is deployed.                                                                   |
+| `ctrlplane/parent-resource-id` | The UUID of the parent resource, if the resource is a child resource of another resource.                                                         |

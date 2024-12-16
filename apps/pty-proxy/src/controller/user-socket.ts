@@ -51,15 +51,15 @@ export class UserSocket {
       ifMessage()
         .is(sessionCreate, (data) => {
           logger.debug("Received session create request", {
-            targetId: data.targetId,
+            resourceId: data.resourceId,
             sessionId: data.sessionId,
             userId: user.id,
           });
 
-          const { agent } = agents.get(data.targetId) ?? { agent: null };
+          const { agent } = agents.get(data.resourceId) ?? { agent: null };
           if (agent == null) {
             logger.warn("Agent not found for session create", {
-              targetId: data.targetId,
+              resourceId: data.resourceId,
               sessionId: data.sessionId,
               userId: user.id,
             });
@@ -67,23 +67,23 @@ export class UserSocket {
           }
 
           logger.info("Found agent for session create", {
-            targetId: data.targetId,
+            resourceId: data.resourceId,
           });
 
           createSessionSocket(data.sessionId);
           agent.send(data);
         })
         .is(sessionResize, (data) => {
-          const { sessionId, targetId } = data;
+          const { sessionId, resourceId } = data;
           logger.info("Received session resize request", {
             sessionId: data.sessionId,
             userId: user.id,
           });
 
-          const { agent } = agents.get(targetId) ?? { agent: null };
+          const { agent } = agents.get(resourceId) ?? { agent: null };
           if (agent == null) {
             logger.warn("Agent not found for session resize", {
-              targetId,
+              resourceId,
               sessionId,
             });
             return;

@@ -11,12 +11,12 @@ type SessionContextType = {
   isDrawerOpen: boolean;
   controllerReadyState: ReadyState;
   setIsDrawerOpen: (open: boolean) => void;
-  sessionIds: { sessionId: string; targetId: string }[];
-  createSession: (targetId: string) => void;
+  sessionIds: { sessionId: string; resourceId: string }[];
+  createSession: (resourceId: string) => void;
   removeSession: (id: string) => void;
   resizeSession: (
     sessionId: string,
-    targetId: string,
+    resourceId: string,
     cols: number,
     rows: number,
   ) => void;
@@ -36,7 +36,7 @@ export const TerminalSessionsProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
   const [sessionIds, setSessionIds] = useState<
-    { sessionId: string; targetId: string }[]
+    { sessionId: string; resourceId: string }[]
   >([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -50,7 +50,7 @@ export const TerminalSessionsProvider: React.FC<{
       window.requestAnimationFrame(() => {
         setSessionIds((prev) => [
           ...prev,
-          { sessionId: session.sessionId, targetId: resourceId },
+          { sessionId: session.sessionId, resourceId },
         ]);
         setActiveSessionId(session.sessionId);
       });

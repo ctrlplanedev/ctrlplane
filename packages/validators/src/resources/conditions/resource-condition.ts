@@ -117,11 +117,11 @@ export const isCreatedAtCondition = (
   condition: ResourceCondition,
 ): condition is CreatedAtCondition => condition.type === FilterType.CreatedAt;
 
-export const isValidTargetCondition = (
+export const isValidResourceCondition = (
   condition: ResourceCondition,
 ): boolean => {
   if (isComparisonCondition(condition))
-    return condition.conditions.every((c) => isValidTargetCondition(c));
+    return condition.conditions.every((c) => isValidResourceCondition(c));
   if (isMetadataCondition(condition)) {
     if (condition.operator === ResourceOperator.Null)
       return condition.value == null && condition.key.length > 0;

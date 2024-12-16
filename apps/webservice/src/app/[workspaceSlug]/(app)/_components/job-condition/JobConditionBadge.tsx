@@ -8,7 +8,7 @@ import type {
   DeploymentCondition,
   EnvironmentCondition,
   JobCondition,
-  JobTargetCondition,
+  JobResourceCondition,
   StatusCondition,
 } from "@ctrlplane/validators/jobs";
 import React from "react";
@@ -34,7 +34,7 @@ import {
   isCreatedAtCondition,
   isDeploymentCondition,
   isEnvironmentCondition,
-  isJobTargetCondition,
+  isJobResourceCondition,
   isMetadataCondition,
   isStatusCondition,
   isVersionCondition,
@@ -246,19 +246,19 @@ const StringifiedVersionCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedJobTargetCondition: React.FC<{
-  condition: JobTargetCondition;
+const StringifiedJobResourceCondition: React.FC<{
+  condition: JobResourceCondition;
 }> = ({ condition }) => {
-  const targetQ = api.resource.byId.useQuery(condition.value);
-  const target = targetQ.data;
+  const resourceQ = api.resource.byId.useQuery(condition.value);
+  const resource = resourceQ.data;
 
   return (
     <ConditionBadge>
-      <span className="text-white">target</span>
+      <span className="text-white">resource</span>
       <span className="text-muted-foreground">
         {operatorVerbs[condition.operator]}
       </span>
-      <span className="text-white">{noCase(target?.name ?? "")}</span>
+      <span className="text-white">{noCase(resource?.name ?? "")}</span>
     </ConditionBadge>
   );
 };
@@ -301,8 +301,8 @@ const StringifiedJobCondition: React.FC<{
   if (isVersionCondition(condition))
     return <StringifiedVersionCondition condition={condition} />;
 
-  if (isJobTargetCondition(condition))
-    return <StringifiedJobTargetCondition condition={condition} />;
+  if (isJobResourceCondition(condition))
+    return <StringifiedJobResourceCondition condition={condition} />;
 
   return null;
 };

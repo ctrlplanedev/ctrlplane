@@ -9,7 +9,7 @@ Remember, the actual building and packaging of your software should be handled
 by your existing CI pipelines or build systems. Ctrlplane takes over from the
 point where your software is built and ready for distribution, solving the
 complex problem of managing deployments across a large and potentially diverse
-set of targets.
+set of resources.
 
 ## Key Characteristics of Releases
 
@@ -18,7 +18,7 @@ set of targets.
 
 2. **Deployment Association**: Releases are created as part of a deployment in
    Ctrlplane. They represent the content that will be deployed across various
-   environments and targets.
+   environments and resources.
 
 3. **External Build Process**: Ctrlplane does not manage the build process for
    releases. The actual compilation, packaging, or preparation of your software
@@ -41,8 +41,8 @@ set of targets.
 ## Release Dependencies
 
 Since Ctrlplane is meant for solving the way releases are deployed across
-targets, it's very common to have version dependencies on other deployments. In
-the world of software, this could mean a microservice depends on a specific
+resources, it's very common to have version dependencies on other deployments.
+In the world of software, this could mean a microservice depends on a specific
 version of another microservice to ensure it has the required APIs.
 
 In the case of software and infrastructure interactions, this could require a
@@ -68,20 +68,20 @@ deployments. This feature allows you to:
 When creating a release, you can define expresions to determine what version of
 other deployments is required.
 
-### Managing Dependencies with Target Metadata Grouping
+### Managing Dependencies with Resource Metadata Grouping
 
-In most cases, a target has multiple deployments associated with it, making it
-easy to verify if a specific version is deployed on that target as required by
+In most cases, a resource has multiple deployments associated with it, making it
+easy to verify if a specific version is deployed on that resource as required by
 another deployment. However, complexities arise when dependencies involve other
-targets, where the deployment version might be present on any of these dependent
-targets.
+resources, where the deployment version might be present on any of these
+dependent resources.
 
-To address this, Ctrlplane uses target metadata grouping. This mechanism allows
-you to logically group targets based on their metadata attributes. By doing so,
-Ctrlplane can accurately determine which targets to inspect to verify if the
-software has been deployed.
+To address this, Ctrlplane uses resource metadata grouping. This mechanism
+allows you to logically group resources based on their metadata attributes. By
+doing so, Ctrlplane can accurately determine which resources to inspect to
+verify if the software has been deployed.
 
-The idea is to create logical associations between targets that share common
+The idea is to create logical associations between resources that share common
 characteristics, such as being part of the same kubernetes cluster. This is
 particularly useful in complex infrastructures or distributed systems where
 deployments span multiple infrastructure components.
@@ -89,12 +89,12 @@ deployments span multiple infrastructure components.
 For example:
 
 1. **Single Cluster Deployment**: If you have a single Kubernetes namespace
-   represented by a target, you can easily check if a version is deployed on
-   that cluster without additional grouping if that target is used by all the
+   represented by a resource, you can easily check if a version is deployed on
+   that cluster without additional grouping if that resource is used by all the
    deployments.
 
 2. **Multiple Clusters Deployment**: If you have multiple Kubernetes namespaces,
-   you might need to group targets by cluster name. This way, Ctrlplane can
+   you might need to group resources by cluster name. This way, Ctrlplane can
    check all namespaces within the specified cluster to determine if the
    required version is deployed.
 
@@ -102,6 +102,6 @@ By defining metadata groups and associating deployments with these groups, you
 ensure that version checks are performed within the relevant scope, maintaining
 consistency and compatibility across your system.
 
-When defining release dependencies, carefully consider how your targets are
+When defining release dependencies, carefully consider how your resources are
 grouped and which metadata attributes are most relevant for determining version
 compatibility across your system.

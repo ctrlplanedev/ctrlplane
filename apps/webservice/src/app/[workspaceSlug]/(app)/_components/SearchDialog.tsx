@@ -30,7 +30,7 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
     { workspaceId: workspace.data?.id ?? "" },
     { enabled: workspace.isSuccess },
   );
-  const targets = api.resource.byWorkspaceId.list.useQuery(
+  const resources = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? "",
       filter:
@@ -85,20 +85,20 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
                 ))}
               </CommandGroup>
 
-              {targets.data?.total !== 0 && (
+              {resources.data?.total !== 0 && (
                 <>
                   <CommandSeparator />
-                  <CommandGroup heading="Targets">
-                    {targets.data?.items.slice(0, 5).map((target) => (
+                  <CommandGroup heading="Resources">
+                    {resources.data?.items.slice(0, 5).map((resource) => (
                       <Link
-                        key={target.id}
-                        href={`/${workspaceSlug}/targets/${target.id}`}
+                        key={resource.id}
+                        href={`/${workspaceSlug}/resources/${resource.id}`}
                       >
-                        <CommandItem>{target.name}</CommandItem>
+                        <CommandItem>{resource.name}</CommandItem>
                       </Link>
                     ))}
 
-                    {(targets.data?.total ?? 0) > 5 && (
+                    {(resources.data?.total ?? 0) > 5 && (
                       <CommandItem disabled>. . .</CommandItem>
                     )}
                   </CommandGroup>

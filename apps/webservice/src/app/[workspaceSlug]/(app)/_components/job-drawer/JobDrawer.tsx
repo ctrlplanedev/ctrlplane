@@ -74,7 +74,7 @@ export const JobDrawer: React.FC = () => {
                   <JobDropdownMenu
                     release={job.release}
                     environmentId={job.environment.id}
-                    target={job.resource}
+                    resource={job.resource}
                     deployment={job.release.deployment}
                     job={job.job}
                     isPassingReleaseChannel={isPassingReleaseChannel}

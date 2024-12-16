@@ -89,7 +89,7 @@ export const isPassingReleaseDependencyPolicy = async (
         const latestJobSubquery = db
           .select({
             id: schema.releaseJobTrigger.id,
-            targetId: schema.releaseJobTrigger.resourceId,
+            resourceId: schema.releaseJobTrigger.resourceId,
             releaseId: schema.releaseJobTrigger.releaseId,
             status: schema.job.status,
             createdAt: schema.job.createdAt,
@@ -105,7 +105,7 @@ export const isPassingReleaseDependencyPolicy = async (
           )
           .as("latest_job");
 
-        const targetFulfillingDependency = await db
+        const resourceFulfillingDependency = await db
           .select()
           .from(schema.release)
           .innerJoin(
@@ -120,13 +120,13 @@ export const isPassingReleaseDependencyPolicy = async (
             and(
               schema.releaseMatchesCondition(db, dep.releaseFilter),
               eq(schema.deployment.id, dep.deploymentId),
-              inArray(latestJobSubquery.targetId, allIds),
+              inArray(latestJobSubquery.resourceId, allIds),
               eq(latestJobSubquery.rank, 1),
               eq(latestJobSubquery.status, JobStatus.Completed),
             ),
           );
 
-        const isPassing = targetFulfillingDependency.length > 0;
+        const isPassing = resourceFulfillingDependency.length > 0;
         return isPassing ? dep : null;
       });
 

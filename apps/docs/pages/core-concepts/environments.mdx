@@ -1,6 +1,6 @@
 # Environments
 
-Environments in Ctrlplane are logical groupings of targets that represent
+Environments in Ctrlplane are logical groupings of resources that represent
 distinct stages in your software deployment pipeline. They are defined at the
 system level and play a crucial role in organizing and managing the deployment
 process across various infrastructure components.
@@ -22,27 +22,27 @@ of releases through predefined stages.
 ### Environment Policies
 
 Environment policies determine how deployments move from one environment's
-targets to the next. These policies can include:
+resources to the next. These policies can include:
 
 - Approval workflows
 - Automated checks
 - Rollback strategies
 - Deployment windows
 
-### Target Filters
+### Resource Filters
 
-Each environment uses target filters to dynamically determine which targets are
-associated with it. This feature allows for flexible and automatic assignment of
-targets to environments based on their characteristics.
+Each environment uses resource filters to dynamically determine which resources
+are associated with it. This feature allows for flexible and automatic
+assignment of resources to environments based on their characteristics.
 
-## Dynamic Target Association
+## Dynamic Resource Association
 
-The use of target filters enables dynamic addition and removal of targets from
-environments. As a result:
+The use of resource filters enables dynamic addition and removal of resources
+from environments. As a result:
 
-1. Pipelines and deployments automatically run against newly added targets.
+1. Pipelines and deployments automatically run against newly added resources.
 2. New software releases or upgrades are automatically applied to relevant
-   targets.
+   resources.
 
 This dynamic association ensures that your deployment process remains agile and
 responsive to changes in your infrastructure.
@@ -58,7 +58,7 @@ allows for:
 - Improved fault isolation
 
 For example, you might have production environments like `prod-us-west`,
-`prod-us-east`, `prod-eu-central`, each with its own set of targets and
+`prod-us-east`, `prod-eu-central`, each with its own set of resources and
 potentially different rollout schedules.
 
 ## Benefits of Using Environments
@@ -67,7 +67,7 @@ potentially different rollout schedules.
    progression.
 2. **Consistency**: Standardized environments across all deployments in a
    system.
-3. **Flexibility**: Dynamic target association allows for easy scaling and
+3. **Flexibility**: Dynamic resource association allows for easy scaling and
    infrastructure changes.
 4. **Control**: Environment policies provide fine-grained control over the
    deployment process.
@@ -83,7 +83,7 @@ A typical environment setup might include:
 3. **Staging**: A pre-production environment mirroring production
 4. **Production**: Multiple production environments for different regions
 
-Each of these environments would have its own target filters and policies,
+Each of these environments would have its own resource filters and policies,
 ensuring that software progresses through the pipeline in a controlled and
 consistent manner.
 
@@ -93,11 +93,11 @@ In Ctrlplane, environments are typically managed through the UI or API. The
 environment configuration includes:
 
 1. Name and description
-2. Target filters
+2. Resource filters
 3. Associated policies
 4. Any environment-specific variables or configurations
 
-For example, creating an environment might involve setting up target filters
+For example, creating an environment might involve setting up resource filters
 like:
 
 ```yaml
@@ -105,7 +105,7 @@ environment: staging
 region: us-west
 ```
 
-This would automatically associate all targets with matching labels to the
+This would automatically associate all resources with matching labels to the
 staging environment in the US West region.
 
 By leveraging environments effectively in Ctrlplane, you can create a robust,

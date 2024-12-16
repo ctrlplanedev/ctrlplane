@@ -39,7 +39,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["message"]
+                  "required": [
+                    "message"
+                  ]
                 }
               }
             }
@@ -55,7 +57,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -71,7 +75,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -87,7 +93,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -186,18 +194,28 @@
                         },
                         "approvalRequirement": {
                           "type": "string",
-                          "enum": ["manual", "automatic"]
+                          "enum": [
+                            "manual",
+                            "automatic"
+                          ]
                         },
                         "successType": {
                           "type": "string",
-                          "enum": ["some", "all", "optional"]
+                          "enum": [
+                            "some",
+                            "all",
+                            "optional"
+                          ]
                         },
                         "successMinimum": {
                           "type": "number"
                         },
                         "concurrencyType": {
                           "type": "string",
-                          "enum": ["some", "all"]
+                          "enum": [
+                            "some",
+                            "all"
+                          ]
                         },
                         "concurrencyLimit": {
                           "type": "number"
@@ -207,7 +225,10 @@
                         },
                         "releaseSequencing": {
                           "type": "string",
-                          "enum": ["wait", "cancel"]
+                          "enum": [
+                            "wait",
+                            "cancel"
+                          ]
                         }
                       }
                     }
@@ -235,7 +256,9 @@
                       "example": "Environment not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -273,7 +296,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["systemId", "name"],
+                "required": [
+                  "systemId",
+                  "name"
+                ],
                 "properties": {
                   "systemId": {
                     "type": "string"
@@ -337,7 +363,11 @@
                       "additionalProperties": true
                     }
                   },
-                  "required": ["id", "name", "systemId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "systemId"
+                  ]
                 }
               }
             }
@@ -371,7 +401,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -611,7 +643,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["type", "name", "workspaceId"]
+                "required": [
+                  "type",
+                  "name",
+                  "workspaceId"
+                ]
               }
             }
           }
@@ -634,7 +670,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -672,7 +712,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["sucess"]
+                  "required": [
+                    "sucess"
+                  ]
                 }
               }
             }
@@ -688,7 +730,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -751,7 +795,11 @@
                             },
                             "status": {
                               "type": "string",
-                              "enum": ["pending", "approved", "rejected"]
+                              "enum": [
+                                "pending",
+                                "approved",
+                                "rejected"
+                              ]
                             },
                             "approver": {
                               "type": "object",
@@ -765,13 +813,21 @@
                                   "type": "string"
                                 }
                               },
-                              "required": ["id", "name"]
+                              "required": [
+                                "id",
+                                "name"
+                              ]
                             }
                           },
-                          "required": ["id", "status"]
+                          "required": [
+                            "id",
+                            "status"
+                          ]
                         }
                       },
-                      "required": ["variables"]
+                      "required": [
+                        "variables"
+                      ]
                     }
                   ]
                 }
@@ -845,7 +901,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 }
               }
             }
@@ -877,7 +935,10 @@
                     "example": "resource-123"
                   }
                 },
-                "required": ["jobId", "resourceIdentifier"],
+                "required": [
+                  "jobId",
+                  "resourceIdentifier"
+                ],
                 "additionalProperties": false
               }
             }
@@ -971,7 +1032,9 @@
       "post": {
         "summary": "Create a relationship between two resources",
         "operationId": "createResourceToResourceRelationship",
-        "tags": ["Resource Relationships"],
+        "tags": [
+          "Resource Relationships"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1106,7 +1169,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["deploymentId", "name", "releaseFilter"],
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "releaseFilter"
+                ],
                 "properties": {
                   "deploymentId": {
                     "type": "string"
@@ -1157,7 +1224,12 @@
                       "additionalProperties": true
                     }
                   },
-                  "required": ["id", "deploymentId", "name", "createdAt"]
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
                 }
               }
             }
@@ -1173,7 +1245,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1189,7 +1263,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1208,7 +1284,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error", "id"]
+                  "required": [
+                    "error",
+                    "id"
+                  ]
                 }
               }
             }
@@ -1224,7 +1303,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1272,7 +1353,10 @@
                     }
                   }
                 },
-                "required": ["version", "deploymentId"]
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
               }
             }
           }
@@ -1344,7 +1428,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["resources"],
+                "required": [
+                  "resources"
+                ],
                 "properties": {
                   "resources": {
                     "type": "array",
@@ -1518,7 +1604,9 @@
                       "example": "Resource not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1645,7 +1733,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1673,7 +1763,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["success"],
+                  "required": [
+                    "success"
+                  ],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -1700,7 +1792,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1718,7 +1812,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "resources"],
+                "required": [
+                  "workspaceId",
+                  "resources"
+                ],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -1988,7 +2085,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -2029,12 +2130,12 @@
             "schema": {
               "type": "string"
             },
-            "description": "Identifier of the target"
+            "description": "Identifier of the resource"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successfully retrieved the target",
+            "description": "Successfully retrieved the resource",
             "content": {
               "application/json": {
                 "schema": {
@@ -2090,7 +2191,12 @@
                       }
                     }
                   },
-                  "required": ["id", "identifier", "workspaceId", "providerId"]
+                  "required": [
+                    "id",
+                    "identifier",
+                    "workspaceId",
+                    "providerId"
+                  ]
                 }
               }
             }
@@ -2102,7 +2208,7 @@
             "description": "Permission denied"
           },
           "404": {
-            "description": "Target not found",
+            "description": "Resource not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -2110,7 +2216,7 @@
                   "properties": {
                     "error": {
                       "type": "string",
-                      "example": "Target not found"
+                      "example": "Resource not found"
                     }
                   }
                 }
@@ -2147,7 +2253,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Successfully deleted the target",
+            "description": "Successfully deleted the resource",
             "content": {
               "application/json": {
                 "schema": {
@@ -2169,7 +2275,7 @@
             "description": "Permission denied"
           },
           "404": {
-            "description": "Target not found",
+            "description": "Resource not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -2177,7 +2283,7 @@
                   "properties": {
                     "error": {
                       "type": "string",
-                      "example": "Target not found"
+                      "example": "Resource not found"
                     }
                   }
                 }
@@ -2249,6 +2355,10 @@
             "type": "object",
             "additionalProperties": true
           },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": { "type": "string" }
+          },
           "deploymentId": {
             "type": "string",
             "format": "uuid"
@@ -2263,6 +2373,7 @@
           "name",
           "version",
           "config",
+          "metadata",
           "deploymentId",
           "createdAt"
         ]
@@ -2304,7 +2415,12 @@
             "nullable": true
           }
         },
-        "required": ["id", "systemId", "name", "createdAt"]
+        "required": [
+          "id",
+          "systemId",
+          "name",
+          "createdAt"
+        ]
       },
       "Runbook": {
         "type": "object",
@@ -2325,7 +2441,12 @@
             "format": "uuid"
           }
         },
-        "required": ["id", "name", "systemId", "jobAgentId"]
+        "required": [
+          "id",
+          "name",
+          "systemId",
+          "jobAgentId"
+        ]
       },
       "Resource": {
         "type": "object",
@@ -2431,11 +2552,20 @@
             "type": "string"
           }
         },
-        "required": ["id", "status", "createdAt", "updatedAt", "jobAgentConfig"]
+        "required": [
+          "id",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "jobAgentConfig"
+        ]
       },
       "Variable": {
         "type": "object",
-        "required": ["key", "value"],
+        "required": [
+          "key",
+          "value"
+        ],
         "properties": {
           "key": {
             "type": "string"

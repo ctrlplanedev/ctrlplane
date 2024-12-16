@@ -8,9 +8,7 @@ import { env } from "./config";
 
 const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
 
-export const targetScanQueue = new Queue<ResourceScanEvent>(
+export const resourceScanQueue = new Queue<ResourceScanEvent>(
   Channel.ResourceScan,
-  {
-    connection,
-  },
+  { connection },
 );

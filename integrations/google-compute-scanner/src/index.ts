@@ -38,7 +38,7 @@ const scan = async () => {
     count: namespaces.length,
   });
 
-  await scanner.set([...clusters.map((t) => t.target), ...namespaces]);
+  await scanner.set([...clusters.map((t) => t.resource), ...namespaces]);
 };
 
 logger.info(

@@ -25,9 +25,9 @@ const SocketTerminal = dynamic(
   { ssr: false },
 );
 
-const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
+const SessionTerminal: React.FC<{ sessionId: string; resourceId: string }> = ({
   sessionId,
-  targetId,
+  resourceId,
 }) => {
   const terminalRef = useRef<Terminal | null>(null);
 
@@ -58,7 +58,7 @@ const SessionTerminal: React.FC<{ sessionId: string; targetId: string }> = ({
               readyState={readyState}
               sessionId={sessionId}
               onResize={({ cols, rows }) =>
-                resizeSession(sessionId, targetId, cols, rows)
+                resizeSession(sessionId, resourceId, cols, rows)
               }
             />
           </div>

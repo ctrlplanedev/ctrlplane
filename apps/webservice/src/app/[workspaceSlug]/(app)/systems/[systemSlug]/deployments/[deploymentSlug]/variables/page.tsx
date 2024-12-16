@@ -26,7 +26,7 @@ export default async function VariablesPage({
     deployment.id,
   );
 
-  const systemTargetsFilter: ComparisonCondition = {
+  const systemResourcesFilter: ComparisonCondition = {
     type: ResourceFilterType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
@@ -44,8 +44,8 @@ export default async function VariablesPage({
       if (v.resourceFilter == null)
         return {
           ...v,
-          targetCount: 0,
-          targets: [],
+          resourceCount: 0,
+          resources: [],
           filterHash: "",
         };
 
@@ -56,10 +56,10 @@ export default async function VariablesPage({
       const filter: ComparisonCondition = {
         type: ResourceFilterType.Comparison,
         operator: ResourceOperator.And,
-        conditions: [systemTargetsFilter, v.resourceFilter],
+        conditions: [systemResourcesFilter, v.resourceFilter],
       };
 
-      const targets = await api.resource.byWorkspaceId.list({
+      const resources = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,
@@ -67,8 +67,8 @@ export default async function VariablesPage({
 
       return {
         ...v,
-        targetCount: targets.total,
-        targets: targets.items,
+        resourceCount: resources.total,
+        resources: resources.items,
         filterHash,
       };
     });
@@ -80,12 +80,12 @@ export default async function VariablesPage({
 
       const filter: ResourceCondition =
         restFilters.length === 0
-          ? systemTargetsFilter
+          ? systemResourcesFilter
           : {
               type: ResourceFilterType.Comparison,
               operator: ResourceOperator.And,
               conditions: [
-                systemTargetsFilter,
+                systemResourcesFilter,
                 {
                   type: ResourceFilterType.Comparison,
                   operator: ResourceOperator.Or,
@@ -95,7 +95,7 @@ export default async function VariablesPage({
               ],
             };
 
-      const defaultTargets = await api.resource.byWorkspaceId.list({
+      const defaultResources = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,
@@ -107,16 +107,13 @@ export default async function VariablesPage({
 
       values.unshift({
         ...defaultValue,
-        targetCount: defaultTargets.total,
-        targets: defaultTargets.items,
+        resourceCount: defaultResources.total,
+        resources: defaultResources.items,
         filterHash,
       });
     }
 
-    return {
-      ...variable.deploymentVariable,
-      values,
-    };
+    return { ...variable.deploymentVariable, values };
   });
 
   const variables = await Promise.all(variablesPromises);

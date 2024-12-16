@@ -1,5 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { and, eq, isNull, notInArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -9,6 +11,7 @@ import {
   job,
   release,
   releaseJobTrigger,
+  releaseMetadata,
   resource,
 } from "@ctrlplane/db/schema";
 
@@ -29,6 +32,7 @@ export const GET = async (
     .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
     .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
     .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
+    .leftJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
     .leftJoin(deployment, eq(deployment.id, release.deploymentId))
     .where(
       and(
@@ -44,14 +48,25 @@ export const GET = async (
       ),
     )
     .then((rows) =>
-      rows.map((row) => ({
-        ...row.job,
-        config: row.release_job_trigger,
-        environment: row.environment,
-        target: row.resource,
-        deployment: row.deployment,
-        release: row.release,
-      })),
+      _.chain(rows)
+        .groupBy((row) => row.job.id)
+        .map((jobRows) => ({
+          ...jobRows[0]!.job,
+          config: jobRows[0]!.release_job_trigger,
+          environment: jobRows[0]!.environment,
+          target: jobRows[0]!.resource,
+          deployment: jobRows[0]!.deployment,
+          release:
+            jobRows[0]!.release != null
+              ? {
+                  ...jobRows[0]!.release,
+                  metadata: jobRows
+                    .map((r) => r.release_metadata)
+                    .filter(isPresent),
+                }
+              : null,
+        }))
+        .value(),
     );
 
   return NextResponse.json(je);

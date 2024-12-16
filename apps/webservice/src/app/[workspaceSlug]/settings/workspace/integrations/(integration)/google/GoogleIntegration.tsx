@@ -38,7 +38,7 @@ export const GoogleIntegration: React.FC<{
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold">Google</h1>
           <p className="text-sm text-muted-foreground">
-            Sync deployment targets, trigger google workflows and more.
+            Sync deployment resources, trigger google workflows and more.
           </p>
         </div>
       </div>

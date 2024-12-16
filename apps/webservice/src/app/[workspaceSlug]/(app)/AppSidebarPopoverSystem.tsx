@@ -79,7 +79,7 @@ export const AppSidebarSystemPopover: React.FC<{
             {deployments.data?.map(({ id, name, slug, jobAgentId }) => (
               <SidebarMenuButton key={id} asChild>
                 <Link
-                  href={`/${workspace.slug}/systems/${system.data?.slug}/deployments/${slug}`}
+                  href={`/${workspace.slug}/systems/${system.data?.slug}/deployments/${slug}/releases`}
                   onClick={() => setActiveSidebarItem(null)}
                 >
                   {name}{" "}

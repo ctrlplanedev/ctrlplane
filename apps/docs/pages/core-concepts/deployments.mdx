@@ -41,12 +41,12 @@ A deployment in Ctrlplane typically includes:
    across different stages.
 
 4. **Job Configurations**: Specifications for the jobs that will be created and
-   run for each release and target.
+   run for each release and resource.
 
-5. **Variables**: Target-specific variables that allow the same pipeline to be
+5. **Variables**: Resource-specific variables that allow the same pipeline to be
    used across different environments.
 
-## Systems, Environments, and Target Filtering
+## Systems, Environments, and Resource Filtering
 
 Ctrlplane uses a hierarchical structure to manage deployments:
 
@@ -57,12 +57,12 @@ Ctrlplane uses a hierarchical structure to manage deployments:
    environment can be configured with specific settings and policies.
 
 3. **Environment Configuration**: Each environment is configured with label
-   filters to determine which targets fall under that environment. This allows
+   filters to determine which resources fall under that environment. This allows
    for fine-grained control over where deployments are applied.
 
-4. **Target Filtering**: When a release is created, Ctrlplane uses the
-   environment's label filters to identify matching targets. It then runs the
-   appropriate jobs for each of these targets.
+4. **Resource Filtering**: When a release is created, Ctrlplane uses the
+   environment's label filters to identify matching resources. It then runs the
+   appropriate jobs for each of these resources.
 
 5. **Inter-Environment Policies**: Environments are connected by policies that
    determine when and how jobs should run. These policies control the
@@ -77,15 +77,15 @@ Ctrlplane uses a hierarchical structure to manage deployments:
 
 3. **Environment Processing**: For each environment in the system:
 
-   - The environment's label filters are applied to identify relevant targets.
-   - Jobs are created for each matching target based on the deployment's job
+   - The environment's label filters are applied to identify relevant resources.
+   - Jobs are created for each matching resource based on the deployment's job
      definitions.
 
 4. **Policy Enforcement**: Inter-environment policies determine when jobs can
    run, allowing for controlled progression through environments.
 
-5. **Job Execution**: Jobs are executed on the identified targets, applying the
-   release changes.
+5. **Job Execution**: Jobs are executed on the identified resources, applying
+   the release changes.
 
 ## Creating and Managing Deployments
 

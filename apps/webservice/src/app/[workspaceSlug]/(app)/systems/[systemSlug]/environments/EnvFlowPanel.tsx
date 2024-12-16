@@ -113,7 +113,7 @@ const AddEnvironmentButton: React.FC<{
               <DialogTitle>Add Environments</DialogTitle>
               <DialogDescription>
                 Group your deployments by environment. Environments can be used
-                to group targets.
+                to group resources.
               </DialogDescription>
             </DialogHeader>
 

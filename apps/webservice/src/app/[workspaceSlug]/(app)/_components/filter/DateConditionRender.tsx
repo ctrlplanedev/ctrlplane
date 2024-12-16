@@ -1,9 +1,5 @@
-import type { DateValue } from "@internationalized/date";
-import { ZonedDateTime } from "@internationalized/date";
-import ms from "ms";
-
 import { cn } from "@ctrlplane/ui";
-import { DateTimePicker } from "@ctrlplane/ui/date-time-picker/date-time-picker";
+import { DateTimePicker } from "@ctrlplane/ui/datetime-picker";
 import {
   Select,
   SelectContent,
@@ -13,34 +9,10 @@ import {
 } from "@ctrlplane/ui/select";
 import { DateOperator } from "@ctrlplane/validators/conditions";
 
-const toZonedDateTime = (date: Date): ZonedDateTime => {
-  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const offset = -date.getTimezoneOffset() * ms("1m");
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hour = date.getHours();
-  const minute = date.getMinutes();
-  const second = date.getSeconds();
-  const millisecond = date.getMilliseconds();
-
-  return new ZonedDateTime(
-    year,
-    month,
-    day,
-    timeZone,
-    offset,
-    hour,
-    minute,
-    second,
-    millisecond,
-  );
-};
-
 type Operator = "before" | "after" | "before-or-on" | "after-or-on";
 
 type DateConditionRenderProps = {
-  setDate: (date: DateValue) => void;
+  setDate: (date: Date) => void;
   setOperator: (operator: DateOperator) => void;
   value: string;
   operator: Operator;
@@ -81,10 +53,11 @@ export const DateConditionRender: React.FC<DateConditionRenderProps> = ({
       </div>
       <div className="col-span-7">
         <DateTimePicker
-          value={toZonedDateTime(new Date(value))}
-          onChange={(value) => setDate(value)}
+          value={new Date(value)}
+          onChange={(value) => setDate(value ?? new Date())}
           aria-label={type}
-          variant="filter"
+          granularity="minute"
+          className="rounded-l-none"
         />
       </div>
     </div>

@@ -8,7 +8,7 @@ import type {
 import type { ComparisonCondition } from "./comparison-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
-import type { JobTargetCondition } from "./job-target-condition.js";
+import type { JobResourceCondition } from "./job-resource-condition.js";
 import type { ReleaseCondition } from "./release-condition.js";
 import type { StatusCondition } from "./status-condition.js";
 import {
@@ -23,7 +23,7 @@ import {
 import { comparisonCondition } from "./comparison-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
-import { jobTargetCondition } from "./job-target-condition.js";
+import { jobResourceCondition } from "./job-resource-condition.js";
 import { releaseCondition } from "./release-condition.js";
 import { statusCondition } from "./status-condition.js";
 
@@ -35,7 +35,7 @@ export type JobCondition =
   | DeploymentCondition
   | EnvironmentCondition
   | VersionCondition
-  | JobTargetCondition
+  | JobResourceCondition
   | ReleaseCondition;
 
 export const jobCondition = z.union([
@@ -46,7 +46,7 @@ export const jobCondition = z.union([
   deploymentCondition,
   environmentCondition,
   versionCondition,
-  jobTargetCondition,
+  jobResourceCondition,
   releaseCondition,
 ]);
 
@@ -62,7 +62,7 @@ export enum JobFilterType {
   Deployment = "deployment",
   Environment = "environment",
   Release = "release",
-  JobTarget = "target",
+  JobResource = "resource",
 }
 
 export const isEmptyCondition = (condition: JobCondition): boolean =>
@@ -98,10 +98,10 @@ export const isVersionCondition = (
   condition: JobCondition,
 ): condition is VersionCondition => condition.type === FilterType.Version;
 
-export const isJobTargetCondition = (
+export const isJobResourceCondition = (
   condition: JobCondition,
-): condition is JobTargetCondition =>
-  condition.type === JobFilterType.JobTarget;
+): condition is JobResourceCondition =>
+  condition.type === JobFilterType.JobResource;
 
 // Check if converting to a comparison condition will exceed the max depth
 // including any nested conditions

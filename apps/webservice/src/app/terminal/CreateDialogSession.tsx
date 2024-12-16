@@ -35,7 +35,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
   const { createSession, setIsDrawerOpen } = useTerminalSessions();
 
   const workspaces = api.workspace.list.useQuery();
-  const [targetId, setTargetId] = React.useState("");
+  const [resourceId, setResourceId] = React.useState("");
 
   const { workspaceSlug } = useParams<{ workspaceSlug?: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug ?? "", {
@@ -44,7 +44,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
 
   const [workspaceId, setWorkspaceId] = useState("");
 
-  const targets = api.resource.byWorkspaceId.list.useQuery(
+  const resources = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: workspace.data?.id ?? workspaceId,
       limit: 500,
@@ -57,7 +57,7 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
     { enabled: workspace.data != null || workspaceId != "" },
   );
 
-  const [isTargetPopoverOpen, setIsTargetPopoverOpen] = useState(false);
+  const [isResourcePopoverOpen, setIsResourcePopoverOpen] = useState(false);
   const [isWorkspacePopoverOpen, setIsWorkspacePopoverOpen] = useState(false);
   return (
     <Dialog open={isModalOpen} onOpenChange={setModelOpen}>
@@ -135,25 +135,25 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
             </div>
           )}
           <div className="grid w-full items-center gap-1.5">
-            <Label htmlFor="picture">Targets</Label>
+            <Label htmlFor="picture">Resources</Label>
 
             <Popover
-              open={isTargetPopoverOpen}
-              onOpenChange={setIsTargetPopoverOpen}
+              open={isResourcePopoverOpen}
+              onOpenChange={setIsResourcePopoverOpen}
               modal={true}
             >
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={isTargetPopoverOpen}
+                  aria-expanded={isResourcePopoverOpen}
                   className="w-full items-center justify-start gap-2 bg-transparent px-2 hover:bg-neutral-800/50"
                 >
                   <IconSelector className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">
-                    {targetId === ""
-                      ? "Select targets..."
-                      : targets.data?.items.find((t) => t.id === targetId)
+                    {resourceId === ""
+                      ? "Select resources..."
+                      : resources.data?.items.find((r) => r.id === resourceId)
                           ?.name}
                   </span>
                 </Button>
@@ -161,30 +161,30 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
               <PopoverContent className="w-[400px] p-0">
                 <Command>
                   <CommandInput
-                    placeholder="Search targets..."
+                    placeholder="Search resources..."
                     className="h-9"
                   />
 
                   <CommandList>
-                    <CommandEmpty>No target found.</CommandEmpty>
+                    <CommandEmpty>No resource found.</CommandEmpty>
 
                     <CommandGroup>
-                      {targets.data?.items.map((target) => (
+                      {resources.data?.items.map((resource) => (
                         <CommandItem
-                          key={target.id}
-                          value={target.id}
+                          key={resource.id}
+                          value={resource.id}
                           onSelect={(currentValue) => {
-                            setTargetId(
-                              currentValue === targetId ? "" : currentValue,
+                            setResourceId(
+                              currentValue === resourceId ? "" : currentValue,
                             );
-                            setIsTargetPopoverOpen(false);
+                            setIsResourcePopoverOpen(false);
                           }}
                         >
-                          {target.name}
+                          {resource.name}
                           <IconCheck
                             className={cn(
                               "ml-auto",
-                              targetId === target.id
+                              resourceId === resource.id
                                 ? "opacity-100"
                                 : "opacity-0",
                             )}
@@ -201,12 +201,12 @@ export const CreateSessionDialog: React.FC<{ children: React.ReactNode }> = ({
         <DialogFooter>
           <Button
             onClick={() => {
-              createSession(targetId);
+              createSession(resourceId);
               setModelOpen(false);
               setIsDrawerOpen(true);
             }}
             disabled={
-              targetId === "" || (workspaceId === "" && workspaceSlug == null)
+              resourceId === "" || (workspaceId === "" && workspaceSlug == null)
             }
           >
             Create Session

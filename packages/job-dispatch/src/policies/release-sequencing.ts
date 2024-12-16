@@ -3,7 +3,7 @@ import { isAfter } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, ne, notExists, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, ne, notExists, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -43,10 +43,12 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
             select 1 from ${schema.job}
             inner join ${schema.releaseJobTrigger} as rjt2 on ${schema.job.id} = rjt2.job_id
             inner join ${schema.release} as release2 on rjt2.release_id = release2.id
+            inner join ${schema.resource} on rjt2.resource_id = ${schema.resource.id}
             where rjt2.environment_id = ${schema.releaseJobTrigger.environmentId}
             and release2.deployment_id = ${schema.deployment.id}
             and release2.id != ${schema.release.id}
             and ${inArray(schema.job.status, activeStatus)}
+            and ${isNull(schema.resource.deletedAt)}
           `),
         ),
       ),

@@ -43,12 +43,12 @@ import { Input } from "@ctrlplane/ui/input";
 import { Switch } from "@ctrlplane/ui/switch";
 import {
   defaultCondition,
-  isValidTargetCondition,
+  isValidResourceCondition,
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
-import { TargetConditionRender } from "~/app/[workspaceSlug]/(app)/_components/target-condition/TargetConditionRender";
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionRender";
 import {
   VariableBooleanInput,
   VariableChoiceSelect,
@@ -58,10 +58,10 @@ import { api } from "~/trpc/react";
 
 const editVariableValueFormSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
-  targetFilter: resourceCondition
+  resourceFilter: resourceCondition
     .nullish()
-    .refine((data) => data == null || isValidTargetCondition(data), {
-      message: "Invalid target condition",
+    .refine((data) => data == null || isValidResourceCondition(data), {
+      message: "Invalid resource condition",
     }),
   default: z.boolean().optional(),
 });
@@ -78,19 +78,12 @@ const EditVariableValueDialog: React.FC<{
 
   const form = useForm({
     schema: editVariableValueFormSchema,
-    defaultValues: {
-      value: value.value,
-      targetFilter: value.resourceFilter,
-      default: variable.defaultValueId === value.id,
-    },
+    defaultValues: { ...value, default: variable.defaultValueId === value.id },
   });
 
   const onSubmit = form.handleSubmit((data) =>
     update
-      .mutateAsync({
-        id: value.id,
-        data: { ...data, resourceFilter: data.targetFilter },
-      })
+      .mutateAsync({ id: value.id, data })
       .then(() => router.refresh())
       .then(onClose),
   );
@@ -155,12 +148,12 @@ const EditVariableValueDialog: React.FC<{
 
             <FormField
               control={form.control}
-              name="targetFilter"
+              name="resourceFilter"
               render={({ field: { value, onChange } }) => (
                 <FormItem>
-                  <FormLabel>Target filter</FormLabel>
+                  <FormLabel>Resource filter</FormLabel>
                   <FormControl>
-                    <TargetConditionRender
+                    <ResourceConditionRender
                       condition={value ?? defaultCondition}
                       onChange={onChange}
                     />
@@ -189,7 +182,7 @@ const EditVariableValueDialog: React.FC<{
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => form.setValue("targetFilter", null)}
+                onClick={() => form.setValue("resourceFilter", null)}
               >
                 Clear filter
               </Button>

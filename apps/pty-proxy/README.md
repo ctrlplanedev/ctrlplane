@@ -1,4 +1,4 @@
-# Target Proxy Router
+# Resource Proxy Router
 
 Simple router that redirects web terminal requests to instances and vis-versa.
 
@@ -15,7 +15,7 @@ sequenceDiagram
 
     opt Init Agent
         AG->>PR: Connects to Proxy
-        PR->>CP: Register as target
+        PR->>CP: Register as resource
         AG->>PR: Sends heartbeat
     end
 

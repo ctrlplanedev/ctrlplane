@@ -7,7 +7,7 @@ import colors from "tailwindcss/colors";
 const defaultManifest = `apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ release.version }}-{{ target.name }} # Unique ID for the job
+  name: {{ release.version }}-{{ resource.name }} # Unique ID for the job
   namespace: ctrlplane
 spec:
   ttlSecondsAfterFinished: 120
@@ -22,7 +22,7 @@ spec:
         - /bin/sh
         - -c
         - |
-          echo "Hello Kubernetes! Releasing {{ release.version }} on {{ target.name }}"
+          echo "Hello Kubernetes! Releasing {{ release.version }} on {{ resource.name }}"
           SLEEP_TIME=$(shuf -i 60-180 -n 1)
           echo "Sleeping for $SLEEP_TIME seconds."
           sleep $SLEEP_TIME

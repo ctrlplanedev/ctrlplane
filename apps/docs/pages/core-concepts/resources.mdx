@@ -1,0 +1,85 @@
+# Resources in Ctrlplane
+
+## Overview
+
+A Resource in Ctrlplane represents any entity that pipelines can excute against.
+This includes traditional infrastructure (e.g., EKS clusters) and abstract
+concepts (e.g., Salesforce accounts).
+
+import Youtube from "react-youtube";
+
+<div className="flex justify-center pt-4">
+  <Youtube videoId="aN_cxngJZHc" />
+</div>
+
+## Key Features
+
+- **External Management:** Resources exist outside Ctrlplane (e.g., in cloud
+  infrastructure, CI/CD systems).
+- **Environment Association:** Resources are linked to specific Environments,
+  determining workflow triggers.
+- **Flexible Types:** Supports infrastructure-based and custom object Resources.
+- **Label-based Filtering:** Use labels for precise workflow resourceing.
+
+## Resource Lifecycle
+
+1. **Creation:**
+
+   - API-driven: Programmatically create Resources with custom configurations.
+   - Resource Providers: Automated discovery and registration based on
+     predefined criteria.
+
+2. **Registration:** Link Resources to relevant Environments in Ctrlplane.
+
+3. **Workflow Triggering:**
+
+   - On Resource addition to an Environment.
+   - On Resource updates (e.g., configuration changes).
+   - During new software releases (most common).
+
+4. **Custom Deployments:** Resources can initiate infrastructure provisioning
+   workflows.
+
+## Implementation Examples
+
+### EKS Cluster Resource
+
+1. EKS cluster exists in AWS.
+2. Resource provider discovers and registers it with region/name labels.
+3. Environment created with matching region filter.
+4. New release triggers deployment to matching EKS cluster Resource.
+
+### Salesforce Account Resource
+
+1. New Salesforce account created.
+2. Custom workflow provisions Kubernetes resources and infrastructure.
+3. Resource provider registers new infrastructure components.
+4. Additional workflows configure infrastructure based on Salesforce settings.
+
+## Advanced Concepts
+
+- **Dynamic Workflows:** Customize actions based on Resource type and
+  Environment.
+- **Complex Filtering:** Combine labels for granular workflow control.
+
+## Resource Registration Details
+
+When registered in Ctrlplane, a Resource includes:
+
+- **Metadata:** Kind, version, labels
+- **Configuration:** Schema-defined properties
+- **Status:** Current state (e.g., active, inactive, error)
+
+Registration enables:
+
+- Environment association via labels
+- Workflow triggering based on defined conditions
+- Visibility in Ctrlplane dashboard for monitoring and management
+
+## Environment Assignment
+
+Resources are assigned to Environments using label-based filtering. Example:
+
+- Resource label: `environment: staging`
+- Environment filter: `environment: staging`
+- Result: Resource automatically added to "Staging" Environment

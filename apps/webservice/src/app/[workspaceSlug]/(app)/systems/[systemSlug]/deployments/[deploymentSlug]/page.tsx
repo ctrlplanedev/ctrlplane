@@ -28,7 +28,7 @@ const Variables: React.FC<{
     deployment.id,
   );
 
-  const systemTargetsFilter: ComparisonCondition = {
+  const systemResourcesFilter: ComparisonCondition = {
     type: ResourceFilterType.Comparison,
     operator: ResourceOperator.Or,
     conditions: await api.environment
@@ -46,8 +46,8 @@ const Variables: React.FC<{
       if (v.resourceFilter == null)
         return {
           ...v,
-          targetCount: 0,
-          targets: [],
+          resourceCount: 0,
+          resources: [],
           filterHash: "",
         };
 
@@ -58,10 +58,10 @@ const Variables: React.FC<{
       const filter: ComparisonCondition = {
         type: ResourceFilterType.Comparison,
         operator: ResourceOperator.And,
-        conditions: [systemTargetsFilter, v.resourceFilter],
+        conditions: [systemResourcesFilter, v.resourceFilter],
       };
 
-      const targets = await api.resource.byWorkspaceId.list({
+      const resources = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,
@@ -69,8 +69,8 @@ const Variables: React.FC<{
 
       return {
         ...v,
-        targetCount: targets.total,
-        targets: targets.items,
+        resourceCount: resources.total,
+        resources: resources.items,
         filterHash,
       };
     });
@@ -82,12 +82,12 @@ const Variables: React.FC<{
 
       const filter: ResourceCondition =
         restFilters.length === 0
-          ? systemTargetsFilter
+          ? systemResourcesFilter
           : {
               type: ResourceFilterType.Comparison,
               operator: ResourceOperator.And,
               conditions: [
-                systemTargetsFilter,
+                systemResourcesFilter,
                 {
                   type: ResourceFilterType.Comparison,
                   operator: ResourceOperator.Or,
@@ -97,7 +97,7 @@ const Variables: React.FC<{
               ],
             };
 
-      const defaultTargets = await api.resource.byWorkspaceId.list({
+      const defaultResources = await api.resource.byWorkspaceId.list({
         workspaceId,
         filter,
         limit: 5,
@@ -109,8 +109,8 @@ const Variables: React.FC<{
 
       values.unshift({
         ...defaultValue,
-        targetCount: defaultTargets.total,
-        targets: defaultTargets.items,
+        resourceCount: defaultResources.total,
+        resources: defaultResources.items,
         filterHash,
       });
     }
@@ -128,7 +128,7 @@ const Variables: React.FC<{
       <div>
         <h2 id="variables">Variables</h2>
         <div className="text-xs text-muted-foreground">
-          Deployment variables allow you to configure target-specific settings
+          Deployment variables allow you to configure resource-specific settings
           for your application. Learn more about variable precedence here.
         </div>
       </div>

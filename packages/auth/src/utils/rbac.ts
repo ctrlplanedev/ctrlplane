@@ -172,7 +172,7 @@ const getVariableSetScopes = async (id: string) => {
   ];
 };
 
-const getTargetMetadataGroupScopes = async (id: string) => {
+const getResourceMetadataGroupScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
@@ -206,7 +206,7 @@ const getResourceScopes = async (id: string) => {
   ];
 };
 
-const getTargetProviderScopes = async (id: string) => {
+const getResourceProviderScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
@@ -220,7 +220,7 @@ const getTargetProviderScopes = async (id: string) => {
   ];
 };
 
-const getTargetViewScopes = async (id: string) => {
+const getResourceViewScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
@@ -377,8 +377,8 @@ export const scopeHandlers: Record<
   (id: string) => Promise<Array<Scope>>
 > = {
   resource: getResourceScopes,
-  resourceView: getTargetViewScopes,
-  resourceProvider: getTargetProviderScopes,
+  resourceView: getResourceViewScopes,
+  resourceProvider: getResourceProviderScopes,
   deployment: getDeploymentScopes,
   deploymentVariable: getDeploymentVariableScopes,
   runbook: getRunbookScopes,
@@ -388,7 +388,7 @@ export const scopeHandlers: Record<
   environmentPolicy: getEnvironmentPolicyScopes,
   release: getReleaseScopes,
   releaseChannel: getReleaseChannelScopes,
-  resourceMetadataGroup: getTargetMetadataGroupScopes,
+  resourceMetadataGroup: getResourceMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,
   job: getJobScopes,

@@ -4,6 +4,41 @@
  */
 
 export interface paths {
+  "/v1/deployments/{deploymentId}/release-channels/name/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete a release channel */
+    delete: operations["deleteReleaseChannel"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/environments/{environmentId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get an environment */
+    get: operations["getEnvironment"];
+    put?: never;
+    post?: never;
+    /** Delete an environment */
+    delete: operations["deleteEnvironment"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/environments": {
     parameters: {
       query?: never;
@@ -127,6 +162,40 @@ export interface paths {
     patch: operations["updateJob"];
     trace?: never;
   };
+  "/v1/relationship/job-to-resource": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a relationship between a job and a resource */
+    post: operations["createJobToResourceRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/relationship/resource-to-resource": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Create a relationship between two resources */
+    post: operations["createResourceToResourceRelationship"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/release-channels": {
     parameters: {
       query?: never;
@@ -214,6 +283,40 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/systems/{systemId}/environments/{name}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete an environment */
+    delete: operations["deleteEnvironmentByName"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/systems/{systemId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a system */
+    get: operations["getSystem"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
     parameters: {
       query?: never;
@@ -253,6 +356,112 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    Deployment: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      slug: string;
+      description: string;
+      /** Format: uuid */
+      systemId: string;
+      /** Format: uuid */
+      jobAgentId?: string | null;
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+    };
+    Release: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      version: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: string;
+      };
+      /** Format: uuid */
+      deploymentId: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    Environment: {
+      /** Format: uuid */
+      id: string;
+      /** Format: uuid */
+      systemId: string;
+      name: string;
+      description?: string;
+      /** Format: uuid */
+      policyId?: string | null;
+      resourceFilter?: {
+        [key: string]: unknown;
+      } | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      expiresAt?: string | null;
+    };
+    Runbook: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      /** Format: uuid */
+      systemId: string;
+      /** Format: uuid */
+      jobAgentId: string;
+    };
+    Resource: {
+      /** Format: uuid */
+      id: string;
+      name: string;
+      version: string;
+      kind: string;
+      identifier: string;
+      config: {
+        [key: string]: unknown;
+      };
+      metadata: {
+        [key: string]: unknown;
+      };
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: uuid */
+      workspaceId: string;
+    };
+    Job: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      status:
+        | "completed"
+        | "cancelled"
+        | "skipped"
+        | "in_progress"
+        | "action_required"
+        | "pending"
+        | "failure"
+        | "invalid_job_agent"
+        | "invalid_integration"
+        | "external_run_not_found";
+      /** @description External job identifier (e.g. GitHub workflow run ID) */
+      externalId?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: uuid */
+      jobAgentId?: string;
+      /** @description Configuration for the Job Agent */
+      jobAgentConfig: {
+        [key: string]: unknown;
+      };
+      message?: string;
+      reason?: string;
+    };
     Variable: {
       key: string;
       value: string | number | boolean;
@@ -267,6 +476,156 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  deleteReleaseChannel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Release channel deleted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            message: string;
+          };
+        };
+      };
+      /** @description Permission denied */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Release channel not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to delete release channel */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  getEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the environment */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            systemId: string;
+            name: string;
+            description?: string | null;
+            resourceFilter?: {
+              [key: string]: unknown;
+            };
+            policyId?: string | null;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: date-time */
+            createdAt: string;
+            releaseChannels: {
+              id?: string;
+              deploymentId?: string;
+              channelId?: string;
+              environmentId?: string;
+            }[];
+            policy?: {
+              systemId?: string;
+              name?: string;
+              description?: string | null;
+              id?: string;
+              /** @enum {string} */
+              approvalRequirement?: "manual" | "automatic";
+              /** @enum {string} */
+              successType?: "some" | "all" | "optional";
+              successMinimum?: number;
+              /** @enum {string} */
+              concurrencyType?: "some" | "all";
+              concurrencyLimit?: number;
+              rolloutDuration?: number;
+              /** @enum {string} */
+              releaseSequencing?: "wait" | "cancel";
+            } | null;
+          };
+        };
+      };
+      /** @description Environment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Environment not found */
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  deleteEnvironment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the environment */
+        environmentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Environment deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   createEnvironment: {
     parameters: {
       query?: never;
@@ -298,15 +657,14 @@ export interface operations {
         };
         content: {
           "application/json": {
-            environment?: {
-              systemId: string;
-              name?: string;
-              description?: string;
-              /** Format: date-time */
-              expiresAt?: string | null;
-              resourceFilter?: {
-                [key: string]: unknown;
-              };
+            id: string;
+            systemId: string;
+            name: string;
+            description?: string | null;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            resourceFilter?: {
+              [key: string]: unknown;
             };
           };
         };
@@ -361,12 +719,12 @@ export interface operations {
             jobAgentId: string;
             jobAgentConfig: Record<string, never>;
             externalId: string | null;
-            release?: Record<string, never>;
-            deployment?: Record<string, never>;
+            release?: components["schemas"]["Release"];
+            deployment?: components["schemas"]["Deployment"];
             config: Record<string, never>;
-            runbook?: Record<string, never>;
-            target?: Record<string, never>;
-            environment?: Record<string, never>;
+            runbook?: components["schemas"]["Runbook"];
+            resource?: components["schemas"]["Resource"];
+            environment?: components["schemas"]["Environment"];
           }[];
         };
       };
@@ -545,56 +903,12 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          "application/json": {
-            id: string;
-            /** @enum {string} */
-            status:
-              | "completed"
-              | "cancelled"
-              | "skipped"
-              | "in_progress"
-              | "action_required"
-              | "pending"
-              | "failure"
-              | "invalid_job_agent"
-              | "invalid_integration"
-              | "external_run_not_found";
-            /** @description External job identifier (e.g. GitHub workflow run ID) */
-            externalId?: string | null;
-            release?: {
-              id: string;
-              version: string;
-              metadata: Record<string, never>;
-              config: Record<string, never>;
-            };
-            deployment?: {
-              id: string;
-              name?: string;
-              slug: string;
-              systemId: string;
-              jobAgentId: string;
-            };
-            runbook?: {
-              id: string;
-              name: string;
-              systemId: string;
-              jobAgentId: string;
-            };
-            resource?: {
-              id: string;
-              name: string;
-              version: string;
-              kind: string;
-              identifier: string;
-              workspaceId: string;
-              config: Record<string, never>;
-              metadata: Record<string, never>;
-            };
-            environment?: {
-              id: string;
-              name: string;
-              systemId: string;
-            };
+          "application/json": components["schemas"]["Job"] & {
+            release?: components["schemas"]["Release"];
+            deployment?: components["schemas"]["Deployment"];
+            runbook?: components["schemas"]["Runbook"];
+            resource?: components["schemas"]["Resource"];
+            environment?: components["schemas"]["Environment"];
             variables: Record<string, never>;
             approval?: {
               id: string;
@@ -606,14 +920,6 @@ export interface operations {
                 name: string;
               } | null;
             } | null;
-            /** Format: date-time */
-            createdAt: string;
-            /** Format: date-time */
-            updatedAt: string;
-            /** @description Configuration for the Job Agent */
-            jobAgentConfig: {
-              [key: string]: unknown;
-            };
           };
         };
       };
@@ -659,6 +965,186 @@ export interface operations {
         content: {
           "application/json": {
             id: string;
+          };
+        };
+      };
+    };
+  };
+  createJobToResourceRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description Unique identifier of the job
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          jobId: string;
+          /**
+           * @description Unique identifier of the resource
+           * @example resource-123
+           */
+          resourceIdentifier: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Relationship created successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Relationship created successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Invalid jobId format */
+            error?: string;
+          };
+        };
+      };
+      /** @description Job or resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Job with specified ID not found */
+            error?: string;
+          };
+        };
+      };
+      /** @description Relationship already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Relationship between job and resource already exists */
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Internal server error occurred */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
+  createResourceToResourceRelationship: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": {
+          /**
+           * Format: uuid
+           * @description The workspace ID
+           * @example 123e4567-e89b-12d3-a456-426614174000
+           */
+          workspaceId: string;
+          /**
+           * @description The identifier of the resource to connect
+           * @example my-resource
+           */
+          fromIdentifier: string;
+          /**
+           * @description The identifier of the resource to connect to
+           * @example my-resource
+           */
+          toIdentifier: string;
+          /**
+           * @description The type of relationship
+           * @example depends_on
+           */
+          type: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Relationship created */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Relationship created successfully */
+            message?: string;
+          };
+        };
+      };
+      /** @description Invalid request body */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Resource not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Relationship already exists */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
+          };
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error?: string;
           };
         };
       };
@@ -1100,6 +1586,83 @@ export interface operations {
       };
     };
   };
+  deleteEnvironmentByName: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the system */
+        systemId: string;
+        /** @description Name of the environment */
+        name: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Environment deleted successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getSystem: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description UUID of the system */
+        systemId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description System retrieved successfully */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            id: string;
+            name: string;
+            slug: string;
+            description: string;
+            workspaceId: string;
+            environments: {
+              id?: string;
+              name?: string;
+              description?: string | null;
+              /** Format: date-time */
+              expiresAt?: string | null;
+              /** Format: date-time */
+              createdAt?: string;
+              systemId?: string;
+              policyId?: string | null;
+              resourceFilter?: {
+                [key: string]: unknown;
+              } | null;
+            }[];
+            deployments: {
+              id?: string;
+              name?: string;
+              slug?: string;
+              description?: string;
+              systemId?: string;
+              jobAgentId?: string | null;
+              jobAgentConfig?: {
+                [key: string]: unknown;
+              };
+            }[];
+          };
+        };
+      };
+    };
+  };
   upsertResourceProvider: {
     parameters: {
       query?: never;
@@ -1164,14 +1727,14 @@ export interface operations {
       path: {
         /** @description ID of the workspace */
         workspaceId: string;
-        /** @description Identifier of the target */
+        /** @description Identifier of the resource */
         identifier: string;
       };
       cookie?: never;
     };
     requestBody?: never;
     responses: {
-      /** @description Successfully retrieved the target */
+      /** @description Successfully retrieved the resource */
       200: {
         headers: {
           [name: string]: unknown;
@@ -1212,14 +1775,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Target not found */
+      /** @description Resource not found */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            /** @example Target not found */
+            /** @example Resource not found */
             error?: string;
           };
         };
@@ -1247,7 +1810,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Successfully deleted the target */
+      /** @description Successfully deleted the resource */
       200: {
         headers: {
           [name: string]: unknown;
@@ -1273,14 +1836,14 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Target not found */
+      /** @description Resource not found */
       404: {
         headers: {
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            /** @example Target not found */
+            /** @example Resource not found */
             error?: string;
           };
         };
