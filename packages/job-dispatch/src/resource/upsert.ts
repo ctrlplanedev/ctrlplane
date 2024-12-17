@@ -37,14 +37,14 @@ export const upsertResources = async (
 
   try {
     const resourceIdentifiers = resourcesToInsert.map((r) => r.identifier);
-    log.info("Getting environments before insert", { resourceIdentifiers });
+    log.debug("Getting environments before insert", { resourceIdentifiers });
     const envsBeforeInsert = await getEnvironmentsByResourceWithIdentifiers(
       tx,
       workspaceId,
       resourceIdentifiers,
     );
 
-    log.info("Envs before insert", {
+    log.debug("Envs before insert", {
       envs: envsBeforeInsert.map((e) => ({
         id: e.id,
         resources: e.resources.map((r) => r.identifier),
@@ -74,7 +74,7 @@ export const upsertResources = async (
       resourceIdentifiers,
     );
 
-    log.info("Envs after insert", {
+    log.debug("Envs after insert", {
       envs: envsAfterInsert.map((e) => ({
         id: e.id,
         resources: e.resources.map((r) => r.identifier),
