@@ -229,12 +229,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         return { items, total };
       }),
     dailyCount: protectedProcedure
-      .input(
-        z.object({
-          workspaceId: z.string().uuid(),
-          timezone: z.string(),
-        }),
-      )
+      .input(z.object({ workspaceId: z.string().uuid(), timezone: z.string() }))
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
@@ -266,6 +261,64 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .where(
             and(
               eq(schema.system.workspaceId, input.workspaceId),
+              notInArray(schema.job.status, [
+                JobStatus.Pending,
+                JobStatus.Cancelled,
+                JobStatus.Skipped,
+              ]),
+            ),
+          )
+          .groupBy(dateTruncExpr, schema.job.status)
+          .as("sub");
+
+        return ctx.db
+          .select({
+            date: subquery.date,
+            totalCount: sql<number>`SUM(${subquery.countPerStatus})`.as(
+              "totalCount",
+            ),
+            statusCounts: sql<Record<JobStatus, number>>`
+              jsonb_object_agg(${subquery.status}, ${subquery.countPerStatus})
+            `.as("statusCounts"),
+          })
+          .from(subquery)
+          .groupBy(subquery.date)
+          .orderBy(subquery.date);
+      }),
+  }),
+
+  byDeploymentId: createTRPCRouter({
+    dailyCount: protectedProcedure
+      .input(
+        z.object({ deploymentId: z.string().uuid(), timezone: z.string() }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.JobList)
+            .on({ type: "deployment", id: input.deploymentId }),
+      })
+      .query(async ({ ctx, input }) => {
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
+
+        const subquery = ctx.db
+          .select({
+            date: dateTruncExpr.as("date"),
+            status: schema.job.status,
+            countPerStatus: sql<number>`COUNT(*)`.as("countPerStatus"),
+          })
+          .from(schema.releaseJobTrigger)
+          .innerJoin(
+            schema.job,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          )
+          .innerJoin(
+            schema.release,
+            eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+          )
+          .where(
+            and(
+              eq(schema.release.deploymentId, input.deploymentId),
               notInArray(schema.job.status, [
                 JobStatus.Pending,
                 JobStatus.Cancelled,

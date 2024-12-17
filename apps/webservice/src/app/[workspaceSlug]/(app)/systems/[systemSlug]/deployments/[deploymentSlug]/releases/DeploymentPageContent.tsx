@@ -3,7 +3,12 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import { useParams, useRouter } from "next/navigation";
-import { IconFilter, IconGraph, IconSettings } from "@tabler/icons-react";
+import {
+  IconFilter,
+  IconGraph,
+  IconHistory,
+  IconSettings,
+} from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 
@@ -31,6 +36,7 @@ import {
   EnvironmentColumnSelector,
   useEnvironmentColumnSelector,
 } from "./EnvironmentColumnSelector";
+import { JobHistoryPopover } from "./JobHistoryPopover";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -80,8 +86,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const numEnvironmentBlocks = Math.min(3, selectedEnvironments.length);
 
   return (
-    <div className="flex flex-col">
-      <div className="text-sm">
+    <div>
+      <div className="h-full text-sm">
         <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
           <div className="flex flex-grow items-center gap-2">
             <ReleaseConditionDialog
@@ -135,15 +141,28 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             </Badge>
           </div>
 
-          <ReleaseDistributionGraphPopover deployment={deployment}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-            >
-              <IconGraph className="h-4 w-4" />
-            </Button>
-          </ReleaseDistributionGraphPopover>
+          <div className="flex items-center gap-2">
+            <ReleaseDistributionGraphPopover deployment={deployment}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+              >
+                <IconGraph className="h-4 w-4" />
+              </Button>
+            </ReleaseDistributionGraphPopover>
+            {releaseIds.length > 0 && (
+              <JobHistoryPopover deploymentId={deployment.id}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+                >
+                  <IconHistory className="h-4 w-4" />
+                </Button>
+              </JobHistoryPopover>
+            )}
+          </div>
         </div>
       </div>
       <div className="h-full text-sm">
