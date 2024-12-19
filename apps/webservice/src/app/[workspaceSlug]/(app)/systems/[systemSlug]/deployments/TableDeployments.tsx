@@ -109,14 +109,13 @@ const ReleaseCell: React.FC<{
     conditions: [isSameDeployment, isSameEnvironment, isSameRelease],
   };
 
-  const { items } =
+  const releaseJobTriggers =
     release != null
       ? await api.job.config.byWorkspaceId.list({
           workspaceId: workspace.id,
           filter,
         })
-      : { items: null };
-  const releaseJobTriggers = items ?? [];
+      : [];
   const hasResources = env.resources.length > 0;
   const hasRelease = release != null;
   const jc = releaseJobTriggers

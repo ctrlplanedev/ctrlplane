@@ -132,9 +132,9 @@ const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   const loading = pendingJobsQ.isLoading || inProgressJobsQ.isLoading;
 
   const isCurrentReleasePending =
-    pendingJobsQ.data != null && pendingJobsQ.data.total > 0;
+    pendingJobsQ.data != null && pendingJobsQ.data.length > 0;
   const isSeparateReleaseInProgress =
-    inProgressJobsQ.data != null && inProgressJobsQ.data.total > 0;
+    inProgressJobsQ.data != null && inProgressJobsQ.data.length > 0;
 
   const isWaitingOnActive =
     isCurrentReleasePending && isSeparateReleaseInProgress;

@@ -5,7 +5,6 @@ import { z } from "zod";
 
 import {
   and,
-  asc,
   countDistinct,
   desc,
   eq,
@@ -137,8 +136,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .perform(Permission.JobList)
             .on({ type: "workspace", id: input.workspaceId }),
       })
-      .query(async ({ ctx, input }) => {
-        const items = await releaseJobTriggerQuery(ctx.db)
+      .query(({ ctx, input }) =>
+        releaseJobTriggerQuery(ctx.db)
           .leftJoin(
             schema.system,
             eq(schema.system.id, schema.deployment.systemId),
@@ -158,7 +157,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
               schema.releaseJobMatchesCondition(ctx.db, input.filter),
             ),
           )
-          .orderBy(asc(schema.releaseJobTrigger.createdAt))
+          .orderBy(desc(schema.job.createdAt))
           .limit(input.limit)
           .offset(input.offset)
           .then((data) =>
@@ -185,9 +184,23 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 environment: v[0]!.environment,
               }))
               .value(),
-          );
-
-        const total = await ctx.db
+          ),
+      ),
+    count: protectedProcedure
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          filter: jobCondition.optional(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.JobList)
+            .on({ type: "workspace", id: input.workspaceId }),
+      })
+      .query(({ ctx, input }) =>
+        ctx.db
           .select({
             count: countDistinct(schema.releaseJobTrigger.id),
           })
@@ -224,10 +237,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
             ),
           )
           .then(takeFirst)
-          .then((t) => t.count);
-
-        return { items, total };
-      }),
+          .then((t) => t.count),
+      ),
     dailyCount: protectedProcedure
       .input(z.object({ workspaceId: z.string().uuid(), timezone: z.string() }))
       .meta({
