@@ -24,6 +24,7 @@ import {
 } from "drizzle-orm";
 import {
   boolean,
+  index,
   json,
   pgEnum,
   pgTable,
@@ -69,30 +70,37 @@ export const jobReason = pgEnum("job_reason", [
   "config_policy_override",
 ]);
 
-export const job = pgTable("job", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const job = pgTable(
+  "job",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
 
-  jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
-    onDelete: "set null",
+    jobAgentId: uuid("job_agent_id").references(() => jobAgent.id, {
+      onDelete: "set null",
+    }),
+    jobAgentConfig: json("job_agent_config")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, any>>(),
+
+    externalId: text("external_id"),
+
+    status: jobStatus("status").notNull().default("pending"),
+    message: text("message"),
+    reason: jobReason("reason").notNull().default("policy_passing"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (t) => ({
+    idx: index("job_created_at_idx").on(t.createdAt),
+    statusIdx: index("job_status_idx").on(t.status),
   }),
-  jobAgentConfig: json("job_agent_config")
-    .notNull()
-    .default("{}")
-    .$type<Record<string, any>>(),
-
-  externalId: text("external_id"),
-
-  status: jobStatus("status").notNull().default("pending"),
-  message: text("message"),
-  reason: jobReason("reason").notNull().default("policy_passing"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
+);
 
 export const jobRelations = relations(job, ({ many }) => ({
   releaseTrigger: many(releaseJobTrigger),

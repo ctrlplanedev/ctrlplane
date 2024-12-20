@@ -3,7 +3,6 @@
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import React from "react";
 import { IconFilter, IconLoader2 } from "@tabler/icons-react";
-import _ from "lodash";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -28,6 +27,7 @@ import { VariableCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
+import { nFormatter } from "../../systems/[systemSlug]/_components/nFormatter";
 
 type JobTableProps = {
   workspaceId: string;
@@ -36,10 +36,16 @@ type JobTableProps = {
 export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
   const { filter, setFilter } = useFilter<JobCondition>();
   const { setJobId } = useJobDrawer();
-  const allReleaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
-    { workspaceId, limit: 0 },
+  const { data: allJobsTotal } = api.job.config.byWorkspaceId.count.useQuery(
+    { workspaceId },
     { refetchInterval: 60_000, placeholderData: (prev) => prev },
   );
+
+  const { data: total, isLoading: isTotalLoading } =
+    api.job.config.byWorkspaceId.count.useQuery(
+      { workspaceId, filter: filter ?? undefined },
+      { refetchInterval: 60_000, placeholderData: (prev) => prev },
+    );
 
   const releaseJobTriggers = api.job.config.byWorkspaceId.list.useQuery(
     { workspaceId, filter: filter ?? undefined, limit: 100 },
@@ -67,22 +73,21 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
           )}
         </div>
 
-        {releaseJobTriggers.data?.total != null && (
-          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
-            Total:
-            <Badge
-              variant="outline"
-              className="rounded-full border-neutral-800 text-inherit"
-            >
-              {releaseJobTriggers.data.total}
-            </Badge>
-          </div>
-        )}
+        <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
+          Total:
+          <Badge
+            variant="outline"
+            className="rounded-full border-neutral-800 text-inherit"
+          >
+            {isTotalLoading && <IconLoader2 className="h-3 w-3 animate-spin" />}
+            {!isTotalLoading && (total ? nFormatter(total, 1) : "-")}
+          </Badge>
+        </div>
       </div>
 
       {releaseJobTriggers.isLoading && (
         <div className="space-y-2 p-4">
-          {_.range(10).map((i) => (
+          {Array.from({ length: 10 }).map((_, i) => (
             <Skeleton
               key={i}
               className="h-9 w-full"
@@ -91,17 +96,17 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
           ))}
         </div>
       )}
-      {releaseJobTriggers.isSuccess && releaseJobTriggers.data.total === 0 && (
+      {releaseJobTriggers.isSuccess && total === 0 && (
         <NoFilterMatch
-          numItems={allReleaseJobTriggers.data?.total ?? 0}
+          numItems={allJobsTotal ?? 0}
           itemType="job"
           onClear={() => setFilter(null)}
         />
       )}
 
-      {releaseJobTriggers.isSuccess && releaseJobTriggers.data.total > 0 && (
-        <div className="h-[calc(100%-41px)] overflow-auto">
-          <Table className="table-fixed">
+      {releaseJobTriggers.isSuccess && releaseJobTriggers.data.length > 0 && (
+        <div className="h-[calc(100vh-93px)] overflow-auto">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Resource</TableHead>
@@ -114,13 +119,15 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {releaseJobTriggers.data.items.map((job) => (
+              {releaseJobTriggers.data.map((job) => (
                 <TableRow
                   key={job.id}
                   onClick={() => setJobId(job.job.id)}
                   className="cursor-pointer"
                 >
-                  <TableCell>{job.resource.name}</TableCell>
+                  <TableCell>
+                    <span className="flex truncate">{job.resource.name}</span>
+                  </TableCell>
                   <TableCell>{job.environment.name}</TableCell>
                   <TableCell>{job.release.deployment.name}</TableCell>
                   <TableCell>{job.release.version}</TableCell>

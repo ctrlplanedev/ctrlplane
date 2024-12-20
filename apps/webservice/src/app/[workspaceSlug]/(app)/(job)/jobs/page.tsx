@@ -19,10 +19,10 @@ export default async function JobsPage({
 
   const releaseJobTriggers = await api.job.config.byWorkspaceId.list({
     workspaceId: workspace.id,
-    limit: 0,
+    limit: 1,
   });
 
-  if (releaseJobTriggers.total === 0) return <JobsGettingStarted />;
+  if (releaseJobTriggers.length === 0) return <JobsGettingStarted />;
 
   return <JobTable workspaceId={workspace.id} />;
 }
