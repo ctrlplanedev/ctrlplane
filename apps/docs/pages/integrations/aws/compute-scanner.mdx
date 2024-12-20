@@ -1,0 +1,60 @@
+# Compute Scanner
+
+The AWS Compute Scanner is a tool that scans AWS accounts for new instances and
+creates resources for them automatically.
+
+Currently, the AWS compute scanner supports importing the following resources:
+
+- Amazon Elastic Kubernetes Service Clusters (EKS)
+
+## Managed AWS Compute Scanner
+
+The managed AWS Compute Scanner is built into the Ctrlplane solution. Each
+workspace will be assigned an AWS IAM role when the managed provider is enabled.
+You must provide this IAM role with the required permissions to access the
+resources in the AWS accounts that you want it to scan.
+
+After the integration is enabeld, you can add a new provider, select the Managed
+Provider, and add all the roles you would like it to assume to scan the
+resources available to those roles. Once you hit submit, you may need to wait a
+few minutes while it scans and imports all compute resources.
+
+## Role Requirements
+
+The Managed AWS Compute Scanner role can be gotten from the provider settings
+under `AWS Role` or from the workspace settings integration page after being
+enabled.
+
+The role that you want assumed in your account must have the following
+permissions policy:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["eks:*", "ec2:*"],
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+The role also requires a trust policy that allows the
+`arn:aws:iam::<account-id>:role/ctrlplane-<workspace>` role to assume it.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::<account-id>:role/ctrlplane-<workspace>"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+```
