@@ -697,25 +697,12 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "workspace", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const activeRelease = latestActiveReleaseSubQuery(ctx.db);
-      return ctx.db
+    .query(({ ctx, input }) =>
+      ctx.db
         .select()
         .from(deployment)
         .innerJoin(system, eq(system.id, deployment.systemId))
-        .leftJoin(
-          activeRelease,
-          and(
-            eq(activeRelease.deploymentId, deployment.id),
-            eq(activeRelease.rank, 1),
-          ),
-        )
         .where(eq(system.workspaceId, input))
-        .then((r) =>
-          r.map((row) => ({
-            ...row.deployment,
-            latestActiveReleases: row.active_releases,
-          })),
-        );
-    }),
+        .then((r) => r.map((row) => row.deployment)),
+    ),
 });
