@@ -13,18 +13,14 @@ import {
 } from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
+import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
 export const ApprovalAndGovernance: React.FC<{
   environmentPolicy: SCHEMA.EnvironmentPolicy;
 }> = ({ environmentPolicy }) => {
   const updatePolicy = api.environment.policy.update.useMutation();
-  const utils = api.useUtils();
-
-  const { id, systemId } = environmentPolicy;
-  const invalidatePolicy = () => {
-    utils.environment.policy.byId.invalidate(id);
-    utils.environment.policy.bySystemId.invalidate(systemId);
-  };
+  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
+  const { id } = environmentPolicy;
 
   return (
     <div className="space-y-10 p-2">

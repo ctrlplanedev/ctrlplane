@@ -77,8 +77,8 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
           j.release_job_trigger.environmentId,
         ])
         .map((jcs) =>
-          // Check if the concurrency policy type is "some"
-          jcs[0]!.environment_policy?.concurrencyType === "some"
+          // Check if the policy has a concurrency limit
+          jcs[0]!.environment_policy?.concurrencyLimit != null
             ? // If so, limit the number of release job triggers based on the concurrency limit
               jcs.slice(
                 0,
