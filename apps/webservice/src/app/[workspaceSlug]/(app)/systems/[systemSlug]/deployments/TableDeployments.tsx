@@ -1,22 +1,15 @@
+"use client";
+
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { Deployment, Workspace } from "@ctrlplane/db/schema";
-import type { JobCondition } from "@ctrlplane/validators/jobs";
 import Link from "next/link";
 import { IconCircleFilled } from "@tabler/icons-react";
-import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
-import {
-  ColumnOperator,
-  ComparisonOperator,
-  FilterType,
-} from "@ctrlplane/validators/conditions";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/DeploymentOptionsDropdown";
-import { api } from "~/trpc/server";
-import { Release } from "./TableCells";
+import { LazyReleaseEnvironmentCell } from "./ReleaseEnvironmentCell";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 
@@ -64,92 +57,6 @@ const EnvIcon: React.FC<{
         </div>
       </Link>
     </Icon>
-  );
-};
-
-const ReleaseCell: React.FC<{
-  workspace: Workspace;
-  systemSlug: string;
-  environment: Environment;
-  release: {
-    id: string;
-    name: string;
-    version: string;
-    createdAt: Date;
-  } | null;
-  deployment: Deployment;
-}> = async ({
-  release,
-  environment: env,
-  deployment,
-  workspace,
-  systemSlug,
-}) => {
-  const isSameDeployment: JobCondition = {
-    type: JobFilterType.Deployment,
-    operator: ColumnOperator.Equals,
-    value: deployment.id,
-  };
-
-  const isSameEnvironment: JobCondition = {
-    type: JobFilterType.Environment,
-    operator: ColumnOperator.Equals,
-    value: env.id,
-  };
-
-  const isSameRelease: JobCondition = {
-    type: JobFilterType.Release,
-    operator: ColumnOperator.Equals,
-    value: release?.id ?? "",
-  };
-
-  const filter: JobCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [isSameDeployment, isSameEnvironment, isSameRelease],
-  };
-
-  const releaseJobTriggers =
-    release != null
-      ? await api.job.config.byWorkspaceId.list({
-          workspaceId: workspace.id,
-          filter,
-        })
-      : [];
-  const hasResources = env.resources.length > 0;
-  const hasRelease = release != null;
-  const jc = releaseJobTriggers
-    .filter(
-      (releaseJobTrigger) =>
-        isPresent(releaseJobTrigger.environmentId) &&
-        isPresent(releaseJobTrigger.releaseId) &&
-        isPresent(releaseJobTrigger.resource.id),
-    )
-    .map((releaseJobTrigger) => ({ ...releaseJobTrigger }));
-  return (
-    <>
-      {hasRelease && hasResources && (
-        <Release
-          releaseId={release.id}
-          environment={env}
-          name={release.name}
-          version={release.version}
-          deployedAt={release.createdAt}
-          releaseJobTriggers={jc}
-          workspaceSlug={workspace.slug}
-          systemSlug={systemSlug}
-          deploymentSlug={deployment.slug}
-        />
-      )}
-
-      {!hasResources && hasRelease && (
-        <div className="text-center text-xs text-muted">No resources</div>
-      )}
-
-      {!hasRelease && (
-        <div className="text-center text-xs text-muted">No release</div>
-      )}
-    </>
   );
 };
 
@@ -228,13 +135,18 @@ const DeploymentTable: React.FC<{
                       idx === 0 && "border-t",
                     )}
                   >
-                    <ReleaseCell
-                      release={release}
-                      environment={env}
-                      deployment={r}
-                      workspace={workspace}
-                      systemSlug={systemSlug}
-                    />
+                    {release != null && (
+                      <LazyReleaseEnvironmentCell
+                        release={release}
+                        environment={env}
+                        deployment={r}
+                      />
+                    )}
+                    {release == null && (
+                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
+                        No release
+                      </div>
+                    )}
                   </td>
                 );
               })}

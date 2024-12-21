@@ -33,6 +33,7 @@ export const JobStatusReadable = {
 };
 
 export const activeStatus = [JobStatus.InProgress, JobStatus.ActionRequired];
+export const activeStatusType = activeStatus.map((s) => s as JobStatusType);
 
 export const exitedStatus = [
   JobStatus.Completed,
