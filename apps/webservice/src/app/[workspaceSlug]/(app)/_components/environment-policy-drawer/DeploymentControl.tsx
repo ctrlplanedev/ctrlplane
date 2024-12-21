@@ -1,5 +1,6 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React, { useState } from "react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { useDebounce } from "react-use";
 
 import { Input } from "@ctrlplane/ui/input";
@@ -9,7 +10,6 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 import { useInvalidatePolicy } from "./useInvalidatePolicy";
-import { IconLoader2 } from "@tabler/icons-react";
 
 type DeploymentControlProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy;
