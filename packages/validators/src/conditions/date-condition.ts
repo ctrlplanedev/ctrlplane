@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const operator = z.union([
+export const operator = z.union([
   z.literal("before"),
   z.literal("after"),
   z.literal("before-or-on"),
@@ -8,7 +8,9 @@ const operator = z.union([
 ]);
 
 const isValidDate = (v: string) => !Number.isNaN(new Date(v).getTime());
-const value = z.string().refine(isValidDate, { message: "Invalid date" });
+export const value = z
+  .string()
+  .refine(isValidDate, { message: "Invalid date" });
 
 const createdAt = z.literal("created-at");
 const updatedAt = z.literal("updated-at");

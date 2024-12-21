@@ -6,6 +6,7 @@ import type {
   ComparisonCondition,
   IdentifierCondition,
   KindCondition,
+  LastSyncCondition,
   NameCondition,
   ProviderCondition,
   ResourceCondition,
@@ -27,6 +28,7 @@ import {
   isCreatedAtCondition,
   isIdentifierCondition,
   isKindCondition,
+  isLastSyncCondition,
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
@@ -231,6 +233,20 @@ const StringifiedCreatedAtCondition: React.FC<{
   </ConditionBadge>
 );
 
+const StringifiedLastSyncCondition: React.FC<{
+  condition: LastSyncCondition;
+}> = ({ condition }) => (
+  <ConditionBadge>
+    <span className="text-white">last sync</span>
+    <span className="text-muted-foreground">
+      {operatorVerbs[condition.operator]}
+    </span>
+    <span className="text-white">
+      {format(condition.value, "MMM d, yyyy, h:mma")}
+    </span>
+  </ConditionBadge>
+);
+
 const StringifiedResourceCondition: React.FC<{
   condition: ResourceCondition;
   depth?: number;
@@ -268,6 +284,9 @@ const StringifiedResourceCondition: React.FC<{
 
   if (isCreatedAtCondition(condition))
     return <StringifiedCreatedAtCondition condition={condition} />;
+
+  if (isLastSyncCondition(condition))
+    return <StringifiedLastSyncCondition condition={condition} />;
 };
 
 export const ResourceConditionBadge: React.FC<{

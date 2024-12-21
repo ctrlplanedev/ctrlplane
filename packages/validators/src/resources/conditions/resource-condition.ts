@@ -7,6 +7,7 @@ import type {
 import type { ComparisonCondition } from "./comparison-condition.js";
 import type { IdentifierCondition } from "./identifier-condition.js";
 import type { KindCondition } from "./kind-condition.js";
+import type { LastSyncCondition } from "./last-sync-condition.js";
 import type { NameCondition } from "./name-condition.js";
 import type { ProviderCondition } from "./provider-condition.js";
 import {
@@ -17,6 +18,7 @@ import {
 import { comparisonCondition } from "./comparison-condition.js";
 import { identifierCondition } from "./identifier-condition.js";
 import { kindCondition } from "./kind-condition.js";
+import { lastSyncCondition } from "./last-sync-condition.js";
 import { nameCondition } from "./name-condition.js";
 import { providerCondition } from "./provider-condition.js";
 
@@ -27,7 +29,8 @@ export type ResourceCondition =
   | NameCondition
   | ProviderCondition
   | IdentifierCondition
-  | CreatedAtCondition;
+  | CreatedAtCondition
+  | LastSyncCondition;
 
 export const resourceCondition = z.union([
   comparisonCondition,
@@ -37,6 +40,7 @@ export const resourceCondition = z.union([
   providerCondition,
   identifierCondition,
   createdAtCondition,
+  lastSyncCondition,
 ]);
 
 export enum ResourceOperator {
@@ -55,6 +59,7 @@ export enum ResourceFilterType {
   Identifier = "identifier",
   Provider = "provider",
   Comparison = "comparison",
+  LastSync = "last-sync",
 }
 
 export const defaultCondition: ResourceCondition = {
@@ -117,6 +122,11 @@ export const isCreatedAtCondition = (
   condition: ResourceCondition,
 ): condition is CreatedAtCondition => condition.type === FilterType.CreatedAt;
 
+export const isLastSyncCondition = (
+  condition: ResourceCondition,
+): condition is LastSyncCondition =>
+  condition.type === ResourceFilterType.LastSync;
+
 export const isValidResourceCondition = (
   condition: ResourceCondition,
 ): boolean => {
@@ -126,6 +136,14 @@ export const isValidResourceCondition = (
     if (condition.operator === ResourceOperator.Null)
       return condition.value == null && condition.key.length > 0;
     return condition.key.length > 0;
+  }
+  if (isLastSyncCondition(condition) || isCreatedAtCondition(condition)) {
+    try {
+      new Date(condition.value);
+      return true;
+    } catch {
+      return false;
+    }
   }
   return condition.value.length > 0;
 };

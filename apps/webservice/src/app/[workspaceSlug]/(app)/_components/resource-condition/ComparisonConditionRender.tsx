@@ -332,7 +332,17 @@ export const ComparisonConditionRender: React.FC<
             >
               Created at
             </DropdownMenuItem>
-
+            <DropdownMenuItem
+              onClick={() =>
+                addCondition({
+                  type: ResourceFilterType.LastSync,
+                  operator: DateOperator.Before,
+                  value: new Date().toISOString(),
+                })
+              }
+            >
+              Last sync
+            </DropdownMenuItem>
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>

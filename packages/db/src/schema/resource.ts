@@ -4,6 +4,7 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import type {
   IdentifierCondition,
+  LastSyncCondition,
   NameCondition,
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
@@ -295,6 +296,16 @@ const buildCreatedAtCondition = (tx: Tx, cond: CreatedAtCondition): SQL => {
   return gte(resource.createdAt, date);
 };
 
+const buildLastSyncCondition = (tx: Tx, cond: LastSyncCondition): SQL => {
+  const date = new Date(cond.value);
+  if (cond.operator === DateOperator.Before)
+    return lt(resource.updatedAt, date);
+  if (cond.operator === DateOperator.After) return gt(resource.updatedAt, date);
+  if (cond.operator === DateOperator.BeforeOrOn)
+    return lte(resource.updatedAt, date);
+  return gte(resource.updatedAt, date);
+};
+
 const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
   if (cond.type === ResourceFilterType.Metadata)
     return buildMetadataCondition(tx, cond);
@@ -308,6 +319,8 @@ const buildCondition = (tx: Tx, cond: ResourceCondition): SQL => {
     return buildIdentifierCondition(tx, cond);
   if (cond.type === FilterType.CreatedAt)
     return buildCreatedAtCondition(tx, cond);
+  if (cond.type === ResourceFilterType.LastSync)
+    return buildLastSyncCondition(tx, cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 

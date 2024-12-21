@@ -6,6 +6,7 @@ import {
   isCreatedAtCondition,
   isIdentifierCondition,
   isKindCondition,
+  isLastSyncCondition,
   isMetadataCondition,
   isNameCondition,
   isProviderCondition,
@@ -18,6 +19,7 @@ import { KindConditionRender } from "./KindConditionRender";
 import { NameConditionRender } from "./NameConditionRender";
 import { ProviderConditionRender } from "./ProviderConditionRender";
 import { ResourceCreatedAtConditionRender } from "./ResourceCreatedAtConditionRender";
+import { ResourceLastSyncConditionRender } from "./ResourceLastSyncConditionRender";
 import { ResourceMetadataConditionRender } from "./ResourceMetadataConditionRender";
 
 /**
@@ -85,6 +87,15 @@ export const ResourceConditionRender: React.FC<
   if (isCreatedAtCondition(condition))
     return (
       <ResourceCreatedAtConditionRender
+        condition={condition}
+        onChange={onChange}
+        className={className}
+      />
+    );
+
+  if (isLastSyncCondition(condition))
+    return (
+      <ResourceLastSyncConditionRender
         condition={condition}
         onChange={onChange}
         className={className}
