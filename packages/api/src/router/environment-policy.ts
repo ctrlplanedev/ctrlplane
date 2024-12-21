@@ -24,7 +24,6 @@ import {
   release,
   releaseChannel,
   releaseJobTrigger,
-  setPolicyReleaseWindow,
   updateEnvironmentPolicy,
   user,
 } from "@ctrlplane/db/schema";
@@ -367,7 +366,7 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironmentPolicy }))
     .mutation(async ({ ctx, input }) => {
-      const { releaseChannels, ...data } = input.data;
+      const { releaseChannels, releaseWindows, ...data } = input.data;
       const hasUpdates = Object.entries(data).length > 0;
       if (hasUpdates)
         await ctx.db
@@ -418,6 +417,19 @@ export const policyRouter = createTRPCRouter({
         });
       }
 
+      if (releaseWindows != null) {
+        await ctx.db.transaction(async (db) => {
+          await db
+            .delete(environmentPolicyReleaseWindow)
+            .where(eq(environmentPolicyReleaseWindow.policyId, input.id));
+          if (releaseWindows.length > 0)
+            await db
+              .insert(environmentPolicyReleaseWindow)
+              .values(releaseWindows)
+              .returning();
+        });
+      }
+
       return ctx.db
         .select()
         .from(environmentPolicy)
@@ -439,32 +451,5 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.id, input))
         .returning()
         .then(takeFirst),
-    ),
-
-  setWindows: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemUpdate)
-          .on({ type: "environmentPolicy", id: input.policyId }),
-    })
-    .input(
-      z.object({
-        policyId: z.string().uuid(),
-        releaseWindows: z.array(setPolicyReleaseWindow),
-      }),
-    )
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .delete(environmentPolicyReleaseWindow)
-        .where(eq(environmentPolicyReleaseWindow.policyId, input.policyId))
-        .then(() =>
-          input.releaseWindows.length === 0
-            ? []
-            : ctx.db
-                .insert(environmentPolicyReleaseWindow)
-                .values(input.releaseWindows)
-                .returning(),
-        ),
     ),
 });

@@ -128,7 +128,10 @@ const View: React.FC<{
       />
     ),
     [EnvironmentPolicyDrawerTab.Rollout]: (
-      <RolloutAndTiming environmentPolicy={environmentPolicy} />
+      <RolloutAndTiming
+        environmentPolicy={environmentPolicy}
+        isLoading={isLoading}
+      />
     ),
     [EnvironmentPolicyDrawerTab.ReleaseChannels]: deployments != null && (
       <ReleaseChannels

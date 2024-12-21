@@ -1,6 +1,6 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
-import { IconX } from "@tabler/icons-react";
+import { IconLoader2, IconX } from "@tabler/icons-react";
 import _ from "lodash";
 import ms from "ms";
 import prettyMilliseconds from "pretty-ms";
@@ -29,8 +29,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
+import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
 const isValidDuration = (str: string) => !isNaN(ms(str));
 
@@ -48,11 +50,17 @@ const schema = z.object({
   }),
 });
 
-export const RolloutAndTiming: React.FC<{
+type RolloutAndTimingProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
   };
-}> = ({ environmentPolicy }) => {
+  isLoading: boolean;
+};
+
+export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
+  environmentPolicy,
+  isLoading,
+}) => {
   const rolloutDuration = prettyMilliseconds(environmentPolicy.rolloutDuration);
   const form = useForm({
     schema,
@@ -64,27 +72,30 @@ export const RolloutAndTiming: React.FC<{
     name: "releaseWindows",
   });
 
-  const setPolicyWindows = api.environment.policy.setWindows.useMutation();
   const updatePolicy = api.environment.policy.update.useMutation();
-  const utils = api.useUtils();
+  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
 
-  const { id: policyId, systemId } = environmentPolicy;
-  const onSubmit = form.handleSubmit(async (data) => {
+  const { id: policyId } = environmentPolicy;
+  const onSubmit = form.handleSubmit((data) => {
     const { releaseWindows, rolloutDuration: durationString } = data;
     const rolloutDuration = ms(durationString);
-    await setPolicyWindows.mutateAsync({ policyId, releaseWindows });
-    await updatePolicy.mutateAsync({ id: policyId, data: { rolloutDuration } });
-
-    form.reset(data);
-    await utils.environment.policy.byId.invalidate(policyId);
-    await utils.environment.policy.bySystemId.invalidate(systemId);
+    updatePolicy
+      .mutateAsync({ id: policyId, data: { rolloutDuration, releaseWindows } })
+      .then(() => form.reset(data))
+      .then(() => invalidatePolicy())
+      .catch((e) => toast.error(e.message));
   });
 
   return (
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-10 p-2">
         <div className="flex flex-col gap-1">
-          <h1 className="text-lg font-medium">Rollout and Timing</h1>
+          <h1 className="flex items-center gap-2 text-lg font-medium">
+            Rollout and Timing
+            {(isLoading || form.formState.isSubmitting) && (
+              <IconLoader2 className="h-4 w-4 animate-spin" />
+            )}
+          </h1>
           <span className="text-sm text-muted-foreground">
             Rollout and timing policies govern how and when deployments are
             rolled out to environments. These include incremental rollout
@@ -229,11 +240,7 @@ export const RolloutAndTiming: React.FC<{
 
         <Button
           type="submit"
-          disabled={
-            setPolicyWindows.isPending ||
-            updatePolicy.isPending ||
-            !form.formState.isDirty
-          }
+          disabled={updatePolicy.isPending || !form.formState.isDirty}
         >
           Save
         </Button>

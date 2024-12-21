@@ -145,6 +145,16 @@ export const updateEnvironmentPolicy = createEnvironmentPolicy
   .partial()
   .extend({
     releaseChannels: z.record(z.string().uuid().nullable()).optional(),
+    releaseWindows: z
+      .array(
+        z.object({
+          policyId: z.string().uuid(),
+          recurrence: z.enum(["hourly", "daily", "weekly", "monthly"]),
+          startTime: z.date(),
+          endTime: z.date(),
+        }),
+      )
+      .optional(),
   });
 
 export const environmentPolicyRelations = relations(
@@ -180,10 +190,6 @@ export const environmentPolicyReleaseWindow = pgTable(
     recurrence: recurrenceType("recurrence").notNull(),
   },
 );
-
-export const setPolicyReleaseWindow = createInsertSchema(
-  environmentPolicyReleaseWindow,
-).omit({ id: true });
 
 export type EnvironmentPolicyReleaseWindow = InferSelectModel<
   typeof environmentPolicyReleaseWindow
