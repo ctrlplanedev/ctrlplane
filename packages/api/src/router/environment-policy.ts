@@ -425,56 +425,6 @@ export const policyRouter = createTRPCRouter({
         .then(takeFirst);
     }),
 
-  updateReleaseChannels: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        releaseChannels: z.record(z.string().uuid().nullable()),
-      }),
-    )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.SystemUpdate)
-          .on({ type: "environmentPolicy", id: input.id }),
-    })
-    .mutation(({ ctx, input }) => {
-      const { id, releaseChannels } = input;
-      const [nulled, set] = _.partition(
-        Object.entries(releaseChannels),
-        ([_, channelId]) => channelId == null,
-      );
-
-      const nulledIds = nulled.map(([deploymentId]) => deploymentId);
-      const setChannels = set.map(([deploymentId, channelId]) => ({
-        policyId: id,
-        deploymentId,
-        channelId: channelId!,
-      }));
-
-      return ctx.db.transaction(async (db) => {
-        await db
-          .delete(environmentPolicyReleaseChannel)
-          .where(
-            inArray(environmentPolicyReleaseChannel.deploymentId, nulledIds),
-          );
-
-        if (setChannels.length > 0)
-          await db
-            .insert(environmentPolicyReleaseChannel)
-            .values(setChannels)
-            .onConflictDoUpdate({
-              target: [
-                environmentPolicyReleaseChannel.policyId,
-                environmentPolicyReleaseChannel.deploymentId,
-              ],
-              set: buildConflictUpdateColumns(environmentPolicyReleaseChannel, [
-                "channelId",
-              ]),
-            });
-      });
-    }),
-
   delete: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
