@@ -330,6 +330,13 @@
       "when": 1734638546868,
       "tag": "0046_little_warstar",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1734802324798,
+      "tag": "0047_square_william_stryker",
+      "breakpoints": true
     }
   ]
 }

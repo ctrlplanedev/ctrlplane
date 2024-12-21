@@ -97,7 +97,7 @@ export const onJobCompletion = async (je: schema.Job) => {
   );
 
   const isWaitingOnConcurrencyRequirementInSameRelease = and(
-    eq(schema.environmentPolicy.concurrencyType, "some"),
+    isNotNull(schema.environmentPolicy.concurrencyLimit),
     eq(schema.environment.id, triggers.release_job_trigger.environmentId),
     eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
     eq(schema.job.status, JobStatus.Pending),

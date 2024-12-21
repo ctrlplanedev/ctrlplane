@@ -70,11 +70,7 @@ export const openapi: Swagger.SwaggerV3 = {
                           enum: ["some", "all", "optional"],
                         },
                         successMinimum: { type: "number" },
-                        concurrencyType: {
-                          type: "string",
-                          enum: ["some", "all"],
-                        },
-                        concurrencyLimit: { type: "number" },
+                        concurrencyLimit: { type: "number", nullable: true },
                         rolloutDuration: { type: "number" },
                         releaseSequencing: {
                           type: "string",

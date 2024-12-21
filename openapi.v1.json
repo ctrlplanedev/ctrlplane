@@ -210,15 +210,9 @@
                         "successMinimum": {
                           "type": "number"
                         },
-                        "concurrencyType": {
-                          "type": "string",
-                          "enum": [
-                            "some",
-                            "all"
-                          ]
-                        },
                         "concurrencyLimit": {
-                          "type": "number"
+                          "type": "number",
+                          "nullable": true
                         },
                         "rolloutDuration": {
                           "type": "number"
@@ -2355,10 +2349,6 @@
             "type": "object",
             "additionalProperties": true
           },
-          "metadata": {
-            "type": "object",
-            "additionalProperties": { "type": "string" }
-          },
           "deploymentId": {
             "type": "string",
             "format": "uuid"
@@ -2373,7 +2363,6 @@
           "name",
           "version",
           "config",
-          "metadata",
           "deploymentId",
           "createdAt"
         ]

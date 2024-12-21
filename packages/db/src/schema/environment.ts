@@ -106,8 +106,6 @@ export const releaseSequencingType = pgEnum("release_sequencing_type", [
   "cancel",
 ]);
 
-export const concurrencyType = pgEnum("concurrency_type", ["all", "some"]);
-
 export const environmentPolicy = pgTable("environment_policy", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -124,9 +122,7 @@ export const environmentPolicy = pgTable("environment_policy", {
     .notNull()
     .default("all"),
   successMinimum: integer("minimum_success").notNull().default(0),
-
-  concurrencyType: concurrencyType("concurrency_type").notNull().default("all"),
-  concurrencyLimit: integer("concurrency_limit").notNull().default(1),
+  concurrencyLimit: integer("concurrency_limit").default(sql`NULL`),
 
   // Duration in milliseconds over which to gradually roll out releases to this
   // environment
