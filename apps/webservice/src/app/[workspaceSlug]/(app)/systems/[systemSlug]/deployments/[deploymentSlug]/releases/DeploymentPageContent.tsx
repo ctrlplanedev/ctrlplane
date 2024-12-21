@@ -30,8 +30,7 @@ import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/r
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
-import { DeployButton } from "../../DeployButton";
-import { Release } from "../../TableCells";
+import { LazyReleaseEnvironmentCell } from "../../ReleaseEnvironmentCell";
 import {
   EnvironmentColumnSelector,
   useEnvironmentColumnSelector,
@@ -40,9 +39,10 @@ import { JobHistoryPopover } from "./JobHistoryPopover";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
+type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
 type DeploymentPageContentProps = {
-  deployment: schema.Deployment & { releaseChannels: schema.ReleaseChannel[] };
+  deployment: Deployment;
   environments: Environment[];
   releaseChannel: schema.ReleaseChannel | null;
 };
@@ -241,99 +241,26 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       </Badge>
                     </div>
                   </TableCell>
-                  {selectedEnvironments.map((env) => {
-                    const environmentReleaseReleaseJobTriggers =
-                      release.releaseJobTriggers.filter(
-                        (t) => t.environmentId === env.id,
-                      );
-
-                    const hasResources = env.resources.length > 0;
-                    const isAlreadyDeployed =
-                      environmentReleaseReleaseJobTriggers.length > 0;
-                    const hasJobAgent = deployment.jobAgentId != null;
-                    const blockedEnv = blockedEnvByRelease.data?.find(
-                      (be) =>
-                        be.releaseId === release.id &&
-                        be.environmentId === env.id,
-                    );
-                    const isBlockedByReleaseChannel = blockedEnv != null;
-
-                    const showRelease = isAlreadyDeployed;
-                    const showDeployButton =
-                      !isAlreadyDeployed &&
-                      hasJobAgent &&
-                      hasResources &&
-                      !isBlockedByReleaseChannel;
-
-                    return (
-                      <TableCell
-                        className={cn(
-                          "h-[60px] w-[220px] border-l",
-                          releaseIdx === releases.data.items.length - 1 &&
-                            "border-b",
+                  {selectedEnvironments.map((env) => (
+                    <TableCell
+                      className={cn(
+                        "h-[60px] w-[220px] border-l",
+                        releaseIdx === releases.data.items.length - 1 &&
+                          "border-b",
+                      )}
+                      onClick={(e) => e.stopPropagation()}
+                      key={env.id}
+                    >
+                      <LazyReleaseEnvironmentCell
+                        environment={env}
+                        deployment={deployment}
+                        release={release}
+                        blockedEnv={blockedEnvByRelease.data?.find(
+                          (b) => b.environmentId === env.id,
                         )}
-                        onClick={(e) => e.stopPropagation()}
-                        key={env.id}
-                      >
-                        <div className="flex w-full items-center justify-center">
-                          {showRelease && (
-                            <Release
-                              workspaceSlug={workspaceSlug}
-                              systemSlug={systemSlug}
-                              deploymentSlug={deployment.slug}
-                              releaseId={release.id}
-                              version={release.version}
-                              environment={env}
-                              name={release.version}
-                              deployedAt={
-                                environmentReleaseReleaseJobTriggers[0]!
-                                  .createdAt
-                              }
-                              releaseJobTriggers={
-                                environmentReleaseReleaseJobTriggers
-                              }
-                            />
-                          )}
-
-                          {showDeployButton && (
-                            <DeployButton
-                              releaseId={release.id}
-                              environmentId={env.id}
-                            />
-                          )}
-
-                          {!isAlreadyDeployed && (
-                            <div className="text-center text-xs text-muted-foreground/70">
-                              {isBlockedByReleaseChannel && (
-                                <>
-                                  Blocked by{" "}
-                                  <Button
-                                    variant="link"
-                                    size="sm"
-                                    onClick={() =>
-                                      setReleaseChannelId(
-                                        blockedEnv.releaseChannelId ?? null,
-                                      )
-                                    }
-                                    className="px-0 text-muted-foreground/70"
-                                  >
-                                    release channel
-                                  </Button>
-                                </>
-                              )}
-                              {!isBlockedByReleaseChannel &&
-                                !hasJobAgent &&
-                                "No job agent"}
-                              {!isBlockedByReleaseChannel &&
-                                hasJobAgent &&
-                                !hasResources &&
-                                "No resources"}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                    );
-                  })}
+                      />
+                    </TableCell>
+                  ))}
                 </TableRow>
               ))}
             </TableBody>

@@ -1,6 +1,6 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { JobStatus } from "@ctrlplane/validators/jobs";
+import type { JobCondition, JobStatus } from "@ctrlplane/validators/jobs";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { IconChevronRight, IconDots } from "@tabler/icons-react";
@@ -14,9 +14,15 @@ import {
   CollapsibleTrigger,
 } from "@ctrlplane/ui/collapsible";
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
-import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { JobStatusReadable } from "@ctrlplane/validators/jobs";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  FilterType,
+  ReservedMetadataKey,
+} from "@ctrlplane/validators/conditions";
+import { JobFilterType, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
+import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "../../systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
 import { DeployButton } from "../../systems/[systemSlug]/deployments/DeployButton";
 import { JobLinksCell } from "../job-table/JobLinksCell";
@@ -258,9 +264,43 @@ export const ReleaseRows: React.FC<ReleaseRowsProps> = ({
   deployment,
   resource,
 }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const { data: workspace } = api.workspace.bySlug.useQuery(workspaceSlug);
+
   const [open, setOpen] = useState(false);
-  const { releaseJobTriggers } = release;
-  const hasOtherReleaseJobTriggers = releaseJobTriggers.length > 1;
+
+  const isSameRelease: JobCondition = {
+    type: JobFilterType.Release,
+    operator: ColumnOperator.Equals,
+    value: release.id,
+  };
+
+  const isSameResource: JobCondition = {
+    type: JobFilterType.JobResource,
+    operator: ColumnOperator.Equals,
+    value: resource.id,
+  };
+
+  const isSameEnvironment: JobCondition = {
+    type: JobFilterType.Environment,
+    operator: ColumnOperator.Equals,
+    value: environment.id,
+  };
+
+  const filter: JobCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [isSameRelease, isSameResource, isSameEnvironment],
+  };
+
+  const { data: releaseJobTriggers } =
+    api.job.config.byWorkspaceId.list.useQuery(
+      { workspaceId: workspace?.id ?? "", filter },
+      { enabled: workspace != null },
+    );
+
+  const hasOtherReleaseJobTriggers =
+    releaseJobTriggers != null && releaseJobTriggers.length > 1;
 
   return (
     <Collapsible asChild open={open} onOpenChange={setOpen}>
@@ -270,14 +310,14 @@ export const ReleaseRows: React.FC<ReleaseRowsProps> = ({
           environment={environment}
           deployment={deployment}
           resource={resource}
-          releaseJobTrigger={releaseJobTriggers[0]}
+          releaseJobTrigger={releaseJobTriggers?.[0]}
           isExpandable={hasOtherReleaseJobTriggers}
           isExpanded={open}
-          key={releaseJobTriggers[0]?.id ?? `${release.id}-parent`}
+          key={releaseJobTriggers?.[0]?.id ?? `${release.id}-parent`}
         />
         <CollapsibleContent asChild>
           <>
-            {releaseJobTriggers.map((trigger, idx) => {
+            {releaseJobTriggers?.map((trigger, idx) => {
               if (idx === 0) return null;
               return (
                 <ReleaseJobTriggerChildRow

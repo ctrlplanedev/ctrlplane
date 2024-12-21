@@ -8,7 +8,6 @@ import {
   desc,
   eq,
   inArray,
-  isNull,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -21,15 +20,12 @@ import {
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
   job,
-  jobMetadata,
   release,
   releaseChannel,
   releaseDependency,
-  releaseJobMatchesCondition,
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
-  resource,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -70,26 +66,19 @@ export const releaseRouter = createTRPCRouter({
         ctx.db,
         input.filter,
       );
-      const checks = [deploymentIdCheck, releaseConditionCheck].filter(
-        isPresent,
-      );
+      const checks = and(
+        ...[deploymentIdCheck, releaseConditionCheck].filter(isPresent),
+      )!;
 
-      const getItems = async () => {
-        const items = await ctx.db
+      const getItems = async () =>
+        ctx.db
           .select()
           .from(release)
           .leftJoin(
             releaseDependency,
             eq(release.id, releaseDependency.releaseId),
           )
-          .where(
-            and(
-              ...[
-                eq(release.deploymentId, input.deploymentId),
-                releaseMatchesCondition(ctx.db, input.filter),
-              ].filter(isPresent),
-            ),
-          )
+          .where(checks)
           .orderBy(desc(release.createdAt), desc(release.version))
           .limit(input.limit)
           .offset(input.offset)
@@ -105,57 +94,12 @@ export const releaseRouter = createTRPCRouter({
               .value(),
           );
 
-        const jobTriggers = await ctx.db
-          .select()
-          .from(releaseJobTrigger)
-          .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
-          .leftJoin(jobMetadata, eq(jobMetadata.jobId, job.id))
-          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-          .innerJoin(
-            resource,
-            and(
-              eq(releaseJobTrigger.resourceId, resource.id),
-              isNull(resource.deletedAt),
-              releaseJobMatchesCondition(ctx.db, input.jobFilter),
-            ),
-          )
-          .where(
-            inArray(
-              releaseJobTrigger.releaseId,
-              items.map((r) => r.id),
-            ),
-          )
-          .orderBy(desc(releaseJobTrigger.createdAt))
-          .then((data) =>
-            _.chain(data)
-              .groupBy((j) => j.release_job_trigger.id)
-              .map((j) => ({
-                ...j[0]!.release_job_trigger,
-                job: {
-                  ...j[0]!.job,
-                  metadata: _.chain(j)
-                    .map((j) => j.job_metadata)
-                    .filter(isPresent)
-                    .uniqBy((j) => j.id)
-                    .value(),
-                },
-                resource: j[0]!.resource,
-              }))
-              .value(),
-          );
-
-        return items.map((r) => ({
-          ...r,
-          releaseJobTriggers: jobTriggers.filter((j) => j.releaseId === r.id),
-        }));
-      };
-
       const total = ctx.db
         .select({
           count: count().mapWith(Number),
         })
         .from(release)
-        .where(and(...checks))
+        .where(checks)
         .then(takeFirst)
         .then((t) => t.count);
 
@@ -376,6 +320,36 @@ export const releaseRouter = createTRPCRouter({
 
       return Promise.all(blockedEnvsPromises).then((r) => r.filter(isPresent));
     }),
+
+  status: createTRPCRouter({
+    byEnvironmentId: protectedProcedure
+      .input(
+        z.object({
+          releaseId: z.string().uuid(),
+          environmentId: z.string().uuid(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.ReleaseGet).on({
+            type: "release",
+            id: input.releaseId,
+          }),
+      })
+      .query(({ input: { releaseId, environmentId } }) =>
+        db
+          .selectDistinctOn([job.status])
+          .from(job)
+          .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
+          .orderBy(job.status, desc(job.createdAt))
+          .where(
+            and(
+              eq(releaseJobTrigger.releaseId, releaseId),
+              eq(releaseJobTrigger.environmentId, environmentId),
+            ),
+          ),
+      ),
+  }),
 
   metadataKeys: releaseMetadataKeysRouter,
 });
