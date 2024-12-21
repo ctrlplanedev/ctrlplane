@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   IconFilter,
@@ -15,7 +16,9 @@ import _ from "lodash";
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
+import { Label } from "@ctrlplane/ui/label";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
+import { Switch } from "@ctrlplane/ui/switch";
 import {
   Table,
   TableBody,
@@ -31,10 +34,6 @@ import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release-condition/useReleaseFilter";
 import { api } from "~/trpc/react";
 import { LazyReleaseEnvironmentCell } from "../../ReleaseEnvironmentCell";
-import {
-  EnvironmentColumnSelector,
-  useEnvironmentColumnSelector,
-} from "./EnvironmentColumnSelector";
 import { JobHistoryPopover } from "./JobHistoryPopover";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
@@ -73,15 +72,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const loading = releases.isLoading;
   const router = useRouter();
 
-  const {
-    selectedEnvironmentIds,
-    setEnvironmentIdSelected,
-    setEnvironmentIds,
-  } = useEnvironmentColumnSelector(environments);
+  const [showEphemeralEnvs, setShowEphemeralEnvs] = useState(false);
 
-  const selectedEnvironments = environments.filter((e) =>
-    selectedEnvironmentIds.includes(e.id),
-  );
+  const selectedEnvironments = showEphemeralEnvs
+    ? environments
+    : environments.filter((e) => e.expiresAt == null);
 
   const numEnvironmentBlocks = Math.min(3, selectedEnvironments.length);
 
@@ -124,12 +119,19 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             )}
           </div>
 
-          <EnvironmentColumnSelector
-            environments={environments}
-            selectedEnvironmentIds={selectedEnvironmentIds}
-            onSelectEnvironment={setEnvironmentIdSelected}
-            onSetEnvironmentIds={setEnvironmentIds}
-          />
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={showEphemeralEnvs}
+              id="show-ephemeral-envs"
+              onCheckedChange={setShowEphemeralEnvs}
+            />
+            <Label
+              htmlFor="show-ephemeral-envs"
+              className="text-sm text-muted-foreground"
+            >
+              Show ephemeral environments
+            </Label>
+          </div>
 
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
             Total:
