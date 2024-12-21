@@ -378,9 +378,6 @@ export interface components {
       config: {
         [key: string]: unknown;
       };
-      metadata: {
-        [key: string]: string;
-      };
       /** Format: uuid */
       deploymentId: string;
       /** Format: date-time */
@@ -581,9 +578,7 @@ export interface operations {
               /** @enum {string} */
               successType?: "some" | "all" | "optional";
               successMinimum?: number;
-              /** @enum {string} */
-              concurrencyType?: "some" | "all";
-              concurrencyLimit?: number;
+              concurrencyLimit?: number | null;
               rolloutDuration?: number;
               /** @enum {string} */
               releaseSequencing?: "wait" | "cancel";
