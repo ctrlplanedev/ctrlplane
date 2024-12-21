@@ -103,7 +103,8 @@ const View: React.FC<{
     releaseChannels: SCHEMA.ReleaseChannel[];
   };
   deployments?: Deployment[];
-}> = ({ activeTab, environmentPolicy, deployments }) => {
+  isLoading: boolean;
+}> = ({ activeTab, environmentPolicy, deployments, isLoading }) => {
   return {
     [EnvironmentPolicyDrawerTab.Overview]: (
       <Overview environmentPolicy={environmentPolicy} />
@@ -121,7 +122,11 @@ const View: React.FC<{
       <RolloutAndTiming environmentPolicy={environmentPolicy} />
     ),
     [EnvironmentPolicyDrawerTab.ReleaseChannels]: deployments != null && (
-      <ReleaseChannels policy={environmentPolicy} deployments={deployments} />
+      <ReleaseChannels
+        environmentPolicy={environmentPolicy}
+        deployments={deployments}
+        isLoading={isLoading}
+      />
     ),
   }[activeTab];
 };
@@ -155,7 +160,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
     environmentPolicyId ?? "",
     { enabled: isOpen },
   );
-  const environmentPolicy = environmentPolicyQ.data;
+  const { data: environmentPolicy, isLoading } = environmentPolicyQ;
 
   const deploymentsQ = api.deployment.bySystemId.useQuery(
     environmentPolicy?.systemId ?? "",
@@ -235,6 +240,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
                 activeTab={tab ?? EnvironmentPolicyDrawerTab.Overview}
                 environmentPolicy={environmentPolicy}
                 deployments={deployments}
+                isLoading={isLoading}
               />
             </div>
           )}

@@ -366,14 +366,64 @@ export const policyRouter = createTRPCRouter({
           .on({ type: "environmentPolicy", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironmentPolicy }))
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .update(environmentPolicy)
-        .set(input.data)
+    .mutation(async ({ ctx, input }) => {
+      const { releaseChannels, ...data } = input.data;
+      const hasUpdates = Object.entries(data).length > 0;
+      if (hasUpdates)
+        await ctx.db
+          .update(environmentPolicy)
+          .set(data)
+          .where(eq(environmentPolicy.id, input.id))
+          .returning()
+          .then(takeFirst);
+
+      if (releaseChannels != null) {
+        const [nulled, set] = _.partition(
+          Object.entries(releaseChannels),
+          ([_, channelId]) => channelId == null,
+        );
+
+        const nulledIds = nulled.map(([deploymentId]) => deploymentId);
+        const setChannels = set.map(([deploymentId, channelId]) => ({
+          policyId: input.id,
+          deploymentId,
+          channelId: channelId!,
+        }));
+
+        await ctx.db.transaction(async (db) => {
+          if (nulledIds.length > 0)
+            await db
+              .delete(environmentPolicyReleaseChannel)
+              .where(
+                inArray(
+                  environmentPolicyReleaseChannel.deploymentId,
+                  nulledIds,
+                ),
+              );
+
+          if (setChannels.length > 0)
+            await db
+              .insert(environmentPolicyReleaseChannel)
+              .values(setChannels)
+              .onConflictDoUpdate({
+                target: [
+                  environmentPolicyReleaseChannel.policyId,
+                  environmentPolicyReleaseChannel.deploymentId,
+                ],
+                set: buildConflictUpdateColumns(
+                  environmentPolicyReleaseChannel,
+                  ["channelId"],
+                ),
+              });
+        });
+      }
+
+      return ctx.db
+        .select()
+        .from(environmentPolicy)
         .where(eq(environmentPolicy.id, input.id))
-        .returning()
-        .then(takeFirst),
-    ),
+        .then(takeFirst);
+    }),
 
   updateReleaseChannels: protectedProcedure
     .input(

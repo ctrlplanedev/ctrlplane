@@ -141,7 +141,11 @@ export const createEnvironmentPolicy = createInsertSchema(
   environmentPolicy,
 ).omit({ id: true });
 
-export const updateEnvironmentPolicy = createEnvironmentPolicy.partial();
+export const updateEnvironmentPolicy = createEnvironmentPolicy
+  .partial()
+  .extend({
+    releaseChannels: z.record(z.string().uuid().nullable()).optional(),
+  });
 
 export const environmentPolicyRelations = relations(
   environmentPolicy,

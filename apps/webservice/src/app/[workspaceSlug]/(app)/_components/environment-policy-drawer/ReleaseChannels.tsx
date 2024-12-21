@@ -1,10 +1,8 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconPlus } from "@tabler/icons-react";
+import { IconLoader2, IconPlus } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
 import { Label } from "@ctrlplane/ui/label";
 import {
   Select,
@@ -15,6 +13,7 @@ import {
 } from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
+import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
 type Policy = SCHEMA.EnvironmentPolicy & {
   releaseChannels: SCHEMA.ReleaseChannel[];
@@ -24,7 +23,11 @@ type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
 };
 
-type ReleaseChannelProps = { policy: Policy; deployments: Deployment[] };
+type ReleaseChannelProps = {
+  environmentPolicy: Policy;
+  deployments: Deployment[];
+  isLoading: boolean;
+};
 
 type DeploymentSelectProps = {
   deployment: Deployment;
@@ -90,43 +93,47 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
 };
 
 export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
-  policy,
+  environmentPolicy,
   deployments,
+  isLoading,
 }) => {
-  const updateReleaseChannels =
-    api.environment.policy.updateReleaseChannels.useMutation();
-  const utils = api.useUtils();
+  const updatePolicy = api.environment.policy.update.useMutation();
+  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
 
   const deploymentsWithReleaseChannels = deployments.filter(
     (d) => d.releaseChannels.length > 0,
   );
 
+  const { id, releaseChannels } = environmentPolicy;
+
   const currReleaseChannels = Object.fromEntries(
     deploymentsWithReleaseChannels.map((d) => [
       d.id,
-      policy.releaseChannels.find((rc) => rc.deploymentId === d.id)?.id ?? null,
+      releaseChannels.find((rc) => rc.deploymentId === d.id)?.id ?? null,
     ]),
   );
-
-  const [releaseChannels, setReleaseChannels] =
-    useState<Record<string, string | null>>(currReleaseChannels);
 
   const updateReleaseChannel = (
     deploymentId: string,
     channelId: string | null,
-  ) => setReleaseChannels((prev) => ({ ...prev, [deploymentId]: channelId }));
-
-  const onSubmit = () =>
-    updateReleaseChannels
-      .mutateAsync({
-        id: policy.id,
-        releaseChannels,
-      })
-      .then(() => utils.environment.policy.byId.invalidate(policy.id));
+  ) => {
+    const newReleaseChannels = {
+      ...currReleaseChannels,
+      [deploymentId]: channelId,
+    };
+    updatePolicy
+      .mutateAsync({ id, data: { releaseChannels: newReleaseChannels } })
+      .then(invalidatePolicy);
+  };
 
   return (
     <div className="space-y-4">
-      <Label>Release Channels</Label>
+      <Label className="flex items-center gap-2">
+        Release Channels{" "}
+        {(isLoading || updatePolicy.isPending) && (
+          <IconLoader2 className="h-4 w-4 animate-spin" />
+        )}
+      </Label>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="w-40">Deployment</span>
@@ -136,14 +143,11 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
           <DeploymentSelect
             key={d.id}
             deployment={d}
-            releaseChannels={releaseChannels}
+            releaseChannels={currReleaseChannels}
             updateReleaseChannel={updateReleaseChannel}
           />
         ))}
       </div>
-      <Button onClick={onSubmit} disabled={updateReleaseChannels.isPending}>
-        Save
-      </Button>
     </div>
   );
 };
