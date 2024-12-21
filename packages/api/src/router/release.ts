@@ -336,21 +336,19 @@ export const releaseRouter = createTRPCRouter({
             id: input.releaseId,
           }),
       })
-      .query(async ({ input }) => {
-        const statuses = await db
+      .query(({ input: { releaseId, environmentId } }) =>
+        db
           .selectDistinctOn([job.status])
           .from(job)
           .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
           .orderBy(job.status, desc(job.createdAt))
           .where(
             and(
-              eq(releaseJobTrigger.releaseId, input.releaseId),
-              eq(releaseJobTrigger.environmentId, input.environmentId),
+              eq(releaseJobTrigger.releaseId, releaseId),
+              eq(releaseJobTrigger.environmentId, environmentId),
             ),
-          );
-
-        return statuses;
-      }),
+          ),
+      ),
   }),
 
   metadataKeys: releaseMetadataKeysRouter,
