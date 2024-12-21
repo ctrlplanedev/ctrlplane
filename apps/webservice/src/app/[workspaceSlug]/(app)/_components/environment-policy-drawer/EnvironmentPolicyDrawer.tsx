@@ -110,13 +110,22 @@ const View: React.FC<{
       <Overview environmentPolicy={environmentPolicy} />
     ),
     [EnvironmentPolicyDrawerTab.Approval]: (
-      <ApprovalAndGovernance environmentPolicy={environmentPolicy} />
+      <ApprovalAndGovernance
+        environmentPolicy={environmentPolicy}
+        isLoading={isLoading}
+      />
     ),
     [EnvironmentPolicyDrawerTab.Concurrency]: (
-      <DeploymentControl environmentPolicy={environmentPolicy} />
+      <DeploymentControl
+        environmentPolicy={environmentPolicy}
+        isLoading={isLoading}
+      />
     ),
     [EnvironmentPolicyDrawerTab.Management]: (
-      <ReleaseManagement environmentPolicy={environmentPolicy} />
+      <ReleaseManagement
+        environmentPolicy={environmentPolicy}
+        isLoading={isLoading}
+      />
     ),
     [EnvironmentPolicyDrawerTab.Rollout]: (
       <RolloutAndTiming environmentPolicy={environmentPolicy} />

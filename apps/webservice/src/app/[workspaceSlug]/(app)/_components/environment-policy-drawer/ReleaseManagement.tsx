@@ -1,4 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import { IconLoader2 } from "@tabler/icons-react";
 
 import { Label } from "@ctrlplane/ui/label";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
@@ -6,9 +7,15 @@ import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 import { api } from "~/trpc/react";
 import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
-export const ReleaseManagement: React.FC<{
+type ReleaseManagementProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy;
-}> = ({ environmentPolicy }) => {
+  isLoading: boolean;
+};
+
+export const ReleaseManagement: React.FC<ReleaseManagementProps> = ({
+  environmentPolicy,
+  isLoading,
+}) => {
   const updatePolicy = api.environment.policy.update.useMutation();
   const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
   const { releaseSequencing, id } = environmentPolicy;
@@ -16,7 +23,12 @@ export const ReleaseManagement: React.FC<{
   return (
     <div className="space-y-10 p-2">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-medium">Release Management</h1>
+        <h1 className="flex items-center gap-2 text-lg font-medium">
+          Release Management
+          {(isLoading || updatePolicy.isPending) && (
+            <IconLoader2 className="h-4 w-4 animate-spin" />
+          )}
+        </h1>
         <span className="text-sm text-muted-foreground">
           Release management policies are concerned with how new and pending
           releases are handled within the deployment pipeline. These include

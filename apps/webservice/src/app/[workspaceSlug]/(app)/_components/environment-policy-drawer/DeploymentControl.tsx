@@ -9,10 +9,17 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 import { useInvalidatePolicy } from "./useInvalidatePolicy";
+import { IconLoader2 } from "@tabler/icons-react";
 
-export const DeploymentControl: React.FC<{
+type DeploymentControlProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy;
-}> = ({ environmentPolicy }) => {
+  isLoading: boolean;
+};
+
+export const DeploymentControl: React.FC<DeploymentControlProps> = ({
+  environmentPolicy,
+  isLoading,
+}) => {
   const [concurrencyLimit, setConcurrencyLimit] = useState(
     environmentPolicy.concurrencyLimit?.toString() ?? "",
   );
@@ -37,7 +44,12 @@ export const DeploymentControl: React.FC<{
   return (
     <div className="space-y-10 p-2">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-medium">Deployment Control</h1>
+        <h1 className="flex items-center gap-2 text-lg font-medium">
+          Deployment Control
+          {(isLoading || updatePolicy.isPending) && (
+            <IconLoader2 className="h-4 w-4 animate-spin" />
+          )}
+        </h1>
         <span className="text-sm text-muted-foreground">
           Deployment control policies focus on regulating how deployments are
           executed within an environment. These policies manage concurrency,

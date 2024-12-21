@@ -1,5 +1,6 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
+import { IconLoader2 } from "@tabler/icons-react";
 
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
@@ -15,9 +16,15 @@ import {
 import { api } from "~/trpc/react";
 import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
-export const ApprovalAndGovernance: React.FC<{
+type ApprovalAndGovernanceProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy;
-}> = ({ environmentPolicy }) => {
+  isLoading: boolean;
+};
+
+export const ApprovalAndGovernance: React.FC<ApprovalAndGovernanceProps> = ({
+  environmentPolicy,
+  isLoading,
+}) => {
   const updatePolicy = api.environment.policy.update.useMutation();
   const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
   const { id } = environmentPolicy;
@@ -25,7 +32,12 @@ export const ApprovalAndGovernance: React.FC<{
   return (
     <div className="space-y-10 p-2">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-medium">Approval & Governance</h1>
+        <h1 className="flex items-center gap-2 text-lg font-medium">
+          Approval & Governance
+          {(isLoading || updatePolicy.isPending) && (
+            <IconLoader2 className="h-4 w-4 animate-spin" />
+          )}
+        </h1>
         <span className="text-sm text-muted-foreground">
           This category defines policies that govern the oversight and approval
           process for deployments. These policies ensure that deployments meet

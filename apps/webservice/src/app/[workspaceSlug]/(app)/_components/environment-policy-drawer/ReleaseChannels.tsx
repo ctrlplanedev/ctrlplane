@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconLoader2, IconPlus } from "@tabler/icons-react";
 
-import { Label } from "@ctrlplane/ui/label";
 import {
   Select,
   SelectContent,
@@ -128,12 +127,12 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
 
   return (
     <div className="space-y-4">
-      <Label className="flex items-center gap-2">
+      <h1 className="flex items-center gap-2 text-lg font-medium">
         Release Channels{" "}
         {(isLoading || updatePolicy.isPending) && (
           <IconLoader2 className="h-4 w-4 animate-spin" />
         )}
-      </Label>
+      </h1>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="w-40">Deployment</span>
