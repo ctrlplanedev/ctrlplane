@@ -96,52 +96,27 @@ type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
 };
 
-const View: React.FC<{
+type ViewProps = {
   activeTab: EnvironmentPolicyDrawerTab;
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
     releaseChannels: SCHEMA.ReleaseChannel[];
   };
-  deployments?: Deployment[];
+  deployments: Deployment[];
   isLoading: boolean;
-}> = ({ activeTab, environmentPolicy, deployments, isLoading }) => {
-  return {
-    [EnvironmentPolicyDrawerTab.Overview]: (
-      <Overview environmentPolicy={environmentPolicy} />
-    ),
-    [EnvironmentPolicyDrawerTab.Approval]: (
-      <ApprovalAndGovernance
-        environmentPolicy={environmentPolicy}
-        isLoading={isLoading}
-      />
-    ),
-    [EnvironmentPolicyDrawerTab.Concurrency]: (
-      <DeploymentControl
-        environmentPolicy={environmentPolicy}
-        isLoading={isLoading}
-      />
-    ),
-    [EnvironmentPolicyDrawerTab.Management]: (
-      <ReleaseManagement
-        environmentPolicy={environmentPolicy}
-        isLoading={isLoading}
-      />
-    ),
-    [EnvironmentPolicyDrawerTab.Rollout]: (
-      <RolloutAndTiming
-        environmentPolicy={environmentPolicy}
-        isLoading={isLoading}
-      />
-    ),
-    [EnvironmentPolicyDrawerTab.ReleaseChannels]: deployments != null && (
-      <ReleaseChannels
-        environmentPolicy={environmentPolicy}
-        deployments={deployments}
-        isLoading={isLoading}
-      />
-    ),
-  }[activeTab];
 };
+
+const View: React.FC<ViewProps> = (props) =>
+  ({
+    [EnvironmentPolicyDrawerTab.Overview]: <Overview {...props} />,
+    [EnvironmentPolicyDrawerTab.Approval]: <ApprovalAndGovernance {...props} />,
+    [EnvironmentPolicyDrawerTab.Concurrency]: <DeploymentControl {...props} />,
+    [EnvironmentPolicyDrawerTab.Management]: <ReleaseManagement {...props} />,
+    [EnvironmentPolicyDrawerTab.Rollout]: <RolloutAndTiming {...props} />,
+    [EnvironmentPolicyDrawerTab.ReleaseChannels]: (
+      <ReleaseChannels {...props} />
+    ),
+  })[props.activeTab];
 
 const PolicyDropdownMenu: React.FC<{
   environmentPolicy: SCHEMA.EnvironmentPolicy;
@@ -251,7 +226,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
               <View
                 activeTab={tab ?? EnvironmentPolicyDrawerTab.Overview}
                 environmentPolicy={environmentPolicy}
-                deployments={deployments}
+                deployments={deployments ?? []}
                 isLoading={isLoading}
               />
             </div>
