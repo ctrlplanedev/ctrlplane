@@ -37,6 +37,7 @@ export const SelectPreconnectedOrgDialogContent: React.FC<
   const [value, setValue] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
   const router = useRouter();
+  const utils = api.useUtils();
 
   const githubOrgCreate = api.github.organizations.create.useMutation();
   const jobAgentCreate = api.job.agent.create.useMutation();
@@ -66,6 +67,7 @@ export const SelectPreconnectedOrgDialogContent: React.FC<
 
     onSave();
     router.refresh();
+    utils.job.agent.byWorkspaceId.invalidate(workspaceId);
   };
 
   return (
