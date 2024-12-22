@@ -34,7 +34,14 @@ import { toast } from "@ctrlplane/ui/toast";
 import { api } from "~/trpc/react";
 import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
-const isValidDuration = (str: string) => !isNaN(ms(str));
+const isValidDuration = (str: string) => {
+  try {
+    const duration = ms(str);
+    return !Number.isNaN(duration) && duration >= 0;
+  } catch {
+    return false;
+  }
+};
 
 const schema = z.object({
   releaseWindows: z.array(
