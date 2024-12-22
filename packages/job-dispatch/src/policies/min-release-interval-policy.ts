@@ -3,7 +3,16 @@ import { differenceInMilliseconds } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, exists, inArray, notExists, sql } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  notExists,
+  or,
+  sql,
+} from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -12,14 +21,10 @@ import type { ReleaseIdPolicyChecker } from "./utils";
 const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
   db
     .select({
-      id: SCHEMA.release.id,
       deploymentId: SCHEMA.release.deploymentId,
-      version: SCHEMA.release.version,
       createdAt: SCHEMA.release.createdAt,
-      name: SCHEMA.release.name,
-      config: SCHEMA.release.config,
       environmentId: SCHEMA.environment.id,
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${SCHEMA.release.deploymentId}, ${SCHEMA.releaseJobTrigger.environmentId} ORDER BY ${SCHEMA.release.createdAt} DESC)`.as(
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${SCHEMA.release.deploymentId}, ${SCHEMA.environment.id} ORDER BY ${SCHEMA.release.createdAt} DESC)`.as(
         "rank",
       ),
     })
@@ -49,6 +54,10 @@ const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
           db
             .select()
             .from(SCHEMA.releaseJobTrigger)
+            .innerJoin(
+              SCHEMA.job,
+              eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+            )
             .where(
               and(
                 eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
@@ -110,11 +119,17 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
     )
     .where(
       and(
-        inArray(
-          latestCompletedReleasesSubquery.deploymentId,
-          releases.map((r) => r.deploymentId),
+        or(
+          isNull(latestCompletedReleasesSubquery.deploymentId),
+          and(
+            inArray(
+              latestCompletedReleasesSubquery.deploymentId,
+              releases.map((r) => r.deploymentId),
+            ),
+            eq(latestCompletedReleasesSubquery.rank, 1),
+          ),
         ),
-        eq(latestCompletedReleasesSubquery.rank, 1),
+        inArray(SCHEMA.environment.id, environmentIds),
       ),
     )
     .then((rows) =>
@@ -134,7 +149,7 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
     .groupBy((rjt) => [rjt.environmentId, rjt.releaseId])
     .filter((groupedTriggers) => {
       const release = releases.find(
-        (r) => r.deploymentId === groupedTriggers[0]!.releaseId,
+        (r) => r.id === groupedTriggers[0]!.releaseId,
       );
       if (!release) return false;
 
@@ -150,7 +165,7 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
 
       const { minimumReleaseInterval } = environment.policy;
       const timeSinceLatestCompletedRelease = differenceInMilliseconds(
-        release.createdAt,
+        new Date(),
         latestCompletedRelease.createdAt,
       );
 
