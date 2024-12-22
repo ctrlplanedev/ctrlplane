@@ -6,8 +6,12 @@ import type {
   ResourceProviderGoogle,
   Workspace,
 } from "@ctrlplane/db/schema";
+import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
+import type { ClusterManagerClient } from "@google-cloud/container";
 import type { google } from "@google-cloud/container/build/protos/protos.js";
 import type { KubeConfig } from "@kubernetes/client-node";
+import type { AuthClient } from "google-auth-library";
+import Container from "@google-cloud/container";
 import { CoreV1Api } from "@kubernetes/client-node";
 import _ from "lodash";
 import { SemVer } from "semver";
@@ -16,20 +20,36 @@ import { v4 as uuidv4 } from "uuid";
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import {
-  clusterToResource,
-  connectToCluster,
-  getClient,
-  getClusters,
-} from "./google.js";
-import { createNamespaceResource } from "./kube.js";
+import { omitNullUndefined } from "../../utils.js";
+import { getGoogleClient } from "./client.js";
+import { createNamespaceResource, getKubeConfig } from "./kube.js";
 
 const exec = promisify(execCallback);
 
 const log = logger.child({ label: "resource-scan/gke" });
 
+const getClusterClient = async (
+  targetPrincipal?: string | null,
+): Promise<[ClusterManagerClient, AuthClient | undefined]> => {
+  return getGoogleClient(
+    Container.v1.ClusterManagerClient,
+    targetPrincipal,
+    "GKE Cluster Client",
+  );
+};
+
+const getClusters = async (
+  clusterClient: ClusterManagerClient,
+  projectId: string,
+) => {
+  const request = { parent: `projects/${projectId}/locations/-` };
+  const [response] = await clusterClient.listClusters(request);
+  const { clusters } = response;
+  return clusters ?? [];
+};
+
 const getClustersByProject = async (
-  googleClusterClient: any,
+  googleClusterClient: ClusterManagerClient,
   projectIds: string[],
 ) => {
   const results = await Promise.allSettled(
@@ -63,30 +83,6 @@ const getClustersByProject = async (
       }> => result.status === "fulfilled",
     )
     .map((v) => v.value);
-};
-
-const getKubeConfig = async (
-  googleClusterClient: any,
-  impersonatedAuthClient: any,
-  project: string,
-  cluster: google.container.v1.ICluster,
-  workspaceId: string,
-) => {
-  try {
-    return await connectToCluster(
-      googleClusterClient,
-      impersonatedAuthClient,
-      project,
-      cluster.name!,
-      cluster.location!,
-    );
-  } catch (error: any) {
-    log.error(
-      `Failed to connect to cluster: ${cluster.name}/${cluster.id} - ${error.message}`,
-      { error, project, cluster, workspaceId },
-    );
-    return null;
-  }
 };
 
 const getNamespacesForCluster = async (
@@ -215,6 +211,73 @@ const getVClustersForCluster = async (
   }
 };
 
+const clusterToResource = (
+  workspaceId: string,
+  providerId: string,
+  project: string,
+  cluster: google.container.v1.ICluster,
+): KubernetesClusterAPIV1 & { workspaceId: string; providerId: string } => {
+  const masterVersion = new SemVer(cluster.currentMasterVersion ?? "0");
+  const nodeVersion = new SemVer(cluster.currentNodeVersion ?? "0");
+  const autoscaling = String(
+    cluster.autoscaling?.enableNodeAutoprovisioning ?? false,
+  );
+
+  const appUrl = `https://console.cloud.google.com/kubernetes/clusters/details/${cluster.location}/${cluster.name}/details?project=${project}`;
+  return {
+    workspaceId,
+    name: cluster.name ?? cluster.id ?? "",
+    providerId,
+    identifier: `${project}/${cluster.name}`,
+    version: "kubernetes/v1",
+    kind: "ClusterAPI",
+    config: {
+      name: cluster.name!,
+      auth: {
+        method: "google/gke",
+        project,
+        location: cluster.location!,
+        clusterName: cluster.name!,
+      },
+      status: cluster.status?.toString() ?? "STATUS_UNSPECIFIED",
+      server: {
+        certificateAuthorityData: cluster.masterAuth?.clusterCaCertificate,
+        endpoint: `https://${cluster.endpoint}`,
+      },
+    },
+    metadata: omitNullUndefined({
+      [ReservedMetadataKey.Links]: JSON.stringify({ "Google Console": appUrl }),
+      [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
+
+      "google/self-link": cluster.selfLink,
+      "google/project": project,
+      "google/location": cluster.location,
+      "google/autopilot": String(cluster.autopilot?.enabled ?? false),
+
+      [ReservedMetadataKey.KubernetesFlavor]: "gke",
+      [ReservedMetadataKey.KubernetesVersion]:
+        masterVersion.version.split("-")[0] ?? "",
+
+      "kubernetes/status": cluster.status,
+      "kubernetes/node-count": String(cluster.currentNodeCount ?? "unknown"),
+
+      "kubernetes/master-version": masterVersion.version,
+      "kubernetes/master-version-major": String(masterVersion.major),
+      "kubernetes/master-version-minor": String(masterVersion.minor),
+      "kubernetes/master-version-patch": String(masterVersion.patch),
+
+      "kubernetes/node-version": nodeVersion.version,
+      "kubernetes/node-version-major": String(nodeVersion.major),
+      "kubernetes/node-version-minor": String(nodeVersion.minor),
+      "kubernetes/node-version-patch": String(nodeVersion.patch),
+
+      "kubernetes/autoscaling-enabled": autoscaling,
+
+      ...(cluster.resourceLabels ?? {}),
+    }),
+  };
+};
+
 export const getGkeResources = async (
   workspace: Workspace,
   config: ResourceProviderGoogle,
@@ -225,7 +288,7 @@ export const getGkeResources = async (
     { workspaceId: workspace.id, config, googleServiceAccountEmail },
   );
 
-  const { googleClusterClient, impersonatedAuthClient } = await getClient(
+  const [googleClusterClient, impersonatedAuthClient] = await getClusterClient(
     googleServiceAccountEmail,
   );
 
@@ -262,9 +325,15 @@ export const getGkeResources = async (
         googleClusterClient,
         impersonatedAuthClient,
         project,
-        cluster,
-        workspace.id,
-      );
+        cluster.name!,
+        cluster.location!,
+      ).catch((e) => {
+        log.error(
+          `Failed to connect to cluster: ${cluster.name}/${cluster.id} - ${e.message}`,
+          { error: e, project, cluster, workspaceId: workspace.id },
+        );
+        return null;
+      });
       if (kubeConfig == null) return [];
 
       if (config.importNamespaces)

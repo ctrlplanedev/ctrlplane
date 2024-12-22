@@ -19,6 +19,7 @@
     "@ctrlplane/job-dispatch": "workspace:*",
     "@ctrlplane/logger": "workspace:*",
     "@ctrlplane/validators": "workspace:*",
+    "@google-cloud/compute": "^4.9.0",
     "@google-cloud/container": "^5.16.0",
     "@kubernetes/client-node": "^0.22.0",
     "@octokit/auth-app": "^7.1.0",
