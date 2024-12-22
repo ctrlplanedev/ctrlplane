@@ -240,7 +240,8 @@ export const environmentRouter = createTRPCRouter({
         .then(takeFirst);
 
       const { resourceFilter } = input.data;
-      const isUpdatingResourceFilter = resourceFilter != null;
+      const isUpdatingResourceFilter =
+        resourceFilter != null || oldEnv.environment.resourceFilter != null;
       if (isUpdatingResourceFilter) {
         const hasResourceFiltersChanged = !_.isEqual(
           oldEnv.environment.resourceFilter,
@@ -267,26 +268,32 @@ export const environmentRouter = createTRPCRouter({
           );
           const newQuery = resourceMatchesMetadata(ctx.db, resourceFilter);
 
-          const newResources = await ctx.db
-            .select({ id: resource.id })
-            .from(resource)
-            .where(
-              and(
-                eq(resource.workspaceId, oldEnv.system.workspaceId),
-                isNull(resource.deletedAt),
-                newQuery,
-                oldQuery && not(oldQuery),
-              ),
-            );
+          const newResources =
+            newQuery != null
+              ? await ctx.db
+                  .select({ id: resource.id })
+                  .from(resource)
+                  .where(
+                    and(
+                      eq(resource.workspaceId, oldEnv.system.workspaceId),
+                      isNull(resource.deletedAt),
+                      newQuery,
+                      oldQuery && not(oldQuery),
+                    ),
+                  )
+              : [];
 
-          const removedResources = await ctx.db.query.resource.findMany({
-            where: and(
-              eq(resource.workspaceId, oldEnv.system.workspaceId),
-              isNull(resource.deletedAt),
-              oldQuery,
-              newQuery && not(newQuery),
-            ),
-          });
+          const removedResources =
+            oldQuery != null
+              ? await ctx.db.query.resource.findMany({
+                  where: and(
+                    eq(resource.workspaceId, oldEnv.system.workspaceId),
+                    isNull(resource.deletedAt),
+                    oldQuery,
+                    newQuery && not(newQuery),
+                  ),
+                })
+              : [];
 
           if (removedResources.length > 0) {
             const sysFilter: ResourceCondition = {
