@@ -24,8 +24,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   name: { type: "string" },
                   config: { type: "object", additionalProperties: true },
                   metadata: {
-                    type: "object",
-                    additionalProperties: { type: "string" },
+                    $ref: "#/components/schemas/Release/properties/metadata",
                   },
                 },
                 required: ["version", "deploymentId"],
@@ -44,10 +43,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     id: { type: "string" },
                     version: { type: "string" },
                     metadata: {
-                      type: "object",
-                      additionalProperties: {
-                        type: "string",
-                      },
+                      $ref: "#/components/schemas/Release/properties/metadata",
                     },
                   },
                 },
