@@ -383,7 +383,7 @@ export interface components {
       /** Format: date-time */
       createdAt: string;
       metadata?: {
-        [key: string]: string;
+        [key: string]: unknown;
       };
     };
     Environment: {
