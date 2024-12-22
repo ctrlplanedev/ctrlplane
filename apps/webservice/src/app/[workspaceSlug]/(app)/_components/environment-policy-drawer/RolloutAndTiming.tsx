@@ -48,6 +48,9 @@ const schema = z.object({
   rolloutDuration: z.string().refine(isValidDuration, {
     message: "Invalid duration pattern",
   }),
+  minimumReleaseInterval: z.string().refine(isValidDuration, {
+    message: "Invalid duration pattern",
+  }),
 });
 
 type RolloutAndTimingProps = {
@@ -62,10 +65,15 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
   isLoading,
 }) => {
   const rolloutDuration = prettyMilliseconds(environmentPolicy.rolloutDuration);
-  const form = useForm({
-    schema,
-    defaultValues: { ...environmentPolicy, rolloutDuration },
-  });
+  const minimumReleaseInterval = prettyMilliseconds(
+    environmentPolicy.minimumReleaseInterval,
+  );
+  const defaultValues = {
+    ...environmentPolicy,
+    rolloutDuration,
+    minimumReleaseInterval,
+  };
+  const form = useForm({ schema, defaultValues });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -79,8 +87,10 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
   const onSubmit = form.handleSubmit((data) => {
     const { releaseWindows, rolloutDuration: durationString } = data;
     const rolloutDuration = ms(durationString);
+    const minimumReleaseInterval = ms(data.minimumReleaseInterval);
+    const updates = { rolloutDuration, releaseWindows, minimumReleaseInterval };
     updatePolicy
-      .mutateAsync({ id: policyId, data: { rolloutDuration, releaseWindows } })
+      .mutateAsync({ id: policyId, data: updates })
       .then(() => form.reset(data))
       .then(() => invalidatePolicy())
       .catch((e) => toast.error(e.message));
@@ -222,7 +232,39 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
-                      Spread deployments out over
+                      Roll deployments out over
+                    </span>
+                    <Input
+                      type="string"
+                      {...field}
+                      placeholder="1d"
+                      className="border-b-1 h-6 w-16 text-xs"
+                    />
+                  </div>
+                  <FormMessage />
+                </div>
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="minimumReleaseInterval"
+          render={({ field }) => (
+            <FormItem className="space-y-4">
+              <div className="flex flex-col gap-1">
+                <FormLabel>Minimum Release Interval</FormLabel>
+                <FormDescription>
+                  Setting a minimum release interval will ensure that a certain
+                  amount of time has passed since the last active release.
+                </FormDescription>
+              </div>
+              <FormControl>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Minimum amount of time between active releases:
                     </span>
                     <Input
                       type="string"

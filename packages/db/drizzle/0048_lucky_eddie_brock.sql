@@ -1,0 +1,1 @@
+ALTER TABLE "environment_policy" ADD COLUMN "minimum_release_interval" bigint DEFAULT 0 NOT NULL;

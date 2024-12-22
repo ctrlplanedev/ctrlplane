@@ -130,6 +130,13 @@ export const environmentPolicy = pgTable("environment_policy", {
     .notNull()
     .default(0),
 
+  // Minimum interval between releases in milliseconds
+  minimumReleaseInterval: bigint("minimum_release_interval", {
+    mode: "number",
+  })
+    .notNull()
+    .default(0),
+
   releaseSequencing: releaseSequencingType("release_sequencing")
     .notNull()
     .default("cancel"),

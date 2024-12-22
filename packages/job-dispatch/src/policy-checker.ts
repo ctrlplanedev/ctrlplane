@@ -7,6 +7,7 @@ import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingConcurrencyPolicy } from "./policies/concurrency-policy.js";
 import { isPassingJobRolloutPolicy } from "./policies/gradual-rollout.js";
 import { isPassingApprovalPolicy } from "./policies/manual-approval.js";
+import { isPassingMinReleaseIntervalPolicy } from "./policies/min-release-interval-policy.js";
 import {
   isPassingNewerThanLastActiveReleasePolicy,
   isPassingNoActiveJobsPolicy,
@@ -14,22 +15,26 @@ import {
 import { isPassingReleaseWindowPolicy } from "./policies/release-window.js";
 import { isPassingCriteriaPolicy } from "./policies/success-rate-criteria-passing.js";
 
+const baseChecks: ReleaseIdPolicyChecker[] = [
+  isPassingLockingPolicy,
+  isPassingApprovalPolicy,
+  isPassingCriteriaPolicy,
+  isPassingConcurrencyPolicy,
+  isPassingJobRolloutPolicy,
+  isPassingNoActiveJobsPolicy,
+  isPassingReleaseWindowPolicy,
+  isPassingMinReleaseIntervalPolicy,
+];
+
 export const isPassingAllPolicies = async (
   db: Tx,
   releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
   const checks: ReleaseIdPolicyChecker[] = [
-    isPassingLockingPolicy,
-    isPassingApprovalPolicy,
-    isPassingCriteriaPolicy,
-    isPassingConcurrencyPolicy,
-    isPassingJobRolloutPolicy,
-    isPassingNoActiveJobsPolicy,
+    ...baseChecks,
     isPassingNewerThanLastActiveReleasePolicy,
-    isPassingReleaseWindowPolicy,
   ];
-
   let passingJobs = releaseJobTriggers;
   for (const check of checks) passingJobs = await check(db, passingJobs);
 
@@ -41,18 +46,9 @@ export const isPassingAllPoliciesExceptNewerThanLastActive = async (
   releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => {
   if (releaseJobTriggers.length === 0) return [];
-  const checks: ReleaseIdPolicyChecker[] = [
-    isPassingLockingPolicy,
-    isPassingApprovalPolicy,
-    isPassingCriteriaPolicy,
-    isPassingConcurrencyPolicy,
-    isPassingJobRolloutPolicy,
-    isPassingNoActiveJobsPolicy,
-    isPassingReleaseWindowPolicy,
-  ];
 
   let passingJobs = releaseJobTriggers;
-  for (const check of checks) passingJobs = await check(db, passingJobs);
+  for (const check of baseChecks) passingJobs = await check(db, passingJobs);
 
   return passingJobs;
 };
