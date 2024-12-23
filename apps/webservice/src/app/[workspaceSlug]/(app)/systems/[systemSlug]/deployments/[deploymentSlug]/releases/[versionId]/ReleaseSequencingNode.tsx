@@ -1,3 +1,4 @@
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type {
   EnvironmentCondition,
   JobCondition,
@@ -6,8 +7,11 @@ import type {
 } from "@ctrlplane/validators/jobs";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
+import { useEffect, useState } from "react";
 import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
+import { differenceInMilliseconds } from "date-fns";
 import _ from "lodash";
+import prettyMilliseconds from "pretty-ms";
 import { Handle, Position } from "reactflow";
 import colors from "tailwindcss/colors";
 
@@ -26,7 +30,7 @@ import { api } from "~/trpc/react";
 
 type ReleaseSequencingNodeProps = NodeProps<{
   workspaceId: string;
-  policyType?: "cancel" | "wait";
+  policy?: SCHEMA.EnvironmentPolicy;
   releaseId: string;
   releaseVersion: string;
   deploymentId: string;
@@ -52,8 +56,8 @@ const Waiting: React.FC = () => (
 );
 
 const Loading: React.FC = () => (
-  <div className="animate-spin rounded-full bg-muted-foreground p-0.5 dark:text-black">
-    <IconLoader2 strokeWidth={3} className="h-3 w-3" />
+  <div className="rounded-full bg-muted-foreground p-0.5 dark:text-black">
+    <IconLoader2 strokeWidth={3} className="h-3 w-3 animate-spin" />
   </div>
 );
 
@@ -243,6 +247,72 @@ const ReleaseChannelCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   );
 };
 
+const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+  policy,
+  deploymentId,
+  environmentId,
+}) => {
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  const { data: latestRelease, isLoading } =
+    api.release.latest.completed.useQuery(
+      { deploymentId, environmentId },
+      { enabled: policy != null },
+    );
+
+  useEffect(() => {
+    if (!latestRelease || !policy?.minimumReleaseInterval) return;
+
+    const calculateTimeLeft = () => {
+      const timePassed = differenceInMilliseconds(
+        new Date(),
+        latestRelease.createdAt,
+      );
+      return Math.max(0, policy.minimumReleaseInterval - timePassed);
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const interval = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [latestRelease, policy?.minimumReleaseInterval]);
+
+  if (policy == null) return null;
+  const { minimumReleaseInterval } = policy;
+  if (minimumReleaseInterval === 0) return null;
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <Loading />
+      </div>
+    );
+
+  if (latestRelease == null || timeLeft === 0) {
+    return (
+      <div className="flex items-center gap-2">
+        <Passing />
+        <span>Minimum release interval passed</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Waiting />
+      <span>
+        Waiting {prettyMilliseconds(timeLeft ?? 0, { compact: true })} till next
+        release
+      </span>
+    </div>
+  );
+};
+
 export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
   data,
 }) => {
@@ -255,6 +325,7 @@ export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
       >
         <WaitingOnActiveCheck {...data} />
         <ReleaseChannelCheck {...data} />
+        <MinReleaseIntervalCheck {...data} />
       </div>
       <Handle
         type="target"
