@@ -79,7 +79,7 @@ export const FlowDiagram: React.FC<{
           releaseVersion: release.version,
           deploymentId: release.deploymentId,
           environmentId: env.id,
-          policyType: policy?.releaseSequencing,
+          policy,
           label: `${env.name} - release sequencing`,
         },
       };

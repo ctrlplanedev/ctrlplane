@@ -1,3 +1,4 @@
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type {
   EnvironmentCondition,
   JobCondition,
@@ -6,8 +7,11 @@ import type {
 } from "@ctrlplane/validators/jobs";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
+import { useEffect, useState } from "react";
 import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
+import { differenceInMilliseconds } from "date-fns";
 import _ from "lodash";
+import prettyMilliseconds from "pretty-ms";
 import { Handle, Position } from "reactflow";
 import colors from "tailwindcss/colors";
 
@@ -21,12 +25,14 @@ import {
 import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseFilterType } from "@ctrlplane/validators/releases";
 
+import { EnvironmentPolicyDrawerTab } from "~/app/[workspaceSlug]/(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
+import { useQueryParams } from "~/app/[workspaceSlug]/(app)/_components/useQueryParams";
 import { api } from "~/trpc/react";
 
 type ReleaseSequencingNodeProps = NodeProps<{
   workspaceId: string;
-  policyType?: "cancel" | "wait";
+  policy?: SCHEMA.EnvironmentPolicy;
   releaseId: string;
   releaseVersion: string;
   deploymentId: string;
@@ -52,8 +58,8 @@ const Waiting: React.FC = () => (
 );
 
 const Loading: React.FC = () => (
-  <div className="animate-spin rounded-full bg-muted-foreground p-0.5 dark:text-black">
-    <IconLoader2 strokeWidth={3} className="h-3 w-3" />
+  <div className="rounded-full bg-muted-foreground p-0.5 dark:text-black">
+    <IconLoader2 strokeWidth={3} className="h-3 w-3 animate-spin" />
   </div>
 );
 
@@ -243,31 +249,122 @@ const ReleaseChannelCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   );
 };
 
-export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
-  data,
+const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+  policy,
+  deploymentId,
+  environmentId,
 }) => {
-  return (
-    <>
-      <div
-        className={cn(
-          "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
-        )}
-      >
-        <WaitingOnActiveCheck {...data} />
-        <ReleaseChannelCheck {...data} />
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const { setParams } = useQueryParams();
+
+  const { data: latestRelease, isLoading } =
+    api.release.latest.completed.useQuery(
+      { deploymentId, environmentId },
+      { enabled: policy != null },
+    );
+
+  useEffect(() => {
+    if (!latestRelease || !policy?.minimumReleaseInterval) return;
+
+    const calculateTimeLeft = () => {
+      const timePassed = differenceInMilliseconds(
+        new Date(),
+        latestRelease.createdAt,
+      );
+      return Math.max(0, policy.minimumReleaseInterval - timePassed);
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const interval = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [latestRelease, policy?.minimumReleaseInterval]);
+
+  if (policy == null) return null;
+  const { minimumReleaseInterval } = policy;
+  if (minimumReleaseInterval === 0) return null;
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <Loading />
       </div>
-      <Handle
-        type="target"
-        className="h-2 w-2 rounded-full border border-neutral-500"
-        style={{ background: colors.neutral[800] }}
-        position={Position.Left}
-      />
-      <Handle
-        type="source"
-        className="h-2 w-2 rounded-full border border-neutral-500"
-        style={{ background: colors.neutral[800] }}
-        position={Position.Right}
-      />
-    </>
+    );
+
+  if (latestRelease == null || timeLeft === 0)
+    return (
+      <div className="flex items-center gap-2">
+        <Passing />
+        <span className="flex items-center gap-1">
+          Minimum
+          <Button
+            variant="link"
+            onClick={() =>
+              setParams({
+                environment_policy_id: policy.id,
+                tab: EnvironmentPolicyDrawerTab.Rollout,
+              })
+            }
+            className="h-fit px-0 py-0 text-inherit underline-offset-2"
+          >
+            release interval
+          </Button>
+          passed
+        </span>
+      </div>
+    );
+
+  return (
+    <div className="flex items-center gap-2">
+      <Waiting />
+      <span className="flex items-center gap-1">
+        <Button
+          variant="link"
+          onClick={() =>
+            setParams({
+              environment_policy_id: policy.id,
+              tab: EnvironmentPolicyDrawerTab.Rollout,
+            })
+          }
+          className="h-fit px-0 py-0 text-inherit underline-offset-2"
+        >
+          Waiting {prettyMilliseconds(timeLeft ?? 0, { compact: true })}
+        </Button>
+        till next release
+      </span>
+    </div>
   );
 };
+
+export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
+  data,
+}) => (
+  <>
+    <div
+      className={cn(
+        "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
+      )}
+    >
+      <WaitingOnActiveCheck {...data} />
+      <ReleaseChannelCheck {...data} />
+      <MinReleaseIntervalCheck {...data} />
+    </div>
+    <Handle
+      type="target"
+      className="h-2 w-2 rounded-full border border-neutral-500"
+      style={{ background: colors.neutral[800] }}
+      position={Position.Left}
+    />
+    <Handle
+      type="source"
+      className="h-2 w-2 rounded-full border border-neutral-500"
+      style={{ background: colors.neutral[800] }}
+      position={Position.Right}
+    />
+  </>
+);

@@ -7,7 +7,9 @@ import {
   count,
   desc,
   eq,
+  exists,
   inArray,
+  notExists,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -36,7 +38,11 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
-import { jobCondition } from "@ctrlplane/validators/jobs";
+import {
+  activeStatus,
+  jobCondition,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 import { releaseCondition } from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -348,6 +354,64 @@ export const releaseRouter = createTRPCRouter({
               eq(releaseJobTrigger.environmentId, environmentId),
             ),
           ),
+      ),
+  }),
+
+  latest: createTRPCRouter({
+    completed: protectedProcedure
+      .input(
+        z.object({
+          deploymentId: z.string().uuid(),
+          environmentId: z.string().uuid(),
+        }),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser.perform(Permission.ReleaseGet).on({
+            type: "deployment",
+            id: input.deploymentId,
+          }),
+      })
+      .query(({ input: { deploymentId, environmentId } }) =>
+        db
+          .select()
+          .from(release)
+          .innerJoin(environment, eq(environment.id, environmentId))
+          .where(
+            and(
+              eq(release.deploymentId, deploymentId),
+              exists(
+                db
+                  .select()
+                  .from(releaseJobTrigger)
+                  .where(
+                    and(
+                      eq(releaseJobTrigger.releaseId, release.id),
+                      eq(releaseJobTrigger.environmentId, environmentId),
+                    ),
+                  )
+                  .limit(1),
+              ),
+              notExists(
+                db
+                  .select()
+                  .from(releaseJobTrigger)
+                  .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+                  .where(
+                    and(
+                      eq(releaseJobTrigger.releaseId, release.id),
+                      eq(releaseJobTrigger.environmentId, environmentId),
+                      inArray(job.status, [...activeStatus, JobStatus.Pending]),
+                    ),
+                  )
+                  .limit(1),
+              ),
+            ),
+          )
+          .orderBy(desc(release.createdAt))
+          .limit(1)
+          .then(takeFirstOrNull)
+          .then((r) => r?.release ?? null),
       ),
   }),
 
