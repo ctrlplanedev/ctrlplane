@@ -5,8 +5,8 @@ import type {
   EnvironmentPolicy,
   EnvironmentPolicyDeployment,
 } from "@ctrlplane/db/schema";
-import type { Connection, Node, OnConnect, ReactFlowInstance } from "reactflow";
-import { useCallback, useEffect, useState } from "react";
+import type { Connection, Node, OnConnect } from "reactflow";
+import { useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMount } from "react-use";
 import ReactFlow, {
@@ -29,7 +29,7 @@ import {
   createEdgesWhereEnvironmentHasNoPolicy,
   createEdgesWherePolicyHasNoEnvironment,
 } from "~/app/[workspaceSlug]/(app)/_components/reactflow/edges";
-import { getLayoutedElementsDagre } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
 import { api } from "~/trpc/react";
 import { useEnvironmentPolicyDrawer } from "../../../_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { useDeleteNodeDialog } from "./DeleteNodeDialog";
@@ -175,7 +175,7 @@ export const EnvFlowBuilder: React.FC<{
   policies: Array<EnvironmentPolicy>;
   policyDeployments: Array<EnvironmentPolicyDeployment>;
 }> = ({ systemId, envs, policies, policyDeployments }) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([
+  const [nodes, _, onNodesChange] = useNodesState([
     triggerNode,
     ...envs.map((env) => ({
       id: env.id,
@@ -203,7 +203,7 @@ export const EnvFlowBuilder: React.FC<{
     if (selected != null) setSelectedNodeId(selected);
   });
 
-  const [edges, setEdges, onEdgesChange] = useEdgesState([
+  const [edges, __, onEdgesChange] = useEdgesState([
     ...createEdgesWhereEnvironmentHasNoPolicy(envs),
     ...createEdgesWherePolicyHasNoEnvironment(policies, policyDeployments),
     ...createEdgesFromPolicyDeployment(policyDeployments),
@@ -213,25 +213,7 @@ export const EnvFlowBuilder: React.FC<{
 
   const onConnect = useOnConnect();
 
-  const [reactFlowInstance, setReactFlowInstance] =
-    useState<ReactFlowInstance | null>(null);
-
-  const onLayout = useCallback(() => {
-    const layouted = getLayoutedElementsDagre(nodes, edges, "TB");
-
-    setNodes([...layouted.nodes]);
-    setEdges([...layouted.edges]);
-  }, [nodes, edges, setNodes, setEdges]);
-
-  useEffect(() => {
-    if (reactFlowInstance && nodes.length)
-      reactFlowInstance.fitView({ padding: 0.12, maxZoom: 1 });
-  }, [reactFlowInstance, nodes]);
-
-  useEffect(() => {
-    if (reactFlowInstance != null) onLayout();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reactFlowInstance]);
+  const { setReactFlowInstance, onLayout } = useLayoutAndFitView(nodes);
 
   const onEdgeClick = useOnEdgeClick();
 

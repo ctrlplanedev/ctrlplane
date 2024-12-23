@@ -146,5 +146,5 @@ export const useLayoutAndFitView = (nodes: Node[], config?: LayoutConfig) => {
     setDefaultView,
   ]);
 
-  return setReactFlowInstance;
+  return { setReactFlowInstance, onLayout };
 };
