@@ -25,7 +25,9 @@ import {
 import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseFilterType } from "@ctrlplane/validators/releases";
 
+import { EnvironmentPolicyDrawerTab } from "~/app/[workspaceSlug]/(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
+import { useQueryParams } from "~/app/[workspaceSlug]/(app)/_components/useQueryParams";
 import { api } from "~/trpc/react";
 
 type ReleaseSequencingNodeProps = NodeProps<{
@@ -253,6 +255,7 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   environmentId,
 }) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const { setParams } = useQueryParams();
 
   const { data: latestRelease, isLoading } =
     api.release.latest.completed.useQuery(
@@ -293,21 +296,46 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
       </div>
     );
 
-  if (latestRelease == null || timeLeft === 0) {
+  if (latestRelease == null || timeLeft === 0)
     return (
       <div className="flex items-center gap-2">
         <Passing />
-        <span>Minimum release interval passed</span>
+        <span className="flex items-center gap-1">
+          Minimum
+          <Button
+            variant="link"
+            onClick={() =>
+              setParams({
+                environment_policy_id: policy.id,
+                tab: EnvironmentPolicyDrawerTab.Rollout,
+              })
+            }
+            className="h-fit px-0 py-0 text-inherit underline-offset-2"
+          >
+            release interval
+          </Button>
+          passed
+        </span>
       </div>
     );
-  }
 
   return (
     <div className="flex items-center gap-2">
       <Waiting />
-      <span>
-        Waiting {prettyMilliseconds(timeLeft ?? 0, { compact: true })} till next
-        release
+      <span className="flex items-center gap-1">
+        <Button
+          variant="link"
+          onClick={() =>
+            setParams({
+              environment_policy_id: policy.id,
+              tab: EnvironmentPolicyDrawerTab.Rollout,
+            })
+          }
+          className="h-fit px-0 py-0 text-inherit underline-offset-2"
+        >
+          Waiting {prettyMilliseconds(timeLeft ?? 0, { compact: true })}
+        </Button>
+        till next release
       </span>
     </div>
   );
@@ -315,30 +343,28 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
 
 export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
   data,
-}) => {
-  return (
-    <>
-      <div
-        className={cn(
-          "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
-        )}
-      >
-        <WaitingOnActiveCheck {...data} />
-        <ReleaseChannelCheck {...data} />
-        <MinReleaseIntervalCheck {...data} />
-      </div>
-      <Handle
-        type="target"
-        className="h-2 w-2 rounded-full border border-neutral-500"
-        style={{ background: colors.neutral[800] }}
-        position={Position.Left}
-      />
-      <Handle
-        type="source"
-        className="h-2 w-2 rounded-full border border-neutral-500"
-        style={{ background: colors.neutral[800] }}
-        position={Position.Right}
-      />
-    </>
-  );
-};
+}) => (
+  <>
+    <div
+      className={cn(
+        "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
+      )}
+    >
+      <WaitingOnActiveCheck {...data} />
+      <ReleaseChannelCheck {...data} />
+      <MinReleaseIntervalCheck {...data} />
+    </div>
+    <Handle
+      type="target"
+      className="h-2 w-2 rounded-full border border-neutral-500"
+      style={{ background: colors.neutral[800] }}
+      position={Position.Left}
+    />
+    <Handle
+      type="source"
+      className="h-2 w-2 rounded-full border border-neutral-500"
+      style={{ background: colors.neutral[800] }}
+      position={Position.Right}
+    />
+  </>
+);
