@@ -153,36 +153,17 @@ export const environmentRouter = createTRPCRouter({
         canUser.perform(Permission.SystemGet).on({ type: "system", id: input }),
     })
     .input(z.string().uuid())
-    .query(async ({ ctx, input }) => {
-      const envs = await ctx.db
+    .query(({ ctx, input }) =>
+      ctx.db
         .select()
         .from(environment)
         .innerJoin(system, eq(system.id, environment.systemId))
         .orderBy(environment.name)
-        .where(eq(environment.systemId, input));
-
-      return await Promise.all(
-        envs.map(async (e) => ({
-          ...e.environment,
-          system: e.system,
-          resources:
-            e.environment.resourceFilter != null
-              ? await ctx.db
-                  .select()
-                  .from(resource)
-                  .where(
-                    and(
-                      isNull(resource.deletedAt),
-                      resourceMatchesMetadata(
-                        ctx.db,
-                        e.environment.resourceFilter,
-                      ),
-                    ),
-                  )
-              : [],
-        })),
-      );
-    }),
+        .where(eq(environment.systemId, input))
+        .then((envs) =>
+          envs.map((e) => ({ ...e.environment, system: e.system })),
+        ),
+    ),
 
   byWorkspaceId: protectedProcedure
     .meta({

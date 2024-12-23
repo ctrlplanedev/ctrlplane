@@ -3,12 +3,13 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { Deployment, Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { IconCircleFilled } from "@tabler/icons-react";
+import { IconCircleFilled, IconLoader2 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/DeploymentOptionsDropdown";
+import { api } from "~/trpc/react";
 import { LazyReleaseEnvironmentCell } from "./ReleaseEnvironmentCell";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -34,6 +35,20 @@ const EnvIcon: React.FC<{
   workspaceSlug: string;
   systemSlug: string;
 }> = ({ environment: env, isFirst, isLast, workspaceSlug, systemSlug }) => {
+  const { data: workspace, isLoading: isWorkspaceLoading } =
+    api.workspace.bySlug.useQuery(workspaceSlug);
+  const workspaceId = workspace?.id ?? "";
+
+  const filter = env.resourceFilter ?? undefined;
+  const { data: resourcesResult, isLoading: isResourcesLoading } =
+    api.resource.byWorkspaceId.list.useQuery(
+      { workspaceId, filter, limit: 0 },
+      { enabled: workspaceId !== "" && filter != null },
+    );
+  const total = resourcesResult?.total ?? 0;
+
+  const isLoading = isWorkspaceLoading || isResourcesLoading;
+
   const envUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments?environment_id=${env.id}`;
   return (
     <Icon
@@ -52,7 +67,10 @@ const EnvIcon: React.FC<{
             variant="outline"
             className="rounded-full text-muted-foreground"
           >
-            {env.resources.length}
+            {isLoading && (
+              <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            )}
+            {!isLoading && total}
           </Badge>
         </div>
       </Link>
