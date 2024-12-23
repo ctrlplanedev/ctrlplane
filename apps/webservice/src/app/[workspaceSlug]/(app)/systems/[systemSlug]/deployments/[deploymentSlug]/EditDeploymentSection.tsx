@@ -1,9 +1,11 @@
 "use client";
 
+import type { RouterOutputs } from "@ctrlplane/api";
 import { useParams, useRouter } from "next/navigation";
+import { IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
-import * as schema from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
@@ -24,33 +26,53 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import {
+  defaultCondition,
+  isEmptyCondition,
+} from "@ctrlplane/validators/resources";
 
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionRender";
 import { api } from "~/trpc/react";
+import { DeploymentResourcesDialog } from "./DeploymentResourcesDialog";
 
-const deploymentForm = z.object(schema.deploymentSchema.shape);
+const schema = z.object(SCHEMA.deploymentSchema.shape);
+
+type System = RouterOutputs["system"]["list"]["items"][number];
 
 type EditDeploymentSectionProps = {
-  deployment: schema.Deployment;
-  systems: schema.System[];
+  deployment: SCHEMA.Deployment;
+  systems: System[];
+  workspaceId: string;
 };
 
 export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   deployment,
   systems,
+  workspaceId,
 }) => {
-  const form = useForm({
-    schema: deploymentForm,
-    defaultValues: { ...deployment },
-    mode: "onSubmit",
-  });
+  const system = systems.find((s) => s.id === deployment.systemId);
+
+  const envsWithFilter =
+    system?.environments
+      .filter((e) => e.resourceFilter != null)
+      .map((e) => ({ ...e, resourceFilter: e.resourceFilter! })) ?? [];
+
+  const resourceFilter = deployment.resourceFilter ?? undefined;
+  const defaultValues = { ...deployment, resourceFilter };
+  const form = useForm({ schema, defaultValues, mode: "onSubmit" });
   const { handleSubmit, setError } = form;
 
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const router = useRouter();
   const updateDeployment = api.deployment.update.useMutation();
   const onSubmit = handleSubmit((data) => {
+    const filter =
+      data.resourceFilter == null || isEmptyCondition(data.resourceFilter)
+        ? null
+        : data.resourceFilter;
+    const updates = { ...data, resourceFilter: filter };
     updateDeployment
-      .mutateAsync({ id: deployment.id, data })
+      .mutateAsync({ id: deployment.id, data: updates })
       .then((updatedDeployment) => {
         if (
           data.slug !== deployment.slug ||
@@ -61,11 +83,11 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
           );
         router.refresh();
       })
-      .catch(() => {
+      .catch(() =>
         setError("root", {
           message: "Deployment with this slug already exists",
-        });
-      });
+        }),
+      );
   });
   return (
     <div className="container m-8 mx-auto max-w-3xl space-y-2">
@@ -168,6 +190,41 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                     className="w-16"
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="resourceFilter"
+            render={({ field: { value, onChange } }) => (
+              <FormItem>
+                <FormLabel>Resource Filter</FormLabel>
+                <FormControl>
+                  <ResourceConditionRender
+                    condition={value ?? defaultCondition}
+                    onChange={onChange}
+                  />
+                </FormControl>
+                <div className="flex items-center gap-2">
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="flex items-center gap-2"
+                      onClick={() => onChange(null)}
+                    >
+                      <IconX className="h-4 w-4" /> Clear
+                    </Button>
+                  </FormControl>
+                  {envsWithFilter.length > 0 && value != null && (
+                    <DeploymentResourcesDialog
+                      environments={envsWithFilter}
+                      resourceFilter={value}
+                      workspaceId={workspaceId}
+                    />
+                  )}
+                </div>
                 <FormMessage />
               </FormItem>
             )}

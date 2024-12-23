@@ -1,5 +1,6 @@
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { InferSelectModel } from "drizzle-orm";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   jsonb,
@@ -10,6 +11,11 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+import {
+  isValidResourceCondition,
+  resourceCondition,
+} from "@ctrlplane/validators/resources";
 
 import { jobAgent } from "./job-agent.js";
 import { system } from "./system.js";
@@ -39,6 +45,10 @@ export const deploymentSchema = z.object({
     .refine((val) => val >= 0, {
       message: "Retry count must be a non-negative number.",
     }),
+  resourceFilter: resourceCondition
+    .nullable()
+    .optional()
+    .refine((filter) => filter == null || isValidResourceCondition(filter)),
 });
 
 export const deployment = pgTable(
@@ -59,6 +69,9 @@ export const deployment = pgTable(
       .$type<Record<string, any>>()
       .notNull(),
     retryCount: integer("retry_count").notNull().default(0),
+    resourceFilter: jsonb("resource_filter")
+      .$type<ResourceCondition | null>()
+      .default(sql`NULL`),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.slug) }),
 );

@@ -1,0 +1,1 @@
+ALTER TABLE "deployment" ADD COLUMN "resource_filter" jsonb DEFAULT NULL;

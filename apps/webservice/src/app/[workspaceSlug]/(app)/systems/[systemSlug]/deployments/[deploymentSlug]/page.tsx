@@ -164,7 +164,11 @@ export default async function DeploymentPage({
         </div>
       </div>
       <div className="mb-16 flex-grow space-y-10">
-        <EditDeploymentSection deployment={deployment} systems={systems} />
+        <EditDeploymentSection
+          deployment={deployment}
+          systems={systems}
+          workspaceId={workspaceId}
+        />
 
         <JobAgentSection
           jobAgents={jobAgents}

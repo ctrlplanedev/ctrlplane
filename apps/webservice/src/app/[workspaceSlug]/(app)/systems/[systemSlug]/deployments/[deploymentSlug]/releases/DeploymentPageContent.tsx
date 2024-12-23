@@ -2,16 +2,19 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   IconFilter,
   IconGraph,
   IconHistory,
+  IconLoader2,
   IconSettings,
 } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -27,6 +30,10 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionBadge";
@@ -39,6 +46,51 @@ import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
+
+type EnvHeaderProps = { environment: Environment; deployment: Deployment };
+
+const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const { data: workspace, isLoading: isWorkspaceLoading } =
+    api.workspace.bySlug.useQuery(workspaceSlug);
+  const workspaceId = workspace?.id ?? "";
+
+  const { resourceFilter: envResourceFilter } = environment;
+  const { resourceFilter: deploymentResourceFilter } = deployment;
+
+  const filter: ResourceCondition = {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [envResourceFilter, deploymentResourceFilter].filter(isPresent),
+  };
+
+  const { data: resourcesResult, isLoading: isResourcesLoading } =
+    api.resource.byWorkspaceId.list.useQuery(
+      { workspaceId, filter, limit: 0 },
+      { enabled: workspaceId !== "" && envResourceFilter != null },
+    );
+
+  const total = resourcesResult?.total ?? 0;
+
+  const isLoading = isWorkspaceLoading || isResourcesLoading;
+
+  return (
+    <TableHead className="border-l pl-4">
+      <div className="flex w-[220px] items-center gap-2">
+        {environment.name}
+        <Badge
+          variant="outline"
+          className="rounded-full px-1.5 font-light text-muted-foreground"
+        >
+          {isLoading && (
+            <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {!isLoading && total}
+        </Badge>
+      </div>
+    </TableHead>
+  );
+};
 
 type DeploymentPageContentProps = {
   deployment: Deployment;
@@ -189,17 +241,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                   </div>
                 </TableHead>
                 {selectedEnvironments.map((env) => (
-                  <TableHead className="border-l pl-4" key={env.id}>
-                    <div className="flex w-[220px] items-center gap-2">
-                      {env.name}
-                      <Badge
-                        variant="outline"
-                        className="rounded-full px-1.5 font-light text-muted-foreground"
-                      >
-                        {env.resources.length}
-                      </Badge>
-                    </div>
-                  </TableHead>
+                  <EnvHeader
+                    key={env.id}
+                    environment={env}
+                    deployment={deployment}
+                  />
                 ))}
               </TableRow>
             </TableHeader>

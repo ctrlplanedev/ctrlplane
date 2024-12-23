@@ -1,14 +1,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  IconExternalLink,
-  IconLoader2,
-  IconSelector,
-} from "@tabler/icons-react";
-import * as LZString from "lz-string";
+import { IconLoader2, IconSelector } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -28,7 +21,6 @@ import {
   FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
-import { Label } from "@ctrlplane/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
   ComparisonOperator,
@@ -42,7 +34,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { ResourceConditionRender } from "../resource-condition/ResourceConditionRender";
-import { ResourceIcon } from "../ResourceIcon";
+import { ResourceList } from "../resource-condition/ResourceList";
 
 const ResourceViewsCombobox: React.FC<{
   workspaceId: string;
@@ -120,7 +112,6 @@ export const EditFilterForm: React.FC<{
   environment: SCHEMA.Environment;
   workspaceId: string;
 }> = ({ environment, workspaceId }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
@@ -208,43 +199,11 @@ export const EditFilterForm: React.FC<{
         {resourceFilter != null &&
           resources.data != null &&
           resources.data.total > 0 && (
-            <div className="space-y-4">
-              <Label>Resources ({resources.data.total})</Label>
-              <div className="space-y-2">
-                {resources.data.items.map((resource) => (
-                  <div className="flex items-center gap-2" key={resource.id}>
-                    <ResourceIcon
-                      version={resource.version}
-                      kind={resource.kind}
-                    />
-                    <div className="flex flex-col">
-                      <span className="overflow-hidden text-nowrap text-sm">
-                        {resource.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {resource.version}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Button variant="outline" size="sm">
-                <Link
-                  href={`/${workspaceSlug}/resources?${new URLSearchParams({
-                    filter: LZString.compressToEncodedURIComponent(
-                      JSON.stringify(form.getValues("resourceFilter")),
-                    ),
-                  })}`}
-                  className="flex items-center gap-1"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <IconExternalLink className="h-4 w-4" />
-                  View Resources
-                </Link>
-              </Button>
-            </div>
+            <ResourceList
+              resources={resources.data.items}
+              count={resources.data.total}
+              filter={resourceFilter}
+            />
           )}
       </form>
     </Form>

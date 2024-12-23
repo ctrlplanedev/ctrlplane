@@ -136,6 +136,7 @@ class ReleaseJobTriggerBuilder {
     return Promise.all(
       releases.flatMap(async (release) => {
         const { resourceFilter } = release.environment;
+        const { resourceFilter: deploymentResourceFilter } = release.deployment;
         const { workspaceId } = release.system;
         const resources = await this.tx
           .select()
@@ -143,6 +144,7 @@ class ReleaseJobTriggerBuilder {
           .where(
             and(
               resourceMatchesMetadata(this.tx, resourceFilter),
+              resourceMatchesMetadata(this.tx, deploymentResourceFilter),
               eq(resource.workspaceId, workspaceId),
               isNull(resource.lockedAt),
               isNull(resource.deletedAt),
