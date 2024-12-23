@@ -1,5 +1,6 @@
 "use client";
 
+import type { RouterOutputs } from "@ctrlplane/api";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
@@ -24,23 +25,43 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import {
+  defaultCondition,
+  isEmptyCondition,
+} from "@ctrlplane/validators/resources";
 
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionRender";
 import { api } from "~/trpc/react";
+import { DeploymentResourcesDialog } from "./DeploymentResourcesDialog";
 
 const deploymentForm = z.object(schema.deploymentSchema.shape);
 
+type System = RouterOutputs["system"]["list"]["items"][number];
+
 type EditDeploymentSectionProps = {
   deployment: schema.Deployment;
-  systems: schema.System[];
+  systems: System[];
+  workspaceId: string;
 };
 
 export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   deployment,
   systems,
+  workspaceId,
 }) => {
+  const system = systems.find((s) => s.id === deployment.systemId);
+
+  const envsWithFilter =
+    system?.environments
+      .filter((e) => e.resourceFilter != null)
+      .map((e) => ({ ...e, resourceFilter: e.resourceFilter! })) ?? [];
+
   const form = useForm({
     schema: deploymentForm,
-    defaultValues: { ...deployment },
+    defaultValues: {
+      ...deployment,
+      resourceFilter: deployment.resourceFilter ?? undefined,
+    },
     mode: "onSubmit",
   });
   const { handleSubmit, setError } = form;
@@ -49,8 +70,13 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   const router = useRouter();
   const updateDeployment = api.deployment.update.useMutation();
   const onSubmit = handleSubmit((data) => {
+    const filter =
+      data.resourceFilter == null || isEmptyCondition(data.resourceFilter)
+        ? undefined
+        : data.resourceFilter;
+    const updates = { ...data, resourceFilter: filter };
     updateDeployment
-      .mutateAsync({ id: deployment.id, data })
+      .mutateAsync({ id: deployment.id, data: updates })
       .then((updatedDeployment) => {
         if (
           data.slug !== deployment.slug ||
@@ -61,11 +87,11 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
           );
         router.refresh();
       })
-      .catch(() => {
+      .catch(() =>
         setError("root", {
           message: "Deployment with this slug already exists",
-        });
-      });
+        }),
+      );
   });
   return (
     <div className="container m-8 mx-auto max-w-3xl space-y-2">
@@ -168,6 +194,29 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                     className="w-16"
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="resourceFilter"
+            render={({ field: { value, onChange } }) => (
+              <FormItem>
+                <FormLabel>Resource Filter</FormLabel>
+                <FormControl>
+                  <ResourceConditionRender
+                    condition={value ?? defaultCondition}
+                    onChange={onChange}
+                  />
+                </FormControl>
+                {envsWithFilter.length > 0 && value != null && (
+                  <DeploymentResourcesDialog
+                    environments={envsWithFilter}
+                    resourceFilter={value}
+                    workspaceId={workspaceId}
+                  />
+                )}
                 <FormMessage />
               </FormItem>
             )}

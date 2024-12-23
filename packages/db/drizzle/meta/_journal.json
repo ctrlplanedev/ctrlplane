@@ -344,6 +344,13 @@
       "when": 1734888690276,
       "tag": "0048_lucky_eddie_brock",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1734924482269,
+      "tag": "0049_condemned_franklin_storm",
+      "breakpoints": true
     }
   ]
 }
