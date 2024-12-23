@@ -1341,10 +1341,7 @@
                     "additionalProperties": true
                   },
                   "metadata": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
+                    "$ref": "#/components/schemas/Release/properties/metadata"
                   }
                 },
                 "required": [
@@ -1370,10 +1367,7 @@
                       "type": "string"
                     },
                     "metadata": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "string"
-                      }
+                      "$ref": "#/components/schemas/Release/properties/metadata"
                     }
                   }
                 }
@@ -2356,6 +2350,10 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
           }
         },
         "required": [

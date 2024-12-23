@@ -382,6 +382,9 @@ export interface components {
       deploymentId: string;
       /** Format: date-time */
       createdAt: string;
+      metadata?: {
+        [key: string]: unknown;
+      };
     };
     Environment: {
       /** Format: uuid */
@@ -1249,9 +1252,7 @@ export interface operations {
           config?: {
             [key: string]: unknown;
           };
-          metadata?: {
-            [key: string]: string;
-          };
+          metadata?: components["schemas"]["Release"]["metadata"];
         };
       };
     };
@@ -1265,9 +1266,7 @@ export interface operations {
           "application/json": {
             id?: string;
             version?: string;
-            metadata?: {
-              [key: string]: string;
-            };
+            metadata?: components["schemas"]["Release"]["metadata"];
           };
         };
       };
