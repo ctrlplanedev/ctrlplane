@@ -4,7 +4,7 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import { useParams, useRouter } from "next/navigation";
 import { z } from "zod";
 
-import * as schema from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
@@ -34,12 +34,12 @@ import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components
 import { api } from "~/trpc/react";
 import { DeploymentResourcesDialog } from "./DeploymentResourcesDialog";
 
-const deploymentForm = z.object(schema.deploymentSchema.shape);
+const schema = z.object(SCHEMA.deploymentSchema.shape);
 
 type System = RouterOutputs["system"]["list"]["items"][number];
 
 type EditDeploymentSectionProps = {
-  deployment: schema.Deployment;
+  deployment: SCHEMA.Deployment;
   systems: System[];
   workspaceId: string;
 };
@@ -56,14 +56,9 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
       .filter((e) => e.resourceFilter != null)
       .map((e) => ({ ...e, resourceFilter: e.resourceFilter! })) ?? [];
 
-  const form = useForm({
-    schema: deploymentForm,
-    defaultValues: {
-      ...deployment,
-      resourceFilter: deployment.resourceFilter ?? undefined,
-    },
-    mode: "onSubmit",
-  });
+  const resourceFilter = deployment.resourceFilter ?? undefined;
+  const defaultValues = { ...deployment, resourceFilter };
+  const form = useForm({ schema, defaultValues, mode: "onSubmit" });
   const { handleSubmit, setError } = form;
 
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();

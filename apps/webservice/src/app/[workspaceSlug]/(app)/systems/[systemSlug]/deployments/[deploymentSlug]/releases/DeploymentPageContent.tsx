@@ -47,10 +47,7 @@ import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
-type EnvHeaderProps = {
-  environment: Environment;
-  deployment: Deployment;
-};
+type EnvHeaderProps = { environment: Environment; deployment: Deployment };
 
 const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
