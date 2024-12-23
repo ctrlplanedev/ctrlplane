@@ -53,10 +53,11 @@ export const DeploymentResourcesDialog: React.FC<
       isPresent,
     ),
   };
+  const isFilterValid = isValidResourceCondition(filter);
 
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter, limit: 5 },
-    { enabled: selectedEnvironment != null },
+    { enabled: selectedEnvironment != null && isFilterValid },
   );
 
   const resources = data?.items ?? [];
@@ -65,10 +66,11 @@ export const DeploymentResourcesDialog: React.FC<
   if (environments.length === 0) return null;
   return (
     <Dialog>
-      <DialogTrigger>
+      <DialogTrigger asChild>
         <Button
           variant="outline"
           className="flex items-center gap-2"
+          type="button"
           disabled={!isValidResourceCondition(resourceFilter)}
         >
           <IconFilter className="h-4 w-4" /> View Resources

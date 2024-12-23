@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import { useParams, useRouter } from "next/navigation";
+import { IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -67,7 +68,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   const onSubmit = handleSubmit((data) => {
     const filter =
       data.resourceFilter == null || isEmptyCondition(data.resourceFilter)
-        ? undefined
+        ? null
         : data.resourceFilter;
     const updates = { ...data, resourceFilter: filter };
     updateDeployment
@@ -205,13 +206,25 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                     onChange={onChange}
                   />
                 </FormControl>
-                {envsWithFilter.length > 0 && value != null && (
-                  <DeploymentResourcesDialog
-                    environments={envsWithFilter}
-                    resourceFilter={value}
-                    workspaceId={workspaceId}
-                  />
-                )}
+                <div className="flex items-center gap-2">
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="flex items-center gap-2"
+                      onClick={() => onChange(null)}
+                    >
+                      <IconX className="h-4 w-4" /> Clear
+                    </Button>
+                  </FormControl>
+                  {envsWithFilter.length > 0 && value != null && (
+                    <DeploymentResourcesDialog
+                      environments={envsWithFilter}
+                      resourceFilter={value}
+                      workspaceId={workspaceId}
+                    />
+                  )}
+                </div>
                 <FormMessage />
               </FormItem>
             )}

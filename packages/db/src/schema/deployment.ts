@@ -46,6 +46,7 @@ export const deploymentSchema = z.object({
       message: "Retry count must be a non-negative number.",
     }),
   resourceFilter: resourceCondition
+    .nullable()
     .optional()
     .refine((filter) => filter == null || isValidResourceCondition(filter)),
 });
