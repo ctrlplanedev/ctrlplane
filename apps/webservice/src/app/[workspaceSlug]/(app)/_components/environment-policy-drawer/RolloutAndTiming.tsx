@@ -261,9 +261,9 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
           render={({ field }) => (
             <FormItem className="space-y-4">
               <div className="flex flex-col gap-1">
-                <FormLabel>Minimum Release Interval</FormLabel>
+                <FormLabel>Deployment Cooldown</FormLabel>
                 <FormDescription>
-                  Setting a minimum release interval will ensure that a certain
+                  Setting a deployment cooldown will ensure that a certain
                   amount of time has passed since the last active release.
                 </FormDescription>
               </div>

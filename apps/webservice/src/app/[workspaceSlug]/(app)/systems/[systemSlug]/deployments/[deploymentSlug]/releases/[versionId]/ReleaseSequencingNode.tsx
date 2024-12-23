@@ -301,7 +301,6 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
       <div className="flex items-center gap-2">
         <Passing />
         <span className="flex items-center gap-1">
-          Minimum
           <Button
             variant="link"
             onClick={() =>
@@ -312,9 +311,9 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
             }
             className="h-fit px-0 py-0 text-inherit underline-offset-2"
           >
-            release interval
+            Deployment cooldown
           </Button>
-          passed
+          finished
         </span>
       </div>
     );
@@ -322,21 +321,20 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   return (
     <div className="flex items-center gap-2">
       <Waiting />
-      <span className="flex items-center gap-1">
-        <Button
-          variant="link"
-          onClick={() =>
-            setParams({
-              environment_policy_id: policy.id,
-              tab: EnvironmentPolicyDrawerTab.Rollout,
-            })
-          }
-          className="h-fit px-0 py-0 text-inherit underline-offset-2"
-        >
-          Waiting {prettyMilliseconds(timeLeft ?? 0, { compact: true })}
-        </Button>
-        till next release
-      </span>
+
+      <Button
+        variant="link"
+        onClick={() =>
+          setParams({
+            environment_policy_id: policy.id,
+            tab: EnvironmentPolicyDrawerTab.Rollout,
+          })
+        }
+        className="h-fit px-0 py-0 text-inherit underline-offset-2"
+      >
+        {prettyMilliseconds(timeLeft ?? 0, { compact: true })} deployment
+        cooldown
+      </Button>
     </div>
   );
 };
