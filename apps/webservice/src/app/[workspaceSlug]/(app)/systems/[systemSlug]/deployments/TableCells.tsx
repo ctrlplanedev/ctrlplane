@@ -1,6 +1,7 @@
 import type { JobCondition, JobStatusType } from "@ctrlplane/validators/jobs";
 import Link from "next/link";
 import {
+  IconAlertCircle,
   IconCalendarTime,
   IconCircle,
   IconCircleCheck,
@@ -66,6 +67,13 @@ const ReleaseIcon: React.FC<{
     return (
       <div className="rounded-full bg-red-400 p-1 dark:text-black">
         <IconSettingsX strokeWidth={2} className="h-4 w-4" />
+      </div>
+    );
+
+  if (statuses.some((s) => s === JobStatus.ActionRequired))
+    return (
+      <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
+        <IconAlertCircle strokeWidth={2} className="h-4 w-4" />
       </div>
     );
 
