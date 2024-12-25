@@ -91,14 +91,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     isBlockedByReleaseChannel &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
-  const showRelease = isAlreadyDeployed; // && !showBlockedByReleaseChannel;
-  if (release.version === "v0.0.6")
-    console.log({
-      isAlreadyDeployed,
-      hasJobAgent,
-      hasResources,
-      isBlockedByReleaseChannel,
-    });
+  const showRelease = isAlreadyDeployed && !showBlockedByReleaseChannel;
   const showDeployButton =
     !isAlreadyDeployed &&
     hasJobAgent &&

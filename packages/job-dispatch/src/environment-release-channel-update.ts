@@ -1,4 +1,6 @@
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import _ from "lodash";
+import { isPresent } from "ts-is-present";
 
 import { and, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -177,6 +179,32 @@ const handleReleaseChannelUpdate = async (
   await Promise.all([cancelJobsPromise, triggerJobsPromise]);
 };
 
+const getPolicyReleaseChannels = (environmentId: string) =>
+  db
+    .select({
+      deploymentId: SCHEMA.environmentPolicyReleaseChannel.deploymentId,
+      channelId: SCHEMA.environmentPolicyReleaseChannel.channelId,
+    })
+    .from(SCHEMA.environment)
+    .innerJoin(
+      SCHEMA.environmentPolicy,
+      eq(SCHEMA.environment.policyId, SCHEMA.environmentPolicy.id),
+    )
+    .innerJoin(
+      SCHEMA.environmentPolicyReleaseChannel,
+      eq(
+        SCHEMA.environmentPolicyReleaseChannel.policyId,
+        SCHEMA.environmentPolicy.id,
+      ),
+    )
+    .where(eq(SCHEMA.environment.id, environmentId))
+    .then((rows) =>
+      _.mapValues(
+        _.keyBy(rows, (r) => r.deploymentId),
+        (r) => r.channelId,
+      ),
+    );
+
 export const handleEnvironmentReleaseChannelUpdate = async (
   environmentId: string,
   prevReleaseChannels: Record<string, string>,
@@ -192,10 +220,22 @@ export const handleEnvironmentReleaseChannelUpdate = async (
     .where(eq(SCHEMA.environment.id, environmentId))
     .then((rows) => rows.map((r) => r.deployment.id));
 
+  const policyReleaseChannels = await getPolicyReleaseChannels(environmentId);
+
+  const prevReleaseChannelsWithPolicy = {
+    ...policyReleaseChannels,
+    ...prevReleaseChannels,
+  };
+
+  const newReleaseChannelsWithPolicy = {
+    ...policyReleaseChannels,
+    ...newReleaseChannels,
+  };
+
   const releaseChannelUpdatePromises = deploymentIds.map(
     async (deploymentId) => {
-      const oldChannelId = prevReleaseChannels[deploymentId] ?? null;
-      const newChannelId = newReleaseChannels[deploymentId] ?? null;
+      const oldChannelId = prevReleaseChannelsWithPolicy[deploymentId] ?? null;
+      const newChannelId = newReleaseChannelsWithPolicy[deploymentId] ?? null;
 
       return handleReleaseChannelUpdate(
         environmentId,
@@ -207,4 +247,65 @@ export const handleEnvironmentReleaseChannelUpdate = async (
   );
 
   return Promise.all(releaseChannelUpdatePromises);
+};
+
+export const handleEnvironmentPolicyReleaseChannelUpdate = async (
+  policyId: string,
+  prevReleaseChannels: Record<string, string>,
+  newReleaseChannels: Record<string, string>,
+) => {
+  const environments = await db
+    .select()
+    .from(SCHEMA.environmentPolicy)
+    .innerJoin(
+      SCHEMA.environment,
+      eq(SCHEMA.environmentPolicy.id, SCHEMA.environment.policyId),
+    )
+    .leftJoin(
+      SCHEMA.environmentReleaseChannel,
+      eq(SCHEMA.environmentReleaseChannel.environmentId, SCHEMA.environment.id),
+    )
+    .where(eq(SCHEMA.environmentPolicy.id, policyId))
+    .then((rows) =>
+      _.chain(rows)
+        .groupBy((r) => r.environment.id)
+        .map((groupedRows) => ({
+          environmentId: groupedRows[0]!.environment.id,
+          releaseChannels: groupedRows
+            .filter((row) => isPresent(row.environment_release_channel))
+            .map((row) => row.environment_release_channel!),
+        }))
+        .value(),
+    );
+
+  const deploymentIds = await db
+    .select()
+    .from(SCHEMA.environmentPolicy)
+    .innerJoin(
+      SCHEMA.deployment,
+      eq(SCHEMA.deployment.systemId, SCHEMA.environmentPolicy.systemId),
+    )
+    .where(eq(SCHEMA.environmentPolicy.id, policyId))
+    .then((rows) => rows.map((r) => r.deployment.id));
+
+  const environmentReleaseChannelUpdatePromises = environments.flatMap(
+    ({ environmentId, releaseChannels }) =>
+      deploymentIds.map((deploymentId) => {
+        const environmentLevelReleaseChannel = releaseChannels.find(
+          (channel) => channel.deploymentId === deploymentId,
+        );
+        if (environmentLevelReleaseChannel != null) return;
+
+        const oldChannelId = prevReleaseChannels[deploymentId] ?? null;
+        const newChannelId = newReleaseChannels[deploymentId] ?? null;
+        return handleReleaseChannelUpdate(
+          environmentId,
+          deploymentId,
+          oldChannelId,
+          newChannelId,
+        );
+      }),
+  );
+
+  return Promise.all(environmentReleaseChannelUpdatePromises);
 };
