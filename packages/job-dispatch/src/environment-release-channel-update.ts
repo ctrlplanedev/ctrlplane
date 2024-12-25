@@ -33,7 +33,6 @@ const createFilterForExcludedReleases = (
   newReleaseFilter: ReleaseCondition | null,
 ): ReleaseCondition | null => {
   if (oldReleaseFilter == null && newReleaseFilter == null) return null;
-  if (oldReleaseFilter == null && newReleaseFilter == null) return null;
   if (oldReleaseFilter == null && newReleaseFilter != null)
     return {
       type: FilterType.Comparison,
