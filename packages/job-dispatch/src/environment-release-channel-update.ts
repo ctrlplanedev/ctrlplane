@@ -231,19 +231,17 @@ export const handleEnvironmentReleaseChannelUpdate = async (
     ...newReleaseChannels,
   };
 
-  const releaseChannelUpdatePromises = deploymentIds.map(
-    async (deploymentId) => {
-      const oldChannelId = prevReleaseChannelsWithPolicy[deploymentId] ?? null;
-      const newChannelId = newReleaseChannelsWithPolicy[deploymentId] ?? null;
+  const releaseChannelUpdatePromises = deploymentIds.map((deploymentId) => {
+    const oldChannelId = prevReleaseChannelsWithPolicy[deploymentId] ?? null;
+    const newChannelId = newReleaseChannelsWithPolicy[deploymentId] ?? null;
 
-      return handleReleaseChannelUpdate(
-        environmentId,
-        deploymentId,
-        oldChannelId,
-        newChannelId,
-      );
-    },
-  );
+    return handleReleaseChannelUpdate(
+      environmentId,
+      deploymentId,
+      oldChannelId,
+      newChannelId,
+    );
+  });
 
   return Promise.all(releaseChannelUpdatePromises);
 };
