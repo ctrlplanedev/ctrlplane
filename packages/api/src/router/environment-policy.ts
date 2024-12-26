@@ -433,13 +433,11 @@ export const policyRouter = createTRPCRouter({
           .from(environmentPolicyReleaseChannel)
           .where(eq(environmentPolicyReleaseChannel.policyId, input.id));
 
-        const prevMap = _.mapValues(
-          _.keyBy(prevReleaseChannels, (r) => r.deploymentId),
-          (r) => r.channelId,
+        const prevMap = Object.fromEntries(
+          prevReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
         );
-        const newMap = _.mapValues(
-          _.keyBy(newReleaseChannels, (r) => r.deploymentId),
-          (r) => r.channelId,
+        const newMap = Object.fromEntries(
+          newReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
         );
 
         await handleEnvironmentPolicyReleaseChannelUpdate(
