@@ -198,10 +198,7 @@ const getPolicyReleaseChannels = (environmentId: string) =>
     )
     .where(eq(SCHEMA.environment.id, environmentId))
     .then((rows) =>
-      _.mapValues(
-        _.keyBy(rows, (r) => r.deploymentId),
-        (r) => r.channelId,
-      ),
+      Object.fromEntries(rows.map((r) => [r.deploymentId, r.channelId])),
     );
 
 export const handleEnvironmentReleaseChannelUpdate = async (
