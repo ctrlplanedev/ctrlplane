@@ -30,6 +30,7 @@ import {
 import {
   dispatchJobsForAddedResources,
   getEventsForEnvironmentDeleted,
+  handleEnvironmentReleaseChannelUpdate,
   handleEvent,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -340,7 +341,15 @@ export const environmentRouter = createTRPCRouter({
           .perform(Permission.EnvironmentUpdate)
           .on({ type: "environment", id: input.id }),
     })
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const prevReleaseChannels = await ctx.db
+        .select({
+          deploymentId: environmentReleaseChannel.deploymentId,
+          channelId: environmentReleaseChannel.channelId,
+        })
+        .from(environmentReleaseChannel)
+        .where(eq(environmentReleaseChannel.environmentId, input.id));
+
       const [nulled, set] = _.partition(
         Object.entries(input.releaseChannels),
         ([_, channelId]) => channelId == null,
@@ -353,7 +362,7 @@ export const environmentRouter = createTRPCRouter({
         channelId: channelId!,
       }));
 
-      return ctx.db.transaction(async (db) => {
+      await ctx.db.transaction(async (db) => {
         await db
           .delete(environmentReleaseChannel)
           .where(
@@ -377,6 +386,23 @@ export const environmentRouter = createTRPCRouter({
               ]),
             });
       });
+
+      const newReleaseChannels = await ctx.db
+        .select({
+          deploymentId: environmentReleaseChannel.deploymentId,
+          channelId: environmentReleaseChannel.channelId,
+        })
+        .from(environmentReleaseChannel)
+        .where(eq(environmentReleaseChannel.environmentId, input.id));
+
+      const prevMap = Object.fromEntries(
+        prevReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
+      );
+      const newMap = Object.fromEntries(
+        newReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
+      );
+
+      await handleEnvironmentReleaseChannelUpdate(input.id, prevMap, newMap);
     }),
 
   delete: protectedProcedure

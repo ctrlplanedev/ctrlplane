@@ -30,6 +30,7 @@ import {
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   dispatchReleaseJobTriggers,
+  handleEnvironmentPolicyReleaseChannelUpdate,
   isPassingAllPolicies,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -377,6 +378,14 @@ export const policyRouter = createTRPCRouter({
           .then(takeFirst);
 
       if (releaseChannels != null) {
+        const prevReleaseChannels = await ctx.db
+          .select({
+            deploymentId: environmentPolicyReleaseChannel.deploymentId,
+            channelId: environmentPolicyReleaseChannel.channelId,
+          })
+          .from(environmentPolicyReleaseChannel)
+          .where(eq(environmentPolicyReleaseChannel.policyId, input.id));
+
         const [nulled, set] = _.partition(
           Object.entries(releaseChannels),
           ([_, channelId]) => channelId == null,
@@ -415,6 +424,27 @@ export const policyRouter = createTRPCRouter({
                 ),
               });
         });
+
+        const newReleaseChannels = await ctx.db
+          .select({
+            deploymentId: environmentPolicyReleaseChannel.deploymentId,
+            channelId: environmentPolicyReleaseChannel.channelId,
+          })
+          .from(environmentPolicyReleaseChannel)
+          .where(eq(environmentPolicyReleaseChannel.policyId, input.id));
+
+        const prevMap = Object.fromEntries(
+          prevReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
+        );
+        const newMap = Object.fromEntries(
+          newReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
+        );
+
+        await handleEnvironmentPolicyReleaseChannelUpdate(
+          input.id,
+          prevMap,
+          newMap,
+        );
       }
 
       if (releaseWindows != null) {

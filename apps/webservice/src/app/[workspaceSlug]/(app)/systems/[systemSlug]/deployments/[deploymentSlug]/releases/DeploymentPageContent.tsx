@@ -117,9 +117,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   );
 
   const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
-  const blockedEnvByRelease = api.release.blocked.useQuery(releaseIds, {
-    enabled: releaseIds.length > 0,
-  });
 
   const loading = releases.isLoading;
   const router = useRouter();
@@ -303,9 +300,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         environment={env}
                         deployment={deployment}
                         release={release}
-                        blockedEnv={blockedEnvByRelease.data?.find(
-                          (b) => b.environmentId === env.id,
-                        )}
                       />
                     </TableCell>
                   ))}
