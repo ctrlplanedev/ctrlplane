@@ -7,6 +7,7 @@ export const cloudVpcV1 = z.object({
   name: z.string(),
   config: z.object({
     name: z.string(),
+    id: z.string().optional(), // For AWS
     provider: z.enum(["aws", "azure", "google"]),
     region: z.string().optional(),
     project: z.string().optional(), // For Google Cloud
