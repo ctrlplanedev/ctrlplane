@@ -36,10 +36,10 @@ const convertVpcToCloudResource = (
     partition === "aws-us-gov"
       ? `console.${region}.${partition}`
       : "console.aws.amazon"
-  }.com/vpc/home?region=${region}#/vpcs/vpc-${vpc.VpcId}`;
+  }.com/vpcconsole/home?region=${region}#vpcs:search=${vpc.VpcId}`;
 
   return {
-    name: vpc.VpcId ?? "",
+    name: vpc.Tags?.find((tag) => tag.Key === "Name")?.Value ?? vpc.VpcId ?? "",
     identifier: `aws/${accountId}/vpc/${vpc.VpcId}`,
     version: "cloud/v1",
     kind: "VPC",

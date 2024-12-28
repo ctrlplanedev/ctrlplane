@@ -91,6 +91,8 @@ export const AwsDialog: React.FC<{
       workspaceId: workspace.id,
       config: {
         awsRoleArns: data.awsRoleArns.map((a) => a.value),
+        importEks: data.importEks,
+        importVpc: data.importVpc,
       },
     });
     await utils.resource.provider.byWorkspaceId.invalidate();
