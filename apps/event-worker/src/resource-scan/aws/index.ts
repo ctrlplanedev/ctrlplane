@@ -2,6 +2,7 @@ import { logger } from "@ctrlplane/logger";
 
 import { createResourceScanWorker } from "../utils.js";
 import { getEksResources } from "./eks.js";
+import { getVpcResources } from "./vpc.js";
 
 const log = logger.child({ label: "resource-scan/aws" });
 
@@ -14,10 +15,15 @@ export const createAwsResourceScanWorker = () =>
       return [];
     }
 
-    const resources = await getEksResources(
+    const eksResources = await getEksResources(
       rp.workspace,
       rp.resource_provider_aws,
     );
 
-    return resources;
+    const vpcResources = await getVpcResources(
+      rp.workspace,
+      rp.resource_provider_aws,
+    );
+
+    return [...eksResources, ...vpcResources];
   });

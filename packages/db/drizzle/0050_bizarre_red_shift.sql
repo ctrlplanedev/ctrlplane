@@ -1,0 +1,2 @@
+ALTER TABLE "resource_provider_aws" ADD COLUMN "import_eks" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "resource_provider_aws" ADD COLUMN "import_vpc" boolean DEFAULT false NOT NULL;

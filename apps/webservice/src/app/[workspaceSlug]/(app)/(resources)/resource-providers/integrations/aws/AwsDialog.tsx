@@ -24,6 +24,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -32,6 +33,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
+import { Switch } from "@ctrlplane/ui/switch";
 
 import { api } from "~/trpc/react";
 
@@ -47,6 +49,8 @@ export const createAwsSchema = z.object({
         ),
     }),
   ),
+  importEks: z.boolean().default(false),
+  importVpc: z.boolean().default(false),
 });
 
 export const AwsDialog: React.FC<{
@@ -58,6 +62,8 @@ export const AwsDialog: React.FC<{
     defaultValues: {
       name: "",
       awsRoleArns: [{ value: "" }],
+      importEks: true,
+      importVpc: false,
     },
     mode: "onSubmit",
   });
@@ -193,6 +199,48 @@ export const AwsDialog: React.FC<{
                 Add Role ARN
               </Button>
             </div>
+
+            <FormField
+              control={form.control}
+              name="importEks"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import EKS Clusters</FormLabel>
+                    <FormDescription>
+                      Enable importing of EKS clusters from your AWS accounts
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="importVpc"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import VPCs</FormLabel>
+                    <FormDescription>
+                      Enable importing of VPCs from your AWS accounts
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <DialogFooter>
               <Button type="submit">Create</Button>
