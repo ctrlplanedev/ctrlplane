@@ -114,3 +114,20 @@ export const resourceProviderAwsRelations = relations(
     }),
   }),
 );
+
+export const resourceProviderAzure = pgTable(
+  "resource_provider_azure",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resourceProviderId: uuid("resource_provider_id")
+      .notNull()
+      .references(() => resourceProvider.id, { onDelete: "cascade" }),
+    tenantId: text("tenant_id").notNull(),
+    subscriptionIds: text("subscription_ids").array().notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.tenantId) }),
+);
+
+export type ResourceProviderAzure = InferSelectModel<
+  typeof resourceProviderAzure
+>;
