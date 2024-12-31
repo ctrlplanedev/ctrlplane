@@ -92,11 +92,11 @@ const getNetworkResources = async (
         return {
           name: network.name!,
           identifier: `${project}/${network.name}`,
-          version: "cloud/v1" as const,
-          kind: "VPC" as const,
+          version: "cloud/v1",
+          kind: "VPC",
           config: {
             name: network.name!,
-            provider: "google" as const,
+            provider: "google",
             region: "global",
             project,
             cidr: network.IPv4Range ?? undefined,
@@ -145,17 +145,14 @@ const fetchProjectNetworks = async (
         pageToken,
       });
 
-      const resources = await getNetworkResources(
-        clients,
-        project,
-        networkList,
-      );
       networks.push(
-        ...resources.map((resource) => ({
-          ...resource,
-          workspaceId,
-          providerId,
-        })),
+        ...(await getNetworkResources(clients, project, networkList)).map(
+          (resource) => ({
+            ...resource,
+            workspaceId,
+            providerId,
+          }),
+        ),
       );
       pageToken = request?.pageToken;
     } while (pageToken != null);
