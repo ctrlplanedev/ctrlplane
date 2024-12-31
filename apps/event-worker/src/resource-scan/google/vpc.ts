@@ -110,17 +110,17 @@ const getNetworkResources = async (
             "google/self-link": network.selfLink,
             "google/creation-timestamp": network.creationTimestamp,
             "google/description": network.description,
-            ...network.peerings?.reduce(
-              (acc, peering) => ({
-                ...acc,
-                [`google/peering/${peering.name}`]: JSON.stringify({
+            ...(network.peerings?.reduce(
+              (acc, peering) => {
+                acc[`google/peering/${peering.name}`] = JSON.stringify({
                   network: peering.network,
                   state: peering.state,
                   autoCreateRoutes: peering.autoCreateRoutes,
-                }),
-              }),
-              {},
-            ),
+                });
+                return acc;
+              },
+              {} as Record<string, string>,
+            ) ?? {}),
           }),
         };
       }),
