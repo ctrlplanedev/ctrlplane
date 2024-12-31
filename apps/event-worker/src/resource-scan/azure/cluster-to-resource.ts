@@ -1,16 +1,24 @@
 import type { ManagedCluster } from "@azure/arm-containerservice";
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 
+import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { omitNullUndefined } from "../../utils.js";
+
+const log = logger.child({ module: "resource-scan/azure/cluster-to-resource" });
 
 export const convertManagedClusterToResource = (
   workspaceId: string,
   providerId: string,
   cluster: ManagedCluster,
-): KubernetesClusterAPIV1 & { workspaceId: string; providerId: string } => {
-  if (!cluster.name || !cluster.id) throw new Error("Invalid cluster");
+):
+  | (KubernetesClusterAPIV1 & { workspaceId: string; providerId: string })
+  | null => {
+  if (!cluster.name || !cluster.id) {
+    log.error("Invalid cluster", { cluster });
+    return null;
+  }
 
   const appUrl = cluster.azurePortalFqdn ?? "";
 

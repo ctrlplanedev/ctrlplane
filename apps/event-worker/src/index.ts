@@ -7,9 +7,6 @@ import {
   createAzureResourceScanWorker,
   createGoogleResourceScanWorker,
 } from "./resource-scan/index.js";
-import { testAzure } from "./test-azure.js";
-
-testAzure();
 
 const resourceGoogleScanWorker = createGoogleResourceScanWorker();
 const resourceAwsScanWorker = createAwsResourceScanWorker();

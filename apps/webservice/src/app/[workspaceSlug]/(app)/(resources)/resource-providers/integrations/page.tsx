@@ -7,12 +7,13 @@ import {
   SiKubernetes,
   SiTerraform,
 } from "@icons-pack/react-simple-icons";
-import { IconSettings } from "@tabler/icons-react";
+import { IconBrandAzure, IconSettings } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
 
+import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { AwsActionButton } from "./AwsActionButton";
 import { GoogleActionButton } from "./GoogleActionButton";
@@ -72,6 +73,7 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
 }) => {
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
+  const azureAppClientId = env.AZURE_APP_CLIENT_ID;
   return (
     <div className="h-full overflow-y-auto p-8 pb-24">
       <div className="container mx-auto max-w-5xl">
@@ -117,6 +119,26 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
 
             <GoogleActionButton workspace={workspace} />
           </ResourceProviderCard>
+
+          {azureAppClientId != null && (
+            <ResourceProviderCard>
+              <ResourceProviderContent>
+                <ResourceProviderHeading>
+                  <IconBrandAzure className="mx-auto text-4xl text-blue-400" />
+                  <div className="font-semibold">Azure</div>
+                </ResourceProviderHeading>
+                <p className="text-xs text-muted-foreground">
+                  Grant our Azure application permissions and we will manage
+                  running the resource provider for you.
+                </p>
+                <ResourceProviderBadges>
+                  <K8sBadge />
+                </ResourceProviderBadges>
+              </ResourceProviderContent>
+
+              <GoogleActionButton workspace={workspace} />
+            </ResourceProviderCard>
+          )}
         </div>
 
         <div className="my-16 border-b" />

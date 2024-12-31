@@ -115,18 +115,30 @@ export const resourceProviderAwsRelations = relations(
   }),
 );
 
-export const resourceProviderAzure = pgTable(
-  "resource_provider_azure",
+export const azureTenant = pgTable(
+  "azure_tenant",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    resourceProviderId: uuid("resource_provider_id")
+    workspaceId: uuid("workspace_id")
       .notNull()
-      .references(() => resourceProvider.id, { onDelete: "cascade" }),
+      .references(() => workspace.id),
     tenantId: text("tenant_id").notNull(),
-    subscriptionIds: text("subscription_ids").array().notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.tenantId) }),
 );
+
+export const resourceProviderAzure = pgTable("resource_provider_azure", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  resourceProviderId: uuid("resource_provider_id")
+    .notNull()
+    .references(() => resourceProvider.id, { onDelete: "cascade" }),
+  tenantId: text("tenant_id")
+    .notNull()
+    .references(() => azureTenant.id),
+  subscriptionId: text("subscription_id").notNull(),
+});
+
+export type AzureTenant = InferSelectModel<typeof azureTenant>;
 
 export type ResourceProviderAzure = InferSelectModel<
   typeof resourceProviderAzure
