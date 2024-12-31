@@ -157,17 +157,16 @@ const fetchProjectNetworks = async (
 
     return networks;
   } catch (err) {
-    const error = err as { message?: string; code?: number };
-    const isPermissionError =
-      error.message?.includes("PERMISSION_DENIED") ?? error.code === 403;
-    log.error(
-      `Unable to get VPCs for project: ${project} - ${
-        isPermissionError
-          ? 'Missing required permissions. Please ensure the service account has the "Compute Network Viewer" role.'
-          : (error.message ?? "Unknown error")
-      }`,
-      { error, project },
-    );
+    const { message, code } = err as { message?: string; code?: number };
+    const errorMessage =
+      message?.includes("PERMISSION_DENIED") || code === 403
+        ? 'Missing required permissions. Please ensure the service account has the "Compute Network Viewer" role.'
+        : (message ?? "Unknown error");
+
+    log.error(`Unable to get VPCs for project: ${project} - ${errorMessage}`, {
+      error: err,
+      project,
+    });
     return [];
   }
 };
