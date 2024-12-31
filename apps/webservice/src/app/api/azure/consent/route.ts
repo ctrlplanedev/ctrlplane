@@ -4,7 +4,6 @@ import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
 import { BAD_REQUEST, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import IORedis from "ioredis";
-import * as LZString from "lz-string";
 import ms from "ms";
 import { z } from "zod";
 
@@ -30,13 +29,15 @@ const configSchema = z.object({
 
 export const GET = async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
-  const config = searchParams.get("config");
+  const state = searchParams.get("state");
 
-  if (!config) return NextResponse.json({ status: BAD_REQUEST });
+  if (!state) return NextResponse.json({ status: BAD_REQUEST });
 
-  const decodedConfig = LZString.decompressFromEncodedURIComponent(config);
-  const parsedConfig = configSchema.safeParse(JSON.parse(decodedConfig));
+  const configJSON = await connection.get(`azure_consent_state:${state}`);
+  if (configJSON == null) return NextResponse.json({ status: BAD_REQUEST });
 
+  const config = JSON.parse(configJSON);
+  const parsedConfig = configSchema.safeParse(config);
   if (!parsedConfig.success) return NextResponse.json({ status: BAD_REQUEST });
 
   const { workspaceId, tenantId, subscriptionId, name } = parsedConfig.data;

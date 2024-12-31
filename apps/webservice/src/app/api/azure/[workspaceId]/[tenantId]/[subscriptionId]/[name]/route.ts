@@ -1,9 +1,9 @@
+import { randomUUID } from "crypto";
 import type { ResourceScanEvent } from "@ctrlplane/validators/events";
 import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
 import { FORBIDDEN, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
 import IORedis from "ioredis";
-import * as LZString from "lz-string";
 import ms from "ms";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
@@ -51,10 +51,11 @@ export const GET = async ({ params }: { params: Params }) => {
     .then(takeFirstOrNull);
 
   if (tenant == null) {
-    const configHash = LZString.compressToEncodedURIComponent(
-      JSON.stringify({ workspaceId, tenantId, subscriptionId, name }),
-    );
-    const redirectUrl = `${baseUrl}/api/azure/consent?config=${configHash}`;
+    const state = randomUUID();
+    const config = { workspaceId, tenantId, subscriptionId, name };
+    const configJSON = JSON.stringify(config);
+    await connection.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
+    const redirectUrl = `${baseUrl}/api/azure/consent?state=${state}`;
     const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}`;
     return NextResponse.redirect(consentUrl);
   }
