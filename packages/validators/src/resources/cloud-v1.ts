@@ -20,8 +20,19 @@ export const cloudVpcV1 = z.object({
           name: z.string(),
           region: z.string(),
           cidr: z.string().optional(),
-          type: z.enum(["public", "private"]).optional(),
+          type: z
+            .enum([
+              "public", // for AWS
+              "private",
+              "internal", // for GCP
+              "external",
+            ])
+            .optional(),
+          gatewayAddress: z.string().optional(), // for GCP
           availabilityZone: z.string().optional(),
+          secondaryCidrs: z // for GCP
+            .array(z.object({ name: z.string(), cidr: z.string() }))
+            .optional(),
         }),
       )
       .optional(),
