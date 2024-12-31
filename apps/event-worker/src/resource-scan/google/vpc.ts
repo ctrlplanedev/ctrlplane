@@ -55,24 +55,22 @@ const getSubnetDetails = (
       region,
       filter: `name eq ${name}`,
     })
-    .then(([subnets]) =>
-      _.chain(subnets)
-        .find((subnet) => subnet.name === name)
-        .thru(
-          (subnet): GoogleSubnetDetails => ({
-            name,
-            region,
-            gatewayAddress: subnet.gatewayAddress ?? "",
-            cidr: subnet.ipCidrRange ?? "",
-            type: subnet.purpose === "INTERNAL" ? "internal" : "external",
-            secondaryCidrs: subnet.secondaryIpRanges?.map((r) => ({
-              name: r.rangeName ?? "",
-              cidr: r.ipCidrRange ?? "",
-            })),
-          }),
-        )
-        .value(),
-    );
+    .then(([subnets]) => {
+      const subnet = _.find(subnets, (subnet) => subnet.name === name);
+      if (subnet === undefined) return null;
+
+      return {
+        name,
+        region,
+        gatewayAddress: subnet.gatewayAddress ?? "",
+        cidr: subnet.ipCidrRange ?? "",
+        type: subnet.purpose === "INTERNAL" ? "internal" : "external",
+        secondaryCidrs: subnet.secondaryIpRanges?.map((r) => ({
+          name: r.rangeName ?? "",
+          cidr: r.ipCidrRange ?? "",
+        })),
+      };
+    });
 };
 
 const getNetworkResources = async (
