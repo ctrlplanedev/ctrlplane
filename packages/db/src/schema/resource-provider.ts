@@ -132,7 +132,7 @@ export const resourceProviderAzure = pgTable("resource_provider_azure", {
   resourceProviderId: uuid("resource_provider_id")
     .notNull()
     .references(() => resourceProvider.id, { onDelete: "cascade" }),
-  tenantId: text("tenant_id")
+  tenantId: uuid("tenant_id")
     .notNull()
     .references(() => azureTenant.id),
   subscriptionId: text("subscription_id").notNull(),

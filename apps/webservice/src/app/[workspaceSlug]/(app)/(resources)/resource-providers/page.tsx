@@ -1,11 +1,17 @@
+import type { RouterOutputs } from "@ctrlplane/api";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconExternalLink, IconSettings } from "@tabler/icons-react";
-import { formatDistanceToNow } from "date-fns";
+import { SiAmazon, SiGooglecloud } from "@icons-pack/react-simple-icons";
+import {
+  IconBrandAzure,
+  IconExternalLink,
+  IconSettings,
+} from "@tabler/icons-react";
 import LZString from "lz-string";
 
+import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import {
   Table,
@@ -27,9 +33,67 @@ import { api } from "~/trpc/server";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { ResourceProvidersGettingStarted } from "./ResourceProvidersGettingStarted";
 
-export const metadata: Metadata = {
-  title: "Resource Providers | Ctrlplane",
-};
+export const metadata: Metadata = { title: "Resource Providers | Ctrlplane" };
+type ResourceProvider =
+  RouterOutputs["resource"]["provider"]["byWorkspaceId"][number];
+
+const isCustomProvider = (provider: ResourceProvider) =>
+  provider.googleConfig == null &&
+  provider.awsConfig == null &&
+  provider.azureConfig == null;
+
+const CustomProviderTooltipBadge: React.FC = () => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger>
+        <Badge
+          variant="outline"
+          className="h-6 gap-1.5 rounded-full border-none bg-blue-500/10 pl-2 pr-3 text-xs text-blue-300"
+        >
+          <IconSettings className="h-4 w-4" /> Custom
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[200px]">
+        A custom provider is when you are running your own agent instead of
+        using managed agents built inside Ctrlplane. Your agent directly calls
+        Ctrlplane's API to create resources.
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+const ManagedProviderBadge: React.FC<{
+  provider: ResourceProvider;
+}> = ({ provider }) => (
+  <Badge
+    variant="secondary"
+    className={cn(
+      "flex h-6 w-fit rounded-full px-2 py-0 text-xs",
+      provider.googleConfig != null && "bg-red-400/20",
+      provider.awsConfig != null && "bg-orange-400/20",
+      provider.azureConfig != null && "bg-blue-400/20",
+    )}
+  >
+    {provider.googleConfig != null && (
+      <div className="flex items-center gap-1 text-red-400">
+        <SiGooglecloud className="h-3 w-3" />
+        Google
+      </div>
+    )}
+    {provider.awsConfig != null && (
+      <div className="flex items-center gap-1 text-orange-400">
+        <SiAmazon className="h-3 w-3" />
+        AWS
+      </div>
+    )}
+    {provider.azureConfig != null && (
+      <div className="flex items-center gap-1 text-blue-400">
+        <IconBrandAzure className="h-3 w-3" />
+        Azure
+      </div>
+    )}
+  </Badge>
+);
 
 export default async function ResourceProvidersPage({
   params,
@@ -76,30 +140,13 @@ export default async function ResourceProvidersPage({
             >
               <TableCell>
                 <Link href={provider.filterLink} target="_blank">
-                  <div className="flex h-full items-center gap-1">
+                  <div className="flex h-full items-center gap-2">
                     <span className="text-base">{provider.name}</span>
-                    {provider.googleConfig == null &&
-                      provider.awsConfig == null && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge
-                                variant="outline"
-                                className="h-6 gap-1.5 rounded-full border-none bg-blue-500/10 pl-2 pr-3 text-xs text-blue-300"
-                              >
-                                <IconSettings className="h-4 w-4" /> Custom
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-[200px]">
-                              A custom provider is when you are running your own
-                              agent instead of using managed agents built inside
-                              Ctrlplane. Your agent directly calls Ctrlplane's
-                              API to create resources.
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-
+                    {isCustomProvider(provider) ? (
+                      <CustomProviderTooltipBadge />
+                    ) : (
+                      <ManagedProviderBadge provider={provider} />
+                    )}
                     <Badge
                       variant="outline"
                       className="flex h-6 items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
@@ -112,37 +159,29 @@ export default async function ResourceProvidersPage({
                 </Link>
               </TableCell>
               <TableCell>
-                {provider.kinds.length > 0 ? (
-                  provider.kinds.map((kind) => (
-                    <Badge
-                      key={kind.kind}
-                      variant="outline"
-                      className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
-                    >
-                      {kind.version}:{kind.kind}
-                    </Badge>
-                  ))
-                ) : (
+                {provider.kinds.length === 0 && (
                   <span className="text-xs italic text-muted-foreground">
                     No resources
                   </span>
                 )}
+                {provider.kinds.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto">
+                    {provider.kinds.map((kind) => (
+                      <Badge
+                        key={kind.kind}
+                        variant="outline"
+                        className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
+                      >
+                        {kind.version}:{kind.kind}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(provider.createdAt).toLocaleDateString()}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {formatDistanceToNow(new Date(provider.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(provider.createdAt).toLocaleDateString()}
+                </span>
               </TableCell>
               <TableCell className="text-right">
                 <ProviderActionsDropdown provider={provider} />

@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-  ResourceProvider,
-  ResourceProviderAws,
-  ResourceProviderGoogle,
-} from "@ctrlplane/db/schema";
+import type { RouterOutputs } from "@ctrlplane/api";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconDots } from "@tabler/icons-react";
@@ -32,10 +28,7 @@ import { api } from "~/trpc/react";
 import { UpdateAwsProviderDialog } from "./integrations/aws/UpdateAwsProviderDialog";
 import { UpdateGoogleProviderDialog } from "./integrations/google/UpdateGoogleProviderDialog";
 
-type Provider = ResourceProvider & {
-  googleConfig: ResourceProviderGoogle | null;
-  awsConfig: ResourceProviderAws | null;
-};
+type Provider = RouterOutputs["resource"]["provider"]["byWorkspaceId"][number];
 
 export const ProviderActionsDropdown: React.FC<{
   provider: Provider;
@@ -43,7 +36,9 @@ export const ProviderActionsDropdown: React.FC<{
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
   const isManagedProvider =
-    provider.googleConfig != null || provider.awsConfig != null;
+    provider.googleConfig != null ||
+    provider.awsConfig != null ||
+    provider.azureConfig != null;
 
   const deleteProvider = api.resource.provider.delete.useMutation({
     onSuccess: () => utils.resource.provider.byWorkspaceId.invalidate(),

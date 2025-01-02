@@ -16,6 +16,7 @@ import { Card } from "@ctrlplane/ui/card";
 import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { AwsActionButton } from "./AwsActionButton";
+import { AzureDialog } from "./azure/AzureDialog";
 import { GoogleActionButton } from "./GoogleActionButton";
 
 export const metadata: Metadata = {
@@ -136,7 +137,7 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
                 </ResourceProviderBadges>
               </ResourceProviderContent>
 
-              <GoogleActionButton workspace={workspace} />
+              <AzureDialog workspaceId={workspace.id} />
             </ResourceProviderCard>
           )}
         </div>

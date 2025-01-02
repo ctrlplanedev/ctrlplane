@@ -8,13 +8,16 @@ import { omitNullUndefined } from "../../utils.js";
 
 const log = logger.child({ module: "resource-scan/azure/cluster-to-resource" });
 
+type ClusterResource = KubernetesClusterAPIV1 & {
+  workspaceId: string;
+  providerId: string;
+};
+
 export const convertManagedClusterToResource = (
   workspaceId: string,
   providerId: string,
   cluster: ManagedCluster,
-):
-  | (KubernetesClusterAPIV1 & { workspaceId: string; providerId: string })
-  | null => {
+): ClusterResource | null => {
   if (!cluster.name || !cluster.id) {
     log.error("Invalid cluster", { cluster });
     return null;

@@ -17,6 +17,7 @@ import {
   resource,
   resourceProvider,
   resourceProviderAws,
+  resourceProviderAzure,
   resourceProviderGoogle,
   updateResourceProviderAws,
   updateResourceProviderGoogle,
@@ -46,6 +47,10 @@ export const resourceProviderRouter = createTRPCRouter({
         .leftJoin(
           resourceProviderAws,
           eq(resourceProviderAws.resourceProviderId, resourceProvider.id),
+        )
+        .leftJoin(
+          resourceProviderAzure,
+          eq(resourceProviderAzure.resourceProviderId, resourceProvider.id),
         )
         .where(eq(resourceProvider.workspaceId, input));
 
@@ -92,6 +97,7 @@ export const resourceProviderRouter = createTRPCRouter({
         ...provider.resource_provider,
         googleConfig: provider.resource_provider_google,
         awsConfig: provider.resource_provider_aws,
+        azureConfig: provider.resource_provider_azure,
         resourceCount:
           providerCounts.find(
             (pc) => pc.providerId === provider.resource_provider.id,

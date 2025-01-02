@@ -23,13 +23,12 @@ type Params = {
 const baseUrl = env.BASE_URL;
 const clientId = env.AZURE_APP_CLIENT_ID;
 
-const connection = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
-
+const redis = new IORedis(env.REDIS_URL, { maxRetriesPerRequest: null });
 const resourceScanQueue = new Queue<ResourceScanEvent>(Channel.ResourceScan, {
-  connection,
+  connection: redis,
 });
 
-export const GET = async ({ params }: { params: Params }) => {
+export const GET = async (_: never, { params }: { params: Params }) => {
   const { workspaceId, tenantId, subscriptionId, name } = params;
 
   const workspace = await db
@@ -54,7 +53,7 @@ export const GET = async ({ params }: { params: Params }) => {
     const state = randomUUID();
     const config = { workspaceId, tenantId, subscriptionId, name };
     const configJSON = JSON.stringify(config);
-    await connection.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
+    await redis.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
     const redirectUrl = `${baseUrl}/api/azure/consent?state=${state}`;
     const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}`;
     return NextResponse.redirect(consentUrl);

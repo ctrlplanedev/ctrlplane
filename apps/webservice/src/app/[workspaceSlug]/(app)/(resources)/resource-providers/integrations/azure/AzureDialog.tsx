@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -52,7 +52,7 @@ export const AzureDialog: React.FC<AzureDialogProps> = ({ workspaceId }) => {
           <DialogTitle>Configure Azure</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={onSubmit}>
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -93,6 +93,13 @@ export const AzureDialog: React.FC<AzureDialogProps> = ({ workspaceId }) => {
                 </FormItem>
               )}
             />
+
+            <Button
+              type="submit"
+              disabled={!form.formState.isValid || form.formState.isSubmitting}
+            >
+              Save
+            </Button>
           </form>
         </Form>
       </DialogContent>

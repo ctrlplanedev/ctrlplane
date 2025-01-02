@@ -10,7 +10,7 @@ import { logger } from "@ctrlplane/logger";
 
 import { convertManagedClusterToResource } from "./cluster-to-resource.js";
 
-const log = logger.child({ label: "resource-scan/azure/aks" });
+const log = logger.child({ label: "resource-scan/azure" });
 
 const AZURE_CLIENT_ID = process.env.AZURE_APP_CLIENT_ID;
 const AZURE_CLIENT_SECRET = process.env.AZURE_APP_CLIENT_SECRET;
@@ -53,9 +53,10 @@ export const getAksResources = async (
     clusters.push(cluster);
   }
 
+  const { resourceProviderId: providerId } = azureProvider;
   return clusters
     .map((cluster) =>
-      convertManagedClusterToResource(workspace.id, azureProvider.id, cluster),
+      convertManagedClusterToResource(workspace.id, providerId, cluster),
     )
     .filter(isPresent);
 };
