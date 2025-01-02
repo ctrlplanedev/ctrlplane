@@ -351,13 +351,6 @@
       "when": 1734924482269,
       "tag": "0049_condemned_franklin_storm",
       "breakpoints": true
-    },
-    {
-      "idx": 50,
-      "version": "7",
-      "when": 1735844001390,
-      "tag": "0050_sudden_warstar",
-      "breakpoints": true
     }
   ]
 }
