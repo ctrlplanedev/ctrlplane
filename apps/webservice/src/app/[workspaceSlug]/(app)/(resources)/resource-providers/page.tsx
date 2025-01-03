@@ -68,29 +68,29 @@ const ManagedProviderBadge: React.FC<{
   <Badge
     variant="secondary"
     className={cn(
-      "flex h-6 w-fit rounded-full px-2 py-0 text-xs",
-      provider.googleConfig != null && "bg-red-400/20",
-      provider.awsConfig != null && "bg-orange-400/20",
-      provider.azureConfig != null && "bg-blue-400/20",
+      "flex h-6 w-fit items-center gap-1 rounded-full px-2 py-0 text-xs",
+      provider.googleConfig != null && "bg-red-400/20 text-red-400",
+      provider.awsConfig != null && "bg-orange-400/20 text-orange-400",
+      provider.azureConfig != null && "bg-blue-400/20 text-blue-400",
     )}
   >
     {provider.googleConfig != null && (
-      <div className="flex items-center gap-1 text-red-400">
+      <>
         <SiGooglecloud className="h-3 w-3" />
         Google
-      </div>
+      </>
     )}
     {provider.awsConfig != null && (
-      <div className="flex items-center gap-1 text-orange-400">
+      <>
         <SiAmazon className="h-3 w-3" />
         AWS
-      </div>
+      </>
     )}
     {provider.azureConfig != null && (
-      <div className="flex items-center gap-1 text-blue-400">
+      <>
         <IconBrandAzure className="h-3 w-3" />
         Azure
-      </div>
+      </>
     )}
   </Badge>
 );

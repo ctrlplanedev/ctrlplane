@@ -33,7 +33,7 @@ const removeResourceJob = (job: Job) =>
     ? resourceScanQueue.removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-const getResource = async (rp: any) => {
+const getResources = async (rp: any) => {
   if (rp.resource_provider_google != null) {
     const [gkeResources, vpcResources] = await Promise.all([
       getGkeResources(rp.workspace, rp.resource_provider_google),
@@ -91,18 +91,18 @@ export const createResourceScanWorker = () =>
       );
 
       try {
-        const resources = await getResource(rp);
-        log.info(
-          `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
-        );
-
-        if (resources.length > 0) {
-          await upsertResources(db, resources);
-        } else {
+        const resources = await getResources(rp);
+        if (resources.length === 0) {
           log.info(
             `No resources found for provider ${rp.resource_provider.id}, skipping upsert.`,
           );
+          return;
         }
+
+        log.info(
+          `Upserting ${resources.length} resources for provider ${rp.resource_provider.id}`,
+        );
+        await upsertResources(db, resources);
       } catch (error: any) {
         log.error(
           `Error scanning/upserting resources for provider ${rp.resource_provider.id}: ${error.message}`,

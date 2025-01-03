@@ -31,14 +31,17 @@ export const GET = async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const state = searchParams.get("state");
 
-  if (!state) return NextResponse.json({ status: BAD_REQUEST });
+  if (!state)
+    return NextResponse.json({ error: "Bad request" }, { status: BAD_REQUEST });
 
   const configJSON = await redis.get(`azure_consent_state:${state}`);
-  if (configJSON == null) return NextResponse.json({ status: BAD_REQUEST });
+  if (configJSON == null)
+    return NextResponse.json({ error: "Bad request" }, { status: BAD_REQUEST });
 
   const config = JSON.parse(configJSON);
   const parsedConfig = configSchema.safeParse(config);
-  if (!parsedConfig.success) return NextResponse.json({ status: BAD_REQUEST });
+  if (!parsedConfig.success)
+    return NextResponse.json({ error: "Bad request" }, { status: BAD_REQUEST });
 
   const { workspaceId, tenantId, subscriptionId, name } = parsedConfig.data;
 

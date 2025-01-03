@@ -23,8 +23,6 @@ export const convertManagedClusterToResource = (
     return null;
   }
 
-  const appUrl = cluster.azurePortalFqdn ?? "";
-
   return {
     workspaceId,
     providerId,
@@ -46,7 +44,9 @@ export const convertManagedClusterToResource = (
       },
     },
     metadata: omitNullUndefined({
-      [ReservedMetadataKey.Links]: JSON.stringify({ "Azure Portal": appUrl }),
+      [ReservedMetadataKey.Links]: cluster.azurePortalFqdn
+        ? JSON.stringify({ "Azure Portal": cluster.azurePortalFqdn })
+        : undefined,
       [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
       [ReservedMetadataKey.KubernetesFlavor]: "aks",
       [ReservedMetadataKey.KubernetesVersion]: cluster.currentKubernetesVersion,

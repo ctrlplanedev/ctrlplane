@@ -9,6 +9,7 @@ import ms from "ms";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
 import { env } from "~/env";
@@ -30,76 +31,78 @@ const resourceScanQueue = new Queue<ResourceScanEvent>(Channel.ResourceScan, {
 
 export const GET = async (_: never, { params }: { params: Params }) => {
   const { workspaceId, tenantId, subscriptionId, name } = params;
+  return db.transaction(async (db) => {
+    const workspace = await db
+      .select()
+      .from(SCHEMA.workspace)
+      .where(eq(SCHEMA.workspace.id, workspaceId))
+      .then(takeFirstOrNull);
 
-  const workspace = await db
-    .select()
-    .from(SCHEMA.workspace)
-    .where(eq(SCHEMA.workspace.id, workspaceId))
-    .then(takeFirstOrNull);
+    if (workspace == null)
+      return NextResponse.json(
+        { error: "Workspace not found" },
+        { status: NOT_FOUND },
+      );
 
-  if (workspace == null)
-    return NextResponse.json(
-      { error: "Workspace not found" },
-      { status: NOT_FOUND },
-    );
+    const tenant = await db
+      .select()
+      .from(SCHEMA.azureTenant)
+      .where(eq(SCHEMA.azureTenant.tenantId, tenantId))
+      .then(takeFirstOrNull);
 
-  const tenant = await db
-    .select()
-    .from(SCHEMA.azureTenant)
-    .where(eq(SCHEMA.azureTenant.tenantId, tenantId))
-    .then(takeFirstOrNull);
+    if (tenant == null) {
+      const state = randomUUID();
+      const config = { workspaceId, tenantId, subscriptionId, name };
+      const configJSON = JSON.stringify(config);
+      await redis.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
+      const redirectUrl = `${baseUrl}/api/azure/consent?state=${state}`;
+      const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}`;
+      return NextResponse.redirect(consentUrl);
+    }
 
-  if (tenant == null) {
-    const state = randomUUID();
-    const config = { workspaceId, tenantId, subscriptionId, name };
-    const configJSON = JSON.stringify(config);
-    await redis.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
-    const redirectUrl = `${baseUrl}/api/azure/consent?state=${state}`;
-    const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}`;
-    return NextResponse.redirect(consentUrl);
-  }
+    if (tenant.workspaceId !== workspaceId)
+      return NextResponse.json(
+        { error: "Tenant does not belong to this workspace" },
+        { status: FORBIDDEN },
+      );
 
-  if (tenant.workspaceId !== workspaceId)
-    return NextResponse.json(
-      { error: "Tenant does not belong to this workspace" },
-      { status: FORBIDDEN },
-    );
+    const resourceProvider = await db
+      .insert(SCHEMA.resourceProvider)
+      .values({
+        workspaceId,
+        name,
+      })
+      .returning()
+      .then(takeFirstOrNull);
 
-  const resourceProvider = await db
-    .insert(SCHEMA.resourceProvider)
-    .values({
-      workspaceId,
-      name,
-    })
-    .returning()
-    .then(takeFirstOrNull);
+    if (resourceProvider == null)
+      return NextResponse.json(
+        { error: "Failed to create resource provider" },
+        { status: INTERNAL_SERVER_ERROR },
+      );
 
-  if (resourceProvider == null)
-    return NextResponse.json(
-      { error: "Failed to create resource provider" },
-      { status: INTERNAL_SERVER_ERROR },
-    );
+    try {
+      await db.insert(SCHEMA.resourceProviderAzure).values({
+        resourceProviderId: resourceProvider.id,
+        tenantId: tenant.id,
+        subscriptionId,
+      });
 
-  db.insert(SCHEMA.resourceProviderAzure)
-    .values({
-      resourceProviderId: resourceProvider.id,
-      tenantId: tenant.id,
-      subscriptionId,
-    })
-    .then(() =>
-      resourceScanQueue.add(
+      await resourceScanQueue.add(
         resourceProvider.id,
         { resourceProviderId: resourceProvider.id },
         { repeat: { every: ms("10m"), immediately: true } },
-      ),
-    )
-    .then(() =>
-      NextResponse.redirect(`${baseUrl}/${workspace.slug}/resource-providers`),
-    )
-    .catch(() =>
-      NextResponse.json(
-        { error: "Failed to create resource provider" },
+      );
+    } catch (error) {
+      logger.error(error);
+      return NextResponse.json(
+        { error: "Failed to create resource provider Azure" },
         { status: INTERNAL_SERVER_ERROR },
-      ),
+      );
+    }
+
+    return NextResponse.redirect(
+      `${baseUrl}/${workspace.slug}/resource-providers`,
     );
+  });
 };
