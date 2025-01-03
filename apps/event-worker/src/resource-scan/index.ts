@@ -17,8 +17,10 @@ import { Channel } from "@ctrlplane/validators/events";
 
 import { redis } from "../redis.js";
 import { getEksResources } from "./aws/eks.js";
+import { getVpcResources as getAwsVpcResources } from "./aws/vpc.js";
 import { getAksResources } from "./azure/aks.js";
 import { getGkeResources } from "./google/gke.js";
+import { getVpcResources as getGoogleVpcResources } from "./google/vpc.js";
 
 const log = logger.child({ label: "resource-scan" });
 
@@ -31,11 +33,23 @@ const removeResourceJob = (job: Job) =>
     ? resourceScanQueue.removeRepeatableByKey(job.repeatJobKey)
     : null;
 
-const getResource = (rp: any) => {
-  if (rp.resource_provider_google != null)
-    return getGkeResources(rp.workspace, rp.resource_provider_google);
-  if (rp.resource_provider_aws != null)
-    return getEksResources(rp.workspace, rp.resource_provider_aws);
+const getResource = async (rp: any) => {
+  if (rp.resource_provider_google != null) {
+    const [gkeResources, vpcResources] = await Promise.all([
+      getGkeResources(rp.workspace, rp.resource_provider_google),
+      getGoogleVpcResources(rp.workspace, rp.resource_provider_google),
+    ]);
+    return [...gkeResources, ...vpcResources];
+  }
+
+  if (rp.resource_provider_aws != null) {
+    const [eksResources, vpcResources] = await Promise.all([
+      getEksResources(rp.workspace, rp.resource_provider_aws),
+      getAwsVpcResources(rp.workspace, rp.resource_provider_aws),
+    ]);
+    return [...eksResources, ...vpcResources];
+  }
+
   if (rp.resource_provider_azure != null)
     return getAksResources(rp.workspace, rp.resource_provider_azure);
   throw new Error("Invalid resource provider");
