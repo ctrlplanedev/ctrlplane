@@ -29,6 +29,8 @@ export const env = createEnv({
     OTEL_SAMPLER_RATIO: z.number().optional().default(1),
     OPENREPLAY_PROJECT_KEY: z.string().optional(),
     OPENREPLAY_INGEST_POINT: z.string().optional(),
+    AZURE_APP_CLIENT_ID: z.string().optional(),
+    REDIS_URL: z.string(),
   },
 
   /**
