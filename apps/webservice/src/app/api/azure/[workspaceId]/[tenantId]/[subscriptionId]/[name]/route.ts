@@ -1,5 +1,7 @@
 import { randomUUID } from "crypto";
+import type { Tx } from "@ctrlplane/db";
 import type { ResourceScanEvent } from "@ctrlplane/validators/events";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { Queue } from "bullmq";
 import { FORBIDDEN, INTERNAL_SERVER_ERROR, NOT_FOUND } from "http-status";
@@ -29,8 +31,43 @@ const resourceScanQueue = new Queue<ResourceScanEvent>(Channel.ResourceScan, {
   connection: redis,
 });
 
-export const GET = async (_: never, { params }: { params: Params }) => {
+const createResourceProvider = async (
+  db: Tx,
+  workspaceId: string,
+  tenantId: string,
+  subscriptionId: string,
+  name: string,
+) => {
+  const resourceProvider = await db
+    .insert(SCHEMA.resourceProvider)
+    .values({ workspaceId, name })
+    .returning()
+    .then(takeFirstOrNull);
+
+  if (resourceProvider == null)
+    throw new Error("Failed to create resource provider");
+
+  await db.insert(SCHEMA.resourceProviderAzure).values({
+    resourceProviderId: resourceProvider.id,
+    tenantId,
+    subscriptionId,
+  });
+
+  await resourceScanQueue.add(
+    resourceProvider.id,
+    { resourceProviderId: resourceProvider.id },
+    { repeat: { every: ms("10m"), immediately: true } },
+  );
+};
+
+export const GET = async (
+  request: NextRequest,
+  { params }: { params: Params },
+) => {
   const { workspaceId, tenantId, subscriptionId, name } = params;
+  const { searchParams } = new URL(request.url);
+  const resourceProviderId = searchParams.get("resourceProviderId");
+
   return db.transaction(async (db) => {
     const workspace = await db
       .select()
@@ -56,7 +93,11 @@ export const GET = async (_: never, { params }: { params: Params }) => {
       const configJSON = JSON.stringify(config);
       await redis.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
       const redirectUrl = `${baseUrl}/api/azure/consent?state=${state}`;
-      const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}`;
+      const consentUrlExtension =
+        resourceProviderId == null
+          ? ""
+          : `&resourceProviderId=${resourceProviderId}`;
+      const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}${consentUrlExtension}`;
       return NextResponse.redirect(consentUrl);
     }
 
@@ -66,43 +107,44 @@ export const GET = async (_: never, { params }: { params: Params }) => {
         { status: FORBIDDEN },
       );
 
-    const resourceProvider = await db
-      .insert(SCHEMA.resourceProvider)
-      .values({
-        workspaceId,
-        name,
-      })
-      .returning()
-      .then(takeFirstOrNull);
+    const nextStepsUrl = `${baseUrl}/${workspace.slug}/resource-providers/integrations/azure/${resourceProviderId}`;
 
-    if (resourceProvider == null)
-      return NextResponse.json(
-        { error: "Failed to create resource provider" },
-        { status: INTERNAL_SERVER_ERROR },
-      );
+    if (resourceProviderId != null)
+      return db
+        .update(SCHEMA.resourceProviderAzure)
+        .set({ tenantId: tenant.id, subscriptionId })
+        .where(
+          eq(
+            SCHEMA.resourceProviderAzure.resourceProviderId,
+            resourceProviderId,
+          ),
+        )
+        .then(() =>
+          resourceScanQueue.add(resourceProviderId, { resourceProviderId }),
+        )
+        .then(() => NextResponse.redirect(nextStepsUrl))
+        .catch((error) => {
+          logger.error(error);
+          return NextResponse.json(
+            { error: "Failed to update resource provider" },
+            { status: INTERNAL_SERVER_ERROR },
+          );
+        });
 
-    try {
-      await db.insert(SCHEMA.resourceProviderAzure).values({
-        resourceProviderId: resourceProvider.id,
-        tenantId: tenant.id,
-        subscriptionId,
+    return createResourceProvider(
+      db,
+      workspaceId,
+      tenant.id,
+      subscriptionId,
+      name,
+    )
+      .then(() => NextResponse.redirect(nextStepsUrl))
+      .catch((error) => {
+        logger.error(error);
+        return NextResponse.json(
+          { error: "Failed to create resource provider" },
+          { status: INTERNAL_SERVER_ERROR },
+        );
       });
-
-      await resourceScanQueue.add(
-        resourceProvider.id,
-        { resourceProviderId: resourceProvider.id },
-        { repeat: { every: ms("10m"), immediately: true } },
-      );
-    } catch (error) {
-      logger.error(error);
-      return NextResponse.json(
-        { error: "Failed to create resource provider Azure" },
-        { status: INTERNAL_SERVER_ERROR },
-      );
-    }
-
-    return NextResponse.redirect(
-      `${baseUrl}/${workspace.slug}/resource-providers`,
-    );
   });
 };

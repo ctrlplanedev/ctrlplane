@@ -26,6 +26,7 @@ import {
 
 import { api } from "~/trpc/react";
 import { UpdateAwsProviderDialog } from "./integrations/aws/UpdateAwsProviderDialog";
+import { UpdateAzureProviderDialog } from "./integrations/azure/UpdateAzureProviderDialog";
 import { UpdateGoogleProviderDialog } from "./integrations/google/UpdateGoogleProviderDialog";
 
 type Provider = RouterOutputs["resource"]["provider"]["byWorkspaceId"][number];
@@ -86,6 +87,18 @@ export const ProviderActionsDropdown: React.FC<{
               Edit
             </DropdownMenuItem>
           </UpdateAwsProviderDialog>
+        )}
+        {provider.azureConfig != null && (
+          <UpdateAzureProviderDialog
+            workspaceId={provider.workspaceId}
+            resourceProvider={provider}
+            azureConfig={provider.azureConfig}
+            onClose={() => setOpen(false)}
+          >
+            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+              Edit
+            </DropdownMenuItem>
+          </UpdateAzureProviderDialog>
         )}
         {isManagedProvider && (
           <DropdownMenuItem

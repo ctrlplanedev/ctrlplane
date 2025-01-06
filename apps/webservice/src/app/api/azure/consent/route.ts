@@ -30,7 +30,7 @@ const configSchema = z.object({
 export const GET = async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const state = searchParams.get("state");
-
+  const resourceProviderId = searchParams.get("resourceProviderId");
   if (!state)
     return NextResponse.json({ error: "Bad request" }, { status: BAD_REQUEST });
 
@@ -70,6 +70,26 @@ export const GET = async (req: NextRequest) => {
         { status: INTERNAL_SERVER_ERROR },
       );
 
+    const nextStepsUrl = `${env.BASE_URL}/${workspace.slug}/resource-providers/integrations/azure/${resourceProviderId}`;
+
+    if (resourceProviderId != null)
+      return db
+        .update(SCHEMA.resourceProviderAzure)
+        .set({ tenantId, subscriptionId })
+        .where(
+          eq(
+            SCHEMA.resourceProviderAzure.resourceProviderId,
+            resourceProviderId,
+          ),
+        )
+        .then(() => NextResponse.redirect(nextStepsUrl))
+        .catch(() =>
+          NextResponse.json(
+            { error: "Failed to update resource provider" },
+            { status: INTERNAL_SERVER_ERROR },
+          ),
+        );
+
     const resourceProvider = await db
       .insert(SCHEMA.resourceProvider)
       .values({ workspaceId, name })
@@ -82,14 +102,17 @@ export const GET = async (req: NextRequest) => {
         { status: INTERNAL_SERVER_ERROR },
       );
 
-    const resourceProviderId = resourceProvider.id;
     return db
       .insert(SCHEMA.resourceProviderAzure)
-      .values({ resourceProviderId, tenantId: tenant.id, subscriptionId })
+      .values({
+        resourceProviderId: resourceProvider.id,
+        tenantId: tenant.id,
+        subscriptionId,
+      })
       .then(() =>
         resourceScanQueue.add(
-          resourceProviderId,
-          { resourceProviderId },
+          resourceProvider.id,
+          { resourceProviderId: resourceProvider.id },
           { repeat: { every: ms("10m"), immediately: true } },
         ),
       )

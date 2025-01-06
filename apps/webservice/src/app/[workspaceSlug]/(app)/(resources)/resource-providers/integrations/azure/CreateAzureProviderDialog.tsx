@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { z } from "zod";
 
+import { createResourceProviderAzure } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -22,16 +22,12 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 
-type AzureDialogProps = { workspaceId: string };
+type CreateAzureProviderDialogProps = { workspaceId: string };
 
-const schema = z.object({
-  tenantId: z.string(),
-  subscriptionId: z.string(),
-  name: z.string(),
-});
-
-export const AzureDialog: React.FC<AzureDialogProps> = ({ workspaceId }) => {
-  const form = useForm({ schema });
+export const CreateAzureProviderDialog: React.FC<
+  CreateAzureProviderDialogProps
+> = ({ workspaceId }) => {
+  const form = useForm({ schema: createResourceProviderAzure });
   const router = useRouter();
 
   const onSubmit = form.handleSubmit((data) =>

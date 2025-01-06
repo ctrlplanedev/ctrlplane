@@ -141,6 +141,23 @@ export const resourceProviderAzure = pgTable("resource_provider_azure", {
   subscriptionId: text("subscription_id").notNull(),
 });
 
+export const createResourceProviderAzure = createInsertSchema(
+  resourceProviderAzure,
+)
+  .omit({ id: true, resourceProviderId: true })
+  .extend({ name: z.string().min(1) });
+
+export type CreateResourceProviderAzure = z.infer<
+  typeof createResourceProviderAzure
+>;
+
+export const updateResourceProviderAzure =
+  createResourceProviderAzure.partial();
+
+export type UpdateResourceProviderAzure = z.infer<
+  typeof updateResourceProviderAzure
+>;
+
 export type AzureTenant = InferSelectModel<typeof azureTenant>;
 
 export type ResourceProviderAzure = InferSelectModel<

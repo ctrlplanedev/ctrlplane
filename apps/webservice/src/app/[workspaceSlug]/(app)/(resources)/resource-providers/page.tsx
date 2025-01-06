@@ -123,7 +123,7 @@ export default async function ResourceProvidersPage({
   });
 
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-40px)] overflow-auto">
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-50px)] overflow-auto">
       <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
         <TableHeader>
           <TableRow>

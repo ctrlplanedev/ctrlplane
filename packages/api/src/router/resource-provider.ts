@@ -11,6 +11,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
+  azureTenant,
   createResourceProvider,
   createResourceProviderAws,
   createResourceProviderGoogle,
@@ -37,6 +38,20 @@ export const resourceProviderRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
+      const azureConfigSubquery = ctx.db
+        .select({
+          id: resourceProviderAzure.id,
+          tenantId: azureTenant.tenantId,
+          subscriptionId: resourceProviderAzure.subscriptionId,
+          resourceProviderId: resourceProviderAzure.resourceProviderId,
+        })
+        .from(resourceProviderAzure)
+        .innerJoin(
+          azureTenant,
+          eq(resourceProviderAzure.tenantId, azureTenant.id),
+        )
+        .as("azureConfig");
+
       const providers = await ctx.db
         .select()
         .from(resourceProvider)
@@ -49,8 +64,8 @@ export const resourceProviderRouter = createTRPCRouter({
           eq(resourceProviderAws.resourceProviderId, resourceProvider.id),
         )
         .leftJoin(
-          resourceProviderAzure,
-          eq(resourceProviderAzure.resourceProviderId, resourceProvider.id),
+          azureConfigSubquery,
+          eq(azureConfigSubquery.resourceProviderId, resourceProvider.id),
         )
         .where(eq(resourceProvider.workspaceId, input));
 
@@ -97,7 +112,7 @@ export const resourceProviderRouter = createTRPCRouter({
         ...provider.resource_provider,
         googleConfig: provider.resource_provider_google,
         awsConfig: provider.resource_provider_aws,
-        azureConfig: provider.resource_provider_azure,
+        azureConfig: provider.azureConfig,
         resourceCount:
           providerCounts.find(
             (pc) => pc.providerId === provider.resource_provider.id,
@@ -336,6 +351,27 @@ export const resourceProviderRouter = createTRPCRouter({
             });
           });
         }),
+    }),
+    azure: createTRPCRouter({
+      byProviderId: protectedProcedure
+        .input(z.string().uuid())
+        .meta({
+          authorizationCheck: ({ canUser, input }) =>
+            canUser
+              .perform(Permission.ResourceProviderGet)
+              .on({ type: "resourceProvider", id: input }),
+        })
+        .query(({ ctx, input }) =>
+          ctx.db
+            .select()
+            .from(resourceProviderAzure)
+            .innerJoin(
+              azureTenant,
+              eq(resourceProviderAzure.tenantId, azureTenant.id),
+            )
+            .where(eq(resourceProviderAzure.resourceProviderId, input))
+            .then(takeFirstOrNull),
+        ),
     }),
   }),
   delete: protectedProcedure

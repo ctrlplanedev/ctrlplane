@@ -30,6 +30,8 @@ export const env = createEnv({
     OPENREPLAY_PROJECT_KEY: z.string().optional(),
     OPENREPLAY_INGEST_POINT: z.string().optional(),
     AZURE_APP_CLIENT_ID: z.string().optional(),
+    AZURE_APP_CLIENT_SECRET: z.string().optional(),
+    AZURE_TENANT_ID: z.string().optional(),
     REDIS_URL: z.string(),
   },
 
