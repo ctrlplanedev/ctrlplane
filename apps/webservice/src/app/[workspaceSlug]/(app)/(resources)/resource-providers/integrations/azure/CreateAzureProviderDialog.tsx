@@ -32,7 +32,7 @@ export const CreateAzureProviderDialog: React.FC<
 
   const onSubmit = form.handleSubmit((data) =>
     router.push(
-      `/api/azure/${workspaceId}/${data.tenantId}/${data.subscriptionId}/${data.name}`,
+      `/api/azure/${workspaceId}/${encodeURIComponent(data.tenantId)}/${encodeURIComponent(data.subscriptionId)}/${encodeURIComponent(data.name)}`,
     ),
   );
 

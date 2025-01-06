@@ -46,7 +46,7 @@ export const UpdateAzureProviderDialog: React.FC<
   const onSubmit = form.handleSubmit((data: UpdateResourceProviderAzure) => {
     setOpen(false);
     router.push(
-      `/api/azure/${workspaceId}/${data.tenantId}/${data.subscriptionId}/${data.name}?resourceProviderId=${resourceProvider.id}`,
+      `/api/azure/${workspaceId}/${encodeURIComponent(data.tenantId ?? azureConfig.tenantId)}/${encodeURIComponent(data.subscriptionId ?? azureConfig.subscriptionId)}/${encodeURIComponent(data.name ?? resourceProvider.name)}?resourceProviderId=${resourceProvider.id}`,
     );
   });
 
