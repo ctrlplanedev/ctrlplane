@@ -8,12 +8,13 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 
+import { env } from "../../config.js";
 import { convertManagedClusterToResource } from "./cluster-to-resource.js";
 
 const log = logger.child({ label: "resource-scan/azure" });
 
-const AZURE_CLIENT_ID = process.env.AZURE_APP_CLIENT_ID;
-const AZURE_CLIENT_SECRET = process.env.AZURE_APP_CLIENT_SECRET;
+const AZURE_CLIENT_ID = env.AZURE_APP_CLIENT_ID;
+const AZURE_CLIENT_SECRET = env.AZURE_APP_CLIENT_SECRET;
 
 export const getAksResources = async (
   workspace: SCHEMA.Workspace,
