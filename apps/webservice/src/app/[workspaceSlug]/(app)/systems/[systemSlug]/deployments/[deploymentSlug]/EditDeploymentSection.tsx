@@ -2,7 +2,9 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import { useParams, useRouter } from "next/navigation";
-import { IconX } from "@tabler/icons-react";
+import { IconInfoCircle, IconX } from "@tabler/icons-react";
+import ms from "ms";
+import prettyMilliseconds from "pretty-ms";
 import { z } from "zod";
 
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -27,6 +29,12 @@ import {
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
+import {
   defaultCondition,
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
@@ -35,7 +43,29 @@ import { ResourceConditionRender } from "~/app/[workspaceSlug]/(app)/_components
 import { api } from "~/trpc/react";
 import { DeploymentResourcesDialog } from "./DeploymentResourcesDialog";
 
-const schema = z.object(SCHEMA.deploymentSchema.shape);
+const timeoutSchema = z
+  .string()
+  .optional()
+  .refine((val) => {
+    if (val == null || val === "") return true;
+    try {
+      ms(val);
+      return true;
+    } catch {
+      return false;
+    }
+  }, "Invalid timeout, must be a valid duration string")
+  .refine((val) => {
+    if (val == null || val === "") return true;
+    const timeout = ms(val);
+    if (timeout < 1000) return false;
+    return true;
+  }, "Timeout must be at least 1 second");
+
+const schema = z
+  .object(SCHEMA.deploymentSchema.shape)
+  .omit({ timeout: true })
+  .extend({ timeout: timeoutSchema });
 
 type System = RouterOutputs["system"]["list"]["items"][number];
 
@@ -58,7 +88,11 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
       .map((e) => ({ ...e, resourceFilter: e.resourceFilter! })) ?? [];
 
   const resourceFilter = deployment.resourceFilter ?? undefined;
-  const defaultValues = { ...deployment, resourceFilter };
+  const timeout =
+    deployment.timeout != null
+      ? prettyMilliseconds(deployment.timeout)
+      : undefined;
+  const defaultValues = { ...deployment, resourceFilter, timeout };
   const form = useForm({ schema, defaultValues, mode: "onSubmit" });
   const { handleSubmit, setError } = form;
 
@@ -70,7 +104,12 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
       data.resourceFilter == null || isEmptyCondition(data.resourceFilter)
         ? null
         : data.resourceFilter;
-    const updates = { ...data, resourceFilter: filter };
+    const timeout =
+      data.timeout != null && data.timeout !== ""
+        ? ms(data.timeout) / 1000
+        : null;
+    const updates = { ...data, resourceFilter: filter, timeout };
+
     updateDeployment
       .mutateAsync({ id: deployment.id, data: updates })
       .then((updatedDeployment) => {
@@ -189,6 +228,32 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                     step={1}
                     className="w-16"
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="timeout"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Timeout
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger>
+                        <IconInfoCircle className="h-3 w-3 text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="p-2 text-xs text-muted-foreground">
+                        If a job for this deployment takes longer than the
+                        timeout, it will be marked as failed.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </FormLabel>
+                <FormControl>
+                  <Input {...field} className="w-16" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
