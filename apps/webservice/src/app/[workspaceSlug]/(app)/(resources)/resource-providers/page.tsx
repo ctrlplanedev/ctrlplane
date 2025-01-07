@@ -178,10 +178,8 @@ export default async function ResourceProvidersPage({
                   </div>
                 )}
               </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                <span className="text-xs text-muted-foreground">
-                  {new Date(provider.createdAt).toLocaleDateString()}
-                </span>
+              <TableCell className="text-xs text-muted-foreground">
+                {new Date(provider.createdAt).toLocaleDateString()}
               </TableCell>
               <TableCell className="text-right">
                 <ProviderActionsDropdown provider={provider} />

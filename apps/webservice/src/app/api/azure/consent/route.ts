@@ -34,9 +34,11 @@ export const GET = async (req: NextRequest) => {
   if (!state)
     return NextResponse.json({ error: "Bad request" }, { status: BAD_REQUEST });
 
-  const configJSON = await redis.get(`azure_consent_state:${state}`);
+  const redisKey = `azure_consent_state:${state}`;
+  const configJSON = await redis.get(redisKey);
   if (configJSON == null)
     return NextResponse.json({ error: "Bad request" }, { status: BAD_REQUEST });
+  await redis.del(redisKey);
 
   const config = JSON.parse(configJSON);
   const parsedConfig = configSchema.safeParse(config);
