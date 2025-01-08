@@ -169,6 +169,8 @@ export const getVpcResources = async (
   workspace: Workspace,
   config: ResourceProviderAws,
 ) => {
+  if (!config.importVpc) return [];
+
   const { awsRoleArn: workspaceRoleArn } = workspace;
   if (workspaceRoleArn == null) return [];
 
@@ -184,22 +186,20 @@ export const getVpcResources = async (
   const credentials = await assumeWorkspaceRole(workspaceRoleArn);
   const workspaceStsClient = credentials.sts();
 
-  const resources = config.importVpc
-    ? await _.chain(config.awsRoleArns)
-        .map((customerRoleArn) =>
-          scanVpcsByAssumedRole(workspaceStsClient, customerRoleArn),
-        )
-        .thru((promises) => Promise.all(promises))
-        .value()
-        .then((results) => results.flat())
-        .then((resources) =>
-          resources.map((resource) => ({
-            ...resource,
-            workspaceId: workspace.id,
-            providerId: config.resourceProviderId,
-          })),
-        )
-    : [];
+  const resources = await _.chain(config.awsRoleArns)
+    .map((customerRoleArn) =>
+      scanVpcsByAssumedRole(workspaceStsClient, customerRoleArn),
+    )
+    .thru((promises) => Promise.all(promises))
+    .value()
+    .then((results) => results.flat())
+    .then((resources) =>
+      resources.map((resource) => ({
+        ...resource,
+        workspaceId: workspace.id,
+        providerId: config.resourceProviderId,
+      })),
+    );
 
   log.info(`Found ${resources.length} VPC resources`);
 
