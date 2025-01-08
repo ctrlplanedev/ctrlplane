@@ -45,6 +45,13 @@ export const deploymentSchema = z.object({
     .refine((val) => val >= 0, {
       message: "Retry count must be a non-negative number.",
     }),
+  timeout: z
+    .number()
+    .nullable()
+    .default(null)
+    .refine((val) => val == null || val >= 0, {
+      message: "Timeout must be a non-negative number.",
+    }),
   resourceFilter: resourceCondition
     .nullable()
     .optional()
@@ -69,6 +76,7 @@ export const deployment = pgTable(
       .$type<Record<string, any>>()
       .notNull(),
     retryCount: integer("retry_count").notNull().default(0),
+    timeout: integer("timeout").default(sql`NULL`),
     resourceFilter: jsonb("resource_filter")
       .$type<ResourceCondition | null>()
       .default(sql`NULL`),

@@ -17,16 +17,12 @@ import { logger } from "@ctrlplane/logger";
 
 import { run as expiredEnvChecker } from "./expired-env-checker/index.js";
 import { run as jobPolicyChecker } from "./policy-checker/index.js";
+import { run as timeoutChecker } from "./timeout-checker/index.js";
 
 const jobs: Record<string, { run: () => Promise<void>; schedule: string }> = {
-  "policy-checker": {
-    run: jobPolicyChecker,
-    schedule: "* * * * *", // Default: Every minute
-  },
-  "expired-env-checker": {
-    run: expiredEnvChecker,
-    schedule: "* * * * *", // Default: Every minute
-  },
+  "policy-checker": { run: jobPolicyChecker, schedule: "* * * * *" },
+  "expired-env-checker": { run: expiredEnvChecker, schedule: "* * * * *" },
+  "timeout-checker": { run: timeoutChecker, schedule: "* * * * *" },
 };
 
 const jobSchema = z.object({
@@ -37,15 +33,8 @@ const jobSchema = z.object({
 const parseJobArgs = () => {
   const { values } = parseArgs({
     options: {
-      job: {
-        type: "string",
-        short: "j",
-        multiple: true,
-      },
-      runOnce: {
-        type: "boolean",
-        short: "r",
-      },
+      job: { type: "string", short: "j", multiple: true },
+      runOnce: { type: "boolean", short: "r" },
     },
   });
   return jobSchema.parse(values);
