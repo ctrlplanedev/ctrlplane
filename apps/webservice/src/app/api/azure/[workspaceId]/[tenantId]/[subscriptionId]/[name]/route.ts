@@ -58,6 +58,8 @@ const createResourceProvider = async (
     { resourceProviderId: resourceProvider.id },
     { repeat: { every: ms("10m"), immediately: true } },
   );
+
+  return resourceProvider;
 };
 
 export const GET = async (
@@ -107,7 +109,7 @@ export const GET = async (
         { status: FORBIDDEN },
       );
 
-    const nextStepsUrl = `${baseUrl}/${workspace.slug}/resource-providers/integrations/azure/${resourceProviderId}`;
+    const nextStepsUrl = `${baseUrl}/${workspace.slug}/resource-providers/integrations/azure`;
 
     if (resourceProviderId != null)
       return db
@@ -122,7 +124,9 @@ export const GET = async (
         .then(() =>
           resourceScanQueue.add(resourceProviderId, { resourceProviderId }),
         )
-        .then(() => NextResponse.redirect(nextStepsUrl))
+        .then(() =>
+          NextResponse.redirect(nextStepsUrl + `/${resourceProviderId}`),
+        )
         .catch((error) => {
           logger.error(error);
           return NextResponse.json(
@@ -138,7 +142,7 @@ export const GET = async (
       subscriptionId,
       name,
     )
-      .then(() => NextResponse.redirect(nextStepsUrl))
+      .then((rp) => NextResponse.redirect(nextStepsUrl + `/${rp.id}`))
       .catch((error) => {
         logger.error(error);
         return NextResponse.json(
