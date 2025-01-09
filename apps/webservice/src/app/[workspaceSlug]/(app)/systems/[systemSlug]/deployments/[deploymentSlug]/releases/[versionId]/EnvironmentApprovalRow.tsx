@@ -55,15 +55,9 @@ export const EnvironmentApprovalRow: React.FC<EnvironmentApprovalRowProps> = ({
   });
 
   const handleReject = () =>
-    rejectMutation.mutate({
-      releaseId,
-      environmentId,
-    });
+    rejectMutation.mutate({ releaseId, environmentId });
   const handleApprove = () =>
-    approveMutation.mutate({
-      releaseId,
-      environmentId,
-    });
+    approveMutation.mutate({ releaseId, environmentId });
 
   return (
     <div className="flex items-center gap-2 rounded-md text-sm">
