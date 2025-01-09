@@ -36,7 +36,7 @@ import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobT
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
 import { JobDropdownMenu } from "./JobDropdownMenu";
-import { PolicyApprovalRow } from "./PolicyApprovalRow";
+import { EnvironmentApprovalRow } from "./PolicyApprovalRow";
 import { useReleaseChannel } from "./useReleaseChannel";
 
 type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
@@ -62,13 +62,13 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
 }) => {
   const { setJobId } = useJobDrawer();
 
-  const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
+  const approvalsQ = api.environment.approval.byReleaseId.useQuery({
     releaseId: release.id,
   });
 
   const approvals = approvalsQ.data ?? [];
   const environmentApprovals = approvals.filter(
-    (approval) => approval.policyId === environment.policyId,
+    (approval) => approval.environmentId === environment.id,
   );
 
   const allTriggers = Object.values(triggersByResource).flat();
@@ -142,7 +142,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {environmentApprovals.map((approval) => (
-                <PolicyApprovalRow
+                <EnvironmentApprovalRow
                   key={approval.id}
                   approval={approval}
                   environment={environment}

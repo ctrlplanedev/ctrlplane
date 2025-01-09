@@ -8,7 +8,7 @@ import type {
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
 import { useEffect, useState } from "react";
-import { IconCheck, IconLoader2, IconMinus, IconX } from "@tabler/icons-react";
+import { IconPlant } from "@tabler/icons-react";
 import { differenceInMilliseconds } from "date-fns";
 import _ from "lodash";
 import prettyMilliseconds from "pretty-ms";
@@ -17,6 +17,7 @@ import colors from "tailwindcss/colors";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
+import { Separator } from "@ctrlplane/ui/separator";
 import {
   ColumnOperator,
   ComparisonOperator,
@@ -29,47 +30,20 @@ import { EnvironmentPolicyDrawerTab } from "~/app/[workspaceSlug]/(app)/_compone
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { useQueryParams } from "~/app/[workspaceSlug]/(app)/_components/useQueryParams";
 import { api } from "~/trpc/react";
+import { ApprovalCheck } from "./ApprovalCheck";
+import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
-type ReleaseSequencingNodeProps = NodeProps<{
+type EnvironmentNodeProps = NodeProps<{
   workspaceId: string;
   policy?: SCHEMA.EnvironmentPolicy;
   releaseId: string;
   releaseVersion: string;
   deploymentId: string;
   environmentId: string;
+  environmentName: string;
 }>;
 
-const Passing: React.FC = () => (
-  <div className="rounded-full bg-green-400 p-0.5 dark:text-black">
-    <IconCheck strokeWidth={3} className="h-3 w-3" />
-  </div>
-);
-
-const Failing: React.FC = () => (
-  <div className="rounded-full bg-red-400 p-0.5 dark:text-black">
-    <IconX strokeWidth={3} className="h-3 w-3" />
-  </div>
-);
-
-const Waiting: React.FC = () => (
-  <div className="animate-spin rounded-full bg-blue-400 p-0.5 dark:text-black">
-    <IconLoader2 strokeWidth={3} className="h-3 w-3" />
-  </div>
-);
-
-const Loading: React.FC = () => (
-  <div className="rounded-full bg-muted-foreground p-0.5 dark:text-black">
-    <IconLoader2 strokeWidth={3} className="h-3 w-3 animate-spin" />
-  </div>
-);
-
-const Cancelled: React.FC = () => (
-  <div className="rounded-full bg-neutral-400 p-0.5 dark:text-black">
-    <IconMinus strokeWidth={3} className="h-3 w-3" />
-  </div>
-);
-
-const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   workspaceId,
   releaseId,
   environmentId,
@@ -162,7 +136,7 @@ const WaitingOnActiveCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   );
 };
 
-const ReleaseChannelCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+const ReleaseChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   deploymentId,
   environmentId,
   releaseVersion,
@@ -249,7 +223,7 @@ const ReleaseChannelCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   );
 };
 
-const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
+const MinReleaseIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   policy,
   deploymentId,
   environmentId,
@@ -339,18 +313,24 @@ const MinReleaseIntervalCheck: React.FC<ReleaseSequencingNodeProps["data"]> = ({
   );
 };
 
-export const ReleaseSequencingNode: React.FC<ReleaseSequencingNodeProps> = ({
-  data,
-}) => (
+export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
   <>
     <div
       className={cn(
         "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
       )}
     >
+      <div className="flex items-center gap-2">
+        <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
+          <IconPlant className="h-3 w-3" />
+        </div>
+        {data.environmentName}
+      </div>
+      <Separator className=" bg-neutral-700" />
       <WaitingOnActiveCheck {...data} />
       <ReleaseChannelCheck {...data} />
       <MinReleaseIntervalCheck {...data} />
+      <ApprovalCheck {...data} />
     </div>
     <Handle
       type="target"

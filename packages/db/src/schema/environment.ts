@@ -230,25 +230,23 @@ export const approvalStatusType = pgEnum("approval_status_type", [
   "rejected",
 ]);
 
-export const environmentPolicyApproval = pgTable(
-  "environment_policy_approval",
+export const environmentApproval = pgTable(
+  "environment_approval",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    policyId: uuid("policy_id")
+    environmentId: uuid("environment_id")
       .notNull()
-      .references(() => environmentPolicy.id, { onDelete: "cascade" }),
+      .references(() => environment.id, { onDelete: "cascade" }),
     releaseId: uuid("release_id")
       .notNull()
       .references(() => release.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
     userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.releaseId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.environmentId, t.releaseId) }),
 );
 
-export type EnvironmentPolicyApproval = InferSelectModel<
-  typeof environmentPolicyApproval
->;
+export type EnvironmentApproval = InferSelectModel<typeof environmentApproval>;
 
 export const environmentPolicyReleaseChannel = pgTable(
   "environment_policy_release_channel",
