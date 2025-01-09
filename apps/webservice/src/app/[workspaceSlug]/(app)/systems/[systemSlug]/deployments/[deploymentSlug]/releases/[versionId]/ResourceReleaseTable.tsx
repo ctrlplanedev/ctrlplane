@@ -35,8 +35,8 @@ import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
+import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
 import { JobDropdownMenu } from "./JobDropdownMenu";
-import { EnvironmentApprovalRow } from "./PolicyApprovalRow";
 import { useReleaseChannel } from "./useReleaseChannel";
 
 type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
