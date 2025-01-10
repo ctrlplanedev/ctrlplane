@@ -13,20 +13,17 @@ import ReactFlow, { useEdgesState, useNodesState } from "reactflow";
 import { ArrowEdge } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ArrowEdge";
 import {
   createEdgesFromPolicyDeployment,
-  createEdgesFromPolicyToReleaseSequencing,
-  createEdgesFromReleaseSequencingToEnvironment,
+  createEdgesFromPolicyToEnvironment,
   createEdgesWherePolicyHasNoEnvironment,
 } from "~/app/[workspaceSlug]/(app)/_components/reactflow/edges";
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
-import { EnvironmentNode } from "./FlowNode";
+import { EnvironmentNode } from "./EnvironmentNode";
 import { PolicyNode } from "./FlowPolicyNode";
-import { ReleaseSequencingNode } from "./ReleaseSequencingNode";
 import { TriggerNode } from "./TriggerNode";
 
 const nodeTypes: NodeTypes = {
   environment: EnvironmentNode,
   policy: PolicyNode,
-  "release-sequencing": ReleaseSequencingNode,
   trigger: TriggerNode,
 };
 export const FlowDiagram: React.FC<{
@@ -44,12 +41,6 @@ export const FlowDiagram: React.FC<{
       position: { x: 0, y: 0 },
       data: { ...release, label: release.name },
     },
-    ...envs.map((env) => ({
-      id: env.id,
-      type: "environment",
-      position: { x: 0, y: 0 },
-      data: { ...env, label: env.name, release },
-    })),
     ...policies.map((policy) => ({
       id: policy.id,
       type: "policy",
@@ -66,8 +57,8 @@ export const FlowDiagram: React.FC<{
     ...envs.map((env) => {
       const policy = policies.find((p) => p.id === env.policyId);
       return {
-        id: env.id + "-release-sequencing",
-        type: "release-sequencing",
+        id: env.id,
+        type: "environment",
         position: { x: 0, y: 0 },
         data: {
           workspaceId: workspace.id,
@@ -75,16 +66,16 @@ export const FlowDiagram: React.FC<{
           releaseVersion: release.version,
           deploymentId: release.deploymentId,
           environmentId: env.id,
+          environmentName: env.name,
           policy,
-          label: `${env.name} - release sequencing`,
+          label: env.name,
         },
       };
     }),
   ]);
 
   const [edges, __, onEdgesChange] = useEdgesState([
-    ...createEdgesFromPolicyToReleaseSequencing(envs),
-    ...createEdgesFromReleaseSequencingToEnvironment(envs),
+    ...createEdgesFromPolicyToEnvironment(envs),
     ...createEdgesWherePolicyHasNoEnvironment(policies, policyDeployments),
     ...createEdgesFromPolicyDeployment(policyDeployments),
   ]);
