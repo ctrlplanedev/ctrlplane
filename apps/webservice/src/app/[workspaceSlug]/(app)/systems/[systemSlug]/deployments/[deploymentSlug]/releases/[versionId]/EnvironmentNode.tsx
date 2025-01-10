@@ -316,21 +316,21 @@ const MinReleaseIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
   <>
     <div
-      className={cn(
-        "relative w-[250px] space-y-1 rounded-md border px-2 py-1.5 text-sm",
-      )}
+      className={cn("relative w-[250px] space-y-1 rounded-md border text-sm")}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 p-2">
         <div className="flex-shrink-0 rounded bg-green-500/20 p-1 text-green-400">
           <IconPlant className="h-3 w-3" />
         </div>
         {data.environmentName}
       </div>
-      <Separator className=" bg-neutral-700" />
-      <WaitingOnActiveCheck {...data} />
-      <ReleaseChannelCheck {...data} />
-      <MinReleaseIntervalCheck {...data} />
-      <ApprovalCheck {...data} />
+      <Separator className="!m-0 bg-neutral-800" />
+      <div className="px-2 pb-2">
+        <WaitingOnActiveCheck {...data} />
+        <ReleaseChannelCheck {...data} />
+        <MinReleaseIntervalCheck {...data} />
+        <ApprovalCheck {...data} />
+      </div>
     </div>
     <Handle
       type="target"

@@ -17,8 +17,8 @@ import {
   createEdgesWherePolicyHasNoEnvironment,
 } from "~/app/[workspaceSlug]/(app)/_components/reactflow/edges";
 import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+import { EnvironmentNode } from "./EnvironmentNode";
 import { PolicyNode } from "./FlowPolicyNode";
-import { EnvironmentNode } from "./ReleaseSequencingNode";
 import { TriggerNode } from "./TriggerNode";
 
 const nodeTypes: NodeTypes = {
