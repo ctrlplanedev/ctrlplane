@@ -41,12 +41,13 @@ export const POST = request()
   .handle<{ user: schema.User; body: z.infer<typeof bodySchema> }>(
     async (ctx) => {
       const { req, body } = ctx;
-      const { metadata = {} } = body;
+      const { name, version, metadata = {} } = body;
+      const relName = name == null || name === "" ? version : name;
 
       try {
         const release = await db
           .insert(schema.release)
-          .values(body)
+          .values({ ...body, name: relName })
           .onConflictDoUpdate({
             target: [schema.release.deploymentId, schema.release.version],
             set: buildConflictUpdateColumns(schema.release, [

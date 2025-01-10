@@ -172,9 +172,11 @@ export const releaseRouter = createTRPCRouter({
     })
     .input(createRelease)
     .mutation(async ({ ctx, input }) => {
+      const { name, ...rest } = input;
+      const relName = name == null || name === "" ? rest.version : name;
       const rel = await db
         .insert(release)
-        .values(input)
+        .values({ ...rest, name: relName })
         .returning()
         .then(takeFirst);
 

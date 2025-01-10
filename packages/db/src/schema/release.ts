@@ -138,7 +138,7 @@ export type Release = InferSelectModel<typeof release>;
 
 export const createRelease = createInsertSchema(release, {
   version: z.string().min(1),
-  name: z.string().min(1),
+  name: z.string().optional(),
   config: z.record(z.any()),
   status: z.nativeEnum(ReleaseStatus),
   createdAt: z
