@@ -1,12 +1,15 @@
-ALTER TABLE "environment_policy_approval" RENAME TO "environment_approval";--> statement-breakpoint
-ALTER TABLE "environment_approval" RENAME COLUMN "policy_id" TO "environment_id";--> statement-breakpoint
-ALTER TABLE "environment_approval" DROP CONSTRAINT "environment_policy_approval_policy_id_environment_policy_id_fk";
+ALTER TABLE "environment_policy_approval" DROP CONSTRAINT "environment_policy_approval_policy_id_environment_policy_id_fk";
 --> statement-breakpoint
-ALTER TABLE "environment_approval" DROP CONSTRAINT "environment_policy_approval_release_id_release_id_fk";
+ALTER TABLE "environment_policy_approval" DROP CONSTRAINT "environment_policy_approval_release_id_release_id_fk";
 --> statement-breakpoint
-ALTER TABLE "environment_approval" DROP CONSTRAINT "environment_policy_approval_user_id_user_id_fk";
+ALTER TABLE "environment_policy_approval" DROP CONSTRAINT "environment_policy_approval_user_id_user_id_fk";
 --> statement-breakpoint
-DROP INDEX IF EXISTS "environment_policy_approval_policy_id_release_id_index";--> statement-breakpoint
+DROP INDEX IF EXISTS "environment_policy_approval_policy_id_release_id_index";
+--> statement-breakpoint
+ALTER TABLE "environment_policy_approval" RENAME TO "environment_approval";
+--> statement-breakpoint
+ALTER TABLE "environment_approval" RENAME COLUMN "policy_id" TO "environment_id";
+--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "environment_approval" ADD CONSTRAINT "environment_approval_environment_id_environment_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environment"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
