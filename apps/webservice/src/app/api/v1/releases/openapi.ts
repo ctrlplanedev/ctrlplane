@@ -1,5 +1,7 @@
 import type { Swagger } from "atlassian-openapi";
 
+import { ReleaseStatus } from "@ctrlplane/validators/releases";
+
 export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
   info: {
@@ -9,8 +11,8 @@ export const openapi: Swagger.SwaggerV3 = {
   paths: {
     "/v1/releases": {
       post: {
-        summary: "Creates a release",
-        operationId: "createRelease",
+        summary: "Upserts a release",
+        operationId: "upsertRelease",
         requestBody: {
           required: true,
           content: {
@@ -23,6 +25,11 @@ export const openapi: Swagger.SwaggerV3 = {
                   createdAt: { type: "string", format: "date-time" },
                   name: { type: "string" },
                   config: { type: "object", additionalProperties: true },
+                  status: {
+                    type: "string",
+                    enum: Object.values(ReleaseStatus),
+                  },
+                  message: { type: "string" },
                   metadata: {
                     $ref: "#/components/schemas/Release/properties/metadata",
                   },

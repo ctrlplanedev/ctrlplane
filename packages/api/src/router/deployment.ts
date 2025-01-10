@@ -372,6 +372,7 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
       config: release.config,
       environmentId: releaseJobTrigger.environmentId,
       resourceId: releaseJobTrigger.resourceId,
+      status: release.status,
 
       rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId}, ${releaseJobTrigger.environmentId} ORDER BY ${release.createdAt} DESC)`.as(
         "rank",

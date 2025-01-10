@@ -41,6 +41,7 @@ import {
   releaseCondition,
   ReleaseFilterType,
   ReleaseOperator,
+  ReleaseStatus,
 } from "@ctrlplane/validators/releases";
 
 import type { Tx } from "../common.js";
@@ -105,9 +106,13 @@ export type ReleaseDependency = InferSelectModel<typeof releaseDependency>;
 
 const createReleaseDependency = createInsertSchema(releaseDependency, {
   releaseFilter: releaseCondition,
-}).omit({
-  id: true,
-});
+}).omit({ id: true });
+
+export const releaseStatus = pgEnum("release_status", [
+  "building",
+  "ready",
+  "failed",
+]);
 
 export const release = pgTable(
   "release",
@@ -122,6 +127,8 @@ export const release = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
+    status: releaseStatus("status").notNull().default("ready"),
+    message: text("message"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({ unq: uniqueIndex().on(t.deploymentId, t.version) }),
@@ -133,6 +140,7 @@ export const createRelease = createInsertSchema(release, {
   version: z.string().min(1),
   name: z.string().min(1),
   config: z.record(z.any()),
+  status: z.nativeEnum(ReleaseStatus),
   createdAt: z
     .string()
     .transform((s) => new Date(s))
@@ -145,6 +153,7 @@ export const createRelease = createInsertSchema(release, {
       .default([]),
   });
 
+export const updateRelease = createRelease.partial();
 export const releaseMetadata = pgTable(
   "release_metadata",
   {
@@ -160,6 +169,7 @@ export const releaseMetadata = pgTable(
 
 export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
   "new_release", //  release was created
+  "release_updated", // release was updated
   "new_resource", // new resource was added to an env
   "resource_changed",
   "api", // calling API

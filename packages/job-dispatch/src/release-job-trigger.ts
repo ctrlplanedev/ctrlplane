@@ -19,6 +19,7 @@ import {
   resourceMatchesMetadata,
   system,
 } from "@ctrlplane/db/schema";
+import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 type FilterFunc = (
   tx: Tx,
@@ -114,6 +115,7 @@ class ReleaseJobTriggerBuilder {
         ),
       })
       .from(release)
+      .where(eq(release.status, ReleaseStatus.Ready))
       .as("release");
   }
 
@@ -122,7 +124,10 @@ class ReleaseJobTriggerBuilder {
     const releaseJobTriggers = this.releaseIds
       ? this._baseQuery().innerJoin(
           release,
-          eq(release.deploymentId, deployment.id),
+          and(
+            eq(release.deploymentId, deployment.id),
+            eq(release.status, ReleaseStatus.Ready),
+          ),
         )
       : this._baseQuery().innerJoin(
           latestActiveReleaseSubQuery,

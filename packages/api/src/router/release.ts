@@ -28,6 +28,7 @@ import {
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
+  updateRelease,
 } from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -202,6 +203,33 @@ export const releaseRouter = createTRPCRouter({
 
       return { ...rel, releaseJobTriggers };
     }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string().uuid(), data: updateRelease }))
+    .mutation(async ({ ctx, input: { id, data } }) =>
+      db
+        .update(release)
+        .set(data)
+        .where(eq(release.id, id))
+        .returning()
+        .then(takeFirst)
+        .then((rel) =>
+          createReleaseJobTriggers(db, "release_updated")
+            .causedById(ctx.session.user.id)
+            .filter(isPassingReleaseStringCheckPolicy)
+            .releases([rel.id])
+            .then(createJobApprovals)
+            .insert()
+            .then((triggers) =>
+              dispatchReleaseJobTriggers(db)
+                .releaseTriggers(triggers)
+                .filter(isPassingAllPolicies)
+                .then(cancelOldReleaseJobTriggersOnJobDispatch)
+                .dispatch()
+                .then(() => rel),
+            ),
+        ),
+    ),
 
   blocked: protectedProcedure
     .meta({

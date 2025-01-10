@@ -1314,8 +1314,8 @@
     },
     "/v1/releases": {
       "post": {
-        "summary": "Creates a release",
-        "operationId": "createRelease",
+        "summary": "Upserts a release",
+        "operationId": "upsertRelease",
         "requestBody": {
           "required": true,
           "content": {
@@ -1339,6 +1339,17 @@
                   "config": {
                     "type": "object",
                     "additionalProperties": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
                   },
                   "metadata": {
                     "$ref": "#/components/schemas/Release/properties/metadata"

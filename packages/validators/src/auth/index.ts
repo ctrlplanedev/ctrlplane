@@ -79,6 +79,7 @@ export enum Permission {
 
   ReleaseCreate = "release.create",
   ReleaseGet = "release.get",
+  ReleaseUpdate = "release.update",
   ReleaseList = "release.list",
 
   ReleaseChannelGet = "releaseChannel.get",
