@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { and, eq, inArray, ne, notInArray, sql } from "@ctrlplane/db";
+import { and, eq, inArray, isNull, ne, notInArray, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -23,6 +23,7 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
   const isActiveJob = and(
     notInArray(schema.job.status, exitedStatus),
     ne(schema.job.status, JobStatus.Pending),
+    isNull(schema.resource.deletedAt),
   );
 
   const activeJobSubquery = db
@@ -35,6 +36,10 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
     .innerJoin(
       schema.releaseJobTrigger,
       eq(schema.job.id, schema.releaseJobTrigger.jobId),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
     )
     .where(isActiveJob)
     .groupBy(
