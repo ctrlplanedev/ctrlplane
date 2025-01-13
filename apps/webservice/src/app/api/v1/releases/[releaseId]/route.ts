@@ -4,6 +4,14 @@ import { z } from "zod";
 
 import { buildConflictUpdateColumns, eq, takeFirst } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
+import {
+  cancelOldReleaseJobTriggersOnJobDispatch,
+  createJobApprovals,
+  createReleaseJobTriggers,
+  dispatchReleaseJobTriggers,
+  isPassingAllPolicies,
+  isPassingReleaseStringCheckPolicy,
+} from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -26,11 +34,11 @@ export const PATCH = request()
     ),
   )
   .handle<
-    { body: z.infer<typeof patchSchema> },
+    { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
     { params: { releaseId: string } }
   >(async (ctx, { params }) => {
     const { releaseId } = params;
-    const { body } = ctx;
+    const { body, user, req } = ctx;
 
     try {
       const release = await ctx.db
@@ -57,6 +65,26 @@ export const PATCH = request()
             ],
             set: buildConflictUpdateColumns(SCHEMA.releaseMetadata, ["value"]),
           });
+
+      await createReleaseJobTriggers(ctx.db, "release_updated")
+        .causedById(user.id)
+        .filter(isPassingReleaseStringCheckPolicy)
+        .releases([releaseId])
+        .then(createJobApprovals)
+        .insert()
+        .then((releaseJobTriggers) => {
+          dispatchReleaseJobTriggers(ctx.db)
+            .releaseTriggers(releaseJobTriggers)
+            .filter(isPassingAllPolicies)
+            .then(cancelOldReleaseJobTriggersOnJobDispatch)
+            .dispatch();
+        })
+        .then(() =>
+          logger.info(
+            `Release for ${releaseId} job triggers created and dispatched.`,
+            req,
+          ),
+        );
 
       return NextResponse.json(release);
     } catch (error) {
