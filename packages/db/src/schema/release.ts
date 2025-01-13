@@ -154,6 +154,7 @@ export const createRelease = createInsertSchema(release, {
   });
 
 export const updateRelease = createRelease.partial();
+export type UpdateRelease = z.infer<typeof updateRelease>;
 export const releaseMetadata = pgTable(
   "release_metadata",
   {
