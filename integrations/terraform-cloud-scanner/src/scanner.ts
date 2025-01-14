@@ -17,6 +17,15 @@ const workspaceTemplate = handlebars.compile(
 const RATE_LIMIT_MS = 1000;
 const RATE_LIMIT_CHUNK_SIZE = 10;
 
+type Resource = {
+  version: string;
+  kind: string;
+  name: string;
+  identifier: string;
+  config: Record<string, string>;
+  metadata: Record<string, string>;
+};
+
 const processWorkspaceChunk = (workspaceChunk: Workspace[]) =>
   workspaceChunk.map(async (workspace) => {
     try {
@@ -87,22 +96,23 @@ export async function scan() {
 
     const resources = await _.chain(workspaces)
       .chunk(RATE_LIMIT_CHUNK_SIZE)
-      .map((chunk, index) =>
-        new Promise((resolve) =>
-          setTimeout(resolve, index * RATE_LIMIT_MS),
-        ).then(() =>
-          Promise.allSettled(processWorkspaceChunk(chunk)).then((results) =>
-            results
-              .map((result) =>
-                result.status === "fulfilled" ? result.value : null,
-              )
-              .filter(isPresent),
-          ),
-        ),
+      .reduce(
+        async (acc, chunk) => {
+          const prevResults = await acc;
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_MS));
+          const results = await Promise.allSettled(
+            processWorkspaceChunk(chunk),
+          );
+          const processedResults = results
+            .map((result) =>
+              result.status === "fulfilled" ? result.value : null,
+            )
+            .filter(isPresent);
+          return [...prevResults, ...processedResults];
+        },
+        Promise.resolve([] as Resource[]),
       )
-      .thru((value) => Promise.all(value))
-      .value()
-      .then((res) => res.flat());
+      .value();
 
     logger.info(`Registering ${resources.length} unique resources`);
     await scanner.set(resources);
