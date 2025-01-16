@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 import { z } from "zod";
 
-import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  buildConflictUpdateColumns,
+  eq,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -45,6 +51,17 @@ export const POST = request()
       const relName = name == null || name === "" ? version : name;
 
       try {
+        const prevRelease = await db
+          .select()
+          .from(schema.release)
+          .where(
+            and(
+              eq(schema.release.deploymentId, body.deploymentId),
+              eq(schema.release.version, version),
+            ),
+          )
+          .then(takeFirstOrNull);
+
         const release = await db
           .insert(schema.release)
           .values({ ...body, name: relName })
@@ -80,25 +97,31 @@ export const POST = request()
               ]),
             });
 
-        createReleaseJobTriggers(db, "new_release")
-          .causedById(ctx.user.id)
-          .filter(isPassingReleaseStringCheckPolicy)
-          .releases([release.id])
-          .then(createJobApprovals)
-          .insert()
-          .then((releaseJobTriggers) => {
-            dispatchReleaseJobTriggers(db)
-              .releaseTriggers(releaseJobTriggers)
-              .filter(isPassingAllPolicies)
-              .then(cancelOldReleaseJobTriggersOnJobDispatch)
-              .dispatch();
-          })
-          .then(() => {
-            logger.info(
-              `Release for ${release.id} job triggers created and dispatched.`,
-              req,
-            );
-          });
+        const shouldTrigger =
+          prevRelease == null ||
+          (prevRelease.status !== ReleaseStatus.Ready &&
+            release.status === ReleaseStatus.Ready);
+
+        if (shouldTrigger)
+          await createReleaseJobTriggers(db, "new_release")
+            .causedById(ctx.user.id)
+            .filter(isPassingReleaseStringCheckPolicy)
+            .releases([release.id])
+            .then(createJobApprovals)
+            .insert()
+            .then((releaseJobTriggers) => {
+              dispatchReleaseJobTriggers(db)
+                .releaseTriggers(releaseJobTriggers)
+                .filter(isPassingAllPolicies)
+                .then(cancelOldReleaseJobTriggersOnJobDispatch)
+                .dispatch();
+            })
+            .then(() => {
+              logger.info(
+                `Release for ${release.id} job triggers created and dispatched.`,
+                req,
+              );
+            });
 
         return NextResponse.json(
           { ...release, metadata },
