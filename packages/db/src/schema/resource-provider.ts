@@ -117,3 +117,49 @@ export const resourceProviderAwsRelations = relations(
     }),
   }),
 );
+
+export const azureTenant = pgTable(
+  "azure_tenant",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspace.id),
+    tenantId: text("tenant_id").notNull(),
+  },
+  (t) => ({ uniq: uniqueIndex().on(t.tenantId) }),
+);
+
+export const resourceProviderAzure = pgTable("resource_provider_azure", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  resourceProviderId: uuid("resource_provider_id")
+    .notNull()
+    .references(() => resourceProvider.id, { onDelete: "cascade" }),
+  tenantId: uuid("tenant_id")
+    .notNull()
+    .references(() => azureTenant.id),
+  subscriptionId: text("subscription_id").notNull(),
+});
+
+export const createResourceProviderAzure = createInsertSchema(
+  resourceProviderAzure,
+)
+  .omit({ id: true, resourceProviderId: true })
+  .extend({ name: z.string().min(1) });
+
+export type CreateResourceProviderAzure = z.infer<
+  typeof createResourceProviderAzure
+>;
+
+export const updateResourceProviderAzure =
+  createResourceProviderAzure.partial();
+
+export type UpdateResourceProviderAzure = z.infer<
+  typeof updateResourceProviderAzure
+>;
+
+export type AzureTenant = InferSelectModel<typeof azureTenant>;
+
+export type ResourceProviderAzure = InferSelectModel<
+  typeof resourceProviderAzure
+>;

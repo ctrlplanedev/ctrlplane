@@ -146,6 +146,7 @@ export const getEksResources = async (
   workspace: Workspace,
   config: ResourceProviderAws,
 ) => {
+  if (!config.importEks) return [];
   const { awsRoleArn: workspaceRoleArn } = workspace;
   if (workspaceRoleArn == null) return [];
 
@@ -161,22 +162,20 @@ export const getEksResources = async (
   const credentials = await assumeWorkspaceRole(workspaceRoleArn);
   const workspaceStsClient = credentials.sts();
 
-  const resources = config.importEks
-    ? await _.chain(config.awsRoleArns)
-        .map((customerRoleArn) =>
-          scanEksClustersByAssumedRole(workspaceStsClient, customerRoleArn),
-        )
-        .thru((promises) => Promise.all(promises))
-        .value()
-        .then((results) => results.flat())
-        .then((resources) =>
-          resources.map((resource) => ({
-            ...resource,
-            workspaceId: workspace.id,
-            providerId: config.resourceProviderId,
-          })),
-        )
-    : [];
+  const resources = await _.chain(config.awsRoleArns)
+    .map((customerRoleArn) =>
+      scanEksClustersByAssumedRole(workspaceStsClient, customerRoleArn),
+    )
+    .thru((promises) => Promise.all(promises))
+    .value()
+    .then((results) => results.flat())
+    .then((resources) =>
+      resources.map((resource) => ({
+        ...resource,
+        workspaceId: workspace.id,
+        providerId: config.resourceProviderId,
+      })),
+    );
 
   const resourceTypes = _.countBy(resources, (resource) =>
     [resource.kind, resource.version].join("/"),

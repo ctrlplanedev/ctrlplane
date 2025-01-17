@@ -379,6 +379,13 @@
       "when": 1736486772347,
       "tag": "0053_striped_hellfire_club",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1737135679877,
+      "tag": "0054_loud_amphibian",
+      "breakpoints": true
     }
   ]
 }

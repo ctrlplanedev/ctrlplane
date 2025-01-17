@@ -2,23 +2,16 @@ import { logger } from "@ctrlplane/logger";
 
 import { createDispatchExecutionJobWorker } from "./job-dispatch/index.js";
 import { redis } from "./redis.js";
-import {
-  createAwsResourceScanWorker,
-  createGoogleResourceScanWorker,
-} from "./resource-scan/index.js";
+import { createResourceScanWorker } from "./resource-scan/index.js";
 
-const resourceGoogleScanWorker = createGoogleResourceScanWorker();
-const resourceAwsScanWorker = createAwsResourceScanWorker();
+const resourceScanWorker = createResourceScanWorker();
 const dispatchExecutionJobWorker = createDispatchExecutionJobWorker();
 
 const shutdown = () => {
   logger.warn("Exiting...");
-  resourceAwsScanWorker.close();
-  resourceGoogleScanWorker.close();
+  resourceScanWorker.close();
   dispatchExecutionJobWorker.close();
-
   redis.quit();
-
   process.exit(0);
 };
 
