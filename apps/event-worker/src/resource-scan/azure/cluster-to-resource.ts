@@ -6,7 +6,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { omitNullUndefined } from "../../utils.js";
 
-const log = logger.child({ module: "resource-scan/azure/cluster-to-resource" });
+const log = logger.child({ module: "resource-scan/azure" });
 
 type ClusterResource = KubernetesClusterAPIV1 & {
   workspaceId: string;

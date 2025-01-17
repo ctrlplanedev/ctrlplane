@@ -6,12 +6,9 @@ import { isPresent } from "ts-is-present";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 
 import { env } from "../../config.js";
 import { convertManagedClusterToResource } from "./cluster-to-resource.js";
-
-const log = logger.child({ label: "resource-scan/azure" });
 
 const AZURE_CLIENT_ID = env.AZURE_APP_CLIENT_ID;
 const AZURE_CLIENT_SECRET = env.AZURE_APP_CLIENT_SECRET;
@@ -20,10 +17,8 @@ export const getAksResources = async (
   workspace: SCHEMA.Workspace,
   azureProvider: SCHEMA.ResourceProviderAzure,
 ) => {
-  if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET) {
-    log.error("Invalid azure credentials, skipping resource scan");
-    return [];
-  }
+  if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET)
+    throw new Error("Invalid azure credentials");
 
   const tenant = await db
     .select()
@@ -31,10 +26,7 @@ export const getAksResources = async (
     .where(eq(SCHEMA.azureTenant.id, azureProvider.tenantId))
     .then(takeFirstOrNull);
 
-  if (!tenant) {
-    log.error("Tenant not found, skipping resource scan");
-    return [];
-  }
+  if (!tenant) throw new Error("Tenant not found");
 
   const credential = new ClientSecretCredential(
     tenant.tenantId,
