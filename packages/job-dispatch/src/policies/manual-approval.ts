@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { eq, inArray } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
@@ -33,8 +33,11 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
       eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .leftJoin(
-      schema.environmentPolicyApproval,
-      eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
+      schema.environmentApproval,
+      and(
+        eq(schema.environmentApproval.releaseId, schema.release.id),
+        eq(schema.environmentApproval.environmentId, schema.environment.id),
+      ),
     )
     .where(
       inArray(
@@ -47,7 +50,7 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
     .filter((p) => {
       if (p.environment_policy == null) return true;
       if (p.environment_policy.approvalRequirement === "automatic") return true;
-      return p.environment_policy_approval?.status === "approved";
+      return p.environment_approval?.status === "approved";
     })
     .map((p) => p.release_job_trigger);
 };

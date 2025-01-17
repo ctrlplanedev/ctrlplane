@@ -35,8 +35,8 @@ import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
+import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
 import { JobDropdownMenu } from "./JobDropdownMenu";
-import { PolicyApprovalRow } from "./PolicyApprovalRow";
 import { useReleaseChannel } from "./useReleaseChannel";
 
 type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
@@ -62,13 +62,13 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
 }) => {
   const { setJobId } = useJobDrawer();
 
-  const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
+  const approvalsQ = api.environment.approval.byReleaseId.useQuery({
     releaseId: release.id,
   });
 
   const approvals = approvalsQ.data ?? [];
   const environmentApprovals = approvals.filter(
-    (approval) => approval.policyId === environment.policyId,
+    (approval) => approval.environmentId === environment.id,
   );
 
   const allTriggers = Object.values(triggersByResource).flat();
@@ -142,7 +142,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
             </div>
             <div className="flex items-center gap-2">
               {environmentApprovals.map((approval) => (
-                <PolicyApprovalRow
+                <EnvironmentApprovalRow
                   key={approval.id}
                   approval={approval}
                   environment={environment}
@@ -154,246 +154,254 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
       </TableRow>
       {isExpanded && (
         <>
-          {Object.entries(triggersByResource).map(([, triggers]) => {
-            const resource = triggers[0]!.resource;
-            const trigger = triggers[0]!; // triggers are already sorted by createdAt from the query
-            const linksMetadata = trigger.job.metadata.find(
-              (m) => m.key === String(ReservedMetadataKey.Links),
-            )?.value;
+          {Object.entries(triggersByResource)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([, triggers]) => {
+              const resource = triggers[0]!.resource;
+              const trigger = triggers[0]!; // triggers are already sorted by createdAt from the query
+              const linksMetadata = trigger.job.metadata.find(
+                (m) => m.key === String(ReservedMetadataKey.Links),
+              )?.value;
 
-            const links =
-              linksMetadata != null
-                ? (JSON.parse(linksMetadata) as Record<string, string>)
-                : null;
+              const links =
+                linksMetadata != null
+                  ? (JSON.parse(linksMetadata) as Record<string, string>)
+                  : null;
 
-            return (
-              <Collapsible key={resource.id} asChild>
-                <>
-                  <TableRow
-                    className="cursor-pointer border-none"
-                    onClick={() => setJobId(trigger.job.id)}
-                  >
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      {triggers.length > 1 && (
-                        <CollapsibleTrigger asChild>
+              return (
+                <Collapsible key={resource.id} asChild>
+                  <>
+                    <TableRow
+                      className="cursor-pointer border-none"
+                      onClick={() => setJobId(trigger.job.id)}
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {triggers.length > 1 && (
+                          <CollapsibleTrigger asChild>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() =>
+                                  switchResourceExpandedState(resource.id)
+                                }
+                              >
+                                <IconChevronRight
+                                  className={cn(
+                                    "h-3 w-3 text-muted-foreground transition-all",
+                                    expandedResources[resource.id] &&
+                                      "rotate-90",
+                                  )}
+                                />
+                              </Button>
+                              {resource.name}
+                            </div>
+                          </CollapsibleTrigger>
+                        )}
+
+                        {triggers.length === 1 && (
+                          <div className="pl-[29px]">{resource.name}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <JobTableStatusIcon status={trigger.job.status} />
+                          {capitalCase(trigger.job.status)}
+                        </div>
+                      </TableCell>
+                      <TableCell>{trigger.type}</TableCell>
+                      <TableCell>
+                        {trigger.job.externalId != null ? (
+                          <code className="font-mono text-xs">
+                            {trigger.job.externalId}
+                          </code>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            No external ID
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell
+                        onClick={(e) => e.stopPropagation()}
+                        className="py-0"
+                      >
+                        {links != null && (
                           <div className="flex items-center gap-1">
+                            {Object.entries(links).map(([label, url]) => (
+                              <Link
+                                key={label}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={buttonVariants({
+                                  variant: "secondary",
+                                  size: "xs",
+                                  className: "gap-1",
+                                })}
+                              >
+                                <IconExternalLink className="h-4 w-4" />
+                                {label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className="flex-shrink-0 text-xs text-muted-foreground hover:bg-secondary"
+                        >
+                          {formatDistanceToNowStrict(trigger.createdAt, {
+                            addSuffix: true,
+                          })}
+                        </Badge>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-end">
+                          <JobDropdownMenu
+                            release={release}
+                            deployment={deployment}
+                            resource={trigger.resource}
+                            environmentId={trigger.environmentId}
+                            job={{
+                              id: trigger.job.id,
+                              status: trigger.job.status,
+                            }}
+                            isPassingReleaseChannel={isPassingReleaseChannel}
+                          >
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() =>
-                                switchResourceExpandedState(resource.id)
-                              }
                             >
-                              <IconChevronRight
-                                className={cn(
-                                  "h-3 w-3 text-muted-foreground transition-all",
-                                  expandedResources[resource.id] && "rotate-90",
-                                )}
-                              />
+                              <IconDots className="h-4 w-4" />
                             </Button>
-                            {resource.name}
-                          </div>
-                        </CollapsibleTrigger>
-                      )}
-
-                      {triggers.length === 1 && (
-                        <div className="pl-[29px]">{resource.name}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <JobTableStatusIcon status={trigger.job.status} />
-                        {capitalCase(trigger.job.status)}
-                      </div>
-                    </TableCell>
-                    <TableCell>{trigger.type}</TableCell>
-                    <TableCell>
-                      {trigger.job.externalId != null ? (
-                        <code className="font-mono text-xs">
-                          {trigger.job.externalId}
-                        </code>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          No external ID
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell
-                      onClick={(e) => e.stopPropagation()}
-                      className="py-0"
-                    >
-                      {links != null && (
-                        <div className="flex items-center gap-1">
-                          {Object.entries(links).map(([label, url]) => (
-                            <Link
-                              key={label}
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={buttonVariants({
-                                variant: "secondary",
-                                size: "xs",
-                                className: "gap-1",
-                              })}
-                            >
-                              <IconExternalLink className="h-4 w-4" />
-                              {label}
-                            </Link>
-                          ))}
+                          </JobDropdownMenu>
                         </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="secondary"
-                        className="flex-shrink-0 text-xs text-muted-foreground hover:bg-secondary"
-                      >
-                        {formatDistanceToNowStrict(trigger.createdAt, {
-                          addSuffix: true,
-                        })}
-                      </Badge>
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      <div className="flex justify-end">
-                        <JobDropdownMenu
-                          release={release}
-                          deployment={deployment}
-                          resource={trigger.resource}
-                          environmentId={trigger.environmentId}
-                          job={{
-                            id: trigger.job.id,
-                            status: trigger.job.status,
-                          }}
-                          isPassingReleaseChannel={isPassingReleaseChannel}
-                        >
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                          >
-                            <IconDots className="h-4 w-4" />
-                          </Button>
-                        </JobDropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  <CollapsibleContent asChild>
-                    <>
-                      {triggers.map((trigger, idx) => {
-                        if (idx === 0) return null;
-                        const linksMetadata = trigger.job.metadata.find(
-                          (m) => m.key === String(ReservedMetadataKey.Links),
-                        )?.value;
+                      </TableCell>
+                    </TableRow>
+                    <CollapsibleContent asChild>
+                      <>
+                        {triggers.map((trigger, idx) => {
+                          if (idx === 0) return null;
+                          const linksMetadata = trigger.job.metadata.find(
+                            (m) => m.key === String(ReservedMetadataKey.Links),
+                          )?.value;
 
-                        const links =
-                          linksMetadata != null
-                            ? (JSON.parse(linksMetadata) as Record<
-                                string,
-                                string
-                              >)
-                            : null;
+                          const links =
+                            linksMetadata != null
+                              ? (JSON.parse(linksMetadata) as Record<
+                                  string,
+                                  string
+                                >)
+                              : null;
 
-                        return (
-                          <TableRow
-                            key={trigger.id}
-                            className="cursor-pointer border-none"
-                            onClick={() => setJobId(trigger.job.id)}
-                          >
-                            <TableCell className="p-0">
-                              <div className="pl-5">
-                                <div className="h-10 border-l border-neutral-700/50" />
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <JobTableStatusIcon
-                                  status={trigger.job.status}
-                                />
-                                {capitalCase(trigger.job.status)}
-                              </div>
-                            </TableCell>
-                            <TableCell>{trigger.type}</TableCell>
-                            <TableCell>
-                              {trigger.job.externalId != null ? (
-                                <code className="font-mono text-xs">
-                                  {trigger.job.externalId}
-                                </code>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">
-                                  No external ID
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell
-                              onClick={(e) => e.stopPropagation()}
-                              className="py-0"
+                          return (
+                            <TableRow
+                              key={trigger.id}
+                              className="cursor-pointer border-none"
+                              onClick={() => setJobId(trigger.job.id)}
                             >
-                              {links != null && (
-                                <div className="flex items-center gap-1">
-                                  {Object.entries(links).map(([label, url]) => (
-                                    <Link
-                                      key={label}
-                                      href={url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={buttonVariants({
-                                        variant: "secondary",
-                                        size: "xs",
-                                        className: "gap-1",
-                                      })}
-                                    >
-                                      <IconExternalLink className="h-4 w-4" />
-                                      {label}
-                                    </Link>
-                                  ))}
+                              <TableCell className="p-0">
+                                <div className="pl-5">
+                                  <div className="h-10 border-l border-neutral-700/50" />
                                 </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="secondary"
-                                className="flex-shrink-0 text-xs text-muted-foreground hover:bg-secondary"
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1">
+                                  <JobTableStatusIcon
+                                    status={trigger.job.status}
+                                  />
+                                  {capitalCase(trigger.job.status)}
+                                </div>
+                              </TableCell>
+                              <TableCell>{trigger.type}</TableCell>
+                              <TableCell>
+                                {trigger.job.externalId != null ? (
+                                  <code className="font-mono text-xs">
+                                    {trigger.job.externalId}
+                                  </code>
+                                ) : (
+                                  <span className="text-sm text-muted-foreground">
+                                    No external ID
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell
+                                onClick={(e) => e.stopPropagation()}
+                                className="py-0"
                               >
-                                {formatDistanceToNowStrict(trigger.createdAt, {
-                                  addSuffix: true,
-                                })}
-                              </Badge>
-                            </TableCell>
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <div className="flex justify-end">
-                                <JobDropdownMenu
-                                  release={release}
-                                  deployment={deployment}
-                                  resource={trigger.resource}
-                                  environmentId={trigger.environmentId}
-                                  job={{
-                                    id: trigger.job.id,
-                                    status: trigger.job.status,
-                                  }}
-                                  isPassingReleaseChannel={
-                                    isPassingReleaseChannel
-                                  }
+                                {links != null && (
+                                  <div className="flex items-center gap-1">
+                                    {Object.entries(links).map(
+                                      ([label, url]) => (
+                                        <Link
+                                          key={label}
+                                          href={url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className={buttonVariants({
+                                            variant: "secondary",
+                                            size: "xs",
+                                            className: "gap-1",
+                                          })}
+                                        >
+                                          <IconExternalLink className="h-4 w-4" />
+                                          {label}
+                                        </Link>
+                                      ),
+                                    )}
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="secondary"
+                                  className="flex-shrink-0 text-xs text-muted-foreground hover:bg-secondary"
                                 >
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
+                                  {formatDistanceToNowStrict(
+                                    trigger.createdAt,
+                                    {
+                                      addSuffix: true,
+                                    },
+                                  )}
+                                </Badge>
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <div className="flex justify-end">
+                                  <JobDropdownMenu
+                                    release={release}
+                                    deployment={deployment}
+                                    resource={trigger.resource}
+                                    environmentId={trigger.environmentId}
+                                    job={{
+                                      id: trigger.job.id,
+                                      status: trigger.job.status,
+                                    }}
+                                    isPassingReleaseChannel={
+                                      isPassingReleaseChannel
+                                    }
                                   >
-                                    <IconDots className="h-4 w-4" />
-                                  </Button>
-                                </JobDropdownMenu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </>
-                  </CollapsibleContent>
-                </>
-              </Collapsible>
-            );
-          })}
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                    >
+                                      <IconDots className="h-4 w-4" />
+                                    </Button>
+                                  </JobDropdownMenu>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </>
+                    </CollapsibleContent>
+                  </>
+                </Collapsible>
+              );
+            })}
         </>
       )}
     </Fragment>

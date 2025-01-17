@@ -2,19 +2,46 @@ import type { Tx } from "@ctrlplane/db";
 import type { Resource } from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import { eq, inArray, or } from "@ctrlplane/db";
-import { resource, resourceRelationship } from "@ctrlplane/db/schema";
+import { and, eq, inArray, or } from "@ctrlplane/db";
+import * as SCHEMA from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getEventsForResourceDeleted, handleEvent } from "../events/index.js";
 
 const deleteObjectsAssociatedWithResource = (tx: Tx, resource: Resource) =>
   tx
-    .delete(resourceRelationship)
+    .delete(SCHEMA.resourceRelationship)
     .where(
       or(
-        eq(resourceRelationship.fromIdentifier, resource.identifier),
-        eq(resourceRelationship.toIdentifier, resource.identifier),
+        eq(SCHEMA.resourceRelationship.fromIdentifier, resource.identifier),
+        eq(SCHEMA.resourceRelationship.toIdentifier, resource.identifier),
       ),
+    );
+
+const cancelJobsForDeletedResources = (tx: Tx, resources: Resource[]) =>
+  tx
+    .select()
+    .from(SCHEMA.releaseJobTrigger)
+    .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id))
+    .innerJoin(
+      SCHEMA.resource,
+      eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+    )
+    .where(
+      and(
+        inArray(
+          SCHEMA.resource.id,
+          resources.map((r) => r.id),
+        ),
+        inArray(SCHEMA.job.status, [JobStatus.Pending, JobStatus.InProgress]),
+      ),
+    )
+    .then((rjt) => rjt.map((rjt) => rjt.job.id))
+    .then((jobIds) =>
+      tx
+        .update(SCHEMA.job)
+        .set({ status: JobStatus.Cancelled })
+        .where(inArray(SCHEMA.job.id, jobIds)),
     );
 
 /**
@@ -33,11 +60,13 @@ export const deleteResources = async (tx: Tx, resources: Resource[]) => {
   const deleteAssociatedObjects = Promise.all(
     resources.map((r) => deleteObjectsAssociatedWithResource(tx, r)),
   );
+  const cancelJobs = cancelJobsForDeletedResources(tx, resources);
   await Promise.all([
     deleteAssociatedObjects,
+    cancelJobs,
     tx
-      .update(resource)
+      .update(SCHEMA.resource)
       .set({ deletedAt: new Date() })
-      .where(inArray(resource.id, resourceIds)),
+      .where(inArray(SCHEMA.resource.id, resourceIds)),
   ]);
 };

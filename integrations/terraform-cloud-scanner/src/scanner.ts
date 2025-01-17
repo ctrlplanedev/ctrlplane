@@ -14,27 +14,21 @@ const workspaceTemplate = handlebars.compile(
   env.CTRLPLANE_WORKSPACE_RESOURCE_NAME,
 );
 
-/**
- * Scans Terraform Cloud workspaces and registers them as resources with prefixed labels and a link.
- */
-export async function scan() {
-  const workspaceId = env.CTRLPLANE_WORKSPACE_ID;
-  const name = env.CTRLPLANE_SCANNER_NAME;
-  const scanner = new ResourceProvider({ workspaceId, name }, api);
-  logger.info("Starting Terraform Cloud scan");
+const RATE_LIMIT_MS = 1000;
+const RATE_LIMIT_CHUNK_SIZE = 10;
 
-  try {
-    const provider = await scanner.get();
+type Resource = {
+  version: string;
+  kind: string;
+  name: string;
+  identifier: string;
+  config: Record<string, string>;
+  metadata: Record<string, string>;
+};
 
-    logger.info(`Scanner ID: ${provider.id}`, { id: provider.id });
-    logger.info("Running Terrafrom Cloud scanner", {
-      date: new Date().toISOString(),
-    });
-
-    const workspaces: Workspace[] = await listWorkspaces();
-    logger.info(`Found ${workspaces.length} workspaces`);
-
-    const resourcePromises = workspaces.map(async (workspace) => {
+const processWorkspaceChunk = (workspaceChunk: Workspace[]) =>
+  workspaceChunk.map(async (workspace) => {
+    try {
       logger.info(
         `Processing workspace: ${workspace.attributes.name} (ID: ${workspace.id})`,
       );
@@ -71,16 +65,54 @@ export async function scan() {
           "ctrlplane/links": JSON.stringify(link),
         },
       };
+    } catch (error) {
+      logger.error("Error processing workspace", {
+        error,
+        workspace,
+      });
+      return null;
+    }
+  });
+
+/**
+ * Scans Terraform Cloud workspaces and registers them as resources with prefixed labels and a link.
+ */
+export async function scan() {
+  const workspaceId = env.CTRLPLANE_WORKSPACE_ID;
+  const name = env.CTRLPLANE_SCANNER_NAME;
+  const scanner = new ResourceProvider({ workspaceId, name }, api);
+  logger.info("Starting Terraform Cloud scan");
+
+  try {
+    const provider = await scanner.get();
+
+    logger.info(`Scanner ID: ${provider.id}`, { id: provider.id });
+    logger.info("Running Terrafrom Cloud scanner", {
+      date: new Date().toISOString(),
     });
 
-    const resources = await Promise.allSettled(resourcePromises).then(
-      (results) =>
-        results
-          .map((result) =>
-            result.status === "fulfilled" ? result.value : null,
-          )
-          .filter(isPresent),
-    );
+    const workspaces: Workspace[] = await listWorkspaces();
+    logger.info(`Found ${workspaces.length} workspaces`);
+
+    const resources = await _.chain(workspaces)
+      .chunk(RATE_LIMIT_CHUNK_SIZE)
+      .reduce(
+        async (acc, chunk) => {
+          const prevResults = await acc;
+          await new Promise((resolve) => setTimeout(resolve, RATE_LIMIT_MS));
+          const results = await Promise.allSettled(
+            processWorkspaceChunk(chunk),
+          );
+          const processedResults = results
+            .map((result) =>
+              result.status === "fulfilled" ? result.value : null,
+            )
+            .filter(isPresent);
+          return [...prevResults, ...processedResults];
+        },
+        Promise.resolve([] as Resource[]),
+      )
+      .value();
 
     logger.info(`Registering ${resources.length} unique resources`);
     await scanner.set(resources);

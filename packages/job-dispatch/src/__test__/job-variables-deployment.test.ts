@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@ctrlplane/db/client";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import * as jobVariablesDeployment from "../job-variables-deployment/job-variables-deployment.js";
 import * as utils from "../job-variables-deployment/utils.js";
@@ -73,6 +74,8 @@ const release: SCHEMA.Release = {
   createdAt: new Date(),
   version: "0",
   deploymentId: "0",
+  status: ReleaseStatus.Ready,
+  message: null,
 };
 
 const variableValues: SCHEMA.DeploymentVariableValue[] = [

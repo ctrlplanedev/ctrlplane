@@ -2,7 +2,7 @@
 
 import type {
   Environment,
-  EnvironmentPolicyApproval,
+  EnvironmentApproval,
   User,
 } from "@ctrlplane/db/schema";
 import { useRouter } from "next/navigation";
@@ -12,12 +12,12 @@ import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 
-type PolicyApprovalRowProps = {
-  approval: EnvironmentPolicyApproval & { user?: User | null };
-  environment: Environment | undefined;
+type EnvironmentApprovalRowProps = {
+  approval: EnvironmentApproval & { user?: User | null };
+  environment?: Environment;
 };
 
-export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
+export const EnvironmentApprovalRow: React.FC<EnvironmentApprovalRowProps> = ({
   approval,
   environment,
 }) => {
@@ -30,9 +30,9 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   }
 
   const environmentName = environment.name;
-  const { releaseId, policyId, status } = approval;
+  const { releaseId, environmentId, status } = approval;
 
-  const rejectMutation = api.environment.policy.approval.reject.useMutation({
+  const rejectMutation = api.environment.approval.reject.useMutation({
     onSuccess: ({ cancelledJobCount }) => {
       router.refresh();
       utils.environment.policy.invalidate();
@@ -44,7 +44,7 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
     onError: () => toast.error("Error rejecting release"),
   });
 
-  const approveMutation = api.environment.policy.approval.approve.useMutation({
+  const approveMutation = api.environment.approval.approve.useMutation({
     onSuccess: () => {
       router.refresh();
       utils.environment.policy.invalidate();
@@ -55,15 +55,9 @@ export const PolicyApprovalRow: React.FC<PolicyApprovalRowProps> = ({
   });
 
   const handleReject = () =>
-    rejectMutation.mutate({
-      releaseId,
-      policyId,
-    });
+    rejectMutation.mutate({ releaseId, environmentId });
   const handleApprove = () =>
-    approveMutation.mutate({
-      releaseId,
-      policyId,
-    });
+    approveMutation.mutate({ releaseId, environmentId });
 
   return (
     <div className="flex items-center gap-2 rounded-md text-sm">

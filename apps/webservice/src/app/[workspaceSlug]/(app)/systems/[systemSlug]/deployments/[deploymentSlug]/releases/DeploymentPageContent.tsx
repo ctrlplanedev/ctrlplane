@@ -2,10 +2,12 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
+import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
+  IconCircleFilled,
   IconFilter,
   IconGraph,
   IconHistory,
@@ -31,9 +33,16 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
+import {
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
+import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release-condition/ReleaseConditionBadge";
@@ -48,6 +57,31 @@ type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
 type EnvHeaderProps = { environment: Environment; deployment: Deployment };
+
+const StatusIcon: React.FC<{ status: ReleaseStatusType }> = ({ status }) => {
+  if (status === ReleaseStatus.Ready)
+    return (
+      <div className="relative h-[20px] w-[20px]">
+        <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
+        <IconCircleFilled className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 text-green-300" />
+      </div>
+    );
+
+  if (status === ReleaseStatus.Building)
+    return (
+      <div className="relative h-[20px] w-[20px]">
+        <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-yellow-400/20" />
+        <IconCircleFilled className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 text-yellow-400" />
+      </div>
+    );
+
+  return (
+    <div className="relative h-[20px] w-[20px]">
+      <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-red-400/20" />
+      <IconCircleFilled className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 text-red-400" />
+    </div>
+  );
+};
 
 const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
@@ -275,6 +309,22 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           "max-w-[calc(100vw-256px-246px)]",
                       )}
                     >
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <StatusIcon status={release.status} />
+                          </TooltipTrigger>
+                          <TooltipContent
+                            align="start"
+                            className="bg-neutral-800 px-2 py-1 text-sm"
+                          >
+                            <span>
+                              {release.status}
+                              {release.message && `: ${release.message}`}
+                            </span>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                       <span className="truncate">{release.name}</span>{" "}
                       <Badge
                         variant="secondary"
