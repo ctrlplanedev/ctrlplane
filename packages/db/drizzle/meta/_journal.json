@@ -393,6 +393,13 @@
       "when": 1737154626633,
       "tag": "0055_wandering_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1737169804536,
+      "tag": "0056_hesitant_monster_badoon",
+      "breakpoints": true
     }
   ]
 }
