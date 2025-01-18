@@ -128,6 +128,7 @@ export default async function ResourceProvidersPage({
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Resources</TableHead>
             <TableHead>Kind</TableHead>
             <TableHead>Created</TableHead>
           </TableRow>
@@ -139,23 +140,25 @@ export default async function ResourceProvidersPage({
               className="cursor-pointer border-b-neutral-800/50"
             >
               <TableCell>
+                <div className="flex h-full items-center gap-2">
+                  <span className="text-base">{provider.name}</span>
+                  {isCustomProvider(provider) ? (
+                    <CustomProviderTooltipBadge />
+                  ) : (
+                    <ManagedProviderBadge provider={provider} />
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
                 <Link href={provider.filterLink} target="_blank">
-                  <div className="flex h-full items-center gap-2">
-                    <span className="text-base">{provider.name}</span>
-                    {isCustomProvider(provider) ? (
-                      <CustomProviderTooltipBadge />
-                    ) : (
-                      <ManagedProviderBadge provider={provider} />
-                    )}
-                    <Badge
-                      variant="outline"
-                      className="flex h-6 items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
-                    >
-                      <IconExternalLink className="h-4 w-4" />
-                      {provider.resourceCount}{" "}
-                      {provider.resourceCount === 1 ? "resource" : "resources"}
-                    </Badge>
-                  </div>
+                  <Badge
+                    variant="outline"
+                    className="flex h-6 w-fit items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
+                  >
+                    <IconExternalLink className="h-4 w-4" />
+                    {provider.resourceCount}{" "}
+                    {provider.resourceCount === 1 ? "resource" : "resources"}
+                  </Badge>
                 </Link>
               </TableCell>
               <TableCell>
