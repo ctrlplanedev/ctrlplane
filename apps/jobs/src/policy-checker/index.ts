@@ -13,7 +13,7 @@ export const run = async () => {
   const isPassingApprovalGate = or(
     isNull(schema.environment.policyId),
     eq(schema.environmentPolicy.approvalRequirement, "automatic"),
-    eq(schema.environmentApproval.status, "approved"),
+    eq(schema.environmentPolicyApproval.status, "approved"),
   );
 
   const releaseJobTriggers = await db
@@ -29,11 +29,14 @@ export const run = async () => {
       eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
     .leftJoin(
-      schema.environmentApproval,
+      schema.environmentPolicyApproval,
       and(
-        eq(schema.environmentApproval.environmentId, schema.environment.id),
         eq(
-          schema.environmentApproval.releaseId,
+          schema.environmentPolicyApproval.policyId,
+          schema.environmentPolicy.id,
+        ),
+        eq(
+          schema.environmentPolicyApproval.releaseId,
           schema.releaseJobTrigger.releaseId,
         ),
       ),

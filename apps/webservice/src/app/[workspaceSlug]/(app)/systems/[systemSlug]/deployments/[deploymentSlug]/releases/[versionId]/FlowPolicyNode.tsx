@@ -1,4 +1,5 @@
 import type {
+  Environment,
   EnvironmentPolicy,
   EnvironmentPolicyDeployment,
   Release,
@@ -15,12 +16,14 @@ import { cn } from "@ctrlplane/ui";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
+import { ApprovalCheck } from "./ApprovalCheck";
 import { Passing, Waiting } from "./StatusIcons";
 
 type PolicyNodeProps = NodeProps<
   EnvironmentPolicy & {
     release: Release;
     policyDeployments: Array<EnvironmentPolicyDeployment>;
+    linkedEnvironments: Array<Environment>;
   }
 >;
 
@@ -99,6 +102,7 @@ const GradualRolloutCheck: React.FC<PolicyNodeProps["data"]> = (data) => {
 export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
   const noMinSuccess = data.successType === "optional";
   const noRollout = data.rolloutDuration === 0;
+  const noApproval = data.approvalRequirement === "automatic";
 
   return (
     <>
@@ -109,8 +113,15 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
       >
         {!noMinSuccess && <MinSuccessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
+        {!noApproval && (
+          <ApprovalCheck
+            policyId={data.id}
+            release={data.release}
+            linkedEnvironments={data.linkedEnvironments}
+          />
+        )}
 
-        {noMinSuccess && noRollout && (
+        {noMinSuccess && noRollout && noApproval && (
           <div className="text-muted-foreground">No policy checks.</div>
         )}
       </div>

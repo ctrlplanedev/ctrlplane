@@ -1,3 +1,5 @@
+import type { Environment } from "@ctrlplane/db/schema";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -11,35 +13,56 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@ctrlplane/ui/alert-dialog";
+import { Badge } from "@ctrlplane/ui/badge";
+import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
-const ApprovalDialog: React.FC<{
-  releaseId: string;
-  environmentId: string;
+export const ApprovalDialog: React.FC<{
+  release: { id: string; version: string };
+  policyId: string;
+  linkedEnvironments: Array<Environment>;
   children: React.ReactNode;
-}> = ({ releaseId, environmentId, children }) => {
-  const approve = api.environment.approval.approve.useMutation();
-  const rejected = api.environment.approval.reject.useMutation();
+}> = ({ release, policyId, linkedEnvironments, children }) => {
+  const [open, setOpen] = useState(false);
+  const approve = api.environment.policy.approval.approve.useMutation();
+  const reject = api.environment.policy.approval.reject.useMutation();
+  const releaseId = release.id;
   const onApprove = () =>
     approve
-      .mutateAsync({ releaseId, environmentId })
-      .then(() => router.refresh());
+      .mutateAsync({ releaseId, policyId })
+      .then(() => router.refresh())
+      .then(() => setOpen(false));
   const onReject = () =>
-    rejected
-      .mutateAsync({ releaseId, environmentId })
-      .then(() => router.refresh());
+    reject
+      .mutateAsync({ releaseId, policyId })
+      .then(() => router.refresh())
+      .then(() => setOpen(false));
   const router = useRouter();
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Approval</AlertDialogTitle>
+          <AlertDialogTitle className="text-xl font-semibold">
+            Approve release <span className="truncate">{release.version}</span>
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            Approving this action will initiate the deployment of the release to
-            all currently linked environments.
+            <div className="flex flex-col gap-2">
+              Approves this release for the following environments:
+              <div className="flex flex-wrap gap-2">
+                {linkedEnvironments.map((env) => (
+                  <Badge
+                    key={env.id}
+                    variant="secondary"
+                    className="max-w-24 truncate"
+                  >
+                    {env.name}
+                  </Badge>
+                ))}
+              </div>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -52,13 +75,14 @@ const ApprovalDialog: React.FC<{
 };
 
 export const ApprovalCheck: React.FC<{
-  environmentId: string;
-  releaseId: string;
-}> = ({ environmentId, releaseId }) => {
+  policyId: string;
+  release: { id: string; version: string };
+  linkedEnvironments: Array<Environment>;
+}> = ({ policyId, release, linkedEnvironments }) => {
   const approvalStatus =
-    api.environment.approval.statusByReleaseEnvironmentId.useQuery({
-      environmentId,
-      releaseId,
+    api.environment.policy.approval.statusByReleasePolicyId.useQuery({
+      policyId,
+      releaseId: release.id,
     });
 
   if (approvalStatus.isLoading)
@@ -77,25 +101,36 @@ export const ApprovalCheck: React.FC<{
 
   const status = approvalStatus.data.status;
   return (
-    <ApprovalDialog environmentId={environmentId} releaseId={releaseId}>
-      <button
-        disabled={status === "approved" || status === "rejected"}
-        className="flex w-full items-center gap-2 rounded-md hover:bg-neutral-800/50"
-      >
-        {status === "approved" ? (
+    <div className="flex w-full items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        {status === "approved" && (
           <>
             <Passing /> Approved
           </>
-        ) : status === "rejected" ? (
+        )}
+        {status === "rejected" && (
           <>
             <Failing /> Rejected
           </>
-        ) : (
+        )}
+        {status === "pending" && (
           <>
             <Waiting /> Pending approval
           </>
         )}
-      </button>
-    </ApprovalDialog>
+      </div>
+
+      {status === "pending" && (
+        <ApprovalDialog
+          policyId={policyId}
+          release={release}
+          linkedEnvironments={linkedEnvironments}
+        >
+          <Button size="sm" className="h-6 px-2 py-1">
+            Review
+          </Button>
+        </ApprovalDialog>
+      )}
+    </div>
   );
 };

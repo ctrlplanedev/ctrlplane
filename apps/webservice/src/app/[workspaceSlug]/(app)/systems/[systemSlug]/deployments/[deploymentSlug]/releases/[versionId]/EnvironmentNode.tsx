@@ -30,7 +30,6 @@ import { EnvironmentPolicyDrawerTab } from "~/app/[workspaceSlug]/(app)/_compone
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { useQueryParams } from "~/app/[workspaceSlug]/(app)/_components/useQueryParams";
 import { api } from "~/trpc/react";
-import { ApprovalCheck } from "./ApprovalCheck";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
 type EnvironmentNodeProps = NodeProps<{
@@ -329,7 +328,6 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
         <WaitingOnActiveCheck {...data} />
         <ReleaseChannelCheck {...data} />
         <MinReleaseIntervalCheck {...data} />
-        <ApprovalCheck {...data} />
       </div>
     </div>
     <Handle

@@ -40,7 +40,6 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { approvalRouter } from "./environment-approval";
 import { policyRouter } from "./environment-policy";
 
 export const createEnv = async (
@@ -50,7 +49,6 @@ export const createEnv = async (
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
-  approval: approvalRouter,
 
   byId: protectedProcedure
     .meta({
