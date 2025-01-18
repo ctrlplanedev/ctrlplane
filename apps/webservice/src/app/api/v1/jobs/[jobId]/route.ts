@@ -13,22 +13,22 @@ import { authn, authz } from "~/app/api/v1/auth";
 import { request } from "~/app/api/v1/middleware";
 
 type ApprovalJoinResult = {
-  environment_approval: typeof schema.environmentApproval.$inferSelect;
+  environment_policy_approval: typeof schema.environmentPolicyApproval.$inferSelect;
   user: typeof schema.user.$inferSelect | null;
 };
 
-const getApprovalDetails = async (releaseId: string, environmentId: string) =>
+const getApprovalDetails = async (releaseId: string, policyId: string) =>
   db
     .select()
-    .from(schema.environmentApproval)
+    .from(schema.environmentPolicyApproval)
     .leftJoin(
       schema.user,
-      eq(schema.environmentApproval.userId, schema.user.id),
+      eq(schema.environmentPolicyApproval.userId, schema.user.id),
     )
     .where(
       and(
-        eq(schema.environmentApproval.releaseId, releaseId),
-        eq(schema.environmentApproval.environmentId, environmentId),
+        eq(schema.environmentPolicyApproval.releaseId, releaseId),
+        eq(schema.environmentPolicyApproval.policyId, policyId),
       ),
     )
     .then(takeFirstOrNull)
@@ -38,10 +38,10 @@ const mapApprovalResponse = (row: ApprovalJoinResult | null) =>
   !row
     ? null
     : {
-        id: row.environment_approval.id,
-        status: row.environment_approval.status,
+        id: row.environment_policy_approval.id,
+        status: row.environment_policy_approval.status,
         approver:
-          row.user && row.environment_approval.status !== "pending"
+          row.user && row.environment_policy_approval.status !== "pending"
             ? {
                 id: row.user.id,
                 name: row.user.name,
@@ -123,11 +123,11 @@ export const GET = request()
       release,
     };
 
-    const environmentId = je.environment?.id;
+    const policyId = je.environment?.policyId;
 
     const approval =
-      je.release?.id && environmentId
-        ? await getApprovalDetails(je.release.id, environmentId)
+      je.release?.id && policyId
+        ? await getApprovalDetails(je.release.id, policyId)
         : undefined;
 
     const jobVariableRows = await db

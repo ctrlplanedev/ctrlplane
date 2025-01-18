@@ -5,8 +5,8 @@ import { isPresent } from "ts-is-present";
 import { and, eq, inArray } from "@ctrlplane/db";
 import {
   environment,
-  environmentApproval,
   environmentPolicy,
+  environmentPolicyApproval,
   release,
   releaseJobTrigger,
 } from "@ctrlplane/db/schema";
@@ -16,7 +16,7 @@ export const createJobApprovals = async (
   releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
   const policiesToCheck = await db
-    .selectDistinctOn([release.id, environment.id])
+    .selectDistinctOn([release.id, environmentPolicy.id])
     .from(releaseJobTrigger)
     .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
@@ -37,10 +37,10 @@ export const createJobApprovals = async (
   if (policiesToCheck.length === 0) return;
 
   await db
-    .insert(environmentApproval)
+    .insert(environmentPolicyApproval)
     .values(
       policiesToCheck.map((p) => ({
-        environmentId: p.environment.id,
+        policyId: p.environment_policy.id,
         releaseId: p.release.id,
       })),
     )

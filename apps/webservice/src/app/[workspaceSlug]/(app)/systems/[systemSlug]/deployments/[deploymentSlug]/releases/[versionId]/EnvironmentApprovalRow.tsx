@@ -2,90 +2,46 @@
 
 import type {
   Environment,
-  EnvironmentApproval,
+  EnvironmentPolicyApproval,
   User,
 } from "@ctrlplane/db/schema";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
-import { toast } from "@ctrlplane/ui/toast";
 
-import { api } from "~/trpc/react";
+import { ApprovalDialog } from "./ApprovalCheck";
 
 type EnvironmentApprovalRowProps = {
-  approval: EnvironmentApproval & { user?: User | null };
-  environment?: Environment;
+  approval: EnvironmentPolicyApproval & { user?: User | null };
+  release: { id: string; version: string };
+  linkedEnvironments: Environment[];
 };
 
 export const EnvironmentApprovalRow: React.FC<EnvironmentApprovalRowProps> = ({
   approval,
-  environment,
+  release,
+  linkedEnvironments,
 }) => {
-  const router = useRouter();
-  const utils = api.useUtils();
-
-  if (!environment) {
-    console.error("Environment is undefined for approval:", approval);
-    return null;
-  }
-
-  const environmentName = environment.name;
-  const { releaseId, environmentId, status } = approval;
-
-  const rejectMutation = api.environment.approval.reject.useMutation({
-    onSuccess: ({ cancelledJobCount }) => {
-      router.refresh();
-      utils.environment.policy.invalidate();
-      utils.job.config.invalidate();
-      toast.success(
-        `Rejected release to ${environmentName} and cancelled ${cancelledJobCount} job${cancelledJobCount !== 1 ? "s" : ""}`,
-      );
-    },
-    onError: () => toast.error("Error rejecting release"),
-  });
-
-  const approveMutation = api.environment.approval.approve.useMutation({
-    onSuccess: () => {
-      router.refresh();
-      utils.environment.policy.invalidate();
-      utils.job.config.invalidate();
-      toast.success(`Approved release to ${environmentName}`);
-    },
-    onError: () => toast.error("Error approving release"),
-  });
-
-  const handleReject = () =>
-    rejectMutation.mutate({ releaseId, environmentId });
-  const handleApprove = () =>
-    approveMutation.mutate({ releaseId, environmentId });
+  if (approval.status === "pending")
+    return (
+      <ApprovalDialog
+        release={release}
+        policyId={approval.policyId}
+        linkedEnvironments={linkedEnvironments}
+      >
+        <Button size="sm" className="h-6">
+          Review
+        </Button>
+      </ApprovalDialog>
+    );
 
   return (
-    <div className="flex items-center gap-2 rounded-md text-sm">
-      {status === "pending" ? (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            className="h-6 px-2"
-            onClick={handleReject}
-          >
-            Reject
-          </Button>
-          <Button className="h-6 px-2" onClick={handleApprove}>
-            Approve
-          </Button>
-        </div>
+    <div className="ml-2 flex flex-grow items-center gap-2 rounded-md text-sm font-medium">
+      {approval.status === "approved" ? (
+        <span className="text-green-300">Approved</span>
       ) : (
-        <div className="ml-2 flex-grow">
-          <span className="font-medium">
-            {status === "approved" ? (
-              <span className="text-green-300">Approved</span>
-            ) : (
-              <span className="text-red-300">Rejected</span>
-            )}{" "}
-            by {approval.user?.name}
-          </span>
-        </div>
-      )}
+        <span className="text-red-300">Rejected</span>
+      )}{" "}
+      {approval.user?.name ? `by ${approval.user.name}` : null}
     </div>
   );
 };

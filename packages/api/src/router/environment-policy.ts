@@ -12,6 +12,7 @@ import {
 import {
   createEnvironmentPolicy,
   createEnvironmentPolicyDeployment,
+  environment,
   environmentPolicy,
   environmentPolicyDeployment,
   environmentPolicyReleaseChannel,
@@ -23,8 +24,11 @@ import { handleEnvironmentPolicyReleaseChannelUpdate } from "@ctrlplane/job-disp
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { approvalRouter } from "./environment-approval";
 
 export const policyRouter = createTRPCRouter({
+  approval: approvalRouter,
+
   deployment: createTRPCRouter({
     bySystemId: protectedProcedure
       .meta({
@@ -144,6 +148,7 @@ export const policyRouter = createTRPCRouter({
           environmentPolicyReleaseWindow,
           eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
+        .leftJoin(environment, eq(environment.policyId, environmentPolicy.id))
         .where(eq(environmentPolicy.id, input))
         .then((rows) => {
           const policy = rows.at(0)!;
@@ -164,10 +169,17 @@ export const policyRouter = createTRPCRouter({
             }))
             .value();
 
+          const environments = _.chain(rows)
+            .map((r) => r.environment)
+            .filter(isPresent)
+            .uniqBy((e) => e.id)
+            .value();
+
           return {
             ...policy.environment_policy,
             releaseChannels,
             releaseWindows,
+            environments,
           };
         }),
     ),

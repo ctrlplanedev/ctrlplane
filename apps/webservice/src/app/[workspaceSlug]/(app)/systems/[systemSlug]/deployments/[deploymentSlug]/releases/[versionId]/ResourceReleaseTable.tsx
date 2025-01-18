@@ -62,13 +62,13 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
 }) => {
   const { setJobId } = useJobDrawer();
 
-  const approvalsQ = api.environment.approval.byReleaseId.useQuery({
+  const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
     releaseId: release.id,
   });
 
   const approvals = approvalsQ.data ?? [];
   const environmentApprovals = approvals.filter(
-    (approval) => approval.environmentId === environment.id,
+    (a) => a.policyId === environment.policyId,
   );
 
   const allTriggers = Object.values(triggersByResource).flat();
@@ -79,6 +79,13 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   const [expandedResources, setExpandedResources] = useState<
     Record<string, boolean>
   >({});
+
+  const environmentPolicyQ = api.environment.policy.byId.useQuery(
+    environment.policyId ?? "",
+    { enabled: environment.policyId != null },
+  );
+
+  const linkedEnvironments = environmentPolicyQ.data?.environments ?? [];
 
   const switchResourceExpandedState = (resourceId: string) =>
     setExpandedResources((prev) => {
@@ -145,7 +152,8 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 <EnvironmentApprovalRow
                   key={approval.id}
                   approval={approval}
-                  environment={environment}
+                  release={release}
+                  linkedEnvironments={linkedEnvironments}
                 />
               ))}
             </div>
