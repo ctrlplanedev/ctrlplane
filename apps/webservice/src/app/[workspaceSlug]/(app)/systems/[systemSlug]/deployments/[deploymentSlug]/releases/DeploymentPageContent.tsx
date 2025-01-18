@@ -111,7 +111,7 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
   return (
     <TableHead className="border-l pl-4">
       <div className="flex w-[220px] items-center gap-2">
-        {environment.name}
+        <span className="truncate">{environment.name}</span>
         <Badge
           variant="outline"
           className="rounded-full px-1.5 font-light text-muted-foreground"
