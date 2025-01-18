@@ -53,12 +53,8 @@ export const ApprovalDialog: React.FC<{
               Approves this release for the following environments:
               <div className="flex flex-wrap gap-2">
                 {linkedEnvironments.map((env) => (
-                  <Badge
-                    key={env.id}
-                    variant="secondary"
-                    className="max-w-24 truncate"
-                  >
-                    {env.name}
+                  <Badge key={env.id} variant="secondary" className="max-w-40">
+                    <span className="truncate">{env.name}</span>
                   </Badge>
                 ))}
               </div>
