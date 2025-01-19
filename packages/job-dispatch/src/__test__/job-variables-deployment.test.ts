@@ -39,6 +39,8 @@ const job: Job = {
     reason: "policy_passing",
     createdAt: new Date(),
     updatedAt: new Date(),
+    startedAt: null,
+    completedAt: null,
   },
   release_job_trigger: {
     id: "0",
