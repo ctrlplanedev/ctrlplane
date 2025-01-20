@@ -6,15 +6,43 @@ and creates them for related deployments automatically.
 Currently the compute scanner supports importing the following resources:
 
 - Google Kubernetes Engine Clusters (GKE)
+- Virtual Machines (VMs)
+- Virtual Private Clouds (VPCs)
 
 ## Managed Compute Scanner
 
 The managed Compute Scanner is built into the Ctrlplane solution. Each workspace
 will be assigned a google service account. You need to invite this service
-account to your projects you would like it to scan. Then in the UI, you can add
-a new provider, select the managed install and add all the projects you will
-like it to scan. Once you hit submit you may need to wait a few mins while it
-scanns and imports all compute resources.
+account to your projects and resources you would like it to scan. Then in the
+UI, you can add a new provider, select the managed install and add all the
+projects you will like it to scan. Once you hit submit you may need to wait a
+few mins while it scanns and imports all compute resources.
+
+You will need to navigate to `workspace/integrations/google` to enable the
+integration and find your unique service account.
+
+```bash
+ctrlplane-${workspace-slug}@ctrlplane-prod.iam.gserviceaccount.com
+```
+
+For the scanner to function correctly, you will need to grant the following
+viewer permissions to this service account depending on what resources you want
+to scan in:
+
+| Resource Type                  | Required Role                 |
+| :----------------------------- | :---------------------------- |
+| GKE (Google Kubernetes Engine) | `roles/container.viewer`      |
+| VMs (Virtual Machines)         | `roles/compute.viewer`        |
+| VPCs (Virtual Private Clouds)  | `roles/compute.networkViewer` |
+
+We higly recommend using IAC to manage your permissions, but for the brave, here
+is a way to quickly get started:
+
+```bash
+gcloud projects add-iam-policy-binding ${project-id} \
+    --member=serviceAccount:ctrlplane-${workspace-slug}@ctrlplane-prod.iam.gserviceaccount.com \
+    --role=${role}
+```
 
 ## Unmanaged Compute Scanner
 
