@@ -1,0 +1,1 @@
+ALTER TABLE "resource_provider_google" ADD COLUMN "import_vms" boolean DEFAULT false NOT NULL;

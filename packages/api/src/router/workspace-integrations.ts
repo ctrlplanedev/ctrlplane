@@ -80,9 +80,7 @@ export const integrationsRouter = createTRPCRouter({
 
         return ctx.db
           .update(workspace)
-          .set({
-            googleServiceAccountEmail: sa.data.email,
-          })
+          .set({ googleServiceAccountEmail: sa.data.email })
           .where(eq(workspace.id, input))
           .returning()
           .then(takeFirst);
