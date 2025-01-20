@@ -1,6 +1,7 @@
 name: Apps / Webservice
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: ["*"]
     paths:
