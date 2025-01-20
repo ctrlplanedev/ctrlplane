@@ -19,7 +19,7 @@ on:
 
 jobs:
   build:
-    runs-on: runnex-4vcpu-ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2204
 
     permissions:
       contents: read
