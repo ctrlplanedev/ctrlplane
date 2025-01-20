@@ -3,9 +3,16 @@ import type {
   MetadataOperatorType,
 } from "@ctrlplane/validators/conditions";
 import { useState } from "react";
+import { IconSelector } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
+import {
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@ctrlplane/ui/command";
 import { Input } from "@ctrlplane/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import {
@@ -16,8 +23,6 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { MetadataOperator } from "@ctrlplane/validators/conditions";
-
-import { useMatchSorter } from "~/utils/useMatchSorter";
 
 type MetadataConditionRenderProps = {
   condition: MetadataCondition;
@@ -41,40 +46,46 @@ export const MetadataConditionRender: React.FC<
 
   const [open, setOpen] = useState(false);
 
-  const filteredMetadataKeys = useMatchSorter(metadataKeys, condition.key);
-
   return (
     <div className={cn("flex w-full items-center gap-2", className)}>
       <div className="grid w-full grid-cols-12">
         <div className="col-span-5">
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger className="w-full rounded-r-none hover:rounded-l-sm hover:bg-neutral-800/50">
-              <Input
-                placeholder="Key"
-                value={condition.key}
-                onChange={(e) => setKey(e.target.value)}
-                className="w-full cursor-pointer rounded-l-sm rounded-r-none"
-              />
+          <Popover open={open} onOpenChange={setOpen} modal>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className="w-full items-center justify-start gap-2 rounded-l-md rounded-r-none bg-transparent px-2 hover:bg-neutral-800/50"
+              >
+                <IconSelector className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">
+                  {condition.key != "" ? condition.key : "Select key..."}
+                </span>
+              </Button>
             </PopoverTrigger>
             <PopoverContent
               align="start"
-              className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 max-h-[300px] overflow-y-auto p-0 text-sm"
               onOpenAutoFocus={(e) => e.preventDefault()}
+              className="w-[462px] p-0"
             >
-              {filteredMetadataKeys.map((k) => (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  key={k}
-                  className="w-full rounded-none text-left"
-                  onClick={() => {
-                    setKey(k);
-                    setOpen(false);
-                  }}
-                >
-                  <div className="w-full">{k}</div>
-                </Button>
-              ))}
+              <Command>
+                <CommandInput placeholder="Search key..." />
+                <CommandList>
+                  {metadataKeys.map((key) => (
+                    <CommandItem
+                      key={key}
+                      value={key}
+                      onSelect={() => {
+                        setKey(key);
+                        setOpen(false);
+                      }}
+                    >
+                      {key}
+                    </CommandItem>
+                  ))}
+                </CommandList>
+              </Command>
             </PopoverContent>
           </Popover>
         </div>
