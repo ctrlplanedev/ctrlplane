@@ -358,6 +358,55 @@
       "when": 1735355334225,
       "tag": "0050_bizarre_red_shift",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1736284273338,
+      "tag": "0051_brown_gambit",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1736462985649,
+      "tag": "0052_graceful_taskmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1736486772347,
+      "tag": "0053_striped_hellfire_club",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1737135679877,
+      "tag": "0054_loud_amphibian",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1737154626633,
+      "tag": "0055_wandering_rogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1737169804536,
+      "tag": "0056_hesitant_monster_badoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1737313062687,
+      "tag": "0057_keen_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

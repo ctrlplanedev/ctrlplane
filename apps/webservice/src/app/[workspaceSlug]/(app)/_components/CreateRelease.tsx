@@ -39,11 +39,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
+import { Switch } from "@ctrlplane/ui/switch";
 import { toast } from "@ctrlplane/ui/toast";
 import {
   defaultCondition,
   isEmptyCondition,
   releaseCondition,
+  ReleaseStatus,
 } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
@@ -58,6 +60,7 @@ const releaseForm = z.object({
   systemId: z.string().uuid(),
   deploymentId: z.string().uuid(),
   version: z.string().min(1).max(255),
+  status: z.nativeEnum(ReleaseStatus),
   releaseDependencies: z.array(releaseDependency).refine((deps) => {
     const deploymentIds = deps.map((d) => d.deploymentId);
     return new Set(deploymentIds).size === deploymentIds.length;
@@ -79,8 +82,11 @@ export const CreateReleaseDialog: React.FC<{
       systemId: props.systemId ?? "",
       version: props.version ?? "",
       releaseDependencies: [],
+      status: ReleaseStatus.Ready,
     },
   });
+
+  const [advancedOptionsOpen, setAdvancedOptionsOpen] = useState(false);
 
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);
@@ -239,94 +245,135 @@ export const CreateReleaseDialog: React.FC<{
               )}
             />
 
-            <div className="flex flex-col space-y-3">
-              <Label>Release Dependencies</Label>
-              <span className="text-sm text-muted-foreground">
-                Dependencies must be fulfilled for a resource before this
-                Release can be applied to that resource. Read more about release
-                dependencies here.
-              </span>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={advancedOptionsOpen}
+                onCheckedChange={setAdvancedOptionsOpen}
+                id="advanced-options"
+              />
+              <Label htmlFor="advanced-options">Advanced options</Label>
+            </div>
 
-              {fields.map((_, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <FormField
-                    control={form.control}
-                    name={`releaseDependencies.${index}.deploymentId`}
-                    render={({ field: { value, onChange } }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Select value={value} onValueChange={onChange}>
-                            <SelectTrigger className="w-32 text-sm">
-                              <SelectValue
-                                placeholder="Deployment"
-                                key={value}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {globalDeployments.data
-                                  ?.filter((d) => d.id !== deploymentId)
-                                  .map((deployment) => (
-                                    <SelectItem
-                                      key={deployment.id}
-                                      value={deployment.id}
-                                    >
-                                      {deployment.name}
-                                    </SelectItem>
-                                  ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+            {advancedOptionsOpen && (
+              <>
+                <div className="flex flex-col space-y-3">
+                  <Label>Release Dependencies</Label>
+                  <span className="text-sm text-muted-foreground">
+                    Dependencies must be fulfilled for a resource before this
+                    Release can be applied to that resource. Read more about
+                    release dependencies here.
+                  </span>
 
-                  <FormField
-                    control={form.control}
-                    name={`releaseDependencies.${index}.releaseFilter`}
-                    render={({ field: { value, onChange } }) => (
-                      <FormItem>
-                        <FormControl>
-                          <ReleaseConditionDialog
-                            condition={value ?? defaultCondition}
-                            onChange={onChange}
-                          >
-                            <Button variant="ghost" size="icon">
-                              {value == null && (
-                                <IconFilterExclamation className="h-4 w-4" />
-                              )}
-                              {value != null && (
-                                <IconFilterFilled className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </ReleaseConditionDialog>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  {fields.map((_, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <FormField
+                        control={form.control}
+                        name={`releaseDependencies.${index}.deploymentId`}
+                        render={({ field: { value, onChange } }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Select value={value} onValueChange={onChange}>
+                                <SelectTrigger className="w-32 text-sm">
+                                  <SelectValue
+                                    placeholder="Deployment"
+                                    key={value}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectGroup>
+                                    {globalDeployments.data
+                                      ?.filter((d) => d.id !== deploymentId)
+                                      .map((deployment) => (
+                                        <SelectItem
+                                          key={deployment.id}
+                                          value={deployment.id}
+                                        >
+                                          {deployment.name}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectGroup>
+                                </SelectContent>
+                              </Select>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name={`releaseDependencies.${index}.releaseFilter`}
+                        render={({ field: { value, onChange } }) => (
+                          <FormItem>
+                            <FormControl>
+                              <ReleaseConditionDialog
+                                condition={value ?? defaultCondition}
+                                onChange={onChange}
+                              >
+                                <Button variant="ghost" size="icon">
+                                  {value == null && (
+                                    <IconFilterExclamation className="h-4 w-4" />
+                                  )}
+                                  {value != null && (
+                                    <IconFilterFilled className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </ReleaseConditionDialog>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                      >
+                        <IconX className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
 
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(index)}
+                    type="button"
+                    variant="outline"
+                    className="w-16"
+                    onClick={() =>
+                      append({ deploymentId: "", releaseFilter: null })
+                    }
                   >
-                    <IconX className="h-4 w-4" />
+                    Add
                   </Button>
                 </div>
-              ))}
 
-              <Button
-                type="button"
-                variant="outline"
-                className="w-16"
-                onClick={() =>
-                  append({ deploymentId: "", releaseFilter: null })
-                }
-              >
-                Add
-              </Button>
-            </div>
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field: { value, onChange } }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <FormControl>
+                        <Select value={value} onValueChange={onChange}>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={ReleaseStatus.Ready}>
+                              Ready
+                            </SelectItem>
+                            <SelectItem value={ReleaseStatus.Building}>
+                              Building
+                            </SelectItem>
+                            <SelectItem value={ReleaseStatus.Failed}>
+                              Failed
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
 
             {formErrors?.root?.message && (
               <div className="text-sm text-red-500">

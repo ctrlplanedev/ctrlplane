@@ -51,6 +51,7 @@ export enum Permission {
   ResourceProviderGet = "resourceProvider.get",
   ResourceProviderDelete = "resourceProvider.delete",
   ResourceProviderUpdate = "resourceProvider.update",
+  ResourceProviderCreate = "resourceProvider.create",
 
   ResourceViewCreate = "resourceView.create",
   ResourceViewList = "resourceView.list",
@@ -79,6 +80,7 @@ export enum Permission {
 
   ReleaseCreate = "release.create",
   ReleaseGet = "release.get",
+  ReleaseUpdate = "release.update",
   ReleaseList = "release.list",
 
   ReleaseChannelGet = "releaseChannel.get",

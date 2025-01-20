@@ -1,6 +1,6 @@
 import _ from "lodash";
 
-import { eq, inArray } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
@@ -34,7 +34,13 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
     )
     .leftJoin(
       schema.environmentPolicyApproval,
-      eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
+      and(
+        eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
+        eq(
+          schema.environmentPolicyApproval.policyId,
+          schema.environmentPolicy.id,
+        ),
+      ),
     )
     .where(
       inArray(

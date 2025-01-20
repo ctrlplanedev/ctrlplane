@@ -113,7 +113,7 @@ export const environmentPolicy = pgTable("environment_policy", {
 
   systemId: uuid("system_id")
     .notNull()
-    .references(() => system.id),
+    .references(() => system.id, { onDelete: "cascade" }),
   approvalRequirement: approvalRequirement("approval_required")
     .notNull()
     .default("manual"),

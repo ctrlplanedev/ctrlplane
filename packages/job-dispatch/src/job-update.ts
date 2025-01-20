@@ -2,7 +2,7 @@ import { eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { onJobCompletion } from "./job-creation.js";
 import { onJobFailure } from "./job-failure.js";
@@ -49,6 +49,35 @@ const updateJobMetadata = async (
       });
 };
 
+const getStartedAt = (
+  jobBeforeUpdate: schema.Job,
+  updates: schema.UpdateJob,
+) => {
+  if (updates.startedAt != null) return updates.startedAt;
+  if (jobBeforeUpdate.startedAt != null) return jobBeforeUpdate.startedAt;
+  const isPreviousStatusPending = jobBeforeUpdate.status === JobStatus.Pending;
+  const isCurrentStatusInProgress = updates.status === JobStatus.InProgress;
+  if (isPreviousStatusPending && isCurrentStatusInProgress) return new Date();
+  return null;
+};
+
+const getCompletedAt = (
+  jobBeforeUpdate: schema.Job,
+  updates: schema.UpdateJob,
+) => {
+  if (updates.completedAt != null) return updates.completedAt;
+  if (jobBeforeUpdate.completedAt != null) return jobBeforeUpdate.completedAt;
+  const isPreviousStatusExited = exitedStatus.includes(
+    jobBeforeUpdate.status as JobStatus,
+  );
+  const isCurrentStatusExited =
+    updates.status != null &&
+    exitedStatus.includes(updates.status as JobStatus);
+
+  if (!isPreviousStatusExited && isCurrentStatusExited) return new Date();
+  return null;
+};
+
 export const updateJob = async (
   jobId: string,
   data: schema.UpdateJob,
@@ -61,9 +90,13 @@ export const updateJob = async (
 
   if (jobBeforeUpdate == null) throw new Error("Job not found");
 
+  const startedAt = getStartedAt(jobBeforeUpdate, data);
+  const completedAt = getCompletedAt(jobBeforeUpdate, data);
+  const updates = { ...data, startedAt, completedAt };
+
   const updatedJob = await db
     .update(schema.job)
-    .set(data)
+    .set(updates)
     .where(eq(schema.job.id, jobId))
     .returning()
     .then(takeFirst);

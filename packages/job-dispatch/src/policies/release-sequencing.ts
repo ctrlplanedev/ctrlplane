@@ -3,7 +3,15 @@ import { isAfter } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { and, eq, inArray, isNull, ne, notExists, sql } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  isNull,
+  notExists,
+  notInArray,
+  sql,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -91,7 +99,13 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
       eq(schema.releaseJobTrigger.releaseId, schema.release.id),
     )
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
-    .where(ne(schema.job.status, JobStatus.Pending))
+    .where(
+      notInArray(schema.job.status, [
+        JobStatus.Pending,
+        JobStatus.Skipped,
+        JobStatus.Cancelled,
+      ]),
+    )
     .as("active_releases");
 
 /**

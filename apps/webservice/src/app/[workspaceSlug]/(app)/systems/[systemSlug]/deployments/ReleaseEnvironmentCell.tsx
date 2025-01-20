@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 import { useInView } from "react-intersection-observer";
@@ -13,6 +14,7 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { api } from "~/trpc/react";
@@ -20,11 +22,17 @@ import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
+type Release = {
+  id: string;
+  version: string;
+  createdAt: Date;
+  status: ReleaseStatusType;
+};
 
 type ReleaseEnvironmentCellProps = {
   environment: Environment;
   deployment: SCHEMA.Deployment;
-  release: { id: string; version: string; createdAt: Date };
+  release: Release;
 };
 
 const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
@@ -91,12 +99,15 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     isBlockedByReleaseChannel &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
+  const isReady = release.status === ReleaseStatus.Ready;
+
   const showRelease = isAlreadyDeployed && !showBlockedByReleaseChannel;
   const showDeployButton =
     !isAlreadyDeployed &&
     hasJobAgent &&
     hasResources &&
-    !isBlockedByReleaseChannel;
+    !isBlockedByReleaseChannel &&
+    isReady;
 
   if (showRelease)
     return (
@@ -116,6 +127,18 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   if (showDeployButton)
     return (
       <DeployButton releaseId={release.id} environmentId={environment.id} />
+    );
+
+  if (release.status === ReleaseStatus.Building)
+    return (
+      <div className="text-center text-xs text-muted-foreground/70">
+        Release is building
+      </div>
+    );
+
+  if (release.status === ReleaseStatus.Failed)
+    return (
+      <div className="text-center text-xs text-red-500">Release failed</div>
     );
 
   if (showBlockedByReleaseChannel)

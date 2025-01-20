@@ -2,6 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { Deployment, Workspace } from "@ctrlplane/db/schema";
+import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import Link from "next/link";
 import { IconCircleFilled, IconLoader2 } from "@tabler/icons-react";
 
@@ -90,6 +91,7 @@ const DeploymentTable: React.FC<{
         version: string;
         createdAt: Date;
         environmentId: string;
+        status: ReleaseStatusType;
       }> | null;
     }
   >;
