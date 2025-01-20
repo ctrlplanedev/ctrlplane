@@ -20,19 +20,14 @@ import { getGoogleClient } from "./client.js";
 
 const log = logger.child({ label: "resource-scan/google/vpc" });
 
-const getNetworksClient = async (targetPrincipal?: string | null) => {
-  const [networksClient] = await getGoogleClient(
-    NetworksClient,
-    targetPrincipal,
-    "Networks Client",
-  );
-  const [subnetsClient] = await getGoogleClient(
-    SubnetworksClient,
-    targetPrincipal,
-    "Subnets Client",
-  );
-  return { networksClient, subnetsClient };
-};
+const getNetworksClient = async (targetPrincipal?: string | null) =>
+  Promise.all([
+    getGoogleClient(NetworksClient, targetPrincipal, "Networks Client"),
+    getGoogleClient(SubnetworksClient, targetPrincipal, "Subnets Client"),
+  ]).then(([[networksClient], [subnetsClient]]) => ({
+    networksClient,
+    subnetsClient,
+  }));
 
 const getSubnetDetails = (
   subnetsClient: SubnetworksClient,
