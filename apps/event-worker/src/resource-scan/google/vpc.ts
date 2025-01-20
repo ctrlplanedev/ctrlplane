@@ -3,7 +3,10 @@ import type {
   ResourceProviderGoogle,
   Workspace,
 } from "@ctrlplane/db/schema";
-import type { CloudVPCV1 } from "@ctrlplane/validators/resources";
+import type {
+  CloudSubnetV1,
+  CloudVPCV1,
+} from "@ctrlplane/validators/resources";
 import type { google } from "@google-cloud/compute/build/protos/protos.js";
 import { NetworksClient, SubnetworksClient } from "@google-cloud/compute";
 import _ from "lodash";
@@ -16,15 +19,6 @@ import { omitNullUndefined } from "../../utils.js";
 import { getGoogleClient } from "./client.js";
 
 const log = logger.child({ label: "resource-scan/google/vpc" });
-
-type GoogleSubnetDetails = {
-  name: string;
-  region: string;
-  cidr: string;
-  type: "internal" | "external";
-  gatewayAddress: string;
-  secondaryCidrs: { name: string; cidr: string }[] | undefined;
-};
 
 const getNetworksClient = async (targetPrincipal?: string | null) => {
   const [networksClient] = await getGoogleClient(
@@ -44,7 +38,7 @@ const getSubnetDetails = (
   subnetsClient: SubnetworksClient,
   project: string,
   subnetSelfLink: string,
-): Promise<GoogleSubnetDetails | null> => {
+): Promise<CloudSubnetV1 | null> => {
   const parts = subnetSelfLink.split("/");
   const region = parts.at(-3) ?? "";
   const name = parts.at(-1) ?? "";
@@ -56,7 +50,7 @@ const getSubnetDetails = (
       filter: `name eq ${name}`,
     })
     .then(([subnets]) => {
-      const subnet = _.find(subnets, (subnet) => subnet.name === name);
+      const subnet = subnets.find((subnet) => subnet.name === name);
       if (subnet === undefined) return null;
 
       return {
@@ -110,17 +104,18 @@ const getNetworkResources = async (
             "google/self-link": network.selfLink,
             "google/creation-timestamp": network.creationTimestamp,
             "google/description": network.description,
-            ...(network.peerings?.reduce(
-              (acc, peering) => {
-                acc[`google/peering/${peering.name}`] = JSON.stringify({
-                  network: peering.network,
-                  state: peering.state,
-                  autoCreateRoutes: peering.autoCreateRoutes,
-                });
-                return acc;
-              },
-              {} as Record<string, string>,
-            ) ?? {}),
+            ...(network.peerings
+              ? Object.fromEntries(
+                  network.peerings.flatMap((peering) => [
+                    [`google/peering/${peering.name}/network`, peering.network],
+                    [`google/peering/${peering.name}/state`, peering.state],
+                    [
+                      `google/peering/${peering.name}/auto-create-routes`,
+                      peering.autoCreateRoutes?.toString() ?? "false",
+                    ],
+                  ]),
+                )
+              : {}),
           }),
         };
       }),
