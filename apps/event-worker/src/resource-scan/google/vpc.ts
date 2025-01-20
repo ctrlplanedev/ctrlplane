@@ -138,16 +138,20 @@ const fetchProjectNetworks = async (
         pageToken,
       });
 
-      networks.push(
-        ...(await getNetworkResources(clients, project, networkList)).map(
-          (resource) => ({
-            ...resource,
-            workspaceId,
-            providerId,
-          }),
-        ),
+      const resources = await getNetworkResources(
+        clients,
+        project,
+        networkList,
       );
-      pageToken = request?.pageToken;
+
+      networks.push(
+        ...resources.map((resource) => ({
+          ...resource,
+          workspaceId,
+          providerId,
+        })),
+      );
+      pageToken = request?.pageToken ?? null;
     } while (pageToken != null);
 
     return networks;
