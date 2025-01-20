@@ -121,36 +121,35 @@ export const getGoogleVMResources = async (
     { workspaceId: workspace.id, config, googleServiceAccountEmail },
   );
 
-  return Promise.allSettled(
+  return Promise.all(
     config.projectIds.map(async (projectId) => {
-      const allResources: SCHEMA.InsertResource[] = [];
-      for await (const [_, instances] of vmClient.aggregatedListAsync({
-        project: projectId,
-        returnPartialSuccess: true,
-      })) {
-        if (instances.instances == null || instances.instances.length === 0)
-          continue;
-        const resources = instances.instances.map((instance) =>
-          instanceToResource(
-            instance,
-            workspace.id,
-            config.resourceProviderId,
-            projectId,
-          ),
-        );
-        allResources.push(...resources);
-      }
+      try {
+        const allResources: SCHEMA.InsertResource[] = [];
+        for await (const [_, instances] of vmClient.aggregatedListAsync({
+          project: projectId,
+          returnPartialSuccess: true,
+        })) {
+          if (instances.instances == null || instances.instances.length === 0)
+            continue;
+          const resources = instances.instances.map((instance) =>
+            instanceToResource(
+              instance,
+              workspace.id,
+              config.resourceProviderId,
+              projectId,
+            ),
+          );
+          allResources.push(...resources);
+        }
 
-      return allResources;
+        return allResources;
+      } catch (error: any) {
+        log.error(
+          `Unable to list VMs for provider ${config.id} and project ${projectId}: ${error.message}`,
+          { error, projectId, providerId: config.resourceProviderId },
+        );
+        return [];
+      }
     }),
-  ).then((results) =>
-    results.flatMap((result) => {
-      if (result.status === "fulfilled") return result.value;
-      log.error(
-        `Unable to list VMs for provider ${config.id}: ${result.reason}`,
-        { error: result.reason },
-      );
-      return [];
-    }),
-  );
+  ).then((results) => results.flat());
 };
