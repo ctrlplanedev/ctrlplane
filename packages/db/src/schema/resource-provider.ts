@@ -52,6 +52,7 @@ export const resourceProviderGoogle = pgTable("resource_provider_google", {
   importNamespaces: boolean("import_namespaces").notNull().default(false),
   importVCluster: boolean("import_vcluster").notNull().default(false),
   importVms: boolean("import_vms").notNull().default(false),
+  importVpc: boolean("import_vpc").notNull().default(false),
 });
 
 export const createResourceProviderGoogle = createInsertSchema(
