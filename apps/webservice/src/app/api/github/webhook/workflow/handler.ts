@@ -5,7 +5,7 @@ import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
 const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
@@ -55,6 +55,8 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
     conclusion,
     repository,
     name,
+    run_started_at,
+    updated_at,
   } = event.workflow_run;
 
   const job = await getJob(id, name);
@@ -65,14 +67,19 @@ export const handleWorkflowWebhookEvent = async (event: WorkflowRunEvent) => {
       ? convertConclusion(conclusion)
       : convertStatus(externalStatus);
 
+  const startedAt = new Date(run_started_at);
+  const isJobCompleted = exitedStatus.includes(status as JobStatus);
+
+  // the workflow run object doesn't have an explicit completedAt field
+  // but if the job is in an exited state, the updated_at field works as a proxy
+  // since thats the last time the job was updated
+  const completedAt = isJobCompleted ? new Date(updated_at) : null;
+
   const externalId = id.toString();
+  const GitHub = `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`;
   await updateJob(
     job.id,
-    { status, externalId },
-    {
-      [String(ReservedMetadataKey.Links)]: {
-        GitHub: `https://github.com/${repository.owner.login}/${repository.name}/actions/runs/${id}`,
-      },
-    },
+    { status, externalId, startedAt, completedAt },
+    { [String(ReservedMetadataKey.Links)]: { GitHub } },
   );
 };
