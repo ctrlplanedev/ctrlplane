@@ -39,7 +39,7 @@ export const ChoiceConditionRender: React.FC<ChoiceConditionRenderProps> = ({
           <span className="truncate">{capitalCase(type)} is</span>
         </div>
         <div className="col-span-10">
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open} onOpenChange={setOpen} modal>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
