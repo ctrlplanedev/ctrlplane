@@ -1,5 +1,10 @@
-import type { ManagedCluster } from "@azure/arm-containerservice";
+import type {
+  ContainerServiceClient,
+  ManagedCluster,
+} from "@azure/arm-containerservice";
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
+import * as yaml from "js-yaml";
+import { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
@@ -13,16 +18,63 @@ type ClusterResource = KubernetesClusterAPIV1 & {
   providerId: string;
 };
 
-export const convertManagedClusterToResource = (
+const cluster = z.object({
+  "certificate-authority-data": z.string(),
+  server: z.string(),
+});
+const kubeConfigSchema = z.object({ clusters: z.array(z.object({ cluster })) });
+
+const getCertificateAuthorityData = async (
+  cluster: ManagedCluster,
+  resourceGroup: string,
+  client: ContainerServiceClient,
+) => {
+  try {
+    const { kubernetesVersion, name } = cluster;
+    if (!kubernetesVersion || !name) return null;
+
+    const kubeConfigRaw = await client.managedClusters
+      .getAccessProfile(resourceGroup, name, "clusterAdmin")
+      .then((profile) => profile.kubeConfig);
+    if (!kubeConfigRaw) return null;
+
+    const kubeConfigYaml = Buffer.from(kubeConfigRaw).toString("utf-8");
+    const kubeConfig = yaml.load(kubeConfigYaml);
+
+    const parsedKubeConfig = kubeConfigSchema.parse(kubeConfig);
+    const { cluster: parsedCluster } = parsedKubeConfig.clusters[0] ?? {};
+    if (!parsedCluster) return null;
+    return {
+      endpoint: parsedCluster.server,
+      certificateAuthorityData: parsedCluster["certificate-authority-data"],
+    };
+  } catch (error) {
+    log.error("Error getting certificate authority data for cluster", {
+      cluster: { name: cluster.name, id: cluster.id },
+      error,
+    });
+    return null;
+  }
+};
+
+export const convertManagedClusterToResource = async (
   workspaceId: string,
   providerId: string,
   cluster: ManagedCluster,
-): ClusterResource | null => {
+  client: ContainerServiceClient,
+): Promise<ClusterResource | null> => {
   if (!cluster.name || !cluster.id) {
     log.error("Invalid cluster", { cluster });
     return null;
   }
 
+  const resourceGroup = cluster.id.split("/resourcegroups/")[1]?.split("/")[0];
+  if (!resourceGroup) {
+    log.error("Invalid cluster", { cluster });
+    return null;
+  }
+
+  const ca = await getCertificateAuthorityData(cluster, resourceGroup, client);
   return {
     workspaceId,
     providerId,
@@ -32,16 +84,9 @@ export const convertManagedClusterToResource = (
     kind: "ClusterAPI",
     config: {
       name: cluster.name,
-      auth: {
-        method: "azure/aks",
-        clusterName: cluster.name,
-        resourceGroup: cluster.nodeResourceGroup ?? "",
-      },
+      auth: { method: "azure/aks", clusterName: cluster.name, resourceGroup },
       status: cluster.provisioningState ?? "UNKNOWN",
-      server: {
-        endpoint: cluster.fqdn ?? "",
-        certificateAuthorityData: cluster.servicePrincipalProfile?.clientId,
-      },
+      server: { ...ca, endpoint: ca?.endpoint ?? cluster.fqdn ?? "" },
     },
     metadata: omitNullUndefined({
       [ReservedMetadataKey.Links]: cluster.azurePortalFqdn

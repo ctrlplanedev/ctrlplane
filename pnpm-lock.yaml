@@ -158,7 +158,7 @@ importers:
         version: 9.14.0(jiti@2.3.3)
       postcss-load-config:
         specifier: ^6.0.1
-        version: 6.0.1(jiti@2.3.3)(postcss@8.4.47)(tsx@4.19.2)(yaml@2.6.0)
+        version: 6.0.1(jiti@2.3.3)(postcss@8.4.49)(tsx@4.19.2)(yaml@2.6.0)
       prettier:
         specifier: 'catalog:'
         version: 3.4.2
@@ -267,6 +267,9 @@ importers:
       ioredis:
         specifier: ^5.4.1
         version: 5.4.1
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       lodash:
         specifier: 'catalog:'
         version: 4.17.21
@@ -295,6 +298,9 @@ importers:
       '@ctrlplane/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/lodash':
         specifier: 'catalog:'
         version: 4.17.12
@@ -1576,7 +1582,7 @@ importers:
         version: 1.13.4(eslint@9.14.0(jiti@2.3.3))
       eslint-plugin-import:
         specifier: ^2.29.1
-        version: 2.31.0(eslint@9.14.0(jiti@2.3.3))
+        version: 2.31.0(@typescript-eslint/parser@8.13.0(eslint@9.14.0(jiti@2.3.3))(typescript@5.6.3))(eslint@9.14.0(jiti@2.3.3))
       eslint-plugin-jsx-a11y:
         specifier: ^6.9.0
         version: 6.10.2(eslint@9.14.0(jiti@2.3.3))
@@ -21340,16 +21346,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-module-utils@2.12.0(eslint-import-resolver-node@0.3.9)(eslint@9.14.0(jiti@2.3.3)):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@8.13.0(eslint@9.14.0(jiti@2.3.3))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.14.0(jiti@2.3.3)):
     dependencies:
       debug: 3.2.7
     optionalDependencies:
+      '@typescript-eslint/parser': 8.13.0(eslint@9.14.0(jiti@2.3.3))(typescript@5.6.3)
       eslint: 9.14.0(jiti@2.3.3)
       eslint-import-resolver-node: 0.3.9
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.31.0(eslint@9.14.0(jiti@2.3.3)):
+  eslint-plugin-import@2.31.0(@typescript-eslint/parser@8.13.0(eslint@9.14.0(jiti@2.3.3))(typescript@5.6.3))(eslint@9.14.0(jiti@2.3.3)):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.8
@@ -21360,7 +21367,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 9.14.0(jiti@2.3.3)
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(eslint-import-resolver-node@0.3.9)(eslint@9.14.0(jiti@2.3.3))
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@8.13.0(eslint@9.14.0(jiti@2.3.3))(typescript@5.6.3))(eslint-import-resolver-node@0.3.9)(eslint@9.14.0(jiti@2.3.3))
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -21371,6 +21378,8 @@ snapshots:
       semver: 6.3.1
       string.prototype.trimend: 1.0.8
       tsconfig-paths: 3.15.0
+    optionalDependencies:
+      '@typescript-eslint/parser': 8.13.0(eslint@9.14.0(jiti@2.3.3))(typescript@5.6.3)
     transitivePeerDependencies:
       - eslint-import-resolver-typescript
       - eslint-import-resolver-webpack
@@ -24892,15 +24901,6 @@ snapshots:
     optionalDependencies:
       postcss: 8.4.47
       ts-node: 10.9.2(@types/node@22.8.1)(typescript@5.6.3)
-
-  postcss-load-config@6.0.1(jiti@2.3.3)(postcss@8.4.47)(tsx@4.19.2)(yaml@2.6.0):
-    dependencies:
-      lilconfig: 3.1.2
-    optionalDependencies:
-      jiti: 2.3.3
-      postcss: 8.4.47
-      tsx: 4.19.2
-      yaml: 2.6.0
 
   postcss-load-config@6.0.1(jiti@2.3.3)(postcss@8.4.49)(tsx@4.19.2)(yaml@2.6.0):
     dependencies:

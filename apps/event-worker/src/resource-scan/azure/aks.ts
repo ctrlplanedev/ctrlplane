@@ -47,9 +47,9 @@ export const getAksResources = async (
   }
 
   const { resourceProviderId: providerId } = azureProvider;
-  return clusters
-    .map((cluster) =>
-      convertManagedClusterToResource(workspace.id, providerId, cluster),
-    )
-    .filter(isPresent);
+  const resourcePromises = clusters.map((cluster) =>
+    convertManagedClusterToResource(workspace.id, providerId, cluster, client),
+  );
+  const resources = await Promise.all(resourcePromises);
+  return resources.filter(isPresent);
 };
