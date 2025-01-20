@@ -414,6 +414,13 @@
       "when": 1737396429304,
       "tag": "0058_wooden_husk",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1737399959264,
+      "tag": "0059_nervous_wrecker",
+      "breakpoints": true
     }
   ]
 }
