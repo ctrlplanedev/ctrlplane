@@ -1,5 +1,5 @@
 {
-  "id": "521959e1-0624-4dd3-bd5d-85efca7f5a27",
+  "id": "65e51300-d4c5-4bf0-b0e2-56fc04f4845b",
   "prevId": "9fc7fc3f-6670-4d5a-8db6-62f1d720e791",
   "version": "7",
   "dialect": "postgresql",
@@ -2615,6 +2615,13 @@
         },
         "import_vcluster": {
           "name": "import_vcluster",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "import_vms": {
+          "name": "import_vms",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
