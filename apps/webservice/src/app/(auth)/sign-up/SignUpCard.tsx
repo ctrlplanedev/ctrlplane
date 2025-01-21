@@ -77,7 +77,7 @@ export const SignUpCard: React.FC = () => {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className="bg-neutral-950" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -91,7 +91,7 @@ export const SignUpCard: React.FC = () => {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className="bg-neutral-950" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -105,7 +105,11 @@ export const SignUpCard: React.FC = () => {
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" />
+                      <Input
+                        {...field}
+                        type="password"
+                        className="bg-neutral-950"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -114,7 +118,7 @@ export const SignUpCard: React.FC = () => {
               <FormRootError />
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-white hover:bg-neutral-200"
                 size="lg"
                 disabled={signUp.isPending}
               >

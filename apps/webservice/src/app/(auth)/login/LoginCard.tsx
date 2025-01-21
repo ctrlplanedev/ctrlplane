@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { IconBrandGoogle, IconLock } from "@tabler/icons-react";
+import { IconBrandGoogleFilled, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
@@ -18,6 +19,7 @@ import {
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
+import { Separator } from "@ctrlplane/ui/separator";
 import * as schema from "@ctrlplane/validators/auth";
 
 export const LoginCard: React.FC<{
@@ -56,11 +58,17 @@ export const LoginCard: React.FC<{
   });
 
   return (
-    <div className="container mx-auto mt-[150px] max-w-[375px]">
-      <h1 className="mb-10 text-center text-3xl font-bold">
-        Login to Ctrlplane
+    <div className="container mx-auto max-w-[350px]">
+      <h1 className="mb-10 flex items-center justify-center gap-4 text-center text-3xl font-bold">
+        <Image
+          src="/android-chrome-192x192.png"
+          alt="Ctrlplane Logo"
+          width={32}
+          height={32}
+        />{" "}
+        Ctrlplane
       </h1>
-      <div className="space-y-6">
+      <div className="space-y-8">
         {isCredentialsAuthEnabled && (
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-4">
@@ -71,7 +79,7 @@ export const LoginCard: React.FC<{
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} className="bg-neutral-950" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -85,7 +93,11 @@ export const LoginCard: React.FC<{
                   <FormItem>
                     <FormLabel>Password</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" />
+                      <Input
+                        {...field}
+                        type="password"
+                        className="bg-neutral-950"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -99,55 +111,30 @@ export const LoginCard: React.FC<{
             </form>
           </Form>
         )}
-        <div className="space-y-2">
-          {/* <Button
-            onClick={() => signIn("github")}
-            size="lg"
-            className="w-full gap-2 rounded-lg bg-neutral-700 p-6 text-lg tracking-normal text-white hover:bg-neutral-600"
-          >
-            <IconBrandGithub /> Continue with Github
-          </Button>
-          <Button
-            onClick={() => signIn("gitlab")}
-            size="lg"
-            className="w-full gap-2 rounded-lg bg-purple-700 p-6 text-lg tracking-normal text-white hover:bg-purple-600"
-          >
-            <IconBrandGitlab /> Continue with Gitlab
-          </Button>
-          <Button
-            onClick={() => signIn("bitbucket")}
-            size="lg"
-            className="w-full gap-2 rounded-lg bg-blue-700 p-6 text-lg tracking-normal text-white hover:bg-blue-600"
-          >
-            <IconBrandBitbucket /> Continue with Bitbucket
-          </Button> */}
 
+        {isCredentialsAuthEnabled && (isGoogleEnabled || isOidcEnabled) && (
+          <Separator />
+        )}
+
+        <div className="space-y-2">
           {isGoogleEnabled && (
             <Button
               onClick={() => signIn("google")}
-              size="lg"
-              className="w-full gap-2 rounded-lg bg-red-700 p-6 text-lg tracking-normal text-white hover:bg-red-600"
+              className="h-12 w-full gap-4 rounded-lg bg-white tracking-normal hover:bg-neutral-200"
             >
-              <IconBrandGoogle className="h-4 w-4" /> Continue with Google
+              <IconBrandGoogleFilled className="h-5 w-5" /> Continue with Google
             </Button>
           )}
+
           {isOidcEnabled && (
             <Button
               onClick={() => signIn("oidc")}
-              size="lg"
               variant="outline"
-              className="w-full gap-2 rounded-lg p-6 text-lg tracking-normal"
+              className="w-full gap-4 rounded-lg tracking-normal"
             >
               <IconLock /> Continue with SSO
             </Button>
           )}
-          {/* <Button
-            size="lg"
-            variant="outline"
-            className="w-full gap-2 rounded-lg p-6 text-lg font-semibold tracking-normal"
-          >
-            <IconKey /> Login with Passkey
-          </Button> */}
         </div>
       </div>
     </div>
