@@ -9,6 +9,7 @@ import {
   system,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -39,7 +40,7 @@ export const deploymentStatsRouter = createTRPCRouter({
           lastRunAt: max(job.createdAt),
           totalJobs: count(job.id),
           totalSuccess: sql<number>`
-            (COUNT(*) FILTER (WHERE ${job.status} = 'completed') / COUNT(*)) * 100
+            (COUNT(*) FILTER (WHERE ${job.status} = ${JobStatus.Successful}) / COUNT(*)) * 100
           `,
 
           p50: sql<number>`
