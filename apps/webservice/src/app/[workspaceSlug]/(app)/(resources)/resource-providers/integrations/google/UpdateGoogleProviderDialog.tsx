@@ -72,10 +72,8 @@ export const UpdateGoogleProviderDialog: React.FC<{
       ...data,
       resourceProviderId: providerId,
       config: {
+        ...data,
         projectIds: data.projectIds.map((p) => p.value),
-        importGke: data.importGke,
-        importVCluster: data.importVCluster,
-        importNamespaces: data.importNamespaces,
       },
       repeatSeconds: data.repeatSeconds === 0 ? null : data.repeatSeconds,
     });
@@ -277,6 +275,25 @@ export const UpdateGoogleProviderDialog: React.FC<{
                     <FormDescription>
                       Enable importing of vClusters
                     </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="importVpc"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import VPC</FormLabel>
+                    <FormDescription>Enable importing of VPCs</FormDescription>
                   </div>
                   <FormControl>
                     <Switch
