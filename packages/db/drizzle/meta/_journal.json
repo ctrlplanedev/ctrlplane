@@ -421,6 +421,13 @@
       "when": 1737400440739,
       "tag": "0059_acoustic_flatman",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1737443067443,
+      "tag": "0060_stale_warlock",
+      "breakpoints": true
     }
   ]
 }

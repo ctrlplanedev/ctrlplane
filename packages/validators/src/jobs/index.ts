@@ -5,7 +5,7 @@ export enum JobAgentType {
 }
 
 export enum JobStatus {
-  Completed = "completed",
+  Successful = "successful",
   Cancelled = "cancelled",
   Skipped = "skipped",
   InProgress = "in_progress",
@@ -20,7 +20,7 @@ export enum JobStatus {
 export type JobStatusType = `${JobStatus}`;
 
 export const JobStatusReadable = {
-  [JobStatus.Completed]: "Completed",
+  [JobStatus.Successful]: "Successful",
   [JobStatus.Cancelled]: "Cancelled",
   [JobStatus.Skipped]: "Skipped",
   [JobStatus.InProgress]: "In progress",
@@ -36,7 +36,7 @@ export const activeStatus = [JobStatus.InProgress, JobStatus.ActionRequired];
 export const activeStatusType = activeStatus.map((s) => s as JobStatusType);
 
 export const exitedStatus = [
-  JobStatus.Completed,
+  JobStatus.Successful,
   JobStatus.InvalidJobAgent,
   JobStatus.InvalidIntegration,
   JobStatus.ExternalRunNotFound,

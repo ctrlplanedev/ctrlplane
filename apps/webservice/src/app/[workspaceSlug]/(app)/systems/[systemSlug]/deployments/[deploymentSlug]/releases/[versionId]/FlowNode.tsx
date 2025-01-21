@@ -23,8 +23,8 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const environmentJobs = releaseJobTriggers.data?.filter(
     (job) => job.environmentId === data.id,
   );
-  const completed = environmentJobs?.filter(
-    (job) => job.job.status === JobStatus.Completed,
+  const successful = environmentJobs?.filter(
+    (job) => job.job.status === JobStatus.Successful,
   );
   return (
     <>
@@ -40,7 +40,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
             variant="outline"
             className="rounded-md text-xs text-muted-foreground"
           >
-            {completed?.length} / {environmentJobs?.length}
+            {successful?.length} / {environmentJobs?.length}
           </Badge>
         )}
       </div>

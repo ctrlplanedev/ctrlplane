@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const jobStatus = z.enum([
-  "completed",
+  "successful",
   "cancelled",
   "skipped",
   "in_progress",

@@ -301,7 +301,7 @@ export const RunbookJobComparisonConditionRender: React.FC<
                   addCondition({
                     type: JobFilterType.Status,
                     operator: ColumnOperator.Equals,
-                    value: JobStatus.Completed,
+                    value: JobStatus.Successful,
                   })
                 }
               >

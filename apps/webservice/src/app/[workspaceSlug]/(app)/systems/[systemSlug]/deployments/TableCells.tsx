@@ -85,7 +85,7 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  const isComplete = statuses.every((s) => s === JobStatus.Completed);
+  const isComplete = statuses.every((s) => s === JobStatus.Successful);
   if (isComplete)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
@@ -93,7 +93,7 @@ const ReleaseIcon: React.FC<{
       </div>
     );
 
-  const isRollingOut = statuses.some((s) => s === JobStatus.Completed);
+  const isRollingOut = statuses.some((s) => s === JobStatus.Successful);
   if (isRollingOut)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">

@@ -41,7 +41,7 @@ export const DeploymentsContent: React.FC<{ resourceId: string }> = ({
                   "shrink-0 rounded-full px-2 text-xs",
                   deployment.releaseJobTrigger?.job == null &&
                     "bg-neutral-800 text-muted-foreground",
-                  deployment.releaseJobTrigger?.job.status === "completed" &&
+                  deployment.releaseJobTrigger?.job.status === "successful" &&
                     "bg-green-500/30 text-green-400 text-muted-foreground",
                 )}
               >

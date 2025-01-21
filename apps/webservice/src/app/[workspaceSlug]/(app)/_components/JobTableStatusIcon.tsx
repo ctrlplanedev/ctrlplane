@@ -14,7 +14,7 @@ export const JobTableStatusIcon: React.FC<{
   status?: schema.JobStatus;
   className?: string;
 }> = ({ status, className }) => {
-  if (status === JobStatus.Completed)
+  if (status === JobStatus.Successful)
     return (
       <IconCircleCheck className={cn("h-4 w-4 text-green-400", className)} />
     );

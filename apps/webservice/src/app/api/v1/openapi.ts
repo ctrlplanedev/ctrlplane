@@ -118,7 +118,7 @@ export const openapi: Swagger.SwaggerV3 = {
           status: {
             type: "string",
             enum: [
-              "completed",
+              "successful",
               "cancelled",
               "skipped",
               "in_progress",
@@ -138,6 +138,8 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+          startedAt: { type: "string", format: "date-time", nullable: true },
+          completedAt: { type: "string", format: "date-time", nullable: true },
           jobAgentId: { type: "string", format: "uuid" },
           jobAgentConfig: {
             type: "object",

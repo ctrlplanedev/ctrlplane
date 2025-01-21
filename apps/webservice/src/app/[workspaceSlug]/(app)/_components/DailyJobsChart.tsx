@@ -32,7 +32,7 @@ const statusColors = {
   [JobStatus.InvalidJobAgent]: colors.amber[400],
   [JobStatus.Failure]: colors.red[600],
   [JobStatus.InProgress]: colors.blue[500],
-  [JobStatus.Completed]: colors.green[500],
+  [JobStatus.Successful]: colors.green[500],
 };
 
 const statusLabels = {
@@ -42,7 +42,7 @@ const statusLabels = {
   [JobStatus.InvalidJobAgent]: "Invalid Job Agent",
   [JobStatus.Failure]: "Failure",
   [JobStatus.InProgress]: "In Progress",
-  [JobStatus.Completed]: "Completed",
+  [JobStatus.Successful]: "Successful",
 };
 
 type DailyCount = {
