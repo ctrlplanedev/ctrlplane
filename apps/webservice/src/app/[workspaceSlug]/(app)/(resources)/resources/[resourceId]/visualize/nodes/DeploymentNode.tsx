@@ -39,8 +39,8 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
   const isPending = latestActiveReleases.some(
     (r) => r.releaseJobTrigger.job.status === JobStatus.Pending,
   );
-  const isCompleted = latestActiveReleases.every(
-    (r) => r.releaseJobTrigger.job.status === JobStatus.Completed,
+  const isSuccess = latestActiveReleases.every(
+    (r) => r.releaseJobTrigger.job.status === JobStatus.Successful,
   );
 
   const releaseJobTrigger = activeRelease?.releaseJobTrigger;
@@ -52,7 +52,7 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
           "relative flex h-[70px] w-[250px] cursor-pointer items-center gap-2 rounded-md border border-neutral-800 bg-neutral-900/30 px-4",
           isInProgress && "border-blue-500",
           isPending && "border-neutral-500",
-          isCompleted && "border-green-500",
+          isSuccess && "border-green-500",
           releaseJobTrigger == null && "border-neutral-800",
         )}
         onClick={() =>
@@ -81,7 +81,7 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
           "h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800",
           isInProgress && "border-blue-500",
           isPending && "border-neutral-500",
-          isCompleted && "border-green-500",
+          isSuccess && "border-green-500",
           releaseJobTrigger == null && "border-neutral-800",
         )}
         position={Position.Left}
@@ -93,7 +93,7 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
           "h-2 w-2 rounded-full border border-neutral-800 bg-neutral-800",
           isInProgress && "border-blue-500",
           isPending && "border-neutral-500",
-          isCompleted && "border-green-500",
+          isSuccess && "border-green-500",
           releaseJobTrigger == null && "border-neutral-800",
         )}
       />

@@ -2634,7 +2634,7 @@
           "status": {
             "type": "string",
             "enum": [
-              "completed",
+              "successful",
               "cancelled",
               "skipped",
               "in_progress",
@@ -2655,6 +2655,10 @@
             "type": "string",
             "format": "date-time"
           },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "startedAt": {
             "type": "string",
             "format": "date-time",
@@ -2664,10 +2668,6 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
           },
           "jobAgentId": {
             "type": "string",

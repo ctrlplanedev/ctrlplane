@@ -1,0 +1,1 @@
+ALTER TYPE job_status RENAME VALUE 'completed' TO 'successful';

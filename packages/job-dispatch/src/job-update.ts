@@ -110,8 +110,8 @@ export const updateJob = async (
   if (isJobFailure) await onJobFailure(updatedJob);
 
   const isJobCompletion =
-    data.status === JobStatus.Completed &&
-    jobBeforeUpdate.status !== JobStatus.Completed;
+    data.status === JobStatus.Successful &&
+    jobBeforeUpdate.status !== JobStatus.Successful;
   if (isJobCompletion) await onJobCompletion(updatedJob);
 
   return updatedJob;

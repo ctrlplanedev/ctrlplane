@@ -38,12 +38,12 @@ const isSuccessCriteriaPassing = async (
 
   if (policy.successType === "all")
     return wf.every(({ status, count }) =>
-      status === JobStatus.Completed ? true : count === 0,
+      status === JobStatus.Successful ? true : count === 0,
     );
 
-  const completed =
-    wf.find((w) => w.status === JobStatus.Completed)?.count ?? 0;
-  return completed >= policy.successMinimum;
+  const successful =
+    wf.find((w) => w.status === JobStatus.Successful)?.count ?? 0;
+  return successful >= policy.successMinimum;
 };
 
 /**

@@ -14,6 +14,7 @@ import {
   releaseMetadata,
   resource,
 } from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getUser } from "~/app/api/v1/auth";
 
@@ -38,11 +39,11 @@ export const GET = async (
       and(
         eq(job.jobAgentId, params.agentId),
         notInArray(job.status, [
-          "failure",
-          "cancelled",
-          "skipped",
-          "completed",
-          "invalid_job_agent",
+          JobStatus.Failure,
+          JobStatus.Cancelled,
+          JobStatus.Skipped,
+          JobStatus.Successful,
+          JobStatus.InvalidJobAgent,
         ]),
         isNull(resource.deletedAt),
       ),

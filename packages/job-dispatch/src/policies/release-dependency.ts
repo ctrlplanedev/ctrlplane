@@ -122,7 +122,7 @@ export const isPassingReleaseDependencyPolicy = async (
               eq(schema.deployment.id, dep.deploymentId),
               inArray(latestJobSubquery.resourceId, allIds),
               eq(latestJobSubquery.rank, 1),
-              eq(latestJobSubquery.status, JobStatus.Completed),
+              eq(latestJobSubquery.status, JobStatus.Successful),
             ),
           );
 

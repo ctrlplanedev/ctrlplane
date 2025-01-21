@@ -4,6 +4,7 @@ import type { Job } from "@ctrlplane/db/schema";
 import { and, eq, isNull, notInArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import { job } from "@ctrlplane/db/schema";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import type { JobQueue } from "./queue";
 
@@ -24,11 +25,11 @@ class DatabaseJobQueue implements JobQueue {
         and(
           eq(job.jobAgentId, agentId),
           notInArray(job.status, [
-            "failure",
-            "cancelled",
-            "skipped",
-            "completed",
-            "invalid_job_agent",
+            JobStatus.Failure,
+            JobStatus.Cancelled,
+            JobStatus.Skipped,
+            JobStatus.Successful,
+            JobStatus.InvalidJobAgent,
           ]),
           isNull(job.externalId),
         ),

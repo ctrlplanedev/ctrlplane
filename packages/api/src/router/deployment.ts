@@ -663,7 +663,7 @@ export const deploymentRouter = createTRPCRouter({
                 eq(environment.id, env.environment.id),
                 isNull(resource.deletedAt),
                 inArray(job.status, [
-                  JobStatus.Completed,
+                  JobStatus.Successful,
                   JobStatus.Pending,
                   JobStatus.InProgress,
                 ]),

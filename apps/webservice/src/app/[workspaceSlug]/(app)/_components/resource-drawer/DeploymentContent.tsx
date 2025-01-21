@@ -3,6 +3,7 @@
 import { cn } from "@ctrlplane/ui";
 import { Card } from "@ctrlplane/ui/card";
 import { TableCell, TableHead } from "@ctrlplane/ui/table";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -41,7 +42,8 @@ export const DeploymentsContent: React.FC<{ resourceId: string }> = ({
                   "shrink-0 rounded-full px-2 text-xs",
                   deployment.releaseJobTrigger?.job == null &&
                     "bg-neutral-800 text-muted-foreground",
-                  deployment.releaseJobTrigger?.job.status === "completed" &&
+                  deployment.releaseJobTrigger?.job.status ===
+                    JobStatus.Successful &&
                     "bg-green-500/30 text-green-400 text-muted-foreground",
                 )}
               >

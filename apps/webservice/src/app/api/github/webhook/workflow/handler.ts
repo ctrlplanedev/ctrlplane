@@ -9,18 +9,18 @@ import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
 type Conclusion = Exclude<WorkflowRunEvent["workflow_run"]["conclusion"], null>;
 const convertConclusion = (conclusion: Conclusion): schema.JobStatus => {
-  if (conclusion === "success") return "completed";
-  if (conclusion === "action_required") return "action_required";
-  if (conclusion === "cancelled") return "cancelled";
-  if (conclusion === "neutral") return "skipped";
-  if (conclusion === "skipped") return "skipped";
-  return "failure";
+  if (conclusion === "success") return JobStatus.Successful;
+  if (conclusion === "action_required") return JobStatus.ActionRequired;
+  if (conclusion === "cancelled") return JobStatus.Cancelled;
+  if (conclusion === "neutral") return JobStatus.Skipped;
+  if (conclusion === "skipped") return JobStatus.Skipped;
+  return JobStatus.Failure;
 };
 
 const convertStatus = (
   status: WorkflowRunEvent["workflow_run"]["status"],
 ): schema.JobStatus =>
-  status === JobStatus.Completed ? JobStatus.Completed : JobStatus.InProgress;
+  status === "completed" ? JobStatus.Successful : JobStatus.InProgress;
 
 const extractUuid = (str: string) => {
   const uuidRegex =

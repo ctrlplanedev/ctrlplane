@@ -37,7 +37,7 @@ export const ReleaseIcon: React.FC<{
       </div>
     );
 
-  if (job?.status === JobStatus.Completed)
+  if (job?.status === JobStatus.Successful)
     return (
       <div className="rounded-full bg-green-400 p-1 dark:text-black">
         <IconCircleCheck strokeWidth={2} />
