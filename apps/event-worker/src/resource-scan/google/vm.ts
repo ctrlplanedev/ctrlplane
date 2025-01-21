@@ -1,4 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { VmV1 } from "@ctrlplane/validators/resources";
 import type { google } from "@google-cloud/compute/build/protos/protos.js";
 import { InstancesClient } from "@google-cloud/compute";
 import _ from "lodash";
@@ -19,7 +20,7 @@ const instanceToResource = (
   workspaceId: string,
   providerId: string,
   projectId: string,
-): SCHEMA.InsertResource & { metadata: Record<string, any> } => {
+): VmV1 => {
   const instanceZone =
     instance.zone != null ? instance.zone.split("/").pop() : null;
   const appUrl = `https://console.cloud.google.com/compute/instancesDetail/zones/${instanceZone}/instances/${instance.name}?project=${projectId}`;
@@ -28,17 +29,21 @@ const instanceToResource = (
     name: String(instance.name ?? instance.id ?? ""),
     providerId,
     identifier: `${projectId}/${instance.name}`,
-    version: "compute/v1",
+    version: "vm/v1",
     kind: "VM",
     config: {
-      name: instance.name ?? instance.id ?? "",
-      auth: {
-        method: "google/gce",
-        project: projectId,
-        zone: instanceZone,
-        instance: instance.name ?? instance.id ?? "",
-      },
+      name: String(instance.name ?? instance.id ?? ""),
       status: instance.status ?? "STATUS_UNSPECIFIED",
+      id: String(instance.id ?? ""),
+      machineType: instance.machineType?.split("/").pop() ?? "",
+      type: { type: "google", project: projectId, zone: instanceZone ?? "" },
+      disks:
+        instance.disks?.map((disk) => ({
+          name: disk.deviceName ?? "",
+          size: Number(disk.diskSizeGb),
+          type: disk.type ?? "",
+          encrypted: disk.diskEncryptionKey?.rawKey != null,
+        })) ?? [],
     },
     metadata: omitNullUndefined({
       [ReservedMetadataKey.Links]: JSON.stringify({
@@ -53,6 +58,7 @@ const instanceToResource = (
       "vm/cpu-platform": instance.cpuPlatform,
       "vm/deletion-protection": instance.deletionProtection,
       "vm/description": instance.description,
+      "vm/status": instance.status,
       "vm/disk-count": instance.disks?.length ?? 0,
       "vm/disk-size-gb": _.sumBy(instance.disks, (disk) =>
         disk.diskSizeGb != null ? Number(disk.diskSizeGb) : 0,
