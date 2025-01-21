@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  IconCube,
-  IconFilter,
-  IconList,
-  IconPlus,
-  IconTarget,
-} from "@tabler/icons-react";
+import { IconCube, IconFilter, IconList, IconPlus } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -62,7 +56,7 @@ export default function ResourceLayout({
     <>
       <div className="flex items-center gap-2 border-b px-2">
         <div className="flex items-center gap-2 p-3">
-          <IconTarget className="h-4 w-4" /> Resources
+          <IconCube className="h-4 w-4" /> Resources
         </div>
         <div className="flex-grow">
           <NavigationMenu>

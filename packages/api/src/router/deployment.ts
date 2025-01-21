@@ -47,6 +47,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { deploymentStatsRouter } from "./deployment-stats";
 import { deploymentVariableRouter } from "./deployment-variable";
 
 const releaseChannelRouter = createTRPCRouter({
@@ -704,6 +705,13 @@ export const deploymentRouter = createTRPCRouter({
         .from(deployment)
         .innerJoin(system, eq(system.id, deployment.systemId))
         .where(eq(system.workspaceId, input))
-        .then((r) => r.map((row) => row.deployment)),
+        .then((r) =>
+          r.map((row) => ({
+            ...row.deployment,
+            system: row.system,
+          })),
+        ),
     ),
+
+  stats: deploymentStatsRouter,
 });
