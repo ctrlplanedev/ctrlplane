@@ -18,7 +18,6 @@ export const vmV1 = z.object({
     .object({
       name: z.string(),
       id: z.string(),
-      machineType: z.string(),
       disks: z.array(diskV1),
       type: z.discriminatedUnion("type", [
         z.object({
@@ -29,7 +28,9 @@ export const vmV1 = z.object({
       ]),
     })
     .passthrough(),
-  metadata: z.record(z.string()).and(z.object({}).partial()),
+  metadata: z
+    .record(z.string())
+    .and(z.object({ "vm/machine-type": z.string().optional() })),
 });
 
 export type VmV1 = z.infer<typeof vmV1>;

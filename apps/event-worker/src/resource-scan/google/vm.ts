@@ -15,6 +15,20 @@ const log = logger.child({ module: "resource-scan/gke/vm" });
 const getVMClient = (targetPrincipal?: string | null) =>
   getGoogleClient(InstancesClient, targetPrincipal, "VM Client");
 
+const getFlattenedMetadata = (metadata?: google.cloud.compute.v1.IMetadata) => {
+  if (metadata == null) return {};
+  const { items } = metadata;
+  return _.fromPairs(
+    items?.map(({ key, value }) => [`vm/metadata/${key}`, value ?? ""]) ?? [],
+  );
+};
+
+const getFlattenedTags = (tags?: google.cloud.compute.v1.ITags) => {
+  if (tags == null) return {};
+  const { items } = tags;
+  return _.fromPairs(items?.map((value) => [`vm/tag/${value}`, true]) ?? []);
+};
+
 const instanceToResource = (
   instance: google.cloud.compute.v1.IInstance,
   workspaceId: string,
@@ -53,7 +67,7 @@ const instanceToResource = (
       "google/self-link": instance.selfLink,
       "google/project": projectId,
       "google/zone": instance.zone,
-      "vm/machine-type": instance.machineType,
+      "vm/machine-type": instance.machineType?.split("/").pop() ?? null,
       "vm/can-ip-forward": instance.canIpForward,
       "vm/cpu-platform": instance.cpuPlatform,
       "vm/deletion-protection": instance.deletionProtection,
@@ -74,10 +88,7 @@ const instanceToResource = (
       "vm/last-start-timestamp": instance.lastStartTimestamp,
       "vm/last-stop-timestamp": instance.lastStopTimestamp,
       "vm/last-suspended-timestamp": instance.lastSuspendedTimestamp,
-      ..._.mapKeys(
-        instance.metadata ?? {},
-        (_value, key) => `vm/metadata/${key}`,
-      ),
+      ...getFlattenedMetadata(instance.metadata ?? undefined),
       "vm/min-cpu-platform": instance.minCpuPlatform,
       "vm/network-performance-config/total-egress-bandwith-tier":
         instance.networkPerformanceConfig?.totalEgressBandwidthTier,
@@ -110,7 +121,7 @@ const instanceToResource = (
       "vm/service-accounts":
         instance.serviceAccounts?.map((account) => account.email).join(", ") ??
         null,
-      ..._.mapKeys(instance.tags ?? {}, (_value, key) => `vm/tag/${key}`),
+      ...getFlattenedTags(instance.tags ?? undefined),
     }),
   };
 };
