@@ -44,6 +44,7 @@ export const createGoogleSchema = z.object({
   importNamespaces: z.boolean().default(false),
   importVCluster: z.boolean().default(false),
   importVpc: z.boolean().default(false),
+  importVms: z.boolean().default(false),
 });
 
 export const GoogleDialog: React.FC<{
@@ -58,6 +59,7 @@ export const GoogleDialog: React.FC<{
       importNamespaces: false,
       importVCluster: false,
       importVpc: false,
+      importVms: false,
     },
     mode: "onChange",
   });
@@ -264,6 +266,25 @@ export const GoogleDialog: React.FC<{
                   <div className="space-y-0.5">
                     <FormLabel>Import VPC</FormLabel>
                     <FormDescription>Enable importing of VPCs</FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="importVms"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel>Import VMs</FormLabel>
+                    <FormDescription>Enable importing of VMs</FormDescription>
                   </div>
                   <FormControl>
                     <Switch
