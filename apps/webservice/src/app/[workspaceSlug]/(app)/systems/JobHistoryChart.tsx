@@ -46,21 +46,21 @@ export const JobHistoryChart: React.FC<{
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Jobs</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {totalJobs ?? "-"}
+              {totalJobs?.toLocaleString() ?? "-"}
             </span>
           </div>
 
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Resources</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {resources.data?.total ?? "-"}
+              {resources.data?.total.toLocaleString() ?? "-"}
             </span>
           </div>
 
           <div className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6">
             <span className="text-xs text-muted-foreground">Deployments</span>
             <span className="text-lg font-bold leading-none sm:text-3xl">
-              {deployments.data?.length ?? "-"}
+              {deployments.data?.length.toLocaleString() ?? "-"}
             </span>
           </div>
         </div>

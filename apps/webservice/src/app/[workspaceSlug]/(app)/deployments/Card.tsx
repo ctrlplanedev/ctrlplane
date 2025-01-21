@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { formatDistanceToNowStrict, subWeeks } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
 
@@ -75,7 +76,7 @@ const DeploymentHistoryGraph: React.FC<{ name: string; repo: string }> = () => {
 export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
   workspaceId,
 }) => {
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const startDate = subWeeks(today, 2);
   const deployments = api.deployment.stats.byWorkspaceId.useQuery({
     workspaceId,
@@ -95,11 +96,15 @@ export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
                 <TableHead className="w-[75px] p-4 xl:w-[150px]">
                   P50 Duration
                 </TableHead>
+
                 <TableHead className="w-[75px] p-4 xl:w-[150px]">
                   P90 Duration
                 </TableHead>
 
                 <TableHead className="w-[140px] p-4">Success Rate</TableHead>
+                <TableHead className="w-[75px] p-4 xl:w-[150px]">
+                  Total Jobs
+                </TableHead>
                 <TableHead className="hidden p-4 xl:table-cell xl:w-[120px]">
                   Last Run
                 </TableHead>
@@ -130,6 +135,10 @@ export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
                   </td>
                   <td className="p-4 ">
                     {prettyMilliseconds(Math.round(deployment.p90) * 1000)}
+                  </td>
+
+                  <td className="p-4 ">
+                    {deployment.totalJobs.toLocaleString()}
                   </td>
 
                   <td className="p-4">
