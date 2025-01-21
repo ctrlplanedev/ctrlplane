@@ -1,4 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { VmV1 } from "@ctrlplane/validators/resources";
 import type { google } from "@google-cloud/compute/build/protos/protos.js";
 import { InstancesClient } from "@google-cloud/compute";
 import _ from "lodash";
@@ -14,12 +15,26 @@ const log = logger.child({ module: "resource-scan/gke/vm" });
 const getVMClient = (targetPrincipal?: string | null) =>
   getGoogleClient(InstancesClient, targetPrincipal, "VM Client");
 
+const getFlattenedMetadata = (metadata?: google.cloud.compute.v1.IMetadata) => {
+  if (metadata == null) return {};
+  const { items } = metadata;
+  return _.fromPairs(
+    items?.map(({ key, value }) => [`vm/metadata/${key}`, value ?? ""]) ?? [],
+  );
+};
+
+const getFlattenedTags = (tags?: google.cloud.compute.v1.ITags) => {
+  if (tags == null) return {};
+  const { items } = tags;
+  return _.fromPairs(items?.map((value) => [`vm/tag/${value}`, true]) ?? []);
+};
+
 const instanceToResource = (
   instance: google.cloud.compute.v1.IInstance,
   workspaceId: string,
   providerId: string,
   projectId: string,
-): SCHEMA.InsertResource & { metadata: Record<string, any> } => {
+): VmV1 => {
   const instanceZone =
     instance.zone != null ? instance.zone.split("/").pop() : null;
   const appUrl = `https://console.cloud.google.com/compute/instancesDetail/zones/${instanceZone}/instances/${instance.name}?project=${projectId}`;
@@ -28,17 +43,21 @@ const instanceToResource = (
     name: String(instance.name ?? instance.id ?? ""),
     providerId,
     identifier: `${projectId}/${instance.name}`,
-    version: "compute/v1",
+    version: "vm/v1",
     kind: "VM",
     config: {
-      name: instance.name ?? instance.id ?? "",
-      auth: {
-        method: "google/gce",
-        project: projectId,
-        zone: instanceZone,
-        instance: instance.name ?? instance.id ?? "",
-      },
+      name: String(instance.name ?? instance.id ?? ""),
       status: instance.status ?? "STATUS_UNSPECIFIED",
+      id: String(instance.id ?? ""),
+      machineType: instance.machineType?.split("/").pop() ?? "",
+      type: { type: "google", project: projectId, zone: instanceZone ?? "" },
+      disks:
+        instance.disks?.map((disk) => ({
+          name: disk.deviceName ?? "",
+          size: Number(disk.diskSizeGb),
+          type: disk.type ?? "",
+          encrypted: disk.diskEncryptionKey?.rawKey != null,
+        })) ?? [],
     },
     metadata: omitNullUndefined({
       [ReservedMetadataKey.Links]: JSON.stringify({
@@ -48,11 +67,12 @@ const instanceToResource = (
       "google/self-link": instance.selfLink,
       "google/project": projectId,
       "google/zone": instance.zone,
-      "vm/machine-type": instance.machineType,
+      "vm/machine-type": instance.machineType?.split("/").pop() ?? null,
       "vm/can-ip-forward": instance.canIpForward,
       "vm/cpu-platform": instance.cpuPlatform,
       "vm/deletion-protection": instance.deletionProtection,
       "vm/description": instance.description,
+      "vm/status": instance.status,
       "vm/disk-count": instance.disks?.length ?? 0,
       "vm/disk-size-gb": _.sumBy(instance.disks, (disk) =>
         disk.diskSizeGb != null ? Number(disk.diskSizeGb) : 0,
@@ -68,10 +88,7 @@ const instanceToResource = (
       "vm/last-start-timestamp": instance.lastStartTimestamp,
       "vm/last-stop-timestamp": instance.lastStopTimestamp,
       "vm/last-suspended-timestamp": instance.lastSuspendedTimestamp,
-      ..._.mapKeys(
-        instance.metadata ?? {},
-        (_value, key) => `vm/metadata/${key}`,
-      ),
+      ...getFlattenedMetadata(instance.metadata ?? undefined),
       "vm/min-cpu-platform": instance.minCpuPlatform,
       "vm/network-performance-config/total-egress-bandwith-tier":
         instance.networkPerformanceConfig?.totalEgressBandwidthTier,
@@ -104,7 +121,7 @@ const instanceToResource = (
       "vm/service-accounts":
         instance.serviceAccounts?.map((account) => account.email).join(", ") ??
         null,
-      ..._.mapKeys(instance.tags ?? {}, (_value, key) => `vm/tag/${key}`),
+      ...getFlattenedTags(instance.tags ?? undefined),
     }),
   };
 };
