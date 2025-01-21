@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { IconPlane } from "@tabler/icons-react";
 
 import {
   auth,
@@ -19,9 +19,15 @@ export default async function LoginPage() {
   const session = await auth();
   if (session != null) redirect("/");
   return (
-    <div className="h-full">
-      <div className="flex items-center gap-2 p-4">
-        <IconPlane className="h-10 w-10" />
+    <>
+      <div className="absolute left-0 right-0 top-0 flex items-center gap-2 p-4">
+        <Image
+          src="/android-chrome-192x192.png"
+          alt="Ctrlplane Logo"
+          className="opacity-30"
+          width={32}
+          height={32}
+        />
         <div className="flex-grow" />
         <Link href="https://discord.gg/sUmH9NyWhp" passHref>
           <Button variant="ghost" className="text-muted-foreground">
@@ -30,15 +36,19 @@ export default async function LoginPage() {
         </Link>
         {isCredentialsAuthEnabled && (
           <Link href="/sign-up" passHref>
-            <Button variant="outline">Sign up</Button>
+            <Button variant="outline" className="bg-transparent">
+              Sign up
+            </Button>
           </Link>
         )}
       </div>
-      <LoginCard
-        isCredentialsAuthEnabled={isCredentialsAuthEnabled}
-        isGoogleEnabled={isGoogleAuthEnabled}
-        isOidcEnabled={isOIDCAuthEnabled}
-      />
-    </div>
+      <div className="flex h-[100vh] flex-col items-center justify-center">
+        <LoginCard
+          isCredentialsAuthEnabled={isCredentialsAuthEnabled}
+          isGoogleEnabled={isGoogleAuthEnabled}
+          isOidcEnabled={isOIDCAuthEnabled}
+        />
+      </div>
+    </>
   );
 }

@@ -25,7 +25,9 @@ export default async function LoginPage() {
           Contact
         </Button>
         <Link href="/login" passHref>
-          <Button variant="outline">Login</Button>
+          <Button variant="outline" className="bg-transparent">
+            Login
+          </Button>
         </Link>
       </div>
       <SignUpCard />
