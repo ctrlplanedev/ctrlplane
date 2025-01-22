@@ -47,11 +47,6 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 - **Environment Management:** Efficiently handle transitions between dev, test,
   staging, and production environments.
 
-## Activity
-
-![Alt](https://repobeats.axiom.co/api/embed/354918f3c89424e9615c77d36b62aaeb67d9b7fb.svg "Repobeats analytics image")
-
-
 ## 🛠️ Quick start for contributors
 
 > Development system must have docker engine installed and running.
@@ -90,6 +85,8 @@ server](https://ctrlplane.dev/discord)
 
 Ask questions, report bugs, join discussions, voice ideas, make feature
 requests, or share your projects.
+
+![Alt](https://repobeats.axiom.co/api/embed/354918f3c89424e9615c77d36b62aaeb67d9b7fb.svg "Repobeats analytics image")
 
 ## ⛓️ Security
 
