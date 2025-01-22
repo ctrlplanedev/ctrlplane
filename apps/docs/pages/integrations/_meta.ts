@@ -5,5 +5,6 @@ export default {
   azure: "Azure",
   kubernetes: "Kubernetes",
   "terraform-cloud": "Terraform Cloud",
+  tailscale: "Tailscale",
   api: "API",
 };
