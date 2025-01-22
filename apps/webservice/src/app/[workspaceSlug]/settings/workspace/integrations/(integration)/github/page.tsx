@@ -9,7 +9,7 @@ import { Card } from "@ctrlplane/ui/card";
 import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { DeleteGithubUserButton } from "./DeleteGithubUserButton";
-import { GithubConnectedOrgs } from "./GithubConnectedOrgs";
+import { GithubConnectedEntities } from "./GithubConnectedEntities";
 
 const githubAuthUrl = (
   baseUrl: string,
@@ -86,7 +86,7 @@ export default async function GitHubIntegrationPage({
         </Card>
 
         {isGithubConfigured && (
-          <GithubConnectedOrgs
+          <GithubConnectedEntities
             githubUser={githubUser}
             workspaceId={workspace.id}
             loading={false}

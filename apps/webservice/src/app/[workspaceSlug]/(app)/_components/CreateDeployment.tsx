@@ -235,11 +235,6 @@ export const CreateDeploymentDialog: React.FC<{
                             jobAgent={selectedJobAgent}
                             value={value ?? {}}
                             onChange={onChange}
-                            githubFormStyleConfig={{
-                              className:
-                                "flex flex-col gap-2 items-center w-[450px]",
-                              buttonWidth: "w-[450px]",
-                            }}
                           />
                         </FormControl>
                         <FormMessage />

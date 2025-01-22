@@ -188,7 +188,6 @@ export const CreateRunbook: React.FC<{
                     workspace={workspace}
                     value={value}
                     onChange={onChange}
-                    githubFormStyleConfig={{ buttonWidth: "w-72" }}
                   />
                 </FormControl>
                 <FormMessage />

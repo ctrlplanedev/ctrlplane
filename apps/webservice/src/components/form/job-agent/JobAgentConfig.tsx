@@ -1,10 +1,11 @@
 "use client";
 
 import type { JobAgent } from "@ctrlplane/db/schema";
+import { IconLoader2 } from "@tabler/icons-react";
 
 import { Input } from "@ctrlplane/ui/input";
 
-import type { JobAgentGithubStyleConfig } from "./JobAgentGitHubConfig";
+import { api } from "~/trpc/react";
 import { JobAgentGitHubConfig } from "./JobAgentGitHubConfig";
 import { JobAgentKubernetesConfig } from "./JobAgentKubernetesConfig";
 
@@ -13,7 +14,6 @@ type JobAgentConfigProps = {
   jobAgent?: JobAgent | null;
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
-  githubFormStyleConfig?: JobAgentGithubStyleConfig;
 };
 
 export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
@@ -21,21 +21,33 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
   jobAgent,
   value,
   onChange,
-  githubFormStyleConfig,
 }) => {
+  const repos = api.github.entities.repos.list.useQuery(
+    {
+      owner: jobAgent?.config.owner,
+      installationId: jobAgent?.config.installationId,
+      workspaceId: workspace.id,
+    },
+    { enabled: jobAgent?.type === "github-app" },
+  );
+
   if (jobAgent == null)
     return <Input placeholder="Select a job agent" disabled />;
   if (jobAgent.type === "kubernetes-job")
     return <JobAgentKubernetesConfig value={value} onChange={onChange} />;
-  if (jobAgent.type === "github-app")
+  if (jobAgent.type === "github-app" && repos.isLoading)
+    return (
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <IconLoader2 className="h-4 w-4 animate-spin" /> Loading repositories...
+      </div>
+    );
+  if (jobAgent.type === "github-app" && repos.isSuccess)
     return (
       <JobAgentGitHubConfig
-        styleConfig={githubFormStyleConfig}
         value={value}
-        jobAgent={jobAgent}
-        workspaceId={workspace.id}
         onChange={onChange}
+        repos={repos.data}
       />
     );
-  return <Input placeholder="Unsupport job agent" disabled />;
+  return <Input placeholder="Unsupported job agent" disabled />;
 };

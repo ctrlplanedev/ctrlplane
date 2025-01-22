@@ -210,10 +210,6 @@ export const EditHookDialog: React.FC<EditHookDialogProps> = ({
                       jobAgent={jobAgent}
                       value={value ?? {}}
                       onChange={onChange}
-                      githubFormStyleConfig={{
-                        className: "flex flex-col gap-2 items-center w-[450px]",
-                        buttonWidth: "w-[450px]",
-                      }}
                     />
                   </FormControl>
                   <FormMessage />

@@ -17,26 +17,26 @@ import {
   DialogTrigger,
 } from "@ctrlplane/ui/dialog";
 
-import type { GithubOrg } from "./SelectPreconnectedOrgDialogContent";
-import { SelectPreconnectedOrgDialogContent } from "./SelectPreconnectedOrgDialogContent";
+import { SelectPreconnectedEntityDialogContent } from "./SelectPreconnectedEntityDialogContent";
 
-type GithubAddOrgDialogProps = {
+type GithubAddEntityDialogProps = {
   githubUser: GithubUser;
   children: React.ReactNode;
-  githubConfig: {
-    url: string;
-    botName: string;
-    clientId: string;
-  };
-  validOrgsToAdd: GithubOrg[];
+  githubConfig: { url: string; botName: string; clientId: string };
+  validEntitiesToAdd: {
+    installationId: number;
+    type: "user" | "organization";
+    slug: string;
+    avatarUrl: string;
+  }[];
   workspaceId: string;
 };
 
-export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
+export const GithubAddEntityDialog: React.FC<GithubAddEntityDialogProps> = ({
   githubUser,
   children,
   githubConfig,
-  validOrgsToAdd,
+  validEntitiesToAdd,
   workspaceId,
 }) => {
   const [dialogStep, setDialogStep] = useState<"choose-org" | "pre-connected">(
@@ -52,7 +52,7 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
           <>
             <DialogHeader>
               <DialogTitle>Connect a new Organization</DialogTitle>
-              {validOrgsToAdd.length === 0 && (
+              {validEntitiesToAdd.length === 0 && (
                 <DialogDescription>
                   Install the ctrlplane Github app on an organization to connect
                   it to your workspace.
@@ -60,7 +60,7 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
               )}
             </DialogHeader>
 
-            {validOrgsToAdd.length > 0 && (
+            {validEntitiesToAdd.length > 0 && (
               <Alert variant="secondary">
                 <IconBulb className="h-5 w-5" />
                 <AlertTitle>Connect an organization</AlertTitle>
@@ -99,7 +99,7 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
                 <Button variant="outline">Connect new organization</Button>
               </Link>
 
-              {validOrgsToAdd.length > 0 && (
+              {validEntitiesToAdd.length > 0 && (
                 <div className="flex flex-grow justify-end">
                   <Button
                     className="w-fit"
@@ -115,8 +115,8 @@ export const GithubAddOrgDialog: React.FC<GithubAddOrgDialogProps> = ({
         )}
 
         {dialogStep === "pre-connected" && (
-          <SelectPreconnectedOrgDialogContent
-            githubOrgs={validOrgsToAdd}
+          <SelectPreconnectedEntityDialogContent
+            githubEntities={validEntitiesToAdd}
             githubUser={githubUser}
             workspaceId={workspaceId}
             onNavigateBack={() => setDialogStep("choose-org")}
