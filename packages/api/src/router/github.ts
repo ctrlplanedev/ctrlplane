@@ -2,7 +2,6 @@ import type { RestEndpointMethodTypes } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import { TRPCError } from "@trpc/server";
-import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 

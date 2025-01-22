@@ -5,7 +5,7 @@ export const configSchema = z.object({
   owner: z.string().min(1),
   repo: z.string().min(1),
   workflowId: z.number(),
-  ref: z.string().min(1).optional().nullable(),
+  ref: z.string().optional().nullable(),
 });
 
 export enum GithubEvent {

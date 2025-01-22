@@ -113,7 +113,10 @@ export const JobAgentGitHubConfig: React.FC<{
         placeholder="Git reference (uses repositories default if not set)"
         className="w-80"
         value={value.ref ?? ""}
-        onChange={(e) => onChange({ ...value, ref: e.target.value })}
+        onChange={(e) => {
+          const ref = e.target.value === "" ? null : e.target.value;
+          onChange({ ...value, ref });
+        }}
       />
     </div>
   );
