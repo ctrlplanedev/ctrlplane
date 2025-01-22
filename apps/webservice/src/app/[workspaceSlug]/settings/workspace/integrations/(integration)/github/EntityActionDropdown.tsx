@@ -11,20 +11,16 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { DisconnectDropdownActionButton } from "./DisconnectDropdownActionButton";
-import { GithubRemoveOrgDialog } from "./GithubRemoveOrgDialog";
+import { GithubRemoveEntityDialog } from "./GithubRemoveEntityDialog";
 
-type OrgActionDropdownProps = {
-  githubConfig: {
-    url: string;
-    botName: string;
-    clientId: string;
-  };
-  org: schema.GithubOrganization;
+type EntityActionDropdownProps = {
+  githubConfig: { url: string; botName: string; clientId: string };
+  entity: schema.GithubEntity;
 };
 
-export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
+export const EntityActionDropdown: React.FC<EntityActionDropdownProps> = ({
   githubConfig,
-  org,
+  entity,
 }) => {
   return (
     <DropdownMenu>
@@ -37,7 +33,7 @@ export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <Link
-          href={`${githubConfig.url}/organizations/${org.organizationName}/settings/installations/${org.installationId}`}
+          href={`${githubConfig.url}/organizations/${entity.slug}/settings/installations/${entity.installationId}`}
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -46,9 +42,9 @@ export const OrgActionDropdown: React.FC<OrgActionDropdownProps> = ({
           </DropdownMenuItem>
         </Link>
 
-        <GithubRemoveOrgDialog githubOrganization={org}>
+        <GithubRemoveEntityDialog githubEntity={entity}>
           <DisconnectDropdownActionButton />
-        </GithubRemoveOrgDialog>
+        </GithubRemoveEntityDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );

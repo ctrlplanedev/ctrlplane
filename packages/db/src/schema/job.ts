@@ -51,7 +51,6 @@ import { jobResourceRelationship, resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
 export const jobStatus = pgEnum("job_status", [
-  "successful",
   "cancelled",
   "skipped",
   "in_progress",
@@ -61,6 +60,7 @@ export const jobStatus = pgEnum("job_status", [
   "invalid_job_agent",
   "invalid_integration",
   "external_run_not_found",
+  "successful",
 ]);
 
 export const jobReason = pgEnum("job_reason", [

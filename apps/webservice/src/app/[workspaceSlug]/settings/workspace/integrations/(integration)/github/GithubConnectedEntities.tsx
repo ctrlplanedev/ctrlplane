@@ -19,10 +19,10 @@ import {
 } from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/server";
-import { GithubAddOrgDialog } from "./GithubAddOrgDialog";
-import { OrgActionDropdown } from "./OrgActionDropdown";
+import { EntityActionDropdown } from "./EntityActionDropdown";
+import { GithubAddEntityDialog } from "./GithubAddEntityDialog";
 
-type GithubConnectedOrgsProps = {
+type GithubConnectedEntitiesProps = {
   githubUser?: GithubUser | null;
   workspaceId: string;
   loading: boolean;
@@ -33,23 +33,22 @@ type GithubConnectedOrgsProps = {
   };
 };
 
-export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
-  githubUser,
-  workspaceId,
-  githubConfig,
-}) => {
-  const githubOrgsUserCanAccess =
+export const GithubConnectedEntities: React.FC<
+  GithubConnectedEntitiesProps
+> = async ({ githubUser, workspaceId, githubConfig }) => {
+  const githubEntitiesUserCanAccess =
     githubUser != null
-      ? await api.github.organizations.byGithubUserId({
+      ? await api.github.entities.byGithubUserId({
           workspaceId,
           githubUserId: githubUser.githubUserId,
         })
       : [];
-  const githubOrgsInstalled = await api.github.organizations.list(workspaceId);
-  const validOrgsToAdd = githubOrgsUserCanAccess.filter(
-    (org) =>
-      !githubOrgsInstalled.some(
-        (installedOrg) => installedOrg.organizationName === org.login,
+  const githubEntitiesInstalled = await api.github.entities.list(workspaceId);
+
+  const validEntitiesToAdd = githubEntitiesUserCanAccess.filter(
+    (entity) =>
+      !githubEntitiesInstalled.some(
+        (installedEntity) => installedEntity.slug === entity.slug,
       ),
   );
 
@@ -65,16 +64,16 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
           </CardDescription>
         </div>
         {githubUser != null ? (
-          <GithubAddOrgDialog
+          <GithubAddEntityDialog
             githubUser={githubUser}
             githubConfig={githubConfig}
             workspaceId={workspaceId}
-            validOrgsToAdd={validOrgsToAdd}
+            validEntitiesToAdd={validEntitiesToAdd}
           >
             <Button size="icon" variant="secondary">
               <IconPlus className="h-3 w-3" />
             </Button>
-          </GithubAddOrgDialog>
+          </GithubAddEntityDialog>
         ) : (
           <TooltipProvider>
             <Tooltip>
@@ -95,32 +94,38 @@ export const GithubConnectedOrgs: React.FC<GithubConnectedOrgsProps> = async ({
         )}
       </CardHeader>
 
-      {githubOrgsInstalled.length > 0 && (
+      {githubEntitiesInstalled.length > 0 && (
         <>
           <Separator />
           <div className="flex flex-col gap-4 p-4">
-            {githubOrgsInstalled.map((org) => (
-              <div key={org.id} className="flex items-center justify-between">
+            {githubEntitiesInstalled.map((entity) => (
+              <div
+                key={entity.id}
+                className="flex items-center justify-between"
+              >
                 <div className="flex items-center gap-4">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={org.avatarUrl ?? ""} />
+                    <AvatarImage src={entity.avatarUrl ?? ""} />
                     <AvatarFallback>
                       <SiGithub className="h-12 w-12" />
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
                     <p className="font-semibold text-neutral-200">
-                      {org.organizationName}
+                      {entity.slug}
                     </p>
-                    {org.addedByUser != null && (
+                    {entity.addedByUser != null && (
                       <p className="text-sm text-neutral-400">
-                        Enabled by {org.addedByUser.githubUsername} on{" "}
-                        {org.createdAt.toLocaleDateString()}
+                        Enabled by {entity.addedByUser.githubUsername} on{" "}
+                        {entity.createdAt.toLocaleDateString()}
                       </p>
                     )}
                   </div>
                 </div>
-                <OrgActionDropdown githubConfig={githubConfig} org={org} />
+                <EntityActionDropdown
+                  githubConfig={githubConfig}
+                  entity={entity}
+                />
               </div>
             ))}
           </div>

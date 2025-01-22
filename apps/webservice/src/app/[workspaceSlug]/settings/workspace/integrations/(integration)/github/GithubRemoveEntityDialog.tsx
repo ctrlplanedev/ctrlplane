@@ -18,21 +18,20 @@ import { buttonVariants } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
 
-type GithubRemoveOrgDialogProps = {
-  githubOrganization: schema.GithubOrganization;
+type GithubRemoveEntityDialogProps = {
+  githubEntity: schema.GithubEntity;
   children: React.ReactNode;
 };
 
-export const GithubRemoveOrgDialog: React.FC<GithubRemoveOrgDialogProps> = ({
-  githubOrganization,
-  children,
-}) => {
+export const GithubRemoveEntityDialog: React.FC<
+  GithubRemoveEntityDialogProps
+> = ({ githubEntity, children }) => {
   const router = useRouter();
-  const githubOrgDelete = api.github.organizations.delete.useMutation();
+  const githubEntityDelete = api.github.entities.delete.useMutation();
 
-  const { id, workspaceId } = githubOrganization;
+  const { id, workspaceId } = githubEntity;
   const handleDelete = () =>
-    githubOrgDelete
+    githubEntityDelete
       .mutateAsync({ id, workspaceId })
       .then(() => router.refresh());
 

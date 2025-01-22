@@ -8,13 +8,67 @@ import {
 } from "http-status";
 
 import { auth } from "@ctrlplane/auth";
-import { eq, takeFirstOrNull } from "@ctrlplane/db";
+import { eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import { user, workspace } from "@ctrlplane/db/schema";
+import { githubEntity, jobAgent, user, workspace } from "@ctrlplane/db/schema";
 
+import type { AuthedOctokitClient } from "../octokit";
 import { env } from "~/env";
-import { api } from "~/trpc/server";
 import { getOctokitInstallation, octokit } from "../octokit";
+
+const createOrganizationEntity = async (
+  client: AuthedOctokitClient,
+  installationId: number,
+  installationTargetId: number,
+  workspaceId: string,
+  userId: string,
+) => {
+  const orgData = await client.orgs.get({
+    org: String(installationTargetId),
+    headers: { "X-GitHub-Api-Version": "2022-11-28" },
+  });
+
+  return db
+    .insert(githubEntity)
+    .values({
+      installationId,
+      type: "organization",
+      slug: orgData.data.login,
+      addedByUserId: userId,
+      workspaceId,
+      avatarUrl: orgData.data.avatar_url,
+    })
+    .returning()
+    .then(takeFirst);
+};
+
+const createUserEntity = async (
+  client: AuthedOctokitClient,
+  installationId: number,
+  installationTargetId: number,
+  workspaceId: string,
+  userId: string,
+) => {
+  const userData = (await client.request("GET /user/{account_id}", {
+    account_id: installationTargetId,
+    headers: {
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  })) as { data: { login: string; avatar_url: string } };
+
+  return db
+    .insert(githubEntity)
+    .values({
+      installationId,
+      type: "user",
+      slug: userData.data.login,
+      addedByUserId: userId,
+      workspaceId,
+      avatarUrl: userData.data.avatar_url,
+    })
+    .returning()
+    .then(takeFirst);
+};
 
 export const GET = async (req: NextRequest) => {
   if (octokit == null)
@@ -82,53 +136,43 @@ export const GET = async (req: NextRequest) => {
     },
   });
 
-  if (
-    installation.data.target_type !== "Organization" ||
-    installation.data.account == null
-  ) {
+  if (installation.data.account == null)
     return NextResponse.json(
-      { error: "Invalid installation type" },
+      { error: "Installation account not found" },
       { status: BAD_REQUEST },
     );
-  }
 
-  const installationOctokit = getOctokitInstallation(installation.data.id);
-  if (installationOctokit == null)
+  const authedClient = getOctokitInstallation(installation.data.id);
+  if (authedClient == null)
     return NextResponse.json(
       { error: "Failed to get authenticated Github client" },
       { status: INTERNAL_SERVER_ERROR },
     );
 
-  const targetId = installation.data.target_id;
-  const orgData = await installationOctokit.orgs.get({
-    org: String(targetId),
-    headers: {
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
+  const createEntity =
+    installation.data.target_type === "Organization"
+      ? createOrganizationEntity
+      : createUserEntity;
 
-  await api.github.organizations.create({
-    workspaceId: activeWorkspace.id,
-    installationId: installation.data.id,
-    organizationName: orgData.data.login,
-    avatarUrl: orgData.data.avatar_url,
-    addedByUserId: u.id,
-  });
+  const entity = await createEntity(
+    authedClient,
+    installation.data.id,
+    installation.data.target_id,
+    activeWorkspace.id,
+    u.id,
+  );
 
-  await api.job.agent.create({
+  await db.insert(jobAgent).values({
     workspaceId: activeWorkspace.id,
+    name: entity.slug,
     type: "github-app",
-    name: orgData.data.login,
     config: {
-      installationId: installation.data.id,
-      owner: orgData.data.login,
+      installationId: entity.installationId,
+      owner: entity.slug,
     },
   });
-
-  const baseUrl = env.BASE_URL;
-  const workspaceSlug = activeWorkspace.slug;
 
   return NextResponse.redirect(
-    `${baseUrl}/${workspaceSlug}/settings/workspace/integrations/github`,
+    `${env.BASE_URL}/${activeWorkspace.slug}/settings/workspace/integrations/github`,
   );
 };

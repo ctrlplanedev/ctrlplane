@@ -34,3 +34,7 @@ export const getOctokitInstallation = (installationId: number) =>
         },
       })
     : null;
+
+export type AuthedOctokitClient = NonNullable<
+  ReturnType<typeof getOctokitInstallation>
+>;

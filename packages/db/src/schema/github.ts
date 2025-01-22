@@ -1,6 +1,7 @@
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import {
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -23,12 +24,18 @@ export const githubUser = pgTable("github_user", {
 
 export type GithubUser = InferSelectModel<typeof githubUser>;
 
-export const githubOrganization = pgTable(
-  "github_organization",
+export const githubEntityType = pgEnum("github_entity_type", [
+  "organization",
+  "user",
+]);
+
+export const githubEntity = pgTable(
+  "github_entity",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     installationId: integer("installation_id").notNull(),
-    organizationName: text("organization_name").notNull(),
+    type: githubEntityType("type").notNull().default("organization"),
+    slug: text("slug").notNull(),
     addedByUserId: uuid("added_by_user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -39,7 +46,6 @@ export const githubOrganization = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    branch: text("branch").notNull().default("main"),
   },
   (t) => ({
     unique: uniqueIndex("unique_installation_workspace").on(
@@ -49,9 +55,9 @@ export const githubOrganization = pgTable(
   }),
 );
 
-export type GithubOrganization = InferSelectModel<typeof githubOrganization>;
-export type GithubOrganizationInsert = InferInsertModel<
-  typeof githubOrganization
->;
-
-export const githubOrganizationInsert = createInsertSchema(githubOrganization);
+export type GithubEntity = InferSelectModel<typeof githubEntity>;
+export type GithubEntityInsert = InferInsertModel<typeof githubEntity>;
+export const githubEntityInsert = createInsertSchema(githubEntity).omit({
+  id: true,
+  addedByUserId: true,
+});
