@@ -124,6 +124,10 @@ export const release = pgTable(
       .notNull()
       .default("{}")
       .$type<Record<string, any>>(),
+    jobAgentConfig: jsonb("job_agent_config")
+      .notNull()
+      .default("{}")
+      .$type<Record<string, any>>(),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
