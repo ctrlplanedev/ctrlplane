@@ -1,4 +1,5 @@
 import type { Job } from "@ctrlplane/db/schema";
+import _ from "lodash";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -6,6 +7,7 @@ import {
   environment,
   githubEntity,
   job,
+  release,
   releaseJobTrigger,
   runbook,
   runbookJobTrigger,
@@ -68,6 +70,15 @@ const getGithubEntity = async (
   );
 };
 
+const getReleaseJobAgentConfig = (jobId: string) =>
+  db
+    .select({ jobAgentConfig: release.jobAgentConfig })
+    .from(release)
+    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
+    .where(eq(releaseJobTrigger.jobId, jobId))
+    .then(takeFirstOrNull)
+    .then((r) => r?.jobAgentConfig);
+
 export const dispatchGithubJob = async (je: Job) => {
   logger.info(`Dispatching github job ${je.id}...`);
 
@@ -88,11 +99,13 @@ export const dispatchGithubJob = async (je: Job) => {
   }
 
   const { data: parsedConfig } = parsed;
+  const releaseJobAgentConfig = await getReleaseJobAgentConfig(je.id);
+  const mergedConfig = _.merge(parsedConfig, releaseJobAgentConfig);
 
   const ghEntity = await getGithubEntity(
     je.id,
-    parsedConfig.installationId,
-    parsedConfig.owner,
+    mergedConfig.installationId,
+    mergedConfig.owner,
   );
   if (ghEntity == null) {
     await db
@@ -129,9 +142,9 @@ export const dispatchGithubJob = async (je: Job) => {
   };
 
   const ref =
-    parsedConfig.ref ??
+    mergedConfig.ref ??
     (await octokit.rest.repos
-      .get({ ...parsedConfig, headers })
+      .get({ ...mergedConfig, headers })
       .then((r) => r.data.default_branch)
       .catch((e) => {
         logger.error(`Failed to get ref for github action job ${je.id}`, {
@@ -153,17 +166,17 @@ export const dispatchGithubJob = async (je: Job) => {
   }
 
   logger.info(`Creating workflow dispatch for job ${je.id}...`, {
-    owner: parsedConfig.owner,
-    repo: parsedConfig.repo,
-    workflow_id: parsedConfig.workflowId,
+    owner: mergedConfig.owner,
+    repo: mergedConfig.repo,
+    workflow_id: mergedConfig.workflowId,
     ref,
     inputs: { job_id: je.id },
   });
 
   await octokit.actions.createWorkflowDispatch({
-    owner: parsedConfig.owner,
-    repo: parsedConfig.repo,
-    workflow_id: parsedConfig.workflowId,
+    owner: mergedConfig.owner,
+    repo: mergedConfig.repo,
+    workflow_id: mergedConfig.workflowId,
     ref,
     inputs: { job_id: je.id },
     headers,

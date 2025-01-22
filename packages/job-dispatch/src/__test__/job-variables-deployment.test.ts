@@ -78,6 +78,7 @@ const release: SCHEMA.Release = {
   deploymentId: "0",
   status: ReleaseStatus.Ready,
   message: null,
+  jobAgentConfig: {},
 };
 
 const variableValues: SCHEMA.DeploymentVariableValue[] = [

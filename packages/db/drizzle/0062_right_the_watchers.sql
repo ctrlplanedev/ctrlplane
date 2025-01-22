@@ -1,0 +1,1 @@
+ALTER TABLE "release" ADD COLUMN "job_agent_config" jsonb DEFAULT '{}' NOT NULL;

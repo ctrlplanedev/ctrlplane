@@ -435,6 +435,13 @@
       "when": 1737499140460,
       "tag": "0061_left_jocasta",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1737584964209,
+      "tag": "0062_right_the_watchers",
+      "breakpoints": true
     }
   ]
 }
