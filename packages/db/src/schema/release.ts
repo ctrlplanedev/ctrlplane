@@ -144,6 +144,7 @@ export const createRelease = createInsertSchema(release, {
   version: z.string().min(1),
   name: z.string().optional(),
   config: z.record(z.any()),
+  jobAgentConfig: z.record(z.any()).optional(),
   status: z.nativeEnum(ReleaseStatus),
   createdAt: z
     .string()
