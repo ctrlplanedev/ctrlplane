@@ -1,23 +1,28 @@
 import type { Metadata } from "next";
 import React from "react";
 import { notFound } from "next/navigation";
-import {
-  SiAmazon,
-  SiGooglecloud,
-  SiKubernetes,
-  SiTerraform,
-} from "@icons-pack/react-simple-icons";
-import { IconBrandAzure, IconSettings } from "@tabler/icons-react";
+import { SiAmazon, SiGooglecloud } from "@icons-pack/react-simple-icons";
+import { IconBrandAzure } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@ctrlplane/ui/dialog";
 
 import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { AwsActionButton } from "./AwsActionButton";
 import { CreateAzureProviderDialog } from "./azure/CreateAzureProviderDialog";
 import { GoogleActionButton } from "./GoogleActionButton";
+import { selfManagedAgents } from "./SelfManaged";
 
 export const metadata: Metadata = {
   title: "Resource Integrations | Ctrlplane",
@@ -38,7 +43,15 @@ const Badge: React.FC<{ className?: string; children?: React.ReactNode }> = ({
 );
 
 const K8sBadge: React.FC = () => (
-  <Badge className="bg-blue-500/20 text-blue-300">KubernetesAPI</Badge>
+  <Badge className="bg-blue-500/20 text-blue-300">Kubernetes</Badge>
+);
+
+const VmBadge: React.FC = () => (
+  <Badge className="bg-green-500/20 text-green-300">VM</Badge>
+);
+
+const VpcBadge: React.FC = () => (
+  <Badge className="bg-neutral-500/20 text-neutral-300">VPC</Badge>
 );
 
 const ResourceProviderCard: React.FC<{ children: React.ReactNode }> = ({
@@ -115,6 +128,8 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
               </p>
               <ResourceProviderBadges>
                 <K8sBadge />
+                <VmBadge />
+                <VpcBadge />
               </ResourceProviderBadges>
             </ResourceProviderContent>
 
@@ -151,62 +166,47 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
           Ctrlplane.
         </p>
         <div className="mt-8 grid grid-cols-3 gap-6">
-          <ResourceProviderCard>
-            <ResourceProviderContent>
-              <ResourceProviderHeading>
-                <IconSettings className="mx-auto text-4xl" />
-                <div className="font-semibold">Custom</div>
-              </ResourceProviderHeading>
-              <p className="text-xs text-muted-foreground">
-                Create custom resource providers to import resources.
-              </p>
-              <ResourceProviderBadges>
-                <Badge>Open API</Badge>
-              </ResourceProviderBadges>
-            </ResourceProviderContent>
+          {selfManagedAgents.map((agent) => {
+            const { name, description, icon, instructions } = agent(workspace);
+            return (
+              <ResourceProviderCard key={name}>
+                <ResourceProviderContent>
+                  <ResourceProviderHeading>
+                    {icon}
+                    <div className="font-semibold">{name}</div>
+                  </ResourceProviderHeading>
+                  <p className="text-xs text-muted-foreground">{description}</p>
+                </ResourceProviderContent>
 
-            <ResourceProviderActionButton>
-              Instructions
-            </ResourceProviderActionButton>
-          </ResourceProviderCard>
-          <ResourceProviderCard>
-            <ResourceProviderContent>
-              <ResourceProviderHeading>
-                <SiTerraform className="mx-auto text-4xl text-purple-400" />
-                <div className="font-semibold">Terraform Cloud</div>
-              </ResourceProviderHeading>
-              <p className="text-xs text-muted-foreground">
-                Resource provider terraform cloud workspaces.
-              </p>
-              <ResourceProviderBadges>
-                <Badge>TerraformWorkspace</Badge>
-              </ResourceProviderBadges>
-            </ResourceProviderContent>
-
-            <ResourceProviderActionButton>
-              Instructions
-            </ResourceProviderActionButton>
-          </ResourceProviderCard>
-          <ResourceProviderCard>
-            <ResourceProviderContent>
-              <ResourceProviderHeading>
-                <SiKubernetes className="mx-auto text-4xl text-blue-400" />
-                <div className="font-semibold">Kubernetes Agent</div>
-              </ResourceProviderHeading>
-              <p className="text-xs text-muted-foreground">
-                Agent running on a cluster that can be used for scanning in
-                namespaces.
-              </p>
-              <ResourceProviderBadges>
-                <Badge>KubernetesAPI</Badge>
-                <Badge>KubernetesNamespace</Badge>
-              </ResourceProviderBadges>
-            </ResourceProviderContent>
-
-            <ResourceProviderActionButton>
-              Instructions
-            </ResourceProviderActionButton>
-          </ResourceProviderCard>
+                <div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <ResourceProviderActionButton>
+                        Instructions
+                      </ResourceProviderActionButton>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Setup Instructions</DialogTitle>
+                      </DialogHeader>
+                      {instructions}
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                          >
+                            Close
+                          </Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </ResourceProviderCard>
+            );
+          })}
         </div>
       </div>
     </div>

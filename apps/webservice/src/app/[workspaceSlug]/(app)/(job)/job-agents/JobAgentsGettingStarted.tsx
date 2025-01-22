@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { IconSend2 } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-export const JobAgentsGettingStarted: React.FC = () => {
+export const JobAgentsGettingStarted: React.FC<{
+  workspaceSlug: string;
+}> = ({ workspaceSlug }) => {
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -25,7 +28,9 @@ export const JobAgentsGettingStarted: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm">Set Up Job Agent</Button>
+          <Link href={`/${workspaceSlug}/job-agents/integrations`}>
+            <Button size="sm">Setup Job Agent</Button>
+          </Link>
           <Button size="sm" variant="secondary">
             Learn More
           </Button>

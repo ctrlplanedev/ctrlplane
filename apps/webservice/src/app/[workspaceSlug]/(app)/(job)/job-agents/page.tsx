@@ -24,7 +24,8 @@ export default async function JobAgentsPage({ params }: PageProps) {
   if (workspace == null) notFound();
 
   const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
-  if (jobAgents.length === 0) return <JobAgentsGettingStarted />;
+  if (jobAgents.length === 0)
+    return <JobAgentsGettingStarted workspaceSlug={params.workspaceSlug} />;
   return (
     <>
       <div className="border-b p-1 filter">
