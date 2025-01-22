@@ -178,16 +178,9 @@ const reposRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const { data: installation } =
-        (await octokit?.apps.getInstallation({
-          installation_id: input.installationId,
-        })) ?? {};
-
-      if (installation == null)
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Installation not found",
-        });
+      const { data: installation } = await getOctokit().apps.getInstallation({
+        installation_id: input.installationId,
+      });
 
       const installationOctokit = getOctokitInstallation(installation.id);
       const installationToken = (await installationOctokit.auth({

@@ -110,7 +110,7 @@ export const JobAgentGitHubConfig: React.FC<{
       </Popover>
 
       <Input
-        placeholder="Ref (uses default branch if not set)"
+        placeholder="Git reference (uses repositories default if not set)"
         className="w-80"
         value={value.ref ?? ""}
         onChange={(e) => onChange({ ...value, ref: e.target.value })}

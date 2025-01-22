@@ -87,9 +87,9 @@ export const SelectPreconnectedEntityDialogContent: React.FC<
             <CommandInput placeholder="Search organization..." />
             <CommandGroup>
               <CommandList>
-                {githubEntities.map(({ slug, avatarUrl }) => (
+                {githubEntities.map(({ installationId, slug, avatarUrl }) => (
                   <CommandItem
-                    key={slug}
+                    key={installationId}
                     value={slug}
                     onSelect={(currentValue) => {
                       setValue(currentValue);

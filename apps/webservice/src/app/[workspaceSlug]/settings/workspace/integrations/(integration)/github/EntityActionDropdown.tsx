@@ -22,6 +22,11 @@ export const EntityActionDropdown: React.FC<EntityActionDropdownProps> = ({
   githubConfig,
   entity,
 }) => {
+  const { type, slug, installationId } = entity;
+  const link =
+    type === "organization"
+      ? `${githubConfig.url}/organizations/${slug}/settings/installations/${installationId}`
+      : `${githubConfig.url}/settings/installations/${installationId}`;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -32,11 +37,7 @@ export const EntityActionDropdown: React.FC<EntityActionDropdownProps> = ({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <Link
-          href={`${githubConfig.url}/organizations/${entity.slug}/settings/installations/${entity.installationId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <Link href={link} target="_blank" rel="noopener noreferrer">
           <DropdownMenuItem>
             Configure <IconExternalLink className="ml-2 h-4 w-4" />
           </DropdownMenuItem>

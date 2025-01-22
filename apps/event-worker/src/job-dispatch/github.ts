@@ -132,7 +132,13 @@ export const dispatchGithubJob = async (je: Job) => {
     parsedConfig.ref ??
     (await octokit.rest.repos
       .get({ ...parsedConfig, headers })
-      .then((r) => r.data.default_branch));
+      .then((r) => r.data.default_branch)
+      .catch((e) => {
+        logger.error(`Failed to get ref for github action job ${je.id}`, {
+          error: e,
+        });
+        return null;
+      }));
 
   if (ref == null) {
     logger.error(`Failed to get ref for github action job ${je.id}`);
