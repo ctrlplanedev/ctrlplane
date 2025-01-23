@@ -16,6 +16,24 @@ export const openapi: Swagger.SwaggerV3 = {
       },
     },
     schemas: {
+      System: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid", description: "The system ID" },
+          workspaceId: {
+            type: "string",
+            format: "uuid",
+            description: "The workspace ID of the system",
+          },
+          name: { type: "string", description: "The name of the system" },
+          slug: { type: "string", description: "The slug of the system" },
+          description: {
+            type: "string",
+            description: "The description of the system",
+          },
+        },
+        required: ["id", "workspaceId", "name", "slug"],
+      },
       Deployment: {
         type: "object",
         properties: {
