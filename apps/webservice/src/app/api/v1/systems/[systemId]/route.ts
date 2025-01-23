@@ -33,7 +33,7 @@ export const GET = request()
           { error: "System not found" },
           { status: httpStatus.NOT_FOUND },
         );
-      return NextResponse.json(system);
+      return NextResponse.json({ system }, { status: httpStatus.OK });
     },
   );
 
@@ -59,7 +59,9 @@ export const PATCH = request()
       .where(eq(schema.system.id, params.systemId))
       .returning()
       .then(takeFirst)
-      .then((system) => NextResponse.json(system))
+      .then((system) =>
+        NextResponse.json({ system }, { status: httpStatus.OK }),
+      )
       .catch((error) =>
         NextResponse.json(
           { error: error.message },
