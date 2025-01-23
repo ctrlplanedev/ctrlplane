@@ -161,6 +161,59 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
       },
+      delete: {
+        summary: "Delete a system",
+        operationId: "deleteSystem",
+        parameters: [
+          {
+            name: "systemId",
+            in: "path",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "System deleted successfully",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    message: { type: "string", example: "System deleted" },
+                  },
+                },
+              },
+            },
+          },
+          "404": {
+            description: "System not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string", example: "System not found" },
+                  },
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Internal server error",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string", example: "Internal server error" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };

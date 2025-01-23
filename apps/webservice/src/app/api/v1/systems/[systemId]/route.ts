@@ -69,3 +69,43 @@ export const PATCH = request()
         ),
       );
   });
+
+export const DELETE = request()
+  .use(authn)
+  .use(
+    authz(({ can, extra: { params } }) =>
+      can
+        .perform(Permission.SystemDelete)
+        .on({ type: "system", id: params.systemId }),
+    ),
+  )
+  .handle<unknown, { params: { systemId: string } }>(
+    async ({ db }, { params }) => {
+      const existingSystem = await db.query.system.findFirst({
+        where: eq(schema.system.id, params.systemId),
+      });
+      if (existingSystem == null)
+        return NextResponse.json(
+          { error: "System not found" },
+          { status: httpStatus.NOT_FOUND },
+        );
+
+      return db
+        .delete(schema.system)
+        .where(eq(schema.system.id, params.systemId))
+        .returning()
+        .then(takeFirst)
+        .then(() =>
+          NextResponse.json(
+            { message: "System deleted" },
+            { status: httpStatus.OK },
+          ),
+        )
+        .catch((error) =>
+          NextResponse.json(
+            { error: error.message },
+            { status: httpStatus.INTERNAL_SERVER_ERROR },
+          ),
+        );
+    },
+  );
