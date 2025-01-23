@@ -18,6 +18,7 @@ import {
 import {
   createEnvironment,
   environment,
+  environmentMetadata,
   environmentPolicy,
   environmentPolicyReleaseChannel,
   environmentReleaseChannel,
@@ -105,6 +106,10 @@ export const environmentRouter = createTRPCRouter({
           policyRCSubquery,
           eq(environmentPolicy.id, policyRCSubquery.releaseChannelPolicyId),
         )
+        .leftJoin(
+          environmentMetadata,
+          eq(environmentMetadata.environmentId, environment.id),
+        )
         .where(eq(environment.id, input))
         .then((rows) => {
           const env = rows.at(0);
@@ -139,11 +144,20 @@ export const environmentRouter = createTRPCRouter({
             }))
             .value();
 
+          const metadata = _.chain(rows)
+            .map((r) => r.environment_metadata)
+            .filter(isPresent)
+            .uniqBy((r) => r.key)
+            .keyBy((r) => r.key)
+            .mapValues((r) => r.value)
+            .value();
+
           return {
             ...env.environment,
             policy,
             releaseChannels,
             system: env.system,
+            metadata,
           };
         });
     }),
@@ -159,10 +173,28 @@ export const environmentRouter = createTRPCRouter({
         .select()
         .from(environment)
         .innerJoin(system, eq(system.id, environment.systemId))
+        .leftJoin(
+          environmentMetadata,
+          eq(environmentMetadata.environmentId, environment.id),
+        )
         .orderBy(environment.name)
         .where(eq(environment.systemId, input))
         .then((envs) =>
-          envs.map((e) => ({ ...e.environment, system: e.system })),
+          _.chain(envs)
+            .groupBy((e) => e.environment.id)
+            .map((groupedRows) => {
+              const env = groupedRows.at(0)!;
+              const { system } = env;
+              const metadata = _.chain(groupedRows)
+                .map((r) => r.environment_metadata)
+                .filter(isPresent)
+                .uniqBy((r) => r.key)
+                .keyBy((r) => r.key)
+                .mapValues((r) => r.value)
+                .value();
+              return { ...env.environment, system, metadata };
+            })
+            .value(),
         ),
     ),
 

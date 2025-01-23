@@ -167,9 +167,8 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
             .map(([, triggers]) => {
               const resource = triggers[0]!.resource;
               const trigger = triggers[0]!; // triggers are already sorted by createdAt from the query
-              const linksMetadata = trigger.job.metadata.find(
-                (m) => m.key === String(ReservedMetadataKey.Links),
-              )?.value;
+              const linksMetadata =
+                trigger.job.metadata[ReservedMetadataKey.Links];
 
               const links =
                 linksMetadata != null
@@ -293,9 +292,8 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                       <>
                         {triggers.map((trigger, idx) => {
                           if (idx === 0) return null;
-                          const linksMetadata = trigger.job.metadata.find(
-                            (m) => m.key === String(ReservedMetadataKey.Links),
-                          )?.value;
+                          const linksMetadata =
+                            trigger.job.metadata[ReservedMetadataKey.Links];
 
                           const links =
                             linksMetadata != null

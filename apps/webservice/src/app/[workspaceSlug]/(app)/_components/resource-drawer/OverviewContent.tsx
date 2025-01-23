@@ -1,11 +1,9 @@
 "use client";
 
 import type { Resource, ResourceProvider } from "@ctrlplane/db/schema";
-import { IconSparkles } from "@tabler/icons-react";
 import { format } from "date-fns";
 import yaml from "js-yaml";
 
-import { Input } from "@ctrlplane/ui/input";
 import {
   Tooltip,
   TooltipContent,
@@ -14,52 +12,12 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { ConfigEditor } from "../ConfigEditor";
+import { MetadataInfo } from "../MetadataInfo";
 
 const ResourceConfigInfo: React.FC<{ config: Record<string, any> }> = ({
   config,
 }) => <ConfigEditor value={yaml.dump(config)} readOnly />;
-
-const ResourceMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
-  props,
-) => {
-  const metadata = Object.entries(props.metadata).sort(([keyA], [keyB]) =>
-    keyA.localeCompare(keyB),
-  );
-  const { search, setSearch, result } = useMatchSorterWithSearch(metadata, {
-    keys: ["0", "1"],
-  });
-  return (
-    <div>
-      <div className="text-xs">
-        <div>
-          <Input
-            className="w-full rounded-b-none text-xs"
-            placeholder="Search ..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 max-h-[250px] overflow-auto rounded-b-lg border-x border-b p-1.5">
-          {result.map(([key, value]) => (
-            <div className="text-nowrap font-mono" key={key}>
-              <span>
-                {Object.values(ReservedMetadataKey).includes(
-                  key as ReservedMetadataKey,
-                ) && (
-                  <IconSparkles className="inline-block h-3 w-3 text-yellow-300" />
-                )}{" "}
-              </span>
-              <span className="text-red-400">{key}:</span>
-              <span className="text-green-300"> {value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export const OverviewContent: React.FC<{
   resource: Resource & {
@@ -207,7 +165,7 @@ export const OverviewContent: React.FC<{
           Metadata ({Object.keys(resource.metadata).length})
         </div>
         <div className="text-xs">
-          <ResourceMetadataInfo metadata={resource.metadata} />
+          <MetadataInfo metadata={resource.metadata} />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { RouterOutputs } from "@ctrlplane/api";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -14,11 +14,14 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
+import { MetadataInfo } from "../MetadataInfo";
 
 const name = z.string().min(1).max(100);
 const description = z.string().max(1000).nullable();
 const schema = z.object({ name, description });
-type OverviewProps = { environment: SCHEMA.Environment };
+type OverviewProps = {
+  environment: NonNullable<RouterOutputs["environment"]["byId"]>;
+};
 
 export const Overview: React.FC<OverviewProps> = ({ environment }) => {
   const defaultValues = { ...environment };
@@ -87,6 +90,15 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
           >
             Override
           </Button>
+        </div>
+
+        <div>
+          <div className="mb-2 text-sm">
+            Metadata ({Object.keys(environment.metadata).length})
+          </div>
+          <div className="text-xs">
+            <MetadataInfo metadata={environment.metadata} />
+          </div>
         </div>
       </form>
     </Form>

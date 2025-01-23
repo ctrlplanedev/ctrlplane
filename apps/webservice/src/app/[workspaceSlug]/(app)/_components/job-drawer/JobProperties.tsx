@@ -8,20 +8,16 @@ import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 import type { Job } from "./Job";
 import { JobTableStatusIcon } from "../JobTableStatusIcon";
 
-type JobPropertiesTableProps = {
-  job: Job;
-};
+type JobPropertiesTableProps = { job: Job };
 
 export const JobPropertiesTable: React.FC<JobPropertiesTableProps> = ({
   job,
 }) => {
-  const linksMetadata = job.job.metadata.find(
-    (m) => m.key === String(ReservedMetadataKey.Links),
-  );
+  const linksMetadata = job.job.metadata[ReservedMetadataKey.Links];
 
   const links =
     linksMetadata != null
-      ? (JSON.parse(linksMetadata.value) as Record<string, string>)
+      ? (JSON.parse(linksMetadata) as Record<string, string>)
       : null;
 
   return (

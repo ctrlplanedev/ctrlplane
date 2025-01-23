@@ -81,6 +81,8 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
           .map((v) => v.job_metadata)
           .filter(isPresent)
           .uniqBy((v) => v.id)
+          .keyBy((v) => v.key)
+          .mapValues((v) => v.value)
           .value(),
         status: v[0]!.job.status as JobStatus,
         variables: _.chain(v)

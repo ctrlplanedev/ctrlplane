@@ -16,8 +16,8 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
 import { useReleaseChannel } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/useReleaseChannel";
 import { api } from "~/trpc/react";
+import { MetadataInfo } from "../MetadataInfo";
 import { JobAgent } from "./JobAgent";
-import { JobMetadata } from "./JobMetadata";
 import { JobPropertiesTable } from "./JobProperties";
 import { JobVariables } from "./JobVariables";
 import { useJobDrawer } from "./useJobDrawer";
@@ -32,13 +32,11 @@ export const JobDrawer: React.FC = () => {
     refetchInterval: 10_000,
   });
   const job = jobQ.data;
-  const linksMetadata = job?.job.metadata.find(
-    (m) => m.key === String(ReservedMetadataKey.Links),
-  );
+  const linksMetadata = job?.job.metadata[ReservedMetadataKey.Links];
 
   const links =
     linksMetadata != null
-      ? (JSON.parse(linksMetadata.value) as Record<string, string>)
+      ? (JSON.parse(linksMetadata) as Record<string, string>)
       : null;
 
   const { isPassingReleaseChannel, loading: releaseChannelLoading } =
@@ -123,8 +121,11 @@ export const JobDrawer: React.FC = () => {
                   <div className="col-span-1">
                     <JobVariables job={job} />
                   </div>
-                  <div className="col-span-1">
-                    <JobMetadata job={job} />
+                  <div className="col-span-1 space-y-2">
+                    <span className="text-sm">
+                      Metadata ({Object.keys(job.job.metadata).length})
+                    </span>
+                    <MetadataInfo metadata={job.job.metadata} />
                   </div>
                 </div>
               </div>

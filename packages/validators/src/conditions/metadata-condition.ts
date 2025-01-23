@@ -88,4 +88,5 @@ export enum ReservedMetadataKey {
   ParentResourceIdentifier = "ctrlplane/parent-resource-identifier",
   KubernetesVersion = "kubernetes/version",
   KubernetesFlavor = "kubernetes/flavor",
+  Ephemeral = "ctrlplane/ephemeral",
 }
