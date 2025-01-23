@@ -16,7 +16,7 @@ export const openapi: Swagger.SwaggerV3 = {
             name: "systemId",
             in: "path",
             required: true,
-            schema: { type: "string" },
+            schema: { type: "string", format: "uuid" },
             description: "UUID of the system",
           },
         ],
@@ -94,7 +94,8 @@ export const openapi: Swagger.SwaggerV3 = {
             name: "systemId",
             in: "path",
             required: true,
-            schema: { type: "string" },
+            schema: { type: "string", format: "uuid" },
+            description: "UUID of the system",
           },
         ],
         requestBody: {
@@ -112,6 +113,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   },
                   workspaceId: {
                     type: "string",
+                    format: "uuid",
                     description: "UUID of the workspace",
                   },
                 },

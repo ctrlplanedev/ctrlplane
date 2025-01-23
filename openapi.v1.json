@@ -2043,7 +2043,8 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "string",
+              "format": "uuid"
             },
             "description": "UUID of the system"
           }
@@ -2161,8 +2162,10 @@
             "in": "path",
             "required": true,
             "schema": {
-              "type": "string"
-            }
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "UUID of the system"
           }
         ],
         "requestBody": {
@@ -2186,6 +2189,7 @@
                   },
                   "workspaceId": {
                     "type": "string",
+                    "format": "uuid",
                     "description": "UUID of the workspace"
                   }
                 }
