@@ -250,7 +250,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {
@@ -320,7 +319,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {
@@ -387,7 +385,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {
@@ -454,7 +451,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {
@@ -521,7 +517,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {
@@ -618,7 +613,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {
@@ -715,7 +709,6 @@ describe("job-variables-deployment", () => {
       systemId: "0",
       policyId: null,
       resourceFilter: null,
-      expiresAt: null,
       createdAt: new Date(),
       environments: [
         {

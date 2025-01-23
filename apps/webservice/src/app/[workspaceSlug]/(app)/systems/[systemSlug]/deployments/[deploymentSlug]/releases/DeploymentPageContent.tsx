@@ -4,7 +4,6 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
 import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   IconCircleFilled,
@@ -21,9 +20,7 @@ import { isPresent } from "ts-is-present";
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
-import { Label } from "@ctrlplane/ui/label";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import { Switch } from "@ctrlplane/ui/switch";
 import {
   Table,
   TableBody,
@@ -155,13 +152,13 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const loading = releases.isLoading;
   const router = useRouter();
 
-  const [showEphemeralEnvs, setShowEphemeralEnvs] = useState(false);
+  // const [showEphemeralEnvs, setShowEphemeralEnvs] = useState(false);
 
-  const selectedEnvironments = showEphemeralEnvs
-    ? environments
-    : environments.filter((e) => e.expiresAt == null);
+  // const selectedEnvironments = showEphemeralEnvs
+  //   ? environments
+  //   : environments.filter((e) => e.expiresAt == null);
 
-  const numEnvironmentBlocks = Math.min(3, selectedEnvironments.length);
+  const numEnvironmentBlocks = Math.min(3, environments.length);
 
   return (
     <div>
@@ -202,7 +199,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <Switch
               checked={showEphemeralEnvs}
               id="show-ephemeral-envs"
@@ -214,7 +211,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             >
               Show ephemeral environments
             </Label>
-          </div>
+          </div> */}
 
           <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
             Total:
@@ -271,7 +268,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     Version
                   </div>
                 </TableHead>
-                {selectedEnvironments.map((env) => (
+                {environments.map((env) => (
                   <EnvHeader
                     key={env.id}
                     environment={env}
@@ -336,7 +333,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       </Badge>
                     </div>
                   </TableCell>
-                  {selectedEnvironments.map((env) => (
+                  {environments.map((env) => (
                     <TableCell
                       className={cn(
                         "h-[60px] w-[220px] border-l",

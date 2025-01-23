@@ -44,9 +44,6 @@ export const environment = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).default(
-      sql`NULL`,
-    ),
   },
   (t) => ({ uniq: uniqueIndex().on(t.systemId, t.name) }),
 );
