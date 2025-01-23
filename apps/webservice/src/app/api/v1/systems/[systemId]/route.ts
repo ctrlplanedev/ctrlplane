@@ -1,10 +1,13 @@
+import type { z } from "zod";
 import { NextResponse } from "next/server";
+import httpStatus from "http-status";
 
-import { eq } from "@ctrlplane/db";
+import { eq, takeFirst } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../auth";
+import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
 
 export const GET = request()
@@ -28,8 +31,39 @@ export const GET = request()
       if (system == null)
         return NextResponse.json(
           { error: "System not found" },
-          { status: 404 },
+          { status: httpStatus.NOT_FOUND },
         );
       return NextResponse.json(system);
     },
   );
+
+export const PATCH = request()
+  .use(authn)
+  .use(parseBody(schema.updateSystem))
+  .handle<
+    { body: z.infer<typeof schema.updateSystem> },
+    { params: { systemId: string } }
+  >(async ({ db, body }, { params }) => {
+    const existingSystem = await db.query.system.findFirst({
+      where: eq(schema.system.id, params.systemId),
+    });
+    if (existingSystem == null)
+      return NextResponse.json(
+        { error: "System not found" },
+        { status: httpStatus.NOT_FOUND },
+      );
+
+    return db
+      .update(schema.system)
+      .set(body)
+      .where(eq(schema.system.id, params.systemId))
+      .returning()
+      .then(takeFirst)
+      .then((system) => NextResponse.json(system))
+      .catch((error) =>
+        NextResponse.json(
+          { error: error.message },
+          { status: httpStatus.INTERNAL_SERVER_ERROR },
+        ),
+      );
+  });
