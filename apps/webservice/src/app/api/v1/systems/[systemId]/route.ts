@@ -95,9 +95,9 @@ export const DELETE = request()
         .where(eq(schema.system.id, params.systemId))
         .returning()
         .then(takeFirst)
-        .then(() =>
+        .then((system) =>
           NextResponse.json(
-            { message: "System deleted" },
+            { message: "System deleted", system },
             { status: httpStatus.OK },
           ),
         )
