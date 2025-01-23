@@ -316,10 +316,6 @@
                     "items": {
                       "type": "string"
                     }
-                  },
-                  "expiresAt": {
-                    "type": "string",
-                    "format": "date-time"
                   }
                 }
               }
@@ -345,11 +341,6 @@
                     },
                     "description": {
                       "type": "string",
-                      "nullable": true
-                    },
-                    "expiresAt": {
-                      "type": "string",
-                      "format": "date-time",
                       "nullable": true
                     },
                     "resourceFilter": {
@@ -2095,11 +2086,6 @@
                             "type": "string",
                             "nullable": true
                           },
-                          "expiresAt": {
-                            "type": "string",
-                            "format": "date-time",
-                            "nullable": true
-                          },
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
@@ -2845,11 +2831,6 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
         "required": [

@@ -88,7 +88,6 @@ export const openapi: Swagger.SwaggerV3 = {
             additionalProperties: true,
           },
           createdAt: { type: "string", format: "date-time" },
-          expiresAt: { type: "string", format: "date-time", nullable: true },
         },
         required: ["id", "systemId", "name", "createdAt"],
       },

@@ -41,10 +41,6 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "string",
                     },
                   },
-                  expiresAt: {
-                    type: "string",
-                    format: "date-time",
-                  },
                 },
               },
             },
@@ -69,11 +65,6 @@ export const openapi: Swagger.SwaggerV3 = {
                     },
                     description: {
                       type: "string",
-                      nullable: true,
-                    },
-                    expiresAt: {
-                      type: "string",
-                      format: "date-time",
                       nullable: true,
                     },
                     resourceFilter: {

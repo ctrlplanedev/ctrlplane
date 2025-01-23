@@ -41,11 +41,6 @@ export const openapi: Swagger.SwaggerV3 = {
                           id: { type: "string" },
                           name: { type: "string" },
                           description: { type: "string", nullable: true },
-                          expiresAt: {
-                            type: "string",
-                            format: "date-time",
-                            nullable: true,
-                          },
                           createdAt: { type: "string", format: "date-time" },
                           systemId: { type: "string" },
                           policyId: { type: "string", nullable: true },
