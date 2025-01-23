@@ -124,116 +124,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "systemId": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "resourceFilter": {
-                      "type": "object",
-                      "additionalProperties": true
-                    },
-                    "policyId": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "expiresAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "releaseChannels": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "deploymentId": {
-                            "type": "string"
-                          },
-                          "channelId": {
-                            "type": "string"
-                          },
-                          "environmentId": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "policy": {
-                      "type": "object",
-                      "nullable": true,
-                      "properties": {
-                        "systemId": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "description": {
-                          "type": "string",
-                          "nullable": true
-                        },
-                        "id": {
-                          "type": "string"
-                        },
-                        "approvalRequirement": {
-                          "type": "string",
-                          "enum": [
-                            "manual",
-                            "automatic"
-                          ]
-                        },
-                        "successType": {
-                          "type": "string",
-                          "enum": [
-                            "some",
-                            "all",
-                            "optional"
-                          ]
-                        },
-                        "successMinimum": {
-                          "type": "number"
-                        },
-                        "concurrencyLimit": {
-                          "type": "number",
-                          "nullable": true
-                        },
-                        "rolloutDuration": {
-                          "type": "number"
-                        },
-                        "releaseSequencing": {
-                          "type": "string",
-                          "enum": [
-                            "wait",
-                            "cancel"
-                          ]
-                        }
-                      }
-                    }
-                  },
-                  "required": [
-                    "systemId",
-                    "name",
-                    "id",
-                    "createdAt",
-                    "releaseChannels"
-                  ]
+                  "$ref": "#/components/schemas/Environment"
                 }
               }
             }
@@ -328,31 +219,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "systemId": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "resourceFilter": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "name",
-                    "systemId"
-                  ]
+                  "$ref": "#/components/schemas/Environment"
                 }
               }
             }
@@ -2075,35 +1942,7 @@
                     "environments": {
                       "type": "array",
                       "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "description": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "createdAt": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "systemId": {
-                            "type": "string"
-                          },
-                          "policyId": {
-                            "type": "string",
-                            "nullable": true
-                          },
-                          "resourceFilter": {
-                            "type": "object",
-                            "additionalProperties": true,
-                            "nullable": true
-                          }
-                        }
+                        "$ref": "#/components/schemas/Environment"
                       }
                     },
                     "deployments": {
@@ -2805,6 +2644,83 @@
           "createdAt"
         ]
       },
+      "Policy": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The policy ID"
+          },
+          "systemId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The system ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the policy"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "description": "The description of the policy"
+          },
+          "approvalRequirement": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "automatic"
+            ],
+            "description": "The approval requirement of the policy"
+          },
+          "successType": {
+            "type": "string",
+            "enum": [
+              "some",
+              "all",
+              "optional"
+            ],
+            "description": "If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment"
+          },
+          "successMinimum": {
+            "type": "number",
+            "description": "If a policy depends on an environment, the minimum number of successful releases in the environment"
+          },
+          "concurrencyLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "The maximum number of concurrent releases in the environment"
+          },
+          "rolloutDuration": {
+            "type": "number",
+            "description": "The duration of the rollout in milliseconds"
+          },
+          "minimumReleaseInterval": {
+            "type": "number",
+            "description": "The minimum interval between releases in milliseconds"
+          },
+          "releaseSequencing": {
+            "type": "string",
+            "enum": [
+              "wait",
+              "cancel"
+            ],
+            "description": "If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release"
+          }
+        },
+        "required": [
+          "id",
+          "systemId",
+          "name",
+          "approvalRequirement",
+          "successType",
+          "successMinimum",
+          "rolloutDuration",
+          "minimumReleaseInterval",
+          "releaseSequencing"
+        ]
+      },
       "Environment": {
         "type": "object",
         "properties": {
@@ -2835,6 +2751,34 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "policy": {
+            "$ref": "#/components/schemas/Policy",
+            "nullable": true
+          },
+          "releaseChannels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "deploymentId": {
+                  "type": "string"
+                },
+                "channelId": {
+                  "type": "string"
+                },
+                "environmentId": {
+                  "type": "string"
+                }
+              }
+            }
           }
         },
         "required": [

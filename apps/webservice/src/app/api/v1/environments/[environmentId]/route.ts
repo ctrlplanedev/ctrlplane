@@ -20,17 +20,18 @@ export const GET = request()
     async (ctx, { params }) => {
       const environment = await ctx.db.query.environment.findFirst({
         where: eq(schema.environment.id, params.environmentId),
-        with: {
-          releaseChannels: true,
-          policy: true,
-        },
+        with: { releaseChannels: true, policy: true, metadata: true },
       });
       if (environment == null)
         return NextResponse.json(
           { error: "Environment not found" },
           { status: 404 },
         );
-      return NextResponse.json(environment);
+
+      const metadata = Object.fromEntries(
+        environment.metadata.map((m) => [m.key, m.value]),
+      );
+      return NextResponse.json({ ...environment, metadata });
     },
   );
 

@@ -70,6 +70,7 @@ export const createEnvironment = createInsertSchema(environment, {
         const deploymentIds = new Set(channels.map((c) => c.deploymentId));
         return deploymentIds.size === channels.length;
       }),
+    metadata: z.record(z.string()).optional(),
   });
 
 export const updateEnvironment = createEnvironment.partial();
@@ -86,6 +87,7 @@ export const environmentRelations = relations(environment, ({ many, one }) => ({
     fields: [environment.systemId],
     references: [system.id],
   }),
+  metadata: many(environmentMetadata),
 }));
 
 export const approvalRequirement = pgEnum(
@@ -334,4 +336,14 @@ export const environmentMetadata = pgTable(
     value: text("value").notNull(),
   },
   (t) => ({ uniq: uniqueIndex().on(t.key, t.environmentId) }),
+);
+
+export const environmentMetadataRelations = relations(
+  environmentMetadata,
+  ({ one }) => ({
+    environment: one(environment, {
+      fields: [environmentMetadata.environmentId],
+      references: [environment.id],
+    }),
+  }),
 );

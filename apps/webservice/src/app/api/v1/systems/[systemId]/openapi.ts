@@ -35,22 +35,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     workspaceId: { type: "string" },
                     environments: {
                       type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          description: { type: "string", nullable: true },
-                          createdAt: { type: "string", format: "date-time" },
-                          systemId: { type: "string" },
-                          policyId: { type: "string", nullable: true },
-                          resourceFilter: {
-                            type: "object",
-                            additionalProperties: true,
-                            nullable: true,
-                          },
-                        },
-                      },
+                      items: { $ref: "#/components/schemas/Environment" },
                     },
                     deployments: {
                       type: "array",

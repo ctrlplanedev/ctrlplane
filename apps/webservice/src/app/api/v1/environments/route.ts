@@ -62,33 +62,47 @@ export const POST = request()
         );
 
       try {
-        const environment = await ctx.db
-          .insert(schema.environment)
-          .values({ ...ctx.body })
-          .returning()
-          .then(takeFirst);
+        return ctx.db.transaction(async (tx) => {
+          const environment = await tx
+            .insert(schema.environment)
+            .values({ ...ctx.body })
+            .returning()
+            .then(takeFirst);
 
-        if (
-          isPresent(ctx.body.releaseChannels) &&
-          ctx.body.releaseChannels.length > 0
-        ) {
-          const releaseChannels = await ctx.db
-            .select()
-            .from(schema.releaseChannel)
-            .where(inArray(schema.releaseChannel.id, ctx.body.releaseChannels));
+          const { metadata } = ctx.body;
+          if (metadata != null)
+            await tx.insert(schema.environmentMetadata).values(
+              Object.entries(metadata).map(([key, value]) => ({
+                environmentId: environment.id,
+                key,
+                value,
+              })),
+            );
 
-          await createReleaseChannels(
-            ctx.db,
-            environment.id,
-            _.uniqBy(releaseChannels, (r) => r.deploymentId).map((r) => ({
-              channelId: r.id,
-              deploymentId: r.deploymentId,
-            })),
-          );
-        }
+          if (
+            isPresent(ctx.body.releaseChannels) &&
+            ctx.body.releaseChannels.length > 0
+          ) {
+            const releaseChannels = await tx
+              .select()
+              .from(schema.releaseChannel)
+              .where(
+                inArray(schema.releaseChannel.id, ctx.body.releaseChannels),
+              );
 
-        await createJobsForNewEnvironment(ctx.db, environment);
-        return NextResponse.json(environment);
+            await createReleaseChannels(
+              tx,
+              environment.id,
+              _.uniqBy(releaseChannels, (r) => r.deploymentId).map((r) => ({
+                channelId: r.id,
+                deploymentId: r.deploymentId,
+              })),
+            );
+          }
+
+          await createJobsForNewEnvironment(tx, environment);
+          return NextResponse.json({ ...environment, metadata });
+        });
       } catch (error) {
         logger.error("Failed to create environment", { error });
         return NextResponse.json(

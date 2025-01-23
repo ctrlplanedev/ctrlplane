@@ -51,29 +51,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "Environment created successfully",
             content: {
               "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    id: {
-                      type: "string",
-                    },
-                    systemId: {
-                      type: "string",
-                    },
-                    name: {
-                      type: "string",
-                    },
-                    description: {
-                      type: "string",
-                      nullable: true,
-                    },
-                    resourceFilter: {
-                      type: "object",
-                      additionalProperties: true,
-                    },
-                  },
-                  required: ["id", "name", "systemId"],
-                },
+                schema: { $ref: "#/components/schemas/Environment" },
               },
             },
           },
