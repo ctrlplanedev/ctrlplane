@@ -1,7 +1,14 @@
 import type { Tx } from "@ctrlplane/db";
 import type { Resource } from "@ctrlplane/db/schema";
+import _ from "lodash";
 
-import { buildConflictUpdateColumns } from "@ctrlplane/db";
+import {
+  and,
+  buildConflictUpdateColumns,
+  eq,
+  notInArray,
+  or,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 export type ResourceWithMetadata = Resource & {
@@ -21,6 +28,20 @@ export const insertResourceMetadata = async (
     }));
   });
   if (resourceMetadataValues.length === 0) return;
+
+  const deletedKeysChecks = _.chain(resourceMetadataValues)
+    .groupBy((r) => r.resourceId)
+    .map((groupedMeta) => {
+      const resourceId = groupedMeta[0]!.resourceId;
+      const keys = groupedMeta.map((m) => m.key);
+      return and(
+        eq(schema.resourceMetadata.resourceId, resourceId),
+        notInArray(schema.resourceMetadata.key, keys),
+      )!;
+    })
+    .value();
+
+  await tx.delete(schema.resourceMetadata).where(or(...deletedKeysChecks));
 
   return tx
     .insert(schema.resourceMetadata)
