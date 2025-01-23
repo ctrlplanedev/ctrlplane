@@ -64,12 +64,7 @@ export const POST = request()
       try {
         const environment = await ctx.db
           .insert(schema.environment)
-          .values({
-            ...ctx.body,
-            expiresAt: isPresent(ctx.body.expiresAt)
-              ? new Date(ctx.body.expiresAt)
-              : undefined,
-          })
+          .values({ ...ctx.body })
           .returning()
           .then(takeFirst);
 

@@ -1,16 +1,13 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import { IconX } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
-import { DateTimePicker } from "@ctrlplane/ui/datetime-picker";
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -18,22 +15,13 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { api } from "~/trpc/react";
 
-const schema = z.object({
-  name: z.string().min(1).max(100),
-  description: z.string().max(1000).nullable(),
-  expiresAt: z
-    .date()
-    .min(new Date(), "Expires at must be in the future")
-    .optional(),
-});
-
-type OverviewProps = {
-  environment: SCHEMA.Environment;
-};
+const name = z.string().min(1).max(100);
+const description = z.string().max(1000).nullable();
+const schema = z.object({ name, description });
+type OverviewProps = { environment: SCHEMA.Environment };
 
 export const Overview: React.FC<OverviewProps> = ({ environment }) => {
-  const expiresAt = environment.expiresAt ?? undefined;
-  const defaultValues = { ...environment, expiresAt };
+  const defaultValues = { ...environment };
   const form = useForm({ schema, defaultValues });
   const update = api.environment.update.useMutation();
   const envOverride = api.job.trigger.create.byEnvId.useMutation();
@@ -77,34 +65,6 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
                   onChange={onChange}
                 />
               </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="expiresAt"
-          render={({ field: { value, onChange } }) => (
-            <FormItem>
-              <FormLabel>Expires at</FormLabel>
-              <FormControl>
-                <div className="flex items-center gap-2">
-                  <DateTimePicker
-                    value={value}
-                    onChange={onChange}
-                    granularity="minute"
-                    className="w-60"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    type="button"
-                    onClick={() => onChange(undefined)}
-                  >
-                    <IconX className="h-4 w-4" />
-                  </Button>
-                </div>
-              </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
