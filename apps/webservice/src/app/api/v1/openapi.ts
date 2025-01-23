@@ -153,7 +153,10 @@ export const openapi: Swagger.SwaggerV3 = {
             additionalProperties: true,
           },
           createdAt: { type: "string", format: "date-time" },
-          metadata: { type: "object", additionalProperties: true },
+          metadata: {
+            type: "object",
+            additionalProperties: { type: "string" },
+          },
           policy: { $ref: "#/components/schemas/Policy", nullable: true },
           releaseChannels: {
             type: "array",

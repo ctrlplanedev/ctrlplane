@@ -207,6 +207,12 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -2754,7 +2760,9 @@
           },
           "metadata": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": {
+              "type": "string"
+            }
           },
           "policy": {
             "$ref": "#/components/schemas/Policy",
