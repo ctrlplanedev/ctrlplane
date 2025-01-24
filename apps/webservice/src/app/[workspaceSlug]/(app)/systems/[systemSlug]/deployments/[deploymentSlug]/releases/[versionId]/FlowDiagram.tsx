@@ -50,7 +50,6 @@ export const FlowDiagram: React.FC<{
         policyDeployments: policyDeployments.filter(
           (p) => p.policyId === policy.id,
         ),
-        linkedEnvironments: envs.filter((e) => e.policyId === policy.id),
         label: policy.name,
         release,
       },
