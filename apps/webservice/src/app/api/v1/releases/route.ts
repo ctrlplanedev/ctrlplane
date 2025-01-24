@@ -72,6 +72,7 @@ export const POST = request()
               "status",
               "message",
               "config",
+              "jobAgentConfig",
             ]),
           })
           .returning()
@@ -116,12 +117,12 @@ export const POST = request()
                 .then(cancelOldReleaseJobTriggersOnJobDispatch)
                 .dispatch();
             })
-            .then(() => {
+            .then(() =>
               logger.info(
                 `Release for ${release.id} job triggers created and dispatched.`,
                 req,
-              );
-            });
+              ),
+            );
 
         return NextResponse.json(
           { ...release, metadata },
