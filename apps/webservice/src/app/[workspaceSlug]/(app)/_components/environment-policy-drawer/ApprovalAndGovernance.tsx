@@ -2,16 +2,10 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { IconLoader2 } from "@tabler/icons-react";
 
+import { Checkbox } from "@ctrlplane/ui/checkbox";
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
 
 import { api } from "~/trpc/react";
 import { useInvalidatePolicy } from "./useInvalidatePolicy";
@@ -56,23 +50,22 @@ export const ApprovalAndGovernance: React.FC<ApprovalAndGovernanceProps> = ({
           </span>
         </div>
 
-        <div className="w-32">
-          <Select
-            value={environmentPolicy.approvalRequirement}
-            onValueChange={(value: "manual" | "automatic") =>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="approvalRequirement"
+            checked={environmentPolicy.approvalRequirement === "manual"}
+            onCheckedChange={(value) => {
               updatePolicy
-                .mutateAsync({ id, data: { approvalRequirement: value } })
-                .then(invalidatePolicy)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="manual">Manual</SelectItem>
-              <SelectItem value="automatic">Automatic</SelectItem>
-            </SelectContent>
-          </Select>
+                .mutateAsync({
+                  id,
+                  data: { approvalRequirement: value ? "manual" : "automatic" },
+                })
+                .then(invalidatePolicy);
+            }}
+          />
+          <label htmlFor="approvalRequirement" className="text-sm">
+            Is approval required?
+          </label>
         </div>
       </div>
 
