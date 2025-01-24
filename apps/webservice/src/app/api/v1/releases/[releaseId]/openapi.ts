@@ -31,6 +31,10 @@ export const openapi: Swagger.SwaggerV3 = {
                   createdAt: { type: "string", format: "date-time" },
                   name: { type: "string" },
                   config: { type: "object", additionalProperties: true },
+                  jobAgentConfig: {
+                    type: "object",
+                    additionalProperties: true,
+                  },
                   status: {
                     type: "string",
                     enum: Object.values(ReleaseStatus),
@@ -50,33 +54,7 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "OK",
             content: {
               "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    version: { type: "string" },
-                    deploymentId: { type: "string" },
-                    createdAt: { type: "string", format: "date-time" },
-                    name: { type: "string" },
-                    config: { type: "object", additionalProperties: true },
-                    status: { type: "string" },
-                    message: { type: "string" },
-                    metadata: {
-                      type: "object",
-                      additionalProperties: { type: "string" },
-                    },
-                  },
-                  required: [
-                    "id",
-                    "version",
-                    "deploymentId",
-                    "createdAt",
-                    "name",
-                    "config",
-                    "status",
-                    "metadata",
-                  ],
-                },
+                schema: { $ref: "#/components/schemas/Release" },
               },
             },
           },
