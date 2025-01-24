@@ -26,7 +26,8 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
       ${schema.job.id} as jobIdToCancel, 
       ${schema.release.id} as cancelReleaseId, 
       ${schema.deployment.id} as cancelDeploymentId, 
-      ${schema.releaseJobTrigger.environmentId} as cancelEnvironmentId
+      ${schema.releaseJobTrigger.environmentId} as cancelEnvironmentId,
+      ${schema.release.createdAt} as cancelReleaseCreatedAt
     from ${schema.job}
     inner join ${schema.releaseJobTrigger} on ${schema.job.id} = ${schema.releaseJobTrigger.jobId}
     inner join ${schema.release} on ${schema.releaseJobTrigger.releaseId} = ${schema.release.id}
@@ -45,6 +46,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
       ${schema.deployment.id} = triggers.cancelDeploymentId
       and ${schema.releaseJobTrigger.environmentId} = triggers.cancelEnvironmentId
       and ${schema.release.id} != triggers.cancelReleaseId
+      and ${schema.release.createdAt} > triggers.cancelReleaseCreatedAt
     where ${inArray(
       schema.releaseJobTrigger.id,
       releaseJobTriggers.map((t) => t.id),

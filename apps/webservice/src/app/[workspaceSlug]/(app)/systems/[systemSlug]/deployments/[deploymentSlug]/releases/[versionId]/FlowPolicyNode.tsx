@@ -5,10 +5,9 @@ import type {
   Release,
 } from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
-import { useState } from "react";
-import { addMilliseconds, isBefore } from "date-fns";
+import { useEffect, useState } from "react";
+import { differenceInMilliseconds } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
-import { useTimeoutFn } from "react-use";
 import { Handle, Position } from "reactflow";
 import colors from "tailwindcss/colors";
 
@@ -75,22 +74,39 @@ const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
 };
 
 const GradualRolloutCheck: React.FC<PolicyNodeProps["data"]> = (data) => {
-  const completeDate = addMilliseconds(
-    data.release.createdAt,
-    data.rolloutDuration,
-  );
-  const [now, setNow] = useState(new Date());
-  useTimeoutFn(() => setNow(new Date()), 1000);
-  const completesInMs = completeDate.getTime() - now.getTime();
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const timePassed = differenceInMilliseconds(
+        new Date(),
+        data.release.createdAt,
+      );
+      return Math.max(0, data.rolloutDuration - timePassed);
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const interval = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) clearInterval(interval);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [data.release.createdAt, data.rolloutDuration]);
+
+  if (timeLeft == null) return null;
   return (
     <div className="flex items-center gap-2">
-      {isBefore(new Date(), completeDate) ? <Waiting /> : <Passing />}{" "}
-      {completesInMs < 0 ? (
-        "Rollouts completed"
+      {timeLeft <= 0 ? <Passing /> : <Waiting />}{" "}
+      {timeLeft <= 0 ? (
+        "Rollout completed"
       ) : (
         <>
           Rollout completes in{" "}
-          {prettyMilliseconds(completesInMs, {
+          {prettyMilliseconds(timeLeft, {
             compact: true,
             keepDecimalsOnWholeSeconds: false,
           })}
