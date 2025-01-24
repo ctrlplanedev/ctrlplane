@@ -1,11 +1,37 @@
-import _ from "lodash";
+import murmurhash from "murmurhash";
 import { isPresent } from "ts-is-present";
 
-import { eq, inArray } from "@ctrlplane/db";
+import { and, eq, inArray } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleaseIdPolicyChecker } from "./utils.js";
-import { isReleaseJobTriggerInRolloutWindow } from "../gradual-rollout.js";
+
+const timeWindowPercent = (startDate: Date, duration: number) => {
+  if (duration === 0) return 100;
+  const now = Date.now();
+  const start = startDate.getTime();
+  const end = start + duration;
+
+  if (now < start) return 0;
+  if (now > end) return 100;
+
+  return ((now - start) / duration) * 100;
+};
+
+export const isReleaseJobTriggerInRolloutWindow = (
+  session: string,
+  startDate: Date,
+  duration: number,
+) => murmurhash.v3(session, 11) % 100 < timeWindowPercent(startDate, duration);
+
+export const getRolloutDateForReleaseJobTrigger = (
+  session: string,
+  startDate: Date,
+  duration: number,
+) =>
+  new Date(
+    startDate.getTime() + ((duration * murmurhash.v3(session, 11)) % 100) / 100,
+  );
 
 /**
  *
@@ -37,6 +63,16 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
       schema.environmentPolicy,
       eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
+    .leftJoin(
+      schema.environmentPolicyApproval,
+      and(
+        eq(
+          schema.environmentPolicyApproval.policyId,
+          schema.environmentPolicy.id,
+        ),
+        eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
+      ),
+    )
     .where(
       inArray(
         schema.releaseJobTrigger.id,
@@ -47,11 +83,27 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
   return policies
     .filter((p) => {
       if (p.environment_policy == null) return true;
+      if (p.environment_policy.approvalRequirement === "automatic")
+        return isReleaseJobTriggerInRolloutWindow(
+          [
+            p.release.id,
+            p.environment.id,
+            p.release_job_trigger.resourceId,
+          ].join(":"),
+          p.release.createdAt,
+          p.environment_policy.rolloutDuration,
+        );
+
+      const approval = p.environment_policy_approval;
+      const { status, approvedAt } = approval ?? {};
+      const isApproved = status === "approved" && approvedAt != null;
+      if (!isApproved) return false;
+
       return isReleaseJobTriggerInRolloutWindow(
         [p.release.id, p.environment.id, p.release_job_trigger.resourceId].join(
           ":",
         ),
-        p.release.createdAt,
+        approvedAt,
         p.environment_policy.rolloutDuration,
       );
     })
