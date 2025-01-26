@@ -1,5 +1,4 @@
 import type {
-  Environment,
   EnvironmentPolicy,
   EnvironmentPolicyDeployment,
   Release,
@@ -22,7 +21,6 @@ type PolicyNodeProps = NodeProps<
   EnvironmentPolicy & {
     release: Release;
     policyDeployments: Array<EnvironmentPolicyDeployment>;
-    linkedEnvironments: Array<Environment>;
   }
 >;
 
@@ -131,11 +129,7 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
         {!noMinSuccess && <MinSuccessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && (
-          <ApprovalCheck
-            policyId={data.id}
-            release={data.release}
-            linkedEnvironments={data.linkedEnvironments}
-          />
+          <ApprovalCheck policyId={data.id} release={data.release} />
         )}
 
         {noMinSuccess && noRollout && noApproval && (

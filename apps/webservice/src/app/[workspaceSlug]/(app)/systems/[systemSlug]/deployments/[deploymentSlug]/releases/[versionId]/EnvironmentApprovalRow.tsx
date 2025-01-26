@@ -1,10 +1,6 @@
 "use client";
 
-import type {
-  Environment,
-  EnvironmentPolicyApproval,
-  User,
-} from "@ctrlplane/db/schema";
+import type { EnvironmentPolicyApproval, User } from "@ctrlplane/db/schema";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -13,21 +9,15 @@ import { ApprovalDialog } from "./ApprovalCheck";
 type EnvironmentApprovalRowProps = {
   approval: EnvironmentPolicyApproval & { user?: User | null };
   release: { id: string; version: string };
-  linkedEnvironments: Environment[];
 };
 
 export const EnvironmentApprovalRow: React.FC<EnvironmentApprovalRowProps> = ({
   approval,
   release,
-  linkedEnvironments,
 }) => {
   if (approval.status === "pending")
     return (
-      <ApprovalDialog
-        release={release}
-        policyId={approval.policyId}
-        linkedEnvironments={linkedEnvironments}
-      >
+      <ApprovalDialog release={release} policyId={approval.policyId}>
         <Button size="sm" className="h-6">
           Review
         </Button>
