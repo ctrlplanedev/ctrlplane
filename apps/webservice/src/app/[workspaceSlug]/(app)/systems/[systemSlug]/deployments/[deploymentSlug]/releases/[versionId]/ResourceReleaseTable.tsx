@@ -80,13 +80,6 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
     Record<string, boolean>
   >({});
 
-  const environmentPolicyQ = api.environment.policy.byId.useQuery(
-    environment.policyId ?? "",
-    { enabled: environment.policyId != null },
-  );
-
-  const linkedEnvironments = environmentPolicyQ.data?.environments ?? [];
-
   const switchResourceExpandedState = (resourceId: string) =>
     setExpandedResources((prev) => {
       const newState = { ...prev };
@@ -153,7 +146,6 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                   key={approval.id}
                   approval={approval}
                   release={release}
-                  linkedEnvironments={linkedEnvironments}
                 />
               ))}
             </div>

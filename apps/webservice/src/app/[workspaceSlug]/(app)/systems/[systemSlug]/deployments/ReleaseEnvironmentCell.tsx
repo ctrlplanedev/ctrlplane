@@ -18,6 +18,7 @@ import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { api } from "~/trpc/react";
+import { ApprovalDialog } from "./[deploymentSlug]/releases/[versionId]/ApprovalCheck";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
@@ -47,6 +48,12 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
 
   const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
     api.release.blocked.useQuery([release.id]);
+
+  const { data: approval, isLoading: isApprovalLoading } =
+    api.environment.policy.approval.statusByReleasePolicyId.useQuery(
+      { releaseId: release.id, policyId: environment.policyId ?? "" },
+      { enabled: environment.policyId != null },
+    );
 
   const blockedEnv = blockedEnvsResult?.find(
     (b) => b.environmentId === environment.id,
@@ -85,7 +92,9 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     isWorkspaceLoading ||
     isStatusesLoading ||
     isResourcesLoading ||
-    isBlockedEnvsLoading;
+    isBlockedEnvsLoading ||
+    isApprovalLoading;
+
   if (isLoading)
     return <p className="text-xs text-muted-foreground">Loading...</p>;
 
@@ -95,19 +104,14 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   const hasJobAgent = deployment.jobAgentId != null;
   const isBlockedByReleaseChannel = blockedEnv != null;
 
+  const isPendingApproval = approval?.status === "pending";
+
   const showBlockedByReleaseChannel =
     isBlockedByReleaseChannel &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
-  const isReady = release.status === ReleaseStatus.Ready;
-
-  const showRelease = isAlreadyDeployed && !showBlockedByReleaseChannel;
-  const showDeployButton =
-    !isAlreadyDeployed &&
-    hasJobAgent &&
-    hasResources &&
-    !isBlockedByReleaseChannel &&
-    isReady;
+  const showRelease =
+    isAlreadyDeployed && !showBlockedByReleaseChannel && !isPendingApproval;
 
   if (showRelease)
     return (
@@ -122,11 +126,6 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
         deployedAt={release.createdAt}
         statuses={statuses.map((s) => s.job.status)}
       />
-    );
-
-  if (showDeployButton)
-    return (
-      <DeployButton releaseId={release.id} environmentId={environment.id} />
     );
 
   if (release.status === ReleaseStatus.Building)
@@ -172,11 +171,20 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
       </div>
     );
 
-  return (
-    <div className="text-center text-xs text-muted-foreground/70">
-      Release not deployed
-    </div>
-  );
+  if (isPendingApproval)
+    return (
+      <ApprovalDialog policyId={approval.policyId} release={release}>
+        <Button
+          className="w-full border-dashed border-neutral-800/50 bg-transparent text-center text-neutral-800 hover:border-blue-400 hover:bg-transparent hover:text-blue-400"
+          variant="outline"
+          size="sm"
+        >
+          Pending approval
+        </Button>
+      </ApprovalDialog>
+    );
+
+  return <DeployButton releaseId={release.id} environmentId={environment.id} />;
 };
 
 export const LazyReleaseEnvironmentCell: React.FC<
