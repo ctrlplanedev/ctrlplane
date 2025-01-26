@@ -7,7 +7,6 @@ export * from "./job-dispatch.js";
 export * from "./policy-checker.js";
 export * from "./policy-create.js";
 export * from "./release-sequencing.js";
-export * from "./gradual-rollout.js";
 export * from "./lock-checker.js";
 export * from "./queue.js";
 export * from "./cancel-previous-jobs.js";

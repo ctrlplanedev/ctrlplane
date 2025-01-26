@@ -15,7 +15,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 import { ApprovalCheck } from "./ApprovalCheck";
-import { Passing, Waiting } from "./StatusIcons";
+import { Cancelled, Loading, Passing, Waiting } from "./StatusIcons";
 
 type PolicyNodeProps = NodeProps<
   EnvironmentPolicy & {
@@ -74,12 +74,20 @@ const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
 const GradualRolloutCheck: React.FC<PolicyNodeProps["data"]> = (data) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
+  const { data: approvalStatus, isLoading } =
+    api.environment.policy.approval.statusByReleasePolicyId.useQuery(
+      { policyId: data.id, releaseId: data.release.id },
+      { enabled: data.approvalRequirement === "manual" },
+    );
+
+  const startDate =
+    data.approvalRequirement === "manual"
+      ? (approvalStatus?.approvedAt ?? data.release.createdAt)
+      : data.release.createdAt;
+
   useEffect(() => {
     const calculateTimeLeft = () => {
-      const timePassed = differenceInMilliseconds(
-        new Date(),
-        data.release.createdAt,
-      );
+      const timePassed = differenceInMilliseconds(new Date(), startDate);
       return Math.max(0, data.rolloutDuration - timePassed);
     };
 
@@ -93,9 +101,37 @@ const GradualRolloutCheck: React.FC<PolicyNodeProps["data"]> = (data) => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [data.release.createdAt, data.rolloutDuration]);
+  }, [startDate, data.rolloutDuration]);
 
   if (timeLeft == null) return null;
+
+  if (isLoading)
+    return (
+      <div className="flex items-center gap-2">
+        <Loading /> Loading rollout status
+      </div>
+    );
+
+  const isApprovalPending =
+    approvalStatus == null || approvalStatus.status === "pending";
+
+  if (data.approvalRequirement === "manual" && isApprovalPending)
+    return (
+      <div className="flex items-center gap-2">
+        <Waiting /> Rollout pending approval
+      </div>
+    );
+
+  if (
+    data.approvalRequirement === "manual" &&
+    approvalStatus?.status === "rejected"
+  )
+    return (
+      <div className="flex items-center gap-2">
+        <Cancelled /> Rollout skipped due to approval rejection
+      </div>
+    );
+
   return (
     <div className="flex items-center gap-2">
       {timeLeft <= 0 ? <Passing /> : <Waiting />}{" "}
