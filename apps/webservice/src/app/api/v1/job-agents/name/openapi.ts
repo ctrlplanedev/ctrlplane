@@ -10,7 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
     "/v1/job-agents/name": {
       patch: {
         summary: "Upserts the agent",
-        operationId: "updateJobAgent",
+        operationId: "upsertJobAgent",
         requestBody: {
           required: true,
           content: {
