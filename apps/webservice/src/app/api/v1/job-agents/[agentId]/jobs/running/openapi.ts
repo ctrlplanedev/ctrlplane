@@ -10,7 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
     "/v1/job-agents/{agentId}/jobs/running": {
       get: {
         summary: "Get a agents running jobs",
-        operationId: "getAgentRunningJob",
+        operationId: "getAgentRunningJobs",
         parameters: [
           {
             name: "agentId",
