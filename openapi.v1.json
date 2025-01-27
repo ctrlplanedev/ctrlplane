@@ -327,7 +327,7 @@
                   "type": "object",
                   "properties": {
                     "job": {
-                      "type": "object"
+                      "$ref": "#/components/schemas/Job"
                     }
                   }
                 }

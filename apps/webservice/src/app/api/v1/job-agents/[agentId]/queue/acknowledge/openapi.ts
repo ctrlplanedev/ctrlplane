@@ -31,9 +31,7 @@ export const openapi: Swagger.SwaggerV3 = {
                 schema: {
                   type: "object",
                   properties: {
-                    job: {
-                      type: "object",
-                    },
+                    job: { $ref: "#/components/schemas/Job" },
                   },
                 },
               },

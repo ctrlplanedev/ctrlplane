@@ -47,6 +47,18 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 - **Environment Management:** Efficiently handle transitions between dev, test,
   staging, and production environments.
 
+## :zap: Trusted by
+
+<p align="center">
+  <a href="https://wandb.ai">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="./assets/trusted-by/wb-white.svg">
+      <source media="(prefers-color-scheme: light)" srcset="./assets/trusted-by/wb-black.svg">
+      <img src="./assets/trusted-by/wb-white.svg" height="40" alt="Ctrlplane">
+    </picture>
+  </a>
+</p>
+
 ## 🛠️ Quick start for contributors
 
 > Development system must have docker engine installed and running.
