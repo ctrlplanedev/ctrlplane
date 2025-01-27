@@ -5,6 +5,7 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
+import _ from "lodash";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
@@ -113,6 +114,17 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   const showRelease =
     isAlreadyDeployed && !showBlockedByReleaseChannel && !isPendingApproval;
 
+  const latestStatuses = _.chain(statuses)
+    .groupBy((s) => s.release_job_trigger.resourceId)
+    .map((groupedStatuses) =>
+      _.chain(groupedStatuses)
+        .sortBy((s) => s.release_job_trigger.createdAt)
+        .last()
+        .value(),
+    )
+    .map((s) => s.job.status)
+    .value();
+
   if (showRelease)
     return (
       <Release
@@ -124,7 +136,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
         environment={environment}
         name={release.version}
         deployedAt={release.createdAt}
-        statuses={statuses.map((s) => s.job.status)}
+        statuses={latestStatuses}
       />
     );
 
