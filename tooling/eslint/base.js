@@ -75,6 +75,7 @@ export default tseslint.config(
       ...tseslint.configs.stylisticTypeChecked,
     ],
     rules: {
+      "import/no-cycle": "warn",
       "@typescript-eslint/no-unsafe-return": "off",
       "@typescript-eslint/no-unsafe-call": "error",
       "@typescript-eslint/no-unsafe-assignment": "off",
