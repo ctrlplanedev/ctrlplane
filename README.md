@@ -38,7 +38,7 @@ orchestration** tool.
 
 ## 💪 Trusted by
 
-<p align="center">
+<p align="center" style="display: flex; justify-content: center; align-items: center; gap: 2rem;">
   <a href="https://wandb.ai">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true">
