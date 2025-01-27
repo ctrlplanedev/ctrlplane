@@ -34,35 +34,7 @@ export const openapi: Swagger.SwaggerV3 = {
                       type: "array",
                       items: {
                         type: "object",
-                        properties: {
-                          id: {
-                            type: "string",
-                            description: "The job ID",
-                          },
-                          status: {
-                            type: "string",
-                          },
-                          jobAgentId: {
-                            type: "string",
-                          },
-                          jobAgentConfig: {
-                            type: "object",
-                          },
-                          message: {
-                            type: "string",
-                          },
-                          releaseJobTriggerId: {
-                            type: "string",
-                          },
-                        },
-                        required: [
-                          "id",
-                          "status",
-                          "message",
-                          "releaseJobTriggerId",
-                          "jobAgentId",
-                          "jobAgentConfig",
-                        ],
+                        $ref: "#/components/schemas/Job",
                       },
                     },
                   },
