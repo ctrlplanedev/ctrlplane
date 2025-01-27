@@ -47,11 +47,7 @@ import {
 import type { Tx } from "../common.js";
 import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
-import {
-  environment,
-  environmentPolicyReleaseChannel,
-  environmentReleaseChannel,
-} from "./environment.js";
+import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
 
@@ -76,14 +72,6 @@ export const createReleaseChannel = createInsertSchema(releaseChannel, {
   releaseFilter: releaseCondition,
 }).omit({ id: true });
 export const updateReleaseChannel = createReleaseChannel.partial();
-
-export const releaseChannelRelations = relations(
-  releaseChannel,
-  ({ many }) => ({
-    environmentReleaseChannels: many(environmentReleaseChannel),
-    environmentPolicyReleaseChannels: many(environmentPolicyReleaseChannel),
-  }),
-);
 
 export const releaseDependency = pgTable(
   "release_dependency",
@@ -144,7 +132,7 @@ export const createRelease = createInsertSchema(release, {
   version: z.string().min(1),
   name: z.string().optional(),
   config: z.record(z.any()),
-  jobAgentConfig: z.record(z.any()).optional(),
+  jobAgentConfig: z.record(z.any()),
   status: z.nativeEnum(ReleaseStatus),
   createdAt: z
     .string()
