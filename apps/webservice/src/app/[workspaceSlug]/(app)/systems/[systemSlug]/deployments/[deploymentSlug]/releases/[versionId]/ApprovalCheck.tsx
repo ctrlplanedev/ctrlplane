@@ -83,9 +83,12 @@ export const ApprovalDialog: React.FC<{
           )}
         </AlertDialogHeader>
         {!policyQ.isLoading && (
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={onReject}>Reject</AlertDialogCancel>
-            <AlertDialogAction onClick={onApprove}>Approve</AlertDialogAction>
+          <AlertDialogFooter className="flex w-full justify-between sm:flex-row sm:justify-between">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <div className="flex gap-2">
+              <AlertDialogCancel onClick={onReject}>Reject</AlertDialogCancel>
+              <AlertDialogAction onClick={onApprove}>Approve</AlertDialogAction>
+            </div>
           </AlertDialogFooter>
         )}
       </AlertDialogContent>
