@@ -612,8 +612,8 @@ importers:
         specifier: ^1.5.0
         version: 1.5.0
       match-sorter:
-        specifier: ^6.3.4
-        version: 6.4.0
+        specifier: ^8.0.0
+        version: 8.0.0
       murmurhash:
         specifier: ^2.0.1
         version: 2.0.1
@@ -9877,9 +9877,8 @@ packages:
     engines: {node: '>= 18'}
     hasBin: true
 
-  match-sorter@6.4.0:
-    resolution: {integrity: sha512-d4664ahzdL1QTTvmK1iI0JsrxWeJ6gn33qkYtnPg3mcn+naBLtXSgSPOe+X2vUgtgGwaAk3eiaj7gwKjjMAq+Q==}
-    deprecated: This was arguably a breaking change. Not in API, but more results can be returned. Upgrade to the next major when you are ready for that
+  match-sorter@8.0.0:
+    resolution: {integrity: sha512-bGJ6Zb+OhzXe+ptP5d80OLVx7AkqfRbtGEh30vNSfjNwllu+hHI+tcbMIT/fbkx/FKN1PmKuDb65+Oofg+XUxw==}
 
   math-random@1.0.4:
     resolution: {integrity: sha512-rUxjysqif/BZQH2yhd5Aaq7vXMSx9NdEsQcyA07uEzIvxgI7zIr33gGsh+RU0/XjmQpCW7RsVof1vlkvQVCK5A==}
@@ -23609,7 +23608,7 @@ snapshots:
 
   marked@13.0.3: {}
 
-  match-sorter@6.4.0:
+  match-sorter@8.0.0:
     dependencies:
       '@babel/runtime': 7.25.6
       remove-accents: 0.5.0

@@ -60,7 +60,7 @@
     "immer": "^10.1.1",
     "js-yaml": "^4.1.0",
     "lz-string": "^1.5.0",
-    "match-sorter": "^6.3.4",
+    "match-sorter": "^8.0.0",
     "murmurhash": "^2.0.1",
     "next": "catalog:",
     "next-auth": "catalog:",
