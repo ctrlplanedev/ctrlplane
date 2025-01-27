@@ -29,47 +29,7 @@ export const openapi: Swagger.SwaggerV3 = {
               "application/json": {
                 schema: {
                   type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      id: {
-                        type: "string",
-                      },
-                      status: {
-                        type: "string",
-                      },
-                      message: {
-                        type: "string",
-                      },
-                      jobAgentId: {
-                        type: "string",
-                      },
-                      jobAgentConfig: {
-                        type: "object",
-                      },
-                      externalId: {
-                        type: "string",
-                        nullable: true,
-                      },
-                      release: { $ref: "#/components/schemas/Release" },
-                      deployment: { $ref: "#/components/schemas/Deployment" },
-                      config: {
-                        type: "object",
-                      },
-                      runbook: { $ref: "#/components/schemas/Runbook" },
-                      resource: { $ref: "#/components/schemas/Resource" },
-                      environment: { $ref: "#/components/schemas/Environment" },
-                    },
-                    required: [
-                      "id",
-                      "status",
-                      "message",
-                      "jobAgentId",
-                      "jobAgentConfig",
-                      "externalId",
-                      "config",
-                    ],
-                  },
+                  items: { type: "object", $ref: "#/components/schemas/Job" },
                 },
               },
             },
