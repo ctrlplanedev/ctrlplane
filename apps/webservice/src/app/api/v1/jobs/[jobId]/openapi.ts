@@ -118,7 +118,8 @@ export const openapi: Swagger.SwaggerV3 = {
                 type: "object",
                 properties: {
                   status: {
-                    type: "string",
+                    $ref: "#/components/schemas/JobStatus",
+                    nullable: true,
                   },
                   message: {
                     type: "string",

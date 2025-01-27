@@ -704,7 +704,8 @@
                 "type": "object",
                 "properties": {
                   "status": {
-                    "type": "string"
+                    "$ref": "#/components/schemas/JobStatus",
+                    "nullable": true
                   },
                   "message": {
                     "type": "string",
@@ -2802,6 +2803,21 @@
           "metadata"
         ]
       },
+      "JobStatus": {
+        "type": "string",
+        "enum": [
+          "successful",
+          "cancelled",
+          "skipped",
+          "in_progress",
+          "action_required",
+          "pending",
+          "failure",
+          "invalid_job_agent",
+          "invalid_integration",
+          "external_run_not_found"
+        ]
+      },
       "Job": {
         "type": "object",
         "properties": {
@@ -2810,19 +2826,7 @@
             "format": "uuid"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "successful",
-              "cancelled",
-              "skipped",
-              "in_progress",
-              "action_required",
-              "pending",
-              "failure",
-              "invalid_job_agent",
-              "invalid_integration",
-              "external_run_not_found"
-            ]
+            "$ref": "#/components/schemas/JobStatus"
           },
           "externalId": {
             "type": "string",

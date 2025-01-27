@@ -212,25 +212,26 @@ export const openapi: Swagger.SwaggerV3 = {
           "metadata",
         ],
       },
+      JobStatus: {
+        type: "string",
+        enum: [
+          "successful",
+          "cancelled",
+          "skipped",
+          "in_progress",
+          "action_required",
+          "pending",
+          "failure",
+          "invalid_job_agent",
+          "invalid_integration",
+          "external_run_not_found",
+        ],
+      },
       Job: {
         type: "object",
         properties: {
           id: { type: "string", format: "uuid" },
-          status: {
-            type: "string",
-            enum: [
-              "successful",
-              "cancelled",
-              "skipped",
-              "in_progress",
-              "action_required",
-              "pending",
-              "failure",
-              "invalid_job_agent",
-              "invalid_integration",
-              "external_run_not_found",
-            ],
-          },
+          status: { $ref: "#/components/schemas/JobStatus" },
           externalId: {
             type: "string",
             nullable: true,
