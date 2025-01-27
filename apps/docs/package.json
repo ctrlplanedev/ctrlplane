@@ -28,7 +28,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tailwind-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
-    "@types/node": "catalog:node20",
+    "@types/node": "catalog:node22",
     "@types/react": "catalog:react18",
     "@types/react-dom": "catalog:react18",
     "eslint": "catalog:",

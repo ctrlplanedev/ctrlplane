@@ -31,7 +31,7 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/etag": "^1.8.3",
     "@types/mime-types": "^2.1.4",
-    "@types/node": "catalog:node20",
+    "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"

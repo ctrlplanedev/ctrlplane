@@ -94,7 +94,7 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/dagre": "^0.7.52",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "catalog:node20",
+    "@types/node": "catalog:node22",
     "@types/randomcolor": "^0.5.9",
     "@types/react": "catalog:react18",
     "@types/react-dom": "catalog:react18",

@@ -25,7 +25,7 @@
     "@ctrlplane/prettier-config": "workspace:*",
     "@ctrlplane/tsconfig": "workspace:*",
     "@openapitools/openapi-generator-cli": "^2.13.5",
-    "@types/node": "catalog:node20",
+    "@types/node": "catalog:node22",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "tsup": "^8.2.4",

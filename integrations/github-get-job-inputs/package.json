@@ -10,10 +10,6 @@
   "exports": {
     ".": "./dist/index.js"
   },
-  "packageManager": "pnpm@9.7.1",
-  "engines": {
-    "node": "20"
-  },
   "type": "module",
   "main": "index.ts",
   "scripts": {

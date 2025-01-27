@@ -1,17 +1,33 @@
 {
   "extends": "@ctrlplane/tsconfig/base.json",
   "compilerOptions": {
-    "lib": ["es2022", "dom", "dom.iterable"],
+    "lib": [
+      "es2022",
+      "dom",
+      "dom.iterable"
+    ],
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "~/*": ["./*"]
+      "~/*": [
+        "./*"
+      ]
     },
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "allowSyntheticDefaultImports": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "module": "esnext"
+    "module": "esnext",
+    "strictNullChecks": true
   },
-  "include": [".", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    ".",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
