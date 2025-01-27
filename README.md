@@ -46,14 +46,6 @@ orchestration** tool.
       <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true" height="100" alt="Weights & Biases">
     </picture>
   </a>
-
-  <a href="https://runnex.dev">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/runnex-white.png?raw=true">
-      <source media="(prefers-color-scheme: light)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/runnex-black.png?raw=true">
-      <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/runnex-white.png?raw=true" height="40" alt="Runnex">
-    </picture>
-  </a>
 </p>
 
 ## :zap: Installation
