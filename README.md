@@ -52,9 +52,9 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 <p align="center">
   <a href="https://wandb.ai">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="./assets/trusted-by/wb-white.svg">
-      <source media="(prefers-color-scheme: light)" srcset="./assets/trusted-by/wb-black.svg">
-      <img src="./assets/trusted-by/wb-white.svg" height="40" alt="Ctrlplane">
+      <source media="(prefers-color-scheme: dark)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true">
+      <source media="(prefers-color-scheme: light)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-black.png?raw=true">
+      <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true" height="40" alt="Ctrlplane">
     </picture>
   </a>
 </p>
