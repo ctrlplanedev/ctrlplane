@@ -19,20 +19,8 @@
   <a href="https://docs.ctrlplane.dev"><b>Documentation</b></a>
 </p>
 
-Meet [Ctrlplane](https://ctrlplane.dev), an open-source deployment tool that
-automates multi-cloud, multi-region, and multi-service software deployments.
-
-## :zap: Installation
-
-The easiest way to get started with Ctrlplane is by creating a [Ctrlplane
-Cloud](https://app.ctrlplane.dev) account.
-
-If you would like to self-host Plane, please see our [deployment guide](https://docs.ctrlplane.dev/install/helm).
-
-| Installation methods | Docs link                                                                                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Docker               | [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/docker-compose)         |
-| Kubernetes           | [![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/kubernetes) |
+Meet [Ctrlplane](https://ctrlplane.dev), an open-source **deployment
+orchestration** tool.
 
 ## :rocket: Features
 
@@ -55,10 +43,22 @@ If you would like to self-host Plane, please see our [deployment guide](https://
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true">
       <source media="(prefers-color-scheme: light)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-black.png?raw=true">
-      <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true" height="50" alt="Ctrlplane">
+      <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true" height="100" alt="Ctrlplane">
     </picture>
   </a>
 </p>
+
+## :zap: Installation
+
+The easiest way to get started with Ctrlplane is by creating a [Ctrlplane
+Cloud](https://app.ctrlplane.dev) account.
+
+If you would like to self-host Plane, please see our [deployment guide](https://docs.ctrlplane.dev/install/helm).
+
+| Installation methods | Docs link                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Docker               | [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/docker-compose)         |
+| Kubernetes           | [![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)](https://docs.ctrlplane.dev/self-hosted/methods/kubernetes) |
 
 ## 🛠️ Quick start for contributors
 
