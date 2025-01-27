@@ -1,0 +1,1 @@
+ALTER TABLE "environment_policy_approval" ADD COLUMN "approved_at" timestamp (0) with time zone DEFAULT NULL;

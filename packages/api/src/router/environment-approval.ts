@@ -71,9 +71,10 @@ export const approvalRouter = createTRPCRouter({
       z.object({ policyId: z.string().uuid(), releaseId: z.string().uuid() }),
     )
     .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
       const envApproval = await ctx.db
         .update(SCHEMA.environmentPolicyApproval)
-        .set({ status: "approved", userId: ctx.session.user.id })
+        .set({ status: "approved", userId, approvedAt: sql`now()` })
         .where(
           and(
             eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),

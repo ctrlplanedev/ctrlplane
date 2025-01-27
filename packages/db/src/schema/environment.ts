@@ -241,6 +241,10 @@ export const environmentPolicyApproval = pgTable(
       .references(() => release.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
     userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
+    approvedAt: timestamp("approved_at", {
+      withTimezone: true,
+      precision: 0,
+    }).default(sql`NULL`),
   },
   (t) => ({ uniq: uniqueIndex().on(t.policyId, t.releaseId) }),
 );
