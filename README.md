@@ -1,8 +1,9 @@
 <p align="center">
   <a href="https://ctrlplane.dev">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://ctrlplane.dev/logo-sm.png">
-      <img src="https://ctrlplane.dev/logo-sm.png" height="60">
+      <source media="(prefers-color-scheme: dark)" srcset="https://ctrlplane.dev/logo-white.png">
+      <source media="(prefers-color-scheme: light)" srcset="https://ctrlplane.dev/logo-black.png">
+      <img src="https://ctrlplane.dev/logo-black.png" height="60">
     </picture>
   </a>
 </p>
@@ -47,14 +48,14 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 - **Environment Management:** Efficiently handle transitions between dev, test,
   staging, and production environments.
 
-## :zap: Trusted by
+## 💪 Trusted by
 
 <p align="center">
   <a href="https://wandb.ai">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true">
       <source media="(prefers-color-scheme: light)" srcset="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-black.png?raw=true">
-      <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true" height="40" alt="Ctrlplane">
+      <img src="https://github.com/ctrlplanedev/ctrlplane/blob/main/assets/trusted-by/wb-white.png?raw=true" height="50" alt="Ctrlplane">
     </picture>
   </a>
 </p>
