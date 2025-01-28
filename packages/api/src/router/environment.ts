@@ -96,7 +96,7 @@ export const environmentRouter = createTRPCRouter({
       return ctx.db
         .select()
         .from(environment)
-        .leftJoin(
+        .innerJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
         )
@@ -121,11 +121,6 @@ export const environmentRouter = createTRPCRouter({
         .then((rows) => {
           const env = rows.at(0);
           if (env == null) return null;
-
-          if (env.environment_policy == null)
-            throw new Error(
-              "No policy found on environment, this should never happen. Please contact support.",
-            );
 
           const policy = {
             ...env.environment_policy,
