@@ -1,3 +1,4 @@
+BEGIN;
 ALTER TABLE "environment_policy" ADD COLUMN "environment_id" uuid;--> statement-breakpoint
 DO $$ BEGIN
 ALTER TABLE "environment_policy" ADD CONSTRAINT "environment_policy_environment_id_environment_id_fk" FOREIGN KEY ("environment_id") REFERENCES "public"."environment"("id") ON DELETE cascade ON UPDATE no action;
@@ -22,3 +23,5 @@ WHERE "environment"."id" = ep."environment_id"
   AND "environment"."policy_id" IS NULL;
 
 ALTER TABLE "environment" ALTER COLUMN "policy_id" SET NOT NULL;--> statement-breakpoint
+
+COMMIT;
