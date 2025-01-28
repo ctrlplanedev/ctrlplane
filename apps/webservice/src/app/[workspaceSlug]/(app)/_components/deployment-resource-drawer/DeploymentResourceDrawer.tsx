@@ -48,10 +48,10 @@ export const DeploymentResourceDrawer: React.FC = () => {
 
   const releaseFilter =
     environment?.releaseChannels.find((rc) => rc.deploymentId === deploymentId)
-      ?.filter ??
-    environment?.policy?.releaseChannels.find(
+      ?.releaseFilter ??
+    environment?.policy.releaseChannels.find(
       (rc) => rc.deploymentId === deploymentId,
-    )?.filter ??
+    )?.releaseFilter ??
     undefined;
 
   const jobFilter: JobCondition = {

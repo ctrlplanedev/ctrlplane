@@ -17,14 +17,14 @@ type Policy = NonNullable<
   NonNullable<RouterOutputs["environment"]["byId"]>["policy"]
 >;
 
-type UpdateOverrideProps = {
+type UpdateOverridePolicyProps = {
   environment: SCHEMA.Environment;
   environmentPolicy: Policy;
   activeTab: EnvironmentDrawerTab;
   deployments: Deployment[];
 };
 
-export const UpdateOverride: React.FC<UpdateOverrideProps> = ({
+export const UpdateOverridePolicy: React.FC<UpdateOverridePolicyProps> = ({
   environment,
   environmentPolicy,
   activeTab,

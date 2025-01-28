@@ -16,28 +16,6 @@ const useInvalidateQueries = (
   return invalidateQueries;
 };
 
-export const useCreateOverridePolicy = (environment: SCHEMA.Environment) => {
-  const createPolicy = api.environment.policy.create.useMutation();
-  const invalidateQueries = useInvalidateQueries(
-    environment.id,
-    environment.systemId,
-  );
-
-  const onCreate = (data: SCHEMA.UpdateEnvironmentPolicy) =>
-    createPolicy
-      .mutateAsync({
-        environmentId: environment.id,
-        ...environment,
-        ...data,
-      })
-      .then(invalidateQueries);
-
-  return {
-    onCreate,
-    isCreating: createPolicy.isPending,
-  };
-};
-
 export const useUpdateOverridePolicy = (
   environment: SCHEMA.Environment,
   policy: SCHEMA.EnvironmentPolicy,

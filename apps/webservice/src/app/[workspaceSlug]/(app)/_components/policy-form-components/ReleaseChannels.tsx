@@ -1,4 +1,3 @@
-import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -16,9 +15,7 @@ type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
 };
 
-type Policy = NonNullable<
-  NonNullable<RouterOutputs["environment"]["byId"]>["policy"]
->;
+type Policy = { releaseChannels: SCHEMA.ReleaseChannel[] };
 
 type ReleaseChannelProps = {
   environmentPolicy: Policy;

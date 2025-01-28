@@ -65,6 +65,7 @@ export const environmentRouter = createTRPCRouter({
         .select({
           releaseChannelEnvId: environmentReleaseChannel.environmentId,
           releaseChannelDeploymentId: releaseChannel.deploymentId,
+          releaseChannelDescription: releaseChannel.description,
           releaseChannelFilter: releaseChannel.releaseFilter,
           releaseChannelId: releaseChannel.id,
           releaseChannelName: releaseChannel.name,
@@ -80,6 +81,7 @@ export const environmentRouter = createTRPCRouter({
         .select({
           releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
           releaseChannelDeploymentId: releaseChannel.deploymentId,
+          releaseChannelDescription: releaseChannel.description,
           releaseChannelFilter: releaseChannel.releaseFilter,
           releaseChannelId: releaseChannel.id,
           releaseChannelName: releaseChannel.name,
@@ -119,30 +121,34 @@ export const environmentRouter = createTRPCRouter({
         .then((rows) => {
           const env = rows.at(0);
           if (env == null) return null;
-          const policy =
-            env.environment_policy == null
-              ? null
-              : {
-                  ...env.environment_policy,
-                  releaseChannels: _.chain(rows)
-                    .map((r) => r.policyRCSubquery)
-                    .filter(isPresent)
-                    .uniqBy((r) => r.releaseChannelId)
-                    .map((r) => ({
-                      deploymentId: r.releaseChannelDeploymentId,
-                      filter: r.releaseChannelFilter,
-                      id: r.releaseChannelId,
-                      name: r.releaseChannelName,
-                    }))
-                    .value(),
-                  releaseWindows: _.chain(rows)
-                    .map((r) => r.environment_policy_release_window)
-                    .filter(isPresent)
-                    .uniqBy((r) => r.id)
-                    .value(),
-                  isOverride:
-                    env.environment_policy.environmentId === env.environment.id,
-                };
+
+          if (env.environment_policy == null)
+            throw new Error(
+              "No policy found on environment, this should never happen. Please contact support.",
+            );
+
+          const policy = {
+            ...env.environment_policy,
+            releaseChannels: _.chain(rows)
+              .map((r) => r.policyRCSubquery)
+              .filter(isPresent)
+              .uniqBy((r) => r.releaseChannelId)
+              .map((r) => ({
+                deploymentId: r.releaseChannelDeploymentId,
+                description: r.releaseChannelDescription,
+                releaseFilter: r.releaseChannelFilter,
+                id: r.releaseChannelId,
+                name: r.releaseChannelName,
+              }))
+              .value(),
+            releaseWindows: _.chain(rows)
+              .map((r) => r.environment_policy_release_window)
+              .filter(isPresent)
+              .uniqBy((r) => r.id)
+              .value(),
+            isOverride:
+              env.environment_policy.environmentId === env.environment.id,
+          };
 
           const releaseChannels = _.chain(rows)
             .map((r) => r.envRCSubquery)
@@ -150,7 +156,8 @@ export const environmentRouter = createTRPCRouter({
             .uniqBy((r) => r.releaseChannelId)
             .map((r) => ({
               deploymentId: r.releaseChannelDeploymentId,
-              filter: r.releaseChannelFilter,
+              releaseFilter: r.releaseChannelFilter,
+              description: r.releaseChannelDescription,
               id: r.releaseChannelId,
               name: r.releaseChannelName,
             }))

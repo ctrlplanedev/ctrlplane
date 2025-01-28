@@ -23,8 +23,7 @@ import { TabButton } from "../TabButton";
 import { EnvironmentDropdownMenu } from "./EnvironmentDropdownMenu";
 import { EditFilterForm } from "./Filter";
 import { Overview } from "./Overview";
-import { CreateOverride } from "./policy-override/CreateOverride";
-import { UpdateOverride } from "./policy-override/UpdateOverride";
+import { UpdateOverridePolicy } from "./policy-override/UpdateOverride";
 import { EnvironmentDrawerTab } from "./tabs";
 
 const tabParam = "tab";
@@ -99,8 +98,7 @@ export const EnvironmentDrawer: React.FC = () => {
   const loading =
     environmentQ.isLoading || workspaceQ.isLoading || deploymentsQ.isLoading;
 
-  const isUsingExternalPolicy =
-    environment?.policy != null && !environment.policy.isOverride;
+  const isUsingOverridePolicy = environment?.policy.isOverride ?? false;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -137,7 +135,7 @@ export const EnvironmentDrawer: React.FC = () => {
 
         {!loading && (
           <div className="flex w-full gap-6 p-6">
-            {!isUsingExternalPolicy && (
+            {isUsingOverridePolicy && (
               <div className="space-y-8">
                 <div className="space-y-1">
                   <h1 className="mb-2 text-sm font-medium">General</h1>
@@ -193,7 +191,7 @@ export const EnvironmentDrawer: React.FC = () => {
               </div>
             )}
 
-            {isUsingExternalPolicy && (
+            {!isUsingOverridePolicy && (
               <div className="space-y-1">
                 <TabButton
                   active={tab === EnvironmentDrawerTab.Overview || tab == null}
@@ -222,18 +220,10 @@ export const EnvironmentDrawer: React.FC = () => {
                       workspaceId={workspace.id}
                     />
                   )}
-                {environment.policy != null &&
-                  environment.policy.isOverride && (
-                    <UpdateOverride
-                      environment={environment}
-                      environmentPolicy={environment.policy}
-                      activeTab={tab ?? EnvironmentDrawerTab.Approval}
-                      deployments={deployments ?? []}
-                    />
-                  )}
-                {environment.policy == null && (
-                  <CreateOverride
+                {environment.policy.isOverride && (
+                  <UpdateOverridePolicy
                     environment={environment}
+                    environmentPolicy={environment.policy}
                     activeTab={tab ?? EnvironmentDrawerTab.Approval}
                     deployments={deployments ?? []}
                   />

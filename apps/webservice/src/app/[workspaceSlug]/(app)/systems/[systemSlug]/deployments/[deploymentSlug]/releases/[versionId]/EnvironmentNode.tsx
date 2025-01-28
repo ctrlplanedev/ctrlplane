@@ -147,14 +147,14 @@ const ReleaseChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
     (rc) => rc.deploymentId === deploymentId,
   );
 
-  const policyReleaseChannel = environment.data?.policy?.releaseChannels.find(
+  const policyReleaseChannel = environment.data?.policy.releaseChannels.find(
     (prc) => prc.deploymentId === deploymentId,
   );
 
   const rcId = envReleaseChannel?.id ?? policyReleaseChannel?.id ?? null;
 
-  const { filter } = envReleaseChannel ??
-    policyReleaseChannel ?? { filter: null };
+  const { releaseFilter: filter } = envReleaseChannel ??
+    policyReleaseChannel ?? { releaseFilter: null };
 
   const versionFilter: ReleaseCondition = {
     type: ReleaseFilterType.Version,
