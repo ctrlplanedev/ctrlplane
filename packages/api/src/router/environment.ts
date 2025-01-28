@@ -1,4 +1,3 @@
-import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
@@ -7,6 +6,7 @@ import { z } from "zod";
 import {
   and,
   buildConflictUpdateColumns,
+  createEnv,
   eq,
   inArray,
   isNotNull,
@@ -43,11 +43,6 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { policyRouter } from "./environment-policy";
-
-export const createEnv = async (
-  db: Tx,
-  input: z.infer<typeof createEnvironment>,
-) => db.insert(environment).values(input).returning().then(takeFirst);
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
@@ -260,9 +255,23 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
+      const overridePolicy = await ctx.db
+        .select()
+        .from(environmentPolicy)
+        .where(eq(environmentPolicy.environmentId, input.id))
+        .then(takeFirst);
+
+      const getPolicyId = () => {
+        if (input.data.policyId != null) return input.data.policyId;
+        if (input.data.policyId === null) return overridePolicy.id;
+        return oldEnv.environment.policyId;
+      };
+
+      const policyId = getPolicyId();
+
       const updatedEnv = await ctx.db
         .update(environment)
-        .set(input.data)
+        .set({ ...input.data, policyId })
         .where(eq(environment.id, input.id))
         .returning()
         .then(takeFirst);

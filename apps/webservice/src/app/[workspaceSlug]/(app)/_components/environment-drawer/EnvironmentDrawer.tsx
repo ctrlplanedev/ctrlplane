@@ -224,7 +224,7 @@ export const EnvironmentDrawer: React.FC = () => {
                   <UpdateOverridePolicy
                     environment={environment}
                     environmentPolicy={environment.policy}
-                    activeTab={tab ?? EnvironmentDrawerTab.Approval}
+                    activeTab={tab}
                     deployments={deployments ?? []}
                   />
                 )}

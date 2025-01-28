@@ -248,7 +248,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [
@@ -317,7 +317,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [
@@ -383,7 +383,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [
@@ -449,7 +449,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [
@@ -515,7 +515,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [
@@ -611,7 +611,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [
@@ -707,7 +707,7 @@ describe("job-variables-deployment", () => {
       name: "test",
       description: null,
       systemId: "0",
-      policyId: null,
+      policyId: "0",
       resourceFilter: null,
       createdAt: new Date(),
       environments: [

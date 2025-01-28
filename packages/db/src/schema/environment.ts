@@ -59,7 +59,7 @@ export const createEnvironment = createInsertSchema(environment, {
     .optional()
     .refine((filter) => filter == null || isValidResourceCondition(filter)),
 })
-  .omit({ id: true })
+  .omit({ id: true, policyId: true })
   .extend({
     releaseChannels: z
       .array(
@@ -75,9 +75,13 @@ export const createEnvironment = createInsertSchema(environment, {
         return deploymentIds.size === channels.length;
       }),
     metadata: z.record(z.string()).optional(),
+    policyId: z.string().uuid().optional(),
   });
 
-export const updateEnvironment = createEnvironment.partial();
+export const updateEnvironment = createEnvironment
+  .partial()
+  .omit({ policyId: true })
+  .extend({ policyId: z.string().uuid().nullable().optional() });
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
 export const environmentMetadata = pgTable(

@@ -20,7 +20,7 @@ type Policy = NonNullable<
 type UpdateOverridePolicyProps = {
   environment: SCHEMA.Environment;
   environmentPolicy: Policy;
-  activeTab: EnvironmentDrawerTab;
+  activeTab: EnvironmentDrawerTab | null;
   deployments: Deployment[];
 };
 
