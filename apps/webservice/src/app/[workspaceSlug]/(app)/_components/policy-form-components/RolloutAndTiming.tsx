@@ -29,10 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { toast } from "@ctrlplane/ui/toast";
-
-import { api } from "~/trpc/react";
-import { useInvalidatePolicy } from "./useInvalidatePolicy";
 
 const isValidDuration = (str: string) => {
   try {
@@ -46,7 +42,6 @@ const isValidDuration = (str: string) => {
 const schema = z.object({
   releaseWindows: z.array(
     z.object({
-      policyId: z.string().uuid(),
       recurrence: z.enum(["hourly", "daily", "weekly", "monthly"]),
       startTime: z.date(),
       endTime: z.date(),
@@ -61,15 +56,19 @@ const schema = z.object({
 });
 
 type RolloutAndTimingProps = {
-  environmentPolicy: SCHEMA.EnvironmentPolicy & {
+  environmentPolicy: {
+    rolloutDuration: number;
+    minimumReleaseInterval: number;
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
   };
   isLoading: boolean;
+  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
 };
 
 export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
   environmentPolicy,
   isLoading,
+  onUpdate,
 }) => {
   const rolloutDuration = prettyMilliseconds(environmentPolicy.rolloutDuration);
   const minimumReleaseInterval = prettyMilliseconds(
@@ -87,20 +86,12 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
     name: "releaseWindows",
   });
 
-  const updatePolicy = api.environment.policy.update.useMutation();
-  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
-
-  const { id: policyId } = environmentPolicy;
   const onSubmit = form.handleSubmit((data) => {
     const { releaseWindows, rolloutDuration: durationString } = data;
     const rolloutDuration = ms(durationString);
     const minimumReleaseInterval = ms(data.minimumReleaseInterval);
     const updates = { rolloutDuration, releaseWindows, minimumReleaseInterval };
-    updatePolicy
-      .mutateAsync({ id: policyId, data: updates })
-      .then(() => form.reset(data))
-      .then(() => invalidatePolicy())
-      .catch((e) => toast.error(e.message));
+    onUpdate(updates);
   });
 
   return (
@@ -211,7 +202,6 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
             className="w-fit"
             onClick={() =>
               append({
-                policyId: environmentPolicy.id,
                 recurrence: "weekly",
                 startTime: new Date(),
                 endTime: new Date(),
@@ -287,10 +277,7 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
           )}
         />
 
-        <Button
-          type="submit"
-          disabled={updatePolicy.isPending || !form.formState.isDirty}
-        >
+        <Button type="submit" disabled={isLoading || !form.formState.isDirty}>
           Save
         </Button>
       </form>

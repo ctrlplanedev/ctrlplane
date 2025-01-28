@@ -1,7 +1,10 @@
 import { relations } from "drizzle-orm";
 
-import { environmentPolicy } from "./environment-policy.js";
-import { environment, environmentMetadata } from "./environment.js";
+import {
+  environment,
+  environmentMetadata,
+  environmentPolicy,
+} from "./environment.js";
 import { environmentReleaseChannel } from "./release-channel.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";

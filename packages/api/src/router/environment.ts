@@ -21,6 +21,7 @@ import {
   environmentMetadata,
   environmentPolicy,
   environmentPolicyReleaseChannel,
+  environmentPolicyReleaseWindow,
   environmentReleaseChannel,
   releaseChannel,
   resource,
@@ -97,6 +98,10 @@ export const environmentRouter = createTRPCRouter({
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
         )
+        .leftJoin(
+          environmentPolicyReleaseWindow,
+          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+        )
         .innerJoin(system, eq(environment.systemId, system.id))
         .leftJoin(
           envRCSubquery,
@@ -130,6 +135,13 @@ export const environmentRouter = createTRPCRouter({
                       name: r.releaseChannelName,
                     }))
                     .value(),
+                  releaseWindows: _.chain(rows)
+                    .map((r) => r.environment_policy_release_window)
+                    .filter(isPresent)
+                    .uniqBy((r) => r.id)
+                    .value(),
+                  isOverride:
+                    env.environment_policy.environmentId === env.environment.id,
                 };
 
           const releaseChannels = _.chain(rows)

@@ -4,30 +4,25 @@ import { IconLoader2 } from "@tabler/icons-react";
 import { Label } from "@ctrlplane/ui/label";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 
-import { api } from "~/trpc/react";
-import { useInvalidatePolicy } from "./useInvalidatePolicy";
-
 type ReleaseManagementProps = {
-  environmentPolicy: SCHEMA.EnvironmentPolicy;
+  environmentPolicy: { releaseSequencing: "wait" | "cancel" };
+  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
   isLoading: boolean;
 };
 
 export const ReleaseManagement: React.FC<ReleaseManagementProps> = ({
   environmentPolicy,
+  onUpdate,
   isLoading,
 }) => {
-  const updatePolicy = api.environment.policy.update.useMutation();
-  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
-  const { releaseSequencing, id } = environmentPolicy;
+  const { releaseSequencing } = environmentPolicy;
 
   return (
     <div className="space-y-10 p-2">
       <div className="flex flex-col gap-1">
         <h1 className="flex items-center gap-2 text-lg font-medium">
           Release Management
-          {(isLoading || updatePolicy.isPending) && (
-            <IconLoader2 className="h-4 w-4 animate-spin" />
-          )}
+          {isLoading && <IconLoader2 className="h-4 w-4 animate-spin" />}
         </h1>
         <span className="text-sm text-muted-foreground">
           Release management policies are concerned with how new and pending
@@ -48,10 +43,8 @@ export const ReleaseManagement: React.FC<ReleaseManagementProps> = ({
         </div>
         <RadioGroup
           value={releaseSequencing}
-          onValueChange={(value: "wait" | "cancel") =>
-            updatePolicy
-              .mutateAsync({ id, data: { releaseSequencing: value } })
-              .then(invalidatePolicy)
+          onValueChange={(releaseSequencing: "wait" | "cancel") =>
+            onUpdate({ releaseSequencing })
           }
         >
           <div className="flex items-center space-x-3 space-y-0">

@@ -24,14 +24,15 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { api } from "~/trpc/react";
+import { ApprovalAndGovernance } from "../policy-form-components/ApprovalAndGovernance";
+import { DeploymentControl } from "../policy-form-components/DeploymentControl";
+import { ReleaseChannels } from "../policy-form-components/ReleaseChannels";
+import { ReleaseManagement } from "../policy-form-components/ReleaseManagement";
+import { RolloutAndTiming } from "../policy-form-components/RolloutAndTiming";
 import { TabButton } from "../TabButton";
-import { ApprovalAndGovernance } from "./ApprovalAndGovernance";
-import { DeploymentControl } from "./DeploymentControl";
 import { Overview } from "./Overview";
 import { DeleteEnvironmentPolicyDialog } from "./PolicyDeleteDialog";
-import { ReleaseChannels } from "./ReleaseChannels";
-import { ReleaseManagement } from "./ReleaseManagement";
-import { RolloutAndTiming } from "./RolloutAndTiming";
+import { useUpdatePolicy } from "./useUpdatePolicy";
 
 export enum EnvironmentPolicyDrawerTab {
   Overview = "overview",
@@ -92,32 +93,6 @@ export const useEnvironmentPolicyDrawer = () => {
   };
 };
 
-type Deployment = SCHEMA.Deployment & {
-  releaseChannels: SCHEMA.ReleaseChannel[];
-};
-
-type ViewProps = {
-  activeTab: EnvironmentPolicyDrawerTab;
-  environmentPolicy: SCHEMA.EnvironmentPolicy & {
-    releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
-    releaseChannels: SCHEMA.ReleaseChannel[];
-  };
-  deployments: Deployment[];
-  isLoading: boolean;
-};
-
-const View: React.FC<ViewProps> = (props) =>
-  ({
-    [EnvironmentPolicyDrawerTab.Overview]: <Overview {...props} />,
-    [EnvironmentPolicyDrawerTab.Approval]: <ApprovalAndGovernance {...props} />,
-    [EnvironmentPolicyDrawerTab.Concurrency]: <DeploymentControl {...props} />,
-    [EnvironmentPolicyDrawerTab.Management]: <ReleaseManagement {...props} />,
-    [EnvironmentPolicyDrawerTab.Rollout]: <RolloutAndTiming {...props} />,
-    [EnvironmentPolicyDrawerTab.ReleaseChannels]: (
-      <ReleaseChannels {...props} />
-    ),
-  })[props.activeTab];
-
 const PolicyDropdownMenu: React.FC<{
   environmentPolicy: SCHEMA.EnvironmentPolicy;
   children: React.ReactNode;
@@ -138,6 +113,68 @@ const PolicyDropdownMenu: React.FC<{
   </DropdownMenu>
 );
 
+export type ViewProps = {
+  environmentPolicy: SCHEMA.EnvironmentPolicy & {
+    releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
+    releaseChannels: SCHEMA.ReleaseChannel[];
+  };
+  activeTab: EnvironmentPolicyDrawerTab;
+};
+
+export const View: React.FC<ViewProps> = ({ environmentPolicy, activeTab }) => {
+  const deploymentsQ = api.deployment.bySystemId.useQuery(
+    environmentPolicy.systemId,
+  );
+  const { data: deployments, isLoading: isDeploymentsLoading } = deploymentsQ;
+
+  const { onUpdate, isUpdating } = useUpdatePolicy(environmentPolicy);
+  const isLoading = isDeploymentsLoading || isUpdating;
+
+  return (
+    <div className="w-full overflow-auto">
+      {activeTab === EnvironmentPolicyDrawerTab.Overview && (
+        <Overview environmentPolicy={environmentPolicy} />
+      )}
+      {activeTab === EnvironmentPolicyDrawerTab.Approval && (
+        <ApprovalAndGovernance
+          environmentPolicy={environmentPolicy}
+          onUpdate={onUpdate}
+          isLoading={isLoading}
+        />
+      )}
+      {activeTab === EnvironmentPolicyDrawerTab.Concurrency && (
+        <DeploymentControl
+          environmentPolicy={environmentPolicy}
+          onUpdate={onUpdate}
+          isLoading={isLoading}
+        />
+      )}
+      {activeTab === EnvironmentPolicyDrawerTab.Management && (
+        <ReleaseManagement
+          environmentPolicy={environmentPolicy}
+          onUpdate={onUpdate}
+          isLoading={isLoading}
+        />
+      )}
+      {activeTab === EnvironmentPolicyDrawerTab.ReleaseChannels && (
+        <ReleaseChannels
+          environmentPolicy={environmentPolicy}
+          onUpdate={onUpdate}
+          isLoading={isLoading}
+          deployments={deployments ?? []}
+        />
+      )}
+      {activeTab === EnvironmentPolicyDrawerTab.Rollout && (
+        <RolloutAndTiming
+          environmentPolicy={environmentPolicy}
+          isLoading={isLoading}
+          onUpdate={onUpdate}
+        />
+      )}
+    </div>
+  );
+};
+
 export const EnvironmentPolicyDrawer: React.FC = () => {
   const { environmentPolicyId, removeEnvironmentPolicyId, tab, setTab } =
     useEnvironmentPolicyDrawer();
@@ -147,13 +184,9 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
     environmentPolicyId ?? "",
     { enabled: isOpen },
   );
-  const { data: environmentPolicy, isLoading } = environmentPolicyQ;
+  const { data: environmentPolicy } = environmentPolicyQ;
 
-  const deploymentsQ = api.deployment.bySystemId.useQuery(
-    environmentPolicy?.systemId ?? "",
-    { enabled: isOpen && environmentPolicy != null },
-  );
-  const deployments = deploymentsQ.data;
+  const activeTab = tab ?? EnvironmentPolicyDrawerTab.Overview;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -222,14 +255,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
           </div>
 
           {environmentPolicy != null && (
-            <div className="w-full overflow-auto">
-              <View
-                activeTab={tab ?? EnvironmentPolicyDrawerTab.Overview}
-                environmentPolicy={environmentPolicy}
-                deployments={deployments ?? []}
-                isLoading={isLoading}
-              />
-            </div>
+            <View environmentPolicy={environmentPolicy} activeTab={activeTab} />
           )}
         </div>
       </DrawerContent>

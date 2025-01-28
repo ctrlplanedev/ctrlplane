@@ -295,7 +295,7 @@ export const policyRouter = createTRPCRouter({
           if (releaseWindows.length > 0)
             await db
               .insert(environmentPolicyReleaseWindow)
-              .values(releaseWindows)
+              .values(releaseWindows.map((r) => ({ ...r, policyId: input.id })))
               .returning();
         });
       }
