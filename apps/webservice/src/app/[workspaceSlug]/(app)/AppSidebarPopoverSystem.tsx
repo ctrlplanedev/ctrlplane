@@ -57,17 +57,15 @@ export const AppSidebarSystemPopover: React.FC<{
                   </Link>
                 </SidebarMenuButton>
 
-                {policyId != null && (
-                  <SidebarMenuAction>
-                    <Link
-                      href={`/${workspace.slug}/systems/${system.data?.slug}/environments?environment_policy_id=${policyId}`}
-                      onClick={() => setActiveSidebarItem(null)}
-                      className="flex items-center gap-1 "
-                    >
-                      <IconLock className="size-4 text-muted-foreground" />
-                    </Link>
-                  </SidebarMenuAction>
-                )}
+                <SidebarMenuAction>
+                  <Link
+                    href={`/${workspace.slug}/systems/${system.data?.slug}/environments?environment_policy_id=${policyId}`}
+                    onClick={() => setActiveSidebarItem(null)}
+                    className="flex items-center gap-1 "
+                  >
+                    <IconLock className="size-4 text-muted-foreground" />
+                  </Link>
+                </SidebarMenuAction>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>

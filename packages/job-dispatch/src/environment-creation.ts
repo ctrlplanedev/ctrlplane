@@ -33,8 +33,7 @@ export const createJobsForNewEnvironment = async (
 
   const { releaseChannels: envReleaseChannels, system } = releaseChannels;
   const { workspaceId, deployments } = system;
-  const policyReleaseChannels =
-    releaseChannels.policy?.environmentPolicyReleaseChannels ?? [];
+  const { environmentPolicyReleaseChannels } = releaseChannels.policy;
 
   const resources = await db
     .select()
@@ -52,7 +51,7 @@ export const createJobsForNewEnvironment = async (
     const envReleaseChannel = envReleaseChannels.find(
       (erc) => erc.deploymentId === deployment.id,
     );
-    const policyReleaseChannel = policyReleaseChannels.find(
+    const policyReleaseChannel = environmentPolicyReleaseChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
     const { releaseFilter } =
