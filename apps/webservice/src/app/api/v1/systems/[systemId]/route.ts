@@ -23,17 +23,14 @@ export const GET = request()
     async (ctx, { params }) => {
       const system = await ctx.db.query.system.findFirst({
         where: eq(schema.system.id, params.systemId),
-        with: {
-          environments: true,
-          deployments: true,
-        },
+        with: { environments: true, deployments: true },
       });
       if (system == null)
         return NextResponse.json(
           { error: "System not found" },
           { status: httpStatus.NOT_FOUND },
         );
-      return NextResponse.json({ system }, { status: httpStatus.OK });
+      return NextResponse.json(system, { status: httpStatus.OK });
     },
   );
 
@@ -59,9 +56,7 @@ export const PATCH = request()
       .where(eq(schema.system.id, params.systemId))
       .returning()
       .then(takeFirst)
-      .then((system) =>
-        NextResponse.json({ system }, { status: httpStatus.OK }),
-      )
+      .then((system) => NextResponse.json(system, { status: httpStatus.OK }))
       .catch((error) =>
         NextResponse.json(
           { error: error.message },

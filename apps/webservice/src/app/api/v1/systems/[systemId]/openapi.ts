@@ -26,44 +26,21 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  properties: {
-                    id: { type: "string" },
-                    name: { type: "string" },
-                    slug: { type: "string" },
-                    description: { type: "string" },
-                    workspaceId: { type: "string" },
-                    environments: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/Environment" },
-                    },
-                    deployments: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          slug: { type: "string" },
-                          description: { type: "string" },
-                          systemId: { type: "string" },
-                          jobAgentId: { type: "string", nullable: true },
-                          jobAgentConfig: {
-                            type: "object",
-                            additionalProperties: true,
-                          },
+                  allOf: [
+                    { $ref: "#/components/schemas/System" },
+                    {
+                      type: "object",
+                      properties: {
+                        environments: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/Environment" },
+                        },
+                        deployments: {
+                          type: "array",
+                          items: { $ref: "#/components/schemas/Deployment" },
                         },
                       },
                     },
-                  },
-                  required: [
-                    "id",
-                    "name",
-                    "slug",
-                    "description",
-                    "workspaceId",
-                    "environments",
-                    "deployments",
                   ],
                 },
               },
@@ -87,22 +64,7 @@ export const openapi: Swagger.SwaggerV3 = {
           required: true,
           content: {
             "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  name: { type: "string", description: "Name of the system" },
-                  slug: { type: "string", description: "Slug of the system" },
-                  description: {
-                    type: "string",
-                    description: "Description of the system",
-                  },
-                  workspaceId: {
-                    type: "string",
-                    format: "uuid",
-                    description: "UUID of the workspace",
-                  },
-                },
-              },
+              schema: { $ref: "#/components/schemas/UpdateSystem" },
             },
           },
         },
