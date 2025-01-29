@@ -18,7 +18,7 @@ export const DeployButton: React.FC<{
   return (
     <Button
       className={cn(
-        "w-full border-dashed border-neutral-800/50 bg-transparent text-center text-neutral-800 hover:border-blue-400 hover:bg-transparent hover:text-blue-400",
+        "w-full border-dashed border-neutral-700/60 bg-transparent text-center text-neutral-700 hover:border-blue-400 hover:bg-transparent hover:text-blue-400",
         className,
       )}
       variant="outline"

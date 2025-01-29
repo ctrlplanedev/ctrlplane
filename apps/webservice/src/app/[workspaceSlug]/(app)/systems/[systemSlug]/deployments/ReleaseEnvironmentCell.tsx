@@ -176,7 +176,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     return (
       <ApprovalDialog policyId={approval.policyId} release={release}>
         <Button
-          className="w-full border-dashed border-neutral-800/50 bg-transparent text-center text-neutral-800 hover:border-blue-400 hover:bg-transparent hover:text-blue-400"
+          className="w-full border-dashed border-neutral-700/60 bg-transparent text-center text-neutral-700 hover:border-blue-400 hover:bg-transparent hover:text-blue-400"
           variant="outline"
           size="sm"
         >
