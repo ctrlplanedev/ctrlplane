@@ -22,11 +22,11 @@ export const authn: Middleware = async (ctx, _, next) => {
 
 export const authz: (
   checker: (args: {
-    ctx: Context<{ user: User }>;
+    ctx: Context<{ user: User; body: any }>;
     extra: any;
     can: PermissionChecker;
   }) => Promise<boolean>,
-) => Middleware<any, { user: User }> =
+) => Middleware<any, { user: User; body: any }> =
   (checker) => async (ctx, extra, next) => {
     try {
       const allowed = await checker({

@@ -2473,22 +2473,21 @@
         }
       }
     },
-    "/v1/workspaces/{workspaceSlug}": {
+    "/v1/workspaces": {
       "get": {
         "summary": "Get a workspace by slug",
         "operationId": "getWorkspaceBySlug",
-        "parameters": [
-          {
-            "name": "workspaceSlug",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "The workspace slug",
-              "example": "my-workspace"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "description": "The workspace slug",
+                "example": "my-workspace"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "description": "Workspace found",
