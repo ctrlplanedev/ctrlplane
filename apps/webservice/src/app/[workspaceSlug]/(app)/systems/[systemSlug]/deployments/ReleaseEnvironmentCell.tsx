@@ -51,10 +51,10 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     api.release.blocked.useQuery([release.id]);
 
   const { data: approval, isLoading: isApprovalLoading } =
-    api.environment.policy.approval.statusByReleasePolicyId.useQuery(
-      { releaseId: release.id, policyId: environment.policyId ?? "" },
-      { enabled: environment.policyId != null },
-    );
+    api.environment.policy.approval.statusByReleasePolicyId.useQuery({
+      releaseId: release.id,
+      policyId: environment.policyId,
+    });
 
   const blockedEnv = blockedEnvsResult?.find(
     (b) => b.environmentId === environment.id,

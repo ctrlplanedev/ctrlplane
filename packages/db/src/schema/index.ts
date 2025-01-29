@@ -3,7 +3,6 @@ export * from "./resource.js";
 export * from "./resource-provider.js";
 export * from "./deployment.js";
 export * from "./environment.js";
-export * from "./environment-policy.js";
 export * from "./environment-policy-deployment.js";
 export * from "./release.js";
 export * from "./system.js";

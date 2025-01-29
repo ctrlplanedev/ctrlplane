@@ -7,6 +7,7 @@ import {
   buildConflictUpdateColumns,
   eq,
   inArray,
+  sql,
   takeFirst,
 } from "@ctrlplane/db";
 import {
@@ -295,7 +296,7 @@ export const policyRouter = createTRPCRouter({
           if (releaseWindows.length > 0)
             await db
               .insert(environmentPolicyReleaseWindow)
-              .values(releaseWindows)
+              .values(releaseWindows.map((r) => ({ ...r, policyId: input.id })))
               .returning();
         });
       }
@@ -316,10 +317,23 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .mutation(({ ctx, input }) =>
-      ctx.db
-        .delete(environmentPolicy)
-        .where(eq(environmentPolicy.id, input))
-        .returning()
-        .then(takeFirst),
+      ctx.db.transaction((db) =>
+        db
+          .execute(
+            sql`UPDATE environment e
+                SET policy_id = ep.id
+                FROM environment_policy ep
+                WHERE e.id = ep.environment_id
+                AND e.policy_id = ${input}
+               `,
+          )
+          .then(() =>
+            db
+              .delete(environmentPolicy)
+              .where(eq(environmentPolicy.id, input))
+              .returning()
+              .then(takeFirst),
+          ),
+      ),
     ),
 });

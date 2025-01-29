@@ -1,4 +1,3 @@
-import type { Tx } from "@ctrlplane/db";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
@@ -7,6 +6,7 @@ import { z } from "zod";
 import {
   and,
   buildConflictUpdateColumns,
+  createEnv,
   eq,
   inArray,
   isNotNull,
@@ -21,6 +21,7 @@ import {
   environmentMetadata,
   environmentPolicy,
   environmentPolicyReleaseChannel,
+  environmentPolicyReleaseWindow,
   environmentReleaseChannel,
   releaseChannel,
   resource,
@@ -43,11 +44,6 @@ import {
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { policyRouter } from "./environment-policy";
 
-export const createEnv = async (
-  db: Tx,
-  input: z.infer<typeof createEnvironment>,
-) => db.insert(environment).values(input).returning().then(takeFirst);
-
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
 
@@ -64,6 +60,7 @@ export const environmentRouter = createTRPCRouter({
         .select({
           releaseChannelEnvId: environmentReleaseChannel.environmentId,
           releaseChannelDeploymentId: releaseChannel.deploymentId,
+          releaseChannelDescription: releaseChannel.description,
           releaseChannelFilter: releaseChannel.releaseFilter,
           releaseChannelId: releaseChannel.id,
           releaseChannelName: releaseChannel.name,
@@ -79,6 +76,7 @@ export const environmentRouter = createTRPCRouter({
         .select({
           releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
           releaseChannelDeploymentId: releaseChannel.deploymentId,
+          releaseChannelDescription: releaseChannel.description,
           releaseChannelFilter: releaseChannel.releaseFilter,
           releaseChannelId: releaseChannel.id,
           releaseChannelName: releaseChannel.name,
@@ -93,9 +91,13 @@ export const environmentRouter = createTRPCRouter({
       return ctx.db
         .select()
         .from(environment)
-        .leftJoin(
+        .innerJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
+        )
+        .leftJoin(
+          environmentPolicyReleaseWindow,
+          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
         .innerJoin(system, eq(environment.systemId, system.id))
         .leftJoin(
@@ -114,23 +116,29 @@ export const environmentRouter = createTRPCRouter({
         .then((rows) => {
           const env = rows.at(0);
           if (env == null) return null;
-          const policy =
-            env.environment_policy == null
-              ? null
-              : {
-                  ...env.environment_policy,
-                  releaseChannels: _.chain(rows)
-                    .map((r) => r.policyRCSubquery)
-                    .filter(isPresent)
-                    .uniqBy((r) => r.releaseChannelId)
-                    .map((r) => ({
-                      deploymentId: r.releaseChannelDeploymentId,
-                      filter: r.releaseChannelFilter,
-                      id: r.releaseChannelId,
-                      name: r.releaseChannelName,
-                    }))
-                    .value(),
-                };
+
+          const policy = {
+            ...env.environment_policy,
+            releaseChannels: _.chain(rows)
+              .map((r) => r.policyRCSubquery)
+              .filter(isPresent)
+              .uniqBy((r) => r.releaseChannelId)
+              .map((r) => ({
+                deploymentId: r.releaseChannelDeploymentId,
+                description: r.releaseChannelDescription,
+                releaseFilter: r.releaseChannelFilter,
+                id: r.releaseChannelId,
+                name: r.releaseChannelName,
+              }))
+              .value(),
+            releaseWindows: _.chain(rows)
+              .map((r) => r.environment_policy_release_window)
+              .filter(isPresent)
+              .uniqBy((r) => r.id)
+              .value(),
+            isOverride:
+              env.environment_policy.environmentId === env.environment.id,
+          };
 
           const releaseChannels = _.chain(rows)
             .map((r) => r.envRCSubquery)
@@ -138,7 +146,8 @@ export const environmentRouter = createTRPCRouter({
             .uniqBy((r) => r.releaseChannelId)
             .map((r) => ({
               deploymentId: r.releaseChannelDeploymentId,
-              filter: r.releaseChannelFilter,
+              releaseFilter: r.releaseChannelFilter,
+              description: r.releaseChannelDescription,
               id: r.releaseChannelId,
               name: r.releaseChannelName,
             }))
@@ -246,9 +255,23 @@ export const environmentRouter = createTRPCRouter({
         .where(eq(environment.id, input.id))
         .then(takeFirst);
 
+      const overridePolicy = await ctx.db
+        .select()
+        .from(environmentPolicy)
+        .where(eq(environmentPolicy.environmentId, input.id))
+        .then(takeFirst);
+
+      const getPolicyId = () => {
+        if (input.data.policyId != null) return input.data.policyId;
+        if (input.data.policyId === null) return overridePolicy.id;
+        return oldEnv.environment.policyId;
+      };
+
+      const policyId = getPolicyId();
+
       const updatedEnv = await ctx.db
         .update(environment)
-        .set(input.data)
+        .set({ ...input.data, policyId })
         .where(eq(environment.id, input.id))
         .returning()
         .then(takeFirst);

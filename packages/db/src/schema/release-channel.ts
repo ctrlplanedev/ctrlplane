@@ -2,8 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import { pgTable, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { deployment } from "./deployment.js";
-import { environmentPolicy } from "./environment-policy.js";
-import { environment } from "./environment.js";
+import { environment, environmentPolicy } from "./environment.js";
 import { releaseChannel } from "./release.js";
 
 export const environmentPolicyReleaseChannel = pgTable(

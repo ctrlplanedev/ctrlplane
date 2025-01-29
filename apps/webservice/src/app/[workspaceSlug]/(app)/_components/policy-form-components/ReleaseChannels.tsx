@@ -11,21 +11,17 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 
-import { api } from "~/trpc/react";
-import { useInvalidatePolicy } from "./useInvalidatePolicy";
-
-type Policy = SCHEMA.EnvironmentPolicy & {
-  releaseChannels: SCHEMA.ReleaseChannel[];
-};
-
 type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
 };
+
+type Policy = { releaseChannels: SCHEMA.ReleaseChannel[] };
 
 type ReleaseChannelProps = {
   environmentPolicy: Policy;
   deployments: Deployment[];
   isLoading: boolean;
+  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
 };
 
 type DeploymentSelectProps = {
@@ -34,7 +30,7 @@ type DeploymentSelectProps = {
   updateReleaseChannel: (
     deploymentId: string,
     channelId: string | null,
-  ) => void;
+  ) => Promise<void>;
 };
 
 const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
@@ -95,16 +91,13 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
   environmentPolicy,
   deployments,
   isLoading,
+  onUpdate,
 }) => {
-  const updatePolicy = api.environment.policy.update.useMutation();
-  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
-
   const deploymentsWithReleaseChannels = deployments.filter(
     (d) => d.releaseChannels.length > 0,
   );
 
-  const { id, releaseChannels } = environmentPolicy;
-
+  const { releaseChannels } = environmentPolicy;
   const currReleaseChannels = Object.fromEntries(
     deploymentsWithReleaseChannels.map((d) => [
       d.id,
@@ -115,23 +108,16 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
   const updateReleaseChannel = (
     deploymentId: string,
     channelId: string | null,
-  ) => {
-    const newReleaseChannels = {
-      ...currReleaseChannels,
-      [deploymentId]: channelId,
-    };
-    updatePolicy
-      .mutateAsync({ id, data: { releaseChannels: newReleaseChannels } })
-      .then(invalidatePolicy);
-  };
+  ) =>
+    onUpdate({
+      releaseChannels: { ...currReleaseChannels, [deploymentId]: channelId },
+    });
 
   return (
     <div className="space-y-4">
       <h1 className="flex items-center gap-2 text-lg font-medium">
         Release Channels{" "}
-        {(isLoading || updatePolicy.isPending) && (
-          <IconLoader2 className="h-4 w-4 animate-spin" />
-        )}
+        {isLoading && <IconLoader2 className="h-4 w-4 animate-spin" />}
       </h1>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">

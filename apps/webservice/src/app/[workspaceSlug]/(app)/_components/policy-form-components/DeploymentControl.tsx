@@ -8,34 +8,31 @@ import { Label } from "@ctrlplane/ui/label";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 import { toast } from "@ctrlplane/ui/toast";
 
-import { api } from "~/trpc/react";
-import { useInvalidatePolicy } from "./useInvalidatePolicy";
-
 type DeploymentControlProps = {
-  environmentPolicy: SCHEMA.EnvironmentPolicy;
+  environmentPolicy: { concurrencyLimit: number | null };
+  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
   isLoading: boolean;
 };
 
 export const DeploymentControl: React.FC<DeploymentControlProps> = ({
   environmentPolicy,
+  onUpdate,
   isLoading,
 }) => {
   const [concurrencyLimit, setConcurrencyLimit] = useState(
     environmentPolicy.concurrencyLimit?.toString() ?? "",
   );
 
-  const updatePolicy = api.environment.policy.update.useMutation();
-  const invalidatePolicy = useInvalidatePolicy(environmentPolicy);
-  const { id } = environmentPolicy;
   useDebounce(
     () => {
-      if (concurrencyLimit === "") return;
-      const limit = Number(concurrencyLimit);
-      if (Number.isNaN(limit)) return;
-      updatePolicy
-        .mutateAsync({ id, data: { concurrencyLimit: limit } })
-        .then(invalidatePolicy)
-        .catch((e) => toast.error(e.message));
+      try {
+        if (concurrencyLimit === "") return;
+        const limit = Number(concurrencyLimit);
+        if (Number.isNaN(limit)) return;
+        onUpdate({ concurrencyLimit: limit });
+      } catch {
+        toast.error("Failed to update concurrency limit");
+      }
     },
     300,
     [concurrencyLimit],
@@ -46,9 +43,7 @@ export const DeploymentControl: React.FC<DeploymentControlProps> = ({
       <div className="flex flex-col gap-1">
         <h1 className="flex items-center gap-2 text-lg font-medium">
           Deployment Control
-          {(isLoading || updatePolicy.isPending) && (
-            <IconLoader2 className="h-4 w-4 animate-spin" />
-          )}
+          {isLoading && <IconLoader2 className="h-4 w-4 animate-spin" />}
         </h1>
         <span className="text-sm text-muted-foreground">
           Deployment control policies focus on regulating how deployments are
@@ -71,9 +66,7 @@ export const DeploymentControl: React.FC<DeploymentControlProps> = ({
           onValueChange={(value) => {
             const concurrencyLimit = value === "some" ? 1 : null;
             setConcurrencyLimit(String(concurrencyLimit ?? ""));
-            updatePolicy
-              .mutateAsync({ id, data: { concurrencyLimit } })
-              .then(invalidatePolicy);
+            onUpdate({ concurrencyLimit });
           }}
         >
           <div className="flex items-center space-x-3 space-y-0">

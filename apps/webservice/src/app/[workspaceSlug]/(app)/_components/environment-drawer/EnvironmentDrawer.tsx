@@ -3,11 +3,15 @@
 import React from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
+  IconCalendar,
+  IconChecklist,
+  IconDeviceRemote,
   IconDotsVertical,
-  IconFilter,
   IconInfoCircle,
   IconLoader2,
+  IconLock,
   IconPlant,
+  IconRocket,
   IconTarget,
 } from "@tabler/icons-react";
 
@@ -19,13 +23,8 @@ import { TabButton } from "../TabButton";
 import { EnvironmentDropdownMenu } from "./EnvironmentDropdownMenu";
 import { EditFilterForm } from "./Filter";
 import { Overview } from "./Overview";
-import { ReleaseChannels } from "./ReleaseChannels";
-
-export enum EnvironmentDrawerTab {
-  Overview = "overview",
-  Resources = "resources",
-  ReleaseChannels = "release-channels",
-}
+import { UpdateOverridePolicy } from "./policy-override/UpdateOverride";
+import { EnvironmentDrawerTab } from "./tabs";
 
 const tabParam = "tab";
 const useEnvironmentDrawerTab = () => {
@@ -44,7 +43,9 @@ const useEnvironmentDrawerTab = () => {
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
-  return { tab, setTab };
+  const typedTab = tab != null ? (tab as EnvironmentDrawerTab) : null;
+
+  return { tab: typedTab, setTab };
 };
 
 const param = "environment_id";
@@ -97,6 +98,8 @@ export const EnvironmentDrawer: React.FC = () => {
   const loading =
     environmentQ.isLoading || workspaceQ.isLoading || deploymentsQ.isLoading;
 
+  const isUsingOverridePolicy = environment?.policy.isOverride ?? false;
+
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
       <DrawerContent
@@ -132,26 +135,78 @@ export const EnvironmentDrawer: React.FC = () => {
 
         {!loading && (
           <div className="flex w-full gap-6 p-6">
-            <div className="space-y-1">
-              <TabButton
-                active={tab === EnvironmentDrawerTab.Overview || tab == null}
-                onClick={() => setTab(EnvironmentDrawerTab.Overview)}
-                icon={<IconInfoCircle className="h-4 w-4" />}
-                label="Overview"
-              />
-              <TabButton
-                active={tab === EnvironmentDrawerTab.Resources}
-                onClick={() => setTab(EnvironmentDrawerTab.Resources)}
-                icon={<IconTarget className="h-4 w-4" />}
-                label="Resources"
-              />
-              <TabButton
-                active={tab === EnvironmentDrawerTab.ReleaseChannels}
-                onClick={() => setTab(EnvironmentDrawerTab.ReleaseChannels)}
-                icon={<IconFilter className="h-4 w-4" />}
-                label="Release Channels"
-              />
-            </div>
+            {isUsingOverridePolicy && (
+              <div className="space-y-8">
+                <div className="space-y-1">
+                  <h1 className="mb-2 text-sm font-medium">General</h1>
+                  <TabButton
+                    active={
+                      tab === EnvironmentDrawerTab.Overview || tab == null
+                    }
+                    onClick={() => setTab(EnvironmentDrawerTab.Overview)}
+                    icon={<IconInfoCircle className="h-4 w-4" />}
+                    label="Overview"
+                  />
+                  <TabButton
+                    active={tab === EnvironmentDrawerTab.Resources}
+                    onClick={() => setTab(EnvironmentDrawerTab.Resources)}
+                    icon={<IconTarget className="h-4 w-4" />}
+                    label="Resources"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <h1 className="mb-2 text-sm font-medium">Policy Settings</h1>
+                  <TabButton
+                    active={tab === EnvironmentDrawerTab.Approval}
+                    onClick={() => setTab(EnvironmentDrawerTab.Approval)}
+                    icon={<IconChecklist className="h-4 w-4" />}
+                    label="Approval & Governance"
+                  />
+                  <TabButton
+                    active={tab === EnvironmentDrawerTab.Concurrency}
+                    onClick={() => setTab(EnvironmentDrawerTab.Concurrency)}
+                    icon={<IconLock className="h-4 w-4" />}
+                    label="Deployment Control"
+                  />
+                  <TabButton
+                    active={tab === EnvironmentDrawerTab.Management}
+                    onClick={() => setTab(EnvironmentDrawerTab.Management)}
+                    icon={<IconRocket className="h-4 w-4" />}
+                    label="Release Management"
+                  />
+                  <TabButton
+                    active={tab === EnvironmentDrawerTab.ReleaseChannels}
+                    onClick={() => setTab(EnvironmentDrawerTab.ReleaseChannels)}
+                    icon={<IconDeviceRemote className="h-4 w-4" />}
+                    label="Release Channels"
+                  />
+                  <TabButton
+                    active={tab === EnvironmentDrawerTab.Rollout}
+                    onClick={() => setTab(EnvironmentDrawerTab.Rollout)}
+                    icon={<IconCalendar className="h-4 w-4" />}
+                    label="Rollout and Timing"
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isUsingOverridePolicy && (
+              <div className="space-y-1">
+                <TabButton
+                  active={tab === EnvironmentDrawerTab.Overview || tab == null}
+                  onClick={() => setTab(EnvironmentDrawerTab.Overview)}
+                  icon={<IconInfoCircle className="h-4 w-4" />}
+                  label="Overview"
+                />
+                <TabButton
+                  active={tab === EnvironmentDrawerTab.Resources}
+                  onClick={() => setTab(EnvironmentDrawerTab.Resources)}
+                  icon={<IconTarget className="h-4 w-4" />}
+                  label="Resources"
+                />
+              </div>
+            )}
 
             {environment != null && (
               <div className="w-full overflow-auto">
@@ -165,13 +220,14 @@ export const EnvironmentDrawer: React.FC = () => {
                       workspaceId={workspace.id}
                     />
                   )}
-                {tab === EnvironmentDrawerTab.ReleaseChannels &&
-                  deployments != null && (
-                    <ReleaseChannels
-                      environment={environment}
-                      deployments={deployments}
-                    />
-                  )}
+                {environment.policy.isOverride && (
+                  <UpdateOverridePolicy
+                    environment={environment}
+                    environmentPolicy={environment.policy}
+                    activeTab={tab}
+                    deployments={deployments ?? []}
+                  />
+                )}
               </div>
             )}
           </div>

@@ -1,10 +1,6 @@
-import type {
-  EnvironmentPolicy,
-  EnvironmentPolicyDeployment,
-} from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { MarkerType } from "reactflow";
 import colors from "tailwindcss/colors";
-import { isPresent } from "ts-is-present";
 
 const markerEnd = {
   type: MarkerType.Arrow,
@@ -12,10 +8,14 @@ const markerEnd = {
 };
 
 export const createEdgesWhereEnvironmentHasNoPolicy = (
-  envs: Array<{ id: string; policyId?: string | null }>,
+  envs: SCHEMA.Environment[],
+  standalonePolicies: SCHEMA.EnvironmentPolicy[],
 ) =>
   envs.map((e) => {
-    const source = isPresent(e.policyId) ? e.policyId : "trigger";
+    const isUsingStandalonePolicy = standalonePolicies.some(
+      (p) => p.id === e.policyId,
+    );
+    const source = isUsingStandalonePolicy ? e.policyId : "trigger";
     return {
       id: source + "-" + e.id,
       source,
@@ -35,7 +35,7 @@ export const createEdgesFromPolicyToEnvironment = (
   }));
 
 export const createEdgesFromPolicyDeployment = (
-  policyDeployments: Array<EnvironmentPolicyDeployment>,
+  policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>,
 ) =>
   policyDeployments.map((p) => ({
     id: p.id,
@@ -45,8 +45,8 @@ export const createEdgesFromPolicyDeployment = (
   }));
 
 export const createEdgesWherePolicyHasNoEnvironment = (
-  policies: Array<EnvironmentPolicy>,
-  policyDeployments: Array<EnvironmentPolicyDeployment>,
+  policies: Array<SCHEMA.EnvironmentPolicy>,
+  policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>,
 ) =>
   policies
     .filter((t) => !policyDeployments.some((p) => p.policyId === t.id))

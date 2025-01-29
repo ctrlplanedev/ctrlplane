@@ -2,7 +2,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, count, eq, like, takeFirst } from "@ctrlplane/db";
+import { and, asc, count, createEnv, eq, like, takeFirst } from "@ctrlplane/db";
 import {
   createSystem,
   environment,
@@ -13,7 +13,6 @@ import {
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { createEnv } from "./environment";
 
 export const systemRouter = createTRPCRouter({
   list: protectedProcedure

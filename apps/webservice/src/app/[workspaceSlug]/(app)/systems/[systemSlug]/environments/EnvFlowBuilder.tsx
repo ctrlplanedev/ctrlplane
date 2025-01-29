@@ -84,12 +84,6 @@ const useValidConnection = () => {
       if (target.type === NodeType.Policy && source.type === NodeType.Policy)
         return false;
 
-      if (
-        target.type === NodeType.Environment &&
-        source.type === NodeType.Policy
-      )
-        return !isPresent(target.data.policyId);
-
       return true;
     },
     [getNodes, getEdges, getNode],
@@ -175,6 +169,7 @@ export const EnvFlowBuilder: React.FC<{
   policies: Array<EnvironmentPolicy>;
   policyDeployments: Array<EnvironmentPolicyDeployment>;
 }> = ({ systemId, envs, policies, policyDeployments }) => {
+  const standalonePolicies = policies.filter((p) => p.environmentId == null);
   const [nodes, _, onNodesChange] = useNodesState([
     triggerNode,
     ...envs.map((env) => ({
@@ -183,7 +178,7 @@ export const EnvFlowBuilder: React.FC<{
       position: { x: 0, y: 0 },
       data: { ...env, label: env.name },
     })),
-    ...policies.map((policy) => ({
+    ...standalonePolicies.map((policy) => ({
       id: policy.id,
       type: NodeType.Policy,
       position: { x: 0, y: 0 },
@@ -204,8 +199,11 @@ export const EnvFlowBuilder: React.FC<{
   });
 
   const [edges, __, onEdgesChange] = useEdgesState([
-    ...createEdgesWhereEnvironmentHasNoPolicy(envs),
-    ...createEdgesWherePolicyHasNoEnvironment(policies, policyDeployments),
+    ...createEdgesWhereEnvironmentHasNoPolicy(envs, standalonePolicies),
+    ...createEdgesWherePolicyHasNoEnvironment(
+      standalonePolicies,
+      policyDeployments,
+    ),
     ...createEdgesFromPolicyDeployment(policyDeployments),
   ]);
 

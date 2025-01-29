@@ -66,12 +66,12 @@ export async function dispatchJobsForAddedResources(
 
   const { releaseChannels, policy, system } = environment;
   const { deployments } = system;
-  const policyReleaseChannels = policy?.environmentPolicyReleaseChannels ?? [];
+  const { environmentPolicyReleaseChannels } = policy;
   const deploymentsWithReleaseFilter = deployments.map((deployment) => {
     const envReleaseChannel = releaseChannels.find(
       (erc) => erc.deploymentId === deployment.id,
     );
-    const policyReleaseChannel = policyReleaseChannels.find(
+    const policyReleaseChannel = environmentPolicyReleaseChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
 

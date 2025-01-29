@@ -4,7 +4,7 @@ import { IconFilter, IconPlant } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { EnvironmentDrawerTab } from "../environment-drawer/EnvironmentDrawer";
+import { EnvironmentDrawerTab } from "../environment-drawer/tabs";
 import { EnvironmentPolicyDrawerTab } from "../environment-policy-drawer/EnvironmentPolicyDrawer";
 
 type UsageInfo = {
