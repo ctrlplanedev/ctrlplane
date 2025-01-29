@@ -15,6 +15,8 @@ export const run = async () => {
     eq(schema.environmentPolicy.approvalRequirement, "automatic"),
     eq(schema.environmentPolicyApproval.status, "approved"),
   );
+  const isJobPending = eq(schema.job.status, JobStatus.Pending);
+  const isActiveResource = isNull(schema.resource.deletedAt);
 
   const releaseJobTriggers = await db
     .select()
@@ -23,6 +25,10 @@ export const run = async () => {
     .innerJoin(
       schema.environment,
       eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
     )
     .leftJoin(
       schema.environmentPolicy,
@@ -41,7 +47,7 @@ export const run = async () => {
         ),
       ),
     )
-    .where(and(eq(schema.job.status, JobStatus.Pending), isPassingApprovalGate))
+    .where(and(isJobPending, isPassingApprovalGate, isActiveResource))
     .then((rows) => rows.map((row) => row.release_job_trigger));
 
   if (releaseJobTriggers.length === 0) return;
