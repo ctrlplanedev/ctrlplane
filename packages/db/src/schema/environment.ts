@@ -128,7 +128,7 @@ export const environmentPolicy = pgTable(
     ),
     approvalRequirement: approvalRequirement("approval_required")
       .notNull()
-      .default("manual"),
+      .default("automatic"),
 
     successType: environmentPolicyDeploymentSuccessType("success_status")
       .notNull()
