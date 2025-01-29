@@ -114,17 +114,6 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   const showRelease =
     isAlreadyDeployed && !showBlockedByReleaseChannel && !isPendingApproval;
 
-  const latestStatuses = _.chain(statuses)
-    .groupBy((s) => s.release_job_trigger.resourceId)
-    .map((groupedStatuses) =>
-      _.chain(groupedStatuses)
-        .sortBy((s) => s.release_job_trigger.createdAt)
-        .last()
-        .value(),
-    )
-    .map((s) => s.job.status)
-    .value();
-
   if (showRelease)
     return (
       <Release
@@ -136,7 +125,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
         environment={environment}
         name={release.version}
         deployedAt={release.createdAt}
-        statuses={latestStatuses}
+        statuses={statuses.map((s) => s.job.status)}
       />
     );
 

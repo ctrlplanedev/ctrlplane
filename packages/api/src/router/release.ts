@@ -376,11 +376,11 @@ export const releaseRouter = createTRPCRouter({
       })
       .query(({ input: { releaseId, environmentId } }) =>
         db
-          .selectDistinctOn([job.status])
+          .selectDistinctOn([releaseJobTrigger.resourceId])
           .from(job)
           .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
           .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-          .orderBy(job.status, desc(job.createdAt))
+          .orderBy(releaseJobTrigger.resourceId, desc(job.createdAt))
           .where(
             and(
               eq(releaseJobTrigger.releaseId, releaseId),
