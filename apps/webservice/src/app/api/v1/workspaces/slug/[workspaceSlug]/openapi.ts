@@ -4,21 +4,18 @@ export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
   info: { title: "Ctrlplane API", version: "1.0.0" },
   paths: {
-    "/v1/workspaces": {
+    "/v1/workspaces/slug/{workspaceSlug}": {
       get: {
         summary: "Get a workspace by slug",
         operationId: "getWorkspaceBySlug",
-        requestBody: {
-          content: {
-            "application/json": {
-              schema: {
-                type: "string",
-                description: "The workspace slug",
-                example: "my-workspace",
-              },
-            },
+        parameters: [
+          {
+            name: "workspaceSlug",
+            in: "path",
+            required: true,
+            schema: { type: "string", example: "my-workspace" },
           },
-        },
+        ],
         responses: {
           "200": {
             description: "Workspace found",
