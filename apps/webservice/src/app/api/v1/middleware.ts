@@ -31,24 +31,23 @@ export const request = () => {
     return { use, handle };
   };
 
-  const handle = <TContext = object, Extra extends object = object>(
-    handler: Handler<TContext & BaseContext, Extra>,
-  ) => {
-    return async (req: NextRequest, extra: Extra) => {
+  const handle =
+    <TContext = object, Extra extends object = object>(
+      handler: Handler<TContext & BaseContext, Extra>,
+    ) =>
+    (req: NextRequest, extra: Extra) => {
       let index = 0;
       const ctx: Context = { req, db };
 
       const next = (ctx: Context): Promise<Response> => {
-        if (index >= middlewares.length) {
+        if (index >= middlewares.length)
           return handler(ctx as TContext & BaseContext, extra);
-        }
         const middleware = middlewares[index++];
         return middleware!(ctx, extra, next);
       };
 
       return next(ctx);
     };
-  };
 
   return { use, handle };
 };

@@ -16,6 +16,32 @@ export const openapi: Swagger.SwaggerV3 = {
       },
     },
     schemas: {
+      Workspace: {
+        type: "object",
+        properties: {
+          id: {
+            type: "string",
+            format: "uuid",
+            description: "The workspace ID",
+          },
+          name: { type: "string", description: "The name of the workspace" },
+          slug: { type: "string", description: "The slug of the workspace" },
+          googleServiceAccountEmail: {
+            type: "string",
+            description:
+              "The email of the Google service account attached to the workspace",
+            example: "ctrlplane@ctrlplane-workspace.iam.gserviceaccount.com",
+            nullable: true,
+          },
+          awsRoleArn: {
+            type: "string",
+            description: "The ARN of the AWS role attached to the workspace",
+            example: "arn:aws:iam::123456789012:role/ctrlplane-workspace-role",
+            nullable: true,
+          },
+        },
+        required: ["id", "name", "slug"],
+      },
       System: {
         type: "object",
         properties: {

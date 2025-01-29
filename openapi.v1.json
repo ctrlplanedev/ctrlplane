@@ -2159,6 +2159,67 @@
         }
       }
     },
+    "/v1/workspaces/{workspaceId}": {
+      "get": {
+        "summary": "Get a workspace",
+        "operationId": "getWorkspace",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The workspace ID",
+              "example": "123e4567-e89b-12d3-a456-426614174000"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/workspaces/{workspaceId}/resource-providers/name/{name}": {
       "get": {
         "summary": "Upserts a resource provider.",
@@ -2411,10 +2472,105 @@
           }
         }
       }
+    },
+    "/v1/workspaces/{workspaceSlug}": {
+      "get": {
+        "summary": "Get a workspace by slug",
+        "operationId": "getWorkspaceBySlug",
+        "parameters": [
+          {
+            "name": "workspaceSlug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The workspace slug",
+              "example": "my-workspace"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "Workspace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The workspace ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the workspace"
+          },
+          "slug": {
+            "type": "string",
+            "description": "The slug of the workspace"
+          },
+          "googleServiceAccountEmail": {
+            "type": "string",
+            "description": "The email of the Google service account attached to the workspace",
+            "example": "ctrlplane@ctrlplane-workspace.iam.gserviceaccount.com",
+            "nullable": true
+          },
+          "awsRoleArn": {
+            "type": "string",
+            "description": "The ARN of the AWS role attached to the workspace",
+            "example": "arn:aws:iam::123456789012:role/ctrlplane-workspace-role",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
+      },
       "System": {
         "type": "object",
         "properties": {

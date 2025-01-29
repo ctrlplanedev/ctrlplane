@@ -19,6 +19,7 @@ export const signUpSchema = signInSchema.extend({
 export enum Permission {
   IamSetPolicy = "iam.setIamPolicy",
 
+  WorkspaceGet = "workspace.get",
   WorkspaceListMembers = "workspace.listMembers",
   WorkspaceUpdate = "workspace.update",
   WorkspaceListIntegrations = "workspace.listIntegrations",

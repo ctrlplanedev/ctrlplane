@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 import { can, getUser as getUserFromApiKey } from "@ctrlplane/auth/utils";
 
-import type { Middleware } from "./middleware";
+import type { Context, Middleware } from "./middleware";
 
 export const getUser = async (req: NextRequest) =>
   req.headers.get("x-api-key") != null
@@ -22,7 +22,7 @@ export const authn: Middleware = async (ctx, _, next) => {
 
 export const authz: (
   checker: (args: {
-    ctx: any;
+    ctx: Context<{ user: User }>;
     extra: any;
     can: PermissionChecker;
   }) => Promise<boolean>,
