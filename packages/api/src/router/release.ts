@@ -418,10 +418,15 @@ export const releaseRouter = createTRPCRouter({
                 db
                   .select()
                   .from(releaseJobTrigger)
+                  .innerJoin(
+                    resource,
+                    eq(releaseJobTrigger.resourceId, resource.id),
+                  )
                   .where(
                     and(
                       eq(releaseJobTrigger.releaseId, release.id),
                       eq(releaseJobTrigger.environmentId, environmentId),
+                      isNull(resource.deletedAt),
                     ),
                   )
                   .limit(1),
@@ -431,11 +436,16 @@ export const releaseRouter = createTRPCRouter({
                   .select()
                   .from(releaseJobTrigger)
                   .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+                  .innerJoin(
+                    resource,
+                    eq(releaseJobTrigger.resourceId, resource.id),
+                  )
                   .where(
                     and(
                       eq(releaseJobTrigger.releaseId, release.id),
                       eq(releaseJobTrigger.environmentId, environmentId),
                       inArray(job.status, [...activeStatus, JobStatus.Pending]),
+                      isNull(resource.deletedAt),
                     ),
                   )
                   .limit(1),
