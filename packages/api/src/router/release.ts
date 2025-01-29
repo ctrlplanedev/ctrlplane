@@ -9,6 +9,7 @@ import {
   eq,
   exists,
   inArray,
+  isNull,
   notExists,
   takeFirst,
   takeFirstOrNull,
@@ -28,6 +29,7 @@ import {
   releaseJobTrigger,
   releaseMatchesCondition,
   releaseMetadata,
+  resource,
   updateRelease,
 } from "@ctrlplane/db/schema";
 import {
@@ -377,11 +379,13 @@ export const releaseRouter = createTRPCRouter({
           .selectDistinctOn([job.status])
           .from(job)
           .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
+          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
           .orderBy(job.status, desc(job.createdAt))
           .where(
             and(
               eq(releaseJobTrigger.releaseId, releaseId),
               eq(releaseJobTrigger.environmentId, environmentId),
+              isNull(resource.deletedAt),
             ),
           ),
       ),
