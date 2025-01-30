@@ -30,7 +30,7 @@ export const POST = request()
       .returning()
       .then(takeFirst)
       .then((system) =>
-        NextResponse.json({ system }, { status: httpStatus.CREATED }),
+        NextResponse.json(system, { status: httpStatus.CREATED }),
       )
       .catch((error) => {
         if (error instanceof z.ZodError)

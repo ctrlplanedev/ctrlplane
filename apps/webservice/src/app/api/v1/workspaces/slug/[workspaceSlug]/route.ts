@@ -24,28 +24,30 @@ export const GET = request()
         ),
     ),
   )
-  .handle<{ params: { workspaceSlug: string } }>(async (ctx) => {
-    try {
-      const workspace = await ctx.db
-        .select()
-        .from(SCHEMA.workspace)
-        .where(eq(SCHEMA.workspace.slug, ctx.params.workspaceSlug))
-        .then(takeFirstOrNull);
+  .handle<unknown, { params: { workspaceSlug: string } }>(
+    async ({ db }, { params: { workspaceSlug } }) => {
+      try {
+        const workspace = await db
+          .select()
+          .from(SCHEMA.workspace)
+          .where(eq(SCHEMA.workspace.slug, workspaceSlug))
+          .then(takeFirstOrNull);
 
-      if (workspace == null)
+        if (workspace == null)
+          return NextResponse.json(
+            { error: "Workspace not found" },
+            { status: httpStatus.NOT_FOUND },
+          );
+
+        return NextResponse.json(workspace, { status: httpStatus.OK });
+      } catch {
         return NextResponse.json(
-          { error: "Workspace not found" },
-          { status: httpStatus.NOT_FOUND },
+          {
+            error:
+              "An error occurred while fetching the workspace, please contact support",
+          },
+          { status: httpStatus.INTERNAL_SERVER_ERROR },
         );
-
-      return NextResponse.json(workspace, { status: httpStatus.OK });
-    } catch {
-      return NextResponse.json(
-        {
-          error:
-            "An error occurred while fetching the workspace, please contact support",
-        },
-        { status: httpStatus.INTERNAL_SERVER_ERROR },
-      );
-    }
-  });
+      }
+    },
+  );
