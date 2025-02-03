@@ -87,9 +87,11 @@ export const deployment = pgTable(
 const deploymentInsert = createInsertSchema(deployment, {
   ...deploymentSchema.shape,
   jobAgentConfig: z.record(z.any()),
+  description: z.string().optional(),
 }).omit({ id: true });
 
 export const createDeployment = deploymentInsert;
+export type CreateDeployment = z.infer<typeof createDeployment>;
 export const updateDeployment = deploymentInsert.partial();
 export type UpdateDeployment = z.infer<typeof updateDeployment>;
 export type Deployment = InferSelectModel<typeof deployment>;

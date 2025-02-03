@@ -444,7 +444,11 @@ export const deploymentRouter = createTRPCRouter({
     })
     .input(createDeployment)
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(deployment).values(input).returning().then(takeFirst),
+      ctx.db
+        .insert(deployment)
+        .values({ ...input, description: input.description ?? "" })
+        .returning()
+        .then(takeFirst),
     ),
 
   update: protectedProcedure
