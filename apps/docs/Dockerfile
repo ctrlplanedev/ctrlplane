@@ -6,6 +6,8 @@ RUN apk add --no-cache libc6-compat
 RUN apk update
 
 RUN npm install -g turbo
+RUN npm install -g corepack@latest
+
 
 FROM base AS installer
 
