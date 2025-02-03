@@ -12,6 +12,7 @@ RUN curl -L -o vcluster "https://github.com/loft-sh/vcluster/releases/latest/dow
     mv vcluster /usr/local/bin
 
 RUN npm install -g turbo
+RUN npm install -g corepack@latest
 RUN corepack enable pnpm
 
 WORKDIR /app
