@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
-import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -21,8 +20,8 @@ export const GET = request()
     ),
   )
   .handle<{ db: Tx }, { params: { deploymentId: string } }>(
-    async (ctx, { params }) => {
-      const deployment = await ctx.db
+    async ({ db }, { params }) => {
+      const deployment = await db
         .select()
         .from(SCHEMA.deployment)
         .where(eq(SCHEMA.deployment.id, params.deploymentId))
@@ -48,7 +47,7 @@ export const DELETE = request()
     ),
   )
   .handle<{ db: Tx }, { params: { deploymentId: string } }>(
-    async (ctx, { params }) => {
+    async ({ db }, { params }) => {
       try {
         const deployment = await db
           .select()
@@ -62,7 +61,7 @@ export const DELETE = request()
             { status: httpStatus.NOT_FOUND },
           );
 
-        await ctx.db
+        await db
           .delete(SCHEMA.deployment)
           .where(eq(SCHEMA.deployment.id, params.deploymentId));
 
