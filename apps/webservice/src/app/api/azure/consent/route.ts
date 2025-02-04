@@ -120,7 +120,7 @@ export const GET = async (req: NextRequest) => {
       )
       .then(() =>
         NextResponse.redirect(
-          `${env.BASE_URL}/${workspace.slug}/resource-providers`,
+          `${env.BASE_URL}/${workspace.slug}/resource-providers/integrations/azure/${resourceProvider.id}`,
         ),
       )
       .catch(() =>
