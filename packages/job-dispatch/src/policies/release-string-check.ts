@@ -1,4 +1,3 @@
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
@@ -6,42 +5,6 @@ import { and, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import type { ReleasePolicyChecker } from "./utils.js";
-
-type EnvReleaseChannel = {
-  releaseChannelEnvId: string;
-  releaseChannelDeploymentId: string;
-  releaseChannelFilter: ReleaseCondition | null;
-};
-
-type PolicyReleaseChannel = {
-  releaseChannelPolicyId: string;
-  releaseChannelDeploymentId: string;
-  releaseChannelFilter: ReleaseCondition | null;
-};
-
-type PolicyRow = {
-  environment: schema.Environment;
-  environment_policy: schema.EnvironmentPolicy | null;
-  envRCSubquery: EnvReleaseChannel | null;
-  policyRCSubquery: PolicyReleaseChannel | null;
-};
-
-const cleanPolicyRows = (rows: PolicyRow[]) =>
-  _.chain(rows)
-    .groupBy((e) => e.environment.id)
-    .map((v) => ({
-      environment: {
-        ...v[0]!.environment,
-        releaseChannels: v.map((e) => e.envRCSubquery).filter(isPresent),
-      },
-      environmentPolicy: v[0]!.environment_policy
-        ? {
-            ...v[0]!.environment_policy,
-            releaseChannels: v.map((e) => e.policyRCSubquery).filter(isPresent),
-          }
-        : null,
-    }))
-    .value();
 
 /**
 /**
@@ -55,19 +18,6 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
   db,
   wf,
 ) => {
-  const envRCSubquery = db
-    .select({
-      releaseChannelEnvId: schema.environmentReleaseChannel.environmentId,
-      releaseChannelDeploymentId: schema.releaseChannel.deploymentId,
-      releaseChannelFilter: schema.releaseChannel.releaseFilter,
-    })
-    .from(schema.environmentReleaseChannel)
-    .innerJoin(
-      schema.releaseChannel,
-      eq(schema.environmentReleaseChannel.channelId, schema.releaseChannel.id),
-    )
-    .as("envRCSubquery");
-
   const policyRCSubquery = db
     .select({
       releaseChannelPolicyId: schema.environmentPolicyReleaseChannel.policyId,
@@ -89,11 +39,7 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
   const envs = await db
     .select()
     .from(schema.environment)
-    .leftJoin(
-      envRCSubquery,
-      eq(envRCSubquery.releaseChannelEnvId, schema.environment.id),
-    )
-    .leftJoin(
+    .innerJoin(
       schema.environmentPolicy,
       eq(schema.environment.policyId, schema.environmentPolicy.id),
     )
@@ -102,7 +48,20 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
       eq(policyRCSubquery.releaseChannelPolicyId, schema.environmentPolicy.id),
     )
     .where(inArray(schema.environment.id, envIds))
-    .then(cleanPolicyRows);
+    .then((rows) =>
+      _.chain(rows)
+        .groupBy((row) => row.environment.id)
+        .map((groupedRows) => ({
+          environment: groupedRows[0]!.environment,
+          policy: {
+            ...groupedRows[0]!.environment_policy,
+            releaseChannels: groupedRows
+              .map((row) => row.policyRCSubquery)
+              .filter(isPresent),
+          },
+        }))
+        .value(),
+    );
 
   const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);
   const rels = await db
@@ -117,18 +76,12 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
     const release = rels.find((r) => r.id === wf.releaseId);
     if (release == null) return null;
 
-    const envReleaseChannel = env.environment.releaseChannels.find(
+    const policyReleaseChannel = env.policy.releaseChannels.find(
       (rc) => rc.releaseChannelDeploymentId === release.deploymentId,
     );
 
-    const policyReleaseChannel = env.environmentPolicy?.releaseChannels.find(
-      (rc) => rc.releaseChannelDeploymentId === release.deploymentId,
-    );
-
-    const releaseFilter =
-      envReleaseChannel?.releaseChannelFilter ??
-      policyReleaseChannel?.releaseChannelFilter;
-    if (releaseFilter == null) return wf;
+    const { releaseChannelFilter } = policyReleaseChannel ?? {};
+    if (releaseChannelFilter == null) return wf;
 
     const matchingRelease = await db
       .select()
@@ -136,7 +89,7 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
       .where(
         and(
           eq(schema.release.id, release.id),
-          schema.releaseMatchesCondition(db, releaseFilter),
+          schema.releaseMatchesCondition(db, releaseChannelFilter),
         ),
       )
       .then(takeFirstOrNull);

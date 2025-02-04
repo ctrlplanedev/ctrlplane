@@ -17,15 +17,13 @@ export const useReleaseChannel = (
   enabled = true,
 ) => {
   const environment = api.environment.byId.useQuery(environmentId, { enabled });
-  const envReleaseChannel = environment.data?.releaseChannels.find(
-    (rc) => rc.deploymentId === deploymentId,
-  );
   const policyReleaseChannel = environment.data?.policy.releaseChannels.find(
     (prc) => prc.deploymentId === deploymentId,
   );
-  const rcId = envReleaseChannel?.id ?? policyReleaseChannel?.id ?? null;
-  const { releaseFilter: filter } = envReleaseChannel ??
-    policyReleaseChannel ?? { releaseFilter: null };
+  const rcId = policyReleaseChannel?.id ?? null;
+  const { releaseFilter: filter } = policyReleaseChannel ?? {
+    releaseFilter: null,
+  };
 
   const versionFilter: ReleaseCondition = {
     type: ReleaseFilterType.Version,
@@ -54,5 +52,5 @@ export const useReleaseChannel = (
   const isPassingReleaseChannel =
     !hasReleaseChannel || isReleaseChannelMatchingFilter;
 
-  return { isPassingReleaseChannel, loading };
+  return { isPassingReleaseChannel, releaseChannelId: rcId, loading };
 };

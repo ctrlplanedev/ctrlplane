@@ -5,7 +5,6 @@ import { z } from "zod";
 
 import {
   and,
-  buildConflictUpdateColumns,
   createEnv,
   eq,
   inArray,
@@ -22,7 +21,6 @@ import {
   environmentPolicy,
   environmentPolicyReleaseChannel,
   environmentPolicyReleaseWindow,
-  environmentReleaseChannel,
   releaseChannel,
   resource,
   resourceMatchesMetadata,
@@ -32,7 +30,6 @@ import {
 import {
   dispatchJobsForAddedResources,
   getEventsForEnvironmentDeleted,
-  handleEnvironmentReleaseChannelUpdate,
   handleEvent,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -56,22 +53,6 @@ export const environmentRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const envRCSubquery = ctx.db
-        .select({
-          releaseChannelEnvId: environmentReleaseChannel.environmentId,
-          releaseChannelDeploymentId: releaseChannel.deploymentId,
-          releaseChannelDescription: releaseChannel.description,
-          releaseChannelFilter: releaseChannel.releaseFilter,
-          releaseChannelId: releaseChannel.id,
-          releaseChannelName: releaseChannel.name,
-        })
-        .from(environmentReleaseChannel)
-        .innerJoin(
-          releaseChannel,
-          eq(environmentReleaseChannel.channelId, releaseChannel.id),
-        )
-        .as("envRCSubquery");
-
       const policyRCSubquery = ctx.db
         .select({
           releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
@@ -100,10 +81,6 @@ export const environmentRouter = createTRPCRouter({
           eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
         )
         .innerJoin(system, eq(environment.systemId, system.id))
-        .leftJoin(
-          envRCSubquery,
-          eq(environment.id, envRCSubquery.releaseChannelEnvId),
-        )
         .leftJoin(
           policyRCSubquery,
           eq(environmentPolicy.id, policyRCSubquery.releaseChannelPolicyId),
@@ -140,19 +117,6 @@ export const environmentRouter = createTRPCRouter({
               env.environment_policy.environmentId === env.environment.id,
           };
 
-          const releaseChannels = _.chain(rows)
-            .map((r) => r.envRCSubquery)
-            .filter(isPresent)
-            .uniqBy((r) => r.releaseChannelId)
-            .map((r) => ({
-              deploymentId: r.releaseChannelDeploymentId,
-              releaseFilter: r.releaseChannelFilter,
-              description: r.releaseChannelDescription,
-              id: r.releaseChannelId,
-              name: r.releaseChannelName,
-            }))
-            .value();
-
           const metadata = _.chain(rows)
             .map((r) => r.environment_metadata)
             .filter(isPresent)
@@ -164,7 +128,6 @@ export const environmentRouter = createTRPCRouter({
           return {
             ...env.environment,
             policy,
-            releaseChannels,
             system: env.system,
             metadata,
           };
@@ -381,83 +344,6 @@ export const environmentRouter = createTRPCRouter({
       }
 
       return updatedEnv;
-    }),
-
-  updateReleaseChannels: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        releaseChannels: z.record(z.string().uuid().nullable()),
-      }),
-    )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.EnvironmentUpdate)
-          .on({ type: "environment", id: input.id }),
-    })
-    .mutation(async ({ ctx, input }) => {
-      const prevReleaseChannels = await ctx.db
-        .select({
-          deploymentId: environmentReleaseChannel.deploymentId,
-          channelId: environmentReleaseChannel.channelId,
-        })
-        .from(environmentReleaseChannel)
-        .where(eq(environmentReleaseChannel.environmentId, input.id));
-
-      const [nulled, set] = _.partition(
-        Object.entries(input.releaseChannels),
-        ([_, channelId]) => channelId == null,
-      );
-
-      const nulledIds = nulled.map(([deploymentId]) => deploymentId);
-      const setChannels = set.map(([deploymentId, channelId]) => ({
-        environmentId: input.id,
-        deploymentId,
-        channelId: channelId!,
-      }));
-
-      await ctx.db.transaction(async (db) => {
-        await db
-          .delete(environmentReleaseChannel)
-          .where(
-            and(
-              eq(environmentReleaseChannel.environmentId, input.id),
-              inArray(environmentReleaseChannel.deploymentId, nulledIds),
-            ),
-          );
-
-        if (setChannels.length > 0)
-          await db
-            .insert(environmentReleaseChannel)
-            .values(setChannels)
-            .onConflictDoUpdate({
-              target: [
-                environmentReleaseChannel.environmentId,
-                environmentReleaseChannel.deploymentId,
-              ],
-              set: buildConflictUpdateColumns(environmentReleaseChannel, [
-                "channelId",
-              ]),
-            });
-      });
-
-      const newReleaseChannels = await ctx.db
-        .select({
-          deploymentId: environmentReleaseChannel.deploymentId,
-          channelId: environmentReleaseChannel.channelId,
-        })
-        .from(environmentReleaseChannel)
-        .where(eq(environmentReleaseChannel.environmentId, input.id));
-
-      const prevMap = Object.fromEntries(
-        prevReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
-      );
-      const newMap = Object.fromEntries(
-        newReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
-      );
-
-      await handleEnvironmentReleaseChannelUpdate(input.id, prevMap, newMap);
     }),
 
   delete: protectedProcedure

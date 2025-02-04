@@ -470,6 +470,13 @@
       "when": 1738132260511,
       "tag": "0066_blushing_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1738629174805,
+      "tag": "0067_easy_lady_ursula",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,6 @@ import type {
   ReleaseCondition as JobReleaseCondition,
   StatusCondition,
 } from "@ctrlplane/validators/jobs";
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import type { NodeProps } from "reactflow";
 import { useEffect, useState } from "react";
 import { IconPlant } from "@tabler/icons-react";
@@ -24,13 +23,13 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
-import { ReleaseFilterType } from "@ctrlplane/validators/releases";
 
 import { EnvironmentPolicyDrawerTab } from "~/app/[workspaceSlug]/(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { useQueryParams } from "~/app/[workspaceSlug]/(app)/_components/useQueryParams";
 import { api } from "~/trpc/react";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
+import { useReleaseChannel } from "./useReleaseChannel";
 
 type EnvironmentNodeProps = NodeProps<{
   workspaceId: string;
@@ -141,61 +140,25 @@ const ReleaseChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   releaseVersion,
 }) => {
   const { setReleaseChannelId } = useReleaseChannelDrawer();
-  const environment = api.environment.byId.useQuery(environmentId);
-
-  const envReleaseChannel = environment.data?.releaseChannels.find(
-    (rc) => rc.deploymentId === deploymentId,
-  );
-
-  const policyReleaseChannel = environment.data?.policy.releaseChannels.find(
-    (prc) => prc.deploymentId === deploymentId,
-  );
-
-  const rcId = envReleaseChannel?.id ?? policyReleaseChannel?.id ?? null;
-
-  const { releaseFilter: filter } = envReleaseChannel ??
-    policyReleaseChannel ?? { releaseFilter: null };
-
-  const versionFilter: ReleaseCondition = {
-    type: ReleaseFilterType.Version,
-    operator: ColumnOperator.Equals,
-    value: releaseVersion,
-  };
-
-  const releaseFilter: ReleaseCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: _.compact([versionFilter, filter]),
-  };
-
-  const releasesQ = api.release.list.useQuery(
-    { deploymentId, filter: releaseFilter, limit: 0 },
-    { enabled: filter != null },
-  );
-
-  const hasReleaseChannel = rcId != null;
-  const isPassingReleaseChannel =
-    filter == null ||
-    (releasesQ.data?.total != null && releasesQ.data.total > 0);
-
-  const loading = environment.isLoading || releasesQ.isLoading;
+  const { isPassingReleaseChannel, releaseChannelId, loading } =
+    useReleaseChannel(deploymentId, environmentId, releaseVersion);
 
   return (
     <div className="flex items-center gap-2">
       {loading && <Loading />}
-      {!loading && !hasReleaseChannel && (
+      {!loading && releaseChannelId == null && (
         <>
           <Cancelled /> No release channel
         </>
       )}
-      {!loading && hasReleaseChannel && !isPassingReleaseChannel && (
+      {!loading && releaseChannelId != null && !isPassingReleaseChannel && (
         <>
           <Failing />
           <span className="flex items-center gap-1">
             Blocked by{" "}
             <Button
               variant="link"
-              onClick={() => setReleaseChannelId(rcId)}
+              onClick={() => setReleaseChannelId(releaseChannelId)}
               className="h-fit px-0 py-0 text-inherit underline-offset-2"
             >
               release channel
@@ -203,14 +166,14 @@ const ReleaseChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
           </span>
         </>
       )}
-      {!loading && hasReleaseChannel && isPassingReleaseChannel && (
+      {!loading && releaseChannelId != null && isPassingReleaseChannel && (
         <>
           <Passing />
           <span className="flex items-center gap-1">
             Passing{" "}
             <Button
               variant="link"
-              onClick={() => setReleaseChannelId(rcId)}
+              onClick={() => setReleaseChannelId(releaseChannelId)}
               className="h-fit px-0 py-0 text-inherit underline-offset-2"
             >
               release channel

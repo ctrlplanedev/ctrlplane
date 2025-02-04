@@ -8,12 +8,12 @@ import { environment, environmentPolicy } from "./schema/index.js";
 
 const createReleaseChannels = (
   db: Tx,
-  environmentId: string,
+  policyId: string,
   releaseChannels: { channelId: string; deploymentId: string }[],
 ) =>
-  db.insert(SCHEMA.environmentReleaseChannel).values(
+  db.insert(SCHEMA.environmentPolicyReleaseChannel).values(
     releaseChannels.map(({ channelId, deploymentId }) => ({
-      environmentId,
+      policyId,
       channelId,
       deploymentId,
     })),
@@ -49,7 +49,7 @@ export const createEnv = async (
     );
 
   if (releaseChannels != null && releaseChannels.length > 0)
-    await createReleaseChannels(db, env.id, releaseChannels);
+    await createReleaseChannels(db, policyId, releaseChannels);
 
   await db
     .update(environmentPolicy)

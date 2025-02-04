@@ -186,18 +186,6 @@ export const openapi: Swagger.SwaggerV3 = {
             additionalProperties: { type: "string" },
           },
           policy: { $ref: "#/components/schemas/Policy", nullable: true },
-          releaseChannels: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                id: { type: "string" },
-                deploymentId: { type: "string" },
-                channelId: { type: "string" },
-                environmentId: { type: "string" },
-              },
-            },
-          },
         },
         required: ["id", "systemId", "name", "createdAt"],
       },

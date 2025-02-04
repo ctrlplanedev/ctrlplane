@@ -34,7 +34,6 @@ const getEnvironmentWithReleaseChannels = (db: Tx, envId: string) =>
   db.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, envId),
     with: {
-      releaseChannels: { with: { releaseChannel: true } },
       policy: {
         with: {
           environmentPolicyReleaseChannels: { with: { releaseChannel: true } },
@@ -64,21 +63,15 @@ export async function dispatchJobsForAddedResources(
     return;
   }
 
-  const { releaseChannels, policy, system } = environment;
+  const { policy, system } = environment;
   const { deployments } = system;
   const { environmentPolicyReleaseChannels } = policy;
   const deploymentsWithReleaseFilter = deployments.map((deployment) => {
-    const envReleaseChannel = releaseChannels.find(
-      (erc) => erc.deploymentId === deployment.id,
-    );
-    const policyReleaseChannel = environmentPolicyReleaseChannels.find(
+    const policy = environmentPolicyReleaseChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
 
-    const { releaseFilter } =
-      envReleaseChannel?.releaseChannel ??
-      policyReleaseChannel?.releaseChannel ??
-      {};
+    const { releaseFilter } = policy?.releaseChannel ?? {};
     return { ...deployment, releaseFilter };
   });
 
