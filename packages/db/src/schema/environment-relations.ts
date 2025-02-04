@@ -5,7 +5,6 @@ import {
   environmentMetadata,
   environmentPolicy,
 } from "./environment.js";
-import { environmentReleaseChannel } from "./release-channel.js";
 import { system } from "./system.js";
 import { variableSetEnvironment } from "./variable-sets.js";
 
@@ -14,7 +13,6 @@ export const environmentRelations = relations(environment, ({ many, one }) => ({
     fields: [environment.policyId],
     references: [environmentPolicy.id],
   }),
-  releaseChannels: many(environmentReleaseChannel),
   environments: many(variableSetEnvironment),
   system: one(system, {
     fields: [environment.systemId],

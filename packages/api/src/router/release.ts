@@ -21,7 +21,6 @@ import {
   environment,
   environmentPolicy,
   environmentPolicyReleaseChannel,
-  environmentReleaseChannel,
   job,
   release,
   releaseChannel,
@@ -247,20 +246,6 @@ export const releaseRouter = createTRPCRouter({
     })
     .input(z.array(z.string().uuid()))
     .query(async ({ input }) => {
-      const envRCSubquery = db
-        .select({
-          releaseChannelId: releaseChannel.id,
-          releaseChannelEnvId: environmentReleaseChannel.environmentId,
-          releaseChannelDeploymentId: releaseChannel.deploymentId,
-          releaseChannelFilter: releaseChannel.releaseFilter,
-        })
-        .from(environmentReleaseChannel)
-        .innerJoin(
-          releaseChannel,
-          eq(environmentReleaseChannel.channelId, releaseChannel.id),
-        )
-        .as("envRCSubquery");
-
       const policyRCSubquery = db
         .select({
           releaseChannelId: releaseChannel.id,
@@ -281,10 +266,6 @@ export const releaseRouter = createTRPCRouter({
         .innerJoin(deployment, eq(release.deploymentId, deployment.id))
         .innerJoin(environment, eq(deployment.systemId, environment.systemId))
         .leftJoin(
-          envRCSubquery,
-          eq(envRCSubquery.releaseChannelEnvId, environment.id),
-        )
-        .leftJoin(
           environmentPolicy,
           eq(environment.policyId, environmentPolicy.id),
         )
@@ -298,12 +279,7 @@ export const releaseRouter = createTRPCRouter({
             .groupBy((e) => [e.environment.id, e.release.id])
             .map((v) => ({
               release: v[0]!.release,
-              environment: {
-                ...v[0]!.environment,
-                releaseChannels: v
-                  .map((e) => e.envRCSubquery)
-                  .filter(isPresent),
-              },
+              environment: v[0]!.environment,
               environmentPolicy: v[0]!.environment_policy
                 ? {
                     ...v[0]!.environment_policy,
@@ -319,22 +295,13 @@ export const releaseRouter = createTRPCRouter({
       const blockedEnvsPromises = envs.map(async (env) => {
         const { release: rel, environment, environmentPolicy } = env;
 
-        const envReleaseChannel = environment.releaseChannels.find(
-          (rc) => rc.releaseChannelDeploymentId === rel.deploymentId,
-        );
-
         const policyReleaseChannel = environmentPolicy?.releaseChannels.find(
           (rc) => rc.releaseChannelDeploymentId === rel.deploymentId,
         );
 
-        const releaseFilter =
-          envReleaseChannel?.releaseChannelFilter ??
-          policyReleaseChannel?.releaseChannelFilter;
-        if (releaseFilter == null) return null;
-
-        const releaseChannelId =
-          envReleaseChannel?.releaseChannelId ??
-          policyReleaseChannel?.releaseChannelId;
+        const { releaseChannelId, releaseChannelFilter } =
+          policyReleaseChannel ?? {};
+        if (releaseChannelFilter == null) return null;
 
         const matchingRelease = await db
           .select()
@@ -342,7 +309,7 @@ export const releaseRouter = createTRPCRouter({
           .where(
             and(
               eq(release.id, rel.id),
-              releaseMatchesCondition(db, releaseFilter),
+              releaseMatchesCondition(db, releaseChannelFilter),
             ),
           )
           .then(takeFirstOrNull);

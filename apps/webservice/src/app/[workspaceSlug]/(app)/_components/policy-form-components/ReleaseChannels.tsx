@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconLoader2, IconPlus } from "@tabler/icons-react";
 
+import { Button } from "@ctrlplane/ui/button";
 import {
   Select,
   SelectContent,
@@ -16,13 +17,6 @@ type Deployment = SCHEMA.Deployment & {
 };
 
 type Policy = { releaseChannels: SCHEMA.ReleaseChannel[] };
-
-type ReleaseChannelProps = {
-  environmentPolicy: Policy;
-  deployments: Deployment[];
-  isLoading: boolean;
-  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
-};
 
 type DeploymentSelectProps = {
   deployment: Deployment;
@@ -44,11 +38,8 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   );
   const value = releaseChannel?.id;
 
-  const onChange = (channelId: string) =>
-    updateReleaseChannel(
-      deployment.id,
-      channelId === "null" ? null : channelId,
-    );
+  const onChange = (channelId: string | null) =>
+    updateReleaseChannel(deployment.id, channelId);
 
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug?: string;
@@ -83,8 +74,22 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
           ))}
         </SelectContent>
       </Select>
+      <Button
+        variant="outline"
+        onClick={() => onChange(null)}
+        disabled={releaseChannelId == null}
+      >
+        Clear
+      </Button>
     </div>
   );
+};
+
+type ReleaseChannelProps = {
+  environmentPolicy: Policy;
+  deployments: Deployment[];
+  isLoading: boolean;
+  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
 };
 
 export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({

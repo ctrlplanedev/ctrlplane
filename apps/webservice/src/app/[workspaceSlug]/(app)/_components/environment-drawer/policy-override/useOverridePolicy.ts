@@ -28,12 +28,7 @@ export const useUpdateOverridePolicy = (
   );
 
   const onUpdate = (data: SCHEMA.UpdateEnvironmentPolicy) =>
-    updatePolicy
-      .mutateAsync({
-        id: policy.id,
-        data,
-      })
-      .then(invalidateQueries);
+    updatePolicy.mutateAsync({ id: policy.id, data }).then(invalidateQueries);
 
   return {
     onUpdate,

@@ -46,13 +46,10 @@ export const DeploymentResourceDrawer: React.FC = () => {
     { enabled: isOpen },
   );
 
-  const releaseFilter =
-    environment?.releaseChannels.find((rc) => rc.deploymentId === deploymentId)
-      ?.releaseFilter ??
+  const { releaseFilter } =
     environment?.policy.releaseChannels.find(
       (rc) => rc.deploymentId === deploymentId,
-    )?.releaseFilter ??
-    undefined;
+    ) ?? {};
 
   const jobFilter: JobCondition = {
     type: FilterType.Comparison,
@@ -80,7 +77,7 @@ export const DeploymentResourceDrawer: React.FC = () => {
     api.release.list.useQuery(
       {
         deploymentId: deploymentId ?? "",
-        filter: releaseFilter,
+        filter: releaseFilter ?? undefined,
         jobFilter,
         limit: 100,
       },

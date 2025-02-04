@@ -20,7 +20,7 @@ export const GET = request()
     async (ctx, { params }) => {
       const environment = await ctx.db.query.environment.findFirst({
         where: eq(schema.environment.id, params.environmentId),
-        with: { releaseChannels: true, policy: true, metadata: true },
+        with: { policy: true, metadata: true },
       });
       if (environment == null)
         return NextResponse.json(

@@ -20,7 +20,6 @@ export const createJobsForNewEnvironment = async (
   const releaseChannels = await db.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, env.id),
     with: {
-      releaseChannels: { with: { releaseChannel: true } },
       policy: {
         with: {
           environmentPolicyReleaseChannels: { with: { releaseChannel: true } },
@@ -31,9 +30,9 @@ export const createJobsForNewEnvironment = async (
   });
   if (releaseChannels == null) return;
 
-  const { releaseChannels: envReleaseChannels, system } = releaseChannels;
+  const { system, policy } = releaseChannels;
   const { workspaceId, deployments } = system;
-  const { environmentPolicyReleaseChannels } = releaseChannels.policy;
+  const { environmentPolicyReleaseChannels } = policy;
 
   const resources = await db
     .select()
@@ -48,16 +47,10 @@ export const createJobsForNewEnvironment = async (
   if (resources.length === 0) return;
 
   const releasePromises = deployments.map(async (deployment) => {
-    const envReleaseChannel = envReleaseChannels.find(
-      (erc) => erc.deploymentId === deployment.id,
-    );
-    const policyReleaseChannel = environmentPolicyReleaseChannels.find(
+    const channel = environmentPolicyReleaseChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
-    const { releaseFilter } =
-      envReleaseChannel?.releaseChannel ??
-      policyReleaseChannel?.releaseChannel ??
-      {};
+    const { releaseFilter } = channel?.releaseChannel ?? {};
     return db
       .select()
       .from(SCHEMA.release)

@@ -23,9 +23,6 @@ export const DELETE = request()
           eq(schema.environment.systemId, params.systemId),
           eq(schema.environment.name, params.name),
         ),
-        with: {
-          releaseChannels: true,
-        },
       });
       if (environment == null)
         return NextResponse.json(

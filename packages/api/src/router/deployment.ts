@@ -138,7 +138,6 @@ const releaseChannelRouter = createTRPCRouter({
       const rc = await ctx.db.query.releaseChannel.findFirst({
         where: eq(releaseChannel.id, input),
         with: {
-          environmentReleaseChannels: { with: { environment: true } },
           environmentPolicyReleaseChannels: {
             with: { environmentPolicy: true },
           },
@@ -157,9 +156,6 @@ const releaseChannelRouter = createTRPCRouter({
       return {
         ...rc,
         usage: {
-          environments: rc.environmentReleaseChannels.map(
-            (erc) => erc.environment,
-          ),
           policies: rc.environmentPolicyReleaseChannels.map((eprc) => ({
             ...eprc.environmentPolicy,
             environments: envs.filter(
