@@ -94,12 +94,12 @@ export const GET = async (
       const config = { workspaceId, tenantId, subscriptionId, name };
       const configJSON = JSON.stringify(config);
       await redis.set(`azure_consent_state:${state}`, configJSON, "EX", 900);
-      const redirectUrl = `${baseUrl}/api/azure/consent?state=${state}`;
+      const redirectUrl = `${baseUrl}/api/azure/consent`;
       const consentUrlExtension =
         resourceProviderId == null
           ? ""
           : `&resourceProviderId=${resourceProviderId}`;
-      const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}${consentUrlExtension}`;
+      const consentUrl = `https://login.microsoftonline.com/${tenantId}/adminconsent?client_id=${clientId}&redirect_uri=${redirectUrl}&state=${state}${consentUrlExtension}`;
       return NextResponse.redirect(consentUrl);
     }
 
