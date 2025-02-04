@@ -22,9 +22,8 @@ const createReleaseChannels = (
 export const createEnv = async (
   db: Tx,
   input: z.infer<typeof SCHEMA.createEnvironment>,
-  metadata?: Record<string, string>,
-  releaseChannels?: { channelId: string; deploymentId: string }[],
 ) => {
+  const { metadata, releaseChannels } = input;
   const overridePolicyId = await db
     .insert(environmentPolicy)
     .values({ name: input.name, systemId: input.systemId })
