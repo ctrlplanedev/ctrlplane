@@ -1,16 +1,17 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconLoader2, IconPlus } from "@tabler/icons-react";
+import { IconLoader2, IconPlus, IconSelector } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ctrlplane/ui/select";
+  Command,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@ctrlplane/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 type Deployment = SCHEMA.Deployment & {
   releaseChannels: SCHEMA.ReleaseChannel[];
@@ -32,11 +33,11 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   releaseChannels,
   updateReleaseChannel,
 }) => {
+  const [open, setOpen] = useState(false);
   const releaseChannelId = releaseChannels[deployment.id];
   const releaseChannel = deployment.releaseChannels.find(
     (rc) => rc.id === releaseChannelId,
   );
-  const value = releaseChannel?.id;
 
   const onChange = (channelId: string | null) =>
     updateReleaseChannel(deployment.id, channelId);
@@ -46,34 +47,58 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
     systemSlug?: string;
   }>();
 
+  const sortedReleaseChannels = deployment.releaseChannels.sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
   return (
     <div className="flex items-center gap-2">
       <span className="w-40 truncate text-sm">{deployment.name}</span>
-      <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-72">
-          <SelectValue
-            placeholder="Select release channel"
-            className="truncate"
-          />
-        </SelectTrigger>
-        <SelectContent className="overflow-y-auto">
-          {deployment.releaseChannels.length === 0 && (
-            <Link
-              href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/release-channels`}
-              className="w-72 hover:text-blue-300"
-            >
-              <div className="flex items-center gap-2 p-1 text-sm">
-                <IconPlus className="h-4 w-4" /> Create release channel
-              </div>
-            </Link>
-          )}
-          {deployment.releaseChannels.map((rc) => (
-            <SelectItem key={rc.id} value={rc.id} className="w-72">
-              <span className="truncate">{rc.name}</span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen} modal>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-72 items-center justify-start gap-2"
+            role="combobox"
+            aria-expanded={open}
+          >
+            <IconSelector className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">
+              {releaseChannel?.name ?? `Select release channel...`}
+            </span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="p-1">
+          <Command>
+            <CommandInput placeholder="Search release channels..." />
+            <CommandList>
+              {sortedReleaseChannels.length === 0 && (
+                <CommandItem>
+                  <Link
+                    href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/release-channels`}
+                    className="w-full hover:text-blue-300"
+                  >
+                    <IconPlus className="h-4 w-4" /> Create release channel
+                  </Link>
+                </CommandItem>
+              )}
+              {sortedReleaseChannels.length > 0 &&
+                sortedReleaseChannels.map((rc) => (
+                  <CommandItem
+                    key={rc.name}
+                    value={rc.id}
+                    onSelect={() => {
+                      onChange(rc.id);
+                      setOpen(false);
+                    }}
+                  >
+                    {rc.name}
+                  </CommandItem>
+                ))}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
       <Button
         variant="outline"
         onClick={() => onChange(null)}
