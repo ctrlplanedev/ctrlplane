@@ -21,6 +21,9 @@ export const workspace = pgTable("workspace", {
   slug: text("slug").notNull().unique(),
   googleServiceAccountEmail: text("google_service_account_email"),
   awsRoleArn: text("aws_role_arn"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export const workspaceSchema = z.object({

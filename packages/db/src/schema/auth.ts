@@ -38,6 +38,9 @@ export const user = pgTable("user", {
     .default("user")
     .$type<"user" | "admin">()
     .notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 });
 
 export type User = InferSelectModel<typeof user>;

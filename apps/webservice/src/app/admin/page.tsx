@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { sql } from "@ctrlplane/db";
+import { desc, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
@@ -21,13 +21,21 @@ export default async function AdminPage() {
   if (viewer == null) return notFound();
   if (viewer.systemRole !== "admin") return notFound();
 
-  const users = await db.select().from(schema.user).limit(500);
+  const users = await db
+    .select()
+    .from(schema.user)
+    .orderBy(desc(schema.user.createdAt))
+    .limit(500);
   const count = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.user)
     .then(([result]) => result?.count ?? 0);
 
-  const workspaces = await db.select().from(schema.workspace).limit(500);
+  const workspaces = await db
+    .select()
+    .from(schema.workspace)
+    .orderBy(desc(schema.workspace.createdAt))
+    .limit(500);
   const workspaceCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.workspace)
@@ -46,6 +54,7 @@ export default async function AdminPage() {
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Created At</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -62,6 +71,7 @@ export default async function AdminPage() {
                 </TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.systemRole}</TableCell>
+                <TableCell>{user.createdAt.toLocaleString()}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -80,6 +90,7 @@ export default async function AdminPage() {
               <TableHead>Name</TableHead>
               <TableHead>Google SA</TableHead>
               <TableHead>AWS Role</TableHead>
+              <TableHead>Created At</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -91,6 +102,7 @@ export default async function AdminPage() {
                 </TableCell>
                 <TableCell>{workspace.googleServiceAccountEmail}</TableCell>
                 <TableCell>{workspace.awsRoleArn}</TableCell>
+                <TableCell>{workspace.createdAt.toLocaleString()}</TableCell>
               </TableRow>
             ))}
           </TableBody>
