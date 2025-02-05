@@ -52,7 +52,7 @@
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vite-tsconfig-paths": "^5.0.1",
-    "vitest": "^2.1.2"
+    "vitest": "^2.1.9"
   },
   "prettier": "@ctrlplane/prettier-config"
 }
