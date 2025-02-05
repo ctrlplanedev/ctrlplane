@@ -116,9 +116,12 @@ const authnProcedure = loggedProcedure.use(({ ctx, next }) => {
 
 const authzProcedure = authnProcedure.use(
   async ({ ctx, meta, path, getRawInput, next }) => {
+    if (ctx.session.user.systemRole === "admin") return next();
+
     const { authorizationCheck } = meta ?? {};
     if (authorizationCheck != null) {
       const canUser = can().user(ctx.session.user.id);
+
       const input = await getRawInput();
       let check: boolean | null = null;
       try {

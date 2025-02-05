@@ -19,6 +19,7 @@ declare module "next-auth" {
     token: JWT;
     user: {
       id: string;
+      systemRole: "admin" | "user";
     } & DefaultSession["user"];
   }
 }
