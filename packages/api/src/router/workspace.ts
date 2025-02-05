@@ -202,9 +202,8 @@ export const workspaceRouter = createTRPCRouter({
       .where(
         and(
           eq(workspace.slug, input),
-
           ctx.session.user.systemRole === "admin"
-            ? sql`1=1`
+            ? undefined
             : eq(entityRole.entityId, ctx.session.user.id),
         ),
       )
@@ -223,7 +222,7 @@ export const workspaceRouter = createTRPCRouter({
           and(
             eq(workspace.id, input),
             ctx.session.user.systemRole === "admin"
-              ? sql`1=1`
+              ? undefined
               : eq(entityRole.entityId, ctx.session.user.id),
           ),
         )
@@ -240,7 +239,7 @@ export const workspaceRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) => {
-      const kinds = await ctx.db
+      return ctx.db
         .select({
           version: resource.version,
           kind: resource.kind,
@@ -250,7 +249,5 @@ export const workspaceRouter = createTRPCRouter({
         .where(and(eq(resource.workspaceId, input), isNull(resource.deletedAt)))
         .groupBy(resource.version, resource.kind)
         .orderBy(asc(resource.kind));
-
-      return kinds.map((row) => row);
     }),
 });
