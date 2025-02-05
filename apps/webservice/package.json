@@ -65,7 +65,6 @@
     "next": "catalog:",
     "next-auth": "catalog:",
     "next-themes": "^0.3.0",
-    "pnpm": "^9.12.3",
     "pretty-ms": "^9.0.0",
     "randomcolor": "^0.6.2",
     "react": "catalog:react18",
