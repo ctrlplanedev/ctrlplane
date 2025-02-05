@@ -1,7 +1,15 @@
 "use client";
 
+import type { RouterOutputs } from "@ctrlplane/api";
 import { useMemo } from "react";
-import { formatDistanceToNowStrict, subWeeks } from "date-fns";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import {
+  formatDistanceToNowStrict,
+  isSameDay,
+  subDays,
+  subWeeks,
+} from "date-fns";
 import prettyMilliseconds from "pretty-ms";
 
 import { Card } from "@ctrlplane/ui/card";
@@ -15,61 +23,99 @@ import {
 
 import { api } from "~/trpc/react";
 
-const DeploymentHistoryGraph: React.FC<{ name: string; repo: string }> = () => {
-  const history = [
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: null },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-    { successRate: 100 },
-  ];
+const DeploymentHistoryGraph: React.FC<{
+  history: (number | null)[];
+}> = ({ history }) => (
+  <div className="flex h-[30px] items-center gap-1">
+    {history.map((successRate, j) => (
+      <div key={j} className="relative h-full w-1.5 overflow-hidden rounded-sm">
+        {successRate == null ? (
+          <div className="absolute bottom-0 h-full w-full bg-neutral-700" />
+        ) : (
+          <>
+            <div className="absolute bottom-0 h-full w-full bg-red-500" />
+            <div
+              className="absolute bottom-0 w-full bg-green-500"
+              style={{ height: `${successRate}%` }}
+            />
+          </>
+        )}
+      </div>
+    ))}
+  </div>
+);
+
+type DeploymentStats =
+  RouterOutputs["deployment"]["stats"]["byWorkspaceId"][number];
+
+const DeploymentStatistics: React.FC<{ deployment: DeploymentStats }> = ({
+  deployment,
+}) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const { successRates } = deployment;
+  const history = Array.from({ length: 30 }, (_, i) =>
+    subDays(new Date(), 29 - i),
+  ).map(
+    (d) =>
+      successRates.find(({ date }) => isSameDay(date, d))?.successRate ?? null,
+  );
 
   return (
-    <div className="flex h-[30px] items-center gap-1">
-      {history.map(({ successRate }, j) => (
-        <div
-          key={j}
-          className="relative h-full w-1.5 overflow-hidden rounded-sm"
+    <tr key={deployment.id} className="border-b">
+      <td className="p-4 align-middle">
+        <Link
+          href={`/${workspaceSlug}/systems/${deployment.systemSlug}/deployments/${deployment.slug}/releases`}
+          target="_blank"
         >
-          {successRate == null ? (
-            <div className="absolute bottom-0 h-full w-full bg-neutral-700" />
-          ) : (
-            <>
-              <div className="absolute bottom-0 h-full w-full bg-red-500" />
-              <div
-                className="absolute bottom-0 w-full bg-green-500"
-                style={{ height: `${successRate}%` }}
-              />
-            </>
-          )}
+          <div className="flex items-center gap-2">{deployment.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {deployment.systemName} / {deployment.name}
+          </div>
+        </Link>
+      </td>
+
+      <td className="p-4 align-middle">
+        <DeploymentHistoryGraph history={history} />
+      </td>
+
+      <td className="p-4 ">
+        {prettyMilliseconds(Math.round(deployment.p50) * 1000)}
+      </td>
+      <td className="p-4 ">
+        {prettyMilliseconds(Math.round(deployment.p90) * 1000)}
+      </td>
+
+      <td className="p-4 ">{deployment.totalJobs.toLocaleString()}</td>
+
+      <td className="p-4">
+        <div className="flex items-center gap-2">
+          <div className="h-2 w-full rounded-full bg-neutral-800">
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{
+                width: `${((deployment.totalSuccess / deployment.totalJobs) * 100).toFixed(0)}%`,
+              }}
+            />
+          </div>
+          <div className="w-[75px] text-right">
+            {((deployment.totalSuccess / deployment.totalJobs) * 100).toFixed(
+              0,
+            )}
+            %
+          </div>
         </div>
-      ))}
-    </div>
+      </td>
+
+      <td className="hidden p-4 align-middle xl:table-cell">
+        <div>
+          {deployment.lastRunAt
+            ? formatDistanceToNowStrict(deployment.lastRunAt, {
+                addSuffix: false,
+              })
+            : "No runs"}
+        </div>
+      </td>
+    </tr>
   );
 };
 
@@ -78,10 +124,12 @@ export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
 }) => {
   const today = useMemo(() => new Date(), []);
   const startDate = subWeeks(today, 2);
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const deployments = api.deployment.stats.byWorkspaceId.useQuery({
     workspaceId,
     startDate,
     endDate: today,
+    timezone,
   });
 
   return (
@@ -101,10 +149,10 @@ export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
                   P90 Duration
                 </TableHead>
 
-                <TableHead className="w-[140px] p-4">Success Rate</TableHead>
                 <TableHead className="w-[75px] p-4 xl:w-[150px]">
                   Total Jobs
                 </TableHead>
+                <TableHead className="w-[140px] p-4">Success Rate</TableHead>
                 <TableHead className="hidden p-4 xl:table-cell xl:w-[120px]">
                   Last Run
                 </TableHead>
@@ -113,62 +161,10 @@ export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
 
             <TableBody>
               {deployments.data?.map((deployment) => (
-                <tr key={deployment.id} className="border-b">
-                  <td className="p-4 align-middle">
-                    <div className="flex items-center gap-2">
-                      {deployment.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {deployment.systemName} / {deployment.name}
-                    </div>
-                  </td>
-
-                  <td className="p-4 align-middle">
-                    <DeploymentHistoryGraph
-                      name={deployment.name}
-                      repo={deployment.systemName}
-                    />
-                  </td>
-
-                  <td className="p-4 ">
-                    {prettyMilliseconds(Math.round(deployment.p50) * 1000)}
-                  </td>
-                  <td className="p-4 ">
-                    {prettyMilliseconds(Math.round(deployment.p90) * 1000)}
-                  </td>
-
-                  <td className="p-4 ">
-                    {deployment.totalJobs.toLocaleString()}
-                  </td>
-
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-full rounded-full bg-neutral-800">
-                        <div
-                          className="h-full rounded-full bg-white transition-all"
-                          style={{
-                            width: `${(deployment.totalSuccess / deployment.totalJobs) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <div className="w-[75px] text-right">
-                        {(
-                          (deployment.totalSuccess / deployment.totalJobs) *
-                          100
-                        ).toFixed(0)}
-                        %
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="hidden p-4 align-middle xl:table-cell">
-                    <div>
-                      {formatDistanceToNowStrict(new Date(), {
-                        addSuffix: false,
-                      })}
-                    </div>
-                  </td>
-                </tr>
+                <DeploymentStatistics
+                  key={deployment.id}
+                  deployment={deployment}
+                />
               ))}
             </TableBody>
           </Table>

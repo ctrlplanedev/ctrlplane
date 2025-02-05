@@ -44,3 +44,12 @@ export const exitedStatus = [
   JobStatus.Cancelled,
   JobStatus.Skipped,
 ];
+
+// Statuses that should be included in the analytics calculations
+export const analyticsStatuses = [
+  JobStatus.Failure,
+  JobStatus.InvalidJobAgent,
+  JobStatus.InvalidIntegration,
+  JobStatus.ExternalRunNotFound,
+  JobStatus.Successful,
+];
