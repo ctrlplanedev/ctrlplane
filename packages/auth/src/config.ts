@@ -19,7 +19,7 @@ declare module "next-auth" {
     token: JWT;
     user: {
       id: string;
-      systemRole: "admin" | "user";
+      systemRole: "user" | "admin";
     } & DefaultSession["user"];
   }
 }
@@ -61,7 +61,6 @@ const providers = (): Provider[] => {
           try {
             const { email, password } = signInSchema.parse(credentials);
             const user = await getUserByCredentials(email, password);
-            console.log(user);
             return user;
           } catch (error) {
             console.log(error);

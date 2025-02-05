@@ -116,6 +116,7 @@ const authnProcedure = loggedProcedure.use(({ ctx, next }) => {
 
 const authzProcedure = authnProcedure.use(
   async ({ ctx, meta, path, getRawInput, next }) => {
+    console.log(ctx.session.user);
     if (ctx.session.user.systemRole === "admin") return next();
 
     const { authorizationCheck } = meta ?? {};

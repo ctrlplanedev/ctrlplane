@@ -34,7 +34,10 @@ export const user = pgTable("user", {
     .references(() => workspace.id, { onDelete: "set null" })
     .default(sql`null`),
   passwordHash: text("password_hash").default(sql`null`),
-  systemRole: systemRoleEnum("system_role").default("user").notNull(),
+  systemRole: systemRoleEnum("system_role")
+    .default("user")
+    .$type<"user" | "admin">()
+    .notNull(),
 });
 
 export type User = InferSelectModel<typeof user>;
