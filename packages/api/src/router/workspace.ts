@@ -127,6 +127,12 @@ export const workspaceRouter = createTRPCRouter({
   integrations: integrationsRouter,
 
   roles: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceGet)
+          .on({ type: "workspace", id: input }),
+    })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
       ctx.db
@@ -136,6 +142,12 @@ export const workspaceRouter = createTRPCRouter({
     ),
 
   update: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceGet)
+          .on({ type: "workspace", id: input.id }),
+    })
     .input(z.object({ id: z.string().uuid(), data: updateWorkspace }))
     .mutation(async ({ ctx, input }) =>
       ctx.db
@@ -190,7 +202,10 @@ export const workspaceRouter = createTRPCRouter({
       .where(
         and(
           eq(workspace.slug, input),
-          eq(entityRole.entityId, ctx.session.user.id),
+
+          ctx.session.user.systemRole === "admin"
+            ? sql`1=1`
+            : eq(entityRole.entityId, ctx.session.user.id),
         ),
       )
       .then(takeFirstOrNull)
@@ -207,7 +222,9 @@ export const workspaceRouter = createTRPCRouter({
         .where(
           and(
             eq(workspace.id, input),
-            eq(entityRole.entityId, ctx.session.user.id),
+            ctx.session.user.systemRole === "admin"
+              ? sql`1=1`
+              : eq(entityRole.entityId, ctx.session.user.id),
           ),
         )
         .then(takeFirstOrNull)
