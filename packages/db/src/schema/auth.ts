@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import { relations, sql } from "drizzle-orm";
 import {
   integer,
+  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -21,6 +22,8 @@ const userSchema = z.object({
   activeWorkspaceId: z.string().uuid().optional(),
 });
 
+export const systemRoleEnum = pgEnum("system_role", ["user", "admin"]);
+
 export const user = pgTable("user", {
   id: uuid("id").notNull().primaryKey().defaultRandom(),
   name: varchar("name", { length: 255 }),
@@ -31,6 +34,7 @@ export const user = pgTable("user", {
     .references(() => workspace.id, { onDelete: "set null" })
     .default(sql`null`),
   passwordHash: text("password_hash").default(sql`null`),
+  systemRole: systemRoleEnum("system_role").default("user").notNull(),
 });
 
 export type User = InferSelectModel<typeof user>;

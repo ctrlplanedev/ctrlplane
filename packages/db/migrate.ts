@@ -1,5 +1,6 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import { readMigrationFiles } from "drizzle-orm/migrator";
 import { migrate as drizzleMigrate } from "drizzle-orm/node-postgres/migrator";
 
 import { predefinedRoles } from "@ctrlplane/validators/auth";
@@ -31,8 +32,11 @@ const upsertPredefinedRoles = () =>
 
 const migrate = async () => {
   console.log("* Running migration script...");
-  console.log("Schema folder", __dirname + "/drizzle");
-  await drizzleMigrate(db, { migrationsFolder: __dirname + "/drizzle" });
+  const migrationsFolder = __dirname + "/drizzle";
+  console.log("Migrations folder", migrationsFolder);
+  const migrations = readMigrationFiles({ migrationsFolder });
+  console.log("Migrations count", migrations.length);
+  await drizzleMigrate(db, { migrationsFolder });
   console.log("Migration scripts finished\n");
   console.log("* Upserting predefined roles...");
   await upsertPredefinedRoles();
