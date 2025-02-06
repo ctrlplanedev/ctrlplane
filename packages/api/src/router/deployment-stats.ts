@@ -53,6 +53,9 @@ export const deploymentStatsRouter = createTRPCRouter({
       const { workspaceId, startDate, endDate, orderBy, order, search } = input;
       const orderFunc = order === StatsOrder.Asc ? asc : desc;
 
+      const lastRunAt = max(schema.job.startedAt);
+      const totalJobs = count(schema.job.id);
+
       const p50 = sql<number | null>`
         percentile_cont(0.5) within group (order by 
           EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
@@ -81,11 +84,15 @@ export const deploymentStatsRouter = createTRPCRouter({
         NULLIF(COUNT(*), 0) * 100
       `;
 
+      const totalSuccess = sql<number>`
+        (COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful}))::integer
+      `;
+
       const associatedResources = countDistinct(schema.resource.id);
 
       const getOrderBy = () => {
-        if (orderBy === StatsColumn.LastRunAt) return max(schema.job.createdAt);
-        if (orderBy === StatsColumn.TotalJobs) return count(schema.job.id);
+        if (orderBy === StatsColumn.LastRunAt) return lastRunAt;
+        if (orderBy === StatsColumn.TotalJobs) return totalJobs;
         if (orderBy === StatsColumn.P50) return p50;
         if (orderBy === StatsColumn.P90) return p90;
         if (orderBy === StatsColumn.SuccessRate) return successRate;
@@ -102,11 +109,9 @@ export const deploymentStatsRouter = createTRPCRouter({
           systemId: schema.system.id,
           systemSlug: schema.system.slug,
           systemName: schema.system.name,
-          lastRunAt: max(schema.job.createdAt),
-          totalJobs: count(schema.job.id),
-          totalSuccess: sql<number>`
-            (COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful}))::integer
-          `,
+          lastRunAt,
+          totalJobs,
+          totalSuccess,
           totalDuration,
           associatedResources,
           successRate,
