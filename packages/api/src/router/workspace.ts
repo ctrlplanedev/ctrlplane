@@ -207,6 +207,7 @@ export const workspaceRouter = createTRPCRouter({
             : eq(entityRole.entityId, ctx.session.user.id),
         ),
       )
+      .limit(1)
       .then(takeFirstOrNull)
       .then((workspace) => workspace?.workspace ?? null),
   ),
@@ -226,6 +227,7 @@ export const workspaceRouter = createTRPCRouter({
               : eq(entityRole.entityId, ctx.session.user.id),
           ),
         )
+        .limit(1)
         .then(takeFirstOrNull)
         .then((w) => w?.workspace ?? null),
     ),
