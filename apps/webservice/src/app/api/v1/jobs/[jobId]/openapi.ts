@@ -6,6 +6,60 @@ export const openapi: Swagger.SwaggerV3 = {
     title: "Ctrlplane API",
     version: "1.0.0",
   },
+  components: {
+    schemas: {
+      JobWithTrigger: {
+        allOf: [
+          { $ref: "#/components/schemas/JobWithTrigger" },
+          {
+            type: "object",
+            properties: {
+              release: { $ref: "#/components/schemas/Release" },
+              deployment: { $ref: "#/components/schemas/Deployment" },
+              runbook: { $ref: "#/components/schemas/Runbook" },
+              resource: { $ref: "#/components/schemas/Resource" },
+              environment: {
+                $ref: "#/components/schemas/Environment",
+              },
+              variables: {
+                type: "object",
+              },
+              approval: {
+                type: "object",
+                nullable: true,
+                properties: {
+                  id: {
+                    type: "string",
+                  },
+                  status: {
+                    type: "string",
+                    enum: ["pending", "approved", "rejected"],
+                  },
+                  approver: {
+                    type: "object",
+                    nullable: true,
+                    description:
+                      "Null when status is pending, contains approver details when approved or rejected",
+                    properties: {
+                      id: {
+                        type: "string",
+                      },
+                      name: {
+                        type: "string",
+                      },
+                    },
+                    required: ["id", "name"],
+                  },
+                },
+                required: ["id", "status"],
+              },
+            },
+            required: ["variables"],
+          },
+        ],
+      },
+    },
+  },
   paths: {
     "/v1/jobs/{jobId}": {
       get: {
@@ -26,54 +80,7 @@ export const openapi: Swagger.SwaggerV3 = {
             content: {
               "application/json": {
                 schema: {
-                  allOf: [
-                    { $ref: "#/components/schemas/Job" },
-                    {
-                      type: "object",
-                      properties: {
-                        release: { $ref: "#/components/schemas/Release" },
-                        deployment: { $ref: "#/components/schemas/Deployment" },
-                        runbook: { $ref: "#/components/schemas/Runbook" },
-                        resource: { $ref: "#/components/schemas/Resource" },
-                        environment: {
-                          $ref: "#/components/schemas/Environment",
-                        },
-                        variables: {
-                          type: "object",
-                        },
-                        approval: {
-                          type: "object",
-                          nullable: true,
-                          properties: {
-                            id: {
-                              type: "string",
-                            },
-                            status: {
-                              type: "string",
-                              enum: ["pending", "approved", "rejected"],
-                            },
-                            approver: {
-                              type: "object",
-                              nullable: true,
-                              description:
-                                "Null when status is pending, contains approver details when approved or rejected",
-                              properties: {
-                                id: {
-                                  type: "string",
-                                },
-                                name: {
-                                  type: "string",
-                                },
-                              },
-                              required: ["id", "name"],
-                            },
-                          },
-                          required: ["id", "status"],
-                        },
-                      },
-                      required: ["variables"],
-                    },
-                  ],
+                  $ref: "#/components/schemas/JobWithTrigger",
                 },
               },
             },

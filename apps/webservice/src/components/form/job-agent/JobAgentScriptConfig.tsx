@@ -7,6 +7,9 @@ import colors from "tailwindcss/colors";
 const defaultBash = `echo "Releasing {{ .release.version }} on {{ .resource.name }}"
 `;
 
+const defaultPowerShell = `Write-Host "Releasing $([string]{{ .release.version }}) on $([string]{{ .resource.name }})"
+`;
+
 export const JobAgentScriptConfig: React.FC<{
   type: "shell" | "powershell";
   value: Record<string, any>;
@@ -27,9 +30,9 @@ export const JobAgentScriptConfig: React.FC<{
 
   useEffect(() => {
     if (value.script == null) {
-      onChange({ script: defaultBash });
+      onChange({ script: type === "shell" ? defaultBash : defaultPowerShell });
     }
-  }, [value, onChange]);
+  }, [type, value, onChange]);
 
   return (
     <div className="p-2">
