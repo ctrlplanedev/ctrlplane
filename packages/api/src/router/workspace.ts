@@ -194,40 +194,44 @@ export const workspaceRouter = createTRPCRouter({
       .then((rows) => rows.map((r) => r.workspace)),
   ),
 
-  bySlug: protectedProcedure.input(z.string()).query(async ({ ctx, input }) =>
-    ctx.db
-      .select()
-      .from(workspace)
-      .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
-      .where(
-        and(
-          eq(workspace.slug, input),
-          ctx.session.user.systemRole === "admin"
-            ? undefined
-            : eq(entityRole.entityId, ctx.session.user.id),
-        ),
-      )
-      .then(takeFirstOrNull)
-      .then((workspace) => workspace?.workspace ?? null),
-  ),
+  bySlug: protectedProcedure
+    .input(z.string())
+    .meta({
+      authorizationCheck: async ({ ctx, canUser, input }) => {
+        const ws = await ctx.db
+          .select()
+          .from(workspace)
+          .where(eq(workspace.slug, input))
+          .then(takeFirstOrNull);
+        if (ws == null) return false;
 
-  byId: protectedProcedure
-    .input(z.string().uuid())
+        return canUser
+          .perform(Permission.WorkspaceGet)
+          .on({ type: "workspace", id: ws.id });
+      },
+    })
     .query(async ({ ctx, input }) =>
       ctx.db
         .select()
         .from(workspace)
-        .innerJoin(entityRole, eq(workspace.id, entityRole.scopeId))
-        .where(
-          and(
-            eq(workspace.id, input),
-            ctx.session.user.systemRole === "admin"
-              ? undefined
-              : eq(entityRole.entityId, ctx.session.user.id),
-          ),
-        )
-        .then(takeFirstOrNull)
-        .then((w) => w?.workspace ?? null),
+        .where(eq(workspace.slug, input))
+        .then(takeFirstOrNull),
+    ),
+
+  byId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.WorkspaceGet)
+          .on({ type: "workspace", id: input }),
+    })
+    .query(async ({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(workspace)
+        .where(eq(workspace.id, input))
+        .then(takeFirstOrNull),
     ),
 
   resourceKinds: protectedProcedure
