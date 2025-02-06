@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/react";
 import { useQueryParams } from "../_components/useQueryParams";
-// import { AggregateCharts } from "./AggregateCharts";
+import { AggregateCharts } from "./AggregateCharts";
 import { DeploymentTable } from "./deployment-table/DeploymentTable";
 
 const getStartDate = (timePeriod: string, today: Date) => {
@@ -73,7 +73,7 @@ export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
         </Tabs>
       </div>
       <div className="flex flex-col gap-12">
-        {/* <AggregateCharts data={data} isLoading={isLoading} /> */}
+        <AggregateCharts data={data} isLoading={isLoading} />
         <div className="space-y-2">
           <div className="relative">
             <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

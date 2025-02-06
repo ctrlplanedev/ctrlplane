@@ -3,8 +3,6 @@ import _ from "lodash";
 import prettyMilliseconds from "pretty-ms";
 import { isPresent } from "ts-is-present";
 
-// import prettyMilliseconds from "pretty-ms";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
@@ -55,10 +53,11 @@ export const AggregateCharts: React.FC<AggregateChartsProps> = ({
   });
 
   const totalSuccess = data != null ? _.sumBy(data, (d) => d.totalSuccess) : 0;
-  const totalSuccessRate = data != null ? (totalSuccess / totalJobs) * 100 : 0;
+  const totalSuccessRate =
+    data != null && totalJobs > 0 ? (totalSuccess / totalJobs) * 100 : 0;
   const totalSuccessRatePretty = `${totalSuccessRate.toFixed(2)}%`;
   const averageDurationMs =
-    data != null ? Math.round(totalDurationMs / totalJobs) : 0;
+    data != null && totalJobs > 0 ? Math.round(totalDurationMs / totalJobs) : 0;
   const averageDurationPretty = prettyMilliseconds(averageDurationMs, {
     unitCount: 2,
     secondsDecimalDigits: 0,
