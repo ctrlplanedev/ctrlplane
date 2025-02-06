@@ -8,6 +8,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { api } from "~/trpc/react";
 import { JobAgentGitHubConfig } from "./JobAgentGitHubConfig";
 import { JobAgentKubernetesConfig } from "./JobAgentKubernetesConfig";
+import { JobAgentScriptConfig } from "./JobAgentScriptConfig";
 
 type JobAgentConfigProps = {
   workspace: { id: string };
@@ -28,7 +29,7 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
       installationId: jobAgent?.config.installationId,
       workspaceId: workspace.id,
     },
-    { enabled: jobAgent?.type === "github-app" },
+    { enabled: jobAgent != null && jobAgent.type === "github-app" },
   );
 
   if (jobAgent == null)
@@ -49,5 +50,15 @@ export const JobAgentConfig: React.FC<JobAgentConfigProps> = ({
         repos={repos.data}
       />
     );
+
+  if (jobAgent.type.startsWith("exec-"))
+    return (
+      <JobAgentScriptConfig
+        type={jobAgent.type.startsWith("exec-windows") ? "powershell" : "shell"}
+        value={value}
+        onChange={onChange}
+      />
+    );
+
   return <Input placeholder="Unsupported job agent" disabled />;
 };

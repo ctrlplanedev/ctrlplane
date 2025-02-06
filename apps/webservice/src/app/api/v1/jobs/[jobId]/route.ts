@@ -1,6 +1,5 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { isPresent } from "ts-is-present";
 
 import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -87,10 +86,6 @@ export const GET = request()
         eq(schema.releaseJobTrigger.releaseId, schema.release.id),
       )
       .leftJoin(
-        schema.releaseMetadata,
-        eq(schema.release.id, schema.releaseMetadata.releaseId),
-      )
-      .leftJoin(
         schema.deployment,
         eq(schema.release.deploymentId, schema.deployment.id),
       )
@@ -107,12 +102,7 @@ export const GET = request()
       );
 
     const release =
-      row.release != null
-        ? {
-            ...row.release,
-            metadata: rows.map((r) => r.release_metadata).filter(isPresent),
-          }
-        : null;
+      row.release != null ? { ...row.release, metadata: {} } : null;
 
     const je = {
       job: row.job,
