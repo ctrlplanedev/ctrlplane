@@ -16,6 +16,8 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
   const router = useRouter();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
+  const successRate = deployment.successRate ?? 0;
+
   return (
     <TableRow
       key={deployment.id}
@@ -47,12 +49,12 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
 
       <TableCell className="p-4 ">
         {deployment.p50 != null
-          ? prettyMilliseconds(Math.round(deployment.p50) * 1000)
+          ? prettyMilliseconds(Math.round(deployment.p50 * 1000))
           : "N/A"}
       </TableCell>
       <TableCell className="p-4 ">
         {deployment.p90 != null
-          ? prettyMilliseconds(Math.round(deployment.p90) * 1000)
+          ? prettyMilliseconds(Math.round(deployment.p90 * 1000))
           : "N/A"}
       </TableCell>
 
@@ -61,12 +63,10 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
           <div className="h-2 w-full rounded-full bg-neutral-800">
             <div
               className="h-full rounded-full bg-white transition-all"
-              style={{ width: `${deployment.successRate.toFixed(0)}%` }}
+              style={{ width: `${successRate.toFixed(0)}%` }}
             />
           </div>
-          <div className="w-[75px] text-right">
-            {deployment.successRate.toFixed(0)}%
-          </div>
+          <div className="w-[75px] text-right">{successRate.toFixed(0)}%</div>
         </div>
       </TableCell>
 

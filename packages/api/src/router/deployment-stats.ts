@@ -77,7 +77,7 @@ export const deploymentStatsRouter = createTRPCRouter({
         )::integer
       `;
 
-      const successRate = sql<number>`
+      const successRate = sql<number | null>`
         CAST(
           SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
         ) / 
