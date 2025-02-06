@@ -49,12 +49,18 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
 
       <TableCell className="p-4 ">
         {deployment.p50 != null
-          ? prettyMilliseconds(Math.round(deployment.p50 * 1000))
+          ? prettyMilliseconds(Math.round(deployment.p50 * 1000), {
+              unitCount: 2,
+              secondsDecimalDigits: 0,
+            })
           : "N/A"}
       </TableCell>
       <TableCell className="p-4 ">
         {deployment.p90 != null
-          ? prettyMilliseconds(Math.round(deployment.p90 * 1000))
+          ? prettyMilliseconds(Math.round(deployment.p90 * 1000), {
+              unitCount: 2,
+              secondsDecimalDigits: 0,
+            })
           : "N/A"}
       </TableCell>
 
