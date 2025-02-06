@@ -1,8 +1,9 @@
 import type { RouterOutputs } from "@ctrlplane/api";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { formatDistanceToNowStrict } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
+
+import { TableCell, TableRow } from "@ctrlplane/ui/table";
 
 import { LazyDeploymentHistoryGraph } from "./DeploymentHistoryGraph";
 
@@ -12,45 +13,50 @@ type DeploymentStats =
 export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
   deployment,
 }) => {
+  const router = useRouter();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   return (
-    <tr key={deployment.id} className="border-b">
-      <td className="p-4 align-middle">
-        <Link
-          href={`/${workspaceSlug}/systems/${deployment.systemSlug}/deployments/${deployment.slug}/releases`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div className="flex items-center gap-2">{deployment.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {deployment.systemName} / {deployment.name}
-          </div>
-        </Link>
-      </td>
+    <TableRow
+      key={deployment.id}
+      className="cursor-pointer border-b"
+      onClick={() =>
+        router.push(
+          `/${workspaceSlug}/systems/${deployment.systemSlug}/deployments/${deployment.slug}/releases`,
+        )
+      }
+    >
+      <TableCell className="flex max-w-60 flex-col gap-1 p-4 align-middle">
+        <span className="truncate">{deployment.name}</span>
+        <span className="truncate text-xs text-muted-foreground">
+          {deployment.systemName} / {deployment.name}
+        </span>
+      </TableCell>
 
-      <td className="p-4 ">{deployment.totalJobs.toLocaleString()}</td>
+      <TableCell className="p-4 ">
+        <span>{deployment.totalJobs.toLocaleString()}</span>
+      </TableCell>
 
-      <td className="p-4 ">
+      <TableCell className="p-4 ">
         {deployment.associatedResources.toLocaleString()}
-      </td>
+      </TableCell>
 
-      <td className="p-4 align-middle">
+      <TableCell className="p-4 align-middle">
         <LazyDeploymentHistoryGraph deploymentId={deployment.id} />
-      </td>
+      </TableCell>
 
-      <td className="p-4 ">
+      <TableCell className="p-4 ">
         {deployment.p50 != null
           ? prettyMilliseconds(Math.round(deployment.p50) * 1000)
           : "N/A"}
-      </td>
-      <td className="p-4 ">
+      </TableCell>
+      <TableCell className="p-4 ">
         {deployment.p90 != null
           ? prettyMilliseconds(Math.round(deployment.p90) * 1000)
           : "N/A"}
-      </td>
+      </TableCell>
 
-      <td className="p-4">
+      <TableCell className="p-4">
         <div className="flex items-center gap-2">
           <div className="h-2 w-full rounded-full bg-neutral-800">
             <div
@@ -62,9 +68,9 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
             {deployment.successRate.toFixed(0)}%
           </div>
         </div>
-      </td>
+      </TableCell>
 
-      <td className="hidden p-4 align-middle xl:table-cell">
+      <TableCell className="hidden p-4 align-middle xl:table-cell">
         <div>
           {deployment.lastRunAt
             ? formatDistanceToNowStrict(deployment.lastRunAt, {
@@ -72,7 +78,7 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
               })
             : "No runs"}
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 };
