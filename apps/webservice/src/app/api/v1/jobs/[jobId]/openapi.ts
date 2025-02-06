@@ -10,7 +10,7 @@ export const openapi: Swagger.SwaggerV3 = {
     schemas: {
       JobWithTrigger: {
         allOf: [
-          { $ref: "#/components/schemas/JobWithTrigger" },
+          { $ref: "#/components/schemas/Job" },
           {
             type: "object",
             properties: {
