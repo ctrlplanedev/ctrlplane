@@ -4,10 +4,8 @@ import { z } from "zod";
 
 import {
   and,
-  asc,
   count,
   countDistinct,
-  desc,
   eq,
   gte,
   ilike,
@@ -51,7 +49,10 @@ export const deploymentStatsRouter = createTRPCRouter({
     )
     .query(async ({ ctx, input }) => {
       const { workspaceId, startDate, endDate, orderBy, order, search } = input;
-      const orderFunc = order === StatsOrder.Asc ? asc : desc;
+      const orderFunc = (field: unknown) =>
+        order === StatsOrder.Asc
+          ? sql`${field} ASC NULLS LAST`
+          : sql`${field} DESC NULLS LAST`;
 
       const lastRunAt = max(schema.job.startedAt);
       const totalJobs = count(schema.job.id);
