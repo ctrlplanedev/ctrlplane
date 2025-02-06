@@ -210,7 +210,7 @@ export const workspaceRouter = createTRPCRouter({
           .on({ type: "workspace", id: ws.id });
       },
     })
-    .query(async ({ ctx, input }) =>
+    .query(({ ctx, input }) =>
       ctx.db
         .select()
         .from(workspace)
@@ -226,7 +226,7 @@ export const workspaceRouter = createTRPCRouter({
           .perform(Permission.WorkspaceGet)
           .on({ type: "workspace", id: input }),
     })
-    .query(async ({ ctx, input }) =>
+    .query(({ ctx, input }) =>
       ctx.db
         .select()
         .from(workspace)
