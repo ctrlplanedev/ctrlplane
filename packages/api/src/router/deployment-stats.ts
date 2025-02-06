@@ -1,15 +1,32 @@
+import { eachDayOfInterval, format, subDays } from "date-fns";
+import _ from "lodash";
 import { z } from "zod";
 
-import { and, count, eq, gte, lte, max, sql } from "@ctrlplane/db";
 import {
-  deployment,
-  job,
-  release,
-  releaseJobTrigger,
-  system,
-} from "@ctrlplane/db/schema";
+  and,
+  asc,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  max,
+  sql,
+} from "@ctrlplane/db";
+import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  StatsColumn,
+  statsColumn,
+  statsOrder,
+  StatsOrder,
+} from "@ctrlplane/validators/deployments";
+import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -26,58 +43,186 @@ export const deploymentStatsRouter = createTRPCRouter({
         workspaceId: z.string().uuid(),
         startDate: z.date(),
         endDate: z.date(),
+        timezone: z.string(),
+        orderBy: statsColumn.default(StatsColumn.LastRunAt),
+        order: statsOrder.default(StatsOrder.Desc),
+        search: z.string().optional(),
       }),
     )
-    .query(({ ctx, input }) =>
-      ctx.db
+    .query(async ({ ctx, input }) => {
+      const { workspaceId, startDate, endDate, orderBy, order, search } = input;
+      const orderFunc = order === StatsOrder.Asc ? asc : desc;
+
+      const p50 = sql<number | null>`
+        percentile_cont(0.5) within group (order by 
+          EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
+      `;
+
+      const p90 = sql<number | null>`
+        percentile_cont(0.9) within group (order by 
+          EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
+      `;
+
+      const totalDuration = sql<number | null>`
+        SUM(
+          CASE 
+            WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
+            THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+          END
+        )::integer
+      `;
+
+      const successRate = sql<number>`
+        CAST(
+          SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+        ) / 
+        NULLIF(COUNT(*), 0) * 100
+      `;
+
+      const associatedResources = countDistinct(schema.resource.id);
+
+      const getOrderBy = () => {
+        if (orderBy === StatsColumn.LastRunAt) return max(schema.job.createdAt);
+        if (orderBy === StatsColumn.TotalJobs) return count(schema.job.id);
+        if (orderBy === StatsColumn.P50) return p50;
+        if (orderBy === StatsColumn.P90) return p90;
+        if (orderBy === StatsColumn.SuccessRate) return successRate;
+        if (orderBy === StatsColumn.AssociatedResources)
+          return associatedResources;
+        return schema.deployment.name;
+      };
+
+      const results = await ctx.db
         .select({
-          id: deployment.id,
-          name: deployment.name,
-          slug: deployment.slug,
-          systemId: system.id,
-          systemSlug: system.slug,
-          systemName: system.name,
-          lastRunAt: max(job.createdAt),
-          totalJobs: count(job.id),
+          id: schema.deployment.id,
+          name: schema.deployment.name,
+          slug: schema.deployment.slug,
+          systemId: schema.system.id,
+          systemSlug: schema.system.slug,
+          systemName: schema.system.name,
+          lastRunAt: max(schema.job.createdAt),
+          totalJobs: count(schema.job.id),
           totalSuccess: sql<number>`
-            (COUNT(*) FILTER (WHERE ${job.status} = ${JobStatus.Successful}) / COUNT(*)) * 100
+            (COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful}))::integer
           `,
-
-          p50: sql<number>`
-            percentile_cont(0.5) within group (order by 
-              EXTRACT(EPOCH FROM (${job.completedAt} - ${job.startedAt}))
-            )
-          `,
-
-          p90: sql<number>`
-            percentile_cont(0.9) within group (order by
-              EXTRACT(EPOCH FROM (${job.completedAt} - ${job.startedAt}))
-            )
-          `,
+          totalDuration,
+          associatedResources,
+          successRate,
+          p50,
+          p90,
         })
-        .from(deployment)
-        .innerJoin(release, eq(release.deploymentId, deployment.id))
+        .from(schema.deployment)
         .innerJoin(
-          releaseJobTrigger,
-          eq(releaseJobTrigger.releaseId, release.id),
+          schema.release,
+          eq(schema.release.deploymentId, schema.deployment.id),
         )
-        .innerJoin(job, eq(job.id, releaseJobTrigger.jobId))
-        .innerJoin(system, eq(system.id, deployment.systemId))
+        .innerJoin(
+          schema.releaseJobTrigger,
+          eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+        )
+        .innerJoin(
+          schema.job,
+          eq(schema.job.id, schema.releaseJobTrigger.jobId),
+        )
+        .innerJoin(
+          schema.system,
+          eq(schema.system.id, schema.deployment.systemId),
+        )
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+        )
         .where(
           and(
-            eq(system.workspaceId, input.workspaceId),
-            gte(job.createdAt, input.startDate),
-            lte(job.createdAt, input.endDate),
+            eq(schema.system.workspaceId, workspaceId),
+            gte(schema.job.createdAt, startDate),
+            lte(schema.job.createdAt, endDate),
+            isNull(schema.resource.deletedAt),
+            search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
           ),
         )
+        .orderBy(orderFunc(getOrderBy()))
         .groupBy(
-          deployment.id,
-          deployment.name,
-          deployment.slug,
-          system.id,
-          system.name,
-          system.slug,
+          schema.deployment.id,
+          schema.deployment.name,
+          schema.deployment.slug,
+          schema.system.id,
+          schema.system.name,
+          schema.system.slug,
         )
-        .limit(100),
-    ),
+        .limit(100);
+
+      return results;
+    }),
+
+  history: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        timeZone: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { deploymentId, timeZone } = input;
+      const endDate = new Date();
+      const startDate = subDays(new Date(), 29);
+      const dates = eachDayOfInterval({ start: startDate, end: endDate }).map(
+        (date) => format(date, "yyyy-MM-dd"),
+      );
+
+      const dateExpr = sql`DATE(${schema.job.completedAt} AT TIME ZONE ${timeZone})::text`;
+
+      const baseQuery = ctx.db
+        .select({
+          date: dateExpr.as("date"),
+          status: schema.job.status,
+          duration: sql<number>`
+            EXTRACT(EPOCH FROM (${schema.job.completedAt} AT TIME ZONE ${timeZone} - ${schema.job.startedAt} AT TIME ZONE ${timeZone}))
+          `.as("duration"),
+        })
+        .from(schema.job)
+        .innerJoin(
+          schema.releaseJobTrigger,
+          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+        )
+        .where(
+          and(
+            eq(schema.release.deploymentId, deploymentId),
+            inArray(schema.job.status, analyticsStatuses),
+            gte(schema.job.completedAt, startDate),
+            lt(schema.job.completedAt, endDate),
+          ),
+        )
+        .as("base");
+
+      const results = await ctx.db
+        .select({
+          date: baseQuery.date,
+          successRate: sql<number>`
+            CAST(
+              SUM(CASE WHEN ${baseQuery.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+            ) / 
+            NULLIF(COUNT(*), 0) * 100
+          `.as("successRate"),
+          avgDuration: sql<number>`AVG(${baseQuery.duration})`.as(
+            "avgDuration",
+          ),
+        })
+        .from(baseQuery)
+        .groupBy(baseQuery.date)
+        .orderBy(baseQuery.date);
+
+      const resultMap = new Map(results.map((r) => [r.date, r]));
+
+      return dates.map((date) => {
+        const result = resultMap.get(date);
+        return { date, ...result };
+      });
+    }),
 });

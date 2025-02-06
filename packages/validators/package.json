@@ -47,6 +47,10 @@
     "./conditions": {
       "types": "./src/conditions/index.ts",
       "default": "./dist/conditions/index.js"
+    },
+    "./deployments": {
+      "types": "./src/deployments/index.ts",
+      "default": "./dist/deployments/index.js"
     }
   },
   "license": "MIT",
