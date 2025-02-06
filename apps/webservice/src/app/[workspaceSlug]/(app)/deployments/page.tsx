@@ -25,17 +25,7 @@ export default async function DeploymentsPage({
         </div>
       </div>
 
-      <div className="container m-8 mx-auto">
-        <div>
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">Billing</h2>
-            <p className="text-sm text-muted-foreground">
-              Monitor your usage costs, credits, and billing status
-            </p>
-          </div>
-        </div>
-        <DeploymentsCard workspaceId={workspace.id} />
-      </div>
+      <DeploymentsCard workspaceId={workspace.id} />
     </div>
   );
 }

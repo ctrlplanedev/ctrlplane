@@ -1,10 +1,31 @@
-import { subDays } from "date-fns";
+import { eachDayOfInterval, format, subDays } from "date-fns";
 import _ from "lodash";
 import { z } from "zod";
 
-import { and, count, eq, gte, inArray, lte, max, sql } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  count,
+  countDistinct,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  max,
+  sql,
+} from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  StatsColumn,
+  statsColumn,
+  statsOrder,
+  StatsOrder,
+} from "@ctrlplane/validators/deployments";
 import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -23,10 +44,57 @@ export const deploymentStatsRouter = createTRPCRouter({
         startDate: z.date(),
         endDate: z.date(),
         timezone: z.string(),
+        orderBy: statsColumn.default(StatsColumn.LastRunAt),
+        order: statsOrder.default(StatsOrder.Desc),
+        search: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const runStats = await ctx.db
+      const { workspaceId, startDate, endDate, orderBy, order, search } = input;
+      const orderFunc = order === StatsOrder.Asc ? asc : desc;
+
+      const p50 = sql<number | null>`
+        percentile_cont(0.5) within group (order by 
+          EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
+      `;
+
+      const p90 = sql<number | null>`
+        percentile_cont(0.9) within group (order by 
+          EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
+      `;
+
+      const totalDuration = sql<number | null>`
+        SUM(
+          CASE 
+            WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
+            THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+          END
+        )::integer
+      `;
+
+      const successRate = sql<number>`
+        CAST(
+          SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+        ) / 
+        NULLIF(COUNT(*), 0) * 100
+      `;
+
+      const associatedResources = countDistinct(schema.resource.id);
+
+      const getOrderBy = () => {
+        if (orderBy === StatsColumn.LastRunAt) return max(schema.job.createdAt);
+        if (orderBy === StatsColumn.TotalJobs) return count(schema.job.id);
+        if (orderBy === StatsColumn.P50) return p50;
+        if (orderBy === StatsColumn.P90) return p90;
+        if (orderBy === StatsColumn.SuccessRate) return successRate;
+        if (orderBy === StatsColumn.AssociatedResources)
+          return associatedResources;
+        return schema.deployment.name;
+      };
+
+      const results = await ctx.db
         .select({
           id: schema.deployment.id,
           name: schema.deployment.name,
@@ -39,18 +107,11 @@ export const deploymentStatsRouter = createTRPCRouter({
           totalSuccess: sql<number>`
             (COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful}))::integer
           `,
-
-          p50: sql<number>`
-            percentile_cont(0.5) within group (order by 
-              EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
-            )
-          `,
-
-          p90: sql<number>`
-            percentile_cont(0.9) within group (order by
-              EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
-            )
-          `,
+          totalDuration,
+          associatedResources,
+          successRate,
+          p50,
+          p90,
         })
         .from(schema.deployment)
         .innerJoin(
@@ -69,13 +130,20 @@ export const deploymentStatsRouter = createTRPCRouter({
           schema.system,
           eq(schema.system.id, schema.deployment.systemId),
         )
+        .innerJoin(
+          schema.resource,
+          eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+        )
         .where(
           and(
-            eq(schema.system.workspaceId, input.workspaceId),
-            gte(schema.job.createdAt, input.startDate),
-            lte(schema.job.createdAt, input.endDate),
+            eq(schema.system.workspaceId, workspaceId),
+            gte(schema.job.createdAt, startDate),
+            lte(schema.job.createdAt, endDate),
+            isNull(schema.resource.deletedAt),
+            search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
           ),
         )
+        .orderBy(orderFunc(getOrderBy()))
         .groupBy(
           schema.deployment.id,
           schema.deployment.name,
@@ -86,88 +154,75 @@ export const deploymentStatsRouter = createTRPCRouter({
         )
         .limit(100);
 
-      const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
+      return results;
+    }),
 
-      const subquery = ctx.db
+  history: protectedProcedure
+    .input(
+      z.object({
+        deploymentId: z.string().uuid(),
+        timeZone: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { deploymentId, timeZone } = input;
+      const endDate = new Date();
+      const startDate = subDays(new Date(), 29);
+      const dates = eachDayOfInterval({ start: startDate, end: endDate }).map(
+        (date) => format(date, "yyyy-MM-dd"),
+      );
+
+      const dateExpr = sql`DATE(${schema.job.completedAt} AT TIME ZONE ${timeZone})::text`;
+
+      const baseQuery = ctx.db
         .select({
-          deploymentId: schema.release.deploymentId,
-          date: dateTruncExpr.as("date"),
+          date: dateExpr.as("date"),
           status: schema.job.status,
-          countPerStatus: sql<number>`COUNT(*)`.as("countPerStatus"),
+          duration: sql<number>`
+            EXTRACT(EPOCH FROM (${schema.job.completedAt} AT TIME ZONE ${timeZone} - ${schema.job.startedAt} AT TIME ZONE ${timeZone}))
+          `.as("duration"),
         })
-        .from(schema.releaseJobTrigger)
+        .from(schema.job)
         .innerJoin(
-          schema.job,
+          schema.releaseJobTrigger,
           eq(schema.releaseJobTrigger.jobId, schema.job.id),
         )
         .innerJoin(
           schema.release,
           eq(schema.releaseJobTrigger.releaseId, schema.release.id),
         )
-        .innerJoin(
-          schema.environment,
-          eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
-        )
-        .innerJoin(
-          schema.system,
-          eq(schema.environment.systemId, schema.system.id),
-        )
         .where(
           and(
-            eq(schema.system.workspaceId, input.workspaceId),
+            eq(schema.release.deploymentId, deploymentId),
             inArray(schema.job.status, analyticsStatuses),
-            gte(schema.job.createdAt, subDays(new Date(), 30)),
+            gte(schema.job.completedAt, startDate),
+            lt(schema.job.completedAt, endDate),
           ),
         )
-        .groupBy(dateTruncExpr, schema.job.status, schema.release.deploymentId)
-        .as("sub");
+        .as("base");
 
-      const statusCounts = await ctx.db
+      const results = await ctx.db
         .select({
-          deploymentId: subquery.deploymentId,
-          date: subquery.date,
-          totalCount: sql<number>`SUM(${subquery.countPerStatus})`.as(
-            "totalCount",
+          date: baseQuery.date,
+          successRate: sql<number>`
+            CAST(
+              SUM(CASE WHEN ${baseQuery.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+            ) / 
+            NULLIF(COUNT(*), 0) * 100
+          `.as("successRate"),
+          avgDuration: sql<number>`AVG(${baseQuery.duration})`.as(
+            "avgDuration",
           ),
-          statusCounts: sql<Record<JobStatus, number>>`
-              jsonb_object_agg(${subquery.status}, ${subquery.countPerStatus})
-            `.as("statusCounts"),
         })
-        .from(subquery)
-        .groupBy(subquery.deploymentId, subquery.date)
-        .orderBy(subquery.deploymentId, subquery.date)
-        .then((rows) =>
-          _.chain(rows)
-            .groupBy((row) => row.deploymentId)
-            .map((groupedRows) => {
-              const deploymentId = groupedRows[0]!.deploymentId;
-              const stats = groupedRows.map((row) => ({
-                date: row.date,
-                totalCount: row.totalCount,
-                statusCounts: row.statusCounts,
-                successRate:
-                  row.totalCount === 0
-                    ? null
-                    : (((row.statusCounts[JobStatus.Successful] as
-                        | number
-                        | undefined) ?? 0) /
-                        row.totalCount) *
-                      100,
-              }));
+        .from(baseQuery)
+        .groupBy(baseQuery.date)
+        .orderBy(baseQuery.date);
 
-              return {
-                deploymentId,
-                stats,
-              };
-            })
-            .value(),
-        );
+      const resultMap = new Map(results.map((r) => [r.date, r]));
 
-      return runStats.map((runStat) => {
-        const successRateStat = statusCounts.find(
-          (stat) => stat.deploymentId === runStat.id,
-        );
-        return { ...runStat, successRates: successRateStat?.stats ?? [] };
+      return dates.map((date) => {
+        const result = resultMap.get(date);
+        return { date, ...result };
       });
     }),
 });

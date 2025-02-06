@@ -1,175 +1,99 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
-import { useMemo } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import {
-  formatDistanceToNowStrict,
-  isSameDay,
-  subDays,
-  subWeeks,
-} from "date-fns";
-import prettyMilliseconds from "pretty-ms";
+import type {
+  StatsColumn,
+  StatsOrder,
+} from "@ctrlplane/validators/deployments";
+import { useMemo, useState } from "react";
+import { IconSearch } from "@tabler/icons-react";
+import { startOfMonth, subDays, subMonths, subWeeks } from "date-fns";
+import { useDebounce } from "react-use";
 
 import { Card } from "@ctrlplane/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@ctrlplane/ui/table";
+import { Input } from "@ctrlplane/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/react";
+import { useQueryParams } from "../_components/useQueryParams";
+import { AggregateCharts } from "./AggregateCharts";
+import { DeploymentTable } from "./deployment-table/DeploymentTable";
 
-const DeploymentHistoryGraph: React.FC<{
-  history: (number | null)[];
-}> = ({ history }) => (
-  <div className="flex h-[30px] items-center gap-1">
-    {history.map((successRate, j) => (
-      <div key={j} className="relative h-full w-1.5 overflow-hidden rounded-sm">
-        {successRate == null ? (
-          <div className="absolute bottom-0 h-full w-full bg-neutral-700" />
-        ) : (
-          <>
-            <div className="absolute bottom-0 h-full w-full bg-red-500" />
-            <div
-              className="absolute bottom-0 w-full bg-green-500"
-              style={{ height: `${successRate}%` }}
-            />
-          </>
-        )}
-      </div>
-    ))}
-  </div>
-);
-
-type DeploymentStats =
-  RouterOutputs["deployment"]["stats"]["byWorkspaceId"][number];
-
-const DeploymentStatistics: React.FC<{ deployment: DeploymentStats }> = ({
-  deployment,
-}) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const { successRates } = deployment;
-  const history = Array.from({ length: 30 }, (_, i) =>
-    subDays(new Date(), 29 - i),
-  ).map(
-    (d) =>
-      successRates.find(({ date }) => isSameDay(date, d))?.successRate ?? null,
-  );
-
-  return (
-    <tr key={deployment.id} className="border-b">
-      <td className="p-4 align-middle">
-        <Link
-          href={`/${workspaceSlug}/systems/${deployment.systemSlug}/deployments/${deployment.slug}/releases`}
-          target="_blank"
-        >
-          <div className="flex items-center gap-2">{deployment.name}</div>
-          <div className="text-xs text-muted-foreground">
-            {deployment.systemName} / {deployment.name}
-          </div>
-        </Link>
-      </td>
-
-      <td className="p-4 align-middle">
-        <DeploymentHistoryGraph history={history} />
-      </td>
-
-      <td className="p-4 ">
-        {prettyMilliseconds(Math.round(deployment.p50) * 1000)}
-      </td>
-      <td className="p-4 ">
-        {prettyMilliseconds(Math.round(deployment.p90) * 1000)}
-      </td>
-
-      <td className="p-4 ">{deployment.totalJobs.toLocaleString()}</td>
-
-      <td className="p-4">
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-full rounded-full bg-neutral-800">
-            <div
-              className="h-full rounded-full bg-white transition-all"
-              style={{
-                width: `${((deployment.totalSuccess / deployment.totalJobs) * 100).toFixed(0)}%`,
-              }}
-            />
-          </div>
-          <div className="w-[75px] text-right">
-            {((deployment.totalSuccess / deployment.totalJobs) * 100).toFixed(
-              0,
-            )}
-            %
-          </div>
-        </div>
-      </td>
-
-      <td className="hidden p-4 align-middle xl:table-cell">
-        <div>
-          {deployment.lastRunAt
-            ? formatDistanceToNowStrict(deployment.lastRunAt, {
-                addSuffix: false,
-              })
-            : "No runs"}
-        </div>
-      </td>
-    </tr>
-  );
+const getStartDate = (timePeriod: string, today: Date) => {
+  if (timePeriod === "mtd") return startOfMonth(today);
+  if (timePeriod === "7d") return subWeeks(today, 1);
+  if (timePeriod === "14d") return subWeeks(today, 2);
+  if (timePeriod === "30d") return subDays(today, 29);
+  if (timePeriod === "3m") return subMonths(today, 2);
+  return today;
 };
 
 export const DeploymentsCard: React.FC<{ workspaceId: string }> = ({
   workspaceId,
 }) => {
+  const { getParam } = useQueryParams();
+
+  const orderByParam = getParam("order-by");
+  const orderParam = getParam("order");
+
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const [timePeriod, setTimePeriod] = useState("14d");
+
+  useDebounce(() => setDebouncedSearch(search), 500, [search]);
+
   const today = useMemo(() => new Date(), []);
-  const startDate = subWeeks(today, 2);
+  const startDate = getStartDate(timePeriod, today);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const deployments = api.deployment.stats.byWorkspaceId.useQuery({
-    workspaceId,
-    startDate,
-    endDate: today,
-    timezone,
-  });
+  const { data, isLoading } = api.deployment.stats.byWorkspaceId.useQuery(
+    {
+      workspaceId,
+      startDate,
+      endDate: today,
+      timezone,
+      orderBy: orderByParam != null ? (orderByParam as StatsColumn) : undefined,
+      order: orderParam != null ? (orderParam as StatsOrder) : undefined,
+      search: debouncedSearch,
+    },
+    { placeholderData: (prev) => prev, refetchInterval: 60_000 },
+  );
 
   return (
-    <Card>
-      <div>
-        <div className="relative w-full overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="h-16 hover:bg-transparent">
-                <TableHead className="p-4">Workflow</TableHead>
-                <TableHead className="p-4">History (30 days)</TableHead>
-                <TableHead className="w-[75px] p-4 xl:w-[150px]">
-                  P50 Duration
-                </TableHead>
+    <div className="container m-8 mx-auto">
+      <div className="mb-8 flex justify-between">
+        <h2 className="text-3xl font-semibold">Deployments</h2>
+        <Tabs value={timePeriod} onValueChange={setTimePeriod}>
+          <TabsList>
+            <TabsTrigger value="mtd">MTD</TabsTrigger>
+            <TabsTrigger value="7d">7D</TabsTrigger>
+            <TabsTrigger value="14d">14D</TabsTrigger>
+            <TabsTrigger value="30d">30D</TabsTrigger>
+            <TabsTrigger value="3m">3M</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+      <div className="flex flex-col gap-12">
+        <AggregateCharts data={data} isLoading={isLoading} />
+        <div className="space-y-2">
+          <div className="relative">
+            <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-80 pl-8"
+            />
+          </div>
 
-                <TableHead className="w-[75px] p-4 xl:w-[150px]">
-                  P90 Duration
-                </TableHead>
-
-                <TableHead className="w-[75px] p-4 xl:w-[150px]">
-                  Total Jobs
-                </TableHead>
-                <TableHead className="w-[140px] p-4">Success Rate</TableHead>
-                <TableHead className="hidden p-4 xl:table-cell xl:w-[120px]">
-                  Last Run
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {deployments.data?.map((deployment) => (
-                <DeploymentStatistics
-                  key={deployment.id}
-                  deployment={deployment}
-                />
-              ))}
-            </TableBody>
-          </Table>
+          <Card className="rounded-md">
+            <div>
+              <div className="relative w-full overflow-auto">
+                <DeploymentTable data={data} isLoading={isLoading} />
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };
