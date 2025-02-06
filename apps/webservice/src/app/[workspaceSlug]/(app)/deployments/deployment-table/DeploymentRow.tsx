@@ -20,6 +20,7 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
         <Link
           href={`/${workspaceSlug}/systems/${deployment.systemSlug}/deployments/${deployment.slug}/releases`}
           target="_blank"
+          rel="noopener noreferrer"
         >
           <div className="flex items-center gap-2">{deployment.name}</div>
           <div className="text-xs text-muted-foreground">
