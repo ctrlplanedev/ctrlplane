@@ -20,11 +20,9 @@ const githubAuthUrl = (
 ) =>
   `${githubUrl}/login/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${baseUrl}/api/github/${userId}/${workspaceSlug}&state=sLtHqpxQ6FiUtBWJ&scope=repo%2Cread%3Auser`;
 
-export default async function GitHubIntegrationPage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function GitHubIntegrationPage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);

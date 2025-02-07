@@ -10,11 +10,9 @@ import { WorkspaceDomainMatching } from "./WorkspaceDomainMatching";
 
 export const metadata: Metadata = { title: "Workspace Members" };
 
-export default async function WorkspaceSettingMembersPage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function WorkspaceSettingMembersPage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const session = await auth();
   if (session == null) notFound();

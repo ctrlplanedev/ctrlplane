@@ -1,4 +1,5 @@
-"use client";;
+"use client";
+
 import { use } from "react";
 
 import {
@@ -30,16 +31,12 @@ const VariableRow: React.FC<{
   </TableRow>
 );
 
-export default function VariablePage(
-  props: {
-    params: Promise<{ resourceId: string }>;
-  }
-) {
+export default function VariablePage(props: {
+  params: Promise<{ resourceId: string }>;
+}) {
   const params = use(props.params);
 
-  const {
-    resourceId
-  } = params;
+  const { resourceId } = params;
 
   const deployments = api.deployment.byResourceId.useQuery(resourceId);
   const variables = api.deployment.variable.byResourceId.useQuery(resourceId);

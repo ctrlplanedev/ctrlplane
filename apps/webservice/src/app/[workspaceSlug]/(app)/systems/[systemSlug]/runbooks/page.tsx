@@ -12,11 +12,9 @@ import { RunbookRow } from "./RunbookRow";
 
 export const metadata: Metadata = { title: "Runbooks - Systems" };
 
-export default async function Runbooks(
-  props: {
-    params: Promise<{ workspaceSlug: string; systemSlug: string }>;
-  }
-) {
+export default async function Runbooks(props: {
+  params: Promise<{ workspaceSlug: string; systemSlug: string }>;
+}) {
   const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();

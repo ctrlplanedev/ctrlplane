@@ -9,11 +9,9 @@ export const metadata: Metadata = {
   title: "Deployments | Ctrlplane",
 };
 
-export default async function DeploymentsPage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function DeploymentsPage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);

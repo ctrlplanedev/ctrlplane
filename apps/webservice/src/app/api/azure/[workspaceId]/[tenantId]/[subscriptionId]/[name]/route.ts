@@ -62,7 +62,10 @@ const createResourceProvider = async (
   return resourceProvider;
 };
 
-export const GET = async (request: NextRequest, props: { params: Promise<Params> }) => {
+export const GET = async (
+  request: NextRequest,
+  props: { params: Promise<Params> },
+) => {
   const params = await props.params;
   const { workspaceId, tenantId, subscriptionId, name } = params;
   const { searchParams } = new URL(request.url);

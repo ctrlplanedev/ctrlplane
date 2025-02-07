@@ -3,17 +3,13 @@ import { IconArrowLeft } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-export default async function IntegrationLayout(
-  props: {
-    children: React.ReactNode;
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function IntegrationLayout(props: {
+  children: React.ReactNode;
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const { workspaceSlug } = params;
   return (

@@ -1,17 +1,13 @@
 import { SystemBreadcrumbNavbar } from "../../SystemsBreadcrumb";
 import { TopNav } from "../../TopNav";
 
-export default async function EnvironmentLayout(
-  props: {
-    children: React.ReactNode;
-    params: Promise<any>;
-  }
-) {
+export default async function EnvironmentLayout(props: {
+  children: React.ReactNode;
+  params: Promise<any>;
+}) {
   const params = await props.params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   return (
     <>

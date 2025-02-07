@@ -7,7 +7,11 @@ import { TopNav } from "../../../TopNav";
 import { RunbookNavBar } from "./RunbookNavBar";
 
 type PageProps = {
-  params: Promise<{ workspaceSlug: string; systemSlug: string; runbookId: string }>;
+  params: Promise<{
+    workspaceSlug: string;
+    systemSlug: string;
+    runbookId: string;
+  }>;
 };
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
@@ -23,13 +27,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 export default async function RunbookLayout(
   props: {
     children: React.ReactNode;
-  } & PageProps
+  } & PageProps,
 ) {
   const params = await props.params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();

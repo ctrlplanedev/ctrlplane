@@ -1,6 +1,6 @@
-"use client";;
-import { use } from "react";
+"use client";
 
+import { use } from "react";
 import { notFound } from "next/navigation";
 import { IconLoader2, IconLock, IconLockOpen } from "@tabler/icons-react";
 import { format } from "date-fns";
@@ -102,11 +102,9 @@ const ResourceMetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
   );
 };
 
-export default function ResourcePage(
-  props: {
-    params: Promise<{ resourceId: string }>;
-  }
-) {
+export default function ResourcePage(props: {
+  params: Promise<{ resourceId: string }>;
+}) {
   const params = use(props.params);
   const resourceId = params.resourceId;
   const resource = api.resource.byId.useQuery(resourceId);

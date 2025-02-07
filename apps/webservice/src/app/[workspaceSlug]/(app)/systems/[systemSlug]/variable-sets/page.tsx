@@ -12,11 +12,9 @@ import { VariableSetsTable } from "./VariableSetsTable";
 
 export const metadata: Metadata = { title: "Variable Sets - Systems" };
 
-export default async function SystemVariableSetsPage(
-  props: {
-    params: Promise<{ workspaceSlug: string; systemSlug: string }>;
-  }
-) {
+export default async function SystemVariableSetsPage(props: {
+  params: Promise<{ workspaceSlug: string; systemSlug: string }>;
+}) {
   const params = await props.params;
   const workspace = await api.workspace
     .bySlug(params.workspaceSlug)

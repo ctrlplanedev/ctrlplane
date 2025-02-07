@@ -313,7 +313,11 @@ function Calendar({
           ) : (
             <ChevronRight className="h-4 w-4" />
           ),
-        MonthCaption: ({ calendarMonth }) => {
+        MonthCaption: ({
+          calendarMonth,
+        }: {
+          calendarMonth: { date: Date };
+        }) => {
           return (
             <div className="inline-flex gap-2">
               <Select

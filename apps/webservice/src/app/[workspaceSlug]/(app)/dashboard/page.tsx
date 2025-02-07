@@ -18,11 +18,9 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   };
 }
 
-export default async function Dashboard(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function Dashboard(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug).catch(() => null);

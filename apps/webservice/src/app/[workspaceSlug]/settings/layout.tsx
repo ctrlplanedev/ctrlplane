@@ -14,13 +14,9 @@ type Props = {
 export default async function AccountSettingsLayout(props: Props) {
   const params = await props.params;
 
-  const {
-    workspaceSlug
-  } = params;
+  const { workspaceSlug } = params;
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const session = await auth();
   if (session == null) redirect("/login");
