@@ -24,7 +24,6 @@ export const SystemSelector: React.FC<{
 }> = ({ workspaceSlug, selectedSystem, systems }) => {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  console.log(systems, selectedSystem);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -47,7 +46,6 @@ export const SystemSelector: React.FC<{
               {systems.map((system) => (
                 <CommandItem
                   key={system.id}
-                  value={system.slug}
                   onSelect={() => {
                     router.push(`/${workspaceSlug}/systems2/${system.slug}`);
                     router.refresh();

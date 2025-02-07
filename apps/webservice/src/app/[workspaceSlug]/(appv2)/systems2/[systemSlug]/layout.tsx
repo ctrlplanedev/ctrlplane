@@ -34,10 +34,10 @@ export default async function SystemsLayout(props: {
   );
 
   return (
-    <div className="relative">
+    <div className="relative rounded-tl-lg">
       <SidebarProvider>
-        <Sidebar className="absolute left-0 top-0 -z-10">
-          <SidebarHeader>
+        <Sidebar className="absolute left-0 top-0 rounded-tl-lg">
+          <SidebarHeader className="rounded-tl-lg">
             <SystemSelector
               workspaceSlug={workspace.slug}
               selectedSystem={selectedSystem ?? null}
