@@ -8,20 +8,22 @@ import { JobHistoryChart } from "../systems/JobHistoryChart";
 import { ResourceAnnotationPieChart } from "./ResourceAnnotationPieChart";
 
 type PageProps = {
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 };
 
-export function generateMetadata({ params }: PageProps): Metadata {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   return {
     title: `Dashboard - ${params.workspaceSlug}`,
   };
 }
 
-export default async function Dashboard({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function Dashboard(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug).catch(() => null);
   if (workspace == null) return notFound();

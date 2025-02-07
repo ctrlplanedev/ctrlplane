@@ -7,13 +7,12 @@ import { api } from "~/trpc/server";
 import { DeploymentPageContent } from "./DeploymentPageContent";
 
 type PageProps = {
-  params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
-  searchParams: { "release-channel-id"?: string };
+  params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
+  searchParams: Promise<{ "release-channel-id"?: string }>;
 };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
 
@@ -22,10 +21,9 @@ export async function generateMetadata({
   };
 }
 
-export default async function DeploymentPage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function DeploymentPage(props: PageProps) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
   const { system } = deployment;

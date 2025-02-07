@@ -1,4 +1,3 @@
-import dynamic from "next/dynamic";
 import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@ctrlplane/auth";
@@ -15,20 +14,20 @@ import { ResourceDrawer } from "./_components/resource-drawer/ResourceDrawer";
 import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { AppSidebar } from "./AppSidebar";
 import { AppSidebarPopoverProvider } from "./AppSidebarPopoverContext";
-
-const TerminalDrawer = dynamic(() => import("./TerminalSessionsDrawer"), {
-  ssr: false,
-});
+import TerminalDrawer from "./TerminalSessionsDrawer";
 
 type Props = {
   children: React.ReactNode;
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 };
 
-export default async function WorkspaceLayout({
-  children,
-  params: { workspaceSlug },
-}: Props) {
+export default async function WorkspaceLayout(props: Props) {
+  const params = await props.params;
+
+  const { workspaceSlug } = params;
+
+  const { children } = props;
+
   const session = await auth();
   if (session == null) redirect("/login");
 

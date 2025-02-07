@@ -13,11 +13,12 @@ type Params = { resourceProviderId: string };
 
 const azureAppClientId = env.AZURE_APP_CLIENT_ID;
 
-export default async function AzureProviderPage({
-  params,
-}: {
-  params: Params;
-}) {
+export default async function AzureProviderPage(
+  props: {
+    params: Promise<Params>;
+  }
+) {
+  const params = await props.params;
   if (azureAppClientId == null) return notFound();
 
   const { resourceProviderId } = params;

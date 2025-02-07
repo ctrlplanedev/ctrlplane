@@ -1,9 +1,15 @@
 import { ResourceVisualizationDiagramProvider } from "./ResourceVisualizationDiagram";
 
-export default function VisualizePage({
-  params: { resourceId },
-}: {
-  params: { resourceId: string };
-}) {
+export default async function VisualizePage(
+  props: {
+    params: Promise<{ resourceId: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    resourceId
+  } = params;
+
   return <ResourceVisualizationDiagramProvider resourceId={resourceId} />;
 }

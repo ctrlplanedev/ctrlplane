@@ -4,11 +4,12 @@ import { notFound } from "next/navigation";
 import { api } from "~/trpc/server";
 import { CreateDashboardButton } from "./CreateDashboardButton";
 
-export default async function DasboardsPage({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function DasboardsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const workspace = await api.workspace
     .bySlug(params.workspaceSlug)
     .catch(() => null);

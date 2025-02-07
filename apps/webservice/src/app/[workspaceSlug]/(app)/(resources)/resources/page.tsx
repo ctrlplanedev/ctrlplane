@@ -8,13 +8,14 @@ export const metadata: Metadata = {
   title: "Resources | Ctrlplane",
 };
 
-export default async function ResourcesPage({
-  params,
-  searchParams,
-}: {
-  params: { workspaceSlug: string };
-  searchParams: { view?: string };
-}) {
+export default async function ResourcesPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+    searchParams: Promise<{ view?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
 

@@ -4,7 +4,8 @@ import { api } from "~/trpc/server";
 import { SystemBreadcrumbNavbar } from "../../../SystemsBreadcrumb";
 import { TopNav } from "../../../TopNav";
 
-export default async function VariableSetPage({ params }: { params: any }) {
+export default async function VariableSetPage(props: { params: Promise<any> }) {
+  const params = await props.params;
   const variableSet = await api.variableSet.byId(params.variableSetId);
 
   if (!variableSet) notFound();

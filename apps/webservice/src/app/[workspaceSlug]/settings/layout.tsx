@@ -8,13 +8,20 @@ import { SettingsSidebar } from "./SettingsSidebar";
 
 type Props = {
   children: React.ReactNode;
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 };
 
-export default async function AccountSettingsLayout({
-  children,
-  params: { workspaceSlug },
-}: Props) {
+export default async function AccountSettingsLayout(props: Props) {
+  const params = await props.params;
+
+  const {
+    workspaceSlug
+  } = params;
+
+  const {
+    children
+  } = props;
+
   const session = await auth();
   if (session == null) redirect("/login");
 

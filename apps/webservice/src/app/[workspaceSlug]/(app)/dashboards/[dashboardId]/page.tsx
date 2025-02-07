@@ -8,11 +8,12 @@ import { DashboardProvider } from "../DashboardContext";
 import { DashboardTitle } from "./DashboardTitle";
 import { WidgetMenu } from "./WidgetMenu";
 
-export default async function DashboardPage({
-  params,
-}: {
-  params: { workspaceSlug: string; dashboardId: string };
-}) {
+export default async function DashboardPage(
+  props: {
+    params: Promise<{ workspaceSlug: string; dashboardId: string }>;
+  }
+) {
+  const params = await props.params;
   const workspace = await api.workspace
     .bySlug(params.workspaceSlug)
     .catch(() => null);

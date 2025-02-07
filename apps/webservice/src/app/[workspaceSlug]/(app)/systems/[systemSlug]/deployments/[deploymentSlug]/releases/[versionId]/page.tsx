@@ -9,18 +9,17 @@ import { FlowDiagram } from "./FlowDiagram";
 import { ResourceReleaseTable } from "./ResourceReleaseTable";
 
 type PageProps = {
-  params: {
+  params: Promise<{
     release: { id: string; version: string };
     workspaceSlug: string;
     systemSlug: string;
     deploymentSlug: string;
     versionId: string;
-  };
+  }>;
 };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
 
@@ -32,7 +31,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function ReleasePage({ params }: PageProps) {
+export default async function ReleasePage(props: PageProps) {
+  const params = await props.params;
   const release = await api.release.byId(params.versionId);
   const deployment = await api.deployment.bySlug(params);
   if (release == null || deployment == null) notFound();

@@ -151,10 +151,8 @@ export const GET = request()
 
 const bodySchema = schema.updateJob;
 
-export const PATCH = async (
-  req: NextRequest,
-  { params }: { params: { jobId: string } },
-) => {
+export const PATCH = async (req: NextRequest, props: { params: Promise<{ jobId: string }> }) => {
+  const params = await props.params;
   const response = await req.json();
   const body = bodySchema.parse(response);
 

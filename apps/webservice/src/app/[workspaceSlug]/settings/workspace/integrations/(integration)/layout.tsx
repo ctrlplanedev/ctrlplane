@@ -3,13 +3,18 @@ import { IconArrowLeft } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-export default function IntegrationLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { workspaceSlug: string };
-}) {
+export default async function IntegrationLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const { workspaceSlug } = params;
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-110px)] overflow-auto">

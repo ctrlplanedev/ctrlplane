@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -16,13 +17,18 @@ import {
 import { CreateResourceViewDialog } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
 import { api } from "~/trpc/react";
 
-export default function ResourceLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: { workspaceSlug: string };
-}) {
+export default function ResourceLayout(
+  props: {
+    children: React.ReactNode;
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = use(props.params);
+
+  const {
+    children
+  } = props;
+
   const pathname = usePathname();
   const { workspaceSlug } = params;
   const workspace = api.workspace.bySlug.useQuery(workspaceSlug);

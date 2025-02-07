@@ -14,11 +14,12 @@ import {
 import { api } from "~/trpc/server";
 import { VariableTable } from "./VariableTable";
 
-export default async function VariablesPage({
-  params,
-}: {
-  params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
-}) {
+export default async function VariablesPage(
+  props: {
+    params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) notFound();
   const { id: workspaceId } = deployment.system.workspace;

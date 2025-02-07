@@ -37,8 +37,8 @@
     "lodash": "catalog:",
     "next": "catalog:",
     "next-auth": "catalog:",
-    "react": "catalog:react18",
-    "react-dom": "catalog:react18",
+    "react": "catalog:react19",
+    "react-dom": "catalog:react19",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -47,8 +47,8 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/bcryptjs": "^2.4.6",
     "@types/lodash": "catalog:",
-    "@types/react": "catalog:react18",
-    "@types/react-dom": "catalog:react18",
+    "@types/react": "catalog:react19",
+    "@types/react-dom": "catalog:react19",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:"

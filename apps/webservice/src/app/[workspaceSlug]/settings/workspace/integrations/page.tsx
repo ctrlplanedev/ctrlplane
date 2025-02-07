@@ -32,11 +32,12 @@ const IntegrationHeading: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="flex items-center gap-2">{children}</div>;
 
-export default function IntegrationsPage({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function IntegrationsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const { workspaceSlug } = params;
 
   return (

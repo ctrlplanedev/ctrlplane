@@ -140,11 +140,12 @@ const Variables: React.FC<{
   );
 };
 
-export default async function DeploymentPage({
-  params,
-}: {
-  params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
-}) {
+export default async function DeploymentPage(
+  props: {
+    params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
   const workspaceId = workspace.id;

@@ -10,16 +10,18 @@ import { JobAgentsGettingStarted } from "./JobAgentsGettingStarted";
 import { JobAgentsTable } from "./JobAgentsTable";
 
 type PageProps = {
-  params: { workspaceSlug: string };
+  params: Promise<{ workspaceSlug: string }>;
 };
 
-export function generateMetadata({ params }: PageProps): Metadata {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   return {
     title: `Job Agents - ${params.workspaceSlug}`,
   };
 }
 
-export default async function JobAgentsPage({ params }: PageProps) {
+export default async function JobAgentsPage(props: PageProps) {
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
 

@@ -10,8 +10,9 @@ import { getUser } from "~/app/api/v1/auth";
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { workspace: string; agentId: string } },
+  props: { params: Promise<{ workspace: string; agentId: string }> }
 ) => {
+  const params = await props.params;
   const user = await getUser(req);
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

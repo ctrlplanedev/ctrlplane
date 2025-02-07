@@ -9,11 +9,12 @@ import DeploymentTable from "./TableDeployments";
 
 export const metadata: Metadata = { title: "Deployments - Systems" };
 
-export default async function SystemDeploymentsPage({
-  params,
-}: {
-  params: { workspaceSlug: string; systemSlug: string };
-}) {
+export default async function SystemDeploymentsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string; systemSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
   const system = await api.system.bySlug(params);

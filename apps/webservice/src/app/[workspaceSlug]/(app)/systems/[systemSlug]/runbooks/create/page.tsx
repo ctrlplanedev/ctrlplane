@@ -10,13 +10,14 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  params: {
+  params: Promise<{
     workspaceSlug: string;
     systemSlug: string;
-  };
+  }>;
 };
 
-export default async function CreateRunbookPage({ params }: PageProps) {
+export default async function CreateRunbookPage(props: PageProps) {
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) notFound();
   const system = await api.system.bySlug(params).catch(notFound);

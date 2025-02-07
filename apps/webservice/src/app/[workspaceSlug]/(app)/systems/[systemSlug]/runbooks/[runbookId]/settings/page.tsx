@@ -3,11 +3,12 @@ import { notFound } from "next/navigation";
 import { api } from "~/trpc/server";
 import { EditRunbook } from "./EditRunbook";
 
-export default async function RunbookSettingsPage({
-  params,
-}: {
-  params: { workspaceSlug: string; runbookId: string };
-}) {
+export default async function RunbookSettingsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string; runbookId: string }>;
+  }
+) {
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
   const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);

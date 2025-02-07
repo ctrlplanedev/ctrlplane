@@ -15,11 +15,12 @@ export const metadata: Metadata = {
   title: "Systems | Ctrlplane",
 };
 
-export default async function SystemsPage({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function SystemsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();

@@ -7,11 +7,12 @@ import { CreateMetadataGroupDialog } from "./CreateMetadataGroupDialog";
 import { ResourceGroupsTable } from "./ResourceGroupTable";
 import { ResourceMetadataGroupsGettingStarted } from "./ResourceMetadataGroupsGettingStarted";
 
-export default async function ResourceMetadataGroupPages({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function ResourceMetadataGroupPages(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();

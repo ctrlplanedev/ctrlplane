@@ -9,11 +9,12 @@ export const metadata: Metadata = {
   title: "Jobs | Ctrlplane",
 };
 
-export default async function JobsPage({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function JobsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
 

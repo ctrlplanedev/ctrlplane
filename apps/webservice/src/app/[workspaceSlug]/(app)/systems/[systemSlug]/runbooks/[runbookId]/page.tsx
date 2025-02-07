@@ -1,4 +1,5 @@
-"use client";
+"use client";;
+import { use } from "react";
 
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { IconFilter, IconLoader2 } from "@tabler/icons-react";
@@ -28,11 +29,12 @@ import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobT
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
 
-export default function RunbookPage({
-  params,
-}: {
-  params: { runbookId: string };
-}) {
+export default function RunbookPage(
+  props: {
+    params: Promise<{ runbookId: string }>;
+  }
+) {
+  const params = use(props.params);
   const { filter, setFilter } = useFilter<JobCondition>();
   const { data: allRunbookJobs } = api.runbook.jobs.useQuery({
     runbookId: params.runbookId,

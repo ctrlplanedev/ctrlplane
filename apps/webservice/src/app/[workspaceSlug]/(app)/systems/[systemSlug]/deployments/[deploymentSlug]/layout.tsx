@@ -16,12 +16,11 @@ import { TopNav } from "../../../TopNav";
 import { DeploymentNavBar } from "./DeploymentNavBar";
 
 type PageProps = {
-  params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
+  params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
 };
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
 
@@ -30,12 +29,17 @@ export async function generateMetadata({
   };
 }
 
-export default async function DeploymentLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-} & PageProps) {
+export default async function DeploymentLayout(
+  props: {
+    children: React.ReactNode;
+  } & PageProps
+) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (workspace == null) return notFound();
   const deployment = await api.deployment.bySlug(params);

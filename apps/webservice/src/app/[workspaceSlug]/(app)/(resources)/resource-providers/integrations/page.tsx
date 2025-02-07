@@ -213,10 +213,11 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
   );
 };
 
-export default function ResourceProviderIntegrationsPage({
-  params,
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function ResourceProviderIntegrationsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
   return <ResourceProviders workspaceSlug={params.workspaceSlug} />;
 }

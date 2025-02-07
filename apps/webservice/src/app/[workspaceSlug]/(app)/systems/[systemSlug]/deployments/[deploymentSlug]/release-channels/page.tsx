@@ -3,11 +3,19 @@ import { notFound } from "next/navigation";
 import { api } from "~/trpc/server";
 import { ReleaseChannelsTable } from "./ReleaseChannelsTable";
 
-export default async function ReleaseChannelsPage({
-  params: { workspaceSlug, systemSlug, deploymentSlug },
-}: {
-  params: { workspaceSlug: string; systemSlug: string; deploymentSlug: string };
-}) {
+export default async function ReleaseChannelsPage(
+  props: {
+    params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    workspaceSlug,
+    systemSlug,
+    deploymentSlug
+  } = params;
+
   const deployment = await api.deployment.bySlug({
     workspaceSlug,
     systemSlug,

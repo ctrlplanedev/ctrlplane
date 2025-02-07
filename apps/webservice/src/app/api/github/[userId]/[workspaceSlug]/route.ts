@@ -8,8 +8,9 @@ import { api } from "~/trpc/server";
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { userId: string; workspaceSlug: string } },
+  props: { params: Promise<{ userId: string; workspaceSlug: string }> }
 ) => {
+  const params = await props.params;
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
   const { userId, workspaceSlug } = params;

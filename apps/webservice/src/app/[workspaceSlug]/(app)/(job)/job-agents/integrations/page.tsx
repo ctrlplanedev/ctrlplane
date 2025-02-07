@@ -28,11 +28,17 @@ const AgentHeading: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="space-y-1">{children}</div>;
 
-export default function AgentPage({
-  params: { workspaceSlug },
-}: {
-  params: { workspaceSlug: string };
-}) {
+export default async function AgentPage(
+  props: {
+    params: Promise<{ workspaceSlug: string }>;
+  }
+) {
+  const params = await props.params;
+
+  const {
+    workspaceSlug
+  } = params;
+
   return (
     <div className="p-16">
       <div className="container mx-auto max-w-5xl">

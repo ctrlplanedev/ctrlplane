@@ -25,11 +25,12 @@ export const metadata: Metadata = {
   title: "Accept Token Invite",
 };
 
-export default async function JoinPage({
-  params,
-}: {
-  params: { workspaceInviteToken: string };
-}) {
+export default async function JoinPage(
+  props: {
+    params: Promise<{ workspaceInviteToken: string }>;
+  }
+) {
+  const params = await props.params;
   const token = await db
     .select()
     .from(workspaceInviteToken)

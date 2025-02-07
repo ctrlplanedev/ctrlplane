@@ -25,12 +25,8 @@ const config = {
   },
 
   experimental: {
-    instrumentationHook: true,
+    turbo: {},
     optimizePackageImports: ["googleapis"],
-    serverComponentsExternalPackages: [
-      "@opentelemetry/auto-instrumentations-node",
-      "@opentelemetry/sdk-node",
-    ],
   },
 
   async rewrites() {
@@ -51,8 +47,4 @@ const config = {
   typescript: { ignoreBuildErrors: true },
 };
 
-const bundleAnalyzer = withBundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-});
-
-export default bundleAnalyzer(config);
+export default config;
