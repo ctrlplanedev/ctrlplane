@@ -10,8 +10,8 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
-import { PageHeader } from "../_components/PageHeader";
-import { ResourcePageContent } from "../../(app)/(resources)/resources/ResourcePageContent";
+import { PageHeader } from "../../_components/PageHeader";
+import { ResourcePageContent } from "./ResourcePageContent";
 
 export default async function ResourcesPage(props: {
   params: Promise<{ workspaceSlug: string }>;

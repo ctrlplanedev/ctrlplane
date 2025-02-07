@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { IconList, IconPlug } from "@tabler/icons-react";
 
 import {
   Sidebar,
@@ -6,12 +7,12 @@ import {
   SidebarGroup,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
-import { SidebarGroupKinds } from "./SidebarKinds";
+import { SidebarGroupKinds } from "../SidebarKinds";
+import { SidebarLink } from "../SidebarLink";
 
 export default async function Layout(props: {
   children: React.ReactNode;
@@ -28,10 +29,24 @@ export default async function Layout(props: {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarMenuButton>List</SidebarMenuButton>
-                <SidebarMenuButton>Providers</SidebarMenuButton>
-                <SidebarMenuButton>Resources</SidebarMenuButton>
-                <SidebarMenuButton>Views</SidebarMenuButton>
+                <SidebarLink
+                  icon={<IconList />}
+                  href={`/${workspace.slug}/resources/list`}
+                >
+                  List
+                </SidebarLink>
+                <SidebarLink
+                  icon={<IconPlug />}
+                  href={`/${workspace.slug}/resources/providers`}
+                >
+                  Providers
+                </SidebarLink>
+                <SidebarLink href={`/${workspace.slug}/resources/groupings`}>
+                  Groupings
+                </SidebarLink>
+                <SidebarLink href={`/${workspace.slug}/resources/views`}>
+                  Views
+                </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
 

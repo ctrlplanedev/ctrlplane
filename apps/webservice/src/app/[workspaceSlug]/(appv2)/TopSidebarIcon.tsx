@@ -25,7 +25,7 @@ export const TopSidebarIcon: React.FC<{
           className={cn(
             "rounded-lg p-2",
             active
-              ? "bg-purple-500/10 text-purple-400"
+              ? "bg-purple-500/20 text-purple-400"
               : "transition-colors duration-200 group-hover:bg-neutral-400/10",
           )}
         >

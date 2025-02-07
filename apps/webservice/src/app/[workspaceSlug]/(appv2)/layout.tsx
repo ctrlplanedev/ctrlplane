@@ -31,7 +31,7 @@ export default async function Layout(props: {
             <TopSidebarIcon
               icon={<IconCube />}
               label="Resources"
-              href={`/${params.workspaceSlug}/resources2`}
+              href={`/${params.workspaceSlug}/resources`}
             />
             <TopSidebarIcon
               icon={<IconCategory />}
