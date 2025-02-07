@@ -131,7 +131,7 @@ export const ResourcePageContent: React.FC<{
     return <ResourceGettingStarted workspace={workspace} />;
 
   return (
-    <div className="h-full text-sm">
+    <div className="text-sm">
       <div className="flex h-[41px] items-center justify-between border-b border-neutral-800 p-1 px-2">
         <div className="flex items-center gap-1 pl-1">
           <SearchInput value={search} onChange={setSearch} />
@@ -224,7 +224,7 @@ export const ResourcePageContent: React.FC<{
         />
       )}
       {resources.data != null && resources.data.total > 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-90px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 overflow-auto">
           <ResourcesTable
             resources={resources.data.items}
             activeResourceIds={resourceId ? [resourceId] : []}

@@ -1,10 +1,14 @@
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
-import { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import LZString from "lz-string";
+import { useDebounce } from "react-use";
+
+import { ColumnOperator } from "@ctrlplane/validators/conditions";
 
 import { useQueryParams } from "../useQueryParams";
 
 export const useResourceFilter = () => {
+  const [search, setSearch] = React.useState("");
   const { getParam, setParams } = useQueryParams();
 
   const filterHash = getParam("filter");
@@ -34,5 +38,30 @@ export const useResourceFilter = () => {
     [setParams],
   );
 
-  return { filter, setFilter, viewId };
+  useDebounce(
+    () => {
+      if (search === "") return;
+      setFilter({
+        type: "comparison",
+        operator: "and",
+        conditions: [
+          // Keep any non-name conditions from existing filter
+          ...(filter && "conditions" in filter
+            ? filter.conditions.filter(
+                (c: ResourceCondition) => c.type !== "name",
+              )
+            : []),
+          {
+            type: "name",
+            operator: ColumnOperator.Contains,
+            value: search,
+          },
+        ],
+      });
+    },
+    500,
+    [search],
+  );
+
+  return { filter, setFilter, viewId, search, setSearch };
 };

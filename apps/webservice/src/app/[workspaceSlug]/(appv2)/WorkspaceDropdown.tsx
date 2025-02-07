@@ -1,19 +1,32 @@
+"use client";
+
 import type { Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { IconChevronDown } from "@tabler/icons-react";
+import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
+
+import { api } from "~/trpc/react";
 
 export const WorkspaceDropdown: React.FC<{
   workspace: Workspace;
   workspaces: Workspace[];
-}> = ({ workspace }) => {
+  viewer: { email: string };
+}> = ({ workspace, workspaces, viewer }) => {
+  const update = api.profile.update.useMutation();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -33,6 +46,41 @@ export const WorkspaceDropdown: React.FC<{
         <Link href={`/${workspace.slug}/settings/workspace/members`}>
           <DropdownMenuItem>Invite and manage users</DropdownMenuItem>
         </Link>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>Switch workspaces</DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent className="w-[200px] bg-neutral-900">
+              <DropdownMenuLabel className="font-normal text-muted-foreground">
+                {viewer.email}
+              </DropdownMenuLabel>
+              {workspaces.map((ws) => (
+                <Link
+                  key={ws.id}
+                  href={`/${ws.slug}`}
+                  passHref
+                  onClick={() => update.mutate({ activeWorkspaceId: ws.id })}
+                >
+                  <DropdownMenuItem>
+                    {ws.name}
+                    {ws.id === workspace.id && (
+                      <DropdownMenuShortcut>
+                        <IconCheck className="h-4 w-4" />
+                      </DropdownMenuShortcut>
+                    )}
+                  </DropdownMenuItem>
+                </Link>
+              ))}
+
+              <DropdownMenuSeparator />
+              <Link href={`/workspaces/create`} passHref>
+                <DropdownMenuItem>Create or join workspace</DropdownMenuItem>
+              </Link>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
   );

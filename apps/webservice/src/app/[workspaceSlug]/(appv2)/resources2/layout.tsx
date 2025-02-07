@@ -1,22 +1,32 @@
+import { notFound } from "next/navigation";
+
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
+  SidebarInset,
   SidebarMenu,
   SidebarMenuButton,
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+import { api } from "~/trpc/server";
+import { SidebarGroupKinds } from "./SidebarKinds";
+
+export default async function Layout(props: {
+  children: React.ReactNode;
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const params = await props.params;
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) notFound();
+
   return (
     <div className="relative">
       <SidebarProvider>
         <Sidebar className="absolute left-0 top-0 -z-10">
           <SidebarContent>
             <SidebarGroup>
-              <SidebarGroupLabel>Resources</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarMenuButton>List</SidebarMenuButton>
                 <SidebarMenuButton>Providers</SidebarMenuButton>
@@ -25,29 +35,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </SidebarMenu>
             </SidebarGroup>
 
-            <SidebarGroup>
-              <SidebarGroupLabel>Common Types</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuButton>List</SidebarMenuButton>
-                <SidebarMenuButton>Providers</SidebarMenuButton>
-                <SidebarMenuButton>Resources</SidebarMenuButton>
-                <SidebarMenuButton>Views</SidebarMenuButton>
-              </SidebarMenu>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Recently Added</SidebarGroupLabel>
-              <SidebarMenu>
-                <SidebarMenuButton>List</SidebarMenuButton>
-                <SidebarMenuButton>Providers</SidebarMenuButton>
-                <SidebarMenuButton>Resources</SidebarMenuButton>
-                <SidebarMenuButton>Views</SidebarMenuButton>
-              </SidebarMenu>
-            </SidebarGroup>
+            <SidebarGroupKinds workspace={workspace} />
           </SidebarContent>
-          <SidebarFooter>test</SidebarFooter>
         </Sidebar>
-        <main className="h-[calc(100vh-56px-1px)]">{children}</main>
+        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+          {props.children}
+        </SidebarInset>
       </SidebarProvider>
     </div>
   );
