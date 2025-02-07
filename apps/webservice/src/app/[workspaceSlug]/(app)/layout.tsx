@@ -14,7 +14,6 @@ import { ResourceDrawer } from "./_components/resource-drawer/ResourceDrawer";
 import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
 import { AppSidebar } from "./AppSidebar";
 import { AppSidebarPopoverProvider } from "./AppSidebarPopoverContext";
-import TerminalDrawer from "./TerminalSessionsDrawer";
 
 type Props = {
   children: React.ReactNode;
@@ -47,7 +46,7 @@ export default async function WorkspaceLayout(props: Props) {
       <VariableSetDrawer />
       <JobDrawer />
       <DeploymentResourceDrawer />
-      <TerminalDrawer />
+      {/* <TerminalDrawer /> */}
     </AppSidebarPopoverProvider>
   );
 }

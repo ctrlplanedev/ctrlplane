@@ -42,6 +42,10 @@ const config = {
       },
     ];
   },
+  onDemandEntries: {
+    maxInactiveAge: 1000 * 60 * 15, // 15 minutes
+    pagesBufferLength: 20,
+  },
   /** We already do linting and typechecking as separate tasks in CI */
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },

@@ -88,7 +88,8 @@ export const authConfig: NextAuthConfig = {
   }),
 
   providers: providers(),
-  debug: true,
+  // eslint-disable-next-line no-restricted-properties
+  debug: process.env.NODE_ENV !== "production",
   callbacks: {
     session: async (opts) => {
       const user =
