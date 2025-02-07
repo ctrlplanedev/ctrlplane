@@ -1,15 +1,18 @@
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
+  IconBook,
   IconCategory,
   IconChartBar,
   IconCube,
   IconPlug,
   IconRocket,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
+
+import { TopNav } from "./TopNav";
 
 export const metadata = {
   title: "Ctrlplane",
@@ -47,17 +50,14 @@ const SidebarIconLink: React.FC<{
   );
 };
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default async function Layout(props: {
+  params: Promise<{ workspaceSlug: string }>;
+  children: React.ReactNode;
+}) {
+  const params = await props.params;
   return (
     <div className="flex h-screen w-full flex-col">
-      <nav className="flex h-14 w-full shrink-0 items-center bg-neutral-900/40 px-4">
-        <Image
-          src="/android-chrome-192x192.png"
-          alt="Ctrlplane"
-          width={24}
-          height={24}
-        />
-      </nav>
+      <TopNav workspaceSlug={params.workspaceSlug} />
 
       <div className="flex flex-1">
         <aside className="flex w-20 flex-col bg-neutral-900/40 pt-2">
@@ -69,12 +69,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           />
           <SidebarIconLink icon={<IconCategory />} label="Systems" href="/" />
           <SidebarIconLink icon={<IconRocket />} label="Deploys" href="/" />
+          <SidebarIconLink icon={<IconBook />} label="Runbooks" href="/" />
           <SidebarIconLink icon={<IconChartBar />} label="Insights" href="/" />
           <div className="flex-grow" />
           <SidebarIconLink icon={<IconPlug />} label="Connect" href="/" />
+          <SidebarIconLink icon={<IconSettings />} label="Settings" href="/" />
         </aside>
 
-        <div className="flex-1 rounded-tl-lg border-l border-t">{children}</div>
+        <div className="flex-1 rounded-tl-lg border-l border-t">
+          {props.children}
+        </div>
       </div>
     </div>
   );
