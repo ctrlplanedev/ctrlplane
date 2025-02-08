@@ -28,6 +28,11 @@ export default async function Layout(props: {
       <div className="flex flex-1">
         <aside className="flex flex-col bg-[#111111] pt-2">
           <TopSidebarIcon
+            icon={<IconRocket />}
+            label="Deploys"
+            href={`/${params.workspaceSlug}/deployments2`}
+          />
+          <TopSidebarIcon
             icon={<IconCube />}
             label="Resources"
             href={`/${params.workspaceSlug}/resources`}
@@ -36,11 +41,6 @@ export default async function Layout(props: {
             icon={<IconCategory />}
             label="Systems"
             href={`/${params.workspaceSlug}/systems2`}
-          />
-          <TopSidebarIcon
-            icon={<IconRocket />}
-            label="Deploys"
-            href={`/${params.workspaceSlug}/deployments2`}
           />
           <TopSidebarIcon
             icon={<IconBook />}
