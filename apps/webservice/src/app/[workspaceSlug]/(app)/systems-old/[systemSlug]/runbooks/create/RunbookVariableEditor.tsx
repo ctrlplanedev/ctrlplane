@@ -32,7 +32,7 @@ import {
   ResourceConfigFields,
   RunbookConfigTypeSelector,
   StringConfigFields,
-} from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/variables/ConfigFields";
+} from "~/app/[workspaceSlug]/(app)/systems-old/[systemSlug]/_components/variables/ConfigFields";
 
 type RunbookVariableEditorProps = {
   value: InsertRunbookVariable;

@@ -11,7 +11,7 @@ import {
   NavigationMenuList,
 } from "@ctrlplane/ui/navigation-menu";
 
-import { nFormatter } from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/nFormatter";
+import { nFormatter } from "~/app/[workspaceSlug]/(app)/systems-old/[systemSlug]/_components/nFormatter";
 import { NavigationMenuAction } from "./NavigationMenuAction";
 
 type DeploymentNavBarProps = {

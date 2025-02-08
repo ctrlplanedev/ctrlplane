@@ -30,7 +30,7 @@ export default async function Layout(props: {
           <TopSidebarIcon
             icon={<IconRocket />}
             label="Deploys"
-            href={`/${params.workspaceSlug}/deployments2`}
+            href={`/${params.workspaceSlug}/deployments`}
           />
           <TopSidebarIcon
             icon={<IconCube />}
@@ -40,7 +40,7 @@ export default async function Layout(props: {
           <TopSidebarIcon
             icon={<IconCategory />}
             label="Systems"
-            href={`/${params.workspaceSlug}/systems2`}
+            href={`/${params.workspaceSlug}/systems`}
           />
           <TopSidebarIcon
             icon={<IconBook />}
@@ -56,12 +56,12 @@ export default async function Layout(props: {
           <TopSidebarIcon
             icon={<IconPlug />}
             label="Connect"
-            href={`/${params.workspaceSlug}/systems2`}
+            href={`/${params.workspaceSlug}/systems`}
           />
           <TopSidebarIcon
             icon={<IconSettings />}
             label="Settings"
-            href={`/${params.workspaceSlug}/systems2`}
+            href={`/${params.workspaceSlug}/systems`}
           />
         </aside>
 

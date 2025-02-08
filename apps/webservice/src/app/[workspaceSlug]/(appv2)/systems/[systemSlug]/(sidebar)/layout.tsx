@@ -17,8 +17,8 @@ import {
 } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
-import { SidebarLink } from "../../resources/SidebarLink";
-import { SystemSelector } from "../SystemSelector";
+import { SidebarLink } from "../../../resources/SidebarLink";
+import { SystemSelector } from "../../SystemSelector";
 
 export default async function SystemsLayout(props: {
   children: React.ReactNode;
@@ -49,25 +49,25 @@ export default async function SystemsLayout(props: {
               <SidebarMenu>
                 <SidebarLink
                   icon={<IconPlant />}
-                  href={`/${workspace.slug}/systems/list`}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/environments`}
                 >
                   Environments
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconShip />}
-                  href={`/${workspace.slug}/resources/providers`}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/deployments`}
                 >
                   Deployments
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconBook />}
-                  href={`/${workspace.slug}/resources/groupings`}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/runbooks`}
                 >
                   Runbooks
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconVariable />}
-                  href={`/${workspace.slug}/resources/views`}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/variables`}
                 >
                   Variables Sets
                 </SidebarLink>

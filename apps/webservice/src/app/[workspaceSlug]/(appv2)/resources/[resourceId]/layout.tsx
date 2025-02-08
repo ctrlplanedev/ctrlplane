@@ -12,23 +12,8 @@ import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/server";
+import { TabLink, Tabs, TabsList } from "../../_components/navigation/Tabs";
 import { PageHeader } from "../../_components/PageHeader";
-
-const TabLink: React.FC<{
-  href: string;
-  isActive?: boolean;
-  children: React.ReactNode;
-}> = ({ href, isActive, children }) => {
-  return (
-    <Link
-      href={href}
-      data-state={isActive ? "active" : undefined}
-      className="relative border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 text-sm text-muted-foreground shadow-none transition-none focus-visible:ring-0 data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-    >
-      {children}
-    </Link>
-  );
-};
 
 export default async function Layout(props: {
   children: React.ReactNode;
@@ -66,8 +51,8 @@ export default async function Layout(props: {
 
       <div className="mx-6 mt-4 space-y-4">
         <h1 className="text-2xl font-bold">{resource.name}</h1>
-        <div className="relative mb-6 mr-auto w-full border-b">
-          <div className="flex w-full justify-start">
+        <Tabs>
+          <TabsList>
             <TabLink href="?tab=deployments" isActive>
               Deployments
             </TabLink>
@@ -75,8 +60,8 @@ export default async function Layout(props: {
             <TabLink href="?tab=logs">Logs</TabLink>
             <TabLink href="?tab=logs">Audit Logs</TabLink>
             <TabLink href="?tab=logs">Variables</TabLink>
-          </div>
-        </div>
+          </TabsList>
+        </Tabs>
         {props.children}
       </div>
     </div>

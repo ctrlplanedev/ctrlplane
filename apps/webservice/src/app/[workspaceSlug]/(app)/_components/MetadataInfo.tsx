@@ -3,7 +3,7 @@ import { IconSparkles } from "@tabler/icons-react";
 import { Input } from "@ctrlplane/ui/input";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { useMatchSorterWithSearch } from "../systems/[systemSlug]/environments/useMatchSorter";
+import { useMatchSorterWithSearch } from "../systems-old/[systemSlug]/environments/useMatchSorter";
 
 export const MetadataInfo: React.FC<{ metadata: Record<string, string> }> = (
   props,
