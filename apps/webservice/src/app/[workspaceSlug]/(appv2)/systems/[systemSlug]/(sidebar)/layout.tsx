@@ -49,6 +49,7 @@ export default async function SystemsLayout(props: {
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
+              <SidebarGroupLabel>Release Management</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarLink
                   icon={<IconPlant />}
@@ -63,29 +64,34 @@ export default async function SystemsLayout(props: {
                   Deployments
                 </SidebarLink>
                 <SidebarLink
-                  icon={<IconBook />}
-                  href={`/${workspace.slug}/systems/${params.systemSlug}/runbooks`}
-                >
-                  Runbooks
-                </SidebarLink>
-                <SidebarLink
                   icon={<IconVariable />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/variables`}
                 >
                   Variables
                 </SidebarLink>
-              </SidebarMenu>
-            </SidebarGroup>
-
-            <SidebarGroup>
-              <SidebarGroupLabel>Advanced</SidebarGroupLabel>
-              <SidebarMenu>
                 <SidebarLink
                   icon={<IconShield />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/policies`}
                 >
                   Policies
                 </SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupLabel>Operations</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarLink
+                  icon={<IconBook />}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/runbooks`}
+                >
+                  Runbooks
+                </SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>System</SidebarGroupLabel>
+              <SidebarMenu>
                 <SidebarLink
                   icon={<IconSettings />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/settings`}
