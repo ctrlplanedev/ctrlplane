@@ -53,13 +53,12 @@ export default async function Layout(props: {
         <h1 className="text-2xl font-bold">{resource.name}</h1>
         <Tabs>
           <TabsList>
-            <TabLink href="?tab=deployments" isActive>
-              Deployments
-            </TabLink>
-            <TabLink href="?tab=properties">Visualize</TabLink>
-            <TabLink href="?tab=logs">Logs</TabLink>
-            <TabLink href="?tab=logs">Audit Logs</TabLink>
-            <TabLink href="?tab=logs">Variables</TabLink>
+            <TabLink href="?tab=properties">Properties</TabLink>
+            <TabLink href="?tab=variables">Variables</TabLink>
+            <TabLink href="?tab=visualize">Visualize</TabLink>
+            <TabLink href="?tab=deployments">Deployments</TabLink>
+            <TabLink href="?tab=connectivity">Connectivity</TabLink>
+            <TabLink href="?tab=events">Events</TabLink>
           </TabsList>
         </Tabs>
         {props.children}

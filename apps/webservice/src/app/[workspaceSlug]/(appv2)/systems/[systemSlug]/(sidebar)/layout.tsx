@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import {
   IconBook,
   IconPlant,
+  IconSettings,
+  IconShield,
   IconShip,
   IconVariable,
 } from "@tabler/icons-react";
@@ -10,6 +12,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -70,6 +73,24 @@ export default async function SystemsLayout(props: {
                   href={`/${workspace.slug}/systems/${params.systemSlug}/variables`}
                 >
                   Variables
+                </SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Advanced</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarLink
+                  icon={<IconShield />}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/policies`}
+                >
+                  Policies
+                </SidebarLink>
+                <SidebarLink
+                  icon={<IconSettings />}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/settings`}
+                >
+                  Settings
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>

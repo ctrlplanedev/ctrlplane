@@ -1,5 +1,10 @@
 import { notFound } from "next/navigation";
-import { IconList, IconPlug } from "@tabler/icons-react";
+import {
+  IconList,
+  IconPlug,
+  IconTable,
+  IconView360Arrow,
+} from "@tabler/icons-react";
 
 import {
   Sidebar,
@@ -41,10 +46,16 @@ export default async function Layout(props: {
                 >
                   Providers
                 </SidebarLink>
-                <SidebarLink href={`/${workspace.slug}/resources/groupings`}>
+                <SidebarLink
+                  icon={<IconTable />}
+                  href={`/${workspace.slug}/resources/groupings`}
+                >
                   Groupings
                 </SidebarLink>
-                <SidebarLink href={`/${workspace.slug}/resources/views`}>
+                <SidebarLink
+                  icon={<IconView360Arrow />}
+                  href={`/${workspace.slug}/resources/views`}
+                >
                   Views
                 </SidebarLink>
               </SidebarMenu>

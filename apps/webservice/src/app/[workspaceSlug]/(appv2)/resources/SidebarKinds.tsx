@@ -29,8 +29,13 @@ export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
   const kinds = api.workspace.resourceKinds.useQuery(workspace.id);
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Kinds</SidebarGroupLabel>
+      <SidebarGroupLabel>Types</SidebarGroupLabel>
       <SidebarMenu>
+        {kinds.data?.length === 0 && (
+          <div className="rounded  border-neutral-800 px-2 text-xs text-muted-foreground text-neutral-700">
+            No resources found
+          </div>
+        )}
         {kinds.data?.map(({ version, kind, count }) => {
           const url = `/${workspace.slug}/resources?filter=${LZString.compressToEncodedURIComponent(
             JSON.stringify({
