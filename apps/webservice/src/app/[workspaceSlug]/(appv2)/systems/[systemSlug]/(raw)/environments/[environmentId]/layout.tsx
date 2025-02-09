@@ -29,6 +29,9 @@ export default async function EnvironmentLayout(props: {
   const params = await props.params;
   const environment = await api.environment.byId(params.environmentId);
   if (environment == null) notFound();
+
+  const url = (tab: string) =>
+    `/${params.workspaceSlug}/systems/${params.systemSlug}/environments/${params.environmentId}/${tab}`;
   return (
     <div>
       <PageHeader className="justify-between">
@@ -52,12 +55,11 @@ export default async function EnvironmentLayout(props: {
         <h1 className="text-2xl font-bold">{environment.name}</h1>
         <Tabs>
           <TabsList>
-            <TabLink href="?tab=resources" isActive>
-              Deployment Targets
-            </TabLink>
-            <TabLink href="?tab=deployments">Deployments</TabLink>
-            <TabLink href="?tab=policies">Policies</TabLink>
-            <TabLink href="?tab=variables">Variables</TabLink>
+            <TabLink href={url("resources")}>Targets</TabLink>
+            <TabLink href={url("config")}>Configuration</TabLink>
+            <TabLink href={url("deployments")}>Deployments</TabLink>
+            <TabLink href={url("policies")}>Policies</TabLink>
+            <TabLink href={url("variables")}>Variables</TabLink>
           </TabsList>
         </Tabs>
         {props.children}
