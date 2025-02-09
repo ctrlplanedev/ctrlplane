@@ -69,7 +69,7 @@ export default async function SystemsLayout(props: {
                   icon={<IconVariable />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/variables`}
                 >
-                  Variables Sets
+                  Variables
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
