@@ -23,8 +23,8 @@ import {
 import { JobFilterType, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
-import { JobDropdownMenu } from "../../systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
-import { DeployButton } from "../../systems/[systemSlug]/deployments/DeployButton";
+import { JobDropdownMenu } from "../../systems-old/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
+import { DeployButton } from "../../systems-old/[systemSlug]/deployments/DeployButton";
 import { JobLinksCell } from "../job-table/JobLinksCell";
 import { JobTableStatusIcon } from "../JobTableStatusIcon";
 

@@ -27,7 +27,7 @@ import { VariableCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_components/useFilter";
 import { api } from "~/trpc/react";
-import { nFormatter } from "../../systems/[systemSlug]/_components/nFormatter";
+import { nFormatter } from "../../systems-old/[systemSlug]/_components/nFormatter";
 
 type JobTableProps = {
   workspaceId: string;

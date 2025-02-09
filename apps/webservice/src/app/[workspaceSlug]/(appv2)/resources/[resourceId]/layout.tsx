@@ -12,6 +12,7 @@ import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/server";
+import { TabLink, Tabs, TabsList } from "../../_components/navigation/Tabs";
 import { PageHeader } from "../../_components/PageHeader";
 import { ResourceTabs } from "./ResourceTabs";
 

@@ -34,7 +34,7 @@ import {
   ConfigTypeSelector,
   NumberConfigFields,
   StringConfigFields,
-} from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/variables/ConfigFields";
+} from "~/app/[workspaceSlug]/(app)/systems-old/[systemSlug]/_components/variables/ConfigFields";
 import { api } from "~/trpc/react";
 
 const schema = z.object({

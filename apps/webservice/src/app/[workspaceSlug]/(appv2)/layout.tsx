@@ -22,52 +22,50 @@ export default async function Layout(props: {
 }) {
   const params = await props.params;
   return (
-    <div className="flex h-screen w-full flex-col">
+    <div className="flex h-screen w-full flex-col bg-[#111111]">
       <TopNav workspaceSlug={params.workspaceSlug} />
 
       <div className="flex flex-1">
-        <div className="flex bg-neutral-950">
-          <aside className="flex flex-col bg-neutral-900/50 pt-2">
-            <TopSidebarIcon
-              icon={<IconCube />}
-              label="Resources"
-              href={`/${params.workspaceSlug}/resources`}
-            />
-            <TopSidebarIcon
-              icon={<IconCategory />}
-              label="Systems"
-              href={`/${params.workspaceSlug}/systems2`}
-            />
-            <TopSidebarIcon
-              icon={<IconRocket />}
-              label="Deploys"
-              href={`/${params.workspaceSlug}/deployments2`}
-            />
-            <TopSidebarIcon
-              icon={<IconBook />}
-              label="Runbooks"
-              href={`/${params.workspaceSlug}/runbooks`}
-            />
-            <TopSidebarIcon
-              icon={<IconChartBar />}
-              label="Insights"
-              href={`/${params.workspaceSlug}/insights`}
-            />
-            <div className="flex-grow" />
-            <TopSidebarIcon
-              icon={<IconPlug />}
-              label="Connect"
-              href={`/${params.workspaceSlug}/systems2`}
-            />
-            <TopSidebarIcon
-              icon={<IconSettings />}
-              label="Settings"
-              href={`/${params.workspaceSlug}/systems2`}
-            />
-          </aside>
-        </div>
+        <aside className="flex flex-col bg-[#111111] pt-2">
+          <TopSidebarIcon
+            icon={<IconRocket />}
+            label="Deploys"
+            href={`/${params.workspaceSlug}/deployments`}
+          />
+          <TopSidebarIcon
+            icon={<IconCube />}
+            label="Resources"
+            href={`/${params.workspaceSlug}/resources`}
+          />
+          <TopSidebarIcon
+            icon={<IconCategory />}
+            label="Systems"
+            href={`/${params.workspaceSlug}/systems`}
+          />
+          <TopSidebarIcon
+            icon={<IconBook />}
+            label="Runbooks"
+            href={`/${params.workspaceSlug}/runbooks`}
+          />
+          <TopSidebarIcon
+            icon={<IconChartBar />}
+            label="Insights"
+            href={`/${params.workspaceSlug}/insights`}
+          />
+          <div className="flex-grow" />
+          <TopSidebarIcon
+            icon={<IconPlug />}
+            label="Connect"
+            href={`/${params.workspaceSlug}/systems`}
+          />
+          <TopSidebarIcon
+            icon={<IconSettings />}
+            label="Settings"
+            href={`/${params.workspaceSlug}/systems`}
+          />
+        </aside>
 
-        <div className="flex-1 rounded-tl-lg border-l border-t">
+        <div className="flex-1 overflow-auto rounded-tl-lg border-l border-t bg-neutral-950">
           {props.children}
         </div>
       </div>

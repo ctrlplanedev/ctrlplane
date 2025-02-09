@@ -18,7 +18,7 @@ import {
 } from "@ctrlplane/ui/breadcrumb";
 import { Button } from "@ctrlplane/ui/button";
 
-import { SystemActionsDropdown } from "~/app/[workspaceSlug]/(app)/systems/SystemActionsDropdown";
+import { SystemActionsDropdown } from "~/app/[workspaceSlug]/(app)/systems-old/SystemActionsDropdown";
 import { api } from "~/trpc/server";
 
 export const SystemBreadcrumbNavbar = async ({

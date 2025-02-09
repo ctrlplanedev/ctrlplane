@@ -53,7 +53,7 @@ import {
   VariableBooleanInput,
   VariableChoiceSelect,
   VariableStringInput,
-} from "~/app/[workspaceSlug]/(app)/systems/[systemSlug]/_components/variables/VariableInputs";
+} from "~/app/[workspaceSlug]/(app)/systems-old/[systemSlug]/_components/variables/VariableInputs";
 import { api } from "~/trpc/react";
 
 const editVariableValueFormSchema = z.object({

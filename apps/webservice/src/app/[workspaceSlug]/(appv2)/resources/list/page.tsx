@@ -30,7 +30,7 @@ export default async function ResourcesPage(props: {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>

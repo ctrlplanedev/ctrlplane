@@ -16,7 +16,7 @@ export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
   const viewer = await api.user.viewer();
   const workspaces = await api.workspace.list();
   return (
-    <nav className="flex h-14 w-full shrink-0 items-center gap-4 bg-neutral-900/50 px-4">
+    <nav className="flex h-14 w-full shrink-0 items-center gap-4 px-4">
       <div className="ml-3 flex shrink-0 items-center gap-7">
         <Image
           src="/android-chrome-192x192.png"

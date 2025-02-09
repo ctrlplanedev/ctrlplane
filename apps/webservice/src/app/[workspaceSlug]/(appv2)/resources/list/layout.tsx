@@ -25,7 +25,7 @@ export default async function Layout(props: {
   return (
     <div className="relative">
       <SidebarProvider>
-        <Sidebar className="absolute left-0 top-0 -z-10">
+        <Sidebar className="absolute left-0 top-0">
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
