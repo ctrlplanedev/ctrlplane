@@ -13,22 +13,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/server";
 import { PageHeader } from "../../_components/PageHeader";
-
-const TabLink: React.FC<{
-  href: string;
-  isActive?: boolean;
-  children: React.ReactNode;
-}> = ({ href, isActive, children }) => {
-  return (
-    <Link
-      href={href}
-      data-state={isActive ? "active" : undefined}
-      className="relative border-b-2 border-b-transparent bg-transparent px-4 pb-3 pt-2 text-sm text-muted-foreground shadow-none transition-none focus-visible:ring-0 data-[state=active]:border-b-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-    >
-      {children}
-    </Link>
-  );
-};
+import { ResourceTabs } from "./ResourceTabs";
 
 export default async function Layout(props: {
   children: React.ReactNode;
@@ -64,25 +49,12 @@ export default async function Layout(props: {
         </div>
       </PageHeader>
 
-      <div className="mx-6 h-full space-y-4 ">
+      <div className="flex h-full flex-col gap-4 p-4">
         <h1 className="text-2xl font-bold">{resource.name}</h1>
-        <div className="relative mb-6 mr-auto w-full border-b">
-          <div className="flex w-full justify-start">
-            <TabLink
-              href="?tab=deployments"
-              // isActive={tab == null || tab === "deployments"}
-            >
-              Deployments
-            </TabLink>
-            <TabLink href="?tab=visualize" /*isActive={tab === "visualize"}*/>
-              Visualize
-            </TabLink>
-            <TabLink href="?tab=logs">Logs</TabLink>
-            <TabLink href="?tab=logs">Audit Logs</TabLink>
-            <TabLink href="?tab=logs">Variables</TabLink>
-          </div>
+        <div className="border-b">
+          <ResourceTabs />
         </div>
-        {props.children}
+        <div className="h-full p-4">{props.children}</div>
       </div>
     </div>
   );

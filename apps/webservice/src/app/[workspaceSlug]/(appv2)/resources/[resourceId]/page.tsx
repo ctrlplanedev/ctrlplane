@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
-import { DeploymentsView } from "~/app/[workspaceSlug]/(appv2)/_components/deployment-view/DeploymentView";
 import { api } from "~/trpc/server";
+import { ResourceDeploymentsTable } from "./deployments/ResourceDeploymentsTable";
 import { ResourceVisualizationDiagramProvider } from "./visualize/ResourceVisualizationDiagram";
 
 type Params = Promise<{ resourceId: string }>;
@@ -21,10 +21,5 @@ export default async function ResourcePage(props: {
   if (tab === "visualize")
     return <ResourceVisualizationDiagramProvider resourceId={resourceId} />;
 
-  return (
-    <DeploymentsView
-      workspaceId={resource.workspaceId}
-      resourceId={resourceId}
-    />
-  );
+  return <ResourceDeploymentsTable resource={resource} />;
 }

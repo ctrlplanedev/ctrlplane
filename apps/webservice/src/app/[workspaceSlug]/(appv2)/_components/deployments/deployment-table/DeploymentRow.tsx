@@ -5,7 +5,7 @@ import prettyMilliseconds from "pretty-ms";
 
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
 
-import { LazyDeploymentHistoryGraph } from "./DeploymentHistoryGraph";
+import { LazyDeploymentHistoryGraph } from "../DeploymentHistoryGraph";
 
 type DeploymentStats =
   RouterOutputs["deployment"]["stats"]["byWorkspaceId"][number];

@@ -9,9 +9,9 @@ import {
 } from "@ctrlplane/ui/table";
 import { StatsColumn } from "@ctrlplane/validators/deployments";
 
+import { TableHeadCell } from "../../TableHeadCell";
 import { DeploymentRow } from "./DeploymentRow";
 import { SkeletonRow } from "./SkeletonRow";
-import { TableHeadCell } from "./TableHeadCell";
 
 type DeploymentTableProps = {
   data?: RouterOutputs["deployment"]["stats"]["byWorkspaceId"];

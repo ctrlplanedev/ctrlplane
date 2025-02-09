@@ -177,11 +177,12 @@ export const deploymentStatsRouter = createTRPCRouter({
     .input(
       z.object({
         deploymentId: z.string().uuid(),
+        resourceId: z.string().uuid().optional(),
         timeZone: z.string(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { deploymentId, timeZone } = input;
+      const { deploymentId, resourceId, timeZone } = input;
       const endDate = new Date();
       const startDate = subDays(new Date(), 29);
       const dates = eachDayOfInterval({ start: startDate, end: endDate }).map(
@@ -213,6 +214,9 @@ export const deploymentStatsRouter = createTRPCRouter({
             inArray(schema.job.status, analyticsStatuses),
             gte(schema.job.completedAt, startDate),
             lt(schema.job.completedAt, endDate),
+            resourceId
+              ? eq(schema.releaseJobTrigger.resourceId, resourceId)
+              : undefined,
           ),
         )
         .as("base");

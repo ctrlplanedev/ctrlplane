@@ -16,14 +16,19 @@ export const HistorySkeleton: React.FC = () => (
   </div>
 );
 
-type DeploymentHistoryGraphProps = { deploymentId: string };
+type DeploymentHistoryGraphProps = {
+  deploymentId: string;
+  resourceId?: string;
+};
 
 const DeploymentHistoryGraph: React.FC<DeploymentHistoryGraphProps> = ({
   deploymentId,
+  resourceId,
 }) => {
   const { timeZone } = Intl.DateTimeFormat().resolvedOptions();
   const { data, isLoading } = api.deployment.stats.history.useQuery({
     deploymentId,
+    resourceId,
     timeZone,
   });
 
