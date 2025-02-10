@@ -39,6 +39,7 @@ export const deploymentStatsRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
+        resourceId: z.string().uuid().optional(),
         startDate: z.date(),
         endDate: z.date(),
         timezone: z.string(),
@@ -48,7 +49,15 @@ export const deploymentStatsRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { workspaceId, startDate, endDate, orderBy, order, search } = input;
+      const {
+        workspaceId,
+        resourceId,
+        startDate,
+        endDate,
+        orderBy,
+        order,
+        search,
+      } = input;
       const orderFunc = (field: unknown) =>
         order === StatsOrder.Asc
           ? sql`${field} ASC NULLS LAST`
@@ -147,6 +156,7 @@ export const deploymentStatsRouter = createTRPCRouter({
             lte(schema.job.createdAt, endDate),
             isNull(schema.resource.deletedAt),
             search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
+            resourceId ? eq(schema.resource.id, resourceId) : undefined,
           ),
         )
         .orderBy(orderFunc(getOrderBy()))
@@ -168,10 +178,11 @@ export const deploymentStatsRouter = createTRPCRouter({
       z.object({
         deploymentId: z.string().uuid(),
         timeZone: z.string(),
+        resourceId: z.string().uuid().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { deploymentId, timeZone } = input;
+      const { deploymentId, timeZone, resourceId } = input;
       const endDate = new Date();
       const startDate = subDays(new Date(), 29);
       const dates = eachDayOfInterval({ start: startDate, end: endDate }).map(
@@ -203,6 +214,9 @@ export const deploymentStatsRouter = createTRPCRouter({
             inArray(schema.job.status, analyticsStatuses),
             gte(schema.job.completedAt, startDate),
             lt(schema.job.completedAt, endDate),
+            resourceId
+              ? eq(schema.releaseJobTrigger.resourceId, resourceId)
+              : undefined,
           ),
         )
         .as("base");
