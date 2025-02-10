@@ -5,17 +5,23 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
 import { Separator } from "@ctrlplane/ui/separator";
-
 import {
-  TabLink,
-  Tabs,
-  TabsList,
-} from "~/app/[workspaceSlug]/(appv2)/_components/navigation/Tabs";
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarInset,
+  SidebarMenu,
+  SidebarProvider,
+} from "@ctrlplane/ui/sidebar";
+
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { api } from "~/trpc/server";
 
 export default async function EnvironmentLayout(props: {
@@ -37,7 +43,7 @@ export default async function EnvironmentLayout(props: {
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
           <Link
-            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/environments`}
+            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
           >
             <IconArrowLeft className="size-5" />
           </Link>
@@ -45,25 +51,40 @@ export default async function EnvironmentLayout(props: {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbPage>Environments List</BreadcrumbPage>
+                <BreadcrumbLink
+                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/environments`}
+                >
+                  Environments
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{environment.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
       </PageHeader>
-      <div className="mx-6 mt-4 space-y-2">
-        <h1 className="text-2xl font-bold">{environment.name}</h1>
-        <Tabs>
-          <TabsList>
-            <TabLink href={url("resources")}>Targets</TabLink>
-            <TabLink href={url("config")}>Configuration</TabLink>
-            <TabLink href={url("deployments")}>Deployments</TabLink>
-            <TabLink href={url("policies")}>Policies</TabLink>
-            <TabLink href={url("variables")}>Variables</TabLink>
-          </TabsList>
-        </Tabs>
-        {props.children}
-      </div>
+      <SidebarProvider className="relative">
+        <Sidebar className="absolute left-0 top-0">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarMenu>
+                <SidebarLink href={url("properties")}>Properties</SidebarLink>
+                <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
+                <SidebarLink href={url("releases")}>Releases</SidebarLink>
+                <SidebarLink href={url("channels")}>Channels</SidebarLink>
+                <SidebarLink href={url("targets")}>Targets</SidebarLink>
+                <SidebarLink href={url("variables")}>Variables</SidebarLink>
+                <SidebarLink href={url("settings")}>Settings</SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+          {props.children}
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   );
 }

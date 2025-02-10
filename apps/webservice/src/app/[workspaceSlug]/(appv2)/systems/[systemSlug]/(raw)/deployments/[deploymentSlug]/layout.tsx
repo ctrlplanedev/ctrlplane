@@ -5,17 +5,23 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
 import { Separator } from "@ctrlplane/ui/separator";
-
 import {
-  TabLink,
-  Tabs,
-  TabsList,
-} from "~/app/[workspaceSlug]/(appv2)/_components/navigation/Tabs";
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarInset,
+  SidebarMenu,
+  SidebarProvider,
+} from "@ctrlplane/ui/sidebar";
+
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { api } from "~/trpc/server";
 
 export default async function DeploymentLayout(props: {
@@ -27,9 +33,9 @@ export default async function DeploymentLayout(props: {
   }>;
 }) {
   const params = await props.params;
-  const deployment = await api.deployment.bySlug(params);
-  if (deployment == null) notFound();
-
+  const system = await api.system.bySlug(params).catch(() => null);
+  const deployment = await api.deployment.bySlug(params).catch(() => null);
+  if (system == null || deployment == null) notFound();
   return (
     <div>
       <PageHeader className="justify-between">
@@ -43,26 +49,41 @@ export default async function DeploymentLayout(props: {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbPage>Environments List</BreadcrumbPage>
+                <BreadcrumbLink
+                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
+                >
+                  {system.name}&apos;s Deployments
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
         </div>
       </PageHeader>
-      <div className="mx-6 mt-4 space-y-2">
-        <h1 className="text-2xl font-bold">{deployment.name}</h1>
-        <Tabs>
-          <TabsList>
-            <TabLink href="?tab=resources" isActive>
-              Deployment Targets
-            </TabLink>
-            <TabLink href="?tab=deployments">Deployments</TabLink>
-            <TabLink href="?tab=policies">Policies</TabLink>
-            <TabLink href="?tab=variables">Variables</TabLink>
-          </TabsList>
-        </Tabs>
-        {props.children}
-      </div>
+
+      <SidebarProvider className="relative">
+        <Sidebar className="absolute left-0 top-0">
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarMenu>
+                <SidebarLink href="?tab=resources">Properties</SidebarLink>
+                <SidebarLink href="?tab=workflow">Workflow</SidebarLink>
+                <SidebarLink href="?tab=releases">Releases</SidebarLink>
+                <SidebarLink href="?tab=channels">Channels</SidebarLink>
+                <SidebarLink href="?tab=targets">Targets</SidebarLink>
+                <SidebarLink href="?tab=variables">Variables</SidebarLink>
+                <SidebarLink href="?tab=settings">Settings</SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+          {props.children}
+        </SidebarInset>
+      </SidebarProvider>
     </div>
   );
 }
