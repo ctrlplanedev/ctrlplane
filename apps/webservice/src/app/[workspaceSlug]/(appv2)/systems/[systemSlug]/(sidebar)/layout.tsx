@@ -23,6 +23,18 @@ import { api } from "~/trpc/server";
 import { SidebarLink } from "../../../resources/(sidebar)/SidebarLink";
 import { SystemSelector } from "../../SystemSelector";
 
+export const generateMetadata = async (props: {
+  params: Promise<{ workspaceSlug: string; systemSlug: string }>;
+}) => {
+  const params = await props.params;
+  const system = await api.system.bySlug(params).catch(() => null);
+  if (system == null) return { title: "System Not Found" };
+
+  return {
+    title: `${system.name} - Ctrlplane`,
+  };
+};
+
 export default async function SystemsLayout(props: {
   children: React.ReactNode;
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
