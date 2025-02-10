@@ -39,7 +39,7 @@ export default async function EnvironmentLayout(props: {
   const url = (tab: string) =>
     `/${params.workspaceSlug}/systems/${params.systemSlug}/environments/${params.environmentId}/${tab}`;
   return (
-    <div>
+    <div className="h-full">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
           <Link
@@ -67,7 +67,7 @@ export default async function EnvironmentLayout(props: {
       </PageHeader>
 
       <SidebarProvider className="relative">
-        <Sidebar className="absolute left-0 top-0">
+        <Sidebar className="absolute bottom-0 left-0">
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
@@ -82,7 +82,7 @@ export default async function EnvironmentLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+        <SidebarInset className="h-[calc(100vh-56px-64px-2px)]">
           {props.children}
         </SidebarInset>
       </SidebarProvider>

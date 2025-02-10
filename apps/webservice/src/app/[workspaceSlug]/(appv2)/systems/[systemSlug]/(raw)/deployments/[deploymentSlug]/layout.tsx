@@ -83,7 +83,7 @@ export default async function DeploymentLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+        <SidebarInset className="h-[calc(100vh-56px-64px-2px)]">
           {props.children}
         </SidebarInset>
       </SidebarProvider>

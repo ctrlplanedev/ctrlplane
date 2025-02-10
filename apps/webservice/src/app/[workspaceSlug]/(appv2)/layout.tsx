@@ -25,7 +25,7 @@ export default async function Layout(props: {
     <div className="flex h-screen w-full flex-col bg-[#111111]">
       <TopNav workspaceSlug={params.workspaceSlug} />
 
-      <div className="flex flex-1">
+      <div className="flex h-full flex-1">
         <aside className="flex flex-col bg-[#111111] pt-2">
           <TopSidebarIcon
             icon={<IconRocket />}
@@ -65,7 +65,7 @@ export default async function Layout(props: {
           />
         </aside>
 
-        <div className="flex-1 overflow-auto rounded-tl-lg border-l border-t bg-neutral-950">
+        <div className="h-full flex-1 overflow-auto rounded-tl-lg border-l border-t bg-neutral-950">
           {props.children}
         </div>
       </div>
