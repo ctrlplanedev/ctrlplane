@@ -65,6 +65,7 @@ export default async function EnvironmentLayout(props: {
           </Breadcrumb>
         </div>
       </PageHeader>
+
       <SidebarProvider className="relative">
         <Sidebar className="absolute left-0 top-0">
           <SidebarContent>

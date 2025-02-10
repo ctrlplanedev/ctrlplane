@@ -36,6 +36,9 @@ export default async function DeploymentLayout(props: {
   const system = await api.system.bySlug(params).catch(() => null);
   const deployment = await api.deployment.bySlug(params).catch(() => null);
   if (system == null || deployment == null) notFound();
+
+  const url = (tab: string) =>
+    `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/${tab}`;
   return (
     <div>
       <PageHeader className="justify-between">
@@ -69,13 +72,13 @@ export default async function DeploymentLayout(props: {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarLink href="?tab=resources">Properties</SidebarLink>
-                <SidebarLink href="?tab=workflow">Workflow</SidebarLink>
-                <SidebarLink href="?tab=releases">Releases</SidebarLink>
-                <SidebarLink href="?tab=channels">Channels</SidebarLink>
-                <SidebarLink href="?tab=targets">Targets</SidebarLink>
-                <SidebarLink href="?tab=variables">Variables</SidebarLink>
-                <SidebarLink href="?tab=settings">Settings</SidebarLink>
+                <SidebarLink href={url("resources")}>Properties</SidebarLink>
+                <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
+                <SidebarLink href={url("releases")}>Releases</SidebarLink>
+                <SidebarLink href={url("channels")}>Channels</SidebarLink>
+                <SidebarLink href={url("targets")}>Targets</SidebarLink>
+                <SidebarLink href={url("variables")}>Variables</SidebarLink>
+                <SidebarLink href={url("settings")}>Settings</SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
