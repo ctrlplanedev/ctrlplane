@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import {
   IconBook,
-  IconNetwork,
   IconPlant,
   IconSettings,
   IconShield,
@@ -86,12 +85,6 @@ export default async function SystemsLayout(props: {
                   href={`/${workspace.slug}/systems/${params.systemSlug}/runbooks`}
                 >
                   Runbooks
-                </SidebarLink>
-                <SidebarLink
-                  icon={<IconNetwork />}
-                  href={`/${workspace.slug}/systems/${params.systemSlug}/connect`}
-                >
-                  Access
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
