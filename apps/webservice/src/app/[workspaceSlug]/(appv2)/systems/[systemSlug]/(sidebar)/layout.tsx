@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import {
   IconBook,
+  IconNetwork,
   IconPlant,
   IconSettings,
   IconShield,
@@ -20,7 +21,7 @@ import {
 } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
-import { SidebarLink } from "../../../resources/SidebarLink";
+import { SidebarLink } from "../../../resources/(sidebar)/SidebarLink";
 import { SystemSelector } from "../../SystemSelector";
 
 export default async function SystemsLayout(props: {
@@ -85,6 +86,12 @@ export default async function SystemsLayout(props: {
                   href={`/${workspace.slug}/systems/${params.systemSlug}/runbooks`}
                 >
                   Runbooks
+                </SidebarLink>
+                <SidebarLink
+                  icon={<IconNetwork />}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/connect`}
+                >
+                  Access
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>

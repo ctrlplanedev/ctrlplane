@@ -16,8 +16,8 @@ import {
 } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
-import { SidebarGroupKinds } from "../SidebarKinds";
-import { SidebarLink } from "../SidebarLink";
+import { SidebarGroupKinds } from "./SidebarKinds";
+import { SidebarLink } from "./SidebarLink";
 
 export default async function Layout(props: {
   children: React.ReactNode;
