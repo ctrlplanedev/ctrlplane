@@ -20,7 +20,7 @@ import {
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
-import { ResourceIcon } from "../../(app)/_components/ResourceIcon";
+import { ResourceIcon } from "../../../(app)/_components/ResourceIcon";
 
 export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
   workspace,

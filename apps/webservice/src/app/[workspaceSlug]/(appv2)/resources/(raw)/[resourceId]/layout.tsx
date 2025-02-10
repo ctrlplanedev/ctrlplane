@@ -12,7 +12,7 @@ import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/server";
-import { PageHeader } from "../../_components/PageHeader";
+import { PageHeader } from "../../../_components/PageHeader";
 import { DeploymentTabs } from "./DeploymentTabs";
 
 export default async function Layout(props: {

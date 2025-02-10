@@ -3,7 +3,7 @@
 import React from "react";
 import { useParams, usePathname } from "next/navigation";
 
-import { TabLink, Tabs, TabsList } from "../../_components/navigation/Tabs";
+import { TabLink, Tabs, TabsList } from "../../../_components/navigation/Tabs";
 
 const getActiveTab = (url: string) => {
   if (url.endsWith("/visualize")) return "visualize";

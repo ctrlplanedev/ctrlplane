@@ -4,7 +4,7 @@ import { IconTopologyComplex } from "@tabler/icons-react";
 
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 
-import { CreateResourceDialog } from "../../_components/CreateResource";
+import { CreateResourceDialog } from "../../../_components/CreateResource";
 
 export const ResourceGettingStarted: React.FC<{ workspace: Workspace }> = ({
   workspace,
