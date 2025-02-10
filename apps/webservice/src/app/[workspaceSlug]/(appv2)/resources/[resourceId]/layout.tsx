@@ -12,8 +12,8 @@ import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
 
 import { api } from "~/trpc/server";
-import { TabLink, Tabs, TabsList } from "../../_components/navigation/Tabs";
 import { PageHeader } from "../../_components/PageHeader";
+import { DeploymentTabs } from "./DeploymentTabs";
 
 export default async function Layout(props: {
   children: React.ReactNode;
@@ -23,7 +23,7 @@ export default async function Layout(props: {
   const resource = await api.resource.byId(params.resourceId);
   if (resource == null) notFound();
   return (
-    <div>
+    <div className="flex h-full flex-col">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
           <Link href={`/${params.workspaceSlug}/resources`}>
@@ -49,19 +49,10 @@ export default async function Layout(props: {
         </div>
       </PageHeader>
 
-      <div className="mx-6 mt-4 space-y-4">
+      <div className="flex h-full flex-col gap-4 p-4">
         <h1 className="text-2xl font-bold">{resource.name}</h1>
-        <Tabs>
-          <TabsList>
-            <TabLink href="?tab=properties">Properties</TabLink>
-            <TabLink href="?tab=variables">Variables</TabLink>
-            <TabLink href="?tab=visualize">Visualize</TabLink>
-            <TabLink href="?tab=deployments">Deployments</TabLink>
-            <TabLink href="?tab=connectivity">Connectivity</TabLink>
-            <TabLink href="?tab=events">Events</TabLink>
-          </TabsList>
-        </Tabs>
-        {props.children}
+        <DeploymentTabs />
+        <div className="h-full p-4">{props.children}</div>
       </div>
     </div>
   );
