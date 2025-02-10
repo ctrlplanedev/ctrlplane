@@ -1,10 +1,7 @@
 import React from "react";
 import {
-  IconBook,
   IconCategory,
-  IconChartBar,
   IconCube,
-  IconPlug,
   IconRocket,
   IconSettings,
 } from "@tabler/icons-react";
@@ -42,26 +39,26 @@ export default async function Layout(props: {
             label="Systems"
             href={`/${params.workspaceSlug}/systems`}
           />
-          <TopSidebarIcon
+          {/* <TopSidebarIcon
             icon={<IconBook />}
             label="Runbooks"
             href={`/${params.workspaceSlug}/runbooks`}
-          />
-          <TopSidebarIcon
+          /> */}
+          {/* <TopSidebarIcon
             icon={<IconChartBar />}
             label="Insights"
             href={`/${params.workspaceSlug}/insights`}
-          />
+          /> */}
           <div className="flex-grow" />
-          <TopSidebarIcon
+          {/* <TopSidebarIcon
             icon={<IconPlug />}
             label="Connect"
-            href={`/${params.workspaceSlug}/systems`}
-          />
+            href={`/${params.workspaceSlug}/integrations`}
+          /> */}
           <TopSidebarIcon
             icon={<IconSettings />}
             label="Settings"
-            href={`/${params.workspaceSlug}/systems`}
+            href={`/${params.workspaceSlug}/settings`}
           />
         </aside>
 
