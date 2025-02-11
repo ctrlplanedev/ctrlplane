@@ -9,34 +9,34 @@ const useTableSortHeader = () => {
   const router = useRouter();
   const params = useSearchParams();
 
-  const orderByParam = params.get("order-by");
-  const orderParam = params.get("order");
+  const orderBy = params.get("order-by");
+  const order = params.get("order");
 
-  const setOrderBy = (orderBy: StatsColumn) => {
+  const setOrderBy = (newOrderBy: StatsColumn) => {
     const url = new URL(window.location.href);
-    if (orderByParam !== orderBy) {
-      url.searchParams.set("order-by", orderBy);
+    if (orderBy !== newOrderBy) {
+      url.searchParams.set("order-by", newOrderBy);
       url.searchParams.set("order", StatsOrder.Asc);
       router.replace(`${url.pathname}?${url.searchParams.toString()}`);
       return;
     }
 
     const newOrder =
-      orderParam === StatsOrder.Asc ? StatsOrder.Desc : StatsOrder.Asc;
+      order === StatsOrder.Asc ? StatsOrder.Desc : StatsOrder.Asc;
     url.searchParams.set("order", newOrder);
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
-  return { orderByParam, orderParam, setOrderBy };
+  return { orderBy, order, setOrderBy };
 };
 
 export const TableSortHeader: React.FC<{
   children: React.ReactNode;
   orderByKey: StatsColumn;
 }> = ({ children, orderByKey }) => {
-  const { orderByParam, orderParam, setOrderBy } = useTableSortHeader();
+  const { orderBy, order, setOrderBy } = useTableSortHeader();
 
-  const isActive = orderByParam === orderByKey;
+  const isActive = orderBy === orderByKey;
 
   return (
     <div
@@ -50,7 +50,7 @@ export const TableSortHeader: React.FC<{
       {isActive && (
         <IconChevronDown
           className={cn(
-            orderParam === StatsOrder.Asc && "rotate-180",
+            order === StatsOrder.Asc && "rotate-180",
             "h-4 w-4 transition-transform",
           )}
           strokeWidth={1.5}
