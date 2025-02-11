@@ -1,30 +1,28 @@
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
-import { PageHeader } from "../_components/PageHeader";
+import { PageHeader } from "../../../_components/PageHeader";
 
-export default function DeploymentsPage() {
+export const metadata = {
+  title: "Resource Groupings - Ctrlplane",
+};
+
+export default function GroupingsPage() {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Deployments</BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+              <BreadcrumbPage>Groupings</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
