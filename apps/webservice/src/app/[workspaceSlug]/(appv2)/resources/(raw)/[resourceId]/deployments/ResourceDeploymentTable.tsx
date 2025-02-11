@@ -88,7 +88,7 @@ export const ResourceDeploymentsTable: React.FC<
   const latestTriggersByDeployment = _.chain(triggers)
     .groupBy((t) => t.release.deploymentId)
     .map((groupedTriggers) => _.maxBy(groupedTriggers, (t) => t.job.startedAt))
-    .filter((t) => t != null)
+    .compact()
     .value();
 
   const statsQ = api.deployment.stats.byWorkspaceId.useQuery({
@@ -97,8 +97,8 @@ export const ResourceDeploymentsTable: React.FC<
     startDate,
     endDate,
     timezone,
-    orderBy: orderByParam != null ? (orderByParam as StatsColumn) : undefined,
-    order: orderParam != null ? (orderParam as StatsOrder) : undefined,
+    orderBy: (orderByParam as StatsColumn | null) ?? undefined,
+    order: (orderParam as StatsOrder | null) ?? undefined,
   });
 
   const stats = statsQ.data ?? [];

@@ -4,12 +4,8 @@ import { api } from "~/trpc/server";
 import { ResourceDeploymentsTable } from "./deployments/ResourceDeploymentTable";
 
 type Params = Promise<{ resourceId: string }>;
-type SearchParams = Promise<{ tab?: string }>;
 
-export default async function ResourcePage(props: {
-  params: Params;
-  searchParams: SearchParams;
-}) {
+export default async function ResourcePage(props: { params: Params }) {
   const params = await props.params;
   const { resourceId } = params;
 

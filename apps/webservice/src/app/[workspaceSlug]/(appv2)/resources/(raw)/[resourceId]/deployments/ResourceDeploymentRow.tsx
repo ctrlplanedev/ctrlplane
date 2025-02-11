@@ -30,8 +30,7 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
       key={stats.id}
       className={cn(
         "h-16 border-b",
-        stats.latestTrigger == null && "hover:bg-transparent",
-        stats.latestTrigger != null && "cursor-pointer",
+        stats.latestTrigger == null ? "hover:bg-transparent" : "cursor-pointer",
       )}
       onClick={() => {
         router.push(
