@@ -273,6 +273,8 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
 };
 
 // Why we need raw sql: https://github.com/drizzle-team/drizzle-orm/issues/1242
+// tl;dr we are reselecting existing columsn in a subquery, but drizzle doesn't actually qualify the
+// inner joins of the subquery with its alias
 const buildDateRankCondition = (cond: DateRankCondition): SQL => {
   if (cond.operator === "latest" && cond.value === "resource")
     return notExists(
