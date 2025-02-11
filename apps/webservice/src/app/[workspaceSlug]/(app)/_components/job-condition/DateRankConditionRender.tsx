@@ -18,53 +18,50 @@ import type { JobConditionRenderProps } from "./job-condition-props";
 
 export const DateRankConditionRender: React.FC<
   JobConditionRenderProps<DateRankCondition>
-> = ({ condition, onChange, className }) => {
-  return (
-    <div className={cn("flex w-full items-center gap-2", className)}>
-      <div className="grid w-full grid-cols-5">
-        <div className="col-span-2 text-muted-foreground">
-          <Select
-            value={condition.operator}
-            onValueChange={(value) =>
-              onChange({
-                ...condition,
-                operator: value as DateRankOperatorType,
-              })
-            }
-          >
-            <SelectTrigger className="rounded-r-none">
-              Is {condition.operator}
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={DateRankOperator.Earliest}>
-                Is earliest
-              </SelectItem>
-              <SelectItem value={DateRankOperator.Latest}>Is latest</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="col-span-1 flex items-center justify-center border text-sm text-muted-foreground">
-          by
-        </div>
-        <div className="col-span-2 text-muted-foreground">
-          <Select
-            value={condition.value}
-            onValueChange={(value) =>
-              onChange({ ...condition, value: value as DateRankValue })
-            }
-          >
-            <SelectTrigger className="rounded-l-none">
-              <SelectValue placeholder="Value" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={DateRankValue.Resource}>Resource</SelectItem>
-              <SelectItem value={DateRankValue.Environment}>
-                Environment
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+> = ({ condition, onChange, className }) => (
+  <div className={cn("flex w-full items-center gap-2", className)}>
+    <div className="grid w-full grid-cols-2">
+      <div className="col-span-1 text-muted-foreground">
+        <Select
+          value={condition.operator}
+          onValueChange={(value) =>
+            onChange({
+              ...condition,
+              operator: value as DateRankOperatorType,
+            })
+          }
+        >
+          <SelectTrigger className="rounded-r-none">
+            Is the {condition.operator} by
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={DateRankOperator.Earliest}>
+              Is the earliest by
+            </SelectItem>
+            <SelectItem value={DateRankOperator.Latest}>
+              Is the latest by
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="col-span-1 text-muted-foreground">
+        <Select
+          value={condition.value}
+          onValueChange={(value) =>
+            onChange({ ...condition, value: value as DateRankValue })
+          }
+        >
+          <SelectTrigger className="rounded-l-none">
+            <SelectValue placeholder="Value" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={DateRankValue.Resource}>Resource</SelectItem>
+            <SelectItem value={DateRankValue.Environment}>
+              Environment
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
-  );
-};
+  </div>
+);
