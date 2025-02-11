@@ -44,7 +44,9 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
+import type { DateRankCondition } from "../../../validators/src/jobs/conditions/date-rank-condition.js";
 import type { Tx } from "../common.js";
+import { deployment } from "./deployment.js";
 import { jobAgent } from "./job-agent.js";
 import { release, releaseJobTrigger } from "./release.js";
 import { jobResourceRelationship, resource } from "./resource.js";
@@ -267,7 +269,66 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
   return sql`${release.version} ~ ${cond.value}`;
 };
 
+const buildDateRankCondition = (cond: DateRankCondition): SQL => {
+  if (cond.operator === "latest" && cond.value === "resource")
+    return notExists(
+      sql`
+        (select 1
+        from ${releaseJobTrigger} as rjt2
+        inner join ${release} as r2 on r2.id = rjt2.release_id
+        inner join ${job} as j2 on j2.id = rjt2.job_id
+        where j2.id != ${job.id}
+        and rjt2.resource_id = ${resource.id}
+        and r2.deployment_id = ${deployment.id}
+        and j2.started_at > ${job.startedAt})
+      `,
+    );
+
+  if (cond.operator === "earliest" && cond.value === "resource")
+    return notExists(
+      sql`
+        (select 1
+        from ${releaseJobTrigger} as rjt2
+        inner join ${release} as r2 on r2.id = rjt2.release_id
+        inner join ${job} as j2 on j2.id = rjt2.job_id
+        where j2.id != ${job.id}
+        and rjt2.resource_id = ${resource.id}
+        and r2.deployment_id = ${deployment.id}
+        and j2.started_at < ${job.startedAt})
+    `,
+    );
+
+  if (cond.operator === "latest" && cond.value === "environment")
+    return notExists(
+      sql`
+        (select 1
+        from ${releaseJobTrigger} as rjt2
+        inner join ${release} as r2 on r2.id = rjt2.release_id
+        inner join ${job} as j2 on j2.id = rjt2.job_id
+        where j2.id != ${job.id}
+        and rjt2.environment_id = ${releaseJobTrigger.environmentId}
+        and r2.deployment_id = ${deployment.id}
+        and j2.started_at > ${job.startedAt})
+      `,
+    );
+
+  return notExists(
+    sql`
+      (select 1
+      from ${releaseJobTrigger} as rjt2
+      inner join ${release} as r2 on r2.id = rjt2.release_id
+      inner join ${job} as j2 on j2.id = rjt2.job_id
+      where j2.id != ${job.id}
+      and rjt2.environment_id = ${releaseJobTrigger.environmentId}
+      and r2.deployment_id = ${deployment.id}
+      and j2.started_at < ${job.startedAt})
+    `,
+  );
+};
+
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
+  console.log("cond", cond);
+
   if (cond.type === FilterType.Metadata)
     return buildMetadataCondition(tx, cond);
   if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
@@ -280,6 +341,7 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
   if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
+  if (cond.type === JobFilterType.DateRank) return buildDateRankCondition(cond);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

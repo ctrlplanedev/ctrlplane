@@ -81,7 +81,6 @@ export const ResourceDeploymentsTable: React.FC<
     workspaceId,
     filter,
     limit: 100,
-    latestByResource: true,
   });
 
   const triggers = triggersQ.data ?? [];

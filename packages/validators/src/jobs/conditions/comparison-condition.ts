@@ -5,6 +5,7 @@ import type {
   MetadataCondition,
   VersionCondition,
 } from "../../conditions/index.js";
+import type { DateRankCondition } from "./date-rank-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
 import type { JobResourceCondition } from "./job-resource-condition.js";
@@ -15,6 +16,7 @@ import {
   metadataCondition,
   versionCondition,
 } from "../../conditions/index.js";
+import { dateRankCondition } from "./date-rank-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
 import { jobResourceCondition } from "./job-resource-condition.js";
@@ -37,6 +39,7 @@ export const comparisonCondition: z.ZodType<ComparisonCondition> = z.lazy(() =>
         versionCondition,
         jobResourceCondition,
         releaseCondition,
+        dateRankCondition,
       ]),
     ),
   }),
@@ -56,5 +59,6 @@ export type ComparisonCondition = {
     | VersionCondition
     | JobResourceCondition
     | ReleaseCondition
+    | DateRankCondition
   >;
 };

@@ -38,6 +38,8 @@ import {
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
+  DateRankOperator,
+  DateRankValue,
   doesConvertingToComparisonRespectMaxDepth,
   isComparisonCondition,
   JobFilterType,
@@ -349,6 +351,17 @@ export const JobComparisonConditionRender: React.FC<
                 }
               >
                 Release version
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() =>
+                  addCondition({
+                    type: JobFilterType.DateRank,
+                    operator: DateRankOperator.Earliest,
+                    value: DateRankValue.Resource,
+                  })
+                }
+              >
+                Rank sort
               </DropdownMenuItem>
               {depth < 2 && (
                 <DropdownMenuItem

@@ -4,6 +4,7 @@ import React from "react";
 import {
   isComparisonCondition,
   isCreatedAtCondition,
+  isDateRankCondition,
   isDeploymentCondition,
   isEnvironmentCondition,
   isJobResourceCondition,
@@ -13,6 +14,7 @@ import {
 } from "@ctrlplane/validators/jobs";
 
 import type { JobConditionRenderProps } from "./job-condition-props";
+import { DateRankConditionRender } from "./DateRankConditionRender";
 import { DeploymentConditionRender } from "./DeploymentConditionRender";
 import { EnvironmentConditionRender } from "./EnvironmentConditionRender";
 import { JobComparisonConditionRender } from "./JobComparisonConditionRender";
@@ -103,5 +105,15 @@ export const JobConditionRender: React.FC<
         className={className}
       />
     );
+
+  if (isDateRankCondition(condition))
+    return (
+      <DateRankConditionRender
+        condition={condition}
+        onChange={onChange}
+        className={className}
+      />
+    );
+
   return null;
 };

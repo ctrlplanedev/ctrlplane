@@ -6,6 +6,7 @@ import type {
   VersionCondition,
 } from "../../conditions/index.js";
 import type { ComparisonCondition } from "./comparison-condition.js";
+import type { DateRankCondition } from "./date-rank-condition.js";
 import type { DeploymentCondition } from "./deployment-condition.js";
 import type { EnvironmentCondition } from "./environment-condition.js";
 import type { JobResourceCondition } from "./job-resource-condition.js";
@@ -21,6 +22,7 @@ import {
   versionCondition,
 } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
+import { dateRankCondition } from "./date-rank-condition.js";
 import { deploymentCondition } from "./deployment-condition.js";
 import { environmentCondition } from "./environment-condition.js";
 import { jobResourceCondition } from "./job-resource-condition.js";
@@ -36,7 +38,8 @@ export type JobCondition =
   | EnvironmentCondition
   | VersionCondition
   | JobResourceCondition
-  | ReleaseCondition;
+  | ReleaseCondition
+  | DateRankCondition;
 
 export const jobCondition = z.union([
   comparisonCondition,
@@ -48,6 +51,7 @@ export const jobCondition = z.union([
   versionCondition,
   jobResourceCondition,
   releaseCondition,
+  dateRankCondition,
 ]);
 
 export const defaultCondition: JobCondition = {
@@ -63,6 +67,7 @@ export enum JobFilterType {
   Environment = "environment",
   Release = "release",
   JobResource = "resource",
+  DateRank = "date-rank",
 }
 
 export const isEmptyCondition = (condition: JobCondition): boolean =>
@@ -102,6 +107,10 @@ export const isJobResourceCondition = (
   condition: JobCondition,
 ): condition is JobResourceCondition =>
   condition.type === JobFilterType.JobResource;
+
+export const isDateRankCondition = (
+  condition: JobCondition,
+): condition is DateRankCondition => condition.type === JobFilterType.DateRank;
 
 // Check if converting to a comparison condition will exceed the max depth
 // including any nested conditions
