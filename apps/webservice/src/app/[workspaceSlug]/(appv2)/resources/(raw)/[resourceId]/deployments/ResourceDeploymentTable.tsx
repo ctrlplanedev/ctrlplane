@@ -2,11 +2,9 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { StatsOrder } from "@ctrlplane/validators/deployments";
-import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { subDays } from "date-fns";
-import _ from "lodash";
 
 import { Card } from "@ctrlplane/ui/card";
 import {
@@ -16,14 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import {
-  ColumnOperator,
-  ComparisonOperator,
-  DateOperator,
-  FilterType,
-} from "@ctrlplane/validators/conditions";
 import { StatsColumn } from "@ctrlplane/validators/deployments";
-import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { TableSortHeader } from "~/app/[workspaceSlug]/(appv2)/_components/TableSortHeader";
 import { api } from "~/trpc/react";
@@ -31,36 +22,6 @@ import { ResourceDeploymentRow } from "./ResourceDeploymentRow";
 import { ResourceDeploymentRowSkeleton } from "./ResourceDeploymentRowSkeleton";
 
 type ResourceDeploymentsTableProps = { resource: SCHEMA.Resource };
-
-const getFilter = (
-  resourceId: string,
-  startDate: Date,
-  endDate: Date,
-): JobCondition => {
-  const resourceFilter: JobCondition = {
-    type: JobFilterType.JobResource,
-    operator: ColumnOperator.Equals,
-    value: resourceId,
-  };
-
-  const startDateFilter: JobCondition = {
-    type: FilterType.CreatedAt,
-    operator: DateOperator.AfterOrOn,
-    value: startDate.toISOString(),
-  };
-
-  const endDateFilter: JobCondition = {
-    type: FilterType.CreatedAt,
-    operator: DateOperator.BeforeOrOn,
-    value: endDate.toISOString(),
-  };
-
-  return {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [resourceFilter, startDateFilter, endDateFilter],
-  };
-};
 
 export const ResourceDeploymentsTable: React.FC<
   ResourceDeploymentsTableProps
@@ -75,24 +36,7 @@ export const ResourceDeploymentsTable: React.FC<
   const startDate = subDays(endDate, 14);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-  const filter = getFilter(resource.id, startDate, endDate);
-
-  const triggersQ = api.job.config.byWorkspaceId.list.useQuery({
-    workspaceId,
-    filter,
-    limit: 100,
-    latestByResource: true,
-  });
-
-  const triggers = triggersQ.data ?? [];
-
-  const latestTriggersByDeployment = _.chain(triggers)
-    .groupBy((t) => t.release.deploymentId)
-    .map((groupedTriggers) => _.maxBy(groupedTriggers, (t) => t.job.startedAt))
-    .compact()
-    .value();
-
-  const statsQ = api.deployment.stats.byWorkspaceId.useQuery({
+  const { data, isLoading } = api.deployment.stats.byWorkspaceId.useQuery({
     workspaceId,
     resourceId: resource.id,
     startDate,
@@ -101,17 +45,6 @@ export const ResourceDeploymentsTable: React.FC<
     orderBy: (orderByParam as StatsColumn | null) ?? undefined,
     order: (orderParam as StatsOrder | null) ?? undefined,
   });
-
-  const stats = statsQ.data ?? [];
-
-  const statsWithLatestTrigger = stats.map((stat) => {
-    const latestTrigger = latestTriggersByDeployment.find(
-      (t) => t.release.deploymentId === stat.id,
-    );
-    return { ...stat, latestTrigger, resource };
-  });
-
-  const isLoading = triggersQ.isLoading || statsQ.isLoading;
 
   return (
     <Card className="rounded-md">
@@ -156,8 +89,12 @@ export const ResourceDeploymentsTable: React.FC<
 
         <TableBody>
           {!isLoading &&
-            statsWithLatestTrigger.map((stat) => (
-              <ResourceDeploymentRow key={stat.id} stats={stat} />
+            data?.map((stat) => (
+              <ResourceDeploymentRow
+                key={stat.id}
+                stats={stat}
+                workspaceId={workspaceId}
+              />
             ))}
           {isLoading &&
             Array.from({ length: 3 }).map((_, index) => (
