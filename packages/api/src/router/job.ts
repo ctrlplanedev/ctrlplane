@@ -8,7 +8,6 @@ import {
   countDistinct,
   desc,
   eq,
-  isNotNull,
   isNull,
   notInArray,
   sql,
@@ -131,8 +130,6 @@ const releaseJobTriggerRouter = createTRPCRouter({
           filter: jobCondition.optional(),
           limit: z.number().int().nonnegative().max(1000).default(500),
           offset: z.number().int().nonnegative().default(0),
-          latestByEnvironment: z.boolean().optional().default(false),
-          latestByResource: z.boolean().optional().default(false),
         }),
       )
       .meta({
@@ -141,41 +138,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .perform(Permission.JobList)
             .on({ type: "workspace", id: input.workspaceId }),
       })
-      .query(async ({ ctx, input }) => {
-        const rankSubquery = ctx.db
-          .select({
-            rankId: schema.releaseJobTrigger.id,
-            environmentRank:
-              sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId}, ${schema.releaseJobTrigger.environmentId} ORDER BY ${schema.job.createdAt} DESC)`.as(
-                "environmentRank",
-              ),
-            resourceRank:
-              sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId}, ${schema.releaseJobTrigger.resourceId} ORDER BY ${schema.job.createdAt} DESC)`.as(
-                "resourceRank",
-              ),
-          })
-          .from(schema.releaseJobTrigger)
-          .innerJoin(
-            schema.job,
-            eq(schema.releaseJobTrigger.jobId, schema.job.id),
-          )
-          .innerJoin(
-            schema.release,
-            eq(schema.release.id, schema.releaseJobTrigger.releaseId),
-          )
-          .where(
-            and(
-              isNotNull(schema.job.startedAt),
-              isNotNull(schema.job.completedAt),
-            ),
-          )
-          .as("rank");
-
-        const data = await releaseJobTriggerQuery(ctx.db)
-          .innerJoin(
-            rankSubquery,
-            eq(rankSubquery.rankId, schema.releaseJobTrigger.id),
-          )
+      .query(({ ctx, input }) =>
+        releaseJobTriggerQuery(ctx.db)
           .leftJoin(
             schema.system,
             eq(schema.system.id, schema.deployment.systemId),
@@ -193,12 +157,6 @@ const releaseJobTriggerRouter = createTRPCRouter({
               eq(schema.system.workspaceId, input.workspaceId),
               isNull(schema.resource.deletedAt),
               schema.releaseJobMatchesCondition(ctx.db, input.filter),
-              input.latestByResource
-                ? eq(rankSubquery.resourceRank, 1)
-                : undefined,
-              input.latestByEnvironment
-                ? eq(rankSubquery.environmentRank, 1)
-                : undefined,
             ),
           )
           .orderBy(desc(schema.job.createdAt))
@@ -228,10 +186,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 environment: v[0]!.environment,
               }))
               .value(),
-          );
-
-        return data;
-      }),
+          ),
+      ),
     count: protectedProcedure
       .input(
         z.object({
