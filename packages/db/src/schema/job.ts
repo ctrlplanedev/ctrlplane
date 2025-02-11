@@ -3,7 +3,10 @@ import type {
   MetadataCondition,
   VersionCondition,
 } from "@ctrlplane/validators/conditions";
-import type { JobCondition } from "@ctrlplane/validators/jobs";
+import type {
+  DateRankCondition,
+  JobCondition,
+} from "@ctrlplane/validators/jobs";
 import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
 import type { z } from "zod";
 import {
@@ -13,6 +16,7 @@ import {
   gt,
   gte,
   ilike,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -44,7 +48,6 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
-import type { DateRankCondition } from "../../../validators/src/jobs/conditions/date-rank-condition.js";
 import type { Tx } from "../common.js";
 import { deployment } from "./deployment.js";
 import { jobAgent } from "./job-agent.js";
@@ -269,6 +272,7 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
   return sql`${release.version} ~ ${cond.value}`;
 };
 
+// Why we need raw sql: https://github.com/drizzle-team/drizzle-orm/issues/1242
 const buildDateRankCondition = (cond: DateRankCondition): SQL => {
   if (cond.operator === "latest" && cond.value === "resource")
     return notExists(
@@ -280,7 +284,10 @@ const buildDateRankCondition = (cond: DateRankCondition): SQL => {
         where j2.id != ${job.id}
         and rjt2.resource_id = ${resource.id}
         and r2.deployment_id = ${deployment.id}
-        and j2.started_at > ${job.startedAt})
+        and j2.started_at is not null
+        and j2.completed_at is not null
+        and j2.started_at > ${job.startedAt}
+        )
       `,
     );
 
@@ -294,6 +301,8 @@ const buildDateRankCondition = (cond: DateRankCondition): SQL => {
         where j2.id != ${job.id}
         and rjt2.resource_id = ${resource.id}
         and r2.deployment_id = ${deployment.id}
+        and j2.started_at is not null
+        and j2.completed_at is not null
         and j2.started_at < ${job.startedAt})
     `,
     );
@@ -308,6 +317,8 @@ const buildDateRankCondition = (cond: DateRankCondition): SQL => {
         where j2.id != ${job.id}
         and rjt2.environment_id = ${releaseJobTrigger.environmentId}
         and r2.deployment_id = ${deployment.id}
+        and j2.started_at is not null
+        and j2.completed_at is not null
         and j2.started_at > ${job.startedAt})
       `,
     );
@@ -321,14 +332,14 @@ const buildDateRankCondition = (cond: DateRankCondition): SQL => {
       where j2.id != ${job.id}
       and rjt2.environment_id = ${releaseJobTrigger.environmentId}
       and r2.deployment_id = ${deployment.id}
+      and j2.started_at is not null
+      and j2.completed_at is not null
       and j2.started_at < ${job.startedAt})
     `,
   );
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
-  console.log("cond", cond);
-
   if (cond.type === FilterType.Metadata)
     return buildMetadataCondition(tx, cond);
   if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
@@ -341,7 +352,12 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === JobFilterType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
   if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
-  if (cond.type === JobFilterType.DateRank) return buildDateRankCondition(cond);
+  if (cond.type === JobFilterType.DateRank)
+    return and(
+      buildDateRankCondition(cond),
+      isNotNull(job.startedAt),
+      isNotNull(job.completedAt),
+    )!;
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

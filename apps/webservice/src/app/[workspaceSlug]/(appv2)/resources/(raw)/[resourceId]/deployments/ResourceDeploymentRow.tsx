@@ -1,37 +1,78 @@
 import type { RouterOutputs } from "@ctrlplane/api";
-import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useParams, useRouter } from "next/navigation";
 import { formatDistanceToNowStrict } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
 
-import { cn } from "@ctrlplane/ui";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
+import {
+  ColumnOperator,
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
+import { DateRankOperator, JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { LazyDeploymentHistoryGraph } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/DeploymentHistoryGraph";
+import { api } from "~/trpc/react";
 
 type DeploymentStats =
-  RouterOutputs["deployment"]["stats"]["byWorkspaceId"][number] & {
-    latestTrigger?: RouterOutputs["job"]["config"]["byWorkspaceId"]["list"][number];
-    resource: SCHEMA.Resource;
+  RouterOutputs["deployment"]["stats"]["byWorkspaceId"][number];
+
+type ResourceDeploymentRowProps = {
+  stats: DeploymentStats;
+  workspaceId: string;
+};
+
+const getFilter = (resourceId: string, deploymentId: string): JobCondition => {
+  const resourceFilter: JobCondition = {
+    type: JobFilterType.JobResource,
+    operator: ColumnOperator.Equals,
+    value: resourceId,
   };
 
-type ResourceDeploymentRowProps = { stats: DeploymentStats };
+  const deploymentFilter: JobCondition = {
+    type: JobFilterType.Deployment,
+    operator: ColumnOperator.Equals,
+    value: deploymentId,
+  };
+
+  const dateRankFilter: JobCondition = {
+    type: JobFilterType.DateRank,
+    operator: DateRankOperator.Latest,
+    value: "resource",
+  };
+
+  return {
+    type: FilterType.Comparison,
+    operator: ComparisonOperator.And,
+    conditions: [resourceFilter, deploymentFilter, dateRankFilter],
+  };
+};
 
 export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
   stats,
+  workspaceId,
 }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const { workspaceSlug, resourceId } = useParams<{
+    workspaceSlug: string;
+    resourceId: string;
+  }>();
   const router = useRouter();
 
   const successRate = stats.successRate ?? 0;
 
+  const filter = getFilter(resourceId, stats.id);
+  const { data, isLoading } = api.job.config.byWorkspaceId.list.useQuery({
+    workspaceId,
+    filter,
+    limit: 1,
+  });
+
   return (
     <TableRow
       key={stats.id}
-      className={cn(
-        "h-16 border-b",
-        stats.latestTrigger == null ? "hover:bg-transparent" : "cursor-pointer",
-      )}
+      className="h-16 cursor-pointer border-b"
       onClick={() => {
         router.push(
           `/${workspaceSlug}/systems/${stats.systemSlug}/deployments/${stats.id}/releases`,
@@ -47,14 +88,17 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
         </div>
       </TableCell>
 
-      <TableCell className="p-4">
-        <span>{stats.latestTrigger?.release.version ?? "No release"}</span>
+      <TableCell className="p-4 align-middle">
+        {!isLoading && (
+          <span>{data?.[0]?.release.version ?? "No release"}</span>
+        )}
+        {isLoading && <Skeleton className="h-3 w-8" />}
       </TableCell>
 
       <TableCell className="p-4 align-middle">
         <LazyDeploymentHistoryGraph
           deploymentId={stats.id}
-          resourceId={stats.resource.id}
+          resourceId={resourceId}
         />
       </TableCell>
 

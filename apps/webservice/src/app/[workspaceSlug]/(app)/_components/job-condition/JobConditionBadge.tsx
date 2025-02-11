@@ -5,6 +5,7 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
+  DateRankCondition,
   DeploymentCondition,
   EnvironmentCondition,
   JobCondition,
@@ -30,8 +31,10 @@ import {
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
+  DateRankOperator,
   isComparisonCondition,
   isCreatedAtCondition,
+  isDateRankCondition,
   isDeploymentCondition,
   isEnvironmentCondition,
   isJobResourceCondition,
@@ -60,6 +63,8 @@ const operatorVerbs = {
   [ColumnOperator.StartsWith]: "starts with",
   [ColumnOperator.EndsWith]: "ends with",
   [ColumnOperator.Contains]: "contains",
+  [DateRankOperator.Latest]: "is the latest by",
+  [DateRankOperator.Earliest]: "is the earliest by",
 };
 
 const ConditionBadge: React.FC<{
@@ -263,6 +268,19 @@ const StringifiedJobResourceCondition: React.FC<{
   );
 };
 
+const StringifiedDateRankCondition: React.FC<{
+  condition: DateRankCondition;
+}> = ({ condition }) => {
+  return (
+    <ConditionBadge>
+      <span className="text-muted-foreground">
+        {operatorVerbs[condition.operator]}
+      </span>
+      <span className="text-white">{condition.value}</span>
+    </ConditionBadge>
+  );
+};
+
 const StringifiedJobCondition: React.FC<{
   condition: JobCondition;
   depth?: number;
@@ -303,6 +321,9 @@ const StringifiedJobCondition: React.FC<{
 
   if (isJobResourceCondition(condition))
     return <StringifiedJobResourceCondition condition={condition} />;
+
+  if (isDateRankCondition(condition))
+    return <StringifiedDateRankCondition condition={condition} />;
 
   return null;
 };

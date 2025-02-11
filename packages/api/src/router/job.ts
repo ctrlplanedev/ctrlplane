@@ -138,9 +138,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .perform(Permission.JobList)
             .on({ type: "workspace", id: input.workspaceId }),
       })
-      .query(async ({ ctx, input }) => {
-        console.log("input", input);
-        return releaseJobTriggerQuery(ctx.db)
+      .query(({ ctx, input }) =>
+        releaseJobTriggerQuery(ctx.db)
           .leftJoin(
             schema.system,
             eq(schema.system.id, schema.deployment.systemId),
@@ -187,8 +186,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 environment: v[0]!.environment,
               }))
               .value(),
-          );
-      }),
+          ),
+      ),
     count: protectedProcedure
       .input(
         z.object({

@@ -32,18 +32,18 @@ export const DateRankConditionRender: React.FC<
               })
             }
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Operator" />
+            <SelectTrigger className="rounded-r-none">
+              Is {condition.operator}
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={DateRankOperator.Earliest}>
-                Earliest
+                Is earliest
               </SelectItem>
-              <SelectItem value={DateRankOperator.Latest}>Latest</SelectItem>
+              <SelectItem value={DateRankOperator.Latest}>Is latest</SelectItem>
             </SelectContent>
           </Select>
         </div>
-        <div className="col-span-1 flex items-center justify-center text-muted-foreground">
+        <div className="col-span-1 flex items-center justify-center border text-sm text-muted-foreground">
           by
         </div>
         <div className="col-span-2 text-muted-foreground">
@@ -53,7 +53,7 @@ export const DateRankConditionRender: React.FC<
               onChange({ ...condition, value: value as DateRankValue })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="rounded-l-none">
               <SelectValue placeholder="Value" />
             </SelectTrigger>
             <SelectContent>
