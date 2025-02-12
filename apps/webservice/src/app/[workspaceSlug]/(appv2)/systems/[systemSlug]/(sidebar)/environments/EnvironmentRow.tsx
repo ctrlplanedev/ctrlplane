@@ -4,18 +4,9 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconDots } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 
 import { cn } from "@ctrlplane/ui";
-import { Button } from "@ctrlplane/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@ctrlplane/ui/dropdown-menu";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
@@ -93,29 +84,6 @@ export const EnvironmentRow: React.FC<{
       <div className="flex-1">{environment.name}</div>
       <div className="flex-1">
         <LazyEnvironmentHealth environment={environment} />
-      </div>
-      <div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <IconDots className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Add Resources</DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link
-                href={`/${workspaceSlug}/systems/${systemSlug}/environments/${environment.id}`}
-              >
-                Edit
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </Link>
   );
