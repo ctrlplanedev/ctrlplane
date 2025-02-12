@@ -8,6 +8,7 @@ import {
   countDistinct,
   desc,
   eq,
+  isNotNull,
   isNull,
   notInArray,
   sql,
@@ -358,42 +359,48 @@ const releaseJobTriggerRouter = createTRPCRouter({
       }),
   }),
 
-  byDeploymentAndEnvironment: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentGet, Permission.SystemGet)
-          .on(
-            { type: "deployment", id: input.deploymentId },
-            { type: "environment", id: input.environmentId },
+  latest: createTRPCRouter({
+    byEnvironmentId: protectedProcedure
+      .input(z.string().uuid())
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.EnvironmentGet)
+            .on({ type: "environment", id: input }),
+      })
+      .query(({ ctx, input }) =>
+        ctx.db
+          .selectDistinctOn([
+            schema.release.deploymentId,
+            schema.releaseJobTrigger.environmentId,
+            schema.releaseJobTrigger.resourceId,
+          ])
+          .from(schema.job)
+          .innerJoin(
+            schema.releaseJobTrigger,
+            eq(schema.releaseJobTrigger.jobId, schema.job.id),
+          )
+          .innerJoin(
+            schema.release,
+            eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+          )
+          .orderBy(desc(schema.job.completedAt))
+          .where(
+            and(
+              isNotNull(schema.job.startedAt),
+              isNotNull(schema.job.completedAt),
+              eq(schema.releaseJobTrigger.environmentId, input),
+            ),
+          )
+          .then((rows) =>
+            rows.map((row) => ({
+              ...row.job,
+              trigger: row.release_job_trigger,
+              release: row.release,
+            })),
           ),
-    })
-    .input(
-      z.object({
-        deploymentId: z.string().uuid(),
-        environmentId: z.string().uuid(),
-      }),
-    )
-    .query(({ ctx, input }) =>
-      releaseJobTriggerQuery(ctx.db)
-        .where(
-          and(
-            eq(schema.deployment.id, input.deploymentId),
-            eq(schema.environment.id, input.environmentId),
-            isNull(schema.resource.deletedAt),
-          ),
-        )
-        .then((data) =>
-          data.map((t) => ({
-            ...t.release_job_trigger,
-            job: t.job,
-            jobAgent: t.job_agent,
-            resource: t.resource,
-            release: { ...t.release, deployment: t.deployment },
-            environment: t.environment,
-          })),
-        ),
-    ),
+      ),
+  }),
 
   byReleaseId: protectedProcedure
     .meta({
