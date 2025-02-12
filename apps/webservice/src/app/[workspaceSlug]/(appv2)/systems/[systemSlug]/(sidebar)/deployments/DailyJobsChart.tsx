@@ -97,7 +97,11 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
   console.log({ maxDailyCount, maxBarTickDomain });
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer
+      width="100%"
+      height="100%"
+      className="focus:outline-none"
+    >
       <ComposedChart
         accessibilityLayer
         data={chartData}

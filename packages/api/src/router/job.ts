@@ -9,6 +9,7 @@ import {
   desc,
   eq,
   gt,
+  isNotNull,
   isNull,
   lte,
   notInArray,
@@ -290,6 +291,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
               ]),
               gt(schema.releaseJobTrigger.createdAt, input.startDate),
               lte(schema.releaseJobTrigger.createdAt, input.endDate),
+              isNotNull(schema.job.startedAt),
+              isNotNull(schema.job.completedAt),
             ),
           )
           .groupBy(

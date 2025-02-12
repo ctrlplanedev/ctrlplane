@@ -10,11 +10,13 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
   max,
   sql,
+  takeFirst,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -27,6 +29,22 @@ import {
 import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+
+const successRate = sql<number | null>`
+  CAST(
+    SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+  ) / 
+  NULLIF(COUNT(*), 0) * 100
+`;
+
+const totalDuration = sql<number | null>`
+  SUM(
+    CASE 
+      WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
+      THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+    END
+  )::integer
+`;
 
 export const deploymentStatsRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
@@ -78,22 +96,6 @@ export const deploymentStatsRouter = createTRPCRouter({
         percentile_cont(0.9) within group (order by 
           EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
         ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
-      `;
-
-      const totalDuration = sql<number | null>`
-        SUM(
-          CASE 
-            WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
-            THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
-          END
-        )::integer
-      `;
-
-      const successRate = sql<number | null>`
-        CAST(
-          SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
-        ) / 
-        NULLIF(COUNT(*), 0) * 100
       `;
 
       const totalSuccess = sql<number>`
@@ -156,6 +158,8 @@ export const deploymentStatsRouter = createTRPCRouter({
             eq(schema.system.workspaceId, workspaceId),
             gte(schema.job.createdAt, startDate),
             lte(schema.job.createdAt, endDate),
+            isNotNull(schema.job.completedAt),
+            isNotNull(schema.job.startedAt),
             isNull(schema.resource.deletedAt),
             search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
             resourceId ? eq(schema.resource.id, resourceId) : undefined,
@@ -174,6 +178,51 @@ export const deploymentStatsRouter = createTRPCRouter({
         .limit(100);
 
       return results;
+    }),
+
+  totals: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        startDate: z.date(),
+        endDate: z.date(),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      const { workspaceId, startDate, endDate } = input;
+      return ctx.db
+        .select({
+          totalJobs: count(schema.job.id),
+          successRate,
+          totalDuration,
+        })
+        .from(schema.job)
+        .innerJoin(
+          schema.releaseJobTrigger,
+          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.deployment.id, schema.release.deploymentId),
+        )
+        .innerJoin(
+          schema.system,
+          eq(schema.system.id, schema.deployment.systemId),
+        )
+        .where(
+          and(
+            eq(schema.system.workspaceId, workspaceId),
+            gte(schema.job.createdAt, startDate),
+            lte(schema.job.createdAt, endDate),
+            isNotNull(schema.job.completedAt),
+            isNotNull(schema.job.startedAt),
+          ),
+        )
+        .then(takeFirst);
     }),
 
   history: protectedProcedure

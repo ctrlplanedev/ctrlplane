@@ -8,13 +8,12 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { IconSearch } from "@tabler/icons-react";
 import { endOfDay, startOfMonth, subDays, subMonths, subWeeks } from "date-fns";
-import { useDebounce } from "react-use";
 
 import { Card } from "@ctrlplane/ui/card";
 import { Input } from "@ctrlplane/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/react";
+import { AggregateStats } from "./AggragateStats";
 import { DailyJobsChart } from "./DailyJobsChart";
 import { DeploymentTable } from "./deployment-table/DeploymentTable";
 
@@ -30,17 +29,13 @@ const getStartDate = (timePeriod: string, today: Date) => {
 export const DeploymentsCard: React.FC<{
   workspaceId: string;
   systemId?: string;
-}> = ({ workspaceId, systemId }) => {
+  timePeriod?: string;
+}> = ({ workspaceId, systemId, timePeriod = "14d" }) => {
   const params = useSearchParams();
   const orderByParam = params.get("order-by");
   const orderParam = params.get("order");
 
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  const [timePeriod, setTimePeriod] = useState("14d");
-
-  useDebounce(() => setDebouncedSearch(search), 500, [search]);
 
   const today = useMemo(() => endOfDay(new Date()), []);
   const startDate = getStartDate(timePeriod, today);
@@ -54,25 +49,20 @@ export const DeploymentsCard: React.FC<{
       timezone,
       orderBy: orderByParam != null ? (orderByParam as StatsColumn) : undefined,
       order: orderParam != null ? (orderParam as StatsOrder) : undefined,
-      search: debouncedSearch,
+      search,
     },
     { placeholderData: (prev) => prev, refetchInterval: 60_000 },
   );
 
   return (
     <div className="container m-8 mx-auto">
-      <div className="mb-8">
-        <Tabs value={timePeriod} onValueChange={setTimePeriod}>
-          <TabsList>
-            <TabsTrigger value="mtd">MTD</TabsTrigger>
-            <TabsTrigger value="7d">7D</TabsTrigger>
-            <TabsTrigger value="14d">14D</TabsTrigger>
-            <TabsTrigger value="30d">30D</TabsTrigger>
-            <TabsTrigger value="3m">3M</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
       <div className="flex flex-col gap-12">
+        <AggregateStats
+          workspaceId={workspaceId}
+          startDate={startDate}
+          endDate={today}
+        />
+
         <div className="h-[400px] w-full rounded-md border p-8">
           <DailyJobsChart
             workspaceId={workspaceId}
