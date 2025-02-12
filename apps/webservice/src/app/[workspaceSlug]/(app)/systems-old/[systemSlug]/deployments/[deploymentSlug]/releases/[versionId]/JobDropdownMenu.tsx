@@ -85,10 +85,7 @@ const OverrideJobStatusDialog: React.FC<{
 
   const onSubmit = form.handleSubmit((data) =>
     updateJob
-      .mutateAsync({
-        id: job.id,
-        data,
-      })
+      .mutateAsync({ id: job.id, data })
       .then(() => utils.job.config.byReleaseId.invalidate())
       .then(() => utils.job.config.byId.invalidate(job.id))
       .then(() => utils.release.list.invalidate())
