@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,8 +10,19 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { api } from "~/trpc/server";
+import { RunbookGettingStarted } from "./RunbookGettingStarted";
+import { RunbookRow } from "./RunbookRow";
 
-export default function RunbooksPage() {
+export default async function RunbooksPage(props: {
+  params: Promise<{ workspaceSlug: string; systemSlug: string }>;
+}) {
+  const params = await props.params;
+  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  if (workspace == null) return notFound();
+  const system = await api.system.bySlug(params).catch(notFound);
+  const runbooks = await api.runbook.bySystemId(system.id);
+  const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
   return (
     <div>
       <PageHeader>
@@ -23,6 +36,21 @@ export default function RunbooksPage() {
           </BreadcrumbList>
         </Breadcrumb>
       </PageHeader>
+
+      {runbooks.length === 0 ? (
+        <RunbookGettingStarted {...params} />
+      ) : (
+        <>
+          {runbooks.map((r) => (
+            <RunbookRow
+              key={r.id}
+              runbook={r}
+              jobAgents={jobAgents}
+              workspace={workspace}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 }
