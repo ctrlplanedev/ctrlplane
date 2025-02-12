@@ -1,9 +1,7 @@
 "use client";
 
 import type { JobAgent, System, Workspace } from "@ctrlplane/db/schema";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { createRunbookVariable } from "@ctrlplane/db/schema";
@@ -70,14 +68,6 @@ export const CreateRunbook: React.FC<{
         onSubmit={onSubmit}
         className="container mx-auto max-w-2xl space-y-8"
       >
-        <Link href={`/${workspace.slug}/systems/${system.slug}/runbooks`}>
-          <Button variant="ghost" className="p-0 hover:bg-transparent">
-            <div className="text-md flex items-center gap-2">
-              <IconArrowLeft size={16} /> Runbooks
-            </div>
-          </Button>
-        </Link>
-
         <div>
           <h1 className="mb-1 text-2xl font-bold">Create a new Runbook</h1>
           <p className="text-sm text-muted-foreground">
