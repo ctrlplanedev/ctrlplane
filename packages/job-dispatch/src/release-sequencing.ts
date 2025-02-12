@@ -4,6 +4,8 @@ import { inArray, isNull, sql } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
+import { updateJob } from "./job-update.js";
+
 /**
  *
  * @param db
@@ -61,8 +63,9 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
     .execute(jobsToCancelQuery)
     .then((r) => r.rows.map((r) => String(r.jobidtocancel)));
 
-  await db
-    .update(schema.job)
-    .set({ status: JobStatus.Cancelled })
-    .where(inArray(schema.job.id, jobsToCancel));
+  await Promise.all(
+    jobsToCancel.map((jobId) =>
+      updateJob(db, jobId, { status: JobStatus.Cancelled }),
+    ),
+  );
 };

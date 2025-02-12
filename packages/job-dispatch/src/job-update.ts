@@ -1,3 +1,5 @@
+import type { Tx } from "@ctrlplane/db";
+
 import { eq, sql, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
@@ -56,8 +58,8 @@ const getStartedAt = (
   if (updates.startedAt != null) return updates.startedAt;
   if (jobBeforeUpdate.startedAt != null) return jobBeforeUpdate.startedAt;
   const isPreviousStatusPending = jobBeforeUpdate.status === JobStatus.Pending;
-  const isCurrentStatusInProgress = updates.status === JobStatus.InProgress;
-  if (isPreviousStatusPending && isCurrentStatusInProgress) return new Date();
+  const isCurrentStatusPending = updates.status === JobStatus.Pending;
+  if (isPreviousStatusPending && !isCurrentStatusPending) return new Date();
   return null;
 };
 
@@ -79,6 +81,7 @@ const getCompletedAt = (
 };
 
 export const updateJob = async (
+  db: Tx,
   jobId: string,
   data: schema.UpdateJob,
   metadata?: Record<string, any>,

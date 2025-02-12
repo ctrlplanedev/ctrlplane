@@ -29,6 +29,6 @@ export const run = async () =>
     )
     .then(async (jobs) => {
       await Promise.all(
-        jobs.map((job) => updateJob(job.id, { status: JobStatus.Failure })),
+        jobs.map((job) => updateJob(db, job.id, { status: JobStatus.Failure })),
       );
     });
