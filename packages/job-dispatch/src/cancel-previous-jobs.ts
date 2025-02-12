@@ -1,8 +1,10 @@
 import type { Tx } from "@ctrlplane/db";
 
-import { and, eq, inArray, ne, or } from "@ctrlplane/db";
+import { and, eq, ne, or } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
+
+import { updateJob } from "./job-update.js";
 
 export const cancelPreviousJobsForRedeployedTriggers = async (
   db: Tx,
@@ -32,8 +34,9 @@ export const cancelPreviousJobsForRedeployedTriggers = async (
     );
 
   const jobIdsToCancel = jobsToCancel.map((job) => job.job.id);
-  await db
-    .update(schema.job)
-    .set({ status: JobStatus.Cancelled })
-    .where(inArray(schema.job.id, jobIdsToCancel));
+  await Promise.all(
+    jobIdsToCancel.map((jobId) =>
+      updateJob(db, jobId, { status: JobStatus.Cancelled }),
+    ),
+  );
 };

@@ -1,6 +1,6 @@
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 
-import { and, desc, eq, inArray, takeFirstOrNull } from "@ctrlplane/db";
+import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
@@ -10,6 +10,7 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
+import { updateJob } from "./job-update.js";
 import { isPassingReleaseStringCheckPolicy } from "./policies/release-string-check.js";
 import { isPassingAllPoliciesExceptNewerThanLastActive } from "./policy-checker.js";
 import { createJobApprovals } from "./policy-create.js";
@@ -86,10 +87,11 @@ const cancelJobsForExcludedReleases = async (
 
   if (jobsToCancel.length === 0) return;
 
-  await db
-    .update(SCHEMA.job)
-    .set({ status: JobStatus.Cancelled })
-    .where(inArray(SCHEMA.job.id, jobsToCancel));
+  await Promise.all(
+    jobsToCancel.map((jobId) =>
+      updateJob(db, jobId, { status: JobStatus.Cancelled }),
+    ),
+  );
 };
 
 const getLatestReleaseMatchingFilter = (

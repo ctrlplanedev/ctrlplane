@@ -649,7 +649,7 @@ export const jobRouter = createTRPCRouter({
         canUser.perform(Permission.JobUpdate).on({ type: "job", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: schema.updateJob }))
-    .mutation(({ input }) => updateJob(input.id, input.data)),
+    .mutation(({ ctx, input }) => updateJob(ctx.db, input.id, input.data)),
 
   config: releaseJobTriggerRouter,
   agent: jobAgentRouter,

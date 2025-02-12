@@ -6,6 +6,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTriggeredRunbookJob } from "./job-creation.js";
+import { updateJob } from "./job-update.js";
 import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
 import { dispatchJobsQueue } from "./queue.js";
 
@@ -78,14 +79,10 @@ class DispatchBuilder {
           const wf = wfsWithJobAgent[index];
           if (!wf) return null;
 
-          await this.db
-            .update(schema.job)
-            .set({
-              status: JobStatus.Failure,
-              message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
-            })
-            .where(eq(schema.job.id, wf.id));
-          return null;
+          return updateJob(this.db, wf.id, {
+            status: JobStatus.Failure,
+            message: `Variable resolution failed during job dispatch: ${result.reason.message}`,
+          });
         }
         return wfsWithJobAgent[index];
       }),
@@ -103,26 +100,21 @@ class DispatchBuilder {
         })),
       );
 
-      await this.db
-        .update(schema.job)
-        .set({ status: JobStatus.InProgress })
-        .where(
-          inArray(
-            schema.job.id,
-            validJobsWithResolvedVariables.map((j) => j.id),
-          ),
-        );
-    }
-
-    await this.db
-      .update(schema.job)
-      .set({ status: JobStatus.InvalidJobAgent, message: "No job agent found" })
-      .where(
-        inArray(
-          schema.job.id,
-          wfsWithoutJobAgent.map((j) => j.id),
+      await Promise.all(
+        validJobsWithResolvedVariables.map((j) =>
+          updateJob(this.db, j.id, { status: JobStatus.InProgress }),
         ),
       );
+    }
+
+    await Promise.all(
+      wfsWithoutJobAgent.map((j) =>
+        updateJob(this.db, j.id, {
+          status: JobStatus.InvalidJobAgent,
+          message: "No job agent found",
+        }),
+      ),
+    );
 
     return validJobsWithResolvedVariables;
   }
