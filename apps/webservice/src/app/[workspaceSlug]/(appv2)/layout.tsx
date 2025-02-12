@@ -12,9 +12,7 @@ import { VariableSetDrawer } from "../(app)/_components/variable-set-drawer/Vari
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
 
-export const metadata = {
-  title: "Ctrlplane",
-};
+export const metadata = { title: "Ctrlplane" };
 
 export default async function Layout(props: {
   params: Promise<{ workspaceSlug: string }>;
