@@ -8,7 +8,6 @@ import {
   countDistinct,
   desc,
   eq,
-  isNotNull,
   isNull,
   notInArray,
   sql,
@@ -357,49 +356,6 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .groupBy(subquery.date)
           .orderBy(subquery.date);
       }),
-  }),
-
-  latest: createTRPCRouter({
-    byEnvironmentId: protectedProcedure
-      .input(z.string().uuid())
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.EnvironmentGet)
-            .on({ type: "environment", id: input }),
-      })
-      .query(({ ctx, input }) =>
-        ctx.db
-          .selectDistinctOn([
-            schema.release.deploymentId,
-            schema.releaseJobTrigger.environmentId,
-            schema.releaseJobTrigger.resourceId,
-          ])
-          .from(schema.job)
-          .innerJoin(
-            schema.releaseJobTrigger,
-            eq(schema.releaseJobTrigger.jobId, schema.job.id),
-          )
-          .innerJoin(
-            schema.release,
-            eq(schema.releaseJobTrigger.releaseId, schema.release.id),
-          )
-          .orderBy(desc(schema.job.completedAt))
-          .where(
-            and(
-              isNotNull(schema.job.startedAt),
-              isNotNull(schema.job.completedAt),
-              eq(schema.releaseJobTrigger.environmentId, input),
-            ),
-          )
-          .then((rows) =>
-            rows.map((row) => ({
-              ...row.job,
-              trigger: row.release_job_trigger,
-              release: row.release,
-            })),
-          ),
-      ),
   }),
 
   byReleaseId: protectedProcedure
