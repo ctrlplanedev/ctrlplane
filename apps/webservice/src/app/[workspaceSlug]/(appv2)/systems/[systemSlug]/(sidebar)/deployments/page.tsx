@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
@@ -12,6 +11,7 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
 import { PageHeader } from "../../../../_components/PageHeader";
+import { DeploymentsCard } from "./Card";
 
 export default async function EnvironmentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
@@ -19,8 +19,6 @@ export default async function EnvironmentsPage(props: {
   const params = await props.params;
   const system = await api.system.bySlug(params).catch(() => null);
   if (system == null) notFound();
-
-  const deployments = await api.deployment.bySystemId(system.id);
 
   return (
     <div>
@@ -36,15 +34,7 @@ export default async function EnvironmentsPage(props: {
         </Breadcrumb>
       </PageHeader>
 
-      {deployments.map((deployment) => (
-        <Link
-          key={deployment.id}
-          href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${deployment.slug}`}
-          className="flex items-center border-b p-4"
-        >
-          <div className="flex-1">{deployment.name}</div>
-        </Link>
-      ))}
+      <DeploymentsCard workspaceId={system.workspaceId} systemId={system.id} />
     </div>
   );
 }

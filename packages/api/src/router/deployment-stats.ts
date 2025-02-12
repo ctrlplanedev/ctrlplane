@@ -39,6 +39,7 @@ export const deploymentStatsRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
+        systemId: z.string().uuid().optional(),
         resourceId: z.string().uuid().optional(),
         startDate: z.date(),
         endDate: z.date(),
@@ -51,6 +52,7 @@ export const deploymentStatsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const {
         workspaceId,
+        systemId,
         resourceId,
         startDate,
         endDate,
@@ -157,6 +159,7 @@ export const deploymentStatsRouter = createTRPCRouter({
             isNull(schema.resource.deletedAt),
             search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
             resourceId ? eq(schema.resource.id, resourceId) : undefined,
+            systemId ? eq(schema.system.id, systemId) : undefined,
           ),
         )
         .orderBy(orderFunc(getOrderBy()))

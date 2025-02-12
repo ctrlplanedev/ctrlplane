@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,9 +10,24 @@ import {
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
+import { api } from "~/trpc/server";
 import { PageHeader } from "../_components/PageHeader";
+import { DeploymentsCard } from "../systems/[systemSlug]/(sidebar)/deployments/Card";
 
-export default function DeploymentsPage() {
+export const metadata: Metadata = {
+  title: "Deployments | Ctrlplane",
+};
+
+type Props = {
+  params: Promise<{ workspaceSlug: string }>;
+};
+
+export default async function DeploymentsPage(props: Props) {
+  const { workspaceSlug } = await props.params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
+  if (workspace == null) notFound();
+
+  console.log(workspace);
   return (
     <div>
       <PageHeader>
@@ -27,6 +45,8 @@ export default function DeploymentsPage() {
           </BreadcrumbList>
         </Breadcrumb>
       </PageHeader>
+
+      <DeploymentsCard workspaceId={workspace.id} />
     </div>
   );
 }
