@@ -71,12 +71,6 @@ export default async function SystemsLayout(props: {
                   Environments
                 </SidebarLink>
                 <SidebarLink
-                  icon={<IconCube />}
-                  href={`/${workspace.slug}/systems/${params.systemSlug}/resources`}
-                >
-                  Resources
-                </SidebarLink>
-                <SidebarLink
                   icon={<IconShip />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/deployments`}
                 >
