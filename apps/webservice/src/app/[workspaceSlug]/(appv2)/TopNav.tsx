@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { IconUser } from "@tabler/icons-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
-import { Input } from "@ctrlplane/ui/input";
 
 import { api } from "~/trpc/server";
+import { TopNavSearch } from "./TopNavSearch";
 import { WorkspaceDropdown } from "./WorkspaceDropdown";
 
 export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
@@ -33,12 +33,7 @@ export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
       </div>
 
       <div className="mx-auto flex flex-1 justify-center">
-        <div className="w-[450px]">
-          <Input
-            placeholder="Search for resources, systems, deployments, etc."
-            className="bg-transparent"
-          />
-        </div>
+        <TopNavSearch workspaceId={workspace.id} />
       </div>
 
       <div>
