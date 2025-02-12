@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import {
   IconBook,
+  IconCube,
   IconPlant,
   IconSettings,
   IconShield,
@@ -68,6 +69,12 @@ export default async function SystemsLayout(props: {
                   href={`/${workspace.slug}/systems/${params.systemSlug}/environments`}
                 >
                   Environments
+                </SidebarLink>
+                <SidebarLink
+                  icon={<IconCube />}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/resources`}
+                >
+                  Resources
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconShip />}
