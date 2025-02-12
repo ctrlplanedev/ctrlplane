@@ -42,7 +42,9 @@ export default async function CreateRunbookPage(props: PageProps) {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href={`/systems/${system.slug}/runbooks`}>
+              <BreadcrumbLink
+                href={`/${workspace.slug}/systems/${system.slug}/runbooks`}
+              >
                 Runbooks
               </BreadcrumbLink>
             </BreadcrumbItem>
