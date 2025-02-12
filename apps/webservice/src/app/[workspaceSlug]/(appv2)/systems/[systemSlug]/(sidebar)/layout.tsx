@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import {
   IconBook,
-  IconCube,
   IconPlant,
   IconSettings,
   IconShield,
