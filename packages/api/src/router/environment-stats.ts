@@ -32,13 +32,14 @@ export const environmentStatsRouter = createTRPCRouter({
         .where(eq(SCHEMA.environment.id, input))
         .then(takeFirstOrNull);
 
-      if (environment == null) return [];
+      if (environment?.resourceFilter == null) return [];
 
       const statusRankSubquery = ctx.db
         .select({
           environmentId: SCHEMA.releaseJobTrigger.environmentId,
           resourceId: SCHEMA.releaseJobTrigger.resourceId,
-          rank: sql<number>`row_number() over (partition by ${SCHEMA.release.deploymentId} order by ${SCHEMA.job.startedAt} desc)`.as(
+          systemId: SCHEMA.deployment.systemId,
+          rank: sql<number>`row_number() over (partition by ${SCHEMA.release.deploymentId}, ${SCHEMA.releaseJobTrigger.resourceId} order by ${SCHEMA.job.startedAt} desc)`.as(
             "rank",
           ),
           status: SCHEMA.job.status,
@@ -51,6 +52,10 @@ export const environmentStatsRouter = createTRPCRouter({
         .innerJoin(
           SCHEMA.release,
           eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+        )
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.release.deploymentId, SCHEMA.deployment.id),
         )
         .where(
           and(
@@ -75,6 +80,7 @@ export const environmentStatsRouter = createTRPCRouter({
                     eq(statusRankSubquery.resourceId, SCHEMA.resource.id),
                     ne(statusRankSubquery.status, JobStatus.Successful),
                     eq(statusRankSubquery.rank, 1),
+                    eq(statusRankSubquery.systemId, environment.systemId),
                   ),
                 )
                 .limit(1),

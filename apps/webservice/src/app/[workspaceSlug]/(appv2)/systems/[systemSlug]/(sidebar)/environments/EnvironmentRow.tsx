@@ -5,6 +5,7 @@ import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconDots } from "@tabler/icons-react";
+import { useInView } from "react-intersection-observer";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
@@ -21,14 +22,11 @@ import { api } from "~/trpc/react";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 
-export const EnvironmentRow: React.FC<{
-  environment: Environment;
-}> = ({ environment }) => {
-  const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-  }>();
+type EnvironmentHealthProps = { environment: Environment };
 
+const EnvironmentHealth: React.FC<EnvironmentHealthProps> = ({
+  environment,
+}) => {
   const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: environment.system.workspaceId,
@@ -48,31 +46,53 @@ export const EnvironmentRow: React.FC<{
 
   const isLoading = unhealthyResourcesQ.isLoading || allResourcesQ.isLoading;
 
+  if (isLoading) return <Skeleton className="h-4 w-20 rounded-full" />;
+
   return (
-    <div className="flex items-center border-b p-4">
+    <div className="flex items-center gap-2">
+      <div
+        className={cn(
+          "h-2 w-2 rounded-full",
+          totalCount > 0
+            ? unhealthyCount === 0
+              ? "bg-green-500"
+              : "bg-red-500"
+            : "bg-neutral-600",
+        )}
+      />
+      {totalCount > 0
+        ? `${healthyCount}/${totalCount} Healthy`
+        : "No resources"}
+    </div>
+  );
+};
+
+const LazyEnvironmentHealth: React.FC<EnvironmentHealthProps> = (props) => {
+  const { ref, inView } = useInView();
+  return (
+    <div ref={ref}>
+      {!inView && <Skeleton className="h-4 w-20 rounded-full" />}
+      {inView && <EnvironmentHealth {...props} />}
+    </div>
+  );
+};
+
+export const EnvironmentRow: React.FC<{
+  environment: Environment;
+}> = ({ environment }) => {
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+
+  return (
+    <Link
+      className="flex items-center border-b p-4 hover:bg-muted/50"
+      href={`/${workspaceSlug}/systems/${systemSlug}/environments/${environment.id}`}
+    >
       <div className="flex-1">{environment.name}</div>
       <div className="flex-1">
-        {isLoading && <Skeleton className="h-4 w-20 rounded-full" />}
-        {!isLoading && (
-          <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                "h-2 w-2 rounded-full",
-                totalCount > 0
-                  ? unhealthyCount === 0
-                    ? "bg-green-500"
-                    : "bg-destructive"
-                  : "bg-muted",
-              )}
-            />
-            {totalCount > 0
-              ? `${healthyCount}/${totalCount} Healthy`
-              : "No resources"}
-          </div>
-        )}
-      </div>
-      <div className="flex-1">
-        <div className="text-sm text-muted-foreground">Latest: v1.0.0</div>
+        <LazyEnvironmentHealth environment={environment} />
       </div>
       <div>
         <DropdownMenu>
@@ -97,6 +117,6 @@ export const EnvironmentRow: React.FC<{
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </div>
+    </Link>
   );
 };
