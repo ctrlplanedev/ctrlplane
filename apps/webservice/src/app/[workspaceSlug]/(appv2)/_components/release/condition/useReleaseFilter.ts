@@ -3,12 +3,14 @@ import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
 
+const filterParam = "filter";
+const releaseChannelParam = "release_channel_id";
 export const useReleaseFilter = () => {
   const urlParams = useSearchParams();
   const router = useRouter();
 
-  const filterHash = urlParams.get("filter");
-  const releaseChannelId = urlParams.get("release-channel-id");
+  const filterHash = urlParams.get(filterParam);
+  const releaseChannelId = urlParams.get(releaseChannelParam);
 
   const filter = useMemo<ReleaseCondition | null>(() => {
     if (filterHash == null) return null;
@@ -28,14 +30,14 @@ export const useReleaseFilter = () => {
           : null;
 
       if (releaseChannelId == null)
-        url.searchParams.delete("release-channel-id");
+        url.searchParams.delete(releaseChannelParam);
       if (releaseChannelId != null)
-        url.searchParams.set("release-channel-id", releaseChannelId);
+        url.searchParams.set(releaseChannelParam, releaseChannelId);
 
       if (filterJsonHash != null)
-        url.searchParams.set("filter", filterJsonHash);
+        url.searchParams.set(filterParam, filterJsonHash);
 
-      if (filterJsonHash == null) url.searchParams.delete("filter");
+      if (filterJsonHash == null) url.searchParams.delete(filterParam);
 
       router.replace(`${url.pathname}?${url.searchParams.toString()}`);
     },
