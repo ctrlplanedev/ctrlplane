@@ -15,6 +15,7 @@ import {
   lt,
   lte,
   max,
+  or,
   sql,
   takeFirst,
 } from "@ctrlplane/db";
@@ -121,6 +122,23 @@ export const deploymentStatsRouter = createTRPCRouter({
         return schema.deployment.name;
       };
 
+      // we want to show all deployments in the views, even if they are inactive
+      const activeDeploymentChecks = and(
+        gte(schema.job.createdAt, startDate),
+        lte(schema.job.createdAt, endDate),
+        isNotNull(schema.job.completedAt),
+        isNotNull(schema.job.startedAt),
+        isNull(schema.resource.deletedAt),
+        search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
+        resourceId ? eq(schema.resource.id, resourceId) : undefined,
+      );
+
+      const inactiveDeploymentChecks = or(
+        isNull(schema.job),
+        isNull(schema.release),
+        isNull(schema.releaseJobTrigger),
+      );
+
       const results = await ctx.db
         .select({
           id: schema.deployment.id,
@@ -139,37 +157,25 @@ export const deploymentStatsRouter = createTRPCRouter({
           p90,
         })
         .from(schema.deployment)
-        .innerJoin(
+        .leftJoin(
           schema.release,
           eq(schema.release.deploymentId, schema.deployment.id),
         )
-        .innerJoin(
+        .leftJoin(
           schema.releaseJobTrigger,
           eq(schema.releaseJobTrigger.releaseId, schema.release.id),
         )
-        .innerJoin(
-          schema.job,
-          eq(schema.job.id, schema.releaseJobTrigger.jobId),
-        )
+        .leftJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
         .innerJoin(
           schema.system,
           eq(schema.system.id, schema.deployment.systemId),
         )
-        .innerJoin(
+        .leftJoin(
           schema.resource,
           eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
         )
         .where(
-          and(
-            uuidCheck,
-            gte(schema.job.createdAt, startDate),
-            lte(schema.job.createdAt, endDate),
-            isNotNull(schema.job.completedAt),
-            isNotNull(schema.job.startedAt),
-            isNull(schema.resource.deletedAt),
-            search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
-            resourceId ? eq(schema.resource.id, resourceId) : undefined,
-          ),
+          and(uuidCheck, or(activeDeploymentChecks, inactiveDeploymentChecks)),
         )
         .orderBy(orderFunc(getOrderBy()))
         .groupBy(
