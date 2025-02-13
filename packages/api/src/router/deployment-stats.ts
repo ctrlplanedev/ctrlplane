@@ -184,17 +184,17 @@ export const deploymentStatsRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
+        systemId: z.string().uuid().optional(),
         startDate: z.date(),
         endDate: z.date(),
       }),
     )
     .query(({ ctx, input }) => {
-      const { workspaceId, startDate, endDate } = input;
+      const { workspaceId, systemId, startDate, endDate } = input;
       return ctx.db
         .select({
           totalJobs: count(schema.job.id),
           successRate,
-          totalDuration,
         })
         .from(schema.job)
         .innerJoin(
@@ -220,6 +220,7 @@ export const deploymentStatsRouter = createTRPCRouter({
             lte(schema.job.createdAt, endDate),
             isNotNull(schema.job.completedAt),
             isNotNull(schema.job.startedAt),
+            systemId ? eq(schema.system.id, systemId) : undefined,
           ),
         )
         .then(takeFirst);

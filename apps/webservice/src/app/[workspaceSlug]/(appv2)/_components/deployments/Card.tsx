@@ -11,10 +11,9 @@ import { endOfDay, startOfMonth, subDays, subMonths, subWeeks } from "date-fns";
 
 import { Card } from "@ctrlplane/ui/card";
 import { Input } from "@ctrlplane/ui/input";
+import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/react";
-import { AggregateStats } from "./AggragateStats";
-import { DailyJobsChart } from "./DailyJobsChart";
 import { DeploymentTable } from "./deployment-table/DeploymentTable";
 
 const getStartDate = (timePeriod: string, today: Date) => {
@@ -29,8 +28,9 @@ const getStartDate = (timePeriod: string, today: Date) => {
 export const DeploymentsCard: React.FC<{
   workspaceId: string;
   systemId?: string;
-  timePeriod?: string;
-}> = ({ workspaceId, systemId, timePeriod = "14d" }) => {
+}> = ({ workspaceId, systemId }) => {
+  const [timePeriod, setTimePeriod] = useState("14d");
+
   const params = useSearchParams();
   const orderByParam = params.get("order-by");
   const orderParam = params.get("order");
@@ -56,21 +56,8 @@ export const DeploymentsCard: React.FC<{
 
   return (
     <div className="container m-8 mx-auto">
-      <div className="flex flex-col gap-12">
-        <AggregateStats
-          workspaceId={workspaceId}
-          startDate={startDate}
-          endDate={today}
-        />
-
-        <div className="h-[400px] w-full rounded-md border p-8">
-          <DailyJobsChart
-            workspaceId={workspaceId}
-            startDate={startDate}
-            endDate={today}
-          />
-        </div>
-        <div className="space-y-2">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
           <div className="relative">
             <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -80,15 +67,24 @@ export const DeploymentsCard: React.FC<{
               className="w-80 pl-8"
             />
           </div>
-
-          <Card className="rounded-md">
-            <div>
-              <div className="relative w-full overflow-auto">
-                <DeploymentTable data={data} isLoading={isLoading} />
-              </div>
-            </div>
-          </Card>
+          <Tabs value={timePeriod} onValueChange={setTimePeriod}>
+            <TabsList>
+              <TabsTrigger value="mtd">MTD</TabsTrigger>
+              <TabsTrigger value="7d">7D</TabsTrigger>
+              <TabsTrigger value="14d">14D</TabsTrigger>
+              <TabsTrigger value="30d">30D</TabsTrigger>
+              <TabsTrigger value="3m">3M</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
+
+        <Card className="rounded-md bg-inherit">
+          <div>
+            <div className="relative w-full overflow-auto">
+              <DeploymentTable data={data} isLoading={isLoading} />
+            </div>
+          </div>
+        </Card>
       </div>
     </div>
   );

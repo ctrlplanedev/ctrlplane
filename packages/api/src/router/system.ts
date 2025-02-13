@@ -1,16 +1,34 @@
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, asc, count, createEnv, eq, like, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  asc,
+  count,
+  createEnv,
+  eq,
+  isNotNull,
+  isNull,
+  like,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import {
   createSystem,
   environment,
+  resource,
+  resourceMatchesMetadata,
   system,
   updateSystem,
   workspace,
 } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -183,4 +201,78 @@ export const systemRouter = createTRPCRouter({
         .returning()
         .then(takeFirst),
     ),
+
+  resources: protectedProcedure
+    .input(
+      z.object({
+        systemId: z.string().uuid(),
+        limit: z.number().int().nonnegative().max(1000).default(200),
+        offset: z.number().int().nonnegative().default(0),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.SystemGet)
+          .on({ type: "system", id: input.systemId }),
+    })
+    .query(async ({ ctx, input }) => {
+      const sys = await ctx.db
+        .select()
+        .from(system)
+        .where(eq(system.id, input.systemId))
+        .then(takeFirstOrNull);
+
+      if (!sys) throw new Error("System not found");
+
+      const envsWithFilter = await ctx.db
+        .select()
+        .from(environment)
+        .where(
+          and(
+            eq(environment.systemId, input.systemId),
+            isNotNull(environment.resourceFilter),
+          ),
+        );
+
+      const filter: ResourceCondition = {
+        type: FilterType.Comparison,
+        operator: ComparisonOperator.Or,
+        conditions: envsWithFilter.map((env) => env.resourceFilter!),
+      };
+
+      const itemsPromise = ctx.db
+        .select()
+        .from(resource)
+        .where(
+          and(
+            eq(resource.workspaceId, sys.workspaceId),
+            resourceMatchesMetadata(ctx.db, filter),
+            isNull(resource.deletedAt),
+          ),
+        )
+        .limit(input.limit)
+        .offset(input.offset)
+        .orderBy(asc(resource.name));
+
+      const totalPromise = ctx.db
+        .select({ count: count().as("total") })
+        .from(resource)
+        .where(
+          and(
+            eq(resource.workspaceId, sys.workspaceId),
+            resourceMatchesMetadata(ctx.db, filter),
+            isNull(resource.deletedAt),
+          ),
+        )
+        .then(takeFirst)
+        .then((total) => total.count);
+
+      return Promise.all([itemsPromise, totalPromise]).then(
+        ([items, total]) => ({
+          items,
+          total,
+        }),
+      );
+    }),
 });

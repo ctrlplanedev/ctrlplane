@@ -1,6 +1,7 @@
 "use client";
 
 import type { Workspace } from "@ctrlplane/db/schema";
+import { subWeeks } from "date-fns";
 
 import {
   CardContent,
@@ -17,8 +18,11 @@ export const JobHistoryChart: React.FC<{
   className?: string;
 }> = ({ className, workspace }) => {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const endDate = new Date();
+  const startDate = subWeeks(endDate, 6);
+
   const dailyCounts = api.job.config.byWorkspaceId.dailyCount.useQuery(
-    { workspaceId: workspace.id, timezone },
+    { workspaceId: workspace.id, startDate, endDate, timezone },
     { refetchInterval: 60_000 },
   );
 

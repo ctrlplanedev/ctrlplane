@@ -1,6 +1,6 @@
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { HistorySkeleton } from "../../../../../_components/deployments/DeploymentHistoryGraph";
+import { HistorySkeleton } from "../DeploymentHistoryGraph";
 
 export const SkeletonRow: React.FC<{ index: number }> = ({ index }) => (
   <tr className="border-b">

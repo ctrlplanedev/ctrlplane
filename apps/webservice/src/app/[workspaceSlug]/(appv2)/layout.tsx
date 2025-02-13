@@ -1,6 +1,7 @@
 import React from "react";
 import {
   IconCategory,
+  IconChartBar,
   IconCube,
   IconRocket,
   IconSettings,
@@ -46,11 +47,11 @@ export default async function Layout(props: {
             label="Runbooks"
             href={`/${params.workspaceSlug}/runbooks`}
           /> */}
-            {/* <TopSidebarIcon
-            icon={<IconChartBar />}
-            label="Insights"
-            href={`/${params.workspaceSlug}/insights`}
-          /> */}
+            <TopSidebarIcon
+              icon={<IconChartBar />}
+              label="Insights"
+              href={`/${params.workspaceSlug}/insights`}
+            />
             <div className="flex-grow" />
             {/* <TopSidebarIcon
             icon={<IconPlug />}
