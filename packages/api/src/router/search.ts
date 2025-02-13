@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { PgDialect } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -63,12 +62,16 @@ export const searchRouter = createTRPCRouter({
 
         ORDER BY rank DESC
         LIMIT ${limit}
-        `;
-      const pgDialect = new PgDialect();
-      const queryString = pgDialect.sqlToQuery(query);
-      console.log(queryString);
+      `;
+
       // Search across multiple tables using raw SQL for full text search
-      const results = await ctx.db.execute(query);
+      const results = await ctx.db.execute<{
+        type: string;
+        id: string;
+        name: string;
+        description: string;
+        slug: string;
+      }>(query);
 
       return results.rows;
     }),
