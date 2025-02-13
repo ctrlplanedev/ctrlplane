@@ -16,7 +16,6 @@ import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
-import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
@@ -150,79 +149,79 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const router = useRouter();
 
   return (
-    <div className="h-full w-[calc(100vw-256px-81px)]">
-      <div className="text-sm">
-        <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2">
-          <div className="flex flex-grow items-center gap-2">
-            <ReleaseConditionDialog
-              condition={filter}
-              onChange={setFilter}
-              releaseChannels={deployment.releaseChannels}
-            >
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-                >
-                  <IconFilter className="h-4 w-4" />
-                </Button>
-
-                {filter != null && releaseChannel == null && (
-                  <ReleaseConditionBadge condition={filter} />
-                )}
-              </div>
-            </ReleaseConditionDialog>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
-            Total:
-            <Badge
-              variant="outline"
-              className="rounded-full border-neutral-800 text-inherit"
-            >
-              {releases.data?.total ?? "-"}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <ReleaseDistributionGraphPopover deployment={deployment}>
+    <div className="flex h-full w-full flex-col">
+      <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2 text-sm">
+        <div className="flex flex-grow items-center gap-2">
+          <ReleaseConditionDialog
+            condition={filter}
+            onChange={setFilter}
+            releaseChannels={deployment.releaseChannels}
+          >
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
               >
-                <IconGraph className="h-4 w-4" />
+                <IconFilter className="h-4 w-4" />
               </Button>
-            </ReleaseDistributionGraphPopover>
-            {releaseIds.length > 0 && (
-              <JobHistoryPopover deploymentId={deployment.id}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
-                >
-                  <IconHistory className="h-4 w-4" />
-                </Button>
-              </JobHistoryPopover>
-            )}
-          </div>
+
+              {filter != null && releaseChannel == null && (
+                <ReleaseConditionBadge condition={filter} />
+              )}
+            </div>
+          </ReleaseConditionDialog>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
+          Total:
+          <Badge
+            variant="outline"
+            className="rounded-full border-neutral-800 text-inherit"
+          >
+            {releases.data?.total ?? "-"}
+          </Badge>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ReleaseDistributionGraphPopover deployment={deployment}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+            >
+              <IconGraph className="h-4 w-4" />
+            </Button>
+          </ReleaseDistributionGraphPopover>
+          {releaseIds.length > 0 && (
+            <JobHistoryPopover deploymentId={deployment.id}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex h-7 w-7 flex-shrink-0 items-center gap-1 text-xs"
+              >
+                <IconHistory className="h-4 w-4" />
+              </Button>
+            </JobHistoryPopover>
+          )}
         </div>
       </div>
-      <div className="text-sm">
-        {loading && (
-          <div className="space-y-2 p-4">
-            {_.range(10).map((i) => (
-              <Skeleton
-                key={i}
-                className="h-9 w-full"
-                style={{ opacity: 1 * (1 - i / 10) }}
-              />
-            ))}
-          </div>
-        )}
-        {!loading && releases.data && (
-          <Table>
+
+      {loading && (
+        <div className="space-y-2 p-4">
+          {_.range(10).map((i) => (
+            <Skeleton
+              key={i}
+              className="h-9 w-full"
+              style={{ opacity: 1 * (1 - i / 10) }}
+            />
+          ))}
+        </div>
+      )}
+
+      {!loading && releases.data && (
+        <div className="flex h-full w-[calc(100vw-255px-80px-2px)] overflow-auto text-sm">
+          <Table className="border-b">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
@@ -240,7 +239,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {releases.data.items.map((release, releaseIdx) => {
+              {releases.data.items.map((release) => {
                 return (
                   <TableRow
                     key={release.id}
@@ -280,11 +279,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     </TableCell>
                     {environments.map((env) => (
                       <TableCell
-                        className={cn(
-                          "h-[60px] w-[220px] border-l",
-                          releaseIdx === releases.data.items.length - 1 &&
-                            "border-b",
-                        )}
+                        className="h-[60px] w-[220px] border-l"
                         onClick={(e) => e.stopPropagation()}
                         key={env.id}
                       >
@@ -300,8 +295,8 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               })}
             </TableBody>
           </Table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
