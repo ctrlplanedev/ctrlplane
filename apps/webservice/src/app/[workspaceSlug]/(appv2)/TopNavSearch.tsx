@@ -14,10 +14,10 @@ export const TopNavSearch: React.FC<{ workspaceId: string }> = ({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   useDebounce(() => setDebouncedSearch(search), 300, [search]);
 
-  const { data } = api.search.search.useQuery({
-    workspaceId,
-    search: debouncedSearch,
-  });
+  const { data } = api.search.search.useQuery(
+    { workspaceId, search: debouncedSearch },
+    { enabled: debouncedSearch.length > 0 },
+  );
 
   console.log(data);
 
