@@ -75,7 +75,7 @@
     "react-use": "^17.5.0",
     "react-use-websocket": "^4.10.1",
     "reactflow": "^11.11.3",
-    "recharts": "^2.1.12",
+    "recharts": "^2.15.1",
     "semver": "^7.6.2",
     "sharp": "^0.33.5",
     "slugify": "^1.6.6",

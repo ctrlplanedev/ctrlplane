@@ -8,7 +8,10 @@ import {
   countDistinct,
   desc,
   eq,
+  gt,
+  isNotNull,
   isNull,
+  lte,
   notInArray,
   sql,
   takeFirst,
@@ -242,7 +245,14 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .then((t) => t.count),
       ),
     dailyCount: protectedProcedure
-      .input(z.object({ workspaceId: z.string().uuid(), timezone: z.string() }))
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          timezone: z.string(),
+          startDate: z.date(),
+          endDate: z.date(),
+        }),
+      )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
@@ -250,7 +260,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .query(async ({ ctx, input }) => {
-        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE ${input.timezone})`;
 
         const subquery = ctx.db
           .select({
@@ -279,9 +289,17 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 JobStatus.Cancelled,
                 JobStatus.Skipped,
               ]),
+              gt(schema.releaseJobTrigger.createdAt, input.startDate),
+              lte(schema.releaseJobTrigger.createdAt, input.endDate),
+              isNotNull(schema.job.startedAt),
+              isNotNull(schema.job.completedAt),
             ),
           )
-          .groupBy(dateTruncExpr, schema.job.status)
+          .groupBy(
+            dateTruncExpr,
+            schema.job.status,
+            schema.releaseJobTrigger.createdAt,
+          )
           .as("sub");
 
         return ctx.db
