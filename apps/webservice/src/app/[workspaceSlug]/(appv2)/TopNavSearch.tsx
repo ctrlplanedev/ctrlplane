@@ -37,10 +37,10 @@ export const TopNavSearch: React.FC<{ workspaceId: string }> = ({
   const focus = useFocus();
   useDebounce(() => setDebouncedSearch(search), 300, [search]);
 
-  const { data } = api.search.search.useQuery({
-    workspaceId,
-    search: debouncedSearch,
-  });
+  const { data } = api.search.search.useQuery(
+    { workspaceId, search: debouncedSearch },
+    { enabled: debouncedSearch.length > 0 },
+  );
 
   return (
     <div className="relative w-[600px]">
