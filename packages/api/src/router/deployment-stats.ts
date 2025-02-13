@@ -49,39 +49,45 @@ const totalDuration = sql<number | null>`
 export const deploymentStatsRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
+      authorizationCheck: ({ canUser, input }) => {
+        if ("workspaceId" in input) {
+          return canUser
+            .perform(Permission.DeploymentList)
+            .on({ type: "workspace", id: input.workspaceId });
+        }
+        return canUser
           .perform(Permission.DeploymentList)
-          .on({ type: "workspace", id: input.workspaceId }),
+          .on({ type: "system", id: input.systemId });
+      },
     })
     .input(
-      z.object({
-        workspaceId: z.string().uuid(),
-        systemId: z.string().uuid().optional(),
-        resourceId: z.string().uuid().optional(),
-        startDate: z.date(),
-        endDate: z.date(),
-        timezone: z.string(),
-        orderBy: statsColumn.default(StatsColumn.LastRunAt),
-        order: statsOrder.default(StatsOrder.Desc),
-        search: z.string().optional(),
-      }),
+      z
+        .object({
+          resourceId: z.string().uuid().optional(),
+          startDate: z.date(),
+          endDate: z.date(),
+          timezone: z.string(),
+          orderBy: statsColumn.default(StatsColumn.LastRunAt),
+          order: statsOrder.default(StatsOrder.Desc),
+          search: z.string().optional(),
+        })
+        .and(
+          z
+            .object({ workspaceId: z.string().uuid() })
+            .or(z.object({ systemId: z.string().uuid() })),
+        ),
     )
     .query(async ({ ctx, input }) => {
-      const {
-        workspaceId,
-        systemId,
-        resourceId,
-        startDate,
-        endDate,
-        orderBy,
-        order,
-        search,
-      } = input;
+      const { resourceId, startDate, endDate, orderBy, order, search } = input;
       const orderFunc = (field: unknown) =>
         order === StatsOrder.Asc
           ? sql`${field} ASC NULLS LAST`
           : sql`${field} DESC NULLS LAST`;
+
+      const uuidCheck =
+        "workspaceId" in input
+          ? eq(schema.system.workspaceId, input.workspaceId)
+          : eq(schema.system.id, input.systemId);
 
       const lastRunAt = max(schema.job.startedAt);
       const totalJobs = count(schema.job.id);
@@ -155,7 +161,7 @@ export const deploymentStatsRouter = createTRPCRouter({
         )
         .where(
           and(
-            eq(schema.system.workspaceId, workspaceId),
+            uuidCheck,
             gte(schema.job.createdAt, startDate),
             lte(schema.job.createdAt, endDate),
             isNotNull(schema.job.completedAt),
@@ -163,7 +169,6 @@ export const deploymentStatsRouter = createTRPCRouter({
             isNull(schema.resource.deletedAt),
             search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
             resourceId ? eq(schema.resource.id, resourceId) : undefined,
-            systemId ? eq(schema.system.id, systemId) : undefined,
           ),
         )
         .orderBy(orderFunc(getOrderBy()))
@@ -184,13 +189,13 @@ export const deploymentStatsRouter = createTRPCRouter({
     .input(
       z.object({
         workspaceId: z.string().uuid(),
-        systemId: z.string().uuid().optional(),
         startDate: z.date(),
         endDate: z.date(),
       }),
     )
     .query(({ ctx, input }) => {
-      const { workspaceId, systemId, startDate, endDate } = input;
+      const { startDate, endDate } = input;
+
       return ctx.db
         .select({
           totalJobs: count(schema.job.id),
@@ -215,12 +220,11 @@ export const deploymentStatsRouter = createTRPCRouter({
         )
         .where(
           and(
-            eq(schema.system.workspaceId, workspaceId),
+            eq(schema.system.workspaceId, input.workspaceId),
             gte(schema.job.createdAt, startDate),
             lte(schema.job.createdAt, endDate),
             isNotNull(schema.job.completedAt),
             isNotNull(schema.job.startedAt),
-            systemId ? eq(schema.system.id, systemId) : undefined,
           ),
         )
         .then(takeFirst);

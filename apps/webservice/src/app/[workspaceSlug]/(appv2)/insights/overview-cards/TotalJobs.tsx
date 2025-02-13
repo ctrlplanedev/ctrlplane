@@ -7,20 +7,17 @@ import { api } from "~/trpc/react";
 
 type TotalJobsProps = {
   workspaceId: string;
-  systemId?: string;
   startDate: Date;
   endDate: Date;
 };
 
 export const TotalJobs: React.FC<TotalJobsProps> = ({
   workspaceId,
-  systemId,
   startDate,
   endDate,
 }) => {
   const { data, isLoading } = api.deployment.stats.totals.useQuery({
     workspaceId,
-    systemId,
     startDate,
     endDate,
   });

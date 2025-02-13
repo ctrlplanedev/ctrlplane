@@ -42,14 +42,13 @@ export const DeploymentsCard: React.FC<{
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const { data, isLoading } = api.deployment.stats.byWorkspaceId.useQuery(
     {
-      workspaceId,
-      systemId,
       startDate,
       endDate: today,
       timezone,
-      orderBy: orderByParam != null ? (orderByParam as StatsColumn) : undefined,
-      order: orderParam != null ? (orderParam as StatsOrder) : undefined,
+      orderBy: (orderByParam as StatsColumn | null) ?? undefined,
+      order: (orderParam as StatsOrder | null) ?? undefined,
       search,
+      ...(systemId != null ? { systemId } : { workspaceId }),
     },
     { placeholderData: (prev) => prev, refetchInterval: 60_000 },
   );

@@ -7,22 +7,19 @@ import { api } from "~/trpc/react";
 
 type SuccessRateProps = {
   workspaceId: string;
-  systemId?: string;
   startDate: Date;
   endDate: Date;
 };
 
 export const SuccessRate: React.FC<SuccessRateProps> = ({
   workspaceId,
-  systemId,
   startDate,
   endDate,
 }) => {
   const { data, isLoading } = api.deployment.stats.totals.useQuery({
-    workspaceId,
-    systemId,
     startDate,
     endDate,
+    workspaceId,
   });
 
   const prettySuccessRate = (data?.successRate ?? 0).toFixed(2);
