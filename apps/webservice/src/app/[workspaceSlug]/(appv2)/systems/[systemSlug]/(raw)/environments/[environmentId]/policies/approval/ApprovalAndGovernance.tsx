@@ -1,9 +1,7 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
-import { useRouter } from "next/navigation";
 import { IconLoader2 } from "@tabler/icons-react";
 
 import { Checkbox } from "@ctrlplane/ui/checkbox";
@@ -11,7 +9,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { RadioGroup, RadioGroupItem } from "@ctrlplane/ui/radio-group";
 
-import { api } from "~/trpc/react";
+import { useUpdatePolicy } from "../useUpdatePolicy";
 
 type ApprovalAndGovernanceProps = {
   environmentPolicy: RouterOutputs["environment"]["policy"]["byEnvironmentId"];
@@ -20,20 +18,14 @@ type ApprovalAndGovernanceProps = {
 export const ApprovalAndGovernance: React.FC<ApprovalAndGovernanceProps> = ({
   environmentPolicy,
 }) => {
-  const updatePolicy = api.environment.policy.update.useMutation();
-  const router = useRouter();
-
-  const onUpdate = (data: SCHEMA.UpdateEnvironmentPolicy) =>
-    updatePolicy
-      .mutateAsync({ id: environmentPolicy.id, data })
-      .then(() => router.refresh());
+  const { onUpdate, isPending } = useUpdatePolicy(environmentPolicy.id);
 
   return (
     <div className="space-y-10 p-2">
       <div className="flex flex-col gap-1">
         <h1 className="flex items-center gap-2 text-lg font-medium">
           Approval & Governance
-          {updatePolicy.isPending && (
+          {isPending && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <IconLoader2 className="h-4 w-4 animate-spin" />
               Saving...
