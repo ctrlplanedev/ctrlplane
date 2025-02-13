@@ -47,7 +47,7 @@ export const SystemSelector: React.FC<{
                 <CommandItem
                   key={system.id}
                   onSelect={() => {
-                    router.push(`/${workspaceSlug}/systems2/${system.slug}`);
+                    router.push(`/${workspaceSlug}/systems/${system.slug}`);
                     router.refresh();
                   }}
                 >
