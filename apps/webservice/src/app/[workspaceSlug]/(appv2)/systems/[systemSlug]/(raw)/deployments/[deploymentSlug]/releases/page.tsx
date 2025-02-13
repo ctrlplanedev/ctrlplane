@@ -7,7 +7,11 @@ import { api } from "~/trpc/server";
 import { DeploymentPageContent } from "./DeploymentPageContent";
 
 type PageProps = {
-  params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
+  params: Promise<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>;
   searchParams: Promise<{ "release-channel-id"?: string }>;
 };
 
