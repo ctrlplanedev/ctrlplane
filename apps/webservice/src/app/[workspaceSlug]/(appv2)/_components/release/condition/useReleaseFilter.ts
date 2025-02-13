@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
 
 const filterParam = "filter";
-const releaseChannelParam = "release_channel_id";
+const releaseChannelParam = "release_channel_id_filter";
 export const useReleaseFilter = () => {
   const urlParams = useSearchParams();
   const router = useRouter();
