@@ -48,7 +48,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import type { VariableValue } from "./variable-data";
-import { ResourceConditionRender } from "~/app/[workspaceSlug]/(appv2)/_components/resources/resource-condition/ResourceConditionRender";
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionRender";
 import { api } from "~/trpc/react";
 import {
   VariableBooleanInput,

@@ -33,8 +33,8 @@ import {
   resourceCondition,
 } from "@ctrlplane/validators/resources";
 
-import { ResourceConditionRender } from "~/app/[workspaceSlug]/(appv2)/_components/resources/resource-condition/ResourceConditionRender";
-import { ResourceList } from "~/app/[workspaceSlug]/(appv2)/_components/resources/resource-condition/ResourceList";
+import { ResourceConditionRender } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionRender";
+import { ResourceList } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceList";
 import { api } from "~/trpc/react";
 
 const ResourceViewsCombobox: React.FC<{
