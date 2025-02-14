@@ -17,7 +17,6 @@ import {
 import { api } from "~/trpc/server";
 import { VariableTable } from "../variables/VariableTable";
 import { EditDeploymentSection } from "./EditDeploymentSection";
-import { JobAgentSection } from "./JobAgentSection";
 import { SidebarSection } from "./SettingsSidebar";
 
 const Variables: React.FC<{
@@ -154,8 +153,6 @@ export default async function DeploymentPage(props: {
   const { items: systems } = await api.system.list({ workspaceId });
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
-  const jobAgents = await api.job.agent.byWorkspaceId(workspaceId);
-  const jobAgent = jobAgents.find((a) => a.id === deployment.jobAgentId);
 
   return (
     <div className="container mx-auto flex max-w-5xl gap-12">
@@ -171,14 +168,6 @@ export default async function DeploymentPage(props: {
           deployment={deployment}
           systems={systems}
           workspaceId={workspaceId}
-        />
-
-        <JobAgentSection
-          jobAgents={jobAgents}
-          workspace={workspace}
-          jobAgent={jobAgent}
-          jobAgentConfig={deployment.jobAgentConfig}
-          deploymentId={deployment.id}
         />
 
         <Variables workspaceId={workspaceId} deployment={deployment} />
