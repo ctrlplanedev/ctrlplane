@@ -26,9 +26,10 @@ const getStartDate = (timePeriod: string, today: Date) => {
 };
 
 export const DeploymentsCard: React.FC<{
-  workspaceId: string;
+  workspaceId?: string;
   systemId?: string;
-}> = ({ workspaceId, systemId }) => {
+  environmentId?: string;
+}> = ({ workspaceId, systemId, environmentId }) => {
   const [timePeriod, setTimePeriod] = useState("14d");
 
   const params = useSearchParams();
@@ -48,9 +49,17 @@ export const DeploymentsCard: React.FC<{
       orderBy: (orderByParam as StatsColumn | null) ?? undefined,
       order: (orderParam as StatsOrder | null) ?? undefined,
       search,
-      ...(systemId != null ? { systemId } : { workspaceId }),
+      ...(environmentId != null
+        ? { environmentId }
+        : systemId != null
+          ? { systemId }
+          : { workspaceId: workspaceId ?? "" }),
     },
-    { placeholderData: (prev) => prev, refetchInterval: 60_000 },
+    {
+      placeholderData: (prev) => prev,
+      refetchInterval: 60_000,
+      enabled: workspaceId != null || systemId != null || environmentId != null,
+    },
   );
 
   return (

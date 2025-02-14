@@ -51,14 +51,18 @@ export const deploymentStatsRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) => {
-        if ("workspaceId" in input) {
+        if ("workspaceId" in input)
           return canUser
             .perform(Permission.DeploymentList)
             .on({ type: "workspace", id: input.workspaceId });
-        }
+        if ("systemId" in input)
+          return canUser
+            .perform(Permission.DeploymentList)
+            .on({ type: "system", id: input.systemId });
+
         return canUser
-          .perform(Permission.DeploymentList)
-          .on({ type: "system", id: input.systemId });
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input.environmentId });
       },
     })
     .input(
@@ -75,7 +79,8 @@ export const deploymentStatsRouter = createTRPCRouter({
         .and(
           z
             .object({ workspaceId: z.string().uuid() })
-            .or(z.object({ systemId: z.string().uuid() })),
+            .or(z.object({ systemId: z.string().uuid() }))
+            .or(z.object({ environmentId: z.string().uuid() })),
         ),
     )
     .query(async ({ ctx, input }) => {
@@ -88,7 +93,9 @@ export const deploymentStatsRouter = createTRPCRouter({
       const uuidCheck =
         "workspaceId" in input
           ? eq(schema.system.workspaceId, input.workspaceId)
-          : eq(schema.system.id, input.systemId);
+          : "systemId" in input
+            ? eq(schema.system.id, input.systemId)
+            : eq(schema.releaseJobTrigger.environmentId, input.environmentId);
 
       const lastRunAt = max(schema.job.startedAt);
       const totalJobs = count(schema.job.id);
