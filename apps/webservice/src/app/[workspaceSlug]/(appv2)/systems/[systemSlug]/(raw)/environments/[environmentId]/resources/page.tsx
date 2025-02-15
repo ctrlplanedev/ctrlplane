@@ -14,7 +14,7 @@ export default async function ResourcesPage(props: {
   if (environment == null) notFound();
 
   return (
-    <div className="container m-8 mx-auto">
+    <div className="m-8 mx-auto">
       <EditFilterForm environment={environment} workspaceId={workspace.id} />
     </div>
   );
