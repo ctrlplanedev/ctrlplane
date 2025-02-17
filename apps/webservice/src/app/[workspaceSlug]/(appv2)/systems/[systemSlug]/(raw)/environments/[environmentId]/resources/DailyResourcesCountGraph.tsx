@@ -32,8 +32,6 @@ export const DailyResourceCountGraph: React.FC<
 
   const chartData = countsQuery.data ?? [];
 
-  console.log({ chartData });
-
   return (
     <ResponsiveContainer width="100%" height={250}>
       <ComposedChart data={chartData}>

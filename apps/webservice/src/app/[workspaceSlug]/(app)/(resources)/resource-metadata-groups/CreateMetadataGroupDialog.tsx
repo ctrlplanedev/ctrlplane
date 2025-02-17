@@ -64,8 +64,7 @@ export const CreateMetadataGroupDialog: React.FC<{
     control: form.control,
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    console.log(">>> values", { values });
+  const onSubmit = form.handleSubmit((values) =>
     createMetadataGroup
       .mutateAsync({
         ...values,
@@ -74,8 +73,8 @@ export const CreateMetadataGroupDialog: React.FC<{
       })
       .then(() => utils.resource.metadataGroup.groups.invalidate())
       .then(() => setOpen(false))
-      .then(() => router.refresh());
-  });
+      .then(() => router.refresh()),
+  );
 
   return (
     <Dialog
