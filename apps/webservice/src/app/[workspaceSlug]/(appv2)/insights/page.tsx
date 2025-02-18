@@ -8,12 +8,9 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
 } from "@ctrlplane/ui/breadcrumb";
-import { Separator } from "@ctrlplane/ui/separator";
-import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { api } from "~/trpc/server";
 import { PageHeader } from "../_components/PageHeader";
-import { Sidebars } from "../../sidebars";
 import { DailyJobsChart } from "./DailyJobsChart";
 import { SuccessRate } from "./overview-cards/SuccessRate";
 import { TotalJobs } from "./overview-cards/TotalJobs";
@@ -38,8 +35,6 @@ export default async function InsightsPage(props: Props) {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger className="-ml-1" name={Sidebars.Workspace} />
-        <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">

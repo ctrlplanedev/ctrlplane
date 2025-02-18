@@ -1,3 +1,5 @@
+import { IconMenu2 } from "@tabler/icons-react";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -18,7 +20,9 @@ export default function GroupingsPage() {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger name={Sidebars.Resources} />
+        <SidebarTrigger name={Sidebars.Resources}>
+          <IconMenu2 className="h-4 w-4" />
+        </SidebarTrigger>
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
