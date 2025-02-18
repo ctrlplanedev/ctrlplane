@@ -22,6 +22,7 @@ import {
 
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 
 export default async function EnvironmentLayout(props: {
@@ -66,8 +67,14 @@ export default async function EnvironmentLayout(props: {
         </div>
       </PageHeader>
 
-      <SidebarProvider className="relative">
-        <Sidebar className="absolute bottom-0 left-0">
+      <SidebarProvider
+        className="relative"
+        sidebarNames={[Sidebars.Environment]}
+      >
+        <Sidebar
+          className="absolute bottom-0 left-0"
+          name={Sidebars.Environment}
+        >
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>

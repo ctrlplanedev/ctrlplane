@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { IconMenu2 } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -11,6 +12,7 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { DeploymentsCard } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/Card";
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 
 export default async function EnvironmentsPage(props: {
@@ -23,7 +25,9 @@ export default async function EnvironmentsPage(props: {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger />
+        <SidebarTrigger name={Sidebars.System}>
+          <IconMenu2 className="h-4 w-4" />
+        </SidebarTrigger>
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
