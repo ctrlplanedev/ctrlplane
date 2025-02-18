@@ -15,6 +15,7 @@ import {
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { SidebarGroupKinds } from "./SidebarKinds";
 import { SidebarLink } from "./SidebarLink";
@@ -29,8 +30,8 @@ export default async function Layout(props: {
 
   return (
     <div className="relative">
-      <SidebarProvider>
-        <Sidebar className="absolute left-0 top-0">
+      <SidebarProvider sidebarNames={[Sidebars.Resources]}>
+        <Sidebar className="absolute left-0 top-0" name={Sidebars.Resources}>
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>

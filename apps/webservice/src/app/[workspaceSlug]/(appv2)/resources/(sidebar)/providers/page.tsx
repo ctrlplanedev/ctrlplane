@@ -9,6 +9,7 @@ import { Card } from "@ctrlplane/ui/card";
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { PageHeader } from "../../../_components/PageHeader";
 
 export const metadata = {
@@ -19,7 +20,7 @@ export default function ProvidersPage() {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger />
+        <SidebarTrigger name={Sidebars.Resources} />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>

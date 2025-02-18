@@ -10,12 +10,13 @@ import {
 } from "@ctrlplane/ui/sidebar";
 
 import { SidebarNavMain } from "../SidebarNavMain";
+import { Sidebars } from "../sidebars";
 
 export const SettingsSidebar: React.FC<{ workspace: Workspace }> = ({
   workspace,
 }) => {
   return (
-    <Sidebar>
+    <Sidebar name={Sidebars.Workspace}>
       <SidebarHeader>
         <SidebarMenuButton asChild tooltip="Settings">
           <Link

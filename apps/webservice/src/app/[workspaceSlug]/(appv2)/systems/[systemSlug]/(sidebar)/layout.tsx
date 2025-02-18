@@ -19,6 +19,7 @@ import {
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { SidebarLink } from "../../../resources/(sidebar)/SidebarLink";
 import { SystemSelector } from "../../SystemSelector";
@@ -50,8 +51,11 @@ export default async function SystemsLayout(props: {
 
   return (
     <div className="relative rounded-tl-lg">
-      <SidebarProvider>
-        <Sidebar className="absolute left-0 top-0 rounded-tl-lg">
+      <SidebarProvider sidebarNames={[Sidebars.System]}>
+        <Sidebar
+          className="absolute left-0 top-0 rounded-tl-lg"
+          name={Sidebars.System}
+        >
           <SidebarHeader className="rounded-tl-lg">
             <SystemSelector
               workspaceSlug={workspace.slug}

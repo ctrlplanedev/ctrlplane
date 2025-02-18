@@ -11,6 +11,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { CreateVariableSetDialog } from "./CreateVariableSetDialog";
 import { VariableSetGettingStarted } from "./GettingStartedVariableSets";
@@ -30,7 +31,7 @@ export default async function SystemVariableSetsPage(props: {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger />
+        <SidebarTrigger name={Sidebars.System} />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>

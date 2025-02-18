@@ -9,6 +9,7 @@ import {
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { PageHeader } from "../../../_components/PageHeader";
 import { ResourcePageContent } from "./ResourcePageContent";
@@ -30,7 +31,7 @@ export default async function ResourcesPage(props: {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger />
+        <SidebarTrigger name={Sidebars.Resources} />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>

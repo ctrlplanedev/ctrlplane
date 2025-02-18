@@ -22,6 +22,7 @@ import {
 
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 
 export default async function DeploymentLayout(props: {
@@ -67,8 +68,11 @@ export default async function DeploymentLayout(props: {
         </div>
       </PageHeader>
 
-      <SidebarProvider className="relative">
-        <Sidebar className="absolute left-0 top-0">
+      <SidebarProvider
+        className="relative"
+        sidebarNames={[Sidebars.Deployment]}
+      >
+        <Sidebar className="absolute left-0 top-0" name={Sidebars.Deployment}>
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
