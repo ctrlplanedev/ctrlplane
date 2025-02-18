@@ -90,8 +90,15 @@ export const DailyResourceCountGraph: React.FC<
             });
           }}
           fontSize={14}
+          axisLine={false}
         />
-        <YAxis tickLine={false} fontSize={14} />
+        <YAxis
+          tickLine={false}
+          fontSize={14}
+          orientation="right"
+          axisLine={false}
+          tickFormatter={(value) => (value === 0 ? "" : value)}
+        />
       </ComposedChart>
     </ResponsiveContainer>
   );

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconArrowLeft, IconChartBar } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -18,12 +18,14 @@ import {
   SidebarInset,
   SidebarMenu,
   SidebarProvider,
+  SidebarTrigger,
 } from "@ctrlplane/ui/sidebar";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
+import { EnvironmentAnalyticsSidebar } from "./EnvironmentAnalyticsSidebar";
 
 export default async function EnvironmentLayout(props: {
   children: React.ReactNode;
@@ -40,7 +42,11 @@ export default async function EnvironmentLayout(props: {
   const url = (tab: string) =>
     `/${params.workspaceSlug}/systems/${params.systemSlug}/environments/${params.environmentId}/${tab}`;
   return (
-    <div className="h-full">
+    <SidebarProvider
+      sidebarNames={[Sidebars.Environment, Sidebars.EnvironmentAnalytics]}
+      className="flex h-full w-full flex-col"
+      defaultOpen={[Sidebars.Environment]}
+    >
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
           <Link
@@ -65,14 +71,17 @@ export default async function EnvironmentLayout(props: {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
+
+        <SidebarTrigger name={Sidebars.EnvironmentAnalytics}>
+          <IconChartBar className="h-4 w-4" />
+        </SidebarTrigger>
       </PageHeader>
 
-      <SidebarProvider
-        className="relative"
-        sidebarNames={[Sidebars.Environment]}
-      >
+      <div className="relative flex h-full w-full flex-row-reverse overflow-x-hidden">
+        <EnvironmentAnalyticsSidebar environmentId={environment.id} />
+        <SidebarInset>{props.children}</SidebarInset>
         <Sidebar
-          className="absolute bottom-0 left-0"
+          className="absolute left-0 top-0 flex-1"
           name={Sidebars.Environment}
         >
           <SidebarContent>
@@ -88,10 +97,7 @@ export default async function EnvironmentLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-64px-2px)]">
-          {props.children}
-        </SidebarInset>
-      </SidebarProvider>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
