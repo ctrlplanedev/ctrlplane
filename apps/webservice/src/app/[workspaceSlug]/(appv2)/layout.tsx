@@ -66,7 +66,7 @@ export default async function Layout(props: {
             />
           </aside>
 
-          <div className="h-full flex-1 overflow-auto rounded-tl-lg border-l border-t bg-neutral-950">
+          <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-full flex-1 overflow-auto rounded-tl-lg border-l border-t bg-neutral-950">
             {props.children}
           </div>
         </div>
