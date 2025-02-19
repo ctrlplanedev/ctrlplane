@@ -1,24 +1,11 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { SiGithub } from "@icons-pack/react-simple-icons";
-import { IconMenu2 } from "@tabler/icons-react";
 
 import { auth } from "@ctrlplane/auth";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@ctrlplane/ui/breadcrumb";
 import { Button } from "@ctrlplane/ui/button";
 import { Card } from "@ctrlplane/ui/card";
-import { Separator } from "@ctrlplane/ui/separator";
-import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
-import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
-import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { env } from "~/env";
 import { api } from "~/trpc/server";
 import { DeleteGithubUserButton } from "./DeleteGithubUserButton";
@@ -54,86 +41,61 @@ export default async function GitHubIntegrationPage(props: {
   const githubUser = await api.github.user.byUserId(session.user.id);
 
   return (
-    <div>
-      <PageHeader>
-        <SidebarTrigger name={Sidebars.Workspace}>
-          <IconMenu2 className="h-4 w-4" />
-        </SidebarTrigger>
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink
-                href={`/${workspaceSlug}/settings/workspace/integrations`}
-              >
-                Integrations
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>GitHub</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </PageHeader>
+    <div className="container mx-auto flex max-w-3xl flex-col gap-12 pt-8">
+      <div className="flex items-center gap-4">
+        <SiGithub className="h-14 w-14" />
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold">GitHub</h1>
+          <p className="text-sm text-muted-foreground">
+            Connect a Github organization to Ctrlplane to configure job agents.
+          </p>
+        </div>
+      </div>
 
-      <div className="container mx-auto flex max-w-3xl flex-col gap-12 pt-8">
-        <div className="flex items-center gap-4">
-          <SiGithub className="h-14 w-14" />
-          <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-bold">GitHub</h1>
-            <p className="text-sm text-muted-foreground">
-              Connect a Github organization to Ctrlplane to configure job
-              agents.
+      <div className="flex w-[768px] flex-col gap-12">
+        <Card className="flex items-center justify-between rounded-md p-4">
+          <div className="flex flex-col">
+            <p className="text-neutral-100">
+              {githubUser != null
+                ? "Personal account connected"
+                : "Connect your personal account"}
+            </p>
+            <p className="w-[500px] text-wrap text-sm text-muted-foreground">
+              {githubUser != null
+                ? "Your GitHub account is connected to Ctrlplane"
+                : "Connect your GitHub account to Ctrlplane to add Github organizations to your workspaces"}
             </p>
           </div>
-        </div>
-
-        <div className="flex w-[768px] flex-col gap-12">
-          <Card className="flex items-center justify-between rounded-md p-4">
-            <div className="flex flex-col">
-              <p className="text-neutral-100">
-                {githubUser != null
-                  ? "Personal account connected"
-                  : "Connect your personal account"}
-              </p>
-              <p className="w-[500px] text-wrap text-sm text-muted-foreground">
-                {githubUser != null
-                  ? "Your GitHub account is connected to Ctrlplane"
-                  : "Connect your GitHub account to Ctrlplane to add Github organizations to your workspaces"}
-              </p>
-            </div>
-            {githubUser == null && (
-              <Link
-                href={githubAuthUrl(
-                  baseUrl,
-                  githubUrl ?? "",
-                  githubBotClientId ?? "",
-                  session.user.id,
-                  workspaceSlug,
-                )}
-              >
-                <Button variant="secondary">Connect</Button>
-              </Link>
-            )}
-            {githubUser != null && (
-              <DeleteGithubUserButton githubUserId={githubUser.userId} />
-            )}
-          </Card>
-
-          {isGithubConfigured && (
-            <GithubConnectedEntities
-              githubUser={githubUser}
-              workspaceId={workspace.id}
-              loading={false}
-              githubConfig={{
-                url: githubUrl,
-                botName: githubBotName,
-                clientId: githubBotClientId,
-              }}
-            />
+          {githubUser == null && (
+            <Link
+              href={githubAuthUrl(
+                baseUrl,
+                githubUrl ?? "",
+                githubBotClientId ?? "",
+                session.user.id,
+                workspaceSlug,
+              )}
+            >
+              <Button variant="secondary">Connect</Button>
+            </Link>
           )}
-        </div>
+          {githubUser != null && (
+            <DeleteGithubUserButton githubUserId={githubUser.userId} />
+          )}
+        </Card>
+
+        {isGithubConfigured && (
+          <GithubConnectedEntities
+            githubUser={githubUser}
+            workspaceId={workspace.id}
+            loading={false}
+            githubConfig={{
+              url: githubUrl,
+              botName: githubBotName,
+              clientId: githubBotClientId,
+            }}
+          />
+        )}
       </div>
     </div>
   );
