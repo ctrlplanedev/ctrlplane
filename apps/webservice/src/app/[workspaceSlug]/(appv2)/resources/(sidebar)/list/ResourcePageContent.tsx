@@ -20,6 +20,7 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
+  isComparisonCondition,
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
 
@@ -86,24 +87,36 @@ export const ResourcePageContent: React.FC<{
 
   useDebounce(
     () => {
-      if (search === "") return;
-      setFilter({
-        type: "comparison",
-        operator: "and",
-        conditions: [
-          // Keep any non-name conditions from existing filter
-          ...(filter && "conditions" in filter
-            ? filter.conditions.filter(
-                (c: ResourceCondition) => c.type !== "name",
-              )
-            : []),
-          {
-            type: "name",
-            operator: ColumnOperator.Contains,
-            value: search,
-          },
-        ],
-      });
+      if (search !== "") {
+        setFilter({
+          type: "comparison",
+          operator: "and",
+          conditions: [
+            // Keep any non-name conditions from existing filter
+            ...(filter && "conditions" in filter
+              ? filter.conditions.filter(
+                  (c: ResourceCondition) => c.type !== "name",
+                )
+              : []),
+            {
+              type: "name",
+              operator: ColumnOperator.Contains,
+              value: search,
+            },
+          ],
+        });
+        return;
+      }
+
+      if (filter == null || !isComparisonCondition(filter)) return;
+      const otherConditions = filter.conditions.filter(
+        (c: ResourceCondition) => c.type !== "name",
+      );
+      setFilter(
+        otherConditions.length === 0
+          ? null
+          : { ...filter, conditions: otherConditions },
+      );
     },
     500,
     [search],
@@ -121,8 +134,7 @@ export const ResourcePageContent: React.FC<{
 
   const onFilterChange = (condition: ResourceCondition | null) => {
     const cond = condition ?? defaultCondition;
-    if (isEmptyCondition(cond)) setFilter(null);
-    if (!isEmptyCondition(cond)) setFilter(cond);
+    setFilter(isEmptyCondition(cond) ? null : cond);
   };
 
   const router = useRouter();
