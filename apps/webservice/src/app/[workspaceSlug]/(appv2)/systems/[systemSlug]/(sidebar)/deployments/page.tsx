@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { IconMenu2 } from "@tabler/icons-react";
+import { IconMenu2, IconPlus } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -7,6 +7,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@ctrlplane/ui/breadcrumb";
+import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
@@ -14,6 +15,7 @@ import { DeploymentsCard } from "~/app/[workspaceSlug]/(appv2)/_components/deplo
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
+import { CreateDeploymentDialog } from "./CreateDeployment";
 
 export default async function EnvironmentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
@@ -24,18 +26,27 @@ export default async function EnvironmentsPage(props: {
 
   return (
     <div>
-      <PageHeader>
-        <SidebarTrigger name={Sidebars.System}>
-          <IconMenu2 className="h-4 w-4" />
-        </SidebarTrigger>
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbPage>Deployments</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+      <PageHeader className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger name={Sidebars.System}>
+            <IconMenu2 className="h-4 w-4" />
+          </SidebarTrigger>
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbPage>Deployments</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+
+        <CreateDeploymentDialog systemId={system.id}>
+          <Button className="flex items-center gap-2" variant="outline">
+            <IconPlus className="h-4 w-4" />
+            New Deployment
+          </Button>
+        </CreateDeploymentDialog>
       </PageHeader>
 
       <DeploymentsCard workspaceId={system.workspaceId} systemId={system.id} />
