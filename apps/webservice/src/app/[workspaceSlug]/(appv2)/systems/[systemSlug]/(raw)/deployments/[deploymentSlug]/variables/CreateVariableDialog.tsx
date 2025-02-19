@@ -29,13 +29,13 @@ import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 import { VariableConfig } from "@ctrlplane/validators/variables";
 
+import { api } from "~/trpc/react";
 import {
   BooleanConfigFields,
   ConfigTypeSelector,
   NumberConfigFields,
   StringConfigFields,
-} from "~/app/[workspaceSlug]/(app)/systems-old/[systemSlug]/_components/variables/ConfigFields";
-import { api } from "~/trpc/react";
+} from "./ConfigFields";
 
 const schema = z.object({
   key: z.string(),
@@ -59,10 +59,7 @@ export const CreateVariableDialog: React.FC<{
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
-    await create.mutateAsync({
-      ...values,
-      deploymentId,
-    });
+    await create.mutateAsync({ ...values, deploymentId });
     router.refresh();
     setOpen(false);
   });
