@@ -1,3 +1,5 @@
+"use client";
+
 import type * as schema from "@ctrlplane/db/schema";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import React, { useState } from "react";
