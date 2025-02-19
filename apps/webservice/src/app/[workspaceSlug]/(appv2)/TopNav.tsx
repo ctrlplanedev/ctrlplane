@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconUser } from "@tabler/icons-react";
 
@@ -38,10 +39,12 @@ export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
 
       <div>
         <Avatar className="size-7">
-          <AvatarImage src={viewer.image ?? undefined} />
-          <AvatarFallback>
-            <IconUser />
-          </AvatarFallback>
+          <Link href={`/${workspaceSlug}/settings/account/profile`}>
+            <AvatarImage src={viewer.image ?? undefined} />
+            <AvatarFallback>
+              <IconUser />
+            </AvatarFallback>
+          </Link>
         </Avatar>
       </div>
     </nav>
