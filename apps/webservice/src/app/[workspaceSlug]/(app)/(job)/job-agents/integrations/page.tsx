@@ -28,16 +28,12 @@ const AgentHeading: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => <div className="space-y-1">{children}</div>;
 
-export default async function AgentPage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function AgentPage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
 
-  const {
-    workspaceSlug
-  } = params;
+  const { workspaceSlug } = params;
 
   return (
     <div className="p-16">

@@ -5,11 +5,9 @@ import { Badge } from "@ctrlplane/ui/badge";
 import { api } from "~/trpc/server";
 import { CombinationsTable } from "./CombincationsTable";
 
-export default async function ResourceMetadataGroupPages(
-  props: {
-    params: Promise<{ workspaceSlug: string; groupId: string }>;
-  }
-) {
+export default async function ResourceMetadataGroupPages(props: {
+  params: Promise<{ workspaceSlug: string; groupId: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug, groupId } = params;
   const metadataGroup = await api.resource.metadataGroup

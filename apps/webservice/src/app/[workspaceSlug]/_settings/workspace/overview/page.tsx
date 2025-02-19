@@ -16,11 +16,9 @@ import { Button } from "@ctrlplane/ui/button";
 
 export const metadata = { title: "Overview - Workspace" };
 
-export default async function OverviewPage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function OverviewPage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   return (

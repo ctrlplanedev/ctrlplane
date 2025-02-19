@@ -8,11 +8,9 @@ import { PanelProvider } from "./SidepanelContext";
 
 export const metadata: Metadata = { title: "Environments - Systems" };
 
-export default async function SystemEnvironmentPage(
-  props: {
-    params: Promise<{ workspaceSlug: string; systemSlug: string }>;
-  }
-) {
+export default async function SystemEnvironmentPage(props: {
+  params: Promise<{ workspaceSlug: string; systemSlug: string }>;
+}) {
   const params = await props.params;
   const sys = await api.system.bySlug(params);
   const envs = await api.environment.bySystemId(sys.id);

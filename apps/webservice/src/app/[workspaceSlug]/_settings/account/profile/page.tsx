@@ -12,11 +12,9 @@ import { GithubRedirectButton } from "./GithubRedirectButton";
 
 const defaultAvatar = "/apple-touch-icon.png";
 
-export default async function AccountSettingProfilePage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function AccountSettingProfilePage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   const session = await auth();

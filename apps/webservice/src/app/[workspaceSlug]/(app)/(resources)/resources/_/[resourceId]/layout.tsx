@@ -1,6 +1,6 @@
-"use client";;
-import { use } from "react";
+"use client";
 
+import { use } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -12,17 +12,13 @@ import {
   navigationMenuTriggerStyle,
 } from "@ctrlplane/ui/navigation-menu";
 
-export default function ResourceLayout(
-  props: {
-    params: Promise<{ workspaceSlug: string; resourceId: string }>;
-    children: React.ReactNode;
-  }
-) {
+export default function ResourceLayout(props: {
+  params: Promise<{ workspaceSlug: string; resourceId: string }>;
+  children: React.ReactNode;
+}) {
   const params = use(props.params);
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const pathname = usePathname();
   const baseUrl = `/${params.workspaceSlug}/resources/${params.resourceId}`;

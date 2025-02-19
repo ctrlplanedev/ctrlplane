@@ -7,11 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import { api } from "~/trpc/server";
 import { PieResourcesByKind, PieResourcesByProvider } from "./ResourceCharts";
 
-export default async function EnvironmentPage(
-  props: {
-    params: Promise<{ environmentId: string }>;
-  }
-) {
+export default async function EnvironmentPage(props: {
+  params: Promise<{ environmentId: string }>;
+}) {
   const params = await props.params;
   const environment = await api.environment.byId(params.environmentId);
   if (environment == null) notFound();

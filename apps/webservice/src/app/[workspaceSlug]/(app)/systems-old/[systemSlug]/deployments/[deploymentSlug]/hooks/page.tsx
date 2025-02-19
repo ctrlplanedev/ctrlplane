@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 import { api } from "~/trpc/server";
 import { HooksTable } from "./HooksTable";
 
-export default async function HooksPage(
-  props: {
-    params: Promise<{ workspaceSlug: string; systemSlug: string; deploymentSlug: string }>;
-  }
-) {
+export default async function HooksPage(props: {
+  params: Promise<{
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  }>;
+}) {
   const params = await props.params;
   const workspace = await api.workspace.bySlug(params.workspaceSlug);
   if (!workspace) notFound();

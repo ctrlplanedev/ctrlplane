@@ -95,11 +95,9 @@ const ManagedProviderBadge: React.FC<{
   </Badge>
 );
 
-export default async function ResourceProvidersPage(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function ResourceProvidersPage(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
