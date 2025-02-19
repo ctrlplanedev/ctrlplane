@@ -64,7 +64,7 @@ export const VariableTable: React.FC<{
       <div className="mb-[1px]">
         <Input
           value={search}
-          className="rounded-none rounded-t-lg border-none hover:ring-0"
+          className="rounded-none rounded-t-lg border-none hover:ring-0 focus-visible:ring-0"
           type="text"
           placeholder="Filter variables..."
           onChange={(e) => setSearch(e.target.value)}
