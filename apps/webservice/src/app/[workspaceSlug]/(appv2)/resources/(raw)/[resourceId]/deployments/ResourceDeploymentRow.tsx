@@ -69,7 +69,7 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
       className="h-16 cursor-pointer border-b"
       onClick={() => {
         router.push(
-          `/${workspaceSlug}/systems/${stats.systemSlug}/deployments/${stats.id}/releases`,
+          `/${workspaceSlug}/systems/${stats.systemSlug}/deployments/${stats.slug}/releases`,
         );
       }}
     >
