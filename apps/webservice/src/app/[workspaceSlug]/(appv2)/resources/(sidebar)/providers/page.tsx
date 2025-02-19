@@ -7,12 +7,23 @@ import { SiAmazon, SiGooglecloud } from "@icons-pack/react-simple-icons";
 import {
   IconBrandAzure,
   IconExternalLink,
+  IconMenu2,
+  IconPlus,
   IconSettings,
 } from "@tabler/icons-react";
 import LZString from "lz-string";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@ctrlplane/ui/breadcrumb";
+import { buttonVariants } from "@ctrlplane/ui/button";
+import { Separator } from "@ctrlplane/ui/separator";
+import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -29,6 +40,8 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
+import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { ResourceProvidersGettingStarted } from "./ResourceProvidersGettingStarted";
@@ -121,77 +134,102 @@ export default async function ResourceProvidersPage(props: {
     return { ...provider, filterLink };
   });
 
-  console.log(providers);
-
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-50px)] overflow-auto">
-      <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Resources</TableHead>
-            <TableHead>Kind</TableHead>
-            <TableHead>Created</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {providers.map((provider) => (
-            <TableRow
-              key={provider.id}
-              className="cursor-pointer border-b-neutral-800/50"
-            >
-              <TableCell>
-                <div className="flex h-full items-center gap-2">
-                  <span className="text-base">{provider.name}</span>
-                  {isCustomProvider(provider) ? (
-                    <CustomProviderTooltipBadge />
-                  ) : (
-                    <ManagedProviderBadge provider={provider} />
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Link href={provider.filterLink} target="_blank">
-                  <Badge
-                    variant="outline"
-                    className="flex h-6 w-fit items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
-                  >
-                    <IconExternalLink className="h-4 w-4" />
-                    {provider.resourceCount}{" "}
-                    {provider.resourceCount === 1 ? "resource" : "resources"}
-                  </Badge>
-                </Link>
-              </TableCell>
-              <TableCell>
-                {provider.kinds.length === 0 && (
-                  <span className="text-xs italic text-muted-foreground">
-                    No resources
-                  </span>
-                )}
-                {provider.kinds.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto">
-                    {provider.kinds.map((kind) => (
-                      <Badge
-                        key={kind.kind}
-                        variant="outline"
-                        className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
-                      >
-                        {kind.version}:{kind.kind}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {new Date(provider.createdAt).toLocaleDateString()}
-              </TableCell>
-              <TableCell className="text-right">
-                <ProviderActionsDropdown provider={provider} />
-              </TableCell>
+    <div>
+      <PageHeader className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <SidebarTrigger name={Sidebars.Resources}>
+            <IconMenu2 className="h-4 w-4" />
+          </SidebarTrigger>
+          <Separator orientation="vertical" className="mr-2 h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem className="hidden md:block">
+                <BreadcrumbPage>Resources</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+        <Link
+          className={cn(
+            buttonVariants({ variant: "outline", size: "sm" }),
+            "gap-1.5",
+          )}
+          href={`/${workspaceSlug}/resources/providers/integrations`}
+        >
+          <IconPlus className="h-4 w-4" /> Add Provider
+        </Link>
+      </PageHeader>
+
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-50px)] overflow-auto">
+        <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Resources</TableHead>
+              <TableHead>Kind</TableHead>
+              <TableHead>Created</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {providers.map((provider) => (
+              <TableRow
+                key={provider.id}
+                className="cursor-pointer border-b-neutral-800/50"
+              >
+                <TableCell>
+                  <div className="flex h-full items-center gap-2">
+                    <span className="text-base">{provider.name}</span>
+                    {isCustomProvider(provider) ? (
+                      <CustomProviderTooltipBadge />
+                    ) : (
+                      <ManagedProviderBadge provider={provider} />
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Link href={provider.filterLink} target="_blank">
+                    <Badge
+                      variant="outline"
+                      className="flex h-6 w-fit items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
+                    >
+                      <IconExternalLink className="h-4 w-4" />
+                      {provider.resourceCount}{" "}
+                      {provider.resourceCount === 1 ? "resource" : "resources"}
+                    </Badge>
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {provider.kinds.length === 0 && (
+                    <span className="text-xs italic text-muted-foreground">
+                      No resources
+                    </span>
+                  )}
+                  {provider.kinds.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto">
+                      {provider.kinds.map((kind) => (
+                        <Badge
+                          key={kind.kind}
+                          variant="outline"
+                          className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
+                        >
+                          {kind.version}:{kind.kind}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {new Date(provider.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  <ProviderActionsDropdown provider={provider} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
