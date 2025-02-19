@@ -8,10 +8,12 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
 } from "@ctrlplane/ui/breadcrumb";
+import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 
 import { api } from "~/trpc/server";
 import { PageHeader } from "../_components/PageHeader";
 import { DailyJobsChart } from "./DailyJobsChart";
+import { DailyResourceCountGraph } from "./DailyResourcesCountGraph";
 import { SuccessRate } from "./overview-cards/SuccessRate";
 import { TotalJobs } from "./overview-cards/TotalJobs";
 import { WorkspaceResources } from "./overview-cards/WorkspaceResources";
@@ -31,6 +33,12 @@ export default async function InsightsPage(props: Props) {
 
   const endDate = endOfDay(new Date());
   const startDate = startOfDay(subDays(endDate, 30));
+
+  const resources = await api.resource.stats.dailyCount.byWorkspaceId({
+    workspaceId: workspace.id,
+    startDate,
+    endDate,
+  });
 
   return (
     <div>
@@ -60,6 +68,14 @@ export default async function InsightsPage(props: Props) {
         </div>
 
         <DailyJobsChart workspaceId={workspace.id} />
+        <Card className="rounded-md">
+          <CardHeader>
+            <CardTitle>Resources over 30 days</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full pl-0 pr-6">
+            <DailyResourceCountGraph chartData={resources} />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
