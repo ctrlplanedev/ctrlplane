@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { IconMenu2 } from "@tabler/icons-react";
 
+import { Badge } from "@ctrlplane/ui/badge";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,24 +15,19 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { CreateMetadataGroupDialog } from "./CreateMetadataGroupDialog";
-import { ResourceGroupsTable } from "./ResourceGroupTable";
-import { ResourceMetadataGroupsGettingStarted } from "./ResourceMetadataGroupsGettingStarted";
+import { CreateMetadataGroupDialog } from "../CreateMetadataGroupDialog";
+import { CombinationsTable } from "./CombincationsTable";
 
-export const metadata = {
-  title: "Resource Groupings - Ctrlplane",
-};
-
-export default async function GroupingsPage(props: {
-  params: Promise<{ workspaceSlug: string }>;
+export default async function ResourceMetadataGroupPages(props: {
+  params: Promise<{ workspaceSlug: string; groupId: string }>;
 }) {
-  const { workspaceSlug } = await props.params;
+  const params = await props.params;
+  const { workspaceSlug, groupId } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
-
-  const metadataGroups = await api.resource.metadataGroup.groups(workspace.id);
-  if (metadataGroups.length === 0)
-    return <ResourceMetadataGroupsGettingStarted workspace={workspace} />;
+  const metadataGroup = await api.resource.metadataGroup
+    .byId(groupId)
+    .catch(notFound);
   return (
     <div>
       <PageHeader className="flex items-center justify-between">
@@ -54,11 +50,24 @@ export default async function GroupingsPage(props: {
           </Button>
         </CreateMetadataGroupDialog>
       </PageHeader>
+      <div>
+        <div className="flex items-center gap-3 border-b p-4 px-8 text-xl">
+          <span className="">{metadataGroup.name}</span>
+          <Badge
+            className="rounded-full text-muted-foreground"
+            variant="outline"
+          >
+            {metadataGroup.combinations.length}
+          </Badge>
+        </div>
 
-      <ResourceGroupsTable
-        workspace={workspace}
-        metadataGroups={metadataGroups}
-      />
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-110px)] w-full overflow-auto">
+          <CombinationsTable
+            workspaceSlug={workspaceSlug}
+            combinations={metadataGroup.combinations}
+          />
+        </div>
+      </div>
     </div>
   );
 }
