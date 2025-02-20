@@ -24,6 +24,7 @@ import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
+import { DeploymentCTA } from "./DeploymentCTA";
 
 export default async function DeploymentLayout(props: {
   children: React.ReactNode;
@@ -66,6 +67,8 @@ export default async function DeploymentLayout(props: {
             </BreadcrumbList>
           </Breadcrumb>
         </div>
+
+        <DeploymentCTA deploymentId={deployment.id} />
       </PageHeader>
 
       <SidebarProvider

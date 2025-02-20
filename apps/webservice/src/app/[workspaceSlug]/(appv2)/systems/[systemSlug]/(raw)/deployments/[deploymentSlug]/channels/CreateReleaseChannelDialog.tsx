@@ -1,6 +1,5 @@
 "use client";
 
-import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseCondition } from "@ctrlplane/validators/releases";
 import { useState } from "react";
 import Link from "next/link";
@@ -29,6 +28,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { toast } from "@ctrlplane/ui/toast";
 import {
   defaultCondition,
   isEmptyCondition,
@@ -42,33 +42,23 @@ import { api } from "~/trpc/react";
 
 type CreateReleaseChannelDialogProps = {
   deploymentId: string;
-  releaseChannels: SCHEMA.ReleaseChannel[];
   children: React.ReactNode;
 };
 
 const getFinalFilter = (filter?: ReleaseCondition) =>
   filter && !isEmptyCondition(filter) ? filter : undefined;
 
+const schema = z.object({
+  name: z.string().min(1).max(50),
+  description: z.string().max(1000).optional(),
+  releaseFilter: releaseCondition
+    .optional()
+    .refine((cond) => cond == null || isValidReleaseCondition(cond)),
+});
+
 export const CreateReleaseChannelDialog: React.FC<
   CreateReleaseChannelDialogProps
-> = ({ deploymentId, children, releaseChannels }) => {
-  // schema needs to be in the component scope to use the releaseChannels
-  // to validate the name uniqueness
-  const schema = z.object({
-    name: z
-      .string()
-      .min(1)
-      .max(50)
-      .refine(
-        (name) => !releaseChannels.some((rc) => rc.name === name),
-        "Release channel name must be unique",
-      ),
-    description: z.string().max(1000).optional(),
-    releaseFilter: releaseCondition
-      .optional()
-      .refine((cond) => cond == null || isValidReleaseCondition(cond)),
-  });
-
+> = ({ deploymentId, children }) => {
   const [open, setOpen] = useState(false);
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
     workspaceSlug: string;
@@ -87,7 +77,8 @@ export const CreateReleaseChannelDialog: React.FC<
       .mutateAsync({ ...data, deploymentId, releaseFilter: filter })
       .then(() => form.reset(data))
       .then(() => router.refresh())
-      .then(() => setOpen(false));
+      .then(() => setOpen(false))
+      .catch((error) => toast.error(error.message));
   });
 
   const { releaseFilter } = form.watch();
