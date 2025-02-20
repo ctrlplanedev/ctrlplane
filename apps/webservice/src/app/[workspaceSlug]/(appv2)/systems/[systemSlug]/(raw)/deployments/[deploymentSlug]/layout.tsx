@@ -83,9 +83,7 @@ export default async function DeploymentLayout(props: {
                 <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
                 <SidebarLink href={url("releases")}>Releases</SidebarLink>
                 <SidebarLink href={url("channels")}>Channels</SidebarLink>
-                <SidebarLink href={url("targets")}>Targets</SidebarLink>
                 <SidebarLink href={url("variables")}>Variables</SidebarLink>
-                <SidebarLink href={url("settings")}>Settings</SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
