@@ -323,6 +323,7 @@ export const deploymentVariableRouter = createTRPCRouter({
           eq(deploymentVariableValue.variableId, deploymentVariable.id),
         )
         .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
+        .orderBy(asc(deploymentVariable.key))
         .then((rows) =>
           _.chain(rows)
             .groupBy((r) => r.deployment_variable.id)
@@ -330,6 +331,7 @@ export const deploymentVariableRouter = createTRPCRouter({
               ...r[0]!.deployment_variable,
               resourceFilter: r[0]!.deployment_variable_value.resourceFilter,
               value: r[0]!.deployment_variable_value,
+              deployment: { ...r[0]!.deployment, system: r[0]!.system },
             }))
             .value(),
         );
