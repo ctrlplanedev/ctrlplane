@@ -1,13 +1,13 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { api } from "~/trpc/server";
 
 export default async function SystemsPage(props: {
-  params: Promise<{ workspaceSlug: string }>;
+  params: Promise<{ workspaceSlug: string; systemSlug: string }>;
 }) {
-  const params = await props.params;
-  const workspace = await api.workspace.bySlug(params.workspaceSlug);
+  const { workspaceSlug, systemSlug } = await props.params;
+  const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
 
-  return <></>;
+  return redirect(`/${workspaceSlug}/systems/${systemSlug}/environments`);
 }
