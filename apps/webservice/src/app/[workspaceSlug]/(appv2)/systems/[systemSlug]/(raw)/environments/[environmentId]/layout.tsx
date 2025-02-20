@@ -83,7 +83,6 @@ export default async function EnvironmentLayout(props: {
                 <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
                 <SidebarLink href={url("resources")}>Resources</SidebarLink>
                 <SidebarLink href={url("variables")}>Variables</SidebarLink>
-                <SidebarLink href={url("settings")}>Settings</SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>

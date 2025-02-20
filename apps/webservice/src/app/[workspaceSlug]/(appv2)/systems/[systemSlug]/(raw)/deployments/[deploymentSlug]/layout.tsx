@@ -79,7 +79,7 @@ export default async function DeploymentLayout(props: {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarLink href={url("resources")}>Properties</SidebarLink>
+                <SidebarLink href={url("properties")}>Properties</SidebarLink>
                 <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
                 <SidebarLink href={url("releases")}>Releases</SidebarLink>
                 <SidebarLink href={url("channels")}>Channels</SidebarLink>
