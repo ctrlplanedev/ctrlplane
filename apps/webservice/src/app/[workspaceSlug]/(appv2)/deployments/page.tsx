@@ -37,7 +37,9 @@ export default async function DeploymentsPage(props: Props) {
         </Breadcrumb>
       </PageHeader>
 
-      <DeploymentsCard workspaceId={workspace.id} />
+      <div className="container m-8 mx-auto">
+        <DeploymentsCard workspaceId={workspace.id} />
+      </div>
     </div>
   );
 }
