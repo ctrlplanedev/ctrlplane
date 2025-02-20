@@ -49,7 +49,12 @@ export default async function EnvironmentsPage(props: {
         </CreateDeploymentDialog>
       </PageHeader>
 
-      <DeploymentsCard workspaceId={system.workspaceId} systemId={system.id} />
+      <div className="container m-8 mx-auto">
+        <DeploymentsCard
+          workspaceId={system.workspaceId}
+          systemId={system.id}
+        />
+      </div>
     </div>
   );
 }

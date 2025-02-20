@@ -63,37 +63,35 @@ export const DeploymentsCard: React.FC<{
   );
 
   return (
-    <div className="container m-8 mx-auto">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-80 pl-8"
-            />
-          </div>
-          <Tabs value={timePeriod} onValueChange={setTimePeriod}>
-            <TabsList>
-              <TabsTrigger value="mtd">MTD</TabsTrigger>
-              <TabsTrigger value="7d">7D</TabsTrigger>
-              <TabsTrigger value="14d">14D</TabsTrigger>
-              <TabsTrigger value="30d">30D</TabsTrigger>
-              <TabsTrigger value="3m">3M</TabsTrigger>
-            </TabsList>
-          </Tabs>
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="relative">
+          <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-80 pl-8"
+          />
         </div>
-
-        <Card className="rounded-md bg-inherit">
-          <div>
-            <div className="relative w-full overflow-auto">
-              <DeploymentTable data={data} isLoading={isLoading} />
-            </div>
-          </div>
-        </Card>
+        <Tabs value={timePeriod} onValueChange={setTimePeriod}>
+          <TabsList>
+            <TabsTrigger value="mtd">MTD</TabsTrigger>
+            <TabsTrigger value="7d">7D</TabsTrigger>
+            <TabsTrigger value="14d">14D</TabsTrigger>
+            <TabsTrigger value="30d">30D</TabsTrigger>
+            <TabsTrigger value="3m">3M</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
+
+      <Card className="rounded-md bg-inherit">
+        <div>
+          <div className="relative w-full overflow-auto">
+            <DeploymentTable data={data} isLoading={isLoading} />
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

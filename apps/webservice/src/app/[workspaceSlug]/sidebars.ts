@@ -4,6 +4,7 @@ export enum Sidebars {
   Resources = "resources",
   Deployment = "deployment",
   Environment = "environment",
+  EnvironmentAnalytics = "environment-analytics",
 }
 
 export const allSidebars = Object.values(Sidebars);

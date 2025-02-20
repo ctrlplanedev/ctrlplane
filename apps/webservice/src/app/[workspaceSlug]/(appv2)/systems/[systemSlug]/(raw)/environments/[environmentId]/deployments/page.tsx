@@ -5,5 +5,9 @@ export default async function DeploymentsPage(props: {
 }) {
   const { environmentId } = await props.params;
 
-  return <DeploymentsCard environmentId={environmentId} />;
+  return (
+    <div className="container m-8 mx-auto">
+      <DeploymentsCard environmentId={environmentId} />
+    </div>
+  );
 }
