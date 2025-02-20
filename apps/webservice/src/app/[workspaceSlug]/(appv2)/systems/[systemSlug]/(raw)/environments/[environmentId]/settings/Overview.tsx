@@ -15,8 +15,8 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
+import { MetadataInfo } from "~/app/[workspaceSlug]/(appv2)/_components/MetadataInfo";
 import { api } from "~/trpc/react";
-import { MetadataInfo } from "./MetadataInfo";
 
 const name = z.string().min(1).max(100);
 const description = z.string().max(1000).nullable();

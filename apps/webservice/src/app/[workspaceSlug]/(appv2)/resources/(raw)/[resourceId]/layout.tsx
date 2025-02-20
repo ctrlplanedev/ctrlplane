@@ -23,7 +23,7 @@ export default async function Layout(props: {
   const resource = await api.resource.byId(params.resourceId);
   if (resource == null) notFound();
   return (
-    <div className="flex h-full flex-col">
+    <div className="h-full">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
           <Link href={`/${params.workspaceSlug}/resources`}>
@@ -49,10 +49,10 @@ export default async function Layout(props: {
         </div>
       </PageHeader>
 
-      <div className="flex h-full flex-col gap-4 p-4">
+      <div className="h-full space-y-4 p-4">
         <h1 className="text-2xl font-bold">{resource.name}</h1>
         <DeploymentTabs />
-        <div className="h-full p-4">{props.children}</div>
+        <div className="h-full overflow-auto">{props.children}</div>
       </div>
     </div>
   );

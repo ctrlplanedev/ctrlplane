@@ -1,3 +1,5 @@
+"use client";
+
 import { IconSparkles } from "@tabler/icons-react";
 
 import { Input } from "@ctrlplane/ui/input";
