@@ -317,6 +317,7 @@ function Calendar({
           return (
             <div className="inline-flex gap-2">
               <Select
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
                 defaultValue={calendarMonth.date.getMonth().toString()}
                 onValueChange={(value) => {
                   const newDate = new Date(calendarMonth.date);
@@ -339,6 +340,7 @@ function Calendar({
                 </SelectContent>
               </Select>
               <Select
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call
                 defaultValue={calendarMonth.date.getFullYear().toString()}
                 onValueChange={(value) => {
                   const newDate = new Date(calendarMonth.date);
