@@ -3,17 +3,10 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
-import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
-import _ from "lodash";
 import { useInView } from "react-intersection-observer";
-import { isPresent } from "ts-is-present";
 
 import { Button } from "@ctrlplane/ui/button";
-import {
-  ComparisonOperator,
-  FilterType,
-} from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
@@ -60,46 +53,20 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     (b) => b.environmentId === environment.id,
   );
 
-  const { data: workspace, isLoading: isWorkspaceLoading } =
-    api.workspace.bySlug.useQuery(workspaceSlug);
-  const workspaceId = workspace?.id ?? "";
-
   const { data: statuses, isLoading: isStatusesLoading } =
     api.release.status.byEnvironmentId.useQuery(
       { releaseId: release.id, environmentId: environment.id },
       { refetchInterval: 2_000 },
     );
 
-  const { resourceFilter: envResourceFilter } = environment;
-  const { resourceFilter: deploymentResourceFilter } = deployment;
-
-  const resourceFilter: ResourceCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [envResourceFilter, deploymentResourceFilter].filter(isPresent),
-  };
-
-  const { data: resourcesResult, isLoading: isResourcesLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId, filter: resourceFilter, limit: 0 },
-      { enabled: workspaceId !== "" && envResourceFilter != null },
-    );
-
-  const total = resourcesResult?.total ?? 0;
-
   const { setReleaseChannelId } = useReleaseChannelDrawer();
 
   const isLoading =
-    isWorkspaceLoading ||
-    isStatusesLoading ||
-    isResourcesLoading ||
-    isBlockedEnvsLoading ||
-    isApprovalLoading;
+    isStatusesLoading || isBlockedEnvsLoading || isApprovalLoading;
 
   if (isLoading)
     return <p className="text-xs text-muted-foreground">Loading...</p>;
 
-  const hasResources = total > 0;
   const isAlreadyDeployed = statuses != null && statuses.length > 0;
 
   const hasJobAgent = deployment.jobAgentId != null;
@@ -162,13 +129,6 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     return (
       <div className="text-center text-xs text-muted-foreground/70">
         No job agent
-      </div>
-    );
-
-  if (!hasResources)
-    return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        No resources
       </div>
     );
 
