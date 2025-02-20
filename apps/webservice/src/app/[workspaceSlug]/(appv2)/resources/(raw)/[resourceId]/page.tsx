@@ -12,5 +12,9 @@ export default async function ResourcePage(props: { params: Params }) {
   const resource = await api.resource.byId(resourceId);
   if (resource == null) notFound();
 
-  return <ResourceDeploymentsTable resource={resource} />;
+  return (
+    <div className="container">
+      <ResourceDeploymentsTable resource={resource} />
+    </div>
+  );
 }
