@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-} from "@ctrlplane/ui/breadcrumb";
+import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/server";
 import { DeploymentsCard } from "../_components/deployments/Card";
-import { PageHeader } from "../_components/PageHeader";
+import { CreateDeploymentDialog } from "../_components/deployments/CreateDeployment";
 
 export const metadata: Metadata = {
   title: "Deployments | Ctrlplane",
@@ -26,20 +21,16 @@ export default async function DeploymentsPage(props: Props) {
   if (workspace == null) notFound();
 
   return (
-    <div>
-      <PageHeader>
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Deployments</BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </PageHeader>
-
-      <div className="container m-8 mx-auto">
-        <DeploymentsCard workspaceId={workspace.id} />
+    <div className="container m-8 mx-auto space-y-12">
+      <div className="flex w-full items-center justify-between">
+        <h2 className="text-2xl font-bold">Deployments</h2>
+        <CreateDeploymentDialog>
+          <Button variant="outline" size="sm">
+            Create Deployment
+          </Button>
+        </CreateDeploymentDialog>
       </div>
+      <DeploymentsCard workspaceId={workspace.id} />
     </div>
   );
 }

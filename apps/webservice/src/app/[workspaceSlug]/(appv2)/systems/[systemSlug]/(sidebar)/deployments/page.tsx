@@ -12,10 +12,10 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { DeploymentsCard } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/Card";
+import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { CreateDeploymentDialog } from "./CreateDeployment";
 
 export default async function EnvironmentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
