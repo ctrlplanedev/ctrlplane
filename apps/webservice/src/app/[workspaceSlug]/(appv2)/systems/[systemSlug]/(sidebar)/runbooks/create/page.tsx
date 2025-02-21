@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { IconMenu2 } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -38,7 +39,9 @@ export default async function CreateRunbookPage(props: PageProps) {
   return (
     <div>
       <PageHeader>
-        <SidebarTrigger name={Sidebars.System} />
+        <SidebarTrigger name={Sidebars.System}>
+          <IconMenu2 className="h-4 w-4" />
+        </SidebarTrigger>
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>

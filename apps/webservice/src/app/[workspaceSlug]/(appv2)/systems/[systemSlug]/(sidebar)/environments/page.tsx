@@ -10,9 +10,9 @@ import {
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
+import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { PageHeader } from "../../../../_components/PageHeader";
 import { EnvironmentRow } from "./EnvironmentRow";
 
 export default async function EnvironmentsPage(props: {
