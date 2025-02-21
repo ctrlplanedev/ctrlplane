@@ -11,6 +11,7 @@ import { EnvironmentDrawer } from "../(app)/_components/environment-drawer/Envir
 import { EnvironmentPolicyDrawer } from "../(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { VariableSetDrawer } from "../(app)/_components/variable-set-drawer/VariableSetDrawer";
 import { ReleaseChannelDrawer } from "./_components/channel/drawer/ReleaseChannelDrawer";
+import { JobDrawer } from "./_components/job/drawer/JobDrawer";
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
 
@@ -76,6 +77,7 @@ export default async function Layout(props: {
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
       <ReleaseChannelDrawer />
+      <JobDrawer />
     </>
   );
 }
