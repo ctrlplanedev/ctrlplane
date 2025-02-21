@@ -8,7 +8,6 @@ import {
   IconBrandAzure,
   IconExternalLink,
   IconMenu2,
-  IconPlus,
   IconSettings,
 } from "@tabler/icons-react";
 import LZString from "lz-string";
@@ -157,7 +156,7 @@ export default async function ResourceProvidersPage(props: {
           )}
           href={`/${workspaceSlug}/resources/providers/integrations`}
         >
-          <IconPlus className="h-4 w-4" /> Add Provider
+          Add Provider
         </Link>
       </PageHeader>
 
