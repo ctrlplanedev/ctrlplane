@@ -28,7 +28,7 @@ export const DeploymentTable: React.FC<DeploymentTableProps> = ({
         <TableRow className="h-16 hover:bg-transparent">
           <TableHead className="p-4">
             <TableSortHeader orderByKey={StatsColumn.Name}>
-              Workflow
+              Deployment
             </TableSortHeader>
           </TableHead>
 
