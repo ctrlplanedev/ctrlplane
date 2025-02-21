@@ -4,16 +4,26 @@ import type {
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
 import React from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { IconArrowLeft } from "@tabler/icons-react";
 import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbPage,
+} from "@ctrlplane/ui/breadcrumb";
 import { Card } from "@ctrlplane/ui/card";
+import { Separator } from "@ctrlplane/ui/separator";
 import {
   ResourceFilterType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
+import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { api } from "~/trpc/server";
 import { VariableTable } from "../variables/VariableTable";
 import { EditDeploymentSection } from "./EditDeploymentSection";
@@ -155,22 +165,41 @@ export default async function DeploymentPage(props: {
   if (deployment == null) return notFound();
 
   return (
-    <div className="container mx-auto flex max-w-5xl gap-12">
-      <div className="sticky top-8 my-8 h-full w-[150px] flex-shrink-0">
-        <div>
-          <SidebarSection id="properties">Properties</SidebarSection>
-          <SidebarSection id="job-agent">Job Agent</SidebarSection>
-          <SidebarSection id="variables">Variables</SidebarSection>
+    <div>
+      <PageHeader className="justify-between">
+        <div className="flex shrink-0 items-center gap-4">
+          <Link
+            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
+          >
+            <IconArrowLeft className="size-5" />
+          </Link>
+          <Separator orientation="vertical" className="h-4" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbPage>Properties</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
-      </div>
-      <div className="mb-16 flex-grow space-y-10">
-        <EditDeploymentSection
-          deployment={deployment}
-          systems={systems}
-          workspaceId={workspaceId}
-        />
+      </PageHeader>
+      <div className="container mx-auto flex max-w-5xl gap-12">
+        <div className="sticky top-8 my-8 h-full w-[150px] flex-shrink-0">
+          <div>
+            <SidebarSection id="properties">Properties</SidebarSection>
+            <SidebarSection id="job-agent">Job Agent</SidebarSection>
+            <SidebarSection id="variables">Variables</SidebarSection>
+          </div>
+        </div>
+        <div className="mb-16 flex-grow space-y-10">
+          <EditDeploymentSection
+            deployment={deployment}
+            systems={systems}
+            workspaceId={workspaceId}
+          />
 
-        <Variables workspaceId={workspaceId} deployment={deployment} />
+          <Variables workspaceId={workspaceId} deployment={deployment} />
+        </div>
       </div>
     </div>
   );

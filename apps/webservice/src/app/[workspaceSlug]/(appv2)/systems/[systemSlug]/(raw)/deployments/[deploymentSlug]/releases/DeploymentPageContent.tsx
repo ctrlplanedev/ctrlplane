@@ -149,7 +149,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   const router = useRouter();
 
   return (
-    <div className="flex h-full w-full flex-col">
+    <div className="flex flex-col">
       <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2 text-sm">
         <div className="flex flex-grow items-center gap-2">
           <ReleaseConditionDialog
@@ -220,7 +220,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
       )}
 
       {!loading && releases.data && (
-        <div className="flex h-full w-[calc(100vw-255px-80px-2px)] overflow-auto text-sm">
+        <div className="flex h-full overflow-auto text-sm">
           <Table className="border-b">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
