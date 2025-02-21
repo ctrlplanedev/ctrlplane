@@ -40,9 +40,9 @@ import {
 } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
+import { getStatusColor, statusColor } from "../status-color";
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
-import { getStatusColor, statusColor } from "./status-color";
 
 const ReleaseIcon: React.FC<{
   statuses: JobStatusType[];

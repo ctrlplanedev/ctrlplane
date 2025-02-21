@@ -44,8 +44,8 @@ import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_component
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/useReleaseFilter";
 import { api } from "~/trpc/react";
 import { JobHistoryPopover } from "./JobHistoryPopover";
+import { LazyReleaseEnvironmentCell } from "./release-cell/ReleaseEnvironmentCell";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
-import { LazyReleaseEnvironmentCell } from "./ReleaseEnvironmentCell";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
