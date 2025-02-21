@@ -68,7 +68,7 @@ export default async function DeploymentLayout(props: {
           </Breadcrumb>
         </div>
 
-        <DeploymentCTA deploymentId={deployment.id} />
+        <DeploymentCTA deploymentId={deployment.id} systemId={system.id} />
       </PageHeader>
 
       <SidebarProvider

@@ -10,9 +10,10 @@ import { CreateReleaseChannelDialog } from "./channels/CreateReleaseChannelDialo
 import { CreateReleaseDialog } from "./releases/CreateRelease";
 import { CreateVariableDialog } from "./variables/CreateVariableDialog";
 
-export const DeploymentCTA: React.FC<{ deploymentId: string }> = ({
-  deploymentId,
-}) => {
+export const DeploymentCTA: React.FC<{
+  deploymentId: string;
+  systemId: string;
+}> = ({ deploymentId, systemId }) => {
   const pathname = usePathname();
   const tab = pathname.split("/").pop();
 
@@ -28,7 +29,7 @@ export const DeploymentCTA: React.FC<{ deploymentId: string }> = ({
 
   if (tab === "releases")
     return (
-      <CreateReleaseDialog deploymentId={deploymentId}>
+      <CreateReleaseDialog deploymentId={deploymentId} systemId={systemId}>
         <Button variant="outline" className="flex items-center gap-2">
           <IconRocket className="h-4 w-4" />
           New Release
