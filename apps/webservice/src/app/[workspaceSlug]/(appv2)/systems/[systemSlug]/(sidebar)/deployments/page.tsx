@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { IconMenu2, IconPlus } from "@tabler/icons-react";
+import { IconMenu2 } from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -42,9 +42,12 @@ export default async function EnvironmentsPage(props: {
         </div>
 
         <CreateDeploymentDialog systemId={system.id}>
-          <Button className="flex items-center gap-2" variant="outline">
-            <IconPlus className="h-4 w-4" />
-            New Deployment
+          <Button
+            className="flex items-center gap-2"
+            variant="outline"
+            size="sm"
+          >
+            Create Deployment
           </Button>
         </CreateDeploymentDialog>
       </PageHeader>
