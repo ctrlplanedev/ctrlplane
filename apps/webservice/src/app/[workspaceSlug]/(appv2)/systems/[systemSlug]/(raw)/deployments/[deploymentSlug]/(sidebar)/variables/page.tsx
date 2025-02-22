@@ -2,28 +2,16 @@ import type {
   ComparisonCondition,
   ResourceCondition,
 } from "@ctrlplane/validators/resources";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
 import LZString from "lz-string";
 import { isPresent } from "ts-is-present";
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from "@ctrlplane/ui/breadcrumb";
-import { Button } from "@ctrlplane/ui/button";
-import { Separator } from "@ctrlplane/ui/separator";
 import {
   ResourceFilterType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
-import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { api } from "~/trpc/server";
-import { CreateVariableDialog } from "./CreateVariableDialog";
 import { VariableTable } from "./VariableTable";
 
 export default async function VariablesPage(props: {
@@ -134,34 +122,9 @@ export default async function VariablesPage(props: {
   const variables = await Promise.all(variablesPromises);
 
   return (
-    <div>
-      <PageHeader className="justify-between">
-        <div className="flex shrink-0 items-center gap-4">
-          <Link
-            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
-          >
-            <IconArrowLeft className="size-5" />
-          </Link>
-          <Separator orientation="vertical" className="h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbPage>Variables</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </div>
-
-        <CreateVariableDialog deploymentId={deployment.id}>
-          <Button variant="outline" size="sm">
-            Create Variable
-          </Button>
-        </CreateVariableDialog>
-      </PageHeader>
-      <div className="h-full overflow-y-auto pb-[100px]">
-        <div className="min-h-full">
-          <VariableTable variables={variables} />
-        </div>
+    <div className="h-full overflow-y-auto pb-[100px]">
+      <div className="min-h-full">
+        <VariableTable variables={variables} />
       </div>
     </div>
   );

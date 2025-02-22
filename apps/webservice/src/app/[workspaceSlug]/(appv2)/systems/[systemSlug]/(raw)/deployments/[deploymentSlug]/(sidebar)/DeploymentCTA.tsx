@@ -2,7 +2,6 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { IconPlus, IconRocket } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
@@ -20,8 +19,7 @@ export const DeploymentCTA: React.FC<{
   if (tab === "variables")
     return (
       <CreateVariableDialog deploymentId={deploymentId}>
-        <Button variant="outline" className="flex items-center gap-2">
-          <IconPlus className="h-4 w-4" />
+        <Button variant="outline" className="flex items-center gap-2" size="sm">
           Add Variable
         </Button>
       </CreateVariableDialog>
@@ -30,8 +28,7 @@ export const DeploymentCTA: React.FC<{
   if (tab === "releases")
     return (
       <CreateReleaseDialog deploymentId={deploymentId} systemId={systemId}>
-        <Button variant="outline" className="flex items-center gap-2">
-          <IconRocket className="h-4 w-4" />
+        <Button variant="outline" className="flex items-center gap-2" size="sm">
           New Release
         </Button>
       </CreateReleaseDialog>
@@ -40,8 +37,7 @@ export const DeploymentCTA: React.FC<{
   if (tab === "channels")
     return (
       <CreateReleaseChannelDialog deploymentId={deploymentId}>
-        <Button variant="outline" className="flex items-center gap-2">
-          <IconPlus className="h-4 w-4" />
+        <Button variant="outline" className="flex items-center gap-2" size="sm">
           New Channel
         </Button>
       </CreateReleaseChannelDialog>
