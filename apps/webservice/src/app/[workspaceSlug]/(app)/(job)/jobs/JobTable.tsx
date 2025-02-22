@@ -21,7 +21,6 @@ import { JobStatusReadable } from "@ctrlplane/validators/jobs";
 import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job-condition/JobConditionDialog";
-import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job-drawer/useJobDrawer";
 import { JobLinksCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/JobLinksCell";
 import { VariableCell } from "~/app/[workspaceSlug]/(app)/_components/job-table/VariableCell";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/JobTableStatusIcon";
@@ -35,7 +34,7 @@ type JobTableProps = {
 
 export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
   const { filter, setFilter } = useFilter<JobCondition>();
-  const { setJobId } = useJobDrawer();
+
   const { data: allJobsTotal } = api.job.config.byWorkspaceId.count.useQuery(
     { workspaceId },
     { refetchInterval: 60_000, placeholderData: (prev) => prev },
@@ -120,11 +119,7 @@ export const JobTable: React.FC<JobTableProps> = ({ workspaceId }) => {
             </TableHeader>
             <TableBody>
               {releaseJobTriggers.data.map((job) => (
-                <TableRow
-                  key={job.id}
-                  onClick={() => setJobId(job.job.id)}
-                  className="cursor-pointer"
-                >
+                <TableRow key={job.id} className="cursor-pointer">
                   <TableCell>
                     <span className="flex truncate">{job.resource.name}</span>
                   </TableCell>
