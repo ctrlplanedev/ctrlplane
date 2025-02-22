@@ -19,10 +19,10 @@ import {
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
+import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { PageHeader } from "../../../../../../_components/PageHeader";
 import { DeploymentCTA } from "./DeploymentCTA";
 
 export default async function DeploymentLayout(props: {

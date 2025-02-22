@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
+import { IconMenu2 } from "@tabler/icons-react";
 
-import { Separator } from "@ctrlplane/ui/separator";
+import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
-import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { ReactFlowProvider } from "~/app/[workspaceSlug]/(appv2)/_components/reactflow/ReactFlowProvider";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { FlowDiagram } from "./flow-diagram/FlowDiagram";
 
@@ -55,32 +54,23 @@ export default async function ChecksPage(props: PageProps) {
     policyDeploymentsPromise,
   ]);
   return (
-    <div className="h-full">
-      <PageHeader className="space-x-2">
-        <Link
-          href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/releases`}
-        >
-          <IconArrowLeft className="size-5" />
-        </Link>
-        <Separator orientation="vertical" className="h-4" />
-        <div className="shrink-0 text-lg text-muted-foreground">
-          Release{" "}
-          <span className="font-semibold text-white">{release.version}</span>
-        </div>
-      </PageHeader>
-
-      <div className="h-full">
-        <ReactFlowProvider>
-          <FlowDiagram
-            workspace={system.workspace}
-            release={release}
-            envs={environments}
-            systemId={system.id}
-            policies={policies}
-            policyDeployments={policyDeployments}
-          />
-        </ReactFlowProvider>
-      </div>
+    <div className="relative h-full">
+      <SidebarTrigger
+        name={Sidebars.Release}
+        className="absolute left-2 top-2 z-50"
+      >
+        <IconMenu2 className="h-4 w-4" />
+      </SidebarTrigger>
+      <ReactFlowProvider>
+        <FlowDiagram
+          workspace={system.workspace}
+          release={release}
+          envs={environments}
+          systemId={system.id}
+          policies={policies}
+          policyDeployments={policyDeployments}
+        />
+      </ReactFlowProvider>
     </div>
   );
 }

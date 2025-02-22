@@ -10,6 +10,7 @@ import {
   IconDots,
   IconExternalLink,
   IconFilter,
+  IconMenu2,
 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -24,6 +25,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@ctrlplane/ui/collapsible";
+import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
@@ -35,6 +37,7 @@ import { JobDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/_components/job/J
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(appv2)/_components/job/JobTableStatusIcon";
 import { useReleaseChannel } from "~/app/[workspaceSlug]/(appv2)/_hooks/channel/useReleaseChannel";
 import { useFilter } from "~/app/[workspaceSlug]/(appv2)/_hooks/useFilter";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
 import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
 
@@ -446,7 +449,10 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-neutral-800 p-1 px-2">
+      <div className="flex items-center border-b border-neutral-800 p-1 px-2">
+        <SidebarTrigger name={Sidebars.Release}>
+          <IconMenu2 className="h-4 w-4" />
+        </SidebarTrigger>
         <JobConditionDialog condition={filter} onChange={setFilter}>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-7 w-7">
@@ -478,7 +484,7 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
       )}
 
       {!releaseJobTriggerQuery.isLoading && releaseJobTriggers.length > 0 && (
-        <Table className="table-fixed">
+        <Table>
           <TableBody>
             {groupedTriggers.map(({ environment, resources }) => (
               <CollapsibleTableRow
