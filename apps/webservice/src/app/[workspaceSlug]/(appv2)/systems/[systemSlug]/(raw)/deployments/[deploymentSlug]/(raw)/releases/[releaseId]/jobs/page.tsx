@@ -3,13 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IconArrowLeft } from "@tabler/icons-react";
 
-import { ScrollArea } from "@ctrlplane/ui/scroll-area";
 import { Separator } from "@ctrlplane/ui/separator";
 
-import { ReactFlowProvider } from "~/app/[workspaceSlug]/(appv2)/_components/reactflow/ReactFlowProvider";
+import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { api } from "~/trpc/server";
-import { PageHeader } from "../../../../../../../_components/PageHeader";
-import { FlowDiagram } from "./flow-diagram/FlowDiagram";
 import { ResourceReleaseTable } from "./release-table/ResourceReleaseTable";
 
 type PageProps = {
@@ -43,13 +40,9 @@ export default async function ReleasePage(props: PageProps) {
 
   const { system } = deployment;
   const environments = await api.environment.bySystemId(system.id);
-  const policies = await api.environment.policy.bySystemId(system.id);
-  const policyDeployments = await api.environment.policy.deployment.bySystemId(
-    system.id,
-  );
 
   return (
-    <div className="flex h-[calc(100vh-103px)] flex-col">
+    <div>
       <PageHeader className="space-x-2">
         <Link
           href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/releases`}
@@ -62,28 +55,12 @@ export default async function ReleasePage(props: PageProps) {
           <span className="font-semibold text-white">{release.version}</span>
         </div>
       </PageHeader>
-      {/*  */}
 
-      <ScrollArea>
-        <div className="h-[350px] shrink-0 border-b">
-          <ReactFlowProvider>
-            <FlowDiagram
-              workspace={system.workspace}
-              release={release}
-              envs={environments}
-              systemId={system.id}
-              policies={policies}
-              policyDeployments={policyDeployments}
-            />
-          </ReactFlowProvider>
-        </div>
-
-        <ResourceReleaseTable
-          release={release}
-          deployment={deployment}
-          environments={environments}
-        />
-      </ScrollArea>
+      <ResourceReleaseTable
+        release={release}
+        deployment={deployment}
+        environments={environments}
+      />
     </div>
   );
 }

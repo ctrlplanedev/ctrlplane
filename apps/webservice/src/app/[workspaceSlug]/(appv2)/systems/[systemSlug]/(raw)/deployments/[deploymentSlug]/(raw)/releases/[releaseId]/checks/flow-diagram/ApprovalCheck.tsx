@@ -1,7 +1,7 @@
 import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/react";
-import { ApprovalDialog } from "../../ApprovalDialog";
+import { ApprovalDialog } from "../../../../../(sidebar)/releases/ApprovalDialog";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
 export const ApprovalCheck: React.FC<{
