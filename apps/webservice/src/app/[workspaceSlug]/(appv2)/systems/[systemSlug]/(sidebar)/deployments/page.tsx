@@ -11,21 +11,30 @@ import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
-import { DeploymentsCard } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/Card";
 import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
+import DeploymentTable from "./TableDeployments";
 
 export default async function EnvironmentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
 }) {
   const params = await props.params;
-  const system = await api.system.bySlug(params).catch(() => null);
-  if (system == null) notFound();
+
+  const [workspace, system] = await Promise.all([
+    api.workspace.bySlug(params.workspaceSlug),
+    api.system.bySlug(params),
+  ]);
+  if (workspace == null) notFound();
+
+  const [environments, deployments] = await Promise.all([
+    api.environment.bySystemId(system.id),
+    api.deployment.bySystemId(system.id),
+  ]);
 
   return (
-    <div>
+    <div className="flex min-w-0 flex-col overflow-x-auto">
       <PageHeader className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger name={Sidebars.System}>
@@ -52,12 +61,12 @@ export default async function EnvironmentsPage(props: {
         </CreateDeploymentDialog>
       </PageHeader>
 
-      <div className="container m-8 mx-auto">
-        <DeploymentsCard
-          workspaceId={system.workspaceId}
-          systemId={system.id}
-        />
-      </div>
+      <DeploymentTable
+        workspace={workspace}
+        systemSlug={params.systemSlug}
+        environments={environments}
+        deployments={deployments}
+      />
     </div>
   );
 }

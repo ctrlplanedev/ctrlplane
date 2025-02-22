@@ -42,9 +42,9 @@ import { ReleaseStatus } from "@ctrlplane/validators/releases";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/useReleaseFilter";
+import { LazyReleaseEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/release-cell/ReleaseEnvironmentCell";
 import { api } from "~/trpc/react";
 import { JobHistoryPopover } from "./JobHistoryPopover";
-import { LazyReleaseEnvironmentCell } from "./release-cell/ReleaseEnvironmentCell";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -279,7 +279,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     </TableCell>
                     {environments.map((env) => (
                       <TableCell
-                        className="h-[60px] w-[220px] border-l"
+                        className="h-[60px] w-[220px] border-l px-3 py-2"
                         onClick={(e) => e.stopPropagation()}
                         key={env.id}
                       >

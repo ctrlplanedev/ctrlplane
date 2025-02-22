@@ -12,7 +12,7 @@ import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { api } from "~/trpc/react";
-import { ApprovalDialog } from "../ApprovalDialog";
+import { ApprovalDialog } from "../../(raw)/deployments/[deploymentSlug]/(sidebar)/releases/ApprovalDialog";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 

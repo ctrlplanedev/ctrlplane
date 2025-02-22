@@ -40,7 +40,10 @@ import {
 } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
-import { getStatusColor, statusColor } from "../status-color";
+import {
+  getStatusColor,
+  statusColor,
+} from "../../(raw)/deployments/[deploymentSlug]/(sidebar)/releases/status-color";
 import { DeploymentBarChart } from "./DeploymentBarChart";
 import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
 
@@ -189,7 +192,7 @@ export const Release: React.FC<{
   );
 
   return (
-    <div className="flex w-[220px] items-center justify-between px-1">
+    <div className="flex w-full items-center justify-between">
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
