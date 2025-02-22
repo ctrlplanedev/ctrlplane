@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { IconMenu2, IconPlus } from "@tabler/icons-react";
+import { IconMenu2 } from "@tabler/icons-react";
 import LZString from "lz-string";
 
 import {
@@ -52,8 +52,8 @@ export default async function ViewsPage(props: {
           </Breadcrumb>
         </div>
         <CreateResourceViewDialog workspaceId={workspace.id} filter={null}>
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <IconPlus className="h-4 w-4" /> Add View
+          <Button variant="outline" size="sm">
+            Add View
           </Button>
         </CreateResourceViewDialog>
       </PageHeader>
