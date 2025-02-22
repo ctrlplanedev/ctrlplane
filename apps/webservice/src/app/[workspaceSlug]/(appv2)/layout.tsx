@@ -9,9 +9,9 @@ import {
 
 import { EnvironmentDrawer } from "../(app)/_components/environment-drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "../(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
-import { VariableSetDrawer } from "../(app)/_components/variable-set-drawer/VariableSetDrawer";
 import { ReleaseChannelDrawer } from "./_components/channel/drawer/ReleaseChannelDrawer";
 import { JobDrawer } from "./_components/job/drawer/JobDrawer";
+import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
 
