@@ -26,7 +26,7 @@ export const ResourceProvidersGettingStarted: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href={`/${workspaceSlug}/resource-providers/integrations`}
+            href={`/${workspaceSlug}/resources/providers/integrations`}
             passHref
           >
             <Button size="sm">View integrations</Button>

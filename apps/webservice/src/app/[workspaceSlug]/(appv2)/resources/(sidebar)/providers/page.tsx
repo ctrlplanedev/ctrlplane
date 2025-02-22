@@ -119,9 +119,6 @@ export default async function ResourceProvidersPage(props: {
     workspace.id,
   );
 
-  if (resourceProviders.length === 0)
-    return <ResourceProvidersGettingStarted />;
-
   const providers = resourceProviders.map((provider) => {
     const filter: ResourceCondition = {
       type: ResourceFilterType.Provider,
@@ -160,75 +157,80 @@ export default async function ResourceProvidersPage(props: {
         </Link>
       </PageHeader>
 
-      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-50px)] overflow-auto">
-        <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Resources</TableHead>
-              <TableHead>Kind</TableHead>
-              <TableHead>Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {providers.map((provider) => (
-              <TableRow
-                key={provider.id}
-                className="cursor-pointer border-b-neutral-800/50"
-              >
-                <TableCell>
-                  <div className="flex h-full items-center gap-2">
-                    <span className="text-base">{provider.name}</span>
-                    {isCustomProvider(provider) ? (
-                      <CustomProviderTooltipBadge />
-                    ) : (
-                      <ManagedProviderBadge provider={provider} />
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Link href={provider.filterLink} target="_blank">
-                    <Badge
-                      variant="outline"
-                      className="flex h-6 w-fit items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
-                    >
-                      <IconExternalLink className="h-4 w-4" />
-                      {provider.resourceCount}{" "}
-                      {provider.resourceCount === 1 ? "resource" : "resources"}
-                    </Badge>
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  {provider.kinds.length === 0 && (
-                    <span className="text-xs italic text-muted-foreground">
-                      No resources
-                    </span>
-                  )}
-                  {provider.kinds.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto">
-                      {provider.kinds.map((kind) => (
-                        <Badge
-                          key={kind.kind}
-                          variant="outline"
-                          className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
-                        >
-                          {kind.version}:{kind.kind}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {new Date(provider.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  <ProviderActionsDropdown provider={provider} />
-                </TableCell>
+      {resourceProviders.length === 0 && <ResourceProvidersGettingStarted />}
+      {resourceProviders.length > 0 && (
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-50px)] overflow-auto">
+          <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Resources</TableHead>
+                <TableHead>Kind</TableHead>
+                <TableHead>Created</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {providers.map((provider) => (
+                <TableRow
+                  key={provider.id}
+                  className="cursor-pointer border-b-neutral-800/50"
+                >
+                  <TableCell>
+                    <div className="flex h-full items-center gap-2">
+                      <span className="text-base">{provider.name}</span>
+                      {isCustomProvider(provider) ? (
+                        <CustomProviderTooltipBadge />
+                      ) : (
+                        <ManagedProviderBadge provider={provider} />
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={provider.filterLink} target="_blank">
+                      <Badge
+                        variant="outline"
+                        className="flex h-6 w-fit items-center gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
+                      >
+                        <IconExternalLink className="h-4 w-4" />
+                        {provider.resourceCount}{" "}
+                        {provider.resourceCount === 1
+                          ? "resource"
+                          : "resources"}
+                      </Badge>
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    {provider.kinds.length === 0 && (
+                      <span className="text-xs italic text-muted-foreground">
+                        No resources
+                      </span>
+                    )}
+                    {provider.kinds.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto">
+                        {provider.kinds.map((kind) => (
+                          <Badge
+                            key={kind.kind}
+                            variant="outline"
+                            className="h-6 gap-1.5 rounded-full border-none bg-neutral-800/50 px-2 text-xs text-muted-foreground"
+                          >
+                            {kind.version}:{kind.kind}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {new Date(provider.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ProviderActionsDropdown provider={provider} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
