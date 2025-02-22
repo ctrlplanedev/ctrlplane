@@ -44,7 +44,10 @@ export const TopNavSearch: React.FC<{ workspaceId: string }> = ({
 
   return (
     <div className="relative w-[600px]">
-      <Command className="rounded-lg border shadow-md md:min-w-[450px]">
+      <Command
+        className="rounded-lg border shadow-md md:min-w-[450px]"
+        shouldFilter={false}
+      >
         <CommandInput
           placeholder="Search for resources, systems, deployments, etc."
           onValueChange={(value) => setSearch(value)}
