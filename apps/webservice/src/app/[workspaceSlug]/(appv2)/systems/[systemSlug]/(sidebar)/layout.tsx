@@ -118,7 +118,7 @@ export default async function SystemsLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+        <SidebarInset className="h-[calc(100vh-56px-1px)] min-w-0">
           {props.children}
         </SidebarInset>
       </SidebarProvider>
