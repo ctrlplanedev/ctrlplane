@@ -144,7 +144,7 @@ export default async function ResourceProvidersPage(props: {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbPage>Resources</BreadcrumbPage>
+                <BreadcrumbPage>Providers</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
