@@ -6,6 +6,7 @@ import {
   IconCube,
   IconGitBranch,
   IconLayoutDashboard,
+  IconLoader2,
   IconPlanet,
   IconServer,
 } from "@tabler/icons-react";
@@ -48,7 +49,7 @@ export const TopNavSearch: React.FC<{
   const focus = useFocus();
   useDebounce(() => setDebouncedSearch(search), 300, [search]);
 
-  const { data } = api.search.search.useQuery(
+  const { data, isLoading } = api.search.search.useQuery(
     { workspaceId: workspace.id, search: debouncedSearch },
     { enabled: debouncedSearch.length > 0 },
   );
@@ -68,7 +69,6 @@ export const TopNavSearch: React.FC<{
           placeholder="Search for resources, systems, deployments, etc."
           onValueChange={(value) => setSearch(value)}
           onBlur={(e) => {
-            console.log(e.relatedTarget?.closest("[cmdk-list]"));
             // Prevent blur if clicking within the CommandList
             if (e.relatedTarget?.closest("[cmdk-list]") !== undefined) {
               e.preventDefault();
@@ -81,7 +81,14 @@ export const TopNavSearch: React.FC<{
 
         {focus.isFocused && (
           <CommandList className="absolute left-0 right-0 top-12 z-20 rounded border bg-neutral-900">
-            <CommandEmpty>No results found.</CommandEmpty>
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <IconLoader2 className="mt-5 animate-spin" />
+              </div>
+            ) : (
+              <CommandEmpty>No results found.</CommandEmpty>
+            )}
+
             {_.chain(data)
               .groupBy((d) => d.type)
               .map((results, type) => (

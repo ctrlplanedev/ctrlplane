@@ -7,7 +7,6 @@ import { IconBolt, IconTag } from "@tabler/icons-react";
 
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
