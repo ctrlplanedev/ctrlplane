@@ -93,11 +93,12 @@ export default async function ReleaseLayout(props: {
               <SidebarMenu>
                 <SidebarLink href={url("jobs")}>Jobs</SidebarLink>
                 <SidebarLink href={url("checks")}>Checks</SidebarLink>
+                <SidebarLink href={url("properties")}>Properties</SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-full w-full">{props.children}</SidebarInset>
+        <SidebarInset className="h-full min-w-0">{props.children}</SidebarInset>
       </SidebarProvider>
     </div>
   );
