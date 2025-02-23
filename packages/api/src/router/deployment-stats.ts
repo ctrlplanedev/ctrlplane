@@ -10,11 +10,14 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
   max,
+  or,
   sql,
+  takeFirst,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -28,31 +31,71 @@ import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
+const successRate = sql<number | null>`
+  CAST(
+    SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+  ) / 
+  NULLIF(COUNT(*), 0) * 100
+`;
+
+const totalDuration = sql<number | null>`
+  SUM(
+    CASE 
+      WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
+      THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
+    END
+  )::integer
+`;
+
 export const deploymentStatsRouter = createTRPCRouter({
   byWorkspaceId: protectedProcedure
     .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentList)
-          .on({ type: "workspace", id: input.workspaceId }),
+      authorizationCheck: ({ canUser, input }) => {
+        if ("workspaceId" in input)
+          return canUser
+            .perform(Permission.DeploymentList)
+            .on({ type: "workspace", id: input.workspaceId });
+        if ("systemId" in input)
+          return canUser
+            .perform(Permission.DeploymentList)
+            .on({ type: "system", id: input.systemId });
+
+        return canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input.environmentId });
+      },
     })
     .input(
-      z.object({
-        workspaceId: z.string().uuid(),
-        startDate: z.date(),
-        endDate: z.date(),
-        timezone: z.string(),
-        orderBy: statsColumn.default(StatsColumn.LastRunAt),
-        order: statsOrder.default(StatsOrder.Desc),
-        search: z.string().optional(),
-      }),
+      z
+        .object({
+          resourceId: z.string().uuid().optional(),
+          startDate: z.date(),
+          endDate: z.date(),
+          timezone: z.string(),
+          orderBy: statsColumn.default(StatsColumn.LastRunAt),
+          order: statsOrder.default(StatsOrder.Desc),
+          search: z.string().optional(),
+        })
+        .and(
+          z
+            .object({ workspaceId: z.string().uuid() })
+            .or(z.object({ systemId: z.string().uuid() }))
+            .or(z.object({ environmentId: z.string().uuid() })),
+        ),
     )
     .query(async ({ ctx, input }) => {
-      const { workspaceId, startDate, endDate, orderBy, order, search } = input;
+      const { resourceId, startDate, endDate, orderBy, order, search } = input;
       const orderFunc = (field: unknown) =>
         order === StatsOrder.Asc
           ? sql`${field} ASC NULLS LAST`
           : sql`${field} DESC NULLS LAST`;
+
+      const uuidCheck =
+        "workspaceId" in input
+          ? eq(schema.system.workspaceId, input.workspaceId)
+          : "systemId" in input
+            ? eq(schema.system.id, input.systemId)
+            : eq(schema.releaseJobTrigger.environmentId, input.environmentId);
 
       const lastRunAt = max(schema.job.startedAt);
       const totalJobs = count(schema.job.id);
@@ -67,22 +110,6 @@ export const deploymentStatsRouter = createTRPCRouter({
         percentile_cont(0.9) within group (order by 
           EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
         ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
-      `;
-
-      const totalDuration = sql<number | null>`
-        SUM(
-          CASE 
-            WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
-            THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
-          END
-        )::integer
-      `;
-
-      const successRate = sql<number | null>`
-        CAST(
-          SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
-        ) / 
-        NULLIF(COUNT(*), 0) * 100
       `;
 
       const totalSuccess = sql<number>`
@@ -102,6 +129,23 @@ export const deploymentStatsRouter = createTRPCRouter({
         return schema.deployment.name;
       };
 
+      // we want to show all deployments in the views, even if they are inactive
+      const activeDeploymentChecks = and(
+        gte(schema.job.createdAt, startDate),
+        lte(schema.job.createdAt, endDate),
+        isNotNull(schema.job.completedAt),
+        isNotNull(schema.job.startedAt),
+        isNull(schema.resource.deletedAt),
+        search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
+        resourceId ? eq(schema.resource.id, resourceId) : undefined,
+      );
+
+      const inactiveDeploymentChecks = or(
+        isNull(schema.job),
+        isNull(schema.release),
+        isNull(schema.releaseJobTrigger),
+      );
+
       const results = await ctx.db
         .select({
           id: schema.deployment.id,
@@ -120,34 +164,25 @@ export const deploymentStatsRouter = createTRPCRouter({
           p90,
         })
         .from(schema.deployment)
-        .innerJoin(
+        .leftJoin(
           schema.release,
           eq(schema.release.deploymentId, schema.deployment.id),
         )
-        .innerJoin(
+        .leftJoin(
           schema.releaseJobTrigger,
           eq(schema.releaseJobTrigger.releaseId, schema.release.id),
         )
-        .innerJoin(
-          schema.job,
-          eq(schema.job.id, schema.releaseJobTrigger.jobId),
-        )
+        .leftJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
         .innerJoin(
           schema.system,
           eq(schema.system.id, schema.deployment.systemId),
         )
-        .innerJoin(
+        .leftJoin(
           schema.resource,
           eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
         )
         .where(
-          and(
-            eq(schema.system.workspaceId, workspaceId),
-            gte(schema.job.createdAt, startDate),
-            lte(schema.job.createdAt, endDate),
-            isNull(schema.resource.deletedAt),
-            search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
-          ),
+          and(uuidCheck, or(activeDeploymentChecks, inactiveDeploymentChecks)),
         )
         .orderBy(orderFunc(getOrderBy()))
         .groupBy(
@@ -163,15 +198,61 @@ export const deploymentStatsRouter = createTRPCRouter({
       return results;
     }),
 
+  totals: protectedProcedure
+    .input(
+      z.object({
+        workspaceId: z.string().uuid(),
+        startDate: z.date(),
+        endDate: z.date(),
+      }),
+    )
+    .query(({ ctx, input }) => {
+      const { startDate, endDate } = input;
+
+      return ctx.db
+        .select({
+          totalJobs: count(schema.job.id),
+          successRate,
+        })
+        .from(schema.job)
+        .innerJoin(
+          schema.releaseJobTrigger,
+          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+        )
+        .innerJoin(
+          schema.release,
+          eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+        )
+        .innerJoin(
+          schema.deployment,
+          eq(schema.deployment.id, schema.release.deploymentId),
+        )
+        .innerJoin(
+          schema.system,
+          eq(schema.system.id, schema.deployment.systemId),
+        )
+        .where(
+          and(
+            eq(schema.system.workspaceId, input.workspaceId),
+            gte(schema.job.createdAt, startDate),
+            lte(schema.job.createdAt, endDate),
+            isNotNull(schema.job.completedAt),
+            isNotNull(schema.job.startedAt),
+          ),
+        )
+        .then(takeFirst);
+    }),
+
   history: protectedProcedure
     .input(
       z.object({
         deploymentId: z.string().uuid(),
         timeZone: z.string(),
+        resourceId: z.string().uuid().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
-      const { deploymentId, timeZone } = input;
+      const { deploymentId, timeZone, resourceId } = input;
       const endDate = new Date();
       const startDate = subDays(new Date(), 29);
       const dates = eachDayOfInterval({ start: startDate, end: endDate }).map(
@@ -203,6 +284,9 @@ export const deploymentStatsRouter = createTRPCRouter({
             inArray(schema.job.status, analyticsStatuses),
             gte(schema.job.completedAt, startDate),
             lt(schema.job.completedAt, endDate),
+            resourceId
+              ? eq(schema.releaseJobTrigger.resourceId, resourceId)
+              : undefined,
           ),
         )
         .as("base");

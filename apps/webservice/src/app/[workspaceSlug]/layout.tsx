@@ -1,6 +1,7 @@
 import { SidebarProvider } from "@ctrlplane/ui/sidebar";
 
 import { TerminalSessionsProvider } from "~/app/terminal/TerminalSessionsProvider";
+import { Sidebars } from "./sidebars";
 
 export default function WorkspaceLayout({
   children,
@@ -8,7 +9,7 @@ export default function WorkspaceLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider sidebarNames={[Sidebars.Workspace]}>
       <TerminalSessionsProvider>{children}</TerminalSessionsProvider>
     </SidebarProvider>
   );

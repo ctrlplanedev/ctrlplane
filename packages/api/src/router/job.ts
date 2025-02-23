@@ -8,7 +8,10 @@ import {
   countDistinct,
   desc,
   eq,
+  gt,
+  isNotNull,
   isNull,
+  lte,
   notInArray,
   sql,
   takeFirst,
@@ -242,7 +245,14 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .then((t) => t.count),
       ),
     dailyCount: protectedProcedure
-      .input(z.object({ workspaceId: z.string().uuid(), timezone: z.string() }))
+      .input(
+        z.object({
+          workspaceId: z.string().uuid(),
+          timezone: z.string(),
+          startDate: z.date(),
+          endDate: z.date(),
+        }),
+      )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
@@ -250,7 +260,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .query(async ({ ctx, input }) => {
-        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE 'UTC' AT TIME ZONE '${sql.raw(input.timezone)}')`;
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE ${input.timezone})`;
 
         const subquery = ctx.db
           .select({
@@ -279,9 +289,17 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 JobStatus.Cancelled,
                 JobStatus.Skipped,
               ]),
+              gt(schema.releaseJobTrigger.createdAt, input.startDate),
+              lte(schema.releaseJobTrigger.createdAt, input.endDate),
+              isNotNull(schema.job.startedAt),
+              isNotNull(schema.job.completedAt),
             ),
           )
-          .groupBy(dateTruncExpr, schema.job.status)
+          .groupBy(
+            dateTruncExpr,
+            schema.job.status,
+            schema.releaseJobTrigger.createdAt,
+          )
           .as("sub");
 
         return ctx.db
@@ -357,43 +375,6 @@ const releaseJobTriggerRouter = createTRPCRouter({
           .orderBy(subquery.date);
       }),
   }),
-
-  byDeploymentAndEnvironment: protectedProcedure
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentGet, Permission.SystemGet)
-          .on(
-            { type: "deployment", id: input.deploymentId },
-            { type: "environment", id: input.environmentId },
-          ),
-    })
-    .input(
-      z.object({
-        deploymentId: z.string().uuid(),
-        environmentId: z.string().uuid(),
-      }),
-    )
-    .query(({ ctx, input }) =>
-      releaseJobTriggerQuery(ctx.db)
-        .where(
-          and(
-            eq(schema.deployment.id, input.deploymentId),
-            eq(schema.environment.id, input.environmentId),
-            isNull(schema.resource.deletedAt),
-          ),
-        )
-        .then((data) =>
-          data.map((t) => ({
-            ...t.release_job_trigger,
-            job: t.job,
-            jobAgent: t.job_agent,
-            resource: t.resource,
-            release: { ...t.release, deployment: t.deployment },
-            environment: t.environment,
-          })),
-        ),
-    ),
 
   byReleaseId: protectedProcedure
     .meta({
@@ -668,7 +649,7 @@ export const jobRouter = createTRPCRouter({
         canUser.perform(Permission.JobUpdate).on({ type: "job", id: input.id }),
     })
     .input(z.object({ id: z.string().uuid(), data: schema.updateJob }))
-    .mutation(({ input }) => updateJob(input.id, input.data)),
+    .mutation(({ ctx, input }) => updateJob(ctx.db, input.id, input.data)),
 
   config: releaseJobTriggerRouter,
   agent: jobAgentRouter,

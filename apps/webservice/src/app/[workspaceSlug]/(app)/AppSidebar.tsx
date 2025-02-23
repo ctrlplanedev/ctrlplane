@@ -6,7 +6,6 @@ import { SidebarContent, SidebarHeader } from "@ctrlplane/ui/sidebar";
 import { api } from "~/trpc/server";
 import { AppSidebarSystem, AppSidebarWorkspace } from "./AppSidebarContent";
 import { AppSidebarHeader } from "./AppSidebarHeader";
-import { AppSidebarPopover } from "./AppSidebarPopover";
 import { SidebarWithPopover } from "./AppSidebarPopoverContext";
 
 export const AppSidebar: React.FC<{ workspace: Workspace }> = async ({
@@ -20,7 +19,6 @@ export const AppSidebar: React.FC<{ workspace: Workspace }> = async ({
 
   return (
     <SidebarWithPopover>
-      <AppSidebarPopover workspace={workspace} />
       <SidebarHeader>
         <AppSidebarHeader
           workspace={workspace}

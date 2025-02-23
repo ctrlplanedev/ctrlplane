@@ -4,6 +4,7 @@ import { Worker } from "bullmq";
 import { eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { updateJob } from "@ctrlplane/job-dispatch";
 import { Channel } from "@ctrlplane/validators/events";
 import { JobAgentType, JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -39,12 +40,10 @@ export const createDispatchExecutionJobWorker = () =>
           await dispatchGithubJob(je.job);
         }
       } catch (error: unknown) {
-        db.update(schema.job)
-          .set({
-            status: JobStatus.Failure,
-            message: (error as Error).message,
-          })
-          .where(eq(schema.job.id, je.job.id));
+        await updateJob(db, je.job.id, {
+          status: JobStatus.Failure,
+          message: (error as Error).message,
+        });
       }
 
       return je;

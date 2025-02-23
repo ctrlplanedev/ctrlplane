@@ -1,9 +1,9 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { JobCondition, JobStatus } from "@ctrlplane/validators/jobs";
+import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { IconChevronRight, IconDots } from "@tabler/icons-react";
+import { IconChevronRight } from "@tabler/icons-react";
 import { formatDistanceToNowStrict } from "date-fns";
 
 import { cn } from "@ctrlplane/ui";
@@ -23,8 +23,6 @@ import {
 import { JobFilterType, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
-import { JobDropdownMenu } from "../../systems/[systemSlug]/deployments/[deploymentSlug]/releases/[versionId]/JobDropdownMenu";
-import { DeployButton } from "../../systems/[systemSlug]/deployments/DeployButton";
 import { JobLinksCell } from "../job-table/JobLinksCell";
 import { JobTableStatusIcon } from "../JobTableStatusIcon";
 
@@ -38,11 +36,7 @@ type StatusCellProps = {
   environmentId: string;
 };
 
-const StatusCell: React.FC<StatusCellProps> = ({
-  releaseJobTrigger,
-  releaseId,
-  environmentId,
-}) => (
+const StatusCell: React.FC<StatusCellProps> = ({ releaseJobTrigger }) => (
   <TableCell className="py-0">
     {releaseJobTrigger != null && (
       <div className="flex items-center gap-2">
@@ -50,15 +44,6 @@ const StatusCell: React.FC<StatusCellProps> = ({
         <span className="text-xs">
           {JobStatusReadable[releaseJobTrigger.job.status]}
         </span>
-      </div>
-    )}
-    {releaseJobTrigger == null && (
-      <div onClick={(e) => e.stopPropagation()}>
-        <DeployButton
-          releaseId={releaseId}
-          environmentId={environmentId}
-          className="h-6 w-20"
-        />
       </div>
     )}
   </TableCell>
@@ -91,33 +76,9 @@ type DropdownCellProps = {
   deployment: SCHEMA.Deployment;
 };
 
-const DropdownCell: React.FC<DropdownCellProps> = ({
-  releaseJobTrigger,
-  release,
-  environmentId,
-  resource,
-  deployment,
-}) => (
+const DropdownCell: React.FC<DropdownCellProps> = () => (
   <TableCell>
-    <div className="flex justify-end">
-      {releaseJobTrigger != null && (
-        <JobDropdownMenu
-          release={release}
-          environmentId={environmentId}
-          resource={resource}
-          deployment={deployment}
-          job={{
-            id: releaseJobTrigger.job.id,
-            status: releaseJobTrigger.job.status as JobStatus,
-          }}
-          isPassingReleaseChannel
-        >
-          <Button variant="ghost" size="icon" className="h-5 w-5">
-            <IconDots className="h-4 w-4" />
-          </Button>
-        </JobDropdownMenu>
-      )}
-    </div>
+    <div className="flex justify-end"></div>
   </TableCell>
 );
 

@@ -40,9 +40,11 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { policyRouter } from "./environment-policy";
+import { environmentStatsRouter } from "./environment-stats";
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
+  stats: environmentStatsRouter,
 
   byId: protectedProcedure
     .meta({

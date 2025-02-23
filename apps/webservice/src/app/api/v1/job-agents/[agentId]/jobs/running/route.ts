@@ -18,7 +18,10 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getUser } from "~/app/api/v1/auth";
 
-export const GET = async (req: NextRequest, props: { params: Promise<{ agentId: string }> }) => {
+export const GET = async (
+  req: NextRequest,
+  props: { params: Promise<{ agentId: string }> },
+) => {
   const params = await props.params;
   const user = await getUser(req);
   if (!user)

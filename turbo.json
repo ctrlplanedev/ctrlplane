@@ -1,7 +1,6 @@
 {
   "$schema": "https://turborepo.org/schema.json",
   "globalDependencies": ["**/.env"],
-  "ui": "stream",
   "globalEnv": ["DATABASE_URL", "AUTH_SECRET"],
   "tasks": {
     "topo": {

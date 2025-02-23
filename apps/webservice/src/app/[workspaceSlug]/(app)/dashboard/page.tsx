@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Card } from "@ctrlplane/ui/card";
 
 import { api } from "../../../../trpc/server";
-import { JobHistoryChart } from "../systems/JobHistoryChart";
+import { JobHistoryChart } from "../systems-old/JobHistoryChart";
 import { ResourceAnnotationPieChart } from "./ResourceAnnotationPieChart";
 
 type PageProps = {
@@ -18,11 +18,9 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   };
 }
 
-export default async function Dashboard(
-  props: {
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default async function Dashboard(props: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = await props.params;
   const { workspaceSlug } = params;
   const workspace = await api.workspace.bySlug(workspaceSlug).catch(() => null);

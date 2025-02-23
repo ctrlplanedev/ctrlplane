@@ -40,7 +40,7 @@ export const SidebarWithPopover: React.FC<{
 }> = ({ children }) => {
   const { setActiveSidebarItem } = useSidebarPopover();
   return (
-    <Sidebar onMouseLeave={() => setActiveSidebarItem(null)}>
+    <Sidebar onMouseLeave={() => setActiveSidebarItem(null)} name="sidebar">
       {children}
     </Sidebar>
   );

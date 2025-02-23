@@ -30,6 +30,20 @@ export const variableSetRouter = createTRPCRouter({
       }),
     ),
 
+  byEnvironmentId: protectedProcedure
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input }),
+    })
+    .input(z.string().uuid())
+    .query(({ ctx, input }) =>
+      ctx.db.query.variableSetEnvironment.findMany({
+        where: eq(variableSetEnvironment.environmentId, input),
+        with: { variableSet: { with: { values: true } } },
+      }),
+    ),
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

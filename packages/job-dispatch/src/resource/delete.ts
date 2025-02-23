@@ -7,6 +7,7 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getEventsForResourceDeleted, handleEvent } from "../events/index.js";
+import { updateJob } from "../job-update.js";
 
 const deleteObjectsAssociatedWithResource = (tx: Tx, resource: Resource) =>
   tx
@@ -38,10 +39,11 @@ const cancelJobsForDeletedResources = (tx: Tx, resources: Resource[]) =>
     )
     .then((rjt) => rjt.map((rjt) => rjt.job.id))
     .then((jobIds) =>
-      tx
-        .update(SCHEMA.job)
-        .set({ status: JobStatus.Cancelled })
-        .where(inArray(SCHEMA.job.id, jobIds)),
+      Promise.all(
+        jobIds.map((jobId) =>
+          updateJob(tx, jobId, { status: JobStatus.Cancelled }),
+        ),
+      ),
     );
 
 /**

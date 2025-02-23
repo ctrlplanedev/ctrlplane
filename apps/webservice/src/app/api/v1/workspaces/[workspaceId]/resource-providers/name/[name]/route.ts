@@ -11,7 +11,7 @@ import { getUser } from "~/app/api/v1/auth";
 
 export const GET = async (
   req: NextRequest,
-  props: { params: Promise<{ workspaceId: string; name: string }> }
+  props: { params: Promise<{ workspaceId: string; name: string }> },
 ) => {
   const params = await props.params;
   const ws = await db

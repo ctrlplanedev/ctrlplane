@@ -7,7 +7,6 @@ import { api } from "~/trpc/server";
 import { DeploymentResourceDrawer } from "./_components/deployment-resource-drawer/DeploymentResourceDrawer";
 import { EnvironmentDrawer } from "./_components/environment-drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer/EnvironmentPolicyDrawer";
-import { JobDrawer } from "./_components/job-drawer/JobDrawer";
 import { ReleaseChannelDrawer } from "./_components/release-channel-drawer/ReleaseChannelDrawer";
 import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
 import { ResourceDrawer } from "./_components/resource-drawer/ResourceDrawer";
@@ -44,7 +43,6 @@ export default async function WorkspaceLayout(props: Props) {
       <EnvironmentDrawer />
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
-      <JobDrawer />
       <DeploymentResourceDrawer />
       {/* <TerminalDrawer /> */}
     </AppSidebarPopoverProvider>

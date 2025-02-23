@@ -113,7 +113,7 @@ const PolicyDropdownMenu: React.FC<{
   </DropdownMenu>
 );
 
-export type ViewProps = {
+type ViewProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
     releaseChannels: SCHEMA.ReleaseChannel[];
@@ -121,7 +121,7 @@ export type ViewProps = {
   activeTab: EnvironmentPolicyDrawerTab;
 };
 
-export const View: React.FC<ViewProps> = ({ environmentPolicy, activeTab }) => {
+const View: React.FC<ViewProps> = ({ environmentPolicy, activeTab }) => {
   const deploymentsQ = api.deployment.bySystemId.useQuery(
     environmentPolicy.systemId,
   );

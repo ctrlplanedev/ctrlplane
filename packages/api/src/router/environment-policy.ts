@@ -1,3 +1,4 @@
+import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -26,6 +27,23 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { approvalRouter } from "./environment-approval";
+
+const basePolicyQuery = (db: Tx) =>
+  db
+    .select()
+    .from(environmentPolicy)
+    .leftJoin(
+      environmentPolicyReleaseChannel,
+      eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
+    )
+    .leftJoin(
+      releaseChannel,
+      eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+    )
+    .leftJoin(
+      environmentPolicyReleaseWindow,
+      eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
+    );
 
 export const policyRouter = createTRPCRouter({
   approval: approvalRouter,
@@ -125,6 +143,44 @@ export const policyRouter = createTRPCRouter({
         ),
     ),
 
+  byEnvironmentId: protectedProcedure
+    .input(z.string().uuid())
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input }),
+    })
+    .query(({ ctx, input }) =>
+      basePolicyQuery(ctx.db)
+        .where(eq(environmentPolicy.environmentId, input))
+        .then((rows) => {
+          const policy = rows.at(0)!;
+          const releaseChannels = _.chain(rows)
+            .map((r) => r.release_channel)
+            .filter(isPresent)
+            .uniqBy((r) => r.id)
+            .value();
+
+          const releaseWindows = _.chain(rows)
+            .map((r) => r.environment_policy_release_window)
+            .filter(isPresent)
+            .uniqBy((r) => r.id)
+            .map((r) => ({
+              ...r,
+              startTime: new Date(r.startTime),
+              endTime: new Date(r.endTime),
+            }))
+            .value();
+
+          return {
+            ...policy.environment_policy,
+            releaseChannels,
+            releaseWindows,
+          };
+        }),
+    ),
+
   byId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -134,21 +190,7 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.string().uuid())
     .query(async ({ ctx, input }) =>
-      ctx.db
-        .select()
-        .from(environmentPolicy)
-        .leftJoin(
-          environmentPolicyReleaseChannel,
-          eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
-        )
-        .leftJoin(
-          releaseChannel,
-          eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
-        )
-        .leftJoin(
-          environmentPolicyReleaseWindow,
-          eq(environmentPolicyReleaseWindow.policyId, environmentPolicy.id),
-        )
+      basePolicyQuery(ctx.db)
         .leftJoin(environment, eq(environment.policyId, environmentPolicy.id))
         .where(eq(environmentPolicy.id, input))
         .then((rows) => {

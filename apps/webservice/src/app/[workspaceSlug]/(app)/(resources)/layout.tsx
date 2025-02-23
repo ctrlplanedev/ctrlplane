@@ -1,6 +1,6 @@
-"use client";;
-import { use } from "react";
+"use client";
 
+import { use } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { IconCube, IconFilter, IconList, IconPlus } from "@tabler/icons-react";
@@ -17,17 +17,13 @@ import {
 import { CreateResourceViewDialog } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
 import { api } from "~/trpc/react";
 
-export default function ResourceLayout(
-  props: {
-    children: React.ReactNode;
-    params: Promise<{ workspaceSlug: string }>;
-  }
-) {
+export default function ResourceLayout(props: {
+  children: React.ReactNode;
+  params: Promise<{ workspaceSlug: string }>;
+}) {
   const params = use(props.params);
 
-  const {
-    children
-  } = props;
+  const { children } = props;
 
   const pathname = usePathname();
   const { workspaceSlug } = params;
