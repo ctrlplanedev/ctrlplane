@@ -31,17 +31,26 @@ import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-const successRate = sql<number | null>`
+const successRate = (startDate: Date, endDate: Date) => sql<number | null>`
   CAST(
-    SUM(CASE WHEN ${schema.job.status} = ${JobStatus.Successful} THEN 1 ELSE 0 END) AS FLOAT
+    SUM(
+      CASE 
+        WHEN ${schema.job.status} = ${JobStatus.Successful} 
+        AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate}
+        THEN 1 
+        ELSE 0 
+      END
+    ) AS FLOAT
   ) / 
-  NULLIF(COUNT(*), 0) * 100
+  NULLIF(COUNT(*) FILTER (WHERE ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate}), 0) * 100
 `;
 
-const totalDuration = sql<number | null>`
+const totalDuration = (startDate: Date, endDate: Date) => sql<number | null>`
   SUM(
     CASE 
-      WHEN ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL 
+      WHEN ${schema.job.completedAt} IS NOT NULL 
+      AND ${schema.job.startedAt} IS NOT NULL 
+      AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate}
       THEN EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
     END
   )::integer
@@ -103,18 +112,18 @@ export const deploymentStatsRouter = createTRPCRouter({
       const p50 = sql<number | null>`
         percentile_cont(0.5) within group (order by 
           EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
-        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
+        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate})
       `;
 
       const p90 = sql<number | null>`
         percentile_cont(0.9) within group (order by 
           EXTRACT(EPOCH FROM (${schema.job.completedAt} - ${schema.job.startedAt}))
-        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL)
+        ) FILTER (WHERE ${schema.job.completedAt} IS NOT NULL AND ${schema.job.startedAt} IS NOT NULL AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate})
       `;
 
       const totalSuccess = sql<number>`
-        (COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful}))::integer
-      `;
+(COUNT(*) FILTER (WHERE ${schema.job.status} = ${JobStatus.Successful} AND ${schema.job.createdAt} BETWEEN ${startDate} AND ${endDate}))::integer
+`;
 
       const associatedResources = countDistinct(schema.resource.id);
 
@@ -131,8 +140,6 @@ export const deploymentStatsRouter = createTRPCRouter({
 
       // we want to show all deployments in the views, even if they are inactive
       const activeDeploymentChecks = and(
-        gte(schema.job.createdAt, startDate),
-        lte(schema.job.createdAt, endDate),
         isNotNull(schema.job.completedAt),
         isNotNull(schema.job.startedAt),
         isNull(schema.resource.deletedAt),
@@ -157,9 +164,9 @@ export const deploymentStatsRouter = createTRPCRouter({
           lastRunAt,
           totalJobs,
           totalSuccess,
-          totalDuration,
+          totalDuration: totalDuration(startDate, endDate),
           associatedResources,
-          successRate,
+          successRate: successRate(startDate, endDate),
           p50,
           p90,
         })
@@ -212,7 +219,7 @@ export const deploymentStatsRouter = createTRPCRouter({
       return ctx.db
         .select({
           totalJobs: count(schema.job.id),
-          successRate,
+          successRate: successRate(startDate, endDate),
         })
         .from(schema.job)
         .innerJoin(
