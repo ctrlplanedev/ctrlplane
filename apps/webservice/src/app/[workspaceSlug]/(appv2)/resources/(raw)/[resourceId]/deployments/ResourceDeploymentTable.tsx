@@ -6,7 +6,6 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { subDays } from "date-fns";
 
-import { Card } from "@ctrlplane/ui/card";
 import {
   Table,
   TableBody,
@@ -47,64 +46,62 @@ export const ResourceDeploymentsTable: React.FC<
   });
 
   return (
-    <Card className="rounded-md">
-      <Table>
-        <TableHeader>
-          <TableRow className="h-16 hover:bg-transparent">
-            <TableHead className="p-4">
-              <TableSortHeader orderByKey={StatsColumn.Name}>
-                Deployment
-              </TableSortHeader>
-            </TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow className="h-16 hover:bg-transparent">
+          <TableHead className="p-4">
+            <TableSortHeader orderByKey={StatsColumn.Name}>
+              Deployment
+            </TableSortHeader>
+          </TableHead>
 
-            <TableHead className="w-20 p-4 xl:w-40">Version</TableHead>
+          <TableHead className="w-20 p-4 xl:w-40">Version</TableHead>
 
-            <TableHead className="p-4">History</TableHead>
+          <TableHead className="p-4">History</TableHead>
 
-            <TableHead className="p-4">
-              <TableSortHeader orderByKey={StatsColumn.P50}>
-                P50 Duration
-              </TableSortHeader>
-            </TableHead>
+          <TableHead className="p-4">
+            <TableSortHeader orderByKey={StatsColumn.P50}>
+              P50 Duration
+            </TableSortHeader>
+          </TableHead>
 
-            <TableHead className="p-4">
-              <TableSortHeader orderByKey={StatsColumn.P90}>
-                P90 Duration
-              </TableSortHeader>
-            </TableHead>
+          <TableHead className="p-4">
+            <TableSortHeader orderByKey={StatsColumn.P90}>
+              P90 Duration
+            </TableSortHeader>
+          </TableHead>
 
-            <TableHead className="p-4">
-              <TableSortHeader orderByKey={StatsColumn.SuccessRate}>
-                Success Rate
-              </TableSortHeader>
-            </TableHead>
+          <TableHead className="p-4">
+            <TableSortHeader orderByKey={StatsColumn.SuccessRate}>
+              Success Rate
+            </TableSortHeader>
+          </TableHead>
 
-            <TableHead className="hidden p-4 xl:table-cell xl:w-[120px]">
-              <TableSortHeader orderByKey={StatsColumn.LastRunAt}>
-                Last Run
-              </TableSortHeader>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
+          <TableHead className="hidden p-4 xl:table-cell xl:w-[120px]">
+            <TableSortHeader orderByKey={StatsColumn.LastRunAt}>
+              Last Run
+            </TableSortHeader>
+          </TableHead>
+        </TableRow>
+      </TableHeader>
 
-        <TableBody>
-          {!isLoading &&
-            data?.map((stat) => (
-              <ResourceDeploymentRow
-                key={stat.id}
-                stats={stat}
-                workspaceId={workspaceId}
-              />
-            ))}
-          {isLoading &&
-            Array.from({ length: 3 }).map((_, index) => (
-              <ResourceDeploymentRowSkeleton
-                key={index}
-                opacity={1 * (1 - index / 3)}
-              />
-            ))}
-        </TableBody>
-      </Table>
-    </Card>
+      <TableBody>
+        {!isLoading &&
+          data?.map((stat) => (
+            <ResourceDeploymentRow
+              key={stat.id}
+              stats={stat}
+              workspaceId={workspaceId}
+            />
+          ))}
+        {isLoading &&
+          Array.from({ length: 3 }).map((_, index) => (
+            <ResourceDeploymentRowSkeleton
+              key={index}
+              opacity={1 * (1 - index / 3)}
+            />
+          ))}
+      </TableBody>
+    </Table>
   );
 };

@@ -10,9 +10,5 @@ export default async function DeploymentsPage(props: { params: Params }) {
   const resource = await api.resource.byId(resourceId);
   if (resource == null) notFound();
 
-  return (
-    <div className="container m-8 mx-auto">
-      <ResourceDeploymentsTable resource={resource} />
-    </div>
-  );
+  return <ResourceDeploymentsTable resource={resource} />;
 }
