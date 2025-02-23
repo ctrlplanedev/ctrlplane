@@ -78,6 +78,7 @@ export const searchRouter = createTRPCRouter({
         FROM ${schema.resource}
         WHERE 
             ${schema.resource.workspaceId} = ${workspaceId}
+            AND ${schema.resource.deletedAt} IS NULL
             AND (
             ${schema.resource.name} % ${search}
             OR ${schema.resource.identifier} % ${search}
