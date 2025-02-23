@@ -26,11 +26,11 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.description} as description,
             ${schema.system.slug} as "slug",
             '' as "systemSlug",
-            GREATEST(
-            similarity(${schema.system.name}, ${search}),
-            similarity(${schema.system.description}, ${search}),
-            similarity(${schema.system.slug}, ${search})
-            ) as rank
+            (
+              similarity(${schema.system.name}, ${search}) +
+              similarity(${schema.system.description}, ${search}) +
+              similarity(${schema.system.slug}, ${search})
+            ) / 3 as rank
         FROM ${schema.system}
         WHERE 
             ${schema.system.workspaceId} = ${workspaceId}
@@ -49,10 +49,10 @@ export const searchRouter = createTRPCRouter({
             ${schema.environment.description} as description,
             '' as "slug",
             ${schema.system.slug} as "systemSlug",
-            GREATEST(
-            similarity(${schema.environment.name}, ${search}),
+            (
+            similarity(${schema.environment.name}, ${search}) +
             similarity(${schema.environment.description}, ${search})
-            ) as rank
+            ) / 2 as rank
         FROM ${schema.environment}
         INNER JOIN ${schema.system} ON ${schema.environment.systemId} = ${schema.system.id}
         WHERE 
@@ -71,10 +71,10 @@ export const searchRouter = createTRPCRouter({
             '' as description,
             ${schema.resource.identifier} as "slug",
             '' as "systemSlug",
-            GREATEST(
-            similarity(${schema.resource.name}, ${search}),
+            (
+            similarity(${schema.resource.name}, ${search}) +
             similarity(${schema.resource.identifier}, ${search})
-            ) as rank
+            ) / 2 as rank
         FROM ${schema.resource}
         WHERE 
             ${schema.resource.workspaceId} = ${workspaceId}
@@ -93,11 +93,11 @@ export const searchRouter = createTRPCRouter({
             ${schema.deployment.description} as description,
             ${schema.deployment.slug} as "slug",
             ${schema.system.slug} as "systemSlug",
-            GREATEST(
-            similarity(${schema.deployment.name}, ${search}),
-            similarity(${schema.deployment.description}, ${search}),
+            (
+            similarity(${schema.deployment.name}, ${search}) +
+            similarity(${schema.deployment.description}, ${search}) +
             similarity(${schema.deployment.slug}, ${search})
-            ) as rank
+            ) / 3 as rank
         FROM ${schema.deployment}
         INNER JOIN ${schema.system} ON ${schema.deployment.systemId} = ${schema.system.id}
         WHERE 
