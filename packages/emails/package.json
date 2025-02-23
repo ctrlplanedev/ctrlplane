@@ -1,0 +1,49 @@
+{
+  "name": "@ctrlplane/emails",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": [
+      "./src/*.tsx",
+      "./src/*.ts"
+    ]
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "email dev --dir ./src",
+    "clean": "rm -rf .turbo node_modules",
+    "format": "prettier --check . --ignore-path ../../.gitignore",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@ctrlplane/ui": "workspace:*",
+    "@react-email/components": "0.0.33",
+    "@t3-oss/env-core": "catalog:",
+    "nodemailer": "^6.10.0",
+    "react-dom": "catalog:react19"
+  },
+  "devDependencies": {
+    "@ctrlplane/eslint-config": "workspace:*",
+    "@ctrlplane/prettier-config": "workspace:*",
+    "@ctrlplane/tailwind-config": "workspace:*",
+    "@ctrlplane/tsconfig": "workspace:*",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "catalog:react19",
+    "eslint": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:react19",
+    "react-email": "3.0.7",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:react19",
+    "zod": "catalog:"
+  },
+  "prettier": "@ctrlplane/prettier-config"
+}
