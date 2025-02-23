@@ -5,6 +5,7 @@ import { IconArrowLeft, IconEdit, IconLock } from "@tabler/icons-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -43,7 +44,9 @@ export default async function Layout(props: {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                Resource List
+                <BreadcrumbLink href={`/${params.workspaceSlug}/resources`}>
+                  Resources
+                </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>

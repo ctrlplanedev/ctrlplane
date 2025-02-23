@@ -5,6 +5,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -52,7 +53,13 @@ export default async function DeploymentLayout(props: {
           <Separator orientation="vertical" className="h-4" />
           <Breadcrumb>
             <BreadcrumbList>
-              <BreadcrumbItem>Deployments</BreadcrumbItem>
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
+                >
+                  Deployments
+                </BreadcrumbLink>
+              </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbPage>{deployment.name}</BreadcrumbPage>
