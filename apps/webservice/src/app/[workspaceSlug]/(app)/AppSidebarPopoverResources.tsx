@@ -27,7 +27,6 @@ import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 import { ResourceIcon } from "./_components/ResourceIcon";
-import { SearchInput } from "./(resources)/resources/ResourcePageContent";
 import { useSidebarPopover } from "./AppSidebarPopoverContext";
 
 export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
@@ -43,7 +42,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
     hash: LZString.compressToEncodedURIComponent(JSON.stringify(view.filter)),
   }));
 
-  const [search, setSearch] = useState("");
+  const [search] = useState("");
   const [filter, setFilter] = useState<ComparisonCondition | undefined>();
   useDebounce(
     () => {
@@ -81,7 +80,6 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
     <>
       <SidebarHeader className="mt-1 flex flex-row items-center justify-between gap-2 px-3">
         <span>Resources</span>
-        <SearchInput value={search} onChange={setSearch} />
       </SidebarHeader>
       <SidebarContent>
         {filter != null && (
