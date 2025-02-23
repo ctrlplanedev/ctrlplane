@@ -7,13 +7,23 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@ctrlplane/ui/breadcrumb";
 import { Button } from "@ctrlplane/ui/button";
 import { Separator } from "@ctrlplane/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarInset,
+  SidebarMenu,
+  SidebarProvider,
+} from "@ctrlplane/ui/sidebar";
 
+import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
+import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
-import { PageHeader } from "../../../_components/PageHeader";
-import { DeploymentTabs } from "./DeploymentTabs";
+import { SidebarLink } from "../../(sidebar)/SidebarLink";
 
 export default async function Layout(props: {
   children: React.ReactNode;
@@ -33,7 +43,11 @@ export default async function Layout(props: {
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbPage>Resource List</BreadcrumbPage>
+                Resource List
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{resource.name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -49,11 +63,43 @@ export default async function Layout(props: {
         </div>
       </PageHeader>
 
-      <div className="h-full space-y-4 p-4">
-        <h1 className="text-2xl font-bold">{resource.name}</h1>
-        <DeploymentTabs />
-        <div className="h-full overflow-auto">{props.children}</div>
-      </div>
+      <SidebarProvider
+        className="relative h-full"
+        sidebarNames={[Sidebars.Resource]}
+      >
+        <Sidebar
+          name={Sidebars.Resource}
+          className="absolute left-0 top-0 h-full"
+        >
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarMenu>
+                <SidebarLink
+                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/deployments`}
+                >
+                  Deployments
+                </SidebarLink>
+                <SidebarLink
+                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/visualize`}
+                >
+                  Visualize
+                </SidebarLink>
+                <SidebarLink
+                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/variables`}
+                >
+                  Variables
+                </SidebarLink>
+                <SidebarLink
+                  href={`/${params.workspaceSlug}/resources/${params.resourceId}/properties`}
+                >
+                  Properties
+                </SidebarLink>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="h-full min-w-0">{props.children}</SidebarInset>
+      </SidebarProvider>
     </div>
   );
 }

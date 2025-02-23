@@ -34,7 +34,7 @@ export default async function PropertiesPage(props: {
       : null;
 
   return (
-    <div className="container space-y-4 p-4">
+    <div className="container space-y-4 p-8">
       <div className="space-y-2">
         <div className="text-sm">Properties</div>
         <div className="grid grid-cols-2 gap-4">
