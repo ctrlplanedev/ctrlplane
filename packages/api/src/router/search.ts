@@ -25,6 +25,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.name} as name,
             ${schema.system.description} as description,
             ${schema.system.slug} as "slug",
+            '' as "systemSlug",
             GREATEST(
             similarity(${schema.system.name}, ${search}),
             similarity(${schema.system.description}, ${search}),
@@ -47,6 +48,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.environment.name} as name,
             ${schema.environment.description} as description,
             '' as "slug",
+            ${schema.system.slug} as "systemSlug",
             GREATEST(
             similarity(${schema.environment.name}, ${search}),
             similarity(${schema.environment.description}, ${search})
@@ -68,6 +70,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.resource.name} as name,
             '' as description,
             ${schema.resource.identifier} as "slug",
+            '' as "systemSlug",
             GREATEST(
             similarity(${schema.resource.name}, ${search}),
             similarity(${schema.resource.identifier}, ${search})
@@ -78,6 +81,30 @@ export const searchRouter = createTRPCRouter({
             AND (
             ${schema.resource.name} % ${search}
             OR ${schema.resource.identifier} % ${search}
+            )
+        
+        UNION ALL
+
+        SELECT 
+            'deployment' as type,
+            ${schema.deployment.id} as id,
+            ${schema.deployment.name} as name,
+            ${schema.deployment.description} as description,
+            ${schema.deployment.slug} as "slug",
+            ${schema.system.slug} as "systemSlug",
+            GREATEST(
+            similarity(${schema.deployment.name}, ${search}),
+            similarity(${schema.deployment.description}, ${search}),
+            similarity(${schema.deployment.slug}, ${search})
+            ) as rank
+        FROM ${schema.deployment}
+        INNER JOIN ${schema.system} ON ${schema.deployment.systemId} = ${schema.system.id}
+        WHERE 
+            ${schema.system.workspaceId} = ${workspaceId}
+            AND (
+            ${schema.deployment.name} % ${search}
+            OR ${schema.deployment.description} % ${search}
+            OR ${schema.deployment.slug} % ${search}
             )
 
         ORDER BY rank DESC
@@ -91,6 +118,7 @@ export const searchRouter = createTRPCRouter({
         name: string;
         description: string;
         slug: string;
+        systemSlug?: string;
       }>(query);
 
       return results.rows;

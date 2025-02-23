@@ -113,23 +113,21 @@ export const TopNavSearch: React.FC<{
                         className="flex items-center"
                       >
                         {result.type === "system" && (
-                          <IconLayoutDashboard className="mr-2 h-4 w-4" />
+                          <IconLayoutDashboard className="mr-2 h-4 w-4 text-neutral-300" />
                         )}
                         {result.type === "deployment" && (
-                          <IconServer className="mr-2 h-4 w-4" />
+                          <IconServer className="mr-2 h-4 w-4 text-neutral-300" />
                         )}
                         {result.type === "release" && (
-                          <IconGitBranch className="mr-2 h-4 w-4" />
+                          <IconGitBranch className="mr-2 h-4 w-4 text-neutral-300" />
                         )}
                         {result.type === "resource" && (
-                          <IconCube className="mr-2 h-4 w-4" />
+                          <IconCube className="mr-2 h-4 w-4 text-neutral-300" />
                         )}
                         {result.type === "environment" && (
-                          <IconPlanet className="mr-2 h-4 w-4" />
+                          <IconPlanet className="mr-2 h-4 w-4 text-neutral-300" />
                         )}
-                        <span>
-                          {result.name} {url}
-                        </span>
+                        <span>{result.name}</span>
                       </CommandItem>
                     );
                   })}
