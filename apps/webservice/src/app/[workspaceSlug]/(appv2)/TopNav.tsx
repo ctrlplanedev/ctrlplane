@@ -34,7 +34,7 @@ export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
       </div>
 
       <div className="mx-auto flex flex-1 justify-center">
-        <TopNavSearch workspaceId={workspace.id} />
+        <TopNavSearch workspace={workspace} />
       </div>
 
       <div>

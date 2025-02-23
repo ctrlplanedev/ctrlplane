@@ -59,6 +59,26 @@ export const searchRouter = createTRPCRouter({
             ${schema.environment.name} % ${search}
             OR ${schema.environment.description} % ${search}
             )
+        
+        UNION ALL
+
+        SELECT 
+            'resource' as type,
+            ${schema.resource.id} as id,
+            ${schema.resource.name} as name,
+            '' as description,
+            ${schema.resource.identifier} as "slug",
+            GREATEST(
+            similarity(${schema.resource.name}, ${search}),
+            similarity(${schema.resource.identifier}, ${search})
+            ) as rank
+        FROM ${schema.resource}
+        WHERE 
+            ${schema.resource.workspaceId} = ${workspaceId}
+            AND (
+            ${schema.resource.name} % ${search}
+            OR ${schema.resource.identifier} % ${search}
+            )
 
         ORDER BY rank DESC
         LIMIT ${limit}
