@@ -8,14 +8,13 @@ import { useDebounce } from "react-use";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
-import { SearchInput } from "../(resources)/resources/ResourcePageContent";
 import { SystemsTable } from "./SystemsTable";
 
 export const SystemsList: React.FC<{
   workspace: Workspace;
   systemsCount: number;
 }> = ({ workspace }) => {
-  const [query, setQuery] = useState<string | undefined>(undefined);
+  const [query] = useState<string | undefined>(undefined);
   const [debouncedQuery, setDebouncedQuery] = useState<string | undefined>(
     undefined,
   );
@@ -30,9 +29,6 @@ export const SystemsList: React.FC<{
   );
   return (
     <div>
-      <div className="border-b border-neutral-800/50 px-2 py-1 text-sm">
-        <SearchInput value={query ?? ""} onChange={setQuery} />
-      </div>
       {systems.isLoading && (
         <div className="space-y-2 p-4">
           {_.range(10).map((i) => (
