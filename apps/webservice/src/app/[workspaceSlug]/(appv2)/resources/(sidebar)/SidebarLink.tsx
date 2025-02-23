@@ -19,7 +19,8 @@ export const SidebarLink: React.FC<{
         href={href}
         className={cn(
           "flex items-center gap-2 text-muted-foreground",
-          active && "bg-purple-500/10 text-purple-300",
+          active &&
+            "bg-purple-500/10 text-purple-300 hover:!bg-purple-500/10 hover:!text-purple-300",
         )}
       >
         {icon}

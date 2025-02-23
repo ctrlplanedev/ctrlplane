@@ -9,5 +9,5 @@ export default async function SystemsPage(props: {
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
 
-  return redirect(`/${workspaceSlug}/systems/${systemSlug}/environments`);
+  return redirect(`/${workspaceSlug}/systems/${systemSlug}/deployments`);
 }

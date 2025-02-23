@@ -68,17 +68,18 @@ export default async function SystemsLayout(props: {
               <SidebarGroupLabel>Release Management</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarLink
-                  icon={<IconPlant />}
-                  href={`/${workspace.slug}/systems/${params.systemSlug}/environments`}
-                >
-                  Environments
-                </SidebarLink>
-                <SidebarLink
                   icon={<IconShip />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/deployments`}
                 >
                   Deployments
                 </SidebarLink>
+                <SidebarLink
+                  icon={<IconPlant />}
+                  href={`/${workspace.slug}/systems/${params.systemSlug}/environments`}
+                >
+                  Environments
+                </SidebarLink>
+
                 <SidebarLink
                   icon={<IconVariable />}
                   href={`/${workspace.slug}/systems/${params.systemSlug}/variables`}
