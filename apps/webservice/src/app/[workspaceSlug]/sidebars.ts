@@ -2,6 +2,7 @@ export enum Sidebars {
   Workspace = "workspace",
   System = "system",
   Resources = "resources",
+  Resource = "resource",
   Deployment = "deployment",
   Environment = "environment",
   EnvironmentAnalytics = "environment-analytics",

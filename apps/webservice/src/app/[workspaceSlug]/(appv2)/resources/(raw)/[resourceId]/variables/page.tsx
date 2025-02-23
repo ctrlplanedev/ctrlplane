@@ -30,7 +30,7 @@ export default async function VariablesPage(props: {
   const { variables } = resource;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8">
+    <div className="mx-auto max-w-2xl space-y-8 p-8">
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h2>Resource Variables</h2>
