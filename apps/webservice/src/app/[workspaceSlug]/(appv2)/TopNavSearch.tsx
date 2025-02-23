@@ -101,9 +101,9 @@ export const TopNavSearch: React.FC<{
                         result.type === "system"
                           ? `/${workspace.slug}/systems/${result.slug}`
                           : result.type === "deployment"
-                            ? `/${workspace.slug}/deployments/${result.slug}`
+                            ? `/${workspace.slug}/systems/${result.systemSlug}/deployments/${result.slug}`
                             : result.type === "release"
-                              ? `/${workspace.slug}/${result.slug}/releases/${result.id}`
+                              ? `/${workspace.slug}/systems/${result.systemSlug}/releases/${result.id}`
                               : `/${workspace.slug}/resources/${result.id}`;
                       return (
                         <CommandItem
