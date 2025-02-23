@@ -498,6 +498,13 @@
       "when": 1738795313731,
       "tag": "0070_friendly_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1740285448903,
+      "tag": "0071_glamorous_black_tom",
+      "breakpoints": true
     }
   ]
 }
