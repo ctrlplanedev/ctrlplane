@@ -89,51 +89,55 @@ export const TopNavSearch: React.FC<{
               <CommandEmpty>No results found.</CommandEmpty>
             )}
 
-            {_.chain(data)
-              .groupBy((d) => d.type)
-              .map((results, type) => (
-                <CommandGroup key={type} heading={capitalCase(type)}>
-                  {results.map((result) => {
-                    const url =
-                      result.type === "system"
-                        ? `/${workspace.slug}/systems/${result.slug}`
-                        : result.type === "deployment"
-                          ? `/${workspace.slug}/deployments/${result.slug}`
-                          : result.type === "release"
-                            ? `/${workspace.slug}/${result.slug}/releases/${result.id}`
-                            : `/${workspace.slug}/resources/${result.id}`;
-                    return (
-                      <CommandItem
-                        value={url}
-                        key={url}
-                        onSelect={() => {
-                          router.push(url);
-                          focus.focusProps.onBlur();
-                        }}
-                        className="flex items-center"
-                      >
-                        {result.type === "system" && (
-                          <IconLayoutDashboard className="mr-2 h-4 w-4 text-neutral-300" />
-                        )}
-                        {result.type === "deployment" && (
-                          <IconServer className="mr-2 h-4 w-4 text-neutral-300" />
-                        )}
-                        {result.type === "release" && (
-                          <IconGitBranch className="mr-2 h-4 w-4 text-neutral-300" />
-                        )}
-                        {result.type === "resource" && (
-                          <IconCube className="mr-2 h-4 w-4 text-neutral-300" />
-                        )}
-                        {result.type === "environment" && (
-                          <IconPlanet className="mr-2 h-4 w-4 text-neutral-300" />
-                        )}
-                        <span>{result.name}</span>
-                      </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              ))
-              .value()}
+            {["system", "deployment", "environment", "resource", "release"]
+              .map((type) => {
+                const results = data?.filter((d) => d.type === type) ?? [];
+                if (results.length === 0) return null;
+
+                return (
+                  <CommandGroup key={type} heading={capitalCase(type)}>
+                    {results.map((result) => {
+                      const url =
+                        result.type === "system"
+                          ? `/${workspace.slug}/systems/${result.slug}`
+                          : result.type === "deployment"
+                            ? `/${workspace.slug}/deployments/${result.slug}`
+                            : result.type === "release"
+                              ? `/${workspace.slug}/${result.slug}/releases/${result.id}`
+                              : `/${workspace.slug}/resources/${result.id}`;
+                      return (
+                        <CommandItem
+                          value={url}
+                          key={url}
+                          onSelect={() => {
+                            router.push(url);
+                            focus.focusProps.onBlur();
+                          }}
+                          className="flex items-center"
+                        >
+                          {result.type === "system" && (
+                            <IconLayoutDashboard className="mr-2 h-4 w-4 text-neutral-300" />
+                          )}
+                          {result.type === "deployment" && (
+                            <IconServer className="mr-2 h-4 w-4 text-neutral-300" />
+                          )}
+                          {result.type === "release" && (
+                            <IconGitBranch className="mr-2 h-4 w-4 text-neutral-300" />
+                          )}
+                          {result.type === "resource" && (
+                            <IconCube className="mr-2 h-4 w-4 text-neutral-300" />
+                          )}
+                          {result.type === "environment" && (
+                            <IconPlanet className="mr-2 h-4 w-4 text-neutral-300" />
+                          )}
+                          <span>{result.name}</span>
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                );
+              })
+              .filter(Boolean)}
           </CommandList>
         )}
       </Command>
