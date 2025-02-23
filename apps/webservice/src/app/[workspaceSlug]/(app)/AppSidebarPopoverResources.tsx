@@ -26,8 +26,8 @@ import {
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
+import { SearchInput } from "../(appv2)/resources/(sidebar)/list/ResourcePageContent";
 import { ResourceIcon } from "./_components/ResourceIcon";
-import { SearchInput } from "./(resources)/resources/ResourcePageContent";
 import { useSidebarPopover } from "./AppSidebarPopoverContext";
 
 export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
