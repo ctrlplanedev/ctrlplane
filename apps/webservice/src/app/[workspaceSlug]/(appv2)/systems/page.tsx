@@ -19,12 +19,10 @@ export default async function SystemsPage(props: {
 
   return (
     <div className="container m-8 mx-auto space-y-8">
-      <div className="flex w-full justify-between">
+      <div className="flex w-full items-center justify-between">
         <h2 className="text-2xl font-bold">Systems</h2>
         <CreateDeploymentDialog>
-          <Button variant="outline" size="sm">
-            Create Deployment
-          </Button>
+          <Button variant="outline">Create Deployment</Button>
         </CreateDeploymentDialog>
       </div>
 

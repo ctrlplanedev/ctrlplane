@@ -74,6 +74,7 @@ const EnvIcon: React.FC<{
 const DeploymentTable: React.FC<{
   workspace: Workspace;
   systemSlug: string;
+  className?: string;
   environments: Environment[];
   deployments: Array<
     Deployment & {
@@ -87,9 +88,14 @@ const DeploymentTable: React.FC<{
       }> | null;
     }
   >;
-}> = ({ systemSlug, deployments, environments, workspace }) => {
+}> = ({ systemSlug, deployments, environments, workspace, className }) => {
   return (
-    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-x-auto">
+    <div
+      className={cn(
+        "scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-x-auto",
+        className,
+      )}
+    >
       <table className="w-full min-w-max border-separate border-spacing-0">
         <thead>
           <tr>
