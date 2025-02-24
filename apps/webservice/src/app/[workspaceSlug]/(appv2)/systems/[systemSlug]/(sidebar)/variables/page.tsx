@@ -62,9 +62,7 @@ export default async function SystemVariableSetsPage(props: {
         />
       )}
       {variableSets.length !== 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-110px)] overflow-auto">
-          <VariableSetsTable variableSets={variableSets} />
-        </div>
+        <VariableSetsTable variableSets={variableSets} />
       )}
     </div>
   );

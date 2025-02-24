@@ -50,10 +50,10 @@ export default async function SystemsLayout(props: {
   );
 
   return (
-    <div className="relative rounded-tl-lg">
-      <SidebarProvider sidebarNames={[Sidebars.System]}>
+    <div className="relative h-full rounded-tl-lg">
+      <SidebarProvider sidebarNames={[Sidebars.System]} className="h-full">
         <Sidebar
-          className="absolute left-0 top-0 rounded-tl-lg"
+          className="absolute left-0 top-0 h-full rounded-tl-lg"
           name={Sidebars.System}
         >
           <SidebarHeader className="rounded-tl-lg">
@@ -119,7 +119,7 @@ export default async function SystemsLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-1px)] min-w-0">
+        <SidebarInset className="h-[calc(100vh-56px-64px-2px)] min-w-0 overflow-auto">
           {props.children}
         </SidebarInset>
       </SidebarProvider>
