@@ -21,7 +21,7 @@ const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
 }) => (
   <th
     className={cn(
-      "sticky left-0 h-10 border-b border-r p-2 px-3 text-left text-sm font-normal text-muted-foreground",
+      "sticky left-0 h-10 border-b p-2 px-3 text-left text-sm font-normal text-muted-foreground",
       className,
     )}
   >
@@ -33,7 +33,8 @@ const EnvIcon: React.FC<{
   environment: Environment;
   workspaceSlug: string;
   systemSlug: string;
-}> = ({ environment: env, workspaceSlug, systemSlug }) => {
+  className?: string;
+}> = ({ environment: env, workspaceSlug, systemSlug, className }) => {
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
   const workspaceId = workspace?.id ?? "";
@@ -50,7 +51,7 @@ const EnvIcon: React.FC<{
 
   const envUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments?environment_id=${env.id}`;
   return (
-    <Icon key={env.id}>
+    <Icon key={env.id} className={className}>
       <Link href={envUrl}>
         <div className="flex justify-between">
           {env.name}
@@ -92,24 +93,33 @@ const DeploymentTable: React.FC<{
       <table className="w-full min-w-max border-separate border-spacing-0">
         <thead>
           <tr>
-            <Icon className="sticky left-0 z-10 backdrop-blur-lg">
+            <Icon className="sticky left-0 z-10 rounded-tl border-r backdrop-blur-lg">
               Deployment
             </Icon>
-            {environments.map((env) => (
+            {environments.map((env, idx) => (
               <EnvIcon
                 key={env.id}
                 environment={env}
                 workspaceSlug={workspace.slug}
                 systemSlug={systemSlug}
+                className={cn({ "border-r": idx !== environments.length - 1 })}
               />
             ))}
           </tr>
         </thead>
 
         <tbody>
-          {deployments.map((r) => (
+          {deployments.map((r, didx) => (
             <tr key={r.id} className="bg-background">
-              <td className="sticky left-0 z-10 w-[250px] items-center border-b border-r px-4 backdrop-blur-lg">
+              <td
+                className={cn(
+                  "sticky left-0 z-10 w-[250px] items-center border-r px-4 backdrop-blur-lg",
+                  {
+                    "border-b": didx !== deployments.length - 1,
+                    "rounded-bl": didx === deployments.length - 1,
+                  },
+                )}
+              >
                 <div className="flex w-full items-center gap-2">
                   <Link
                     href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
@@ -129,8 +139,9 @@ const DeploymentTable: React.FC<{
                 return (
                   <td
                     key={env.id}
-                    className={cn("h-[55px] w-[220px] border-b px-4 py-2", {
+                    className={cn("h-[55px] w-[220px] px-4 py-2", {
                       "border-r": idx !== environments.length - 1,
+                      "border-b": didx !== deployments.length - 1,
                     })}
                   >
                     {release != null && (
