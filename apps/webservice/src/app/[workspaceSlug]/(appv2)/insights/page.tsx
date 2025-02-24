@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { endOfDay, startOfDay, subDays } from "date-fns";
+import { endOfDay, startOfDay, subDays, subWeeks } from "date-fns";
 
 import {
   Breadcrumb,
@@ -40,6 +40,15 @@ export default async function InsightsPage(props: Props) {
     endDate,
   });
 
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const jobs = await api.job.config.byWorkspaceId.dailyCount({
+    workspaceId: workspace.id,
+    startDate: subWeeks(endDate, 6),
+    endDate,
+    timezone,
+  });
+
   return (
     <div>
       <PageHeader>
@@ -67,7 +76,15 @@ export default async function InsightsPage(props: Props) {
           />
         </div>
 
-        <DailyJobsChart workspaceId={workspace.id} />
+        <Card className="rounded-md">
+          <CardHeader>
+            <CardTitle>Jobs per day</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px] w-full">
+            <DailyJobsChart dailyCounts={jobs} />
+          </CardContent>
+        </Card>
+
         <Card className="rounded-md">
           <CardHeader>
             <CardTitle>Resources over 30 days</CardTitle>
