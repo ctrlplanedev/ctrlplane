@@ -109,11 +109,12 @@ const DeploymentTable: React.FC<{
         <tbody>
           {deployments.map((r) => (
             <tr key={r.id} className="bg-background">
-              <td className="sticky left-0 z-10 min-w-[500px] items-center border-b border-r px-4 backdrop-blur-lg">
+              <td className="sticky left-0 z-10 w-[250px] items-center border-b border-r px-4 backdrop-blur-lg">
                 <div className="flex w-full items-center gap-2">
                   <Link
                     href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
-                    className="flex-grow hover:text-blue-300"
+                    className="flex-grow truncate hover:text-blue-300"
+                    title={r.name}
                   >
                     {r.name}
                   </Link>
@@ -121,14 +122,16 @@ const DeploymentTable: React.FC<{
                 </div>
               </td>
 
-              {environments.map((env) => {
+              {environments.map((env, idx) => {
                 const release =
                   r.activeReleases?.find((r) => r.environmentId === env.id) ??
                   null;
                 return (
                   <td
                     key={env.id}
-                    className="h-[55px] w-[220px] border-b border-r px-4 py-2"
+                    className={cn("h-[55px] w-[220px] border-b px-4 py-2", {
+                      "border-r": idx !== environments.length - 1,
+                    })}
                   >
                     {release != null && (
                       <LazyReleaseEnvironmentCell
