@@ -54,7 +54,6 @@ const EnvironmentHealth: React.FC<EnvironmentHealthProps> = ({
       {totalCount > 0
         ? `${healthyCount}/${totalCount} Healthy`
         : "No resources"}
-      DeploymentTable
     </div>
   );
 };

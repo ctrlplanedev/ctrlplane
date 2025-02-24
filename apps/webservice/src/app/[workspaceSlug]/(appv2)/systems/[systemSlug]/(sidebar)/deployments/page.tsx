@@ -66,6 +66,7 @@ export default async function EnvironmentsPage(props: {
         systemSlug={params.systemSlug}
         environments={environments}
         deployments={deployments}
+        className="border-b"
       />
     </div>
   );
