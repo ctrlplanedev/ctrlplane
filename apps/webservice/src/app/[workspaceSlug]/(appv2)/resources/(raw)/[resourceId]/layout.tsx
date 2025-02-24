@@ -101,7 +101,9 @@ export default async function Layout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-full min-w-0">{props.children}</SidebarInset>
+        <SidebarInset className="h-[calc(100vh-56px-64px-2px)] min-w-0 overflow-auto">
+          {props.children}
+        </SidebarInset>
       </SidebarProvider>
     </div>
   );
