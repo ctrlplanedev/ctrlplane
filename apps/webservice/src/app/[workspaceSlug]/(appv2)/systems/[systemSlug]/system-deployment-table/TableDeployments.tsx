@@ -26,8 +26,7 @@ type Deployment = RouterOutputs["deployment"]["bySystemId"][number];
 const EnvHeader: React.FC<{
   environment: Environment;
   workspaceSlug: string;
-  systemSlug: string;
-}> = ({ environment: env, workspaceSlug, systemSlug }) => {
+}> = ({ environment: env, workspaceSlug }) => {
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
   const workspaceId = workspace?.id ?? "";
@@ -42,7 +41,7 @@ const EnvHeader: React.FC<{
 
   const isLoading = isWorkspaceLoading || isResourcesLoading;
 
-  const envUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments?environment_id=${env.id}`;
+  const envUrl = `/${workspaceSlug}/systems?environment_id=${env.id}`;
   return (
     <TableHead className="pl-6" key={env.id}>
       <Link href={envUrl}>
@@ -83,7 +82,6 @@ const DeploymentTable: React.FC<{
                 key={env.id}
                 environment={env}
                 workspaceSlug={workspace.slug}
-                systemSlug={systemSlug}
               />
             ))}
           </TableRow>
