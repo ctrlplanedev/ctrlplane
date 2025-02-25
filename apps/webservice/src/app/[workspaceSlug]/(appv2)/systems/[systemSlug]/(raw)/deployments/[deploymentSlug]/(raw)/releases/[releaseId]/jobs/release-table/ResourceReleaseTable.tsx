@@ -51,6 +51,7 @@ type CollapsibleTableRowProps = {
     id: string;
     version: string;
     name: string;
+    deploymentId: string;
   };
   triggersByResource: Record<string, Trigger[]>;
 };
@@ -420,7 +421,12 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
 };
 
 type ResourceReleaseTableProps = {
-  release: { id: string; version: string; name: string };
+  release: {
+    id: string;
+    version: string;
+    name: string;
+    deploymentId: string;
+  };
   deployment: SCHEMA.Deployment;
   environments: SCHEMA.Environment[];
 };
