@@ -464,14 +464,17 @@ export const releaseRouter = createTRPCRouter({
           )
           .leftJoin(
             environmentPolicyReleaseChannel,
-            eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
+            and(
+              eq(
+                environmentPolicyReleaseChannel.policyId,
+                environmentPolicy.id,
+              ),
+              eq(environmentPolicyReleaseChannel.deploymentId, deploymentId),
+            ),
           )
           .leftJoin(
             releaseChannel,
-            and(
-              eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
-              eq(environmentPolicyReleaseChannel.deploymentId, deploymentId),
-            ),
+            eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
           )
           .where(eq(environment.id, environmentId))
           .then(takeFirst);
