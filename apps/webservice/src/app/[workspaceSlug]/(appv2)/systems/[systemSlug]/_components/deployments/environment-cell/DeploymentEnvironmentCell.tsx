@@ -32,63 +32,25 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   deployment,
   workspace,
 }) => {
-  const { resourceFilter } = environment;
-
-  const { data: resourceInfo, isLoading: isResourceInfoLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      {
-        workspaceId: workspace.id,
-        filter: resourceFilter ?? undefined,
-        limit: 0,
-      },
-      { enabled: resourceFilter != null },
-    );
-
-  const hasResources = (resourceInfo?.total ?? 0) > 0;
-
   const { data: release, isLoading: isReleaseLoading } =
     api.release.latest.byDeploymentAndEnvironment.useQuery({
       deploymentId: deployment.id,
       environmentId: environment.id,
     });
 
-  const { data: approval, isLoading: isApprovalLoading } =
-    api.environment.policy.approval.statusByReleasePolicyId.useQuery(
-      {
-        releaseId: release?.id ?? "",
-        policyId: environment.policyId,
-      },
-      { enabled: release != null && resourceFilter != null },
-    );
-
   const { data: statuses, isLoading: isStatusesLoading } =
     api.release.status.byEnvironmentId.useQuery(
       { releaseId: release?.id ?? "", environmentId: environment.id },
-      {
-        refetchInterval: 2_000,
-        enabled: release != null && resourceFilter != null,
-      },
+      { refetchInterval: 2_000, enabled: release != null },
     );
 
   const deploy = api.release.deploy.toEnvironment.useMutation();
   const router = useRouter();
 
-  const isLoading =
-    isStatusesLoading ||
-    isApprovalLoading ||
-    isReleaseLoading ||
-    isResourceInfoLoading;
+  const isLoading = isStatusesLoading || isReleaseLoading;
 
   if (isLoading)
     return <p className="text-xs text-muted-foreground">Loading...</p>;
-
-  const isAlreadyDeployed = statuses != null && statuses.length > 0;
-
-  const hasJobAgent = deployment.jobAgentId != null;
-
-  const isPendingApproval = approval?.status === "pending";
-
-  const showRelease = isAlreadyDeployed && !isPendingApproval;
 
   if (release == null)
     return (
@@ -97,7 +59,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       </div>
     );
 
-  if (!hasResources)
+  if (release.resourceCount === 0)
     return (
       <Link
         href={`/${workspace.slug}/systems/${deployment.system.slug}/environments/${environment.id}/resources`}
@@ -116,6 +78,15 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
         </div>
       </Link>
     );
+
+  const isAlreadyDeployed = statuses != null && statuses.length > 0;
+
+  const hasJobAgent = deployment.jobAgentId != null;
+
+  const isPendingApproval =
+    release.approval != null && release.approval.status === "pending";
+
+  const showRelease = isAlreadyDeployed && !isPendingApproval;
 
   if (showRelease)
     return (
@@ -153,9 +124,9 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       </div>
     );
 
-  if (isPendingApproval)
+  if (release.approval != null && isPendingApproval)
     return (
-      <ApprovalDialog policyId={approval.policyId} release={release}>
+      <ApprovalDialog policyId={release.approval.policyId} release={release}>
         <div className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50">
           <div className="flex items-center gap-2">
             <div className="rounded-full bg-yellow-400 p-1 dark:text-black">

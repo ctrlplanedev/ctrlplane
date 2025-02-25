@@ -20,6 +20,7 @@ import {
   deployment,
   environment,
   environmentPolicy,
+  environmentPolicyApproval,
   environmentPolicyReleaseChannel,
   job,
   release,
@@ -29,6 +30,8 @@ import {
   releaseMatchesCondition,
   releaseMetadata,
   resource,
+  resourceMatchesMetadata,
+  system,
   updateRelease,
 } from "@ctrlplane/db/schema";
 import {
@@ -451,39 +454,45 @@ export const releaseRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         const { deploymentId, environmentId } = input;
 
-        const rc = await ctx.db
+        const env = await ctx.db
           .select()
           .from(environment)
+          .innerJoin(system, eq(environment.systemId, system.id))
           .innerJoin(
             environmentPolicy,
             eq(environment.policyId, environmentPolicy.id),
           )
-          .innerJoin(
+          .leftJoin(
             environmentPolicyReleaseChannel,
             eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
           )
-          .innerJoin(
+          .leftJoin(
             releaseChannel,
-            eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
-          )
-          .where(
             and(
-              eq(environment.id, environmentId),
-              eq(releaseChannel.deploymentId, deploymentId),
+              eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+              eq(environmentPolicyReleaseChannel.deploymentId, deploymentId),
             ),
           )
-          .then(takeFirstOrNull);
+          .where(eq(environment.id, environmentId))
+          .then(takeFirst);
 
-        return ctx.db
+        const rel = await ctx.db
           .select()
           .from(release)
+          .leftJoin(
+            environmentPolicyApproval,
+            and(
+              eq(environmentPolicyApproval.releaseId, release.id),
+              eq(environmentPolicyApproval.policyId, env.environment.policyId),
+            ),
+          )
           .where(
             and(
               eq(release.deploymentId, deploymentId),
-              rc != null
+              env.release_channel != null
                 ? releaseMatchesCondition(
                     ctx.db,
-                    rc.release_channel.releaseFilter,
+                    env.release_channel.releaseFilter,
                   )
                 : undefined,
             ),
@@ -491,6 +500,33 @@ export const releaseRouter = createTRPCRouter({
           .orderBy(desc(release.createdAt))
           .limit(1)
           .then(takeFirstOrNull);
+
+        if (rel == null) return null;
+
+        if (env.environment.resourceFilter == null)
+          return {
+            ...rel.release,
+            approval: rel.environment_policy_approval,
+            resourceCount: 0,
+          };
+
+        const resourceCount = await ctx.db
+          .select({ count: count() })
+          .from(resource)
+          .where(
+            and(
+              eq(resource.workspaceId, env.system.workspaceId),
+              resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
+              isNull(resource.deletedAt),
+            ),
+          )
+          .then(takeFirst);
+
+        return {
+          ...rel.release,
+          approval: rel.environment_policy_approval,
+          resourceCount: resourceCount.count,
+        };
       }),
   }),
 
