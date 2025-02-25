@@ -1,7 +1,7 @@
 import { Button } from "@ctrlplane/ui/button";
 
+import { ApprovalDialog } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/release/ApprovalDialog";
 import { api } from "~/trpc/react";
-import { ApprovalDialog } from "../../../../../../../../_components/release/ApprovalDialog";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
 export const ApprovalCheck: React.FC<{
