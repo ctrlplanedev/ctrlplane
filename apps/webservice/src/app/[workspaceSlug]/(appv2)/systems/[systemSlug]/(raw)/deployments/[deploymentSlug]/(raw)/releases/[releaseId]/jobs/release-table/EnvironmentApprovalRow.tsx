@@ -8,7 +8,7 @@ import { ApprovalDialog } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlu
 
 type EnvironmentApprovalRowProps = {
   approval: EnvironmentPolicyApproval & { user?: User | null };
-  release: { id: string; version: string };
+  release: { id: string; version: string; deploymentId: string };
 };
 
 export const EnvironmentApprovalRow: React.FC<EnvironmentApprovalRowProps> = ({

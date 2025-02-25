@@ -22,6 +22,7 @@ type Release = {
   version: string;
   createdAt: Date;
   status: ReleaseStatusType;
+  deploymentId: string;
 };
 
 type ReleaseEnvironmentCellProps = {
@@ -134,7 +135,11 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
 
   if (isPendingApproval)
     return (
-      <ApprovalDialog policyId={approval.policyId} release={release}>
+      <ApprovalDialog
+        policyId={approval.policyId}
+        release={release}
+        environmentId={environment.id}
+      >
         <Button
           className="w-full border-dashed border-neutral-700/60 bg-transparent text-center text-neutral-700 hover:border-blue-400 hover:bg-transparent hover:text-blue-400"
           variant="outline"

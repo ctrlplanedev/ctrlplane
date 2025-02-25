@@ -6,7 +6,7 @@ import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
 export const ApprovalCheck: React.FC<{
   policyId: string;
-  release: { id: string; version: string };
+  release: { id: string; version: string; deploymentId: string };
 }> = ({ policyId, release }) => {
   const approvalStatus =
     api.environment.policy.approval.statusByReleasePolicyId.useQuery({
