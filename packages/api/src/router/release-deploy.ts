@@ -51,6 +51,8 @@ export const releaseDeployRouter = createTRPCRouter({
         .then(input.isForcedRelease ? () => {} : createJobApprovals)
         .insert();
 
+      console.log("releaseJobTriggers", releaseJobTriggers);
+
       await dispatchReleaseJobTriggers(ctx.db)
         .releaseTriggers(releaseJobTriggers)
         .filter(

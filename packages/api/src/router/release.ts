@@ -424,6 +424,74 @@ export const releaseRouter = createTRPCRouter({
           .then(takeFirstOrNull)
           .then((r) => r?.release ?? null),
       ),
+
+    byDeploymentAndEnvironment: protectedProcedure
+      .input(
+        z.object({
+          deploymentId: z.string().uuid(),
+          environmentId: z.string().uuid(),
+        }),
+      )
+      .meta({
+        authorizationCheck: async ({ canUser, input }) => {
+          const { deploymentId, environmentId } = input;
+          const deploymentAuthzPromise = canUser
+            .perform(Permission.DeploymentGet)
+            .on({ type: "deployment", id: deploymentId });
+          const environmentAuthzPromise = canUser
+            .perform(Permission.EnvironmentGet)
+            .on({ type: "environment", id: environmentId });
+          const [deployment, environment] = await Promise.all([
+            deploymentAuthzPromise,
+            environmentAuthzPromise,
+          ]);
+          return deployment && environment;
+        },
+      })
+      .query(async ({ ctx, input }) => {
+        const { deploymentId, environmentId } = input;
+
+        const rc = await ctx.db
+          .select()
+          .from(environment)
+          .innerJoin(
+            environmentPolicy,
+            eq(environment.policyId, environmentPolicy.id),
+          )
+          .innerJoin(
+            environmentPolicyReleaseChannel,
+            eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
+          )
+          .innerJoin(
+            releaseChannel,
+            eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+          )
+          .where(
+            and(
+              eq(environment.id, environmentId),
+              eq(releaseChannel.deploymentId, deploymentId),
+            ),
+          )
+          .then(takeFirstOrNull);
+
+        return ctx.db
+          .select()
+          .from(release)
+          .where(
+            and(
+              eq(release.deploymentId, deploymentId),
+              rc != null
+                ? releaseMatchesCondition(
+                    ctx.db,
+                    rc.release_channel.releaseFilter,
+                  )
+                : undefined,
+            ),
+          )
+          .orderBy(desc(release.createdAt))
+          .limit(1)
+          .then(takeFirstOrNull);
+      }),
   }),
 
   metadataKeys: releaseMetadataKeysRouter,

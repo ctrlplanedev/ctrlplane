@@ -21,6 +21,7 @@ import {
   sql,
 } from "drizzle-orm";
 import {
+  index,
   jsonb,
   pgEnum,
   pgTable,
@@ -123,7 +124,10 @@ export const release = pgTable(
     message: text("message"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => ({ unq: uniqueIndex().on(t.deploymentId, t.version) }),
+  (t) => ({
+    unq: uniqueIndex().on(t.deploymentId, t.version),
+    createdAtIdx: index("release_created_at_idx").on(t.createdAt),
+  }),
 );
 
 export type Release = InferSelectModel<typeof release>;

@@ -505,6 +505,13 @@
       "when": 1740285448903,
       "tag": "0071_glamorous_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1740443326841,
+      "tag": "0072_dapper_sphinx",
+      "breakpoints": true
     }
   ]
 }

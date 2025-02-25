@@ -4,7 +4,7 @@ import type { EnvironmentPolicyApproval, User } from "@ctrlplane/db/schema";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { ApprovalDialog } from "../../../../../(sidebar)/releases/ApprovalDialog";
+import { ApprovalDialog } from "../../../../../../../../_components/release/ApprovalDialog";
 
 type EnvironmentApprovalRowProps = {
   approval: EnvironmentPolicyApproval & { user?: User | null };

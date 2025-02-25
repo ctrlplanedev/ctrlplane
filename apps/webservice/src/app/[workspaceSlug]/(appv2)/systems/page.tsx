@@ -4,7 +4,7 @@ import { Button } from "@ctrlplane/ui/button";
 
 import { api } from "~/trpc/server";
 import { CreateDeploymentDialog } from "../_components/deployments/CreateDeployment";
-import { SystemDeploymentTable } from "./SystemDeploymentTable";
+import { SystemDeploymentTable } from "./[systemSlug]/system-deployment-table/SystemDeploymentTable";
 
 export default async function SystemsPage(props: {
   params: Promise<{ workspaceSlug: string }>;
