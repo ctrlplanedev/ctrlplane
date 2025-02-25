@@ -3,7 +3,7 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
-import { IconLoader2, IconRocket } from "@tabler/icons-react";
+import { IconLoader2 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -18,7 +18,6 @@ import {
 
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { api } from "~/trpc/react";
-import { DeploymentOptionsDropdown } from "../_components/deployments/dropdown/DeploymentOptionsDropdown";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Deployment = RouterOutputs["deployment"]["bySystemId"][number];
@@ -43,21 +42,19 @@ const EnvHeader: React.FC<{
 
   const envUrl = `/${workspaceSlug}/systems?environment_id=${env.id}`;
   return (
-    <TableHead className="pl-6" key={env.id}>
-      <Link href={envUrl}>
-        <div className="flex w-fit items-center gap-2 rounded-md px-2 py-1 hover:bg-secondary/50">
-          {env.name}
+    <TableHead className="w-fit p-2" key={env.id}>
+      <Link
+        href={envUrl}
+        className="flex w-fit items-center gap-2 rounded-md px-2 py-1 text-white hover:bg-secondary/50"
+      >
+        {env.name}
 
-          <Badge
-            variant="outline"
-            className="rounded-full text-muted-foreground"
-          >
-            {isLoading && (
-              <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-            )}
-            {!isLoading && total}
-          </Badge>
-        </div>
+        <Badge variant="outline" className="rounded-full text-muted-foreground">
+          {isLoading && (
+            <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {!isLoading && total}
+        </Badge>
       </Link>
     </TableHead>
   );
@@ -75,7 +72,7 @@ const DeploymentTable: React.FC<{
         <TableHeader className="[&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
             <TableHead className="sticky left-0 z-10 rounded-tl-md py-4 pl-6 backdrop-blur-lg">
-              Deployment
+              Deployments
             </TableHead>
             {environments.map((env) => (
               <EnvHeader
@@ -94,33 +91,24 @@ const DeploymentTable: React.FC<{
             >
               <TableCell
                 className={cn(
-                  "sticky left-0 z-10 h-[70px] w-[300px] max-w-[300px] backdrop-blur-lg",
+                  "sticky left-0 z-10 h-[70px] w-[350px] max-w-[300px] backdrop-blur-lg",
                   idx === deployments.length - 1 && "rounded-b-md",
                 )}
               >
-                <div className="flex min-w-0 items-center justify-between gap-2 px-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-purple-400">
-                      <IconRocket className="h-4 w-4 text-purple-600" />
-                    </div>
-                    <Link
-                      href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
-                      className="truncate hover:text-blue-300"
-                      title={r.name}
-                    >
-                      {r.name}
-                    </Link>
-                  </div>
-
-                  <div className="shrink-0">
-                    <DeploymentOptionsDropdown {...r} />
-                  </div>
+                <div className="flex min-w-0 items-center justify-between gap-2 px-2 text-lg">
+                  <Link
+                    href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
+                    className="truncate hover:text-blue-300"
+                    title={r.name}
+                  >
+                    {r.name}
+                  </Link>
                 </div>
               </TableCell>
               {environments.map((env) => {
                 return (
-                  <TableCell key={env.id} className="h-[70px] w-[250px]">
-                    <div className="flex h-full w-full items-center justify-center">
+                  <TableCell key={env.id} className="h-[70px] w-[220px]">
+                    <div className="flex h-full w-full justify-center">
                       <LazyDeploymentEnvironmentCell
                         environment={env}
                         deployment={r}

@@ -48,7 +48,10 @@ import {
   jobCondition,
   JobStatus,
 } from "@ctrlplane/validators/jobs";
-import { releaseCondition } from "@ctrlplane/validators/releases";
+import {
+  releaseCondition,
+  ReleaseStatus,
+} from "@ctrlplane/validators/releases";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { releaseDeployRouter } from "./release-deploy";
@@ -491,6 +494,7 @@ export const releaseRouter = createTRPCRouter({
           )
           .where(
             and(
+              eq(release.status, ReleaseStatus.Ready),
               eq(release.deploymentId, deploymentId),
               env.release_channel != null
                 ? releaseMatchesCondition(

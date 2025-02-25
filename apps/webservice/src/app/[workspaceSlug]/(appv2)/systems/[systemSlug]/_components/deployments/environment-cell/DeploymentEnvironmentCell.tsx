@@ -11,7 +11,6 @@ import {
 import { useInView } from "react-intersection-observer";
 
 import { Button } from "@ctrlplane/ui/button";
-import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 import { ApprovalDialog } from "../../release/ApprovalDialog";
@@ -50,13 +49,11 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   const isLoading = isStatusesLoading || isReleaseLoading;
 
   if (isLoading)
-    return <p className="text-xs text-muted-foreground">Loading...</p>;
+    return <p className="text-xs text-muted-foreground/70">Loading...</p>;
 
   if (release == null)
     return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        No release
-      </div>
+      <p className="text-xs text-muted-foreground/70">No versions released</p>
     );
 
   if (release.resourceCount === 0)
@@ -103,18 +100,6 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           statuses={statuses.map((s) => s.job.status)}
         />
       </div>
-    );
-
-  if (release.status === ReleaseStatus.Building)
-    return (
-      <div className="text-center text-xs text-muted-foreground/70">
-        Release is building
-      </div>
-    );
-
-  if (release.status === ReleaseStatus.Failed)
-    return (
-      <div className="text-center text-xs text-red-500">Release failed</div>
     );
 
   if (!hasJobAgent)
