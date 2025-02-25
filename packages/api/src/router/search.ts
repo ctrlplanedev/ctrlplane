@@ -26,11 +26,14 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.description} as description,
             ${schema.system.slug} as "slug",
             '' as "systemSlug",
-            (
-              similarity(${schema.system.name}, ${search}) +
-              similarity(${schema.system.description}, ${search}) +
-              similarity(${schema.system.slug}, ${search})
-            ) / 3 as rank
+            CASE
+              WHEN LENGTH(${search}) = 36 AND ${schema.system.id}::text = ${search} THEN 1
+              ELSE (
+                similarity(${schema.system.name}, ${search}) +
+                similarity(${schema.system.description}, ${search}) +
+                similarity(${schema.system.slug}, ${search})
+              ) / 3
+            END as rank
         FROM ${schema.system}
         WHERE 
             ${schema.system.workspaceId} = ${workspaceId}
@@ -38,6 +41,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.name} % ${search}
             OR ${schema.system.description} % ${search}
             OR ${schema.system.slug} % ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.system.id}::text = ${search}
             )
 
         UNION ALL
@@ -49,10 +53,13 @@ export const searchRouter = createTRPCRouter({
             ${schema.environment.description} as description,
             '' as "slug",
             ${schema.system.slug} as "systemSlug",
-            (
-            similarity(${schema.environment.name}, ${search}) +
-            similarity(${schema.environment.description}, ${search})
-            ) / 2 as rank
+            CASE
+              WHEN LENGTH(${search}) = 36 AND ${schema.environment.id}::text = ${search} THEN 1
+              ELSE (
+                similarity(${schema.environment.name}, ${search}) +
+                similarity(${schema.environment.description}, ${search})
+              ) / 2
+            END as rank
         FROM ${schema.environment}
         INNER JOIN ${schema.system} ON ${schema.environment.systemId} = ${schema.system.id}
         WHERE 
@@ -60,6 +67,7 @@ export const searchRouter = createTRPCRouter({
             AND (
             ${schema.environment.name} % ${search}
             OR ${schema.environment.description} % ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.environment.id}::text = ${search}
             )
         
         UNION ALL
@@ -71,10 +79,13 @@ export const searchRouter = createTRPCRouter({
             '' as description,
             ${schema.resource.identifier} as "slug",
             '' as "systemSlug",
-            (
-            similarity(${schema.resource.name}, ${search}) +
-            similarity(${schema.resource.identifier}, ${search})
-            ) / 2 as rank
+            CASE
+              WHEN LENGTH(${search}) = 36 AND ${schema.resource.id}::text = ${search} THEN 1
+              ELSE (
+                similarity(${schema.resource.name}, ${search}) +
+                similarity(${schema.resource.identifier}, ${search})
+              ) / 2
+            END as rank
         FROM ${schema.resource}
         WHERE 
             ${schema.resource.workspaceId} = ${workspaceId}
@@ -82,6 +93,7 @@ export const searchRouter = createTRPCRouter({
             AND (
             ${schema.resource.name} % ${search}
             OR ${schema.resource.identifier} % ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.resource.id}::text = ${search}
             )
         
         UNION ALL
@@ -93,11 +105,14 @@ export const searchRouter = createTRPCRouter({
             ${schema.deployment.description} as description,
             ${schema.deployment.slug} as "slug",
             ${schema.system.slug} as "systemSlug",
-            (
-            similarity(${schema.deployment.name}, ${search}) +
-            similarity(${schema.deployment.description}, ${search}) +
-            similarity(${schema.deployment.slug}, ${search})
-            ) / 3 as rank
+            CASE
+              WHEN LENGTH(${search}) = 36 AND ${schema.deployment.id}::text = ${search} THEN 1
+              ELSE (
+                similarity(${schema.deployment.name}, ${search}) +
+                similarity(${schema.deployment.description}, ${search}) +
+                similarity(${schema.deployment.slug}, ${search})
+              ) / 3
+            END as rank
         FROM ${schema.deployment}
         INNER JOIN ${schema.system} ON ${schema.deployment.systemId} = ${schema.system.id}
         WHERE 
@@ -106,6 +121,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.deployment.name} % ${search}
             OR ${schema.deployment.description} % ${search}
             OR ${schema.deployment.slug} % ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.deployment.id}::text = ${search}
             )
 
         ORDER BY rank DESC
