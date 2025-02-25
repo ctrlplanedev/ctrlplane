@@ -1,4 +1,3 @@
-import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -358,27 +357,6 @@ const hookRouter = createTRPCRouter({
     ),
 });
 
-const latestActiveReleaseSubQuery = (db: Tx) =>
-  db
-    .select({
-      id: release.id,
-      deploymentId: release.deploymentId,
-      version: release.version,
-      createdAt: release.createdAt,
-      name: release.name,
-      config: release.config,
-      environmentId: releaseJobTrigger.environmentId,
-      resourceId: releaseJobTrigger.resourceId,
-      status: release.status,
-
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${release.deploymentId}, ${releaseJobTrigger.environmentId} ORDER BY ${release.createdAt} DESC)`.as(
-        "rank",
-      ),
-    })
-    .from(release)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
-    .as("active_releases");
-
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   releaseChannel: releaseChannelRouter,
@@ -570,21 +548,14 @@ export const deploymentRouter = createTRPCRouter({
           .on({ type: "system", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const activeRelease = latestActiveReleaseSubQuery(ctx.db);
       return ctx.db
         .select()
         .from(deployment)
         .leftJoin(
-          activeRelease,
-          and(
-            eq(activeRelease.deploymentId, deployment.id),
-            eq(activeRelease.rank, 1),
-          ),
-        )
-        .leftJoin(
           releaseChannel,
           eq(releaseChannel.deploymentId, deployment.id),
         )
+        .innerJoin(system, eq(deployment.systemId, system.id))
         .where(eq(deployment.systemId, input))
         .orderBy(deployment.name)
         .then((ts) =>
@@ -592,14 +563,7 @@ export const deploymentRouter = createTRPCRouter({
             .groupBy((t) => t.deployment.id)
             .map((t) => ({
               ...t[0]!.deployment,
-              // latest active release subquery can return multiple active releases
-              // and multiple release channels, which means we need to dedupe them
-              // since there will be a row per combination of active release and release channel
-              activeReleases: _.chain(t)
-                .map((a) => a.active_releases)
-                .filter(isPresent)
-                .uniqBy((a) => a.environmentId)
-                .value(),
+              system: t[0]!.system,
               releaseChannels: _.chain(t)
                 .map((a) => a.release_channel)
                 .filter(isPresent)

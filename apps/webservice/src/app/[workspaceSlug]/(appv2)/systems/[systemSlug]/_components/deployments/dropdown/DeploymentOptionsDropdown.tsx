@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react";
+import {
+  IconDotsVertical,
+  IconEdit,
+  IconRocket,
+  IconTrash,
+} from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -12,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { CreateReleaseDialog } from "../../release/CreateRelease";
 import { DeleteDeploymentDialog } from "./DeleteDeployment";
 import { EditDeploymentDialog } from "./EditDeploymentDialog";
 
@@ -37,6 +43,18 @@ export const DeploymentOptionsDropdown: React.FC<{
           forceMount
         >
           <DropdownMenuGroup>
+            <CreateReleaseDialog
+              deploymentId={props.id}
+              systemId={props.systemId}
+            >
+              <DropdownMenuItem
+                className="flex items-center gap-2"
+                onSelect={(e) => e.preventDefault()}
+              >
+                <IconRocket className="h-4 w-4" />
+                New Release
+              </DropdownMenuItem>
+            </CreateReleaseDialog>
             <EditDeploymentDialog {...props}>
               <DropdownMenuItem
                 className="flex items-center gap-2"

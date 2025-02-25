@@ -20,6 +20,7 @@ import {
   deployment,
   environment,
   environmentPolicy,
+  environmentPolicyApproval,
   environmentPolicyReleaseChannel,
   job,
   release,
@@ -29,6 +30,8 @@ import {
   releaseMatchesCondition,
   releaseMetadata,
   resource,
+  resourceMatchesMetadata,
+  system,
   updateRelease,
 } from "@ctrlplane/db/schema";
 import {
@@ -424,6 +427,107 @@ export const releaseRouter = createTRPCRouter({
           .then(takeFirstOrNull)
           .then((r) => r?.release ?? null),
       ),
+
+    byDeploymentAndEnvironment: protectedProcedure
+      .input(
+        z.object({
+          deploymentId: z.string().uuid(),
+          environmentId: z.string().uuid(),
+        }),
+      )
+      .meta({
+        authorizationCheck: async ({ canUser, input }) => {
+          const { deploymentId, environmentId } = input;
+          const deploymentAuthzPromise = canUser
+            .perform(Permission.DeploymentGet)
+            .on({ type: "deployment", id: deploymentId });
+          const environmentAuthzPromise = canUser
+            .perform(Permission.EnvironmentGet)
+            .on({ type: "environment", id: environmentId });
+          const [deployment, environment] = await Promise.all([
+            deploymentAuthzPromise,
+            environmentAuthzPromise,
+          ]);
+          return deployment && environment;
+        },
+      })
+      .query(async ({ ctx, input }) => {
+        const { deploymentId, environmentId } = input;
+
+        const env = await ctx.db
+          .select()
+          .from(environment)
+          .innerJoin(system, eq(environment.systemId, system.id))
+          .innerJoin(
+            environmentPolicy,
+            eq(environment.policyId, environmentPolicy.id),
+          )
+          .leftJoin(
+            environmentPolicyReleaseChannel,
+            eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
+          )
+          .leftJoin(
+            releaseChannel,
+            and(
+              eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+              eq(environmentPolicyReleaseChannel.deploymentId, deploymentId),
+            ),
+          )
+          .where(eq(environment.id, environmentId))
+          .then(takeFirst);
+
+        const rel = await ctx.db
+          .select()
+          .from(release)
+          .leftJoin(
+            environmentPolicyApproval,
+            and(
+              eq(environmentPolicyApproval.releaseId, release.id),
+              eq(environmentPolicyApproval.policyId, env.environment.policyId),
+            ),
+          )
+          .where(
+            and(
+              eq(release.deploymentId, deploymentId),
+              env.release_channel != null
+                ? releaseMatchesCondition(
+                    ctx.db,
+                    env.release_channel.releaseFilter,
+                  )
+                : undefined,
+            ),
+          )
+          .orderBy(desc(release.createdAt))
+          .limit(1)
+          .then(takeFirstOrNull);
+
+        if (rel == null) return null;
+
+        if (env.environment.resourceFilter == null)
+          return {
+            ...rel.release,
+            approval: rel.environment_policy_approval,
+            resourceCount: 0,
+          };
+
+        const resourceCount = await ctx.db
+          .select({ count: count() })
+          .from(resource)
+          .where(
+            and(
+              eq(resource.workspaceId, env.system.workspaceId),
+              resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
+              isNull(resource.deletedAt),
+            ),
+          )
+          .then(takeFirst);
+
+        return {
+          ...rel.release,
+          approval: rel.environment_policy_approval,
+          resourceCount: resourceCount.count,
+        };
+      }),
   }),
 
   metadataKeys: releaseMetadataKeysRouter,

@@ -39,13 +39,13 @@ import {
   JobStatus,
 } from "@ctrlplane/validators/jobs";
 
-import { api } from "~/trpc/react";
+import { DeploymentBarChart } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/charts/DeploymentBarChart";
+import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/release/ReleaseDropdownMenu";
 import {
   getStatusColor,
   statusColor,
-} from "../../(raw)/deployments/[deploymentSlug]/(sidebar)/releases/status-color";
-import { DeploymentBarChart } from "./DeploymentBarChart";
-import { ReleaseDropdownMenu } from "./ReleaseDropdownMenu";
+} from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_utils/status-color";
+import { api } from "~/trpc/react";
 
 const ReleaseIcon: React.FC<{
   statuses: JobStatusType[];

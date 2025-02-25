@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS "release_created_at_idx" ON "release" USING btree ("created_at");

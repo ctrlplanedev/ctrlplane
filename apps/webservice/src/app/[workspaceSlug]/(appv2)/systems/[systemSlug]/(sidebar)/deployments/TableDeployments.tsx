@@ -1,19 +1,19 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import type { Deployment, Workspace } from "@ctrlplane/db/schema";
-import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
+import type { Workspace } from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { IconLoader2 } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 
-import { LazyReleaseEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/release-cell/ReleaseEnvironmentCell";
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/dropdown/DeploymentOptionsDropdown";
+import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { api } from "~/trpc/react";
-import { DeploymentOptionsDropdown } from "./DeploymentOptionsDropdown";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
+type Deployment = RouterOutputs["deployment"]["bySystemId"][number];
 
 const Icon: React.FC<{ children?: React.ReactNode; className?: string }> = ({
   children,
@@ -76,18 +76,7 @@ const DeploymentTable: React.FC<{
   systemSlug: string;
   className?: string;
   environments: Environment[];
-  deployments: Array<
-    Deployment & {
-      activeReleases: Array<{
-        id: string;
-        name: string;
-        version: string;
-        createdAt: Date;
-        environmentId: string;
-        status: ReleaseStatusType;
-      }> | null;
-    }
-  >;
+  deployments: Deployment[];
 }> = ({ systemSlug, deployments, environments, workspace, className }) => {
   return (
     <div
@@ -139,9 +128,6 @@ const DeploymentTable: React.FC<{
               </td>
 
               {environments.map((env, idx) => {
-                const release =
-                  r.activeReleases?.find((r) => r.environmentId === env.id) ??
-                  null;
                 return (
                   <td
                     key={env.id}
@@ -150,18 +136,11 @@ const DeploymentTable: React.FC<{
                       "border-b": didx !== deployments.length - 1,
                     })}
                   >
-                    {release != null && (
-                      <LazyReleaseEnvironmentCell
-                        release={release}
-                        environment={env}
-                        deployment={r}
-                      />
-                    )}
-                    {release == null && (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                        No release
-                      </div>
-                    )}
+                    <LazyDeploymentEnvironmentCell
+                      environment={env}
+                      deployment={r}
+                      workspace={workspace}
+                    />
                   </td>
                 );
               })}
