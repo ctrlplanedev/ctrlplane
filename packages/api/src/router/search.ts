@@ -27,7 +27,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.slug} as "slug",
             '' as "systemSlug",
             CASE
-              WHEN LENGTH(${search}) >= 5 AND ${schema.system.id}::text ~ ${search} THEN 1
+              WHEN LENGTH(${search}) = 36 AND ${schema.system.id}::text = ${search} THEN 1
               ELSE (
                 similarity(${schema.system.name}, ${search}) +
                 similarity(${schema.system.description}, ${search}) +
@@ -41,7 +41,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.system.name} % ${search}
             OR ${schema.system.description} % ${search}
             OR ${schema.system.slug} % ${search}
-            OR LENGTH(${search}) >= 5 AND ${schema.system.id}::text ~ ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.system.id}::text = ${search}
             )
 
         UNION ALL
@@ -54,7 +54,7 @@ export const searchRouter = createTRPCRouter({
             '' as "slug",
             ${schema.system.slug} as "systemSlug",
             CASE
-              WHEN LENGTH(${search}) >= 5 AND ${schema.environment.id}::text ~ ${search} THEN 1
+              WHEN LENGTH(${search}) = 36 AND ${schema.environment.id}::text = ${search} THEN 1
               ELSE (
                 similarity(${schema.environment.name}, ${search}) +
                 similarity(${schema.environment.description}, ${search})
@@ -67,7 +67,7 @@ export const searchRouter = createTRPCRouter({
             AND (
             ${schema.environment.name} % ${search}
             OR ${schema.environment.description} % ${search}
-            OR LENGTH(${search}) >= 5 AND ${schema.environment.id}::text ~ ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.environment.id}::text = ${search}
             )
         
         UNION ALL
@@ -80,7 +80,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.resource.identifier} as "slug",
             '' as "systemSlug",
             CASE
-              WHEN LENGTH(${search}) >= 5 AND ${schema.resource.id}::text ~ ${search} THEN 1
+              WHEN LENGTH(${search}) = 36 AND ${schema.resource.id}::text = ${search} THEN 1
               ELSE (
                 similarity(${schema.resource.name}, ${search}) +
                 similarity(${schema.resource.identifier}, ${search})
@@ -93,7 +93,7 @@ export const searchRouter = createTRPCRouter({
             AND (
             ${schema.resource.name} % ${search}
             OR ${schema.resource.identifier} % ${search}
-            OR LENGTH(${search}) >= 5 AND ${schema.resource.id}::text ~ ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.resource.id}::text = ${search}
             )
         
         UNION ALL
@@ -106,7 +106,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.deployment.slug} as "slug",
             ${schema.system.slug} as "systemSlug",
             CASE
-              WHEN LENGTH(${search}) >= 5 AND ${schema.deployment.id}::text ~ ${search} THEN 1
+              WHEN LENGTH(${search}) = 36 AND ${schema.deployment.id}::text = ${search} THEN 1
               ELSE (
                 similarity(${schema.deployment.name}, ${search}) +
                 similarity(${schema.deployment.description}, ${search}) +
@@ -121,7 +121,7 @@ export const searchRouter = createTRPCRouter({
             ${schema.deployment.name} % ${search}
             OR ${schema.deployment.description} % ${search}
             OR ${schema.deployment.slug} % ${search}
-            OR LENGTH(${search}) >= 5 AND ${schema.deployment.id}::text ~ ${search}
+            OR LENGTH(${search}) = 36 AND ${schema.deployment.id}::text = ${search}
             )
 
         ORDER BY rank DESC
