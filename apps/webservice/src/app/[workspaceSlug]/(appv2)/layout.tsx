@@ -10,6 +10,7 @@ import {
 import { EnvironmentDrawer } from "../(app)/_components/environment-drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "../(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
 import { ReleaseChannelDrawer } from "./_components/channel/drawer/ReleaseChannelDrawer";
+import { DeploymentResourceDrawer } from "./_components/deployments/resource-drawer/DeploymentResourceDrawer";
 import { JobDrawer } from "./_components/job/drawer/JobDrawer";
 import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
 import { TopNav } from "./TopNav";
@@ -78,6 +79,7 @@ export default async function Layout(props: {
       <VariableSetDrawer />
       <ReleaseChannelDrawer />
       <JobDrawer />
+      <DeploymentResourceDrawer />
     </>
   );
 }
