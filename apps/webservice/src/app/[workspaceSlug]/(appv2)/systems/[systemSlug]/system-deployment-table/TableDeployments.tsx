@@ -45,7 +45,7 @@ const EnvHeader: React.FC<{
   return (
     <TableHead className="pl-6" key={env.id}>
       <Link href={envUrl}>
-        <div className="flex items-center gap-2">
+        <div className="flex w-fit items-center gap-2 rounded-md px-2 py-1 hover:bg-secondary/50">
           {env.name}
 
           <Badge
