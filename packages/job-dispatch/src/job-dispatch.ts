@@ -8,6 +8,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTriggeredRunbookJob } from "./job-creation.js";
 import { updateJob } from "./job-update.js";
 import { createReleaseVariables } from "./job-variables-deployment/job-variables-deployment.js";
+import { isRunbookJobsPassingAllPolicies } from "./policy-checker.js";
 import { dispatchJobsQueue } from "./queue.js";
 
 export type DispatchFilterFunc = (
@@ -132,7 +133,16 @@ export const dispatchRunbook = async (
     .from(schema.runbook)
     .where(eq(schema.runbook.id, runbookId))
     .then(takeFirst);
-  const job = await createTriggeredRunbookJob(db, runbook, values);
+  const { job, runbookJobTrigger } = await createTriggeredRunbookJob(
+    db,
+    runbook,
+    values,
+  );
+  const isPassingAllPolicies = await isRunbookJobsPassingAllPolicies(
+    db,
+    runbookJobTrigger,
+  );
+  if (!isPassingAllPolicies) return;
   await dispatchJobsQueue.add(job.id, { jobId: job.id });
   return job;
 };

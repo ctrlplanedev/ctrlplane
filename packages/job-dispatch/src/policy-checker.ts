@@ -2,7 +2,10 @@ import type { Tx } from "@ctrlplane/db";
 import type * as schema from "@ctrlplane/db/schema";
 import _ from "lodash";
 
-import type { ReleaseIdPolicyChecker } from "./policies/utils.js";
+import type {
+  ReleaseIdPolicyChecker,
+  RunbookJobPolicyChecker,
+} from "./policies/utils.js";
 import { isPassingLockingPolicy } from "./lock-checker.js";
 import { isPassingConcurrencyPolicy } from "./policies/concurrency-policy.js";
 import { isPassingJobRolloutPolicy } from "./policies/gradual-rollout.js";
@@ -13,6 +16,10 @@ import {
   isPassingNoActiveJobsPolicy,
 } from "./policies/release-sequencing.js";
 import { isPassingReleaseWindowPolicy } from "./policies/release-window.js";
+import {
+  isPassingResourceLockCheck,
+  isRunbookJobPassingResourceLockCheck,
+} from "./policies/resource-lock-check.js";
 import { isPassingCriteriaPolicy } from "./policies/success-rate-criteria-passing.js";
 
 const baseChecks: ReleaseIdPolicyChecker[] = [
@@ -24,6 +31,7 @@ const baseChecks: ReleaseIdPolicyChecker[] = [
   isPassingNoActiveJobsPolicy,
   isPassingReleaseWindowPolicy,
   isPassingMinReleaseIntervalPolicy,
+  isPassingResourceLockCheck,
 ];
 
 export const isPassingAllPolicies = async (
@@ -51,4 +59,17 @@ export const isPassingAllPoliciesExceptNewerThanLastActive = async (
   for (const check of baseChecks) passingJobs = await check(db, passingJobs);
 
   return passingJobs;
+};
+
+export const isRunbookJobsPassingAllPolicies = async (
+  db: Tx,
+  runbookJobTrigger: schema.RunbookJobTrigger,
+) => {
+  const checks: RunbookJobPolicyChecker[] = [
+    isRunbookJobPassingResourceLockCheck,
+  ];
+
+  for (const check of checks)
+    if (!(await check(db, runbookJobTrigger))) return false;
+  return true;
 };

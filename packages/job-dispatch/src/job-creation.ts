@@ -15,7 +15,10 @@ export const createTriggeredRunbookJob = async (
   db: Tx,
   runbook: schema.Runbook,
   variableValues: Record<string, any>,
-): Promise<schema.Job> => {
+): Promise<{
+  job: schema.Job;
+  runbookJobTrigger: schema.RunbookJobTrigger;
+}> => {
   logger.info(`Triger triggered runbook job ${runbook.name}`, {
     runbook,
     variableValues,
@@ -40,9 +43,11 @@ export const createTriggeredRunbookJob = async (
     .returning()
     .then(takeFirst);
 
-  await db
+  const runbookJobTrigger = await db
     .insert(schema.runbookJobTrigger)
-    .values({ jobId: job.id, runbookId: runbook.id });
+    .values({ jobId: job.id, runbookId: runbook.id })
+    .returning()
+    .then(takeFirst);
 
   logger.info(`Created triggered runbook job`, { jobId: job.id });
 
@@ -55,7 +60,7 @@ export const createTriggeredRunbookJob = async (
   if (variables.length > 0)
     await db.insert(schema.jobVariable).values(variables);
 
-  return job;
+  return { job, runbookJobTrigger };
 };
 
 /**

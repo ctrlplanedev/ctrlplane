@@ -10,3 +10,8 @@ export type ReleaseIdPolicyChecker = (
   tx: Tx,
   releaseJobTriggers: schema.ReleaseJobTrigger[],
 ) => Promise<schema.ReleaseJobTrigger[]>;
+
+export type RunbookJobPolicyChecker = (
+  tx: Tx,
+  runbookJobTrigger: schema.RunbookJobTrigger,
+) => Promise<boolean>;
