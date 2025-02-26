@@ -260,7 +260,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .query(async ({ ctx, input }) => {
-        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.releaseJobTrigger.createdAt} AT TIME ZONE ${input.timezone})`;
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.job.startedAt} AT TIME ZONE 'America/Los_Angeles')`;
 
         const subquery = ctx.db
           .select({
@@ -289,17 +289,12 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 JobStatus.Cancelled,
                 JobStatus.Skipped,
               ]),
-              gt(schema.releaseJobTrigger.createdAt, input.startDate),
-              lte(schema.releaseJobTrigger.createdAt, input.endDate),
-              isNotNull(schema.job.startedAt),
+              gt(schema.job.startedAt, input.startDate),
+              lte(schema.job.startedAt, input.endDate),
               isNotNull(schema.job.completedAt),
             ),
           )
-          .groupBy(
-            dateTruncExpr,
-            schema.job.status,
-            schema.releaseJobTrigger.createdAt,
-          )
+          .groupBy(dateTruncExpr, schema.job.status)
           .as("sub");
 
         return ctx.db
@@ -309,8 +304,8 @@ const releaseJobTriggerRouter = createTRPCRouter({
               "totalCount",
             ),
             statusCounts: sql<Record<JobStatus, number>>`
-              jsonb_object_agg(${subquery.status}, ${subquery.countPerStatus})
-            `.as("statusCounts"),
+      jsonb_object_agg(${subquery.status}, ${subquery.countPerStatus})
+    `.as("statusCounts"),
           })
           .from(subquery)
           .groupBy(subquery.date)
