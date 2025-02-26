@@ -69,15 +69,22 @@ export const deploymentStatsRouter = createTRPCRouter({
             .perform(Permission.DeploymentList)
             .on({ type: "system", id: input.systemId });
 
-        return canUser
-          .perform(Permission.EnvironmentGet)
-          .on({ type: "environment", id: input.environmentId });
+        if ("environmentId" in input)
+          return canUser
+            .perform(Permission.EnvironmentGet)
+            .on({ type: "environment", id: input.environmentId });
+
+        if ("resourceId" in input)
+          return canUser
+            .perform(Permission.ResourceGet)
+            .on({ type: "resource", id: input.resourceId });
+
+        return false;
       },
     })
     .input(
       z
         .object({
-          resourceId: z.string().uuid().optional(),
           startDate: z.date(),
           endDate: z.date(),
           timezone: z.string(),
@@ -89,22 +96,28 @@ export const deploymentStatsRouter = createTRPCRouter({
           z
             .object({ workspaceId: z.string().uuid() })
             .or(z.object({ systemId: z.string().uuid() }))
-            .or(z.object({ environmentId: z.string().uuid() })),
+            .or(z.object({ environmentId: z.string().uuid() }))
+            .or(z.object({ resourceId: z.string().uuid() })),
         ),
     )
     .query(async ({ ctx, input }) => {
-      const { resourceId, startDate, endDate, orderBy, order, search } = input;
+      const { startDate, endDate, orderBy, order, search } = input;
       const orderFunc = (field: unknown) =>
         order === StatsOrder.Asc
           ? sql`${field} ASC NULLS LAST`
           : sql`${field} DESC NULLS LAST`;
 
-      const uuidCheck =
-        "workspaceId" in input
-          ? eq(schema.system.workspaceId, input.workspaceId)
-          : "systemId" in input
-            ? eq(schema.system.id, input.systemId)
-            : eq(schema.releaseJobTrigger.environmentId, input.environmentId);
+      const getUUIDCheck = () => {
+        if ("workspaceId" in input)
+          return eq(schema.system.workspaceId, input.workspaceId);
+        if ("systemId" in input) return eq(schema.system.id, input.systemId);
+        if ("environmentId" in input)
+          return eq(
+            schema.releaseJobTrigger.environmentId,
+            input.environmentId,
+          );
+        return eq(schema.releaseJobTrigger.resourceId, input.resourceId);
+      };
 
       const lastRunAt = max(schema.job.startedAt);
       const totalJobs = count(schema.job.id);
@@ -144,7 +157,6 @@ export const deploymentStatsRouter = createTRPCRouter({
         isNotNull(schema.job.startedAt),
         isNull(schema.resource.deletedAt),
         search ? ilike(schema.deployment.name, `%${search}%`) : undefined,
-        resourceId ? eq(schema.resource.id, resourceId) : undefined,
       );
 
       const inactiveDeploymentChecks = or(
@@ -189,7 +201,10 @@ export const deploymentStatsRouter = createTRPCRouter({
           eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
         )
         .where(
-          and(uuidCheck, or(activeDeploymentChecks, inactiveDeploymentChecks)),
+          and(
+            getUUIDCheck(),
+            or(activeDeploymentChecks, inactiveDeploymentChecks),
+          ),
         )
         .orderBy(orderFunc(getOrderBy()))
         .groupBy(

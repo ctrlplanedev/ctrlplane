@@ -36,7 +36,6 @@ export const ResourceDeploymentsTable: React.FC<
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const { data, isLoading } = api.deployment.stats.byWorkspaceId.useQuery({
-    workspaceId,
     resourceId: resource.id,
     startDate,
     endDate,
