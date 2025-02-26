@@ -8,15 +8,15 @@ import _ from "lodash";
 import LZString from "lz-string";
 import {
   Bar,
+  CartesianGrid,
   ComposedChart,
   Line,
-  ResponsiveContainer,
   XAxis,
   YAxis,
 } from "recharts";
 import colors from "tailwindcss/colors";
 
-import { ChartTooltip } from "@ctrlplane/ui/chart";
+import { ChartContainer, ChartTooltip } from "@ctrlplane/ui/chart";
 import {
   ColumnOperator,
   ComparisonOperator,
@@ -86,7 +86,13 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
   const maxBarTickDomain = Math.ceil(maxDailyCount * 1.1);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ChartContainer
+      config={{
+        views: { label: "Job Executions" },
+        jobs: { label: "Executions", color: "hsl(var(--chart-1))" },
+      }}
+      className="aspect-auto h-[275px] w-full"
+    >
       <ComposedChart
         accessibilityLayer
         data={chartData}
@@ -95,7 +101,7 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
           right: 12,
         }}
       >
-        {/* <CartesianGrid vertical={false} /> */}
+        <CartesianGrid vertical={false} />
         <XAxis
           dataKey="date"
           tickLine={false}
@@ -270,6 +276,6 @@ export const DailyJobsChart: React.FC<DailyJobsChartProps> = ({
           dot={false}
         />
       </ComposedChart>
-    </ResponsiveContainer>
+    </ChartContainer>
   );
 };
