@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconArrowLeft } from "@tabler/icons-react";
+import {
+  IconArrowLeft,
+  IconPlayerPlay,
+  IconSettings,
+  IconShip,
+  IconTimelineEvent,
+  IconVariable,
+  IconVersions,
+} from "@tabler/icons-react";
 
 import {
   Breadcrumb,
@@ -15,6 +23,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarInset,
   SidebarMenu,
   SidebarProvider,
@@ -87,23 +96,53 @@ export default async function DeploymentLayout(props: {
         >
           <SidebarContent>
             <SidebarGroup>
+              <SidebarGroupLabel>Release Management</SidebarGroupLabel>
               <SidebarMenu>
-                <SidebarLink href={deploymentUrl.deployments()} exact>
+                <SidebarLink
+                  icon={<IconShip />}
+                  href={deploymentUrl.deployments()}
+                  exact
+                >
                   Deployments
                 </SidebarLink>
-
-                <SidebarLink href={deploymentUrl.workflow()}>
-                  Pipeline
-                </SidebarLink>
-                <SidebarLink href={deploymentUrl.channels()}>
+                <SidebarLink
+                  icon={<IconVersions />}
+                  href={deploymentUrl.channels()}
+                >
                   Channels
                 </SidebarLink>
-                <SidebarLink href={deploymentUrl.variables()}>
+              </SidebarMenu>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Setup</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarLink
+                  icon={<IconPlayerPlay />}
+                  href={deploymentUrl.workflow()}
+                >
+                  Workflow
+                </SidebarLink>
+
+                <SidebarLink
+                  icon={<IconVariable />}
+                  href={deploymentUrl.variables()}
+                >
                   Variables
                 </SidebarLink>
-                <SidebarLink href={deploymentUrl.hooks()}>Hooks</SidebarLink>
+                <SidebarLink
+                  icon={<IconTimelineEvent />}
+                  href={deploymentUrl.hooks()}
+                >
+                  Hooks
+                </SidebarLink>
+              </SidebarMenu>
 
-                <SidebarLink href={deploymentUrl.properties()}>
+              <SidebarMenu>
+                <SidebarLink
+                  icon={<IconSettings />}
+                  href={deploymentUrl.properties()}
+                >
                   Settings
                 </SidebarLink>
               </SidebarMenu>
