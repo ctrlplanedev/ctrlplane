@@ -30,8 +30,8 @@ export default async function ResourcesPage(props: {
       : null;
 
   return (
-    <div>
-      <PageHeader>
+    <div className="flex h-full flex-col">
+      <PageHeader className="z-50">
         <SidebarTrigger name={Sidebars.Resources}>
           <IconMenu2 className="h-4 w-4" />
         </SidebarTrigger>
@@ -44,7 +44,9 @@ export default async function ResourcesPage(props: {
           </BreadcrumbList>
         </Breadcrumb>
       </PageHeader>
-      <ResourcePageContent workspace={workspace} view={view} />
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex-1 overflow-y-auto">
+        <ResourcePageContent workspace={workspace} view={view} />
+      </div>
     </div>
   );
 }
