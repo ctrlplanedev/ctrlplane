@@ -198,7 +198,7 @@ export const ResourcesTable: React.FC<{
         </TableBody>
       </Table>
       {table.getSelectedRowModel().rows.length > 0 && (
-        <div className="sticky bottom-4 left-0 right-0 flex justify-center">
+        <div className="fixed bottom-0 left-0 right-0 flex justify-center">
           <div className="flex items-center gap-2 rounded-md bg-neutral-900 p-2 shadow-lg">
             <Button
               variant="outline"
