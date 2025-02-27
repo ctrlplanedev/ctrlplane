@@ -15,7 +15,7 @@ import {
 
 import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
 import { api } from "~/trpc/react";
-import { DeleteSystemDialog } from "../_components/DeleteSystemDialog";
+import { DeleteSystemDialog } from "./DeleteSystemDialog";
 import DeploymentTable from "./TableDeployments";
 
 export const SystemDeploymentTable: React.FC<{

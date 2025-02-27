@@ -10,9 +10,10 @@ export const SidebarLink: React.FC<{
   icon?: React.ReactNode;
   href: string;
   children: React.ReactNode;
-}> = ({ icon, href, children }) => {
+  exact?: boolean;
+}> = ({ icon, href, children, exact = false }) => {
   const pathname = usePathname();
-  const active = pathname.startsWith(href);
+  const active = exact ? pathname === href : pathname.startsWith(href);
   return (
     <SidebarMenuButton asChild>
       <Link

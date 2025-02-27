@@ -40,7 +40,7 @@ export default async function DeploymentLayout(props: {
   if (system == null || deployment == null) notFound();
 
   const url = (tab: string) =>
-    `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/${tab}`;
+    `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}${tab ? `/${tab}` : ""}`;
   return (
     <div className="h-full w-full">
       <PageHeader className="justify-between">
@@ -81,6 +81,9 @@ export default async function DeploymentLayout(props: {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
+                <SidebarLink href={url("")} exact>
+                  Deployments
+                </SidebarLink>
                 <SidebarLink href={url("properties")}>Properties</SidebarLink>
                 <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
                 <SidebarLink href={url("releases")}>Releases</SidebarLink>
