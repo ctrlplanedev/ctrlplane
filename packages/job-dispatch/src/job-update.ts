@@ -6,7 +6,7 @@ import * as schema from "@ctrlplane/db/schema";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 import { exitedStatus, JobStatus } from "@ctrlplane/validators/jobs";
 
-import { onJobCompletion } from "./job-creation.js";
+import { onJobCompletion, onJobSuccess } from "./job-creation.js";
 import { onJobFailure } from "./job-failure.js";
 
 const updateJobMetadata = async (
@@ -112,9 +112,14 @@ export const updateJob = async (
     jobBeforeUpdate.status !== JobStatus.Failure;
   if (isJobFailure) await onJobFailure(updatedJob);
 
-  const isJobCompletion =
+  const isJobSuccess =
     data.status === JobStatus.Successful &&
     jobBeforeUpdate.status !== JobStatus.Successful;
+  if (isJobSuccess) await onJobSuccess(updatedJob);
+
+  const isJobCompletion =
+    !exitedStatus.includes(jobBeforeUpdate.status as JobStatus) &&
+    exitedStatus.includes(updatedJob.status as JobStatus);
   if (isJobCompletion) await onJobCompletion(updatedJob);
 
   return updatedJob;

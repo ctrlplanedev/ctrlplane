@@ -1,13 +1,23 @@
 import type { Tx } from "@ctrlplane/db";
 import _ from "lodash";
 
-import { and, eq, isNotNull, ne, or, takeFirst } from "@ctrlplane/db";
+import {
+  and,
+  desc,
+  eq,
+  isNotNull,
+  ne,
+  or,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
-import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
+import { dispatchReleaseJobTriggers, dispatchRunbook } from "./job-dispatch.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { cancelOldReleaseJobTriggersOnJobDispatch } from "./release-sequencing.js";
 
@@ -78,7 +88,7 @@ export const createTriggeredRunbookJob = async (
  *
  * @param je
  */
-export const onJobCompletion = async (je: schema.Job) => {
+export const onJobSuccess = async (je: schema.Job) => {
   const triggers = await db
     .select()
     .from(schema.releaseJobTrigger)
@@ -174,4 +184,142 @@ export const onJobCompletion = async (je: schema.Job) => {
     .filter(isPassingAllPolicies)
     .then(cancelOldReleaseJobTriggersOnJobDispatch)
     .dispatch();
+};
+
+export const onJobCompletion = async (je: schema.Job) => {
+  const jobReleaseInfoPromise = db
+    .select()
+    .from(schema.releaseJobTrigger)
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .where(eq(schema.releaseJobTrigger.jobId, je.id))
+    .then(takeFirstOrNull);
+
+  const jobHookInfoPromise = db
+    .select()
+    .from(schema.runbookJobTrigger)
+    .innerJoin(
+      schema.jobVariable,
+      eq(schema.runbookJobTrigger.jobId, schema.jobVariable.jobId),
+    )
+    .innerJoin(
+      schema.runhook,
+      eq(schema.runbookJobTrigger.runbookId, schema.runhook.runbookId),
+    )
+    .innerJoin(schema.hook, eq(schema.runhook.hookId, schema.hook.id))
+    .where(
+      and(
+        eq(schema.jobVariable.key, "resourceId"),
+        eq(schema.runbookJobTrigger.jobId, je.id),
+        eq(schema.hook.scopeType, "deployment"),
+      ),
+    )
+    .then(takeFirstOrNull);
+
+  const [jobReleaseInfo, jobHookInfo] = await Promise.all([
+    jobReleaseInfoPromise,
+    jobHookInfoPromise,
+  ]);
+
+  if (jobReleaseInfo == null && jobHookInfo == null) return;
+
+  const deploymentId =
+    jobReleaseInfo != null
+      ? jobReleaseInfo.release.deploymentId
+      : jobHookInfo!.hook.scopeId;
+
+  const resourceId =
+    jobReleaseInfo != null
+      ? jobReleaseInfo.release_job_trigger.resourceId
+      : String(jobHookInfo!.job_variable.value);
+
+  console.log({
+    deploymentId,
+    resourceId,
+  });
+
+  const latestReleaseJobTriggerPromise = db
+    .select()
+    .from(schema.job)
+    .innerJoin(
+      schema.releaseJobTrigger,
+      eq(schema.job.id, schema.releaseJobTrigger.jobId),
+    )
+    .innerJoin(
+      schema.release,
+      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+    )
+    .where(
+      and(
+        ne(schema.job.id, je.id),
+        eq(schema.job.status, JobStatus.Pending),
+        eq(schema.release.deploymentId, deploymentId),
+        eq(schema.releaseJobTrigger.resourceId, resourceId),
+      ),
+    )
+    .orderBy(desc(schema.job.createdAt))
+    .limit(1)
+    .then(takeFirstOrNull);
+
+  const latestRunbookJobTriggerPromise = db
+    .select()
+    .from(schema.job)
+    .innerJoin(schema.jobVariable, eq(schema.job.id, schema.jobVariable.jobId))
+    .innerJoin(
+      schema.runbookJobTrigger,
+      eq(schema.runbookJobTrigger.jobId, schema.job.id),
+    )
+    .innerJoin(
+      schema.runhook,
+      eq(schema.runbookJobTrigger.runbookId, schema.runhook.runbookId),
+    )
+    .innerJoin(schema.hook, eq(schema.runhook.hookId, schema.hook.id))
+    .where(
+      and(
+        ne(schema.job.id, je.id),
+        eq(schema.job.status, JobStatus.Pending),
+        eq(schema.jobVariable.key, "resourceId"),
+        sql`${schema.jobVariable.value}::jsonb = ${JSON.stringify(resourceId)}::jsonb`,
+        eq(schema.hook.scopeType, "deployment"),
+        eq(schema.hook.scopeId, deploymentId),
+      ),
+    )
+    .orderBy(desc(schema.job.createdAt))
+    .limit(1)
+    .then(takeFirstOrNull);
+
+  const [latestReleaseJobTrigger, latestRunbookJobTrigger] = await Promise.all([
+    latestReleaseJobTriggerPromise,
+    latestRunbookJobTriggerPromise,
+  ]);
+
+  console.log({
+    latestReleaseJobTrigger,
+    latestRunbookJobTrigger,
+  });
+
+  if (
+    latestReleaseJobTrigger != null &&
+    latestReleaseJobTrigger.job.createdAt >
+      (latestRunbookJobTrigger?.job.createdAt ?? 0)
+  ) {
+    dispatchReleaseJobTriggers(db)
+      .releaseTriggers([latestReleaseJobTrigger.release_job_trigger])
+      .filter(isPassingAllPolicies)
+      .then(cancelOldReleaseJobTriggersOnJobDispatch)
+      .dispatch();
+  }
+
+  if (
+    latestRunbookJobTrigger != null &&
+    latestRunbookJobTrigger.job.createdAt >
+      (latestReleaseJobTrigger?.job.createdAt ?? 0)
+  ) {
+    dispatchRunbook(db, latestRunbookJobTrigger.runbook_job_trigger.runbookId, {
+      resourceId,
+      deploymentId,
+    });
+  }
 };

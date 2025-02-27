@@ -1,6 +1,4 @@
-import type { Tx } from "@ctrlplane/db";
-
-import { and, eq, exists, ne, or, sql, takeFirstOrNull } from "@ctrlplane/db";
+import { and, eq, inArray, ne, sql, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
@@ -22,24 +20,45 @@ export const isPassingResourceLockCheck: ReleaseIdPolicyChecker = async (
 ) => {
   if (releaseJobTriggers.length === 0) return [];
 
-  const isRunningReleaseJob = exists(
-    sql`
-      SELECT 1
-      FROM ${SCHEMA.job}
-      INNER JOIN ${SCHEMA.releaseJobTrigger} as rjt on rjt.job_id = ${SCHEMA.job.id}
-      INNER JOIN ${SCHEMA.release} as r on rjt.release_id = r.id
-      WHERE rjt.id != ${SCHEMA.releaseJobTrigger.id}
-      AND rjt.resource_id = ${SCHEMA.releaseJobTrigger.resourceId}
-      and r.deployment_id = ${SCHEMA.release.deploymentId}
-      and ${SCHEMA.job.status} = ${JobStatus.InProgress}
-      LIMIT 1
-    `,
-  );
+  const releases = await db
+    .select()
+    .from(SCHEMA.release)
+    .where(
+      inArray(
+        SCHEMA.release.id,
+        releaseJobTriggers.map((rjt) => rjt.releaseId),
+      ),
+    );
 
-  const isRunningDeploymentHook = (db: Tx) =>
-    exists(
-      db
-        .select({ value: sql<number>`1` })
+  const jobs = await Promise.all(
+    releaseJobTriggers.map(async (rjt) => {
+      const release = releases.find((r) => r.id === rjt.releaseId);
+      if (!release) return null;
+
+      const runningReleaseJob = await db
+        .select()
+        .from(SCHEMA.job)
+        .innerJoin(
+          SCHEMA.releaseJobTrigger,
+          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+        )
+        .innerJoin(
+          SCHEMA.release,
+          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+        )
+        .where(
+          and(
+            eq(SCHEMA.job.status, JobStatus.InProgress),
+            eq(SCHEMA.release.deploymentId, release.deploymentId),
+            eq(SCHEMA.releaseJobTrigger.resourceId, rjt.resourceId),
+            ne(SCHEMA.releaseJobTrigger.id, rjt.id),
+          ),
+        )
+        .limit(1)
+        .then(takeFirstOrNull);
+
+      const runningDeploymentHook = await db
+        .select()
         .from(SCHEMA.job)
         .innerJoin(
           SCHEMA.jobVariable,
@@ -50,39 +69,30 @@ export const isPassingResourceLockCheck: ReleaseIdPolicyChecker = async (
           eq(SCHEMA.runbookJobTrigger.jobId, SCHEMA.job.id),
         )
         .innerJoin(
-          SCHEMA.runbook,
-          eq(SCHEMA.runbook.id, SCHEMA.runbookJobTrigger.runbookId),
-        )
-        .innerJoin(
           SCHEMA.runhook,
-          eq(SCHEMA.runhook.runbookId, SCHEMA.runbook.id),
+          eq(SCHEMA.runhook.runbookId, SCHEMA.runbookJobTrigger.runbookId),
         )
-        .innerJoin(SCHEMA.hook, eq(SCHEMA.hook.id, SCHEMA.runhook.hookId))
+        .innerJoin(SCHEMA.hook, eq(SCHEMA.runhook.hookId, SCHEMA.hook.id))
         .where(
           and(
             eq(SCHEMA.hook.scopeType, "deployment"),
-            eq(SCHEMA.hook.scopeId, SCHEMA.release.deploymentId),
+            eq(SCHEMA.hook.scopeId, release.deploymentId),
             eq(SCHEMA.hook.action, "deployment.resource.removed"),
             eq(SCHEMA.job.status, JobStatus.InProgress),
             eq(SCHEMA.jobVariable.key, "resourceId"),
-            eq(SCHEMA.jobVariable.value, SCHEMA.releaseJobTrigger.resourceId),
+            sql`${SCHEMA.jobVariable.value}::jsonb = ${JSON.stringify(rjt.resourceId)}::jsonb`,
           ),
         )
-        .limit(1),
-    );
+        .limit(1)
+        .then(takeFirstOrNull);
 
-  const blockedJobs = await db
-    .select()
-    .from(SCHEMA.releaseJobTrigger)
-    .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
-    )
-    .where(or(isRunningReleaseJob, isRunningDeploymentHook(db)));
+      if (runningReleaseJob || runningDeploymentHook) return null;
 
-  return releaseJobTriggers.filter(
-    (rjt) => !blockedJobs.some((jb) => jb.release_job_trigger.id === rjt.id),
+      return rjt;
+    }),
   );
+
+  return jobs.filter((rjt) => rjt != null);
 };
 
 export const isRunbookJobPassingResourceLockCheck: RunbookJobPolicyChecker =
@@ -162,7 +172,7 @@ export const isRunbookJobPassingResourceLockCheck: RunbookJobPolicyChecker =
         and(
           eq(SCHEMA.job.status, JobStatus.InProgress),
           eq(SCHEMA.jobVariable.key, "resourceId"),
-          eq(SCHEMA.jobVariable.value, String(jobInfo.job_variable.value)),
+          sql`${SCHEMA.jobVariable.value}::jsonb = ${JSON.stringify(jobInfo.job_variable.value)}::jsonb`,
           eq(SCHEMA.runbookJobTrigger.runbookId, runbookJobTrigger.runbookId),
           ne(SCHEMA.job.id, runbookJobTrigger.jobId),
         ),
