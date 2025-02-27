@@ -131,8 +131,8 @@ export default async function ResourceProvidersPage(props: {
   });
 
   return (
-    <div>
-      <PageHeader className="flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <PageHeader className="z-50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger name={Sidebars.Resources}>
             <IconMenu2 className="h-4 w-4" />
@@ -159,7 +159,7 @@ export default async function ResourceProvidersPage(props: {
 
       {resourceProviders.length === 0 && <ResourceProvidersGettingStarted />}
       {resourceProviders.length > 0 && (
-        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-50px)] overflow-auto">
+        <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex-1 overflow-y-auto">
           <Table className="w-full border border-x-0 border-t-0 border-b-neutral-800/50">
             <TableHeader>
               <TableRow>

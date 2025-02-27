@@ -33,8 +33,8 @@ export default async function GroupingsPage(props: {
   if (metadataGroups.length === 0)
     return <ResourceMetadataGroupsGettingStarted workspace={workspace} />;
   return (
-    <div>
-      <PageHeader className="flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <PageHeader className="z-50 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger name={Sidebars.Resources}>
             <IconMenu2 className="h-4 w-4" />
@@ -54,11 +54,12 @@ export default async function GroupingsPage(props: {
           </Button>
         </CreateMetadataGroupDialog>
       </PageHeader>
-
-      <ResourceGroupsTable
-        workspace={workspace}
-        metadataGroups={metadataGroups}
-      />
+      <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 flex-1 overflow-y-auto">
+        <ResourceGroupsTable
+          workspace={workspace}
+          metadataGroups={metadataGroups}
+        />
+      </div>
     </div>
   );
 }

@@ -65,7 +65,7 @@ export default async function Layout(props: {
             <SidebarGroupKinds workspace={workspace} />
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-1px)]">
+        <SidebarInset className="h-[calc(100vh-56px-2px)]">
           {props.children}
         </SidebarInset>
       </SidebarProvider>
