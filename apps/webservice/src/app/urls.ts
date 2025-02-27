@@ -22,6 +22,10 @@ const workspace = (slug: string) => {
     baseUrl: () => buildUrl(slug),
     systems: () => buildUrl(slug, "systems"),
     system: (systemSlug: string) => system({ workspaceSlug: slug, systemSlug }),
+    deployments: () => buildUrl(slug, "deployments"),
+    insights: () => buildUrl(slug, "insights"),
+    resources: () => buildUrl(slug, "resources"),
+    settings: () => buildUrl(slug, "settings"),
   };
 };
 
