@@ -1,4 +1,5 @@
 import type { Tx } from "@ctrlplane/db";
+import { TRPCError } from "@trpc/server";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -15,6 +16,7 @@ import {
   notInArray,
   sql,
   takeFirst,
+  takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -25,7 +27,11 @@ import {
   updateJob,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
-import { jobCondition, JobStatus } from "@ctrlplane/validators/jobs";
+import {
+  JobAgentType,
+  jobCondition,
+  JobStatus,
+} from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -528,6 +534,55 @@ const jobAgentRouter = createTRPCRouter({
         .from(schema.jobAgent)
         .where(eq(schema.jobAgent.workspaceId, input)),
     ),
+
+  github: createTRPCRouter({
+    byId: protectedProcedure
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          canUser
+            .perform(Permission.JobAgentGet)
+            .on({ type: "jobAgent", id: input }),
+      })
+      .input(z.string().uuid())
+      .query(async ({ ctx, input }) => {
+        const agent = await ctx.db
+          .select()
+          .from(schema.jobAgent)
+          .where(eq(schema.jobAgent.id, input))
+          .then(takeFirstOrNull);
+
+        if (agent === null)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Job agent not found",
+          });
+
+        if (agent.type !== String(JobAgentType.GithubApp))
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Job agent is not a GitHub app",
+          });
+
+        const ghEntity = await ctx.db
+          .select()
+          .from(schema.githubEntity)
+          .where(
+            eq(
+              schema.githubEntity.installationId,
+              Number(agent.config.installationId),
+            ),
+          )
+          .then(takeFirstOrNull);
+
+        if (ghEntity == null)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Associated GitHub entity not found",
+          });
+
+        return { ...agent, ghEntity };
+      }),
+  }),
 
   create: protectedProcedure
     .meta({
