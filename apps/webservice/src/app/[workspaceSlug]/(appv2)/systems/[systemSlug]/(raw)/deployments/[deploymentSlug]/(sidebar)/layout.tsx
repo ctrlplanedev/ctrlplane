@@ -42,7 +42,7 @@ export default async function DeploymentLayout(props: {
   const url = (tab: string) =>
     `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}${tab ? `/${tab}` : ""}`;
   return (
-    <div className="h-full w-full">
+    <div className="flex h-full w-full flex-col">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
           <Link
@@ -94,7 +94,7 @@ export default async function DeploymentLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-full w-[calc(100%-255px-1px)]">
+        <SidebarInset className="h-[calc(100vh-56px-64px-2px)] w-[calc(100%-255px-1px)]">
           {props.children}
         </SidebarInset>
       </SidebarProvider>

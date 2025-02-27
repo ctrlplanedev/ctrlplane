@@ -38,10 +38,12 @@ export default async function DeploymentPage(props: PageProps) {
       )
     : null;
   return (
-    <DeploymentPageContent
-      deployment={deployment}
-      environments={environments}
-      releaseChannel={releaseChannel}
-    />
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-full overflow-auto">
+      <DeploymentPageContent
+        deployment={deployment}
+        environments={environments}
+        releaseChannel={releaseChannel}
+      />
+    </div>
   );
 }
