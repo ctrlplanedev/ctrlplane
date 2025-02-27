@@ -105,19 +105,17 @@ const DeploymentTable: React.FC<{
                   </Link>
                 </div>
               </TableCell>
-              {environments.map((env) => {
-                return (
-                  <TableCell key={env.id} className="h-[70px] w-[220px]">
-                    <div className="flex h-full w-full justify-center">
-                      <LazyDeploymentEnvironmentCell
-                        environment={env}
-                        deployment={r}
-                        workspace={workspace}
-                      />
-                    </div>
-                  </TableCell>
-                );
-              })}
+              {environments.map((env) => (
+                <TableCell key={env.id} className="h-[70px] w-[220px]">
+                  <div className="flex h-full w-full justify-center">
+                    <LazyDeploymentEnvironmentCell
+                      environment={env}
+                      deployment={r}
+                      workspace={workspace}
+                    />
+                  </div>
+                </TableCell>
+              ))}
               <TableCell className="flex-grow" />
             </TableRow>
           ))}

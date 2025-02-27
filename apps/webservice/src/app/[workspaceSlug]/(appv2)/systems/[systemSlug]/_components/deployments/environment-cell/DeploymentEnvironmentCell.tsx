@@ -69,7 +69,9 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
             <IconCube className="h-4 w-4" strokeWidth={2} />
           </div>
           <div>
-            <div className="font-semibold">{release.version}</div>
+            <div className="max-w-36 truncate font-semibold">
+              <span className="whitespace-nowrap">{release.version}</span>
+            </div>
             <div className="text-xs text-muted-foreground">No resources</div>
           </div>
         </div>
@@ -122,7 +124,9 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
               <IconAlertCircle className="h-4 w-4" strokeWidth={2} />
             </div>
             <div>
-              <div className="font-semibold">{release.version}</div>
+              <div className="max-w-36 truncate font-semibold">
+                <span className="whitespace-nowrap">{release.version}</span>
+              </div>
               <div className="text-xs text-muted-foreground">
                 Approval required
               </div>
@@ -157,8 +161,8 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
             <IconProgressCheck className="h-4 w-4" strokeWidth={2} />
           </div>
           <div className="flex flex-col items-start">
-            <div className="font-semibold text-neutral-200">
-              {release.version}
+            <div className="max-w-36 truncate font-semibold text-neutral-200">
+              <span className="whitespace-nowrap">{release.version}</span>
             </div>
             <div className="text-xs text-muted-foreground">Click to deploy</div>
           </div>
