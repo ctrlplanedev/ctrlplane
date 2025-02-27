@@ -2,7 +2,7 @@
 
 import type { System } from "@ctrlplane/db/schema";
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 
 import { cn } from "@ctrlplane/ui";
@@ -23,6 +23,7 @@ export const SystemSelector: React.FC<{
   systems: System[];
 }> = ({ workspaceSlug, selectedSystem, systems }) => {
   const router = useRouter();
+  const tab = usePathname().split("/").pop();
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -47,7 +48,9 @@ export const SystemSelector: React.FC<{
                 <CommandItem
                   key={system.id}
                   onSelect={() => {
-                    router.push(`/${workspaceSlug}/systems/${system.slug}`);
+                    router.push(
+                      `/${workspaceSlug}/systems/${system.slug}/${tab}`,
+                    );
                     router.refresh();
                   }}
                 >
