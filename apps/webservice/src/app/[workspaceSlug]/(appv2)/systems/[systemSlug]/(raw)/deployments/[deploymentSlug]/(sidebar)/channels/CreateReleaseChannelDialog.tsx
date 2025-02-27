@@ -38,6 +38,7 @@ import {
 
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionDialog";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type CreateReleaseChannelDialogProps = {
@@ -89,11 +90,13 @@ export const CreateReleaseChannelDialog: React.FC<
       ? LZString.compressToEncodedURIComponent(JSON.stringify(filter))
       : undefined;
 
-  const baseUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`;
+  const baseUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .releases();
   const releaseFilterUrl =
-    filterHash != null
-      ? `${baseUrl}/releases?filter=${filterHash}`
-      : `${baseUrl}/releases`;
+    filterHash != null ? `${baseUrl}?filter=${filterHash}` : baseUrl;
 
   const releasesQ = api.release.list.useQuery(
     { deploymentId, filter, limit: 5 },

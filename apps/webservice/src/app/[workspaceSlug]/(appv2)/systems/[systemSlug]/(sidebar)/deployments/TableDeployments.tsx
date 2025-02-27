@@ -10,6 +10,7 @@ import { Badge } from "@ctrlplane/ui/badge";
 
 import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/dropdown/DeploymentOptionsDropdown";
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/environment-cell/DeploymentEnvironmentCell";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -117,7 +118,11 @@ const DeploymentTable: React.FC<{
               >
                 <div className="flex w-full items-center gap-2">
                   <Link
-                    href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
+                    href={urls
+                      .workspace(workspace.slug)
+                      .system(systemSlug)
+                      .deployment(r.slug)
+                      .baseUrl()}
                     className="flex-grow truncate hover:text-blue-300"
                     title={r.name}
                   >

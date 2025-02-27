@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/release/CreateRelease";
-import { CreateReleaseChannelDialog } from "./channels/CreateReleaseChannelDialog";
-import { CreateVariableDialog } from "./variables/CreateVariableDialog";
+import { CreateReleaseChannelDialog } from "../channels/CreateReleaseChannelDialog";
+import { CreateVariableDialog } from "../variables/CreateVariableDialog";
 
 export const DeploymentCTA: React.FC<{
   deploymentId: string;

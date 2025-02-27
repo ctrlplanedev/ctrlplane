@@ -2,14 +2,6 @@ type WorkspaceParams = {
   workspaceSlug: string;
 };
 
-type SystemParams = WorkspaceParams & {
-  systemSlug: string;
-};
-
-type DeploymentParams = SystemParams & {
-  deploymentSlug: string;
-};
-
 // Base URL builder
 const buildUrl = (...segments: string[]) => {
   const path = segments.filter(Boolean).join("/");
@@ -29,6 +21,10 @@ const workspace = (slug: string) => {
   };
 };
 
+type SystemParams = WorkspaceParams & {
+  systemSlug: string;
+};
+
 // System URL functions
 const system = (params: SystemParams) => {
   const { workspaceSlug, systemSlug } = params;
@@ -44,6 +40,10 @@ const system = (params: SystemParams) => {
   };
 };
 
+type DeploymentParams = SystemParams & {
+  deploymentSlug: string;
+};
+
 // Deployment URL functions
 const deployment = (params: DeploymentParams) => {
   const { workspaceSlug, systemSlug, deploymentSlug } = params;
@@ -57,12 +57,35 @@ const deployment = (params: DeploymentParams) => {
 
   return {
     baseUrl: () => buildUrl(...base),
+    deployments: () => buildUrl(...base),
     properties: () => buildUrl(...base, "properties"),
     workflow: () => buildUrl(...base, "workflow"),
     releases: () => buildUrl(...base, "releases"),
+    release: (releaseId: string) => release({ ...params, releaseId }),
     channels: () => buildUrl(...base, "channels"),
     variables: () => buildUrl(...base, "variables"),
     hooks: () => buildUrl(...base, "hooks"),
+  };
+};
+
+type ReleaseParams = DeploymentParams & {
+  releaseId: string;
+};
+
+const release = (params: ReleaseParams) => {
+  const { workspaceSlug, systemSlug, deploymentSlug, releaseId } = params;
+  const base = [
+    workspaceSlug,
+    "systems",
+    systemSlug,
+    "deployments",
+    deploymentSlug,
+    "releases",
+    releaseId,
+  ];
+
+  return {
+    baseUrl: () => buildUrl(...base),
   };
 };
 

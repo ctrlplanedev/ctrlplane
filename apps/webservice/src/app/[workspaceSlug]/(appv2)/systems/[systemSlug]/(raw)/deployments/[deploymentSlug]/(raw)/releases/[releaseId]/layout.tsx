@@ -24,6 +24,7 @@ import {
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 
 export default async function ReleaseLayout(props: {
@@ -44,29 +45,29 @@ export default async function ReleaseLayout(props: {
   const url = (tab: string) =>
     `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/releases/${params.releaseId}/${tab}`;
 
+  const systemUrl = urls
+    .workspace(params.workspaceSlug)
+    .system(params.systemSlug);
+
   return (
     <div className="h-full w-full">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
-          <Link
-            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
-          >
+          <Link href={systemUrl.baseUrl()}>
             <IconArrowLeft className="size-5" />
           </Link>
           <Separator orientation="vertical" className="h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
-                <BreadcrumbLink
-                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
-                >
+                <BreadcrumbLink href={systemUrl.deployments()}>
                   Deployments
                 </BreadcrumbLink>
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbLink
-                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/releases`}
+                  href={systemUrl.deployment(params.deploymentSlug).releases()}
                 >
                   {deployment.name}
                 </BreadcrumbLink>

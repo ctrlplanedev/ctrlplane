@@ -43,7 +43,7 @@ import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/useReleaseFilter";
 import { api } from "~/trpc/react";
-import { JobHistoryPopover } from "../../releases/JobHistoryPopover";
+import { JobHistoryPopover } from "./JobHistoryPopover";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 import { LazyReleaseEnvironmentCell } from "./ReleaseEnvironmentCell";
 

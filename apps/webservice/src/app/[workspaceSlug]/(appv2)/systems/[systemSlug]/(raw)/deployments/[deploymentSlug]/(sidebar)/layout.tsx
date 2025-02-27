@@ -23,8 +23,9 @@ import {
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
-import { DeploymentCTA } from "./DeploymentCTA";
+import { DeploymentCTA } from "./_components/DeploymentCTA";
 
 export default async function DeploymentLayout(props: {
   children: React.ReactNode;
@@ -39,8 +40,11 @@ export default async function DeploymentLayout(props: {
   const deployment = await api.deployment.bySlug(params).catch(() => null);
   if (system == null || deployment == null) notFound();
 
-  const url = (tab: string) =>
-    `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}${tab ? `/${tab}` : ""}`;
+  const deploymentUrl = urls
+    .workspace(params.workspaceSlug)
+    .system(params.systemSlug)
+    .deployment(params.deploymentSlug);
+
   return (
     <div className="flex h-full w-full flex-col">
       <PageHeader className="justify-between">
@@ -55,7 +59,10 @@ export default async function DeploymentLayout(props: {
             <BreadcrumbList>
               <BreadcrumbItem>
                 <BreadcrumbLink
-                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
+                  href={urls
+                    .workspace(params.workspaceSlug)
+                    .system(params.systemSlug)
+                    .deployments()}
                 >
                   Deployments
                 </BreadcrumbLink>
@@ -81,15 +88,24 @@ export default async function DeploymentLayout(props: {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarLink href={url("")} exact>
+                <SidebarLink href={deploymentUrl.deployments()} exact>
                   Deployments
                 </SidebarLink>
-                <SidebarLink href={url("properties")}>Properties</SidebarLink>
-                <SidebarLink href={url("workflow")}>Workflow</SidebarLink>
-                <SidebarLink href={url("releases")}>Releases</SidebarLink>
-                <SidebarLink href={url("channels")}>Channels</SidebarLink>
-                <SidebarLink href={url("variables")}>Variables</SidebarLink>
-                <SidebarLink href={url("hooks")}>Hooks</SidebarLink>
+
+                <SidebarLink href={deploymentUrl.workflow()}>
+                  Pipeline
+                </SidebarLink>
+                <SidebarLink href={deploymentUrl.channels()}>
+                  Channels
+                </SidebarLink>
+                <SidebarLink href={deploymentUrl.variables()}>
+                  Variables
+                </SidebarLink>
+                <SidebarLink href={deploymentUrl.hooks()}>Hooks</SidebarLink>
+
+                <SidebarLink href={deploymentUrl.properties()}>
+                  Settings
+                </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>

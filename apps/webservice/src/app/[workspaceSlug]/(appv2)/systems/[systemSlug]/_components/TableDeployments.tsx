@@ -17,6 +17,7 @@ import {
 } from "@ctrlplane/ui/table";
 
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/deployments/environment-cell/DeploymentEnvironmentCell";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
@@ -97,7 +98,11 @@ const DeploymentTable: React.FC<{
               >
                 <div className="flex min-w-0 items-center justify-between gap-2 px-2 text-lg">
                   <Link
-                    href={`/${workspace.slug}/systems/${systemSlug}/deployments/${r.slug}/releases`}
+                    href={urls
+                      .workspace(workspace.slug)
+                      .system(systemSlug)
+                      .deployment(r.slug)
+                      .baseUrl()}
                     className="truncate hover:text-blue-300"
                     title={r.name}
                   >
