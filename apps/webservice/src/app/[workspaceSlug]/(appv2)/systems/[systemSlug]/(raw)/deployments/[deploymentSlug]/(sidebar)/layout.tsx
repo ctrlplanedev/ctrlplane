@@ -24,6 +24,7 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarInset,
   SidebarMenu,
   SidebarProvider,
@@ -94,6 +95,9 @@ export default async function DeploymentLayout(props: {
           className="absolute left-0 top-0 h-full"
           name={Sidebars.Deployment}
         >
+          <SidebarHeader className="rounded-tl-lg p-4">
+            {deployment.name}
+          </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupLabel>Release Management</SidebarGroupLabel>
@@ -111,11 +115,17 @@ export default async function DeploymentLayout(props: {
                 >
                   Channels
                 </SidebarLink>
+                <SidebarLink
+                  icon={<IconVariable />}
+                  href={deploymentUrl.variables()}
+                >
+                  Variables
+                </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
 
             <SidebarGroup>
-              <SidebarGroupLabel>Setup</SidebarGroupLabel>
+              <SidebarGroupLabel>Configuration</SidebarGroupLabel>
               <SidebarMenu>
                 <SidebarLink
                   icon={<IconPlayerPlay />}
@@ -124,12 +134,6 @@ export default async function DeploymentLayout(props: {
                   Workflow
                 </SidebarLink>
 
-                <SidebarLink
-                  icon={<IconVariable />}
-                  href={deploymentUrl.variables()}
-                >
-                  Variables
-                </SidebarLink>
                 <SidebarLink
                   icon={<IconTimelineEvent />}
                   href={deploymentUrl.hooks()}
