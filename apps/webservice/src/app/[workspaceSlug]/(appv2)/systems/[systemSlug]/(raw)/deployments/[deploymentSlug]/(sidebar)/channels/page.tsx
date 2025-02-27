@@ -24,5 +24,9 @@ export default async function ReleaseChannelsPage(props: {
   const releaseChannels =
     await api.deployment.releaseChannel.list.byDeploymentId(deployment.id);
 
-  return <ReleaseChannelsTable releaseChannels={releaseChannels} />;
+  return (
+    <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-full overflow-auto">
+      <ReleaseChannelsTable releaseChannels={releaseChannels} />
+    </div>
+  );
 }
