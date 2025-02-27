@@ -8,12 +8,14 @@ import { z } from "zod";
 
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
 import { Button } from "@ctrlplane/ui/button";
-import { Card } from "@ctrlplane/ui/card";
 import { Form, FormField, useForm } from "@ctrlplane/ui/form";
+import { JobAgentType } from "@ctrlplane/validators/jobs";
 
-import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
+import { JobAgentKubernetesConfig } from "~/components/form/job-agent/JobAgentKubernetesConfig";
+import { JobAgentScriptConfig } from "~/components/form/job-agent/JobAgentScriptConfig";
 import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
 import { api } from "~/trpc/react";
+import { DeploymentJobAgentGithubConfig } from "./DeploymentJobAgentGithubConfig";
 
 const JobAgentForm: React.FC<{
   jobAgent?: schema.JobAgent;
@@ -41,7 +43,7 @@ const JobAgentForm: React.FC<{
 
   return (
     <Form {...form}>
-      <form onSubmit={onFormSubmit} className="space-y-3">
+      <form onSubmit={onFormSubmit} className="space-y-6">
         <FormField
           control={form.control}
           name="jobAgentId"
@@ -55,26 +57,39 @@ const JobAgentForm: React.FC<{
             />
           )}
         />
-        <Card className="rounded-md border-neutral-900 p-4">
-          <FormField
-            control={form.control}
-            name="jobAgentConfig"
-            render={({ field: { value, onChange } }) =>
-              selectedJobAgent == null ? (
+
+        <FormField
+          control={form.control}
+          name="jobAgentConfig"
+          render={({ field }) => (
+            <>
+              {selectedJobAgent == null && (
                 <span className="px-2 text-sm text-muted-foreground">
                   Select a job agent
                 </span>
-              ) : (
-                <JobAgentConfig
-                  jobAgent={selectedJobAgent}
-                  workspace={workspace}
-                  value={value}
-                  onChange={onChange}
+              )}
+              {selectedJobAgent?.type === JobAgentType.KubernetesJob && (
+                <JobAgentKubernetesConfig {...field} />
+              )}
+              {selectedJobAgent?.type === JobAgentType.GithubApp && (
+                <DeploymentJobAgentGithubConfig
+                  jobAgentId={jobAgentId}
+                  {...field}
                 />
-              )
-            }
-          />
-        </Card>
+              )}
+              {selectedJobAgent?.type.startsWith("exec-") && (
+                <JobAgentScriptConfig
+                  type={
+                    selectedJobAgent.type.startsWith(JobAgentType.ExecWindows)
+                      ? "powershell"
+                      : "shell"
+                  }
+                  {...field}
+                />
+              )}
+            </>
+          )}
+        />
 
         <Button
           type="submit"

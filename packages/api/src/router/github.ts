@@ -125,16 +125,28 @@ const getRepos = async (
   installationOctokit: InstallationOctokitClient,
   installationToken: { token: string },
   owner: string,
+  type: "organization" | "user",
 ) => {
-  const { data } = await installationOctokit.repos.listForOrg({
-    org: owner,
-    per_page: 100,
-    page,
-    headers: {
-      "X-GitHub-Api-Version": "2022-11-28",
-      authorization: `Bearer ${installationToken.token}`,
-    },
-  });
+  const { data } =
+    type === "organization"
+      ? await installationOctokit.repos.listForOrg({
+          org: owner,
+          per_page: 100,
+          page,
+          headers: {
+            "X-GitHub-Api-Version": "2022-11-28",
+            authorization: `Bearer ${installationToken.token}`,
+          },
+        })
+      : await installationOctokit.repos.listForUser({
+          username: owner,
+          per_page: 100,
+          page,
+          headers: {
+            "X-GitHub-Api-Version": "2022-11-28",
+            authorization: `Bearer ${installationToken.token}`,
+          },
+        });
 
   const reposWithWorkflows = await Promise.all(
     data.map(async (repo) => {
@@ -157,6 +169,7 @@ const getRepos = async (
     installationOctokit,
     installationToken,
     owner,
+    type,
   );
 };
 
@@ -176,7 +189,24 @@ const reposRouter = createTRPCRouter({
         workspaceId: z.string().uuid(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const entity = await ctx.db
+        .select()
+        .from(githubEntity)
+        .where(
+          and(
+            eq(githubEntity.installationId, input.installationId),
+            eq(githubEntity.workspaceId, input.workspaceId),
+          ),
+        )
+        .then(takeFirstOrNull);
+
+      if (entity == null)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Entity not found",
+        });
+
       const { data: installation } = await getOctokit().apps.getInstallation({
         installation_id: input.installationId,
       });
@@ -193,6 +223,7 @@ const reposRouter = createTRPCRouter({
         installationOctokit,
         installationToken,
         input.owner,
+        entity.type,
       );
     }),
 });

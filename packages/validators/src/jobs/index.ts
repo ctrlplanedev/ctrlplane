@@ -1,8 +1,5 @@
 export * from "./conditions/index.js";
-
-export enum JobAgentType {
-  GithubApp = "github-app",
-}
+export * from "./agents/index.js";
 
 export enum JobStatus {
   Successful = "successful",
