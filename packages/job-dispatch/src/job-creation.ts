@@ -85,6 +85,10 @@ export const onJobCompletion = async (je: schema.Job) => {
       schema.deployment,
       eq(schema.release.deploymentId, schema.deployment.id),
     )
+    .innerJoin(
+      schema.environment,
+      eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
+    )
     .where(eq(schema.releaseJobTrigger.jobId, je.id))
     .then(takeFirst);
 
@@ -98,8 +102,8 @@ export const onJobCompletion = async (je: schema.Job) => {
 
   const isWaitingOnConcurrencyRequirementInSameRelease = and(
     isNotNull(schema.environmentPolicy.concurrencyLimit),
-    eq(schema.environment.id, triggers.release_job_trigger.environmentId),
-    eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
+    eq(schema.environmentPolicy.id, triggers.environment.policyId),
+    eq(schema.release.deploymentId, triggers.release.deploymentId),
     eq(schema.job.status, JobStatus.Pending),
   );
 

@@ -99,12 +99,19 @@ const latestActiveReleaseSubQuery = (db: Tx) =>
       eq(schema.releaseJobTrigger.releaseId, schema.release.id),
     )
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
+    .innerJoin(
+      schema.resource,
+      eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
+    )
     .where(
-      notInArray(schema.job.status, [
-        JobStatus.Pending,
-        JobStatus.Skipped,
-        JobStatus.Cancelled,
-      ]),
+      and(
+        notInArray(schema.job.status, [
+          JobStatus.Pending,
+          JobStatus.Skipped,
+          JobStatus.Cancelled,
+        ]),
+        isNull(schema.resource.deletedAt),
+      ),
     )
     .as("active_releases");
 
