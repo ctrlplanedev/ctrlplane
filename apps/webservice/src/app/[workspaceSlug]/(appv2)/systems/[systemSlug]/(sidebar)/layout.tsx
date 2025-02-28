@@ -119,7 +119,7 @@ export default async function SystemsLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-64px-2px)] min-w-0 overflow-auto">
+        <SidebarInset className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-56px-2px)] min-w-0 overflow-y-auto">
           {props.children}
         </SidebarInset>
       </SidebarProvider>
