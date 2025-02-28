@@ -57,7 +57,7 @@ export default async function ChecksPage(props: PageProps) {
     <div className="relative h-full">
       <SidebarTrigger
         name={Sidebars.Release}
-        className="absolute left-2 top-2 z-50"
+        className="absolute left-2 top-2 z-10"
       >
         <IconMenu2 className="h-4 w-4" />
       </SidebarTrigger>

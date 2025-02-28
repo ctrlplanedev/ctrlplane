@@ -34,7 +34,7 @@ export default async function GroupingsPage(props: {
     return <ResourceMetadataGroupsGettingStarted workspace={workspace} />;
   return (
     <div className="flex h-full flex-col">
-      <PageHeader className="z-50 flex items-center justify-between">
+      <PageHeader className="z-10 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <SidebarTrigger name={Sidebars.Resources}>
             <IconMenu2 className="h-4 w-4" />

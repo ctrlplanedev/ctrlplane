@@ -31,7 +31,7 @@ export default async function ResourcesPage(props: {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader className="z-50">
+      <PageHeader className="z-10">
         <SidebarTrigger name={Sidebars.Resources}>
           <IconMenu2 className="h-4 w-4" />
         </SidebarTrigger>
