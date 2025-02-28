@@ -11,6 +11,7 @@ import {
 import { useInView } from "react-intersection-observer";
 
 import { Button } from "@ctrlplane/ui/button";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
 import { ApprovalDialog } from "../../release/ApprovalDialog";
@@ -49,7 +50,15 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   const isLoading = isStatusesLoading || isReleaseLoading;
 
   if (isLoading)
-    return <p className="text-xs text-muted-foreground/70">Loading...</p>;
+    return (
+      <div className="flex h-full w-full items-center gap-2">
+        <Skeleton className="h-6 w-6 rounded-full" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-[16px] w-20 rounded-full" />
+          <Skeleton className="h-3 w-20 rounded-full" />
+        </div>
+      </div>
+    );
 
   if (release == null)
     return (
@@ -185,7 +194,15 @@ export const LazyDeploymentEnvironmentCell: React.FC<
 
   return (
     <div className="flex w-full items-center justify-center" ref={ref}>
-      {!inView && <p className="text-xs text-muted-foreground">Loading...</p>}
+      {!inView && (
+        <div className="flex h-full w-full items-center gap-2">
+          <Skeleton className="h-6 w-6 rounded-full" />
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-[16px] w-20 rounded-full" />
+            <Skeleton className="h-3 w-20 rounded-full" />
+          </div>
+        </div>
+      )}
       {inView && <DeploymentEnvironmentCell {...props} />}
     </div>
   );

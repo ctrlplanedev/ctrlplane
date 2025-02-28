@@ -43,7 +43,7 @@ const EnvHeader: React.FC<{
 
   const envUrl = `/${workspaceSlug}/systems?environment_id=${env.id}`;
   return (
-    <TableHead className="w-fit p-2" key={env.id}>
+    <TableHead className="w-[220px] p-2" key={env.id}>
       <Link
         href={envUrl}
         className="flex w-fit items-center gap-2 rounded-md px-2 py-1 text-white hover:bg-secondary/50"
@@ -72,7 +72,7 @@ const DeploymentTable: React.FC<{
       <Table className="w-full min-w-max bg-background">
         <TableHeader className="[&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
-            <TableHead className="sticky left-0 z-10 rounded-tl-md py-4 pl-6 backdrop-blur-lg">
+            <TableHead className="sticky left-0 z-10 w-[350px] rounded-tl-md py-4 pl-6 backdrop-blur-lg">
               Deployments
             </TableHead>
             {environments.map((env) => (
@@ -82,6 +82,7 @@ const DeploymentTable: React.FC<{
                 workspaceSlug={workspace.slug}
               />
             ))}
+            <TableCell className="flex-grow" />
           </TableRow>
         </TableHeader>
         <TableBody>
