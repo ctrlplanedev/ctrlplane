@@ -37,12 +37,7 @@ export const isPassingAllPolicies = async (
   ];
   let passingJobs = releaseJobTriggers;
 
-  for (const check of checks) {
-    passingJobs = await check(db, passingJobs);
-    console.log(
-      `After ${check.name}: ${passingJobs.filter((rjt) => rjt.releaseId === "dcfb27db-4792-47dc-b9cc-e34b02482973").length} passing jobs`,
-    );
-  }
+  for (const check of checks) passingJobs = await check(db, passingJobs);
 
   return passingJobs;
 };
