@@ -36,7 +36,14 @@ export const isPassingAllPolicies = async (
     isPassingNewerThanLastActiveReleasePolicy,
   ];
   let passingJobs = releaseJobTriggers;
-  for (const check of checks) passingJobs = await check(db, passingJobs);
+
+  const releaseIds = passingJobs.map((rjt) => rjt.releaseId);
+
+  for (const check of checks) {
+    passingJobs = await check(db, passingJobs);
+    if (releaseIds.includes("dcfb27db-4792-47dc-b9cc-e34b02482973"))
+      console.log(`After ${check.name}: ${passingJobs.length} passing jobs`);
+  }
 
   return passingJobs;
 };

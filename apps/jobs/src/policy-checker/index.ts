@@ -11,7 +11,6 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const run = async () => {
   const isPassingApprovalGate = or(
-    isNull(schema.environment.policyId),
     eq(schema.environmentPolicy.approvalRequirement, "automatic"),
     eq(schema.environmentPolicyApproval.status, "approved"),
   );
