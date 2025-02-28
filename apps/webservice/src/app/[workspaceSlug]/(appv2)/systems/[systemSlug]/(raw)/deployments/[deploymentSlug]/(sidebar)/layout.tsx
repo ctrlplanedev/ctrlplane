@@ -96,7 +96,7 @@ export default async function DeploymentLayout(props: {
           name={Sidebars.Deployment}
         >
           <SidebarHeader className="rounded-tl-lg p-4">
-            {deployment.name}
+            <div className="max-w-60 truncate">{deployment.name}</div>
           </SidebarHeader>
           <SidebarContent>
             <SidebarGroup>
