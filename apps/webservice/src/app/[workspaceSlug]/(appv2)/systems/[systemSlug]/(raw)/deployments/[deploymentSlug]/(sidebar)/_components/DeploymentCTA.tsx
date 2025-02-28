@@ -25,15 +25,6 @@ export const DeploymentCTA: React.FC<{
       </CreateVariableDialog>
     );
 
-  if (tab === "releases")
-    return (
-      <CreateReleaseDialog deploymentId={deploymentId} systemId={systemId}>
-        <Button variant="outline" className="flex items-center gap-2" size="sm">
-          New Release
-        </Button>
-      </CreateReleaseDialog>
-    );
-
   if (tab === "channels")
     return (
       <CreateReleaseChannelDialog deploymentId={deploymentId}>
@@ -42,5 +33,12 @@ export const DeploymentCTA: React.FC<{
         </Button>
       </CreateReleaseChannelDialog>
     );
-  return null;
+
+  return (
+    <CreateReleaseDialog deploymentId={deploymentId} systemId={systemId}>
+      <Button variant="outline" className="flex items-center gap-2" size="sm">
+        New Release
+      </Button>
+    </CreateReleaseDialog>
+  );
 };
