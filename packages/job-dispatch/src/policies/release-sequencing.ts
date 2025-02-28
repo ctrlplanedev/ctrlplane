@@ -147,7 +147,10 @@ const isReleaseLatestActiveForEnvironment = async (
 
   if (!latestActiveRelease) return true;
 
-  return isAfter(release.createdAt, latestActiveRelease.release.createdAt);
+  return (
+    release.id === latestActiveRelease.release.id ||
+    isAfter(release.createdAt, latestActiveRelease.release.createdAt)
+  );
 };
 
 /**
