@@ -111,6 +111,13 @@ const isReleaseLatestActiveForEnvironment = async (
     )
     .where(eq(schema.environment.id, environmentId))
     .then(takeFirstOrNull);
+
+  if (release.id === "dcfb27db-4792-47dc-b9cc-e34b02482973") {
+    console.log(
+      "Environment information for latest active release",
+      environment,
+    );
+  }
   if (!environment) return false;
 
   const latestActiveRelease = await db
@@ -145,6 +152,15 @@ const isReleaseLatestActiveForEnvironment = async (
     .limit(1)
     .then(takeFirstOrNull);
 
+  if (release.id === "dcfb27db-4792-47dc-b9cc-e34b02482973") {
+    console.log(
+      "Latest active release",
+      latestActiveRelease?.release.id,
+      latestActiveRelease?.release.version,
+      latestActiveRelease?.release.createdAt,
+    );
+  }
+
   if (!latestActiveRelease) return true;
 
   return (
@@ -177,6 +193,13 @@ export const isPassingNewerThanLastActiveReleasePolicy: ReleaseIdPolicyChecker =
         );
         if (!release) return [];
         const { environmentId } = groupedTriggers[0]!;
+        if (release.id === "dcfb27db-4792-47dc-b9cc-e34b02482973") {
+          console.log(
+            "Checking if release is latest active for environment",
+            environmentId,
+            release.id,
+          );
+        }
         const isLatestActive = await isReleaseLatestActiveForEnvironment(
           db,
           release,
