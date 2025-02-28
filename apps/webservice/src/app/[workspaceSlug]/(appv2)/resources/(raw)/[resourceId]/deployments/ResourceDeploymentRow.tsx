@@ -1,6 +1,7 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import type { JobCondition } from "@ctrlplane/validators/jobs";
 import { useParams, useRouter } from "next/navigation";
+import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
 import prettyMilliseconds from "pretty-ms";
 
@@ -14,6 +15,7 @@ import {
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { LazyDeploymentHistoryGraph } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/DeploymentHistoryGraph";
+import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(appv2)/_components/job/JobTableStatusIcon";
 import { api } from "~/trpc/react";
 
 type DeploymentStats =
@@ -57,11 +59,10 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
   const successRate = stats.successRate ?? 0;
   const filter = getFilter(resourceId, stats.id);
 
-  const { data, isLoading } = api.job.config.byWorkspaceId.list.useQuery({
-    workspaceId,
-    filter,
-    limit: 1,
-  });
+  const { data, isLoading } = api.job.config.byWorkspaceId.list.useQuery(
+    { workspaceId, filter, limit: 1 },
+    { refetchInterval: 5_000 },
+  );
 
   return (
     <TableRow
@@ -89,6 +90,15 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
         {isLoading && <Skeleton className="h-3 w-8" />}
       </TableCell>
 
+      <TableCell className="p-4 align-middle">
+        {!isLoading && (
+          <div className="flex items-center gap-1">
+            <JobTableStatusIcon status={data?.[0]?.job.status} />
+            {capitalCase(data?.[0]?.job.status ?? "No status")}
+          </div>
+        )}
+        {isLoading && <Skeleton className="h-3 w-8" />}
+      </TableCell>
       <TableCell className="p-4 align-middle">
         <LazyDeploymentHistoryGraph
           deploymentId={stats.id}

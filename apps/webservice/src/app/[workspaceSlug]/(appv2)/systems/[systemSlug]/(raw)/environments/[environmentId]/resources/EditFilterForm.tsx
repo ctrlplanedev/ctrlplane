@@ -7,6 +7,7 @@ import { IconLoader2, IconSelector } from "@tabler/icons-react";
 import { z } from "zod";
 
 import { Button } from "@ctrlplane/ui/button";
+import { Card } from "@ctrlplane/ui/card";
 import {
   Command,
   CommandGroup,
@@ -34,8 +35,8 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { ResourceConditionRender } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionRender";
-import { ResourceList } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceList";
 import { api } from "~/trpc/react";
+import { EnvironmentResourceTable } from "./EnvironmentResourcesTable";
 
 const ResourceViewsCombobox: React.FC<{
   workspaceId: string;
@@ -123,7 +124,7 @@ export const EditFilterForm: React.FC<{
 
   const filter = resourceFilter ?? undefined;
   const resources = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter, limit: 10 },
+    { workspaceId, filter },
     { enabled: workspaceId !== "" },
   );
 
@@ -199,11 +200,13 @@ export const EditFilterForm: React.FC<{
         {resourceFilter != null &&
           resources.data != null &&
           resources.data.total > 0 && (
-            <ResourceList
-              resources={resources.data.items}
-              count={resources.data.total}
-              filter={resourceFilter}
-            />
+            <Card className="rounded-md p-0">
+              <EnvironmentResourceTable
+                resources={resources.data.items}
+                systemId={environment.systemId}
+                environmentId={environment.id}
+              />
+            </Card>
           )}
       </form>
     </Form>

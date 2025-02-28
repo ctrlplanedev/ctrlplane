@@ -19,6 +19,10 @@ export const ResourceDeploymentRowSkeleton: React.FC<{ opacity: number }> = ({
     </td>
 
     <td className="p-4 align-middle">
+      <Skeleton className="h-3 w-8" style={{ opacity }} />
+    </td>
+
+    <td className="p-4 align-middle">
       <HistorySkeleton />
     </td>
 

@@ -55,6 +55,7 @@ export const useDeploymentEnvResourceDrawer = () => {
     const url = new URL(window.location.href);
     if (deploymentId == null || environmentId == null || resourceId == null) {
       url.searchParams.delete(param);
+      router.replace(`${url.pathname}?${url.searchParams.toString()}`);
       return;
     }
 

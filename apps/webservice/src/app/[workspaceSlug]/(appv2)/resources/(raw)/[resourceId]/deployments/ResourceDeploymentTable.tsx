@@ -55,6 +55,7 @@ export const ResourceDeploymentsTable: React.FC<
           </TableHead>
 
           <TableHead className="w-20 p-4 xl:w-40">Version</TableHead>
+          <TableHead className="w-20 p-4 xl:w-40">Status</TableHead>
 
           <TableHead className="p-4">History</TableHead>
 

@@ -5,8 +5,10 @@ import { z } from "zod";
 import {
   and,
   count,
+  desc,
   eq,
   gt,
+  inArray,
   isNull,
   lte,
   or,
@@ -15,6 +17,7 @@ import {
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { analyticsStatuses } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -55,7 +58,59 @@ const getDateRangeCounts = (db: Tx, range: Date[], where?: SQL) =>
     return { date, count: resourceCount };
   });
 
+const healthRouter = createTRPCRouter({
+  byResourceAndSystem: protectedProcedure
+    .input(
+      z.object({
+        resourceId: z.string().uuid(),
+        systemId: z.string().uuid(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.ResourceGet)
+          .on({ type: "resource", id: input.resourceId }),
+    })
+    .query(({ ctx, input }) => {
+      const { resourceId, systemId } = input;
+
+      return ctx.db
+        .selectDistinctOn([SCHEMA.release.deploymentId])
+        .from(SCHEMA.release)
+        .innerJoin(
+          SCHEMA.releaseJobTrigger,
+          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+        )
+        .innerJoin(
+          SCHEMA.job,
+          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+        )
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.release.deploymentId, SCHEMA.deployment.id),
+        )
+        .where(
+          and(
+            eq(SCHEMA.releaseJobTrigger.resourceId, resourceId),
+            eq(SCHEMA.deployment.systemId, systemId),
+            inArray(SCHEMA.job.status, analyticsStatuses),
+          ),
+        )
+        .orderBy(SCHEMA.release.deploymentId, desc(SCHEMA.job.startedAt))
+        .then((rows) =>
+          rows.map((row) => ({
+            ...row.job,
+            deployment: row.deployment,
+            release: row.release,
+          })),
+        );
+    }),
+});
+
 export const resourceStatsRouter = createTRPCRouter({
+  health: healthRouter,
+
   dailyCount: createTRPCRouter({
     byWorkspaceId: protectedProcedure
       .input(
