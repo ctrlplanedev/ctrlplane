@@ -153,7 +153,7 @@ export default async function DeploymentLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-[calc(100vh-56px-64px-2px)] w-[calc(100%-255px-1px)]">
+        <SidebarInset className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-56px-64px-2px)] w-[calc(100%-255px-1px)] flex-1 overflow-y-auto">
           {props.children}
         </SidebarInset>
       </SidebarProvider>
