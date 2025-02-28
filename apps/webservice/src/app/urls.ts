@@ -60,7 +60,7 @@ const deployment = (params: DeploymentParams) => {
     deployments: () => buildUrl(...base),
     properties: () => buildUrl(...base, "properties"),
     workflow: () => buildUrl(...base, "workflow"),
-    releases: () => buildUrl(...base, "releases"),
+    releases: () => buildUrl(...base),
     release: (releaseId: string) => release({ ...params, releaseId }),
     channels: () => buildUrl(...base, "channels"),
     variables: () => buildUrl(...base, "variables"),
