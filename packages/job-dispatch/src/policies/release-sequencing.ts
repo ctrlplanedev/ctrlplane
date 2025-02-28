@@ -86,7 +86,10 @@ const isReleaseLatestActiveForEnvironment = async (
   environmentId: string,
 ) => {
   const releaseChannelSubquery = db
-    .select()
+    .select({
+      rcPolicyId: schema.environmentPolicyReleaseChannel.policyId,
+      rcReleaseFilter: schema.releaseChannel.releaseFilter,
+    })
     .from(schema.environmentPolicyReleaseChannel)
     .innerJoin(
       schema.releaseChannel,
@@ -112,10 +115,7 @@ const isReleaseLatestActiveForEnvironment = async (
     )
     .leftJoin(
       releaseChannelSubquery,
-      eq(
-        schema.environmentPolicy.id,
-        releaseChannelSubquery.environment_policy_release_channel.policyId,
-      ),
+      eq(schema.environmentPolicy.id, releaseChannelSubquery.rcPolicyId),
     )
     .where(eq(schema.environment.id, environmentId))
     .then(takeFirstOrNull);
@@ -152,7 +152,7 @@ const isReleaseLatestActiveForEnvironment = async (
         eq(schema.releaseJobTrigger.environmentId, environmentId),
         schema.releaseMatchesCondition(
           db,
-          environment.release_channel?.release_channel.releaseFilter,
+          environment.release_channel?.rcReleaseFilter,
         ),
       ),
     )
