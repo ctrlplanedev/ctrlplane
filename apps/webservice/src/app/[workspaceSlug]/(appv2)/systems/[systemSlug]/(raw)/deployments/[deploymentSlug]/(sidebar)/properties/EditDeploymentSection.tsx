@@ -129,7 +129,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
       );
   });
   return (
-    <div className="container m-8 mx-auto max-w-3xl space-y-2">
+    <div className="container mx-auto max-w-3xl space-y-2 pt-4">
       <h2 className="" id="properties">
         Properties
       </h2>
