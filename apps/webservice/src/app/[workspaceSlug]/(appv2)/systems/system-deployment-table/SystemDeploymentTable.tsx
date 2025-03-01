@@ -14,8 +14,9 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 
 import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
+import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(appv2)/_components/system/DeleteSystemDialog";
 import { api } from "~/trpc/react";
-import { DeleteSystemDialog } from "./DeleteSystemDialog";
+import { SystemDeploymentSkeleton } from "./SystemDeploymentSkeleton";
 import DeploymentTable from "./TableDeployments";
 
 export const SystemDeploymentTable: React.FC<{
@@ -29,6 +30,8 @@ export const SystemDeploymentTable: React.FC<{
   const deployments = api.deployment.bySystemId.useQuery(system.id, {
     enabled: inView,
   });
+
+  const isLoading = environments.isLoading || deployments.isLoading;
 
   return (
     <div key={system.id} className="space-y-4">
@@ -70,14 +73,21 @@ export const SystemDeploymentTable: React.FC<{
         </DropdownMenu>
       </div>
 
-      <div ref={ref} className="overflow-hidden rounded-md border">
-        <DeploymentTable
-          workspace={workspace}
-          systemSlug={system.slug}
-          environments={environments.data ?? []}
-          deployments={deployments.data ?? []}
-        />
-      </div>
+      {isLoading && (
+        <div className="rounded-md border">
+          <SystemDeploymentSkeleton />
+        </div>
+      )}
+      {!isLoading && (
+        <div ref={ref} className="overflow-hidden rounded-md border">
+          <DeploymentTable
+            workspace={workspace}
+            systemSlug={system.slug}
+            environments={environments.data ?? []}
+            deployments={deployments.data ?? []}
+          />
+        </div>
+      )}
     </div>
   );
 };

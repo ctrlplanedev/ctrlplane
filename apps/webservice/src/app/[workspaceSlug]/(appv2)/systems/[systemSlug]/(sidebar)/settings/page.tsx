@@ -12,7 +12,7 @@ import { Separator } from "@ctrlplane/ui/separator";
 import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
-import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(appv2)/systems/[systemSlug]/_components/DeleteSystemDialog";
+import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(appv2)/_components/system/DeleteSystemDialog";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { GeneralSettings } from "./GeneralSettings";
