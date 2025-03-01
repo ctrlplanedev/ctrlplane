@@ -101,22 +101,20 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
                 <CommandInput placeholder="Search repo..." />
                 <CommandGroup>
                   <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
-                    {repos != null &&
-                      repos.length > 0 &&
-                      repos.map((repo) => (
-                        <CommandItem
-                          key={repo.id}
-                          value={repo.name}
-                          onSelect={(currentValue) => {
-                            onChange({ ...value, repo: currentValue });
-                            setRepoOpen(false);
-                          }}
-                        >
-                          {repo.name}
-                        </CommandItem>
-                      ))}
+                    {(repos ?? []).map((repo) => (
+                      <CommandItem
+                        key={repo.id}
+                        value={repo.name}
+                        onSelect={(currentValue) => {
+                          onChange({ ...value, repo: currentValue });
+                          setRepoOpen(false);
+                        }}
+                      >
+                        {repo.name}
+                      </CommandItem>
+                    ))}
 
-                    {repos.length === 0 && (
+                    {(repos ?? []).length === 0 && (
                       <CommandEmpty className="flex justify-center py-2 text-sm text-muted-foreground">
                         No repos found
                       </CommandEmpty>
