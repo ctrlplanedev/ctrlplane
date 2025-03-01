@@ -110,23 +110,25 @@ export const JobAgentSection: React.FC<{
   deploymentId: string;
 }> = (props) => {
   return (
-    <div className="container m-8 mx-auto max-w-3xl space-y-2">
-      <div id="job-agent">
-        <h2 className="">Job Agent</h2>
-      </div>
+    <div className="container m-8 mx-auto flex max-w-3xl justify-center space-y-2">
+      <div>
+        <div id="job-agent">
+          <h2 className="">Job Agent</h2>
+        </div>
 
-      {props.jobAgent == null && (
-        <Alert className="space-y-2 border-red-400 text-red-300">
-          <AlertTitle className="font-semibold">
-            Job agent not configured
-          </AlertTitle>
-          <AlertDescription>
-            Job agents are used to dispatch jobs to the correct service. Without
-            an agent new releases will not take any action.
-          </AlertDescription>
-        </Alert>
-      )}
-      <JobAgentForm {...props} />
+        {props.jobAgent == null && (
+          <Alert className="space-y-2 border-red-400 text-red-300">
+            <AlertTitle className="font-semibold">
+              Job agent not configured
+            </AlertTitle>
+            <AlertDescription>
+              Job agents are used to dispatch jobs to the correct service.
+              Without an agent new releases will not take any action.
+            </AlertDescription>
+          </Alert>
+        )}
+        <JobAgentForm {...props} />
+      </div>
     </div>
   );
 };
