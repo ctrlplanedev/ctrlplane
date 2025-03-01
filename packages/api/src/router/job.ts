@@ -16,7 +16,6 @@ import {
   notInArray,
   sql,
   takeFirst,
-  takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as schema from "@ctrlplane/db/schema";
 import {
@@ -549,13 +548,7 @@ const jobAgentRouter = createTRPCRouter({
           .select()
           .from(schema.jobAgent)
           .where(eq(schema.jobAgent.id, input))
-          .then(takeFirstOrNull);
-
-        if (agent === null)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Job agent not found",
-          });
+          .then(takeFirst);
 
         if (agent.type !== String(JobAgentType.GithubApp))
           throw new TRPCError({
@@ -567,18 +560,15 @@ const jobAgentRouter = createTRPCRouter({
           .select()
           .from(schema.githubEntity)
           .where(
-            eq(
-              schema.githubEntity.installationId,
-              Number(agent.config.installationId),
+            and(
+              eq(
+                schema.githubEntity.installationId,
+                Number(agent.config.installationId),
+              ),
+              eq(schema.githubEntity.workspaceId, agent.workspaceId),
             ),
           )
-          .then(takeFirstOrNull);
-
-        if (ghEntity == null)
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Associated GitHub entity not found",
-          });
+          .then(takeFirst);
 
         return { ...agent, ghEntity };
       }),
