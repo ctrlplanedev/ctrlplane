@@ -47,10 +47,11 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
   const workflows = selectedRepo?.workflows ?? [];
   const selectedWorkflow = workflows.find((w) => w.id === value.workflowId);
 
-  if (isGithubAgentLoading)
+  if (isGithubAgentLoading || isReposLoading)
     return (
-      <div className="flex w-96 items-center justify-center gap-2">
-        <IconLoader2 className="animate-spin" />
+      <div className="flex w-96 items-center justify-center gap-2 text-sm text-muted-foreground">
+        <IconLoader2 className="h-4 w-4 animate-spin" /> Loading{" "}
+        {isGithubAgentLoading ? "GitHub agent" : "repositories"}...
       </div>
     );
 
@@ -100,8 +101,7 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
                 <CommandInput placeholder="Search repo..." />
                 <CommandGroup>
                   <CommandList className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700">
-                    {!isReposLoading &&
-                      repos != null &&
+                    {repos != null &&
                       repos.length > 0 &&
                       repos.map((repo) => (
                         <CommandItem
@@ -116,18 +116,10 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
                         </CommandItem>
                       ))}
 
-                    {!isReposLoading &&
-                      (repos == null || repos.length === 0) && (
-                        <CommandEmpty className="flex justify-center py-2 text-sm text-muted-foreground">
-                          No repos found
-                        </CommandEmpty>
-                      )}
-
-                    {isReposLoading && (
-                      <CommandItem>
-                        <IconLoader2 className="h-4 w-4 animate-spin" /> Loading
-                        repos...
-                      </CommandItem>
+                    {repos.length === 0 && (
+                      <CommandEmpty className="flex justify-center py-2 text-sm text-muted-foreground">
+                        No repos found
+                      </CommandEmpty>
                     )}
                   </CommandList>
                 </CommandGroup>
