@@ -6,12 +6,13 @@ on:
     paths:
       - packages/db/**
       - .github/workflows/packages-migrations.yaml
+      - packages/validators/src/auth/index.ts
   push:
     branches: ["main"]
     paths:
       - packages/db/**
       - .github/workflows/packages-migrations.yaml
-
+      - packages/validators/src/auth/index.ts
 jobs:
   build:
     runs-on: ubuntu-latest
