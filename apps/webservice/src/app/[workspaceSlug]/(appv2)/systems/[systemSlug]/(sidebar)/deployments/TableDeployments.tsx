@@ -109,7 +109,7 @@ const DeploymentTable: React.FC<{
             <tr key={r.id} className="bg-background">
               <td
                 className={cn(
-                  "sticky left-0 z-10 w-[250px] items-center border-r px-4 backdrop-blur-lg",
+                  "sticky left-0 z-10 min-w-[250px] flex-grow items-center border-r px-4 backdrop-blur-lg",
                   {
                     "border-b": didx !== deployments.length - 1,
                     "rounded-bl": didx === deployments.length - 1,
@@ -136,7 +136,7 @@ const DeploymentTable: React.FC<{
                 return (
                   <td
                     key={env.id}
-                    className={cn("h-[55px] w-[220px] px-4 py-2", {
+                    className={cn("h-[70px] w-[220px] px-2 py-1", {
                       "border-r": idx !== environments.length - 1,
                       "border-b": didx !== deployments.length - 1,
                     })}
