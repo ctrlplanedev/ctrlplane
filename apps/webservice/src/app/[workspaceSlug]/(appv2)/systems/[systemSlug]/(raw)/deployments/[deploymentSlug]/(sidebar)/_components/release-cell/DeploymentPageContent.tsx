@@ -250,7 +250,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       )
                     }
                   >
-                    <TableCell className="sticky left-0 z-10 flex h-[60px] min-w-[500px] items-center gap-2 bg-background/95 text-base">
+                    <TableCell className="sticky left-0 z-10 flex h-[60px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 text-base">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
