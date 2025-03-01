@@ -79,6 +79,7 @@ export enum Permission {
 
   EnvironmentGet = "environment.get",
   EnvironmentUpdate = "environment.update",
+  EnvironmentList = "environment.list",
 
   ReleaseCreate = "release.create",
   ReleaseGet = "release.get",
