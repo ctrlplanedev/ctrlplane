@@ -265,7 +265,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
             .on({ type: "workspace", id: input.workspaceId }),
       })
       .query(async ({ ctx, input }) => {
-        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.job.startedAt} AT TIME ZONE 'America/Los_Angeles')`;
+        const dateTruncExpr = sql<Date>`date_trunc('day', ${schema.job.startedAt} AT TIME ZONE ${input.timezone})`;
 
         const subquery = ctx.db
           .select({
@@ -299,7 +299,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
               isNotNull(schema.job.completedAt),
             ),
           )
-          .groupBy(dateTruncExpr, schema.job.status)
+          .groupBy(sql`1`, schema.job.status)
           .as("sub");
 
         return ctx.db
