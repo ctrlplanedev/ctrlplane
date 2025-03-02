@@ -8,7 +8,6 @@ import {
   IconSelector,
 } from "@tabler/icons-react";
 
-import { cn } from "@ctrlplane/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
@@ -195,10 +194,10 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
         {selectedWorkflow != null && (
           <Link
             href={selectedWorkflow.html_url}
-            className={cn(
-              buttonVariants({ variant: "outline" }),
-              "flex items-center gap-2",
-            )}
+            className={buttonVariants({
+              variant: "outline",
+              className: "flex items-center gap-2",
+            })}
             target="_blank"
             rel="noopener noreferrer"
           >
