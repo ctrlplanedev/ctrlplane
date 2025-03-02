@@ -81,14 +81,8 @@ export default async function ReleaseLayout(props: {
         </div>
       </PageHeader>
 
-      <SidebarProvider
-        sidebarNames={[Sidebars.Release]}
-        className="relative h-full"
-      >
-        <Sidebar
-          name={Sidebars.Release}
-          className="absolute left-0 top-0 h-full"
-        >
+      <SidebarProvider sidebarNames={[Sidebars.Release]} className="relative">
+        <Sidebar name={Sidebars.Release} className="absolute left-0 top-0">
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
@@ -99,7 +93,9 @@ export default async function ReleaseLayout(props: {
             </SidebarGroup>
           </SidebarContent>
         </Sidebar>
-        <SidebarInset className="h-full min-w-0">{props.children}</SidebarInset>
+        <SidebarInset className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 h-[calc(100vh-56px-64px-2px)] min-w-0 overflow-y-auto">
+          {props.children}
+        </SidebarInset>
       </SidebarProvider>
     </div>
   );
