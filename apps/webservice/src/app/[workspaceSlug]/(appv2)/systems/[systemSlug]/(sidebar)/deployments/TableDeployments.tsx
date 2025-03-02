@@ -145,6 +145,7 @@ const DeploymentTable: React.FC<{
                       environment={env}
                       deployment={r}
                       workspace={workspace}
+                      systemSlug={systemSlug}
                     />
                   </td>
                 );

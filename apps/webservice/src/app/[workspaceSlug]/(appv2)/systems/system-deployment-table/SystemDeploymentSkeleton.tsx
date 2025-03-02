@@ -9,7 +9,7 @@ import {
 } from "@ctrlplane/ui/table";
 
 export const SystemDeploymentSkeleton: React.FC = () => (
-  <Table className="w-full min-w-max bg-background">
+  <Table className="w-full min-w-max rounded-md bg-background">
     <TableHeader className="[&_tr]:border-0">
       <TableRow className="hover:bg-transparent">
         <TableHead className="w-[350px] rounded-tl-md py-4 pl-6">

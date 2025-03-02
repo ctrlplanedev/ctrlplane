@@ -1,9 +1,8 @@
 "use client";
 
-import type { System, Workspace } from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { IconDots, IconShip, IconTrash } from "@tabler/icons-react";
-import { useInView } from "react-intersection-observer";
 
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -15,24 +14,17 @@ import {
 
 import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
 import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(appv2)/_components/system/DeleteSystemDialog";
-import { api } from "~/trpc/react";
-import { SystemDeploymentSkeleton } from "./SystemDeploymentSkeleton";
 import DeploymentTable from "./TableDeployments";
 
+type System = SCHEMA.System & {
+  deployments: SCHEMA.Deployment[];
+  environments: SCHEMA.Environment[];
+};
+
 export const SystemDeploymentTable: React.FC<{
-  workspace: Workspace;
+  workspace: SCHEMA.Workspace;
   system: System;
 }> = ({ workspace, system }) => {
-  const { ref, inView } = useInView();
-  const environments = api.environment.bySystemId.useQuery(system.id, {
-    enabled: inView,
-  });
-  const deployments = api.deployment.bySystemId.useQuery(system.id, {
-    enabled: inView,
-  });
-
-  const isLoading = environments.isLoading || deployments.isLoading;
-
   return (
     <div key={system.id} className="space-y-4">
       <div className="flex w-full items-center justify-between">
@@ -73,21 +65,14 @@ export const SystemDeploymentTable: React.FC<{
         </DropdownMenu>
       </div>
 
-      {isLoading && (
-        <div className="rounded-md border">
-          <SystemDeploymentSkeleton />
-        </div>
-      )}
-      {!isLoading && (
-        <div ref={ref} className="overflow-hidden rounded-md border">
-          <DeploymentTable
-            workspace={workspace}
-            systemSlug={system.slug}
-            environments={environments.data ?? []}
-            deployments={deployments.data ?? []}
-          />
-        </div>
-      )}
+      <div className="overflow-hidden rounded-md border">
+        <DeploymentTable
+          workspace={workspace}
+          systemSlug={system.slug}
+          environments={system.environments}
+          deployments={system.deployments}
+        />
+      </div>
     </div>
   );
 };
