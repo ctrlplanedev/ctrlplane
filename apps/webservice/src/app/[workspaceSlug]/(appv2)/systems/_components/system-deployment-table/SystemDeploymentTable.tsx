@@ -4,6 +4,7 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { IconDots, IconShip, IconTrash } from "@tabler/icons-react";
 
+import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import {
   DropdownMenu,
@@ -33,6 +34,9 @@ export const SystemDeploymentTable: React.FC<{
           href={`/${workspace.slug}/systems/${system.slug}`}
         >
           {system.name}
+          <Badge variant="secondary" className="rounded-full">
+            {system.deployments.length}
+          </Badge>
         </Link>
 
         <DropdownMenu>

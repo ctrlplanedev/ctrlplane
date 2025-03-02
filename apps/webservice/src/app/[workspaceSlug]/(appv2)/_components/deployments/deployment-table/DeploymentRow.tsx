@@ -5,6 +5,7 @@ import prettyMilliseconds from "pretty-ms";
 
 import { TableCell, TableRow } from "@ctrlplane/ui/table";
 
+import { urls } from "~/app/urls";
 import { LazyDeploymentHistoryGraph } from "../DeploymentHistoryGraph";
 
 type DeploymentStats =
@@ -18,15 +19,16 @@ export const DeploymentRow: React.FC<{ deployment: DeploymentStats }> = ({
 
   const successRate = deployment.successRate ?? 0;
 
+  const systemUrl = urls
+    .workspace(workspaceSlug)
+    .system(deployment.systemSlug)
+    .deployment(deployment.slug)
+    .baseUrl();
   return (
     <TableRow
       key={deployment.id}
       className="cursor-pointer border-b bg-transparent"
-      onClick={() =>
-        router.push(
-          `/${workspaceSlug}/systems/${deployment.systemSlug}/deployments/${deployment.slug}`,
-        )
-      }
+      onClick={() => router.push(systemUrl)}
     >
       <TableCell className="flex max-w-60 flex-col gap-1 p-4 align-middle">
         <span className="truncate">{deployment.name}</span>

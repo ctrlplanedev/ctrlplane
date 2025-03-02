@@ -10,8 +10,8 @@ import { Input } from "@ctrlplane/ui/input";
 import { api } from "~/trpc/react";
 import { CreateDeploymentDialog } from "../_components/deployments/CreateDeployment";
 import { CreateSystemDialog } from "../../(app)/_components/CreateSystem";
-import { SystemDeploymentSkeleton } from "./system-deployment-table/SystemDeploymentSkeleton";
-import { SystemDeploymentTable } from "./system-deployment-table/SystemDeploymentTable";
+import { SystemDeploymentSkeleton } from "./_components/system-deployment-table/SystemDeploymentSkeleton";
+import { SystemDeploymentTable } from "./_components/system-deployment-table/SystemDeploymentTable";
 
 const useSystemFilter = () => {
   const router = useRouter();
@@ -55,7 +55,7 @@ export const SystemsPageContent: React.FC<{
   const systems = data?.items ?? [];
 
   return (
-    <div className="container m-8 mx-auto space-y-8">
+    <div className="m-8 space-y-8">
       <div className="flex w-full items-center justify-between">
         <h2 className="text-2xl font-bold">Systems</h2>
         <div className="flex items-center gap-2">
