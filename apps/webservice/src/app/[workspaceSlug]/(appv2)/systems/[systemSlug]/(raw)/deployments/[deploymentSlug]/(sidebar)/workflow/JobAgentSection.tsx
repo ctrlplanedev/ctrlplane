@@ -7,7 +7,6 @@ import _ from "lodash";
 import { z } from "zod";
 
 import { Alert, AlertDescription, AlertTitle } from "@ctrlplane/ui/alert";
-import { Button } from "@ctrlplane/ui/button";
 import { Form, FormField, useForm } from "@ctrlplane/ui/form";
 import { JobAgentType } from "@ctrlplane/validators/jobs";
 
@@ -38,7 +37,7 @@ const JobAgentForm: React.FC<{
     update.mutateAsync({ id: deploymentId, data }).then(() => router.refresh()),
   );
 
-  const { jobAgentId, jobAgentConfig: formConfig } = form.watch();
+  const { jobAgentId } = form.watch();
   const selectedJobAgent = jobAgents.find((j) => j.id === jobAgentId);
 
   return (
@@ -75,6 +74,7 @@ const JobAgentForm: React.FC<{
                 <DeploymentJobAgentGithubConfig
                   jobAgentId={jobAgentId}
                   {...field}
+                  disabled={update.isPending}
                 />
               )}
               {selectedJobAgent?.type.startsWith("exec-") && (
@@ -85,18 +85,12 @@ const JobAgentForm: React.FC<{
                       : "shell"
                   }
                   {...field}
+                  disabled={update.isPending}
                 />
               )}
             </>
           )}
         />
-
-        <Button
-          type="submit"
-          disabled={update.isPending || _.isEqual(formConfig, jobAgentConfig)}
-        >
-          Save
-        </Button>
       </form>
     </Form>
   );

@@ -3,12 +3,14 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   IconBrandGithub,
+  IconExternalLink,
   IconLoader2,
   IconSelector,
 } from "@tabler/icons-react";
 
+import { cn } from "@ctrlplane/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -27,7 +29,8 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
   jobAgentId: string;
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
-}> = ({ jobAgentId, value, onChange }) => {
+  disabled?: boolean;
+}> = ({ jobAgentId, value, onChange, disabled = false }) => {
   const [repoOpen, setRepoOpen] = useState(false);
   const [workflowOpen, setWorkflowOpen] = useState(false);
 
@@ -47,6 +50,10 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
   const workflows = selectedRepo?.workflows ?? [];
   const selectedWorkflow = workflows.find((w) => w.id === value.workflowId);
 
+  const isChanged =
+    selectedRepo?.name !== value.repo ||
+    selectedWorkflow?.id !== value.workflowId;
+
   if (isGithubAgentLoading || isReposLoading)
     return (
       <div className="flex w-96 items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -57,26 +64,17 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <Avatar className="size-14">
           <AvatarImage src={githubAgent?.ghEntity.avatarUrl ?? ""} />
           <AvatarFallback>
             <IconBrandGithub />
           </AvatarFallback>
         </Avatar>
-        <div className="flex flex-col">
-          <span className="text-2xl font-semibold">
-            {githubAgent?.ghEntity.slug}
-          </span>
-          <Link
-            href={`https://github.com/${githubAgent?.ghEntity.slug ?? ""}`}
-            className="text-sm hover:text-primary"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View on GitHub
-          </Link>
-        </div>
+
+        <span className="text-2xl font-semibold">
+          {githubAgent?.ghEntity.slug}
+        </span>
       </div>
 
       <div className="flex w-96 flex-col gap-6">
@@ -187,6 +185,27 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
             }}
           />
         </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button type="submit" disabled={disabled || !isChanged}>
+          Save
+        </Button>
+
+        {selectedWorkflow != null && (
+          <Link
+            href={selectedWorkflow.html_url}
+            className={cn(
+              buttonVariants({ variant: "outline" }),
+              "flex items-center gap-2",
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <IconExternalLink className="h-4 w-4" />
+            Workflow
+          </Link>
+        )}
       </div>
     </div>
   );

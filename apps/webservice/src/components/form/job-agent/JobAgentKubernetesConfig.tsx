@@ -4,6 +4,8 @@ import React, { useEffect } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import colors from "tailwindcss/colors";
 
+import { Button } from "@ctrlplane/ui/button";
+
 const defaultManifest = `apiVersion: batch/v1
 kind: Job
 metadata:
@@ -32,7 +34,8 @@ spec:
 export const JobAgentKubernetesConfig: React.FC<{
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
-}> = ({ value, onChange }) => {
+  disabled?: boolean;
+}> = ({ value, onChange, disabled = false }) => {
   useEffect(() => {
     loader.init().then((monaco) => {
       monaco.editor.defineTheme("vs-dark-custom", {
@@ -52,7 +55,7 @@ export const JobAgentKubernetesConfig: React.FC<{
     }
   }, [value, onChange]);
   return (
-    <div className="p-2">
+    <div className="space-y-4 p-2">
       <Editor
         height="500px"
         defaultLanguage="yaml"
@@ -60,6 +63,9 @@ export const JobAgentKubernetesConfig: React.FC<{
         theme="vs-dark-custom"
         onChange={(v) => onChange({ manifest: v })}
       />
+      <Button type="submit" disabled={disabled}>
+        Save
+      </Button>
     </div>
   );
 };
