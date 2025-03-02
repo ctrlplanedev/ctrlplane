@@ -20,12 +20,14 @@ export default async function DeploymentPage(props: {
   if (deployment == null) return notFound();
 
   return (
-    <div className="container mx-auto max-w-5xl overflow-y-auto">
-      <EditDeploymentSection
-        deployment={deployment}
-        systems={systems}
-        workspaceId={workspaceId}
-      />
+    <div className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 w-full overflow-y-auto">
+      <div className="container max-w-3xl py-4">
+        <EditDeploymentSection
+          deployment={deployment}
+          systems={systems}
+          workspaceId={workspaceId}
+        />
+      </div>
     </div>
   );
 }
