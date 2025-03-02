@@ -203,7 +203,7 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
             rel="noopener noreferrer"
           >
             <IconExternalLink className="h-4 w-4" />
-            workflow
+            Workflow
           </Link>
         )}
       </div>
