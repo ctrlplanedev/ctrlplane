@@ -9,9 +9,9 @@ import {
   count,
   createEnv,
   eq,
+  ilike,
   isNotNull,
   isNull,
-  like,
   or,
   takeFirst,
   takeFirstOrNull,
@@ -55,10 +55,10 @@ export const systemRouter = createTRPCRouter({
 
       const query = input.query
         ? or(
-            like(system.name, `%${input.query}%`),
-            like(system.slug, `%${input.query}%`),
-            like(deployment.name, `%${input.query}%`),
-            like(deployment.slug, `%${input.query}%`),
+            ilike(system.name, `%${input.query}%`),
+            ilike(system.slug, `%${input.query}%`),
+            ilike(deployment.name, `%${input.query}%`),
+            ilike(deployment.slug, `%${input.query}%`),
           )
         : undefined;
       const checks = and(workspaceIdCheck, query);
