@@ -43,11 +43,7 @@ const HealthCell: React.FC<HealthCellProps> = ({
 
   const jobs = data ?? [];
 
-  if (isLoading) return;
-  <div className="flex items-center gap-2">
-    <Skeleton className="h-2 w-2 rounded-full" />;
-    <Skeleton className="h-4 w-20 rounded-full" />;
-  </div>;
+  if (isLoading) return <Skeleton className="h-4 w-28 rounded-full" />;
 
   if (jobs.length === 0)
     return (
@@ -116,7 +112,7 @@ type EnvironmentResourceTableProps = {
 export const EnvironmentResourceTable: React.FC<
   EnvironmentResourceTableProps
 > = ({ resources, systemId, environmentId }) => (
-  <Table>
+  <Table className="table-fixed">
     <TableHeader>
       <TableRow>
         <TableHead>Resource</TableHead>
