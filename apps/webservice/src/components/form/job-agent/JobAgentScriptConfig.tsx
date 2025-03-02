@@ -4,6 +4,8 @@ import React, { useEffect } from "react";
 import Editor, { loader } from "@monaco-editor/react";
 import colors from "tailwindcss/colors";
 
+import { Button } from "@ctrlplane/ui/button";
+
 const defaultBash = `echo "Releasing {{ .release.version }} on {{ .resource.name }}"
 `;
 
@@ -14,7 +16,8 @@ export const JobAgentScriptConfig: React.FC<{
   type: "shell" | "powershell";
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
-}> = ({ type, value, onChange }) => {
+  disabled?: boolean;
+}> = ({ type, value, onChange, disabled = false }) => {
   useEffect(() => {
     loader.init().then((monaco) => {
       monaco.editor.defineTheme("vs-dark-custom", {
@@ -35,7 +38,7 @@ export const JobAgentScriptConfig: React.FC<{
   }, [type, value, onChange]);
 
   return (
-    <div className="p-2">
+    <div className="space-y-4 p-2">
       <Editor
         height="500px"
         defaultLanguage={type}
@@ -43,6 +46,9 @@ export const JobAgentScriptConfig: React.FC<{
         theme="vs-dark-custom"
         onChange={(v) => onChange({ script: v })}
       />
+      <Button type="submit" disabled={disabled}>
+        Save
+      </Button>
     </div>
   );
 };
