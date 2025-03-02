@@ -25,6 +25,8 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 
+import { api } from "~/trpc/react";
+
 type UpdateAzureProviderDialogProps = {
   workspaceId: string;
   resourceProvider: SCHEMA.ResourceProvider;
@@ -41,14 +43,33 @@ export const UpdateAzureProviderDialog: React.FC<
     schema: updateResourceProviderAzure,
     defaultValues: { ...azureConfig, ...resourceProvider },
   });
+  const updateAzureProviderName =
+    api.resource.provider.managed.azure.update.useMutation();
   const router = useRouter();
 
-  const onSubmit = form.handleSubmit((data: UpdateResourceProviderAzure) => {
-    setOpen(false);
-    router.push(
-      `/api/azure/${workspaceId}/${encodeURIComponent(data.tenantId ?? azureConfig.tenantId)}/${encodeURIComponent(data.subscriptionId ?? azureConfig.subscriptionId)}/${encodeURIComponent(data.name ?? resourceProvider.name)}?resourceProviderId=${resourceProvider.id}`,
-    );
-  });
+  const onSubmit = form.handleSubmit(
+    async (data: UpdateResourceProviderAzure) => {
+      if (data.name != null && data.name !== resourceProvider.name)
+        await updateAzureProviderName
+          .mutateAsync({
+            resourceProviderId: resourceProvider.id,
+            name: data.name,
+          })
+          .then(() => router.refresh());
+
+      const isTenantIdChanged =
+        data.tenantId != null && data.tenantId !== azureConfig.tenantId;
+      const isSubscriptionIdChanged =
+        data.subscriptionId != null &&
+        data.subscriptionId !== azureConfig.subscriptionId;
+      if (isTenantIdChanged || isSubscriptionIdChanged)
+        router.push(
+          `/api/azure/${workspaceId}/${encodeURIComponent(data.tenantId ?? azureConfig.tenantId)}/${encodeURIComponent(data.subscriptionId ?? azureConfig.subscriptionId)}/${encodeURIComponent(data.name ?? resourceProvider.name)}?resourceProviderId=${resourceProvider.id}`,
+        );
+
+      setOpen(false);
+    },
+  );
 
   return (
     <Dialog

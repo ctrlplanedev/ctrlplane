@@ -372,6 +372,28 @@ export const resourceProviderRouter = createTRPCRouter({
             .where(eq(resourceProviderAzure.resourceProviderId, input))
             .then(takeFirstOrNull),
         ),
+
+      update: protectedProcedure
+        .input(
+          z.object({
+            resourceProviderId: z.string().uuid(),
+            name: z.string(),
+          }),
+        )
+        .meta({
+          authorizationCheck: ({ canUser, input }) =>
+            canUser
+              .perform(Permission.ResourceProviderUpdate)
+              .on({ type: "resourceProvider", id: input.resourceProviderId }),
+        })
+        .mutation(({ ctx, input }) =>
+          ctx.db
+            .update(resourceProvider)
+            .set({ name: input.name })
+            .where(eq(resourceProvider.id, input.resourceProviderId))
+            .returning()
+            .then(takeFirst),
+        ),
     }),
   }),
   delete: protectedProcedure
