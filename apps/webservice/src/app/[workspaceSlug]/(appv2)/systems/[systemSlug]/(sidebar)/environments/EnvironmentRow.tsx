@@ -4,12 +4,15 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { IconDots } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 
 import { cn } from "@ctrlplane/ui";
+import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
+import { EnvironmentDropdown } from "./EnvironmentDropdown";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 
@@ -84,6 +87,13 @@ export const EnvironmentRow: React.FC<{
       <div className="flex-1">{environment.name}</div>
       <div className="flex-1">
         <LazyEnvironmentHealth environment={environment} />
+      </div>
+      <div className="flex flex-1 justify-end">
+        <EnvironmentDropdown environment={environment}>
+          <Button variant="ghost" size="icon" className="h-6 w-6">
+            <IconDots className="h-4 w-4" />
+          </Button>
+        </EnvironmentDropdown>
       </div>
     </Link>
   );
