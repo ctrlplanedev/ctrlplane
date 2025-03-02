@@ -69,7 +69,6 @@ export const TopNavSearch: React.FC<{
           placeholder="Search for resources, systems, deployments, etc."
           onValueChange={(value) => setSearch(value)}
           onBlur={(e) => {
-            // Prevent blur if clicking within the CommandList
             if (e.relatedTarget?.closest("[cmdk-list]") !== undefined) {
               e.preventDefault();
               return;
@@ -82,9 +81,12 @@ export const TopNavSearch: React.FC<{
         {focus.isFocused && (
           <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 absolute left-0 right-0 top-12 z-20 rounded border bg-neutral-900">
             {isLoading ? (
-              <div className="flex items-center justify-center">
-                <IconLoader2 className="mt-5 animate-spin" />
-              </div>
+              <CommandEmpty>
+                <div className="flex items-center justify-center gap-3">
+                  <IconLoader2 className="size-4 animate-spin" />
+                  <span>Searching...</span>
+                </div>
+              </CommandEmpty>
             ) : (
               <CommandEmpty>No results found.</CommandEmpty>
             )}
