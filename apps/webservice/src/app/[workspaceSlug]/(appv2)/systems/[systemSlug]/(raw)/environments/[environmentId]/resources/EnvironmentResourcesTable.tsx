@@ -125,7 +125,7 @@ export const EnvironmentResourceTable: React.FC<
     </TableHeader>
     <TableBody>
       {resources.map((resource) => (
-        <TableRow key={resource.id} className="hover:bg-transparent">
+        <TableRow key={resource.id} className="h-[45px] hover:bg-transparent">
           <TableCell>{resource.name}</TableCell>
           <TableCell>
             <HealthCell
