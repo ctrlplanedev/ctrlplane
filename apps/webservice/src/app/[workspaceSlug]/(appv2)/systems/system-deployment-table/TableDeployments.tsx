@@ -48,7 +48,7 @@ const EnvHeader: React.FC<{
         href={envUrl}
         className="flex w-fit items-center gap-2 rounded-md px-2 py-1 text-white hover:bg-secondary/50"
       >
-        {env.name}
+        <span className=" max-w-36 truncate">{env.name}</span>
 
         <Badge variant="outline" className="rounded-full text-muted-foreground">
           {isLoading && (
