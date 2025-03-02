@@ -99,8 +99,8 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
   if (workspace == null) return notFound();
   const azureAppClientId = env.AZURE_APP_CLIENT_ID;
   return (
-    <div>
-      <PageHeader className="flex items-center justify-between">
+    <div className="flex h-full flex-col">
+      <PageHeader className="z-10">
         <div className="flex items-center gap-2">
           <SidebarTrigger name={Sidebars.Resources}>
             <IconMenu2 className="h-4 w-4" />
@@ -116,7 +116,7 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
         </div>
       </PageHeader>
 
-      <div className="h-full overflow-y-auto p-8 pb-24">
+      <div className="scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 flex-1 overflow-y-auto p-8">
         <div className="container mx-auto max-w-5xl">
           <h2 className="font-semibold">Managed Resource Providers</h2>
           <p className="text-sm text-muted-foreground">
