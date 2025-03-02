@@ -68,7 +68,7 @@ const DeploymentTable: React.FC<{
       <Table className="w-full min-w-max bg-background">
         <TableHeader className="[&_tr]:border-0">
           <TableRow className="hover:bg-transparent">
-            <TableHead className="sticky left-0 z-10 w-[350px] rounded-tl-md py-4 pl-6 backdrop-blur-lg">
+            <TableHead className="sticky left-0 z-10 w-[350px] rounded-md py-4 pl-6 backdrop-blur-lg">
               Deployments
             </TableHead>
             {environments.map((env) => (
