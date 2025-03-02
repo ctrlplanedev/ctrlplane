@@ -1,6 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -18,19 +18,18 @@ import { ApprovalDialog } from "../../release/ApprovalDialog";
 import { ReleaseDropdownMenu } from "../../release/ReleaseDropdownMenu";
 import { Release } from "./ReleaseInfo";
 
-type Environment = RouterOutputs["environment"]["bySystemId"][number];
-type Deployment = RouterOutputs["deployment"]["bySystemId"][number];
-
 type DeploymentEnvironmentCellProps = {
-  environment: Environment;
-  deployment: Deployment;
-  workspace: { id: string; slug: string };
+  environment: SCHEMA.Environment;
+  deployment: SCHEMA.Deployment;
+  workspace: SCHEMA.Workspace;
+  systemSlug: string;
 };
 
 const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   environment,
   deployment,
   workspace,
+  systemSlug,
 }) => {
   const { data: release, isLoading: isReleaseLoading } =
     api.release.latest.byDeploymentAndEnvironment.useQuery({
@@ -68,7 +67,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   if (release.resourceCount === 0)
     return (
       <Link
-        href={`/${workspace.slug}/systems/${deployment.system.slug}/environments/${environment.id}/resources`}
+        href={`/${workspace.slug}/systems/${systemSlug}/environments/${environment.id}/resources`}
         className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50"
         target="_blank"
         rel="noopener noreferrer"
@@ -101,7 +100,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
         <Release
           workspaceSlug={workspace.slug}
-          systemSlug={deployment.system.slug}
+          systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
           releaseId={release.id}
           version={release.version}

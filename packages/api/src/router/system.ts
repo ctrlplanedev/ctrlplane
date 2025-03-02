@@ -12,11 +12,13 @@ import {
   isNotNull,
   isNull,
   like,
+  or,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import {
   createSystem,
+  deployment,
   environment,
   resource,
   resourceMatchesMetadata,
@@ -51,15 +53,21 @@ export const systemRouter = createTRPCRouter({
     .query(({ ctx, input }) => {
       const workspaceIdCheck = eq(system.workspaceId, input.workspaceId);
 
-      const checks = and(
-        workspaceIdCheck,
-        input.query ? like(system.name, `%${input.query}%`) : undefined,
-      );
+      const query = input.query
+        ? or(
+            like(system.name, `%${input.query}%`),
+            like(system.slug, `%${input.query}%`),
+            like(deployment.name, `%${input.query}%`),
+            like(deployment.slug, `%${input.query}%`),
+          )
+        : undefined;
+      const checks = and(workspaceIdCheck, query);
 
       const items = ctx.db
         .select()
         .from(system)
         .leftJoin(environment, eq(environment.systemId, system.id))
+        .leftJoin(deployment, eq(deployment.systemId, system.id))
         .where(checks)
         .limit(input.limit)
         .offset(input.offset)
@@ -69,7 +77,16 @@ export const systemRouter = createTRPCRouter({
             .groupBy((r) => r.system.id)
             .map((r) => ({
               ...r[0]!.system,
-              environments: r.map((r) => r.environment).filter(isPresent),
+              environments: _.chain(r)
+                .map((r) => r.environment)
+                .filter(isPresent)
+                .uniqBy((e) => e.id)
+                .value(),
+              deployments: _.chain(r)
+                .map((r) => r.deployment)
+                .filter(isPresent)
+                .uniqBy((d) => d.id)
+                .value(),
             }))
             .value(),
         );
@@ -77,7 +94,7 @@ export const systemRouter = createTRPCRouter({
       const total = ctx.db
         .select({ count: count().as("total") })
         .from(system)
-        .where(checks)
+        .where(eq(system.workspaceId, input.workspaceId))
         .then(takeFirst)
         .then((total) => total.count);
 

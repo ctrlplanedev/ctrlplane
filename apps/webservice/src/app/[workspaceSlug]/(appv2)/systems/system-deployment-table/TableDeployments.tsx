@@ -1,7 +1,6 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
-import type { Workspace } from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { IconLoader2 } from "@tabler/icons-react";
 
@@ -20,11 +19,8 @@ import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/sys
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
-type Environment = RouterOutputs["environment"]["bySystemId"][number];
-type Deployment = RouterOutputs["deployment"]["bySystemId"][number];
-
 const EnvHeader: React.FC<{
-  environment: Environment;
+  environment: SCHEMA.Environment;
   workspaceSlug: string;
 }> = ({ environment: env, workspaceSlug }) => {
   const { data: workspace, isLoading: isWorkspaceLoading } =
@@ -62,10 +58,10 @@ const EnvHeader: React.FC<{
 };
 
 const DeploymentTable: React.FC<{
-  workspace: Workspace;
+  workspace: SCHEMA.Workspace;
   systemSlug: string;
-  environments: Environment[];
-  deployments: Deployment[];
+  environments: SCHEMA.Environment[];
+  deployments: SCHEMA.Deployment[];
 }> = ({ systemSlug, deployments, environments, workspace }) => {
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-x-auto">
@@ -118,6 +114,7 @@ const DeploymentTable: React.FC<{
                       environment={env}
                       deployment={r}
                       workspace={workspace}
+                      systemSlug={systemSlug}
                     />
                   </div>
                 </TableCell>
