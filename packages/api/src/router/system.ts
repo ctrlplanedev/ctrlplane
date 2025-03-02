@@ -51,9 +51,8 @@ export const systemRouter = createTRPCRouter({
       }),
     )
     .query(({ ctx, input }) => {
-      const workspaceIdCheck = eq(system.workspaceId, input.workspaceId);
-
-      const query = input.query
+      const isInWorkspace = eq(system.workspaceId, input.workspaceId);
+      const isMatchingSearch = input.query
         ? or(
             ilike(system.name, `%${input.query}%`),
             ilike(system.slug, `%${input.query}%`),
@@ -61,35 +60,15 @@ export const systemRouter = createTRPCRouter({
             ilike(deployment.slug, `%${input.query}%`),
           )
         : undefined;
-      const checks = and(workspaceIdCheck, query);
+      const where = and(isInWorkspace, isMatchingSearch);
 
-      const items = ctx.db
-        .select()
-        .from(system)
-        .leftJoin(environment, eq(environment.systemId, system.id))
-        .leftJoin(deployment, eq(deployment.systemId, system.id))
-        .where(checks)
-        .limit(input.limit)
-        .offset(input.offset)
-        .orderBy(asc(system.name))
-        .then((rows) =>
-          _.chain(rows)
-            .groupBy((r) => r.system.id)
-            .map((r) => ({
-              ...r[0]!.system,
-              environments: _.chain(r)
-                .map((r) => r.environment)
-                .filter(isPresent)
-                .uniqBy((e) => e.id)
-                .value(),
-              deployments: _.chain(r)
-                .map((r) => r.deployment)
-                .filter(isPresent)
-                .uniqBy((d) => d.id)
-                .value(),
-            }))
-            .value(),
-        );
+      const items = ctx.db.query.system.findMany({
+        where,
+        with: { environments: true, deployments: true },
+        limit: input.limit,
+        offset: input.offset,
+        orderBy: [asc(system.name)],
+      });
 
       const total = ctx.db
         .select({ count: count().as("total") })
