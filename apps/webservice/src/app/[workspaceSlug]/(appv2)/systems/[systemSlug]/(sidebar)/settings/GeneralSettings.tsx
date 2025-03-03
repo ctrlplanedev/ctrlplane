@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useParams, useRouter } from "next/navigation";
 
 import * as schema from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
@@ -23,23 +24,25 @@ import { api } from "~/trpc/react";
 export const GeneralSettings: React.FC<{ system: schema.System }> = ({
   system,
 }) => {
-  const form = useForm({
-    schema: schema.updateSystem,
-    defaultValues: system,
-  });
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const form = useForm({ schema: schema.updateSystem, defaultValues: system });
   const updateSystem = api.system.update.useMutation();
   const utils = api.useUtils();
+  const router = useRouter();
 
   const onFormSubmit = form.handleSubmit((data) =>
     updateSystem
-      .mutateAsync({
-        id: system.id,
-        data,
-      })
+      .mutateAsync({ id: system.id, data })
+      .then(() => form.reset(data))
+      .then(() =>
+        utils.system.list.invalidate({ workspaceId: system.workspaceId }),
+      )
       .then(() => {
-        utils.system.list.invalidate({
-          workspaceId: system.workspaceId,
-        });
+        if (data.slug != null && data.slug !== system.slug) {
+          router.push(`/${workspaceSlug}/systems/${data.slug}/settings`);
+          return;
+        }
+        router.refresh();
       })
       .catch(() => {
         form.setError("root", {
