@@ -118,7 +118,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
           updatedDeployment.systemId !== deployment.systemId
         )
           router.replace(
-            `/${workspaceSlug}/systems/${updatedDeployment.system.slug}/deployments/${data.slug}`,
+            `/${workspaceSlug}/systems/${updatedDeployment.system.slug}/deployments/${data.slug}/properties`,
           );
         router.refresh();
       })
