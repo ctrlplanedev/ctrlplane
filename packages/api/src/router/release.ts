@@ -10,9 +10,7 @@ import {
   exists,
   inArray,
   isNull,
-  like,
   notExists,
-  or,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -364,49 +362,6 @@ export const releaseRouter = createTRPCRouter({
             ),
           ),
       ),
-
-    bySystemDirectory: protectedProcedure
-      .input(
-        z.object({
-          systemId: z.string().uuid(),
-          directory: z.string(),
-          exact: z.boolean().optional().default(false),
-        }),
-      )
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.ReleaseGet).on({
-            type: "system",
-            id: input.systemId,
-          }),
-      })
-      .query(({ input: { systemId, directory, exact } }) => {
-        const normalizedPath = directory.startsWith("/")
-          ? directory.slice(1)
-          : directory;
-        const isMatchingDirectory = exact
-          ? or(
-              eq(environment.directory, normalizedPath),
-              eq(environment.directory, `/${normalizedPath}`),
-            )
-          : or(
-              eq(environment.directory, normalizedPath),
-              eq(environment.directory, `/${normalizedPath}`),
-              like(environment.directory, `${normalizedPath}/%`),
-              like(environment.directory, `/${normalizedPath}/%`),
-            );
-
-        return db
-          .selectDistinctOn([releaseJobTrigger.resourceId])
-          .from(job)
-          .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-          .innerJoin(
-            environment,
-            eq(releaseJobTrigger.environmentId, environment.id),
-          )
-          .where(and(eq(environment.systemId, systemId), isMatchingDirectory));
-      }),
   }),
 
   latest: createTRPCRouter({
