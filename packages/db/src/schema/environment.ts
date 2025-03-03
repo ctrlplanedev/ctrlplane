@@ -26,6 +26,27 @@ import { user } from "./auth.js";
 import { release } from "./release.js";
 import { system } from "./system.js";
 
+export const directoryPath = z
+  .string()
+  .regex(
+    /^\/.*[^/]$|^\/$/,
+    "Directory must start with / and not end with / (except for root directory)",
+  )
+  .refine(
+    (path) => !path.includes("//"),
+    "Directory cannot contain consecutive slashes",
+  )
+  .refine(
+    (path) => !path.includes(".."),
+    "Directory cannot contain relative path segments (..)",
+  )
+  .refine(
+    (path) => path.split("/").every((segment) => !segment.startsWith(".")),
+    "Directory segments cannot start with .",
+  )
+  .transform((path) => path.replace(/\/+$/, ""))
+  .or(z.literal(""));
+
 export const environment = pgTable(
   "environment",
   {
@@ -34,6 +55,7 @@ export const environment = pgTable(
       .notNull()
       .references(() => system.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    directory: text("directory").default(""),
     description: text("description").default(""),
     policyId: uuid("policy_id").notNull(),
     resourceFilter: jsonb("resource_filter")
