@@ -25,12 +25,12 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { activeStatusType, JobFilterType } from "@ctrlplane/validators/jobs";
 
-import { DeploymentBarChart } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/deployments/charts/DeploymentBarChart";
-import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/release/ReleaseDropdownMenu";
+import { DeploymentBarChart } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/charts/DeploymentBarChart";
+import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ReleaseDropdownMenu";
 import {
   getStatusColor,
   statusColor,
-} from "~/app/[workspaceSlug]/(appv2)/(deployments)/_utils/status-color";
+} from "~/app/[workspaceSlug]/(appv2)/(deploy)/_utils/status-color";
 import { api } from "~/trpc/react";
 import { StatusIcon } from "./StatusIcon";
 

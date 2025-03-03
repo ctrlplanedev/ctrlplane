@@ -8,8 +8,8 @@ import { IconLoader2 } from "@tabler/icons-react";
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 
-import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/deployments/dropdown/DeploymentOptionsDropdown";
-import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
+import { DeploymentOptionsDropdown } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/dropdown/DeploymentOptionsDropdown";
+import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 

@@ -13,8 +13,8 @@ import { useInView } from "react-intersection-observer";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { ApprovalDialog } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/release/ApprovalDialog";
-import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/release/ReleaseDropdownMenu";
+import { ApprovalDialog } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ApprovalDialog";
+import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ReleaseDropdownMenu";
 import { api } from "~/trpc/react";
 import { Release } from "./ReleaseInfo";
 

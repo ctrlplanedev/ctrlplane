@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
+import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 

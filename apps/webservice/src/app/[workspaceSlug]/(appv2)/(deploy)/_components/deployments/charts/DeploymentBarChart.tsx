@@ -10,7 +10,7 @@ import {
   YAxis,
 } from "recharts";
 
-import { getStatusColor } from "~/app/[workspaceSlug]/(appv2)/(deployments)/_utils/status-color";
+import { getStatusColor } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_utils/status-color";
 
 export const DeploymentBarChart: React.FC<{
   data: { name: string; count: number }[];

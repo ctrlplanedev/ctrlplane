@@ -19,7 +19,7 @@ import {
   SidebarProvider,
 } from "@ctrlplane/ui/sidebar";
 
-import { SystemSelector } from "~/app/[workspaceSlug]/(appv2)/(deployments)/(sidebar)/systems/SystemSelector";
+import { SystemSelector } from "~/app/[workspaceSlug]/(appv2)/(deploy)/(sidebar)/systems/SystemSelector";
 import { SidebarLink } from "~/app/[workspaceSlug]/(appv2)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
