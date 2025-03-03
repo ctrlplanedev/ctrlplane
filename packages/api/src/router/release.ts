@@ -393,19 +393,11 @@ export const releaseRouter = createTRPCRouter({
       })
       .query(({ input }) => {
         const { directory, exact } = input;
-        const normalizedPath = directory.startsWith("/")
-          ? directory.slice(1)
-          : directory;
         const isMatchingDirectory = exact
-          ? or(
-              eq(environment.directory, normalizedPath),
-              eq(environment.directory, `/${normalizedPath}`),
-            )
+          ? eq(environment.directory, directory)
           : or(
-              eq(environment.directory, normalizedPath),
-              eq(environment.directory, `/${normalizedPath}`),
-              like(environment.directory, `${normalizedPath}/%`),
-              like(environment.directory, `/${normalizedPath}/%`),
+              eq(environment.directory, directory),
+              like(environment.directory, `${directory}/%`),
             );
 
         const releaseCheck =

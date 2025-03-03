@@ -30,12 +30,7 @@ export const directoryRouter = createTRPCRouter({
 
       const rootPaths = Array.from(
         new Set(
-          directoryPaths
-            .map((path) => {
-              const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-              return normalizedPath.split("/")[1];
-            })
-            .filter(isPresent),
+          directoryPaths.map((path) => path.split("/")[0]).filter(isPresent),
         ),
       );
 
@@ -49,9 +44,7 @@ export const directoryRouter = createTRPCRouter({
                 eq(SCHEMA.environment.systemId, input),
                 or(
                   eq(SCHEMA.environment.directory, root),
-                  eq(SCHEMA.environment.directory, `/${root}`),
                   like(SCHEMA.environment.directory, `${root}/%`),
-                  like(SCHEMA.environment.directory, `%/${root}/%`),
                 ),
               ),
             );
