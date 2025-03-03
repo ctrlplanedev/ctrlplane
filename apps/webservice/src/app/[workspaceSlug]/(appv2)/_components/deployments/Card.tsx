@@ -9,7 +9,6 @@ import { useSearchParams } from "next/navigation";
 import { IconSearch } from "@tabler/icons-react";
 import { endOfDay, startOfMonth, subDays, subMonths, subWeeks } from "date-fns";
 
-import { Card } from "@ctrlplane/ui/card";
 import { Input } from "@ctrlplane/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
@@ -64,7 +63,7 @@ export const DeploymentsCard: React.FC<{
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between border-b p-2">
         <div className="relative">
           <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -85,13 +84,9 @@ export const DeploymentsCard: React.FC<{
         </Tabs>
       </div>
 
-      <Card className="rounded-md bg-inherit">
-        <div>
-          <div className="relative w-full overflow-auto">
-            <DeploymentTable data={data} isLoading={isLoading} />
-          </div>
-        </div>
-      </Card>
+      <div className="relative w-full overflow-auto">
+        <DeploymentTable data={data} isLoading={isLoading} />
+      </div>
     </div>
   );
 };

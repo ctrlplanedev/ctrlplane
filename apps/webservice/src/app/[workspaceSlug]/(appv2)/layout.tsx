@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  IconCategory,
-  IconChartBar,
-  IconCube,
-  IconRocket,
-  IconSettings,
-} from "@tabler/icons-react";
+import { IconChartBar, IconCube, IconSettings } from "@tabler/icons-react";
 
 import { EnvironmentDrawer } from "../(app)/_components/environment-drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "../(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
@@ -13,6 +7,7 @@ import { ReleaseChannelDrawer } from "./_components/channel/drawer/ReleaseChanne
 import { DeploymentResourceDrawer } from "./_components/deployments/resource-drawer/DeploymentResourceDrawer";
 import { JobDrawer } from "./_components/job/drawer/JobDrawer";
 import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
+import { DeploymentsSidebarIcon } from "./DeploymentsSidebarIcon";
 import { TopNav } from "./TopNav";
 import { TopSidebarIcon } from "./TopSidebarIcon";
 
@@ -30,16 +25,8 @@ export default async function Layout(props: {
 
         <div className="flex h-full flex-1">
           <aside className="flex flex-col bg-[#111111] pt-2">
-            <TopSidebarIcon
-              icon={<IconCategory />}
-              label="Systems"
-              href={`/${params.workspaceSlug}/systems`}
-            />
-            <TopSidebarIcon
-              icon={<IconRocket />}
-              label="Deploys"
-              href={`/${params.workspaceSlug}/deployments`}
-            />
+            <DeploymentsSidebarIcon />
+
             <TopSidebarIcon
               icon={<IconCube />}
               label="Resources"
