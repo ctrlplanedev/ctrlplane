@@ -512,6 +512,13 @@
       "when": 1740443326841,
       "tag": "0072_dapper_sphinx",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1740979431091,
+      "tag": "0073_luxuriant_wolverine",
+      "breakpoints": true
     }
   ]
 }

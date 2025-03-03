@@ -1,0 +1,1 @@
+ALTER TABLE "environment" ADD COLUMN "directory" text DEFAULT '';
