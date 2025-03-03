@@ -180,6 +180,12 @@ export const openapi: Swagger.SwaggerV3 = {
             nullable: true,
             additionalProperties: true,
           },
+          directory: {
+            type: "string",
+            description: "The directory path of the environment",
+            example: "my/env/path",
+            default: "",
+          },
           createdAt: { type: "string", format: "date-time" },
           metadata: {
             type: "object",
@@ -187,7 +193,7 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           policy: { $ref: "#/components/schemas/Policy", nullable: true },
         },
-        required: ["id", "systemId", "name", "createdAt"],
+        required: ["id", "systemId", "name", "createdAt", "directory"],
       },
       Runbook: {
         type: "object",

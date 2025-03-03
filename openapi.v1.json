@@ -394,6 +394,12 @@
                 "type": "object",
                 "required": ["systemId", "name"],
                 "properties": {
+                  "directory": {
+                    "type": "string",
+                    "description": "The directory path of the environment",
+                    "example": "my/env/path",
+                    "default": ""
+                  },
                   "systemId": {
                     "type": "string"
                   },
@@ -2846,6 +2852,12 @@
             "nullable": true,
             "additionalProperties": true
           },
+          "directory": {
+            "type": "string",
+            "description": "The directory path of the environment",
+            "example": "my/env/path",
+            "default": ""
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -2861,7 +2873,7 @@
             "nullable": true
           }
         },
-        "required": ["id", "systemId", "name", "createdAt"]
+        "required": ["id", "systemId", "name", "createdAt", "directory"]
       },
       "Runbook": {
         "type": "object",

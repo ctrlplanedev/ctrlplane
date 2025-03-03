@@ -19,6 +19,12 @@ export const openapi: Swagger.SwaggerV3 = {
                 type: "object",
                 required: ["systemId", "name"],
                 properties: {
+                  directory: {
+                    type: "string",
+                    description: "The directory path of the environment",
+                    example: "my/env/path",
+                    default: "",
+                  },
                   systemId: {
                     type: "string",
                   },
