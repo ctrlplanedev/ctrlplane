@@ -191,13 +191,20 @@ export const environmentRouter = createTRPCRouter({
           .on({ type: "system", id: input.systemId }),
     })
     .query(async ({ ctx, input }) => {
+      const normalizedPath = input.directory.startsWith("/")
+        ? input.directory.slice(1)
+        : input.directory;
+
       const isInDirectory = input.exact
-        ? eq(environment.directory, input.directory)
+        ? or(
+            eq(environment.directory, normalizedPath),
+            eq(environment.directory, `/${normalizedPath}`),
+          )
         : or(
-            eq(environment.directory, input.directory),
-            eq(environment.directory, `/${input.directory}`),
-            like(environment.directory, `${input.directory}/%`),
-            like(environment.directory, `/${input.directory}/%`),
+            eq(environment.directory, normalizedPath),
+            eq(environment.directory, `/${normalizedPath}`),
+            like(environment.directory, `${normalizedPath}/%`),
+            like(environment.directory, `/${normalizedPath}/%`),
           );
 
       return ctx.db
