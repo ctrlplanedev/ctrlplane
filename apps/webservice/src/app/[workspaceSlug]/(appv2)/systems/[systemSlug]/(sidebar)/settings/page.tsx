@@ -23,7 +23,7 @@ export default async function SystemSettingsPage(props: {
   const params = await props.params;
   const system = await api.system.bySlug(params).catch(() => notFound());
   return (
-    <div>
+    <div className="flex flex-col">
       <PageHeader>
         <SidebarTrigger name={Sidebars.System}>
           <IconMenu2 className="h-4 w-4" />
@@ -38,7 +38,7 @@ export default async function SystemSettingsPage(props: {
         </Breadcrumb>
       </PageHeader>
 
-      <div className="container mx-auto h-full max-w-2xl space-y-8 overflow-y-auto p-8 py-16 pb-24">
+      <div className="container max-w-2xl space-y-8 overflow-y-auto py-8">
         <div className="space-y-3">
           <div>General</div>
           <GeneralSettings system={system} />
