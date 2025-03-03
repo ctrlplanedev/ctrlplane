@@ -1,6 +1,7 @@
 import type { RouterOutputs } from "@ctrlplane/api";
 import { z } from "zod";
 
+import { directoryPath } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Form,
@@ -18,13 +19,16 @@ import { MetadataInfo } from "../MetadataInfo";
 
 const name = z.string().min(1).max(100);
 const description = z.string().max(1000).nullable();
-const schema = z.object({ name, description });
+const schema = z.object({ name, description, directory: directoryPath });
 type OverviewProps = {
   environment: NonNullable<RouterOutputs["environment"]["byId"]>;
 };
 
 export const Overview: React.FC<OverviewProps> = ({ environment }) => {
-  const defaultValues = { ...environment };
+  const defaultValues = {
+    ...environment,
+    directory: environment.directory ?? "",
+  };
   const form = useForm({ schema, defaultValues });
   const update = api.environment.update.useMutation();
   const envOverride = api.job.trigger.create.byEnvId.useMutation();
@@ -65,6 +69,24 @@ export const Overview: React.FC<OverviewProps> = ({ environment }) => {
                 <Textarea
                   placeholder="Add a description..."
                   value={value ?? ""}
+                  onChange={onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="directory"
+          render={({ field: { value, onChange } }) => (
+            <FormItem>
+              <FormLabel>Directory</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="my/env/path"
+                  value={value}
+                  className="font-mono"
                   onChange={onChange}
                 />
               </FormControl>

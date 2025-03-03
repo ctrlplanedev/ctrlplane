@@ -26,6 +26,26 @@ import { user } from "./auth.js";
 import { release } from "./release.js";
 import { system } from "./system.js";
 
+export const directoryPath = z
+  .string()
+  .refine(
+    (path) => !path.includes("//"),
+    "Directory cannot contain consecutive slashes",
+  )
+  .refine(
+    (path) => !path.includes(".."),
+    "Directory cannot contain relative path segments (..)",
+  )
+  .refine(
+    (path) => path.split("/").every((segment) => !segment.startsWith(".")),
+    "Directory segments cannot start with .",
+  )
+  .refine(
+    (path) => !path.startsWith("/") && !path.endsWith("/"),
+    "Directory cannot start or end with /",
+  )
+  .or(z.literal(""));
+
 export const environment = pgTable(
   "environment",
   {
@@ -34,6 +54,7 @@ export const environment = pgTable(
       .notNull()
       .references(() => system.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    directory: text("directory").default(""),
     description: text("description").default(""),
     policyId: uuid("policy_id").notNull(),
     resourceFilter: jsonb("resource_filter")
@@ -81,7 +102,10 @@ export const createEnvironment = createInsertSchema(environment, {
 export const updateEnvironment = createEnvironment
   .partial()
   .omit({ policyId: true })
-  .extend({ policyId: z.string().uuid().nullable().optional() });
+  .extend({
+    policyId: z.string().uuid().nullable().optional(),
+    directory: directoryPath.optional(),
+  });
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
 export const environmentMetadata = pgTable(
