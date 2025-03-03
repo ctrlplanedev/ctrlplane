@@ -519,6 +519,13 @@
       "when": 1740979431091,
       "tag": "0073_luxuriant_wolverine",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1741026605759,
+      "tag": "0074_nebulous_mantis",
+      "breakpoints": true
     }
   ]
 }

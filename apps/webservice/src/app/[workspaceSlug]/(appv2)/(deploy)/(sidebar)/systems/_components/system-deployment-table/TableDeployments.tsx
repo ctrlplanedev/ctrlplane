@@ -1,8 +1,10 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import Link from "next/link";
-import { IconLoader2 } from "@tabler/icons-react";
+import { IconFolder, IconLoader2 } from "@tabler/icons-react";
+import { isPresent } from "ts-is-present";
 
 import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
@@ -14,30 +16,28 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { DeploymentDirectoryCell } from "./DeploymentDirectoryCell";
 
 const EnvHeader: React.FC<{
   environment: SCHEMA.Environment;
-  workspaceSlug: string;
-}> = ({ environment: env, workspaceSlug }) => {
-  const { data: workspace, isLoading: isWorkspaceLoading } =
-    api.workspace.bySlug.useQuery(workspaceSlug);
-  const workspaceId = workspace?.id ?? "";
-
+  workspace: SCHEMA.Workspace;
+}> = ({ environment: env, workspace }) => {
   const filter = env.resourceFilter ?? undefined;
-  const { data: resourcesResult, isLoading: isResourcesLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId, filter, limit: 0 },
-      { enabled: workspaceId !== "" && filter != null },
-    );
-  const total = resourcesResult?.total ?? 0;
+  const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
+    { workspaceId: workspace.id, filter, limit: 0 },
+    { enabled: filter != null },
+  );
+  const total = data?.total ?? 0;
 
-  const isLoading = isWorkspaceLoading || isResourcesLoading;
-
-  const envUrl = `/${workspaceSlug}/systems?environment_id=${env.id}`;
+  const envUrl = `/${workspace.slug}/systems?environment_id=${env.id}`;
   return (
     <TableHead className="w-[220px] p-2" key={env.id}>
       <Link
@@ -57,12 +57,63 @@ const EnvHeader: React.FC<{
   );
 };
 
+const DirectoryHeader: React.FC<{
+  directory: {
+    path: string;
+    environments: SCHEMA.Environment[];
+  };
+  workspace: SCHEMA.Workspace;
+}> = ({ directory, workspace }) => {
+  const resourceFilters = directory.environments
+    .map((env) => env.resourceFilter)
+    .filter(isPresent);
+  const filter: ResourceCondition | undefined =
+    resourceFilters.length > 0
+      ? {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.Or,
+          conditions: resourceFilters,
+        }
+      : undefined;
+
+  const { data: resourcesResult, isLoading } =
+    api.resource.byWorkspaceId.list.useQuery(
+      { workspaceId: workspace.id, filter, limit: 0 },
+      { enabled: filter != null },
+    );
+
+  const total = resourcesResult?.total ?? 0;
+
+  return (
+    <TableHead className="w-[220px] p-2" key={directory.path}>
+      <div className="flex w-fit items-center gap-2 px-2 py-1 text-white">
+        <span className=" max-w-32 truncate">{directory.path}</span>
+
+        <Badge variant="outline" className="rounded-full text-muted-foreground">
+          {isLoading && (
+            <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {!isLoading && total}
+        </Badge>
+
+        <Badge variant="outline" className="rounded-full text-muted-foreground">
+          <IconFolder className="h-4 w-4" strokeWidth={1.5} />
+        </Badge>
+      </div>
+    </TableHead>
+  );
+};
+
 const DeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
   systemSlug: string;
   environments: SCHEMA.Environment[];
   deployments: SCHEMA.Deployment[];
-}> = ({ systemSlug, deployments, environments, workspace }) => {
+  directories: {
+    path: string;
+    environments: SCHEMA.Environment[];
+  }[];
+}> = ({ systemSlug, deployments, environments, workspace, directories }) => {
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 w-full overflow-x-auto">
       <Table className="w-full min-w-max bg-background">
@@ -72,10 +123,13 @@ const DeploymentTable: React.FC<{
               Deployments
             </TableHead>
             {environments.map((env) => (
-              <EnvHeader
-                key={env.id}
-                environment={env}
-                workspaceSlug={workspace.slug}
+              <EnvHeader key={env.id} environment={env} workspace={workspace} />
+            ))}
+            {directories.map((dir) => (
+              <DirectoryHeader
+                key={dir.path}
+                directory={dir}
+                workspace={workspace}
               />
             ))}
             <TableCell className="flex-grow" />
@@ -114,6 +168,17 @@ const DeploymentTable: React.FC<{
                       environment={env}
                       deployment={r}
                       workspace={workspace}
+                      systemSlug={systemSlug}
+                    />
+                  </div>
+                </TableCell>
+              ))}
+              {directories.map((dir) => (
+                <TableCell key={dir.path} className="h-[70px] w-[220px]">
+                  <div className="flex h-full w-full justify-center">
+                    <DeploymentDirectoryCell
+                      directory={dir}
+                      deployment={r}
                       systemSlug={systemSlug}
                     />
                   </div>

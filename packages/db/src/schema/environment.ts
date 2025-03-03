@@ -54,7 +54,7 @@ export const environment = pgTable(
       .notNull()
       .references(() => system.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    directory: text("directory").default(""),
+    directory: text("directory").notNull().default(""),
     description: text("description").default(""),
     policyId: uuid("policy_id").notNull(),
     resourceFilter: jsonb("resource_filter")

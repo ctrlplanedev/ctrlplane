@@ -9,6 +9,7 @@ import {
   IconShip,
   IconTrash,
 } from "@tabler/icons-react";
+import _ from "lodash";
 
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
@@ -27,17 +28,32 @@ import {
 
 import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
 import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(appv2)/_components/system/DeleteSystemDialog";
+import { api } from "~/trpc/react";
+import { SystemDeploymentSkeleton } from "./SystemDeploymentSkeleton";
 import DeploymentTable from "./TableDeployments";
 
 type System = SCHEMA.System & {
   deployments: SCHEMA.Deployment[];
-  environments: SCHEMA.Environment[];
 };
 
 export const SystemDeploymentTable: React.FC<{
   workspace: SCHEMA.Workspace;
   system: System;
 }> = ({ workspace, system }) => {
+  const { data: rootDirsResult, isLoading } =
+    api.system.directory.listRoots.useQuery(system.id);
+  if (isLoading) return <SystemDeploymentSkeleton />;
+
+  const rootDirs = rootDirsResult?.directories ?? [];
+  const rootEnvironments = rootDirsResult?.rootEnvironments ?? [];
+
+  const numNestedEnvironments = _.sumBy(
+    rootDirs,
+    (dir) => dir.environments.length,
+  );
+
+  const numEnvironments = numNestedEnvironments + rootEnvironments.length;
+
   return (
     <div key={system.id} className="space-y-4">
       <div className="flex w-full items-center justify-between">
@@ -70,7 +86,7 @@ export const SystemDeploymentTable: React.FC<{
                   variant="outline"
                   className="flex items-center gap-1 rounded-full font-normal text-muted-foreground"
                 >
-                  <IconPlant className="size-3" /> {system.environments.length}
+                  <IconPlant className="size-3" /> {numEnvironments}
                 </Badge>
               </TooltipTrigger>
               <TooltipContent>
@@ -114,8 +130,9 @@ export const SystemDeploymentTable: React.FC<{
         <DeploymentTable
           workspace={workspace}
           systemSlug={system.slug}
-          environments={system.environments}
+          environments={rootEnvironments}
           deployments={system.deployments}
+          directories={rootDirs}
         />
       </div>
     </div>

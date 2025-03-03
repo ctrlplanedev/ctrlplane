@@ -33,6 +33,7 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { directoryRouter } from "./directory";
 
 export const systemRouter = createTRPCRouter({
   list: protectedProcedure
@@ -271,4 +272,6 @@ export const systemRouter = createTRPCRouter({
         }),
       );
     }),
+
+  directory: directoryRouter,
 });

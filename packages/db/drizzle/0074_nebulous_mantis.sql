@@ -1,0 +1,1 @@
+ALTER TABLE "environment" ALTER COLUMN "directory" SET NOT NULL;
