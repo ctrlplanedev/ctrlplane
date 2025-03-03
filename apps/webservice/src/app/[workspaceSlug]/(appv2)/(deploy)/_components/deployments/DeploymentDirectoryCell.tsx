@@ -1,5 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import React, { version } from "react";
+import React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
@@ -24,28 +24,32 @@ type DeploymentDirectoryCellProps = {
   };
   deployment: SCHEMA.Deployment;
   systemSlug: string;
+  release?: SCHEMA.Release;
 };
 
 export const DeploymentDirectoryCell: React.FC<
   DeploymentDirectoryCellProps
-> = ({ directory, deployment, systemSlug }) => {
+> = ({ directory, deployment, systemSlug, release }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const { ref, inView } = useInView();
 
   const { data: releaseResult, isLoading: isReleaseLoading } =
     api.release.list.useQuery(
       { deploymentId: deployment.id, limit: 1 },
-      { enabled: inView && directory.environments.length > 0 },
+      {
+        enabled: inView && directory.environments.length > 0 && release == null,
+      },
     );
+
+  const rel = release ?? releaseResult?.items[0];
 
   const { data: statusesResult, isLoading: isStatusesLoading } =
     api.release.status.bySystemDirectory.useQuery(
-      { systemId: deployment.systemId, directory: directory.path },
-      { enabled: inView && releaseResult != null },
+      { releaseId: rel?.id ?? "", directory: directory.path },
+      { enabled: inView && rel != null },
     );
   const isLoading = isReleaseLoading || isStatusesLoading;
 
-  const release = releaseResult?.items[0];
   const statuses = statusesResult ?? [];
 
   const getReleaseUrl = urls
@@ -65,14 +69,14 @@ export const DeploymentDirectoryCell: React.FC<
         </div>
       )}
 
-      {inView && !isLoading && release == null && (
+      {inView && !isLoading && rel == null && (
         <p className="text-xs text-muted-foreground/70">No versions released</p>
       )}
 
-      {inView && !isLoading && release != null && (
+      {inView && !isLoading && rel != null && (
         <div className="flex w-full items-center justify-between rounded-md p-2 hover:bg-secondary/50">
           <Link
-            href={getReleaseUrl(release.id).baseUrl()}
+            href={getReleaseUrl(rel.id).baseUrl()}
             className="flex w-full items-center gap-2"
           >
             <StatusIcon statuses={statuses.map((s) => s.job.status)} />
@@ -82,19 +86,17 @@ export const DeploymentDirectoryCell: React.FC<
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="max-w-36 truncate font-semibold">
-                        <span className="whitespace-nowrap">
-                          {release.version}
-                        </span>
+                        <span className="whitespace-nowrap">{rel.version}</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px]">
-                      {version}
+                      {rel.version}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(release.createdAt, "MMM d, hh:mm aa")}
+                {format(rel.createdAt, "MMM d, hh:mm aa")}
               </div>
             </div>
           </Link>

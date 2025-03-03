@@ -19,10 +19,12 @@ export default async function EnvironmentsPage(props: {
   ]);
   if (workspace == null) notFound();
 
-  const [environments, deployments] = await Promise.all([
-    api.environment.bySystemId(system.id),
+  const [roots, deployments] = await Promise.all([
+    api.system.directory.listRoots(system.id),
     api.deployment.bySystemId(system.id),
   ]);
+
+  const { directories, rootEnvironments } = roots;
 
   return (
     <div className="flex min-w-0 flex-col overflow-x-auto">
@@ -43,7 +45,8 @@ export default async function EnvironmentsPage(props: {
       <DeploymentTable
         workspace={workspace}
         systemSlug={params.systemSlug}
-        environments={environments}
+        rootEnvironments={rootEnvironments}
+        directories={directories}
         deployments={deployments}
         className="border-b"
       />

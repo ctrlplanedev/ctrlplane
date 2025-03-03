@@ -21,10 +21,10 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 
+import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/DeploymentDirectoryCell";
 import { LazyDeploymentEnvironmentCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/environment-cell/DeploymentEnvironmentCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { DeploymentDirectoryCell } from "./DeploymentDirectoryCell";
 
 const EnvHeader: React.FC<{
   environment: SCHEMA.Environment;

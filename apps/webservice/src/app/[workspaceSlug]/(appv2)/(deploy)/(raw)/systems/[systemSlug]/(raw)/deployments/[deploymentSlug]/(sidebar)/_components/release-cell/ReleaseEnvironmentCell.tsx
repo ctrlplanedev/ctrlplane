@@ -1,6 +1,5 @@
 "use client";
 
-import type { RouterOutputs } from "@ctrlplane/api";
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import { useParams } from "next/navigation";
@@ -16,7 +15,6 @@ import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
 
-type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Release = {
   id: string;
   version: string;
@@ -26,7 +24,7 @@ type Release = {
 };
 
 type ReleaseEnvironmentCellProps = {
-  environment: Environment;
+  environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
   release: Release;
 };

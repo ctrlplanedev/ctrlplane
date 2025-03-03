@@ -367,20 +367,32 @@ export const releaseRouter = createTRPCRouter({
 
     bySystemDirectory: protectedProcedure
       .input(
-        z.object({
-          systemId: z.string().uuid(),
-          directory: z.string(),
-          exact: z.boolean().optional().default(false),
-        }),
+        z
+          .object({
+            directory: z.string(),
+            exact: z.boolean().optional().default(false),
+          })
+          .and(
+            z.union([
+              z.object({ deploymentId: z.string().uuid() }),
+              z.object({ releaseId: z.string().uuid() }),
+            ]),
+          ),
       )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.ReleaseGet).on({
-            type: "system",
-            id: input.systemId,
-          }),
+          "releaseId" in input
+            ? canUser.perform(Permission.ReleaseGet).on({
+                type: "release",
+                id: input.releaseId,
+              })
+            : canUser.perform(Permission.DeploymentGet).on({
+                type: "deployment",
+                id: input.deploymentId,
+              }),
       })
-      .query(({ input: { systemId, directory, exact } }) => {
+      .query(({ input }) => {
+        const { directory, exact } = input;
         const normalizedPath = directory.startsWith("/")
           ? directory.slice(1)
           : directory;
@@ -396,6 +408,11 @@ export const releaseRouter = createTRPCRouter({
               like(environment.directory, `/${normalizedPath}/%`),
             );
 
+        const releaseCheck =
+          "releaseId" in input
+            ? eq(release.id, input.releaseId)
+            : eq(release.deploymentId, input.deploymentId);
+
         return db
           .selectDistinctOn([releaseJobTrigger.resourceId])
           .from(job)
@@ -405,7 +422,9 @@ export const releaseRouter = createTRPCRouter({
             environment,
             eq(releaseJobTrigger.environmentId, environment.id),
           )
-          .where(and(eq(environment.systemId, systemId), isMatchingDirectory));
+          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+          .orderBy(releaseJobTrigger.resourceId, desc(job.createdAt))
+          .where(and(releaseCheck, isMatchingDirectory));
       }),
   }),
 
