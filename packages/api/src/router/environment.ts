@@ -10,10 +10,8 @@ import {
   inArray,
   isNotNull,
   isNull,
-  like,
   ne,
   not,
-  or,
   takeFirst,
 } from "@ctrlplane/db";
 import {
@@ -173,48 +171,6 @@ export const environmentRouter = createTRPCRouter({
             .value(),
         ),
     ),
-
-  bySystemDirectory: protectedProcedure
-    .input(
-      z.object({
-        systemId: z.string().uuid(),
-        directory: z.string(),
-        exact: z.boolean().default(false),
-        limit: z.number().default(100),
-        offset: z.number().default(0),
-      }),
-    )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.EnvironmentList)
-          .on({ type: "system", id: input.systemId }),
-    })
-    .query(async ({ ctx, input }) => {
-      const normalizedPath = input.directory.startsWith("/")
-        ? input.directory.slice(1)
-        : input.directory;
-
-      const isInDirectory = input.exact
-        ? or(
-            eq(environment.directory, normalizedPath),
-            eq(environment.directory, `/${normalizedPath}`),
-          )
-        : or(
-            eq(environment.directory, normalizedPath),
-            eq(environment.directory, `/${normalizedPath}`),
-            like(environment.directory, `${normalizedPath}/%`),
-            like(environment.directory, `/${normalizedPath}/%`),
-          );
-
-      return ctx.db
-        .select()
-        .from(environment)
-        .where(and(eq(environment.systemId, input.systemId), isInDirectory))
-        .orderBy(environment.name)
-        .limit(input.limit)
-        .offset(input.offset);
-    }),
 
   byWorkspaceId: protectedProcedure
     .meta({
