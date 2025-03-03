@@ -60,10 +60,14 @@ export const SystemsPageContent: React.FC<{
         <h2 className="text-2xl font-bold">Systems</h2>
         <div className="flex items-center gap-2">
           <CreateSystemDialog workspace={workspace}>
-            <Button variant="outline">New System</Button>
+            <Button variant="outline" size="sm">
+              New System
+            </Button>
           </CreateSystemDialog>
           <CreateDeploymentDialog>
-            <Button variant="outline">New Deployment</Button>
+            <Button variant="outline" size="sm">
+              New Deployment
+            </Button>
           </CreateDeploymentDialog>
         </div>
       </div>
