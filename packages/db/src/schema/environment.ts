@@ -28,10 +28,6 @@ import { system } from "./system.js";
 
 export const directoryPath = z
   .string()
-  .regex(
-    /^\/.*[^/]$|^\/$/,
-    "Directory must start with / and not end with / (except for root directory)",
-  )
   .refine(
     (path) => !path.includes("//"),
     "Directory cannot contain consecutive slashes",
@@ -44,7 +40,10 @@ export const directoryPath = z
     (path) => path.split("/").every((segment) => !segment.startsWith(".")),
     "Directory segments cannot start with .",
   )
-  .transform((path) => path.replace(/\/+$/, ""))
+  .refine(
+    (path) => !path.startsWith("/") && !path.endsWith("/"),
+    "Directory cannot start or end with /",
+  )
   .or(z.literal(""));
 
 export const environment = pgTable(
@@ -103,7 +102,10 @@ export const createEnvironment = createInsertSchema(environment, {
 export const updateEnvironment = createEnvironment
   .partial()
   .omit({ policyId: true })
-  .extend({ policyId: z.string().uuid().nullable().optional() });
+  .extend({
+    policyId: z.string().uuid().nullable().optional(),
+    directory: directoryPath.optional(),
+  });
 export type InsertEnvironment = z.infer<typeof createEnvironment>;
 
 export const environmentMetadata = pgTable(
