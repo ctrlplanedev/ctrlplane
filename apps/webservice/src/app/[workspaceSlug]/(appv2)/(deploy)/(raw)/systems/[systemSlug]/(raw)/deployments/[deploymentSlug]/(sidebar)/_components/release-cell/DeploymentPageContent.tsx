@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   IconCircleFilled,
   IconFilter,
+  IconFolder,
   IconGraph,
   IconHistory,
   IconLoader2,
@@ -42,15 +43,20 @@ import { ReleaseStatus } from "@ctrlplane/validators/releases";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionDialog";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/useReleaseFilter";
+import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/DeploymentDirectoryCell";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { JobHistoryPopover } from "./JobHistoryPopover";
 import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
 import { LazyReleaseEnvironmentCell } from "./ReleaseEnvironmentCell";
 
-type Environment = RouterOutputs["environment"]["bySystemId"][number];
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
-type EnvHeaderProps = { environment: Environment; deployment: Deployment };
+type EnvHeaderProps = {
+  environment: schema.Environment;
+  deployment: Deployment;
+  workspace: schema.Workspace;
+};
 
 const StatusIcon: React.FC<{ status: ReleaseStatusType }> = ({ status }) => {
   if (status === ReleaseStatus.Ready)
@@ -77,12 +83,11 @@ const StatusIcon: React.FC<{ status: ReleaseStatusType }> = ({ status }) => {
   );
 };
 
-const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
-  const { data: workspace, isLoading: isWorkspaceLoading } =
-    api.workspace.bySlug.useQuery(workspaceSlug);
-  const workspaceId = workspace?.id ?? "";
-
+const EnvHeader: React.FC<EnvHeaderProps> = ({
+  environment,
+  deployment,
+  workspace,
+}) => {
   const { resourceFilter: envResourceFilter } = environment;
   const { resourceFilter: deploymentResourceFilter } = deployment;
 
@@ -92,15 +97,12 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
     conditions: [envResourceFilter, deploymentResourceFilter].filter(isPresent),
   };
 
-  const { data: resourcesResult, isLoading: isResourcesLoading } =
-    api.resource.byWorkspaceId.list.useQuery(
-      { workspaceId, filter, limit: 0 },
-      { enabled: workspaceId !== "" && envResourceFilter != null },
-    );
+  const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
+    { workspaceId: workspace.id, filter, limit: 0 },
+    { enabled: envResourceFilter != null },
+  );
 
-  const total = resourcesResult?.total ?? 0;
-
-  const isLoading = isWorkspaceLoading || isResourcesLoading;
+  const total = data?.total ?? 0;
 
   return (
     <TableHead className="border-l pl-4">
@@ -120,23 +122,72 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({ environment, deployment }) => {
   );
 };
 
+type DirectoryHeaderProps = {
+  directory: { path: string; environments: schema.Environment[] };
+  workspace: schema.Workspace;
+};
+
+const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
+  directory,
+  workspace,
+}) => {
+  const resourceFilters = directory.environments
+    .map((env) => env.resourceFilter)
+    .filter(isPresent);
+  const filter: ResourceCondition | undefined =
+    resourceFilters.length > 0
+      ? {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.Or,
+          conditions: resourceFilters,
+        }
+      : undefined;
+
+  const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
+    { workspaceId: workspace.id, filter, limit: 0 },
+    { enabled: filter != null },
+  );
+
+  const total = data?.total ?? 0;
+
+  return (
+    <TableHead className="w-[220px] border-l p-2" key={directory.path}>
+      <div className="flex w-fit items-center gap-2 px-2 py-1 text-white">
+        <span className="max-w-32 truncate">{directory.path}</span>
+
+        <Badge variant="outline" className="rounded-full text-muted-foreground">
+          {isLoading && (
+            <IconLoader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+          )}
+          {!isLoading && total}
+        </Badge>
+
+        <Badge variant="outline" className="rounded-full text-muted-foreground">
+          <IconFolder className="h-4 w-4" strokeWidth={1.5} />
+        </Badge>
+      </div>
+    </TableHead>
+  );
+};
+
 type DeploymentPageContentProps = {
+  workspace: schema.Workspace;
   deployment: Deployment;
-  environments: Environment[];
+  environments: schema.Environment[];
+  directories: { path: string; environments: schema.Environment[] }[];
   releaseChannel: schema.ReleaseChannel | null;
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
+  workspace,
   deployment,
   environments,
+  directories,
   releaseChannel,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
 
-  const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-  }>();
+  const { systemSlug } = useParams<{ systemSlug: string }>();
 
   const releases = api.release.list.useQuery(
     { deploymentId: deployment.id, filter: filter ?? undefined, limit: 30 },
@@ -147,6 +198,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const loading = releases.isLoading;
   const router = useRouter();
+
+  const releaseUrl = urls
+    .workspace(workspace.slug)
+    .system(systemSlug)
+    .deployment(deployment.slug).release;
 
   return (
     <div className="flex flex-col">
@@ -234,6 +290,14 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     key={env.id}
                     environment={env}
                     deployment={deployment}
+                    workspace={workspace}
+                  />
+                ))}
+                {directories.map((dir) => (
+                  <DirectoryHeader
+                    key={dir.path}
+                    directory={dir}
+                    workspace={workspace}
                   />
                 ))}
               </TableRow>
@@ -245,9 +309,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     key={release.id}
                     className="cursor-pointer hover:bg-transparent"
                     onClick={() =>
-                      router.push(
-                        `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/releases/${release.id}`,
-                      )
+                      router.push(releaseUrl(release.id).baseUrl())
                     }
                   >
                     <TableCell className="sticky left-0 z-10 flex h-[60px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 text-base">
@@ -287,6 +349,20 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           environment={env}
                           deployment={deployment}
                           release={release}
+                        />
+                      </TableCell>
+                    ))}
+                    {directories.map((dir) => (
+                      <TableCell
+                        key={dir.path}
+                        className="h-[60px] w-[220px] border-l px-1 py-0"
+                      >
+                        <DeploymentDirectoryCell
+                          key={dir.path}
+                          directory={dir}
+                          deployment={deployment}
+                          release={release}
+                          systemSlug={systemSlug}
                         />
                       </TableCell>
                     ))}

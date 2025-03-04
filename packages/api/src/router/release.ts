@@ -10,7 +10,9 @@ import {
   exists,
   inArray,
   isNull,
+  like,
   notExists,
+  or,
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
@@ -362,6 +364,60 @@ export const releaseRouter = createTRPCRouter({
             ),
           ),
       ),
+
+    bySystemDirectory: protectedProcedure
+      .input(
+        z
+          .object({
+            directory: z.string(),
+            exact: z.boolean().optional().default(false),
+          })
+          .and(
+            z.union([
+              z.object({ deploymentId: z.string().uuid() }),
+              z.object({ releaseId: z.string().uuid() }),
+            ]),
+          ),
+      )
+      .meta({
+        authorizationCheck: ({ canUser, input }) =>
+          "releaseId" in input
+            ? canUser.perform(Permission.ReleaseGet).on({
+                type: "release",
+                id: input.releaseId,
+              })
+            : canUser.perform(Permission.DeploymentGet).on({
+                type: "deployment",
+                id: input.deploymentId,
+              }),
+      })
+      .query(({ input }) => {
+        const { directory, exact } = input;
+        const isMatchingDirectory = exact
+          ? eq(environment.directory, directory)
+          : or(
+              eq(environment.directory, directory),
+              like(environment.directory, `${directory}/%`),
+            );
+
+        const releaseCheck =
+          "releaseId" in input
+            ? eq(release.id, input.releaseId)
+            : eq(release.deploymentId, input.deploymentId);
+
+        return db
+          .selectDistinctOn([releaseJobTrigger.resourceId])
+          .from(job)
+          .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
+          .innerJoin(
+            environment,
+            eq(releaseJobTrigger.environmentId, environment.id),
+          )
+          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
+          .orderBy(releaseJobTrigger.resourceId, desc(job.createdAt))
+          .where(and(releaseCheck, isMatchingDirectory));
+      }),
   }),
 
   latest: createTRPCRouter({

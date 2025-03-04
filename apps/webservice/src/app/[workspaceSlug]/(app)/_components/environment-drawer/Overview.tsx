@@ -25,10 +25,7 @@ type OverviewProps = {
 };
 
 export const Overview: React.FC<OverviewProps> = ({ environment }) => {
-  const defaultValues = {
-    ...environment,
-    directory: environment.directory ?? "",
-  };
+  const defaultValues = { ...environment };
   const form = useForm({ schema, defaultValues });
   const update = api.environment.update.useMutation();
   const envOverride = api.job.trigger.create.byEnvId.useMutation();

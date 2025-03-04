@@ -105,9 +105,7 @@ export const SystemsPageContent: React.FC<{
         />
         {isLoading &&
           Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="rounded-md border">
-              <SystemDeploymentSkeleton />
-            </div>
+            <SystemDeploymentSkeleton key={i} />
           ))}
         {!isLoading &&
           systems.map((s) => (
