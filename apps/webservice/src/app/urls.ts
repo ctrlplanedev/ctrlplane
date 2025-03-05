@@ -15,6 +15,7 @@ const workspace = (slug: string) => {
     systems: () => buildUrl(slug, "systems"),
     system: (systemSlug: string) => system({ workspaceSlug: slug, systemSlug }),
     deployments: () => buildUrl(slug, "deployments"),
+    agents: () => buildUrl(slug, "agents"),
     insights: () => buildUrl(slug, "insights"),
     resources: () => buildUrl(slug, "resources"),
     settings: () => buildUrl(slug, "settings"),

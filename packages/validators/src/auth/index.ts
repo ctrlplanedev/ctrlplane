@@ -31,6 +31,7 @@ export enum Permission {
   JobAgentList = "jobAgent.list",
   JobAgentCreate = "jobAgent.create",
   JobAgentGet = "jobAgent.get",
+  JobAgentUpdate = "jobAgent.update",
 
   RoleCreate = "role.create",
   RoleDelete = "role.delete",

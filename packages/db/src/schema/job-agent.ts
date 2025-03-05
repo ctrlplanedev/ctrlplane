@@ -24,4 +24,6 @@ export const createJobAgent = createInsertSchema(jobAgent, {
   config: z.record(z.any()),
 }).omit({ id: true });
 
+export const updateJobAgent = createJobAgent.partial();
+
 export type JobAgent = InferSelectModel<typeof jobAgent>;
