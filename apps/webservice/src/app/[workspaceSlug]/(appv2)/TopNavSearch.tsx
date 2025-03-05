@@ -79,7 +79,7 @@ export const TopNavSearch: React.FC<{
         />
 
         {focus.isFocused && (
-          <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 absolute left-0 right-0 top-12 z-20 rounded border bg-neutral-900">
+          <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 absolute left-0 right-0 top-12 z-50 rounded border bg-neutral-900">
             {isLoading ? (
               <CommandEmpty>
                 <div className="flex items-center justify-center gap-3">

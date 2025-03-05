@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { IconCategory, IconRocket } from "@tabler/icons-react";
+import { IconBolt, IconCategory, IconRocket } from "@tabler/icons-react";
 
 import {
   Sidebar,
@@ -11,8 +11,8 @@ import {
 } from "@ctrlplane/ui/sidebar";
 
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
-import { urls } from "../../../../urls";
 import { SidebarLink } from "../../resources/(sidebar)/SidebarLink";
 
 export default async function Layout(props: {
@@ -26,7 +26,7 @@ export default async function Layout(props: {
   const workspaceUrls = urls.workspace(workspaceSlug);
   const deploymentsUrl = workspaceUrls.deployments();
   const systemsUrl = workspaceUrls.systems();
-
+  const agentsUrl = workspaceUrls.agents();
   return (
     <div className="relative">
       <SidebarProvider sidebarNames={[Sidebars.Deployments]}>
@@ -39,6 +39,9 @@ export default async function Layout(props: {
                 </SidebarLink>
                 <SidebarLink icon={<IconRocket />} href={deploymentsUrl}>
                   Deployments
+                </SidebarLink>
+                <SidebarLink icon={<IconBolt />} href={agentsUrl}>
+                  Agents
                 </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
