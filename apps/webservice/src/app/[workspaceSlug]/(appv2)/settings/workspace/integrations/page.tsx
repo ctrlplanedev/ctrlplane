@@ -7,6 +7,8 @@ import {
 
 import { Card } from "@ctrlplane/ui/card";
 
+import { api } from "~/trpc/server";
+
 export const metadata = { title: "Integrations - Settings" };
 
 const IntegrationCard: React.FC<{
@@ -38,6 +40,9 @@ export default async function IntegrationsPage(props: {
   const params = await props.params;
   const { workspaceSlug } = params;
 
+  const currentAwsAccountId =
+    await api.workspace.integrations.aws.currentAwsAccountId();
+
   return (
     <div className="container mx-auto max-w-3xl space-y-8 overflow-auto pt-8">
       <div className="space-y-1">
@@ -61,17 +66,20 @@ export default async function IntegrationsPage(props: {
           </IntegrationContent>
         </IntegrationCard>
 
-        <IntegrationCard integration="aws" workspaceSlug={workspaceSlug}>
-          <IntegrationContent>
-            <IntegrationHeading>
-              <SiAmazon className="text-4xl text-orange-400" />
-              <span className="font-semibold">AWS</span>
-            </IntegrationHeading>
-            <p className="text-left text-sm text-muted-foreground">
-              Sync deployment resources, trigger AWS workflows and more.
-            </p>
-          </IntegrationContent>
-        </IntegrationCard>
+        {currentAwsAccountId != null && (
+          <IntegrationCard integration="aws" workspaceSlug={workspaceSlug}>
+            <IntegrationContent>
+              <IntegrationHeading>
+                <SiAmazon className="text-4xl text-orange-400" />
+                <span className="font-semibold">AWS</span>
+              </IntegrationHeading>
+              <p className="text-left text-sm text-muted-foreground">
+                Sync deployment resources, trigger AWS workflows and more.{" "}
+                {currentAwsAccountId}
+              </p>
+            </IntegrationContent>
+          </IntegrationCard>
+        )}
 
         <IntegrationCard integration="google" workspaceSlug={workspaceSlug}>
           <IntegrationContent>

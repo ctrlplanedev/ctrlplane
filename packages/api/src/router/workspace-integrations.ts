@@ -328,5 +328,12 @@ export const integrationsRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
       }),
+
+    currentAwsAccountId: protectedProcedure.query(async () =>
+      stsClient
+        .send(new GetCallerIdentityCommand({}))
+        .then((response) => response.Account ?? null)
+        .catch(() => null),
+    ),
   }),
 });
