@@ -26,10 +26,11 @@ import { api } from "~/trpc/react";
 
 export const DeploymentJobAgentGithubConfig: React.FC<{
   jobAgentId: string;
+  currentConfig: Record<string, any>;
   value: Record<string, any>;
   onChange: (v: Record<string, any>) => void;
   disabled?: boolean;
-}> = ({ jobAgentId, value, onChange, disabled = false }) => {
+}> = ({ jobAgentId, currentConfig, value, onChange, disabled = false }) => {
   const [repoOpen, setRepoOpen] = useState(false);
   const [workflowOpen, setWorkflowOpen] = useState(false);
 
@@ -50,8 +51,8 @@ export const DeploymentJobAgentGithubConfig: React.FC<{
   const selectedWorkflow = workflows.find((w) => w.id === value.workflowId);
 
   const isChanged =
-    selectedRepo?.name !== value.repo ||
-    selectedWorkflow?.id !== value.workflowId;
+    currentConfig.repo !== value.repo ||
+    currentConfig.workflowId !== value.workflowId;
 
   if (isGithubAgentLoading || isReposLoading)
     return (

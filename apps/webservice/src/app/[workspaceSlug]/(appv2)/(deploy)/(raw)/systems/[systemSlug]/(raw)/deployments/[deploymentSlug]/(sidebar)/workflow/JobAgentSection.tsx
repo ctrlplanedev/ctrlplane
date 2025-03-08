@@ -34,7 +34,12 @@ const JobAgentForm: React.FC<{
   const update = api.deployment.update.useMutation();
   const router = useRouter();
   const onFormSubmit = form.handleSubmit((data) =>
-    update.mutateAsync({ id: deploymentId, data }).then(() => router.refresh()),
+    update
+      .mutateAsync({ id: deploymentId, data })
+      .then((data) =>
+        form.reset({ ...data, jobAgentId: data.jobAgentId ?? undefined }),
+      )
+      .then(() => router.refresh()),
   );
 
   const { jobAgentId } = form.watch();
@@ -73,6 +78,7 @@ const JobAgentForm: React.FC<{
               {selectedJobAgent?.type === JobAgentType.GithubApp && (
                 <DeploymentJobAgentGithubConfig
                   jobAgentId={jobAgentId}
+                  currentConfig={jobAgentConfig}
                   {...field}
                   disabled={update.isPending}
                 />
