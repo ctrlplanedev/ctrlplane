@@ -2,11 +2,11 @@ import { IconPlus } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateSessionDialog } from "./CreateDialogSession";
-import { LoadSessionFromParams } from "./LoadSessionFromParams";
-import { SessionTerminals } from "./SessionTerminals";
-import { TerminalSessionsProvider } from "./TerminalSessionsProvider";
-import { TerminalTabs } from "./TerminalTabs";
+import { CreateSessionDialog } from "./_components/CreateDialogSession";
+import { LoadSessionFromParams } from "./_components/LoadSessionFromParams";
+import { SessionTerminals } from "./_components/SessionTerminals";
+import { TerminalSessionsProvider } from "./_components/TerminalSessionsProvider";
+import { TerminalTabs } from "./_components/TerminalTabs";
 
 export const metadata = {
   title: "Terminal",

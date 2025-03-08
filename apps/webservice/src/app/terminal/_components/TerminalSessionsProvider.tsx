@@ -3,7 +3,7 @@
 import type { ReadyState } from "react-use-websocket";
 import React, { createContext, useCallback, useContext, useState } from "react";
 
-import { useControllerWebsocket } from "~/app/terminal/useControllerWebsocket";
+import { useControllerWebsocket } from "~/app/terminal/_components/useControllerWebsocket";
 
 type SessionContextType = {
   activeSessionId: string | null;
