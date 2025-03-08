@@ -782,6 +782,25 @@ export const jobRouter = createTRPCRouter({
     .input(z.object({ id: z.string().uuid(), data: schema.updateJob }))
     .mutation(({ ctx, input }) => updateJob(ctx.db, input.id, input.data)),
 
+  updateMany: protectedProcedure
+    .input(
+      z.object({ ids: z.array(z.string().uuid()), data: schema.updateJob }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) => {
+        const jobIds: string[] = input.ids;
+        const authzPromises = jobIds.map((id) =>
+          canUser.perform(Permission.JobUpdate).on({ type: "job", id }),
+        );
+        return Promise.all(authzPromises).then((results) =>
+          results.every(Boolean),
+        );
+      },
+    })
+    .mutation(({ ctx, input }) =>
+      Promise.all(input.ids.map((id) => updateJob(ctx.db, id, input.data))),
+    ),
+
   config: releaseJobTriggerRouter,
   agent: jobAgentRouter,
   trigger: jobTriggerRouter,

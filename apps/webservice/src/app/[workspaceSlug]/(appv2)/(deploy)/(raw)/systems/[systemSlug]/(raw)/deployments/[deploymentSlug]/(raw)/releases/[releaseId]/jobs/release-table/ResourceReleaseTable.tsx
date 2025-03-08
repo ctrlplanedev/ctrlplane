@@ -40,6 +40,7 @@ import { useFilter } from "~/app/[workspaceSlug]/(appv2)/_hooks/useFilter";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
 import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
+import { EnvironmentRowDropdown } from "./EnvironmentRowDropdown";
 
 type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
 
@@ -75,6 +76,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   );
 
   const allTriggers = Object.values(triggersByResource).flat();
+  const allJobIds = allTriggers.map((t) => t.job.id);
   const latestStatusesByResource = Object.entries(triggersByResource).map(
     ([_, triggers]) => {
       const sortedByCreatedAt = triggers.sort(
@@ -170,6 +172,12 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                   release={release}
                 />
               ))}
+
+              <EnvironmentRowDropdown jobIds={allJobIds}>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <IconDots className="h-4 w-4" />
+                </Button>
+              </EnvironmentRowDropdown>
             </div>
           </div>
         </TableCell>

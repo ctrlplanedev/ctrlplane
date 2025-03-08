@@ -69,13 +69,13 @@ const overrideJobStatusFormSchema = z.object({
   status: z.nativeEnum(JobStatus),
 });
 
-const OverrideJobStatusDialog: React.FC<{
-  job: { id: string; status: JobStatus };
+export const OverrideJobStatusDialog: React.FC<{
+  jobIds: string[];
   onClose: () => void;
   children: React.ReactNode;
-}> = ({ job, onClose, children }) => {
+}> = ({ jobIds, onClose, children }) => {
   const [open, setOpen] = useState(false);
-  const updateJob = api.job.update.useMutation();
+  const updateJobs = api.job.updateMany.useMutation();
   const utils = api.useUtils();
 
   const form = useForm({
@@ -84,10 +84,10 @@ const OverrideJobStatusDialog: React.FC<{
   });
 
   const onSubmit = form.handleSubmit((data) =>
-    updateJob
-      .mutateAsync({ id: job.id, data })
+    updateJobs
+      .mutateAsync({ ids: jobIds, data })
       .then(() => utils.job.config.byReleaseId.invalidate())
-      .then(() => utils.job.config.byId.invalidate(job.id))
+      .then(() => jobIds.map((id) => utils.job.config.byId.invalidate(id)))
       .then(() => utils.release.list.invalidate())
       .then(() => setOpen(false))
       .then(() => onClose()),
@@ -139,9 +139,9 @@ const OverrideJobStatusDialog: React.FC<{
               )}
             />
 
-            {updateJob.error != null && (
+            {updateJobs.error != null && (
               <div className="text-sm text-red-500">
-                {updateJob.error.message}
+                {updateJobs.error.message}
               </div>
             )}
 
@@ -153,7 +153,7 @@ const OverrideJobStatusDialog: React.FC<{
               <Button
                 type="submit"
                 className={buttonVariants({ variant: "destructive" })}
-                disabled={updateJob.isPending}
+                disabled={updateJobs.isPending}
               >
                 Override
               </Button>
@@ -359,7 +359,10 @@ export const JobDropdownMenu: React.FC<{
             </RedeployReleaseDialog>
           )}
 
-          <OverrideJobStatusDialog job={job} onClose={() => setOpen(false)}>
+          <OverrideJobStatusDialog
+            jobIds={[job.id]}
+            onClose={() => setOpen(false)}
+          >
             <DropdownMenuItem
               onSelect={(e) => e.preventDefault()}
               className="space-x-2"
