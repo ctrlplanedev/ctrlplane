@@ -14,6 +14,8 @@ import {
 
 import { Button } from "@ctrlplane/ui/button";
 
+import { api } from "~/trpc/server";
+
 export const metadata = { title: "Overview - Workspace" };
 
 export default async function OverviewPage(props: {
@@ -21,6 +23,10 @@ export default async function OverviewPage(props: {
 }) {
   const params = await props.params;
   const { workspaceSlug } = params;
+
+  const currentAwsAccountId =
+    await api.workspace.integrations.aws.currentAwsAccountId();
+
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 container mx-auto max-w-7xl space-y-8 overflow-auto pt-8">
       <div className="space-y-1">
@@ -166,26 +172,28 @@ export default async function OverviewPage(props: {
               </div>
             </div>
           </div>
-          <div className="space-y-2 border-b pb-2">
-            <div className="flex flex-grow gap-3">
-              <SiAmazon className="h-5 w-5 text-orange-400" />
-              <div className="space-y-2">
-                <div>AWS</div>
-                <div className="text-xs text-muted-foreground">
-                  Sync deployment resources, trigger AWS workflows and more.
-                </div>
-                <div>
-                  <Link
-                    href={`/${workspaceSlug}/settings/workspace/integrations/aws`}
-                  >
-                    <Button variant="secondary" size="sm">
-                      Open
-                    </Button>
-                  </Link>
+          {currentAwsAccountId != null && (
+            <div className="space-y-2 border-b pb-2">
+              <div className="flex flex-grow gap-3">
+                <SiAmazon className="h-5 w-5 text-orange-400" />
+                <div className="space-y-2">
+                  <div>AWS</div>
+                  <div className="text-xs text-muted-foreground">
+                    Sync deployment resources, trigger AWS workflows and more.
+                  </div>
+                  <div>
+                    <Link
+                      href={`/${workspaceSlug}/settings/workspace/integrations/aws`}
+                    >
+                      <Button variant="secondary" size="sm">
+                        Open
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

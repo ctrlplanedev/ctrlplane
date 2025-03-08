@@ -98,6 +98,8 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) return notFound();
   const azureAppClientId = env.AZURE_APP_CLIENT_ID;
+  const currentAwsAccountId =
+    await api.workspace.integrations.aws.currentAwsAccountId();
   return (
     <div className="flex h-full flex-col">
       <PageHeader className="z-10">
@@ -124,24 +126,26 @@ const ResourceProviders: React.FC<{ workspaceSlug: string }> = async ({
             run anything.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-6">
-            <ResourceProviderCard>
-              <ResourceProviderContent>
-                <ResourceProviderHeading>
-                  <SiAmazon className="mx-auto text-4xl text-orange-300" />
-                  <div className="font-semibold">Amazon</div>
-                </ResourceProviderHeading>
-                <p className="text-xs text-muted-foreground">
-                  Grant our account the correct permissions and we will manage
-                  running the resource provider for you.
-                </p>
+            {currentAwsAccountId != null && (
+              <ResourceProviderCard>
+                <ResourceProviderContent>
+                  <ResourceProviderHeading>
+                    <SiAmazon className="mx-auto text-4xl text-orange-300" />
+                    <div className="font-semibold">Amazon</div>
+                  </ResourceProviderHeading>
+                  <p className="text-xs text-muted-foreground">
+                    Grant our account the correct permissions and we will manage
+                    running the resource provider for you.
+                  </p>
 
-                <ResourceProviderBadges>
-                  <K8sBadge />
-                </ResourceProviderBadges>
-              </ResourceProviderContent>
+                  <ResourceProviderBadges>
+                    <K8sBadge />
+                  </ResourceProviderBadges>
+                </ResourceProviderContent>
 
-              <AwsActionButton workspace={workspace} />
-            </ResourceProviderCard>
+                <AwsActionButton workspace={workspace} />
+              </ResourceProviderCard>
+            )}
 
             <ResourceProviderCard>
               <ResourceProviderContent>
