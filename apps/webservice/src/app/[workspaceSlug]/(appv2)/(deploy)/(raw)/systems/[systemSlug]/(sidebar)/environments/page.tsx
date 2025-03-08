@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation";
 
+import { Button } from "@ctrlplane/ui/button";
+
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
+import { CreateEnvironmentDialog } from "./CreateEnvironmentDialog";
 import { EnvironmentRow } from "./EnvironmentRow";
 
 export default async function EnvironmentsPage(props: {
@@ -16,8 +19,13 @@ export default async function EnvironmentsPage(props: {
 
   return (
     <div>
-      <PageHeader>
+      <PageHeader className="justify-between">
         <SystemBreadcrumb system={system} page="Environments" />
+        <CreateEnvironmentDialog systemId={system.id}>
+          <Button variant="outline" size="sm">
+            Create Environment
+          </Button>
+        </CreateEnvironmentDialog>
       </PageHeader>
 
       {environments.map((environment) => (

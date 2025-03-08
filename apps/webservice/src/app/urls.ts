@@ -37,10 +37,32 @@ const system = (params: SystemParams) => {
     deployment: (deploymentSlug: string) =>
       deployment({ ...params, deploymentSlug }),
     environments: () => buildUrl(...base, "environments"),
-    environment: (id: string) => buildUrl(...base, "environments", id),
+    environment: (id: string) => environment({ ...params, environmentId: id }),
   };
 };
 
+type EnvironmentParams = SystemParams & {
+  environmentId: string;
+};
+
+const environment = (params: EnvironmentParams) => {
+  const { workspaceSlug, systemSlug, environmentId } = params;
+  const base = [
+    workspaceSlug,
+    "systems",
+    systemSlug,
+    "environments",
+    environmentId,
+  ];
+
+  return {
+    baseUrl: () => buildUrl(...base),
+    deployments: () => buildUrl(...base, "deployments"),
+    policies: () => buildUrl(...base, "policies"),
+    resources: () => buildUrl(...base, "resources"),
+    variables: () => buildUrl(...base, "variables"),
+  };
+};
 type DeploymentParams = SystemParams & {
   deploymentSlug: string;
 };
