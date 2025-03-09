@@ -24,6 +24,7 @@ const clusterConfig = z.object({
       method: z.literal("aws/eks"),
       region: z.string(),
       clusterName: z.string(),
+      accountId: z.string(),
     }),
     z.object({
       method: z.literal("azure/aks"),
