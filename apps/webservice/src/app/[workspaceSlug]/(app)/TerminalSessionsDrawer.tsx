@@ -6,11 +6,11 @@ import { createPortal } from "react-dom";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateSessionDialog } from "~/app/terminal/CreateDialogSession";
-import { SessionTerminals } from "~/app/terminal/SessionTerminals";
-import { useTerminalSessions } from "~/app/terminal/TerminalSessionsProvider";
-import { TerminalTabs } from "~/app/terminal/TerminalTabs";
-import { useResizableHeight } from "~/app/terminal/useResizableHeight";
+import { CreateSessionDialog } from "~/app/terminal/_components/CreateDialogSession";
+import { SessionTerminals } from "~/app/terminal/_components/SessionTerminals";
+import { useTerminalSessions } from "~/app/terminal/_components/TerminalSessionsProvider";
+import { TerminalTabs } from "~/app/terminal/_components/TerminalTabs";
+import { useResizableHeight } from "~/app/terminal/_components/useResizableHeight";
 
 const TerminalSessionsContent: React.FC = () => {
   const { setIsDrawerOpen } = useTerminalSessions();
