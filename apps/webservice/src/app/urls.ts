@@ -17,10 +17,18 @@ const workspace = (slug: string) => {
     deployments: () => buildUrl(slug, "deployments"),
     agents: () => buildUrl(slug, "agents"),
     insights: () => buildUrl(slug, "insights"),
-    resources: () => buildUrl(slug, "resources"),
+    resources: () => resources(slug),
     settings: () => buildUrl(slug, "settings"),
   };
 };
+
+const resources = (workspaceSlug: string) => ({
+  baseUrl: () => buildUrl(workspaceSlug, "resources"),
+  list: () => buildUrl(workspaceSlug, "resources", "list"),
+  providers: () => buildUrl(workspaceSlug, "resources", "providers"),
+  groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
+  views: () => buildUrl(workspaceSlug, "resources", "views"),
+});
 
 type SystemParams = WorkspaceParams & {
   systemSlug: string;
