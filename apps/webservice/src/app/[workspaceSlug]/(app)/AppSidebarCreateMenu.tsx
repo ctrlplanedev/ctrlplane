@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import { CreateSessionDialog } from "~/app/terminal/CreateDialogSession";
+import { CreateSessionDialog } from "~/app/terminal/_components/CreateDialogSession";
 import { api } from "~/trpc/react";
 import { CreateDeploymentDialog } from "./_components/CreateDeployment";
 import { CreateReleaseDialog } from "./_components/CreateRelease";
