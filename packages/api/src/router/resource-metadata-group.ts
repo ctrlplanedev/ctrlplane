@@ -140,13 +140,15 @@ export const resourceMetadataGroupRouter = createTRPCRouter({
       const resourceMetadataAggBase = ctx.db
         .select({
           id: resource.id,
-          metadata: sql<Record<string, string>>`jsonb_object_agg(
+          metadata: sql<Record<string, string>>`COALESCE(jsonb_object_agg(
             ${resourceMetadata.key},
             ${resourceMetadata.value}
-          )`.as("metadata"),
+          ) FILTER (WHERE ${resourceMetadata.key} IS NOT NULL), '{}'::jsonb)`.as(
+            "metadata",
+          ),
         })
         .from(resource)
-        .innerJoin(
+        .leftJoin(
           resourceMetadata,
           and(
             eq(resource.id, resourceMetadata.resourceId),
