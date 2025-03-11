@@ -2,10 +2,16 @@
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 import { useInView } from "react-intersection-observer";
+import { isPresent } from "ts-is-present";
 
 import { Button } from "@ctrlplane/ui/button";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
@@ -39,6 +45,27 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     systemSlug: string;
   }>();
 
+  const { data: workspace, isLoading: isWorkspaceLoading } =
+    api.workspace.bySlug.useQuery(workspaceSlug);
+
+  const filter: ResourceCondition | undefined =
+    environment.resourceFilter != null || deployment.resourceFilter != null
+      ? {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.And,
+          conditions: [
+            environment.resourceFilter,
+            deployment.resourceFilter,
+          ].filter(isPresent),
+        }
+      : undefined;
+
+  const { data: resources, isLoading: isResourcesLoading } =
+    api.resource.byWorkspaceId.list.useQuery(
+      { workspaceId: workspace?.id ?? "", filter, limit: 0 },
+      { enabled: workspace != null && filter != null },
+    );
+
   const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
     api.release.blocked.useQuery([release.id]);
 
@@ -61,10 +88,21 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   const { setReleaseChannelId } = useReleaseChannelDrawer();
 
   const isLoading =
-    isStatusesLoading || isBlockedEnvsLoading || isApprovalLoading;
+    isStatusesLoading ||
+    isBlockedEnvsLoading ||
+    isApprovalLoading ||
+    isWorkspaceLoading ||
+    isResourcesLoading;
 
   if (isLoading)
     return <p className="text-xs text-muted-foreground">Loading...</p>;
+
+  if ((resources?.total ?? 0) === 0)
+    return (
+      <div className="text-center text-xs text-muted-foreground/70">
+        No resources
+      </div>
+    );
 
   const isAlreadyDeployed = statuses != null && statuses.length > 0;
 
