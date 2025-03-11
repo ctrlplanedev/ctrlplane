@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type PermissionsButtonProps = {
@@ -16,11 +17,16 @@ export const PermissionsButton: React.FC<PermissionsButtonProps> = ({
   const router = useRouter();
   const sync = api.resource.provider.managed.sync.useMutation();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const providersUrl = urls
+    .workspace(workspaceSlug)
+    .resources()
+    .providers()
+    .baseUrl();
 
   const handleClick = async () => {
     await sync
       .mutateAsync(resourceProviderId)
-      .then(() => router.push(`/${workspaceSlug}/resource-providers`));
+      .then(() => router.push(providersUrl));
   };
 
   return (

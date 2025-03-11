@@ -25,10 +25,24 @@ const workspace = (slug: string) => {
 const resources = (workspaceSlug: string) => ({
   baseUrl: () => buildUrl(workspaceSlug, "resources"),
   list: () => buildUrl(workspaceSlug, "resources", "list"),
-  providers: () => buildUrl(workspaceSlug, "resources", "providers"),
+  providers: () => providers(workspaceSlug),
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
   views: () => buildUrl(workspaceSlug, "resources", "views"),
 });
+
+const providers = (workspaceSlug: string) => {
+  const providersBase = [workspaceSlug, "resources", "providers"];
+  return {
+    baseUrl: () => buildUrl(...providersBase),
+    integrations: () => {
+      const integrationsBase = [...providersBase, "integrations"];
+      return {
+        baseUrl: () => buildUrl(...integrationsBase),
+        azure: () => buildUrl(...integrationsBase, "azure"),
+      };
+    },
+  };
+};
 
 type SystemParams = WorkspaceParams & {
   systemSlug: string;
