@@ -42,7 +42,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -85,7 +87,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -101,7 +105,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -143,7 +149,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["message"]
+                  "required": [
+                    "message"
+                  ]
                 }
               }
             }
@@ -159,7 +167,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -175,7 +185,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -191,7 +203,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -261,7 +275,11 @@
                     }
                   }
                 },
-                "required": ["systemId", "slug", "name"]
+                "required": [
+                  "systemId",
+                  "slug",
+                  "name"
+                ]
               }
             }
           }
@@ -292,7 +310,10 @@
                       "format": "uuid"
                     }
                   },
-                  "required": ["error", "id"]
+                  "required": [
+                    "error",
+                    "id"
+                  ]
                 }
               }
             }
@@ -308,7 +329,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -354,7 +377,9 @@
                       "example": "Environment not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -392,7 +417,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["systemId", "name"],
+                "required": [
+                  "systemId",
+                  "name"
+                ],
                 "properties": {
                   "directory": {
                     "type": "string",
@@ -473,7 +501,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -638,7 +668,11 @@
                     "type": "string"
                   }
                 },
-                "required": ["type", "name", "workspaceId"]
+                "required": [
+                  "type",
+                  "name",
+                  "workspaceId"
+                ]
               }
             }
           }
@@ -661,7 +695,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -699,7 +737,9 @@
                       "type": "boolean"
                     }
                   },
-                  "required": ["sucess"]
+                  "required": [
+                    "sucess"
+                  ]
                 }
               }
             }
@@ -715,7 +755,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -817,7 +859,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id"]
+                  "required": [
+                    "id"
+                  ]
                 }
               }
             }
@@ -849,7 +893,10 @@
                     "example": "resource-123"
                   }
                 },
-                "required": ["jobId", "resourceIdentifier"],
+                "required": [
+                  "jobId",
+                  "resourceIdentifier"
+                ],
                 "additionalProperties": false
               }
             }
@@ -943,7 +990,9 @@
       "post": {
         "summary": "Create a relationship between two resources",
         "operationId": "createResourceToResourceRelationship",
-        "tags": ["Resource Relationships"],
+        "tags": [
+          "Resource Relationships"
+        ],
         "security": [
           {
             "bearerAuth": []
@@ -1078,7 +1127,11 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["deploymentId", "name", "releaseFilter"],
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "releaseFilter"
+                ],
                 "properties": {
                   "deploymentId": {
                     "type": "string"
@@ -1129,7 +1182,12 @@
                       "additionalProperties": true
                     }
                   },
-                  "required": ["id", "deploymentId", "name", "createdAt"]
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
                 }
               }
             }
@@ -1145,7 +1203,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1161,7 +1221,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1180,7 +1242,10 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error", "id"]
+                  "required": [
+                    "error",
+                    "id"
+                  ]
                 }
               }
             }
@@ -1196,7 +1261,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1254,7 +1321,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["ready", "building", "failed"]
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
                   },
                   "message": {
                     "type": "string"
@@ -1318,7 +1389,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["ready", "building", "failed"]
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
                   },
                   "message": {
                     "type": "string"
@@ -1330,7 +1405,10 @@
                     }
                   }
                 },
-                "required": ["version", "deploymentId"]
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
               }
             }
           }
@@ -1388,7 +1466,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["resources"],
+                "required": [
+                  "resources"
+                ],
                 "properties": {
                   "resources": {
                     "type": "array",
@@ -1562,7 +1642,9 @@
                       "example": "Resource not found"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1689,7 +1771,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1717,7 +1801,9 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["success"],
+                  "required": [
+                    "success"
+                  ],
                   "properties": {
                     "success": {
                       "type": "boolean"
@@ -1744,7 +1830,9 @@
                       "type": "string"
                     }
                   },
-                  "required": ["error"]
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
@@ -1762,7 +1850,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["workspaceId", "resources"],
+                "required": [
+                  "workspaceId",
+                  "resources"
+                ],
                 "properties": {
                   "workspaceId": {
                     "type": "string",
@@ -2097,7 +2188,11 @@
                     "description": "The description of the system"
                   }
                 },
-                "required": ["workspaceId", "name", "slug"]
+                "required": [
+                  "workspaceId",
+                  "name",
+                  "slug"
+                ]
               }
             }
           }
@@ -2150,7 +2245,11 @@
                             }
                           }
                         },
-                        "required": ["code", "message", "path"]
+                        "required": [
+                          "code",
+                          "message",
+                          "path"
+                        ]
                       }
                     }
                   }
@@ -2162,7 +2261,9 @@
                         {
                           "code": "invalid_type",
                           "message": "Invalid input",
-                          "path": ["name"]
+                          "path": [
+                            "name"
+                          ]
                         }
                       ]
                     }
@@ -2293,7 +2394,11 @@
                       "type": "string"
                     }
                   },
-                  "required": ["id", "name", "workspaceId"]
+                  "required": [
+                    "id",
+                    "name",
+                    "workspaceId"
+                  ]
                 }
               }
             }
@@ -2309,6 +2414,62 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/{workspaceId}/resources/{filter}": {
+      "get": {
+        "summary": "Get resources by filter",
+        "operationId": "getResourcesByFilter",
+        "parameters": [
+          {
+            "name": "workspaceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID of the workspace"
+          },
+          {
+            "name": "filter",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter to apply to the resources"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Resource"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2395,7 +2556,12 @@
                       }
                     }
                   },
-                  "required": ["id", "identifier", "workspaceId", "providerId"]
+                  "required": [
+                    "id",
+                    "identifier",
+                    "workspaceId",
+                    "providerId"
+                  ]
                 }
               }
             }
@@ -2592,7 +2758,11 @@
                   },
                   "status": {
                     "type": "string",
-                    "enum": ["pending", "approved", "rejected"]
+                    "enum": [
+                      "pending",
+                      "approved",
+                      "rejected"
+                    ]
                   },
                   "approver": {
                     "type": "object",
@@ -2606,13 +2776,21 @@
                         "type": "string"
                       }
                     },
-                    "required": ["id", "name"]
+                    "required": [
+                      "id",
+                      "name"
+                    ]
                   }
                 },
-                "required": ["id", "status"]
+                "required": [
+                  "id",
+                  "status"
+                ]
               }
             },
-            "required": ["variables"]
+            "required": [
+              "variables"
+            ]
           }
         ]
       },
@@ -2645,7 +2823,11 @@
             "nullable": true
           }
         },
-        "required": ["id", "name", "slug"]
+        "required": [
+          "id",
+          "name",
+          "slug"
+        ]
       },
       "System": {
         "type": "object",
@@ -2673,7 +2855,12 @@
             "description": "The description of the system"
           }
         },
-        "required": ["id", "workspaceId", "name", "slug"]
+        "required": [
+          "id",
+          "workspaceId",
+          "name",
+          "slug"
+        ]
       },
       "Deployment": {
         "type": "object",
@@ -2782,12 +2969,19 @@
           },
           "approvalRequirement": {
             "type": "string",
-            "enum": ["manual", "automatic"],
+            "enum": [
+              "manual",
+              "automatic"
+            ],
             "description": "The approval requirement of the policy"
           },
           "successType": {
             "type": "string",
-            "enum": ["some", "all", "optional"],
+            "enum": [
+              "some",
+              "all",
+              "optional"
+            ],
             "description": "If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment"
           },
           "successMinimum": {
@@ -2809,7 +3003,10 @@
           },
           "releaseSequencing": {
             "type": "string",
-            "enum": ["wait", "cancel"],
+            "enum": [
+              "wait",
+              "cancel"
+            ],
             "description": "If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release"
           }
         },
@@ -2873,7 +3070,13 @@
             "nullable": true
           }
         },
-        "required": ["id", "systemId", "name", "createdAt", "directory"]
+        "required": [
+          "id",
+          "systemId",
+          "name",
+          "createdAt",
+          "directory"
+        ]
       },
       "Runbook": {
         "type": "object",
@@ -2894,7 +3097,12 @@
             "format": "uuid"
           }
         },
-        "required": ["id", "name", "systemId", "jobAgentId"]
+        "required": [
+          "id",
+          "name",
+          "systemId",
+          "jobAgentId"
+        ]
       },
       "Resource": {
         "type": "object",
@@ -3013,11 +3221,20 @@
             "type": "string"
           }
         },
-        "required": ["id", "status", "createdAt", "updatedAt", "jobAgentConfig"]
+        "required": [
+          "id",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "jobAgentConfig"
+        ]
       },
       "Variable": {
         "type": "object",
-        "required": ["key", "value"],
+        "required": [
+          "key",
+          "value"
+        ],
         "properties": {
           "key": {
             "type": "string"
