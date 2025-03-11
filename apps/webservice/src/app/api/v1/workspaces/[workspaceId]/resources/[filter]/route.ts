@@ -21,26 +21,33 @@ export const GET = request()
   )
   .handle<unknown, { params: { workspaceId: string; filter: string } }>(
     async (_, { params }) => {
-      const filterJson = JSON.parse(params.filter);
-      const parseFilterResult = resourceCondition.safeParse(filterJson);
-      if (parseFilterResult.error != null)
+      try {
+        const filterJson = JSON.parse(params.filter);
+        const parseFilterResult = resourceCondition.safeParse(filterJson);
+        if (parseFilterResult.error != null)
+          return NextResponse.json(
+            { error: parseFilterResult.error.message },
+            { status: httpStatus.BAD_REQUEST },
+          );
+
+        const { data: filter } = parseFilterResult;
+
+        const resources = await db
+          .select()
+          .from(SCHEMA.resource)
+          .where(
+            and(
+              eq(SCHEMA.resource.workspaceId, params.workspaceId),
+              SCHEMA.resourceMatchesMetadata(db, filter),
+            ),
+          );
+
+        return NextResponse.json(resources);
+      } catch (error) {
         return NextResponse.json(
-          { error: parseFilterResult.error.message },
+          { error: error instanceof Error ? error.message : "Unknown error" },
           { status: httpStatus.BAD_REQUEST },
         );
-
-      const { data: filter } = parseFilterResult;
-
-      const resources = await db
-        .select()
-        .from(SCHEMA.resource)
-        .where(
-          and(
-            eq(SCHEMA.resource.workspaceId, params.workspaceId),
-            SCHEMA.resourceMatchesMetadata(db, filter),
-          ),
-        );
-
-      return NextResponse.json(resources);
+      }
     },
   );
