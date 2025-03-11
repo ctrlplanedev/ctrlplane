@@ -29,6 +29,7 @@ import {
 import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/CreateDeployment";
 import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(appv2)/_components/system/DeleteSystemDialog";
 import { api } from "~/trpc/react";
+import { urls } from "../../../../../../../urls";
 import { SystemDeploymentSkeleton } from "./SystemDeploymentSkeleton";
 import DeploymentTable from "./TableDeployments";
 
@@ -54,12 +55,16 @@ export const SystemDeploymentTable: React.FC<{
 
   const numEnvironments = numNestedEnvironments + rootEnvironments.length;
 
+  const systemUrls = urls.workspace(workspace.slug).system(system.slug);
+  const deploymentsUrl = systemUrls.deployments();
+  const environmentsUrl = systemUrls.environments();
+
   return (
     <div key={system.id} className="space-y-4">
       <div className="flex w-full items-center justify-between">
         <Link
           className="flex items-center gap-2 text-lg font-bold hover:text-blue-300"
-          href={`/${workspace.slug}/systems/${system.slug}`}
+          href={systemUrls.baseUrl()}
         >
           {system.name}
         </Link>
@@ -67,12 +72,19 @@ export const SystemDeploymentTable: React.FC<{
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
-                <Badge
-                  variant="outline"
-                  className="flex items-center gap-1 rounded-full font-normal text-muted-foreground"
+                <Link
+                  href={deploymentsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <IconRocket className="size-3" /> {system.deployments.length}
-                </Badge>
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1 rounded-full font-normal text-muted-foreground"
+                  >
+                    <IconRocket className="size-3" />{" "}
+                    {system.deployments.length}
+                  </Badge>
+                </Link>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Deployments</p>
@@ -82,12 +94,18 @@ export const SystemDeploymentTable: React.FC<{
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
-                <Badge
-                  variant="outline"
-                  className="flex items-center gap-1 rounded-full font-normal text-muted-foreground"
+                <Link
+                  href={environmentsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <IconPlant className="size-3" /> {numEnvironments}
-                </Badge>
+                  <Badge
+                    variant="outline"
+                    className="flex items-center gap-1 rounded-full font-normal text-muted-foreground"
+                  >
+                    <IconPlant className="size-3" /> {numEnvironments}
+                  </Badge>
+                </Link>
               </TooltipTrigger>
               <TooltipContent>
                 <p>Environments</p>
