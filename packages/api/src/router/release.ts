@@ -1,3 +1,4 @@
+import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
@@ -45,6 +46,10 @@ import {
   isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
+import {
+  ComparisonOperator,
+  FilterType,
+} from "@ctrlplane/validators/conditions";
 import {
   activeStatus,
   jobCondition,
@@ -566,6 +571,12 @@ export const releaseRouter = createTRPCRouter({
 
         if (rel == null) return null;
 
+        const dep = await ctx.db
+          .select()
+          .from(deployment)
+          .where(eq(deployment.id, deploymentId))
+          .then(takeFirst);
+
         if (env.environment.resourceFilter == null)
           return {
             ...rel.release,
@@ -573,13 +584,22 @@ export const releaseRouter = createTRPCRouter({
             resourceCount: 0,
           };
 
+        const resourceFilter: ResourceCondition = {
+          type: FilterType.Comparison,
+          operator: ComparisonOperator.And,
+          conditions: [
+            env.environment.resourceFilter,
+            dep.resourceFilter,
+          ].filter(isPresent),
+        };
+
         const resourceCount = await ctx.db
           .select({ count: count() })
           .from(resource)
           .where(
             and(
               eq(resource.workspaceId, env.system.workspaceId),
-              resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
+              resourceMatchesMetadata(ctx.db, resourceFilter),
               isNull(resource.deletedAt),
             ),
           )
