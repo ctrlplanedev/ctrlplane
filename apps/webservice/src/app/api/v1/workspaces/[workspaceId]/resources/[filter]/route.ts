@@ -40,7 +40,8 @@ export const GET = request()
               eq(SCHEMA.resource.workspaceId, params.workspaceId),
               SCHEMA.resourceMatchesMetadata(db, filter),
             ),
-          );
+          )
+          .limit(100);
 
         return NextResponse.json(resources);
       } catch (error) {
