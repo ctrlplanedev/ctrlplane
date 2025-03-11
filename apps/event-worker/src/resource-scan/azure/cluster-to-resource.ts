@@ -2,6 +2,7 @@ import type {
   ContainerServiceClient,
   ManagedCluster,
 } from "@azure/arm-containerservice";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 import * as yaml from "js-yaml";
 import { z } from "zod";
@@ -59,7 +60,7 @@ const getCertificateAuthorityData = async (
 
 export const convertManagedClusterToResource = async (
   workspaceId: string,
-  providerId: string,
+  provider: SCHEMA.ResourceProviderAzure,
   cluster: ManagedCluster,
   client: ContainerServiceClient,
 ): Promise<ClusterResource | null> => {
@@ -77,14 +78,20 @@ export const convertManagedClusterToResource = async (
   const ca = await getCertificateAuthorityData(cluster, resourceGroup, client);
   return {
     workspaceId,
-    providerId,
+    providerId: provider.resourceProviderId,
     name: cluster.name,
     identifier: cluster.id,
     version: "kubernetes/v1",
     kind: "ClusterAPI",
     config: {
       name: cluster.name,
-      auth: { method: "azure/aks", clusterName: cluster.name, resourceGroup },
+      auth: {
+        method: "azure/aks",
+        clusterName: cluster.name,
+        resourceGroup,
+        tenantId: provider.tenantId,
+        subscriptionId: provider.subscriptionId,
+      },
       status: cluster.provisioningState ?? "UNKNOWN",
       server: { ...ca, endpoint: ca?.endpoint ?? cluster.fqdn ?? "" },
     },

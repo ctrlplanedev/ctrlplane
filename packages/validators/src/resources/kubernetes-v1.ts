@@ -30,6 +30,8 @@ const clusterConfig = z.object({
       method: z.literal("azure/aks"),
       resourceGroup: z.string(),
       clusterName: z.string(),
+      tenantId: z.string(),
+      subscriptionId: z.string(),
     }),
     z.object({
       method: z.literal("exec"),
