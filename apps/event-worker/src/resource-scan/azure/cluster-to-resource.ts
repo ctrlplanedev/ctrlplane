@@ -61,6 +61,7 @@ const getCertificateAuthorityData = async (
 export const convertManagedClusterToResource = async (
   workspaceId: string,
   provider: SCHEMA.ResourceProviderAzure,
+  tenantId: string,
   cluster: ManagedCluster,
   client: ContainerServiceClient,
 ): Promise<ClusterResource | null> => {
@@ -89,7 +90,7 @@ export const convertManagedClusterToResource = async (
         method: "azure/aks",
         clusterName: cluster.name,
         resourceGroup,
-        tenantId: provider.tenantId,
+        tenantId,
         subscriptionId: provider.subscriptionId,
       },
       status: cluster.provisioningState ?? "UNKNOWN",

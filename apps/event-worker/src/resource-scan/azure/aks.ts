@@ -50,6 +50,7 @@ export const getAksResources = async (
     convertManagedClusterToResource(
       workspace.id,
       azureProvider,
+      tenant.tenantId,
       cluster,
       client,
     ),
