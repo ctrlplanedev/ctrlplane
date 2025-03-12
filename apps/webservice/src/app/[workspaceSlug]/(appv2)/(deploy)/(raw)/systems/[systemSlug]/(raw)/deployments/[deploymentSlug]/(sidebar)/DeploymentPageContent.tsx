@@ -341,7 +341,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     </TableCell>
                     {environments.map((env) => (
                       <TableCell
-                        className="h-[70px] w-[220px] border-l px-3 py-2"
+                        className="h-[70px] w-[220px] border-l px-2 py-0"
                         onClick={(e) => e.stopPropagation()}
                         key={env.id}
                       >
