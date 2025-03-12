@@ -80,9 +80,10 @@ If you would like to self-host Plane, please see our [deployment guide](https://
 5. Copy `.env.example` to `.env` files available in various folders.
 6. Run the docker command to initiate services:
    ```
-   docker compose -f docker-compose.yaml up -d
+   docker compose -f docker-compose.dev.yaml up -d
    ```
-7. Run `pnpm db:push` to push the schema to the database.
+7. Run `pnpm build` so that it can find the DB migrations???
+8. Run `pnpm db:push` to push the schema to the database.
 8. Run `pnpm dev` to start the development server.
 
 You are ready to make changes to the code. Do not forget to refresh the browser
