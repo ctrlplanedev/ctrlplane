@@ -104,6 +104,8 @@ export const convertManagedClusterToResource = async (
       [ReservedMetadataKey.KubernetesFlavor]: "aks",
       [ReservedMetadataKey.KubernetesVersion]: cluster.currentKubernetesVersion,
 
+      "azure/tenant-id": tenantId,
+      "azure/subscription-id": provider.subscriptionId,
       "azure/self-link": cluster.id,
       "azure/resource-group": cluster.nodeResourceGroup,
       "azure/location": cluster.location,
