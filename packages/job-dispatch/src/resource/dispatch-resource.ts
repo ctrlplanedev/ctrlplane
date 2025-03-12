@@ -14,7 +14,7 @@ import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { handleEvent } from "../events/index.js";
 import { dispatchReleaseJobTriggers } from "../job-dispatch.js";
@@ -155,7 +155,7 @@ const getEnvironmentDeployments = (db: Tx, envId: string) =>
 const getNotInSystemFilter = async (
   systemId: string,
 ): Promise<ResourceCondition | null> => {
-  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
+  const hasFilter = isNotNull(SCHEMA.environment.resourceSelector);
   const system = await db.query.system.findFirst({
     where: eq(SCHEMA.system.id, systemId),
     with: { environments: { where: hasFilter } },
@@ -163,12 +163,12 @@ const getNotInSystemFilter = async (
   if (system == null) return null;
 
   const filters = system.environments
-    .map((e) => e.resourceFilter)
+    .map((e) => e.resourceSelector)
     .filter(isPresent);
   if (filters.length === 0) return null;
 
   return {
-    type: ResourceFilterType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ComparisonOperator.Or,
     not: true,
     conditions: filters,

@@ -23,7 +23,7 @@ import {
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/react";
 import { ResourceIcon } from "./_components/ResourceIcon";
@@ -159,7 +159,7 @@ export const AppSidebarResourcesPopover: React.FC<{ workspace: Workspace }> = ({
                       operator: ComparisonOperator.And,
                       conditions: [
                         {
-                          type: ResourceFilterType.Kind,
+                          type: ResourceConditionType.Kind,
                           value: kind,
                           operator: "equals",
                         },

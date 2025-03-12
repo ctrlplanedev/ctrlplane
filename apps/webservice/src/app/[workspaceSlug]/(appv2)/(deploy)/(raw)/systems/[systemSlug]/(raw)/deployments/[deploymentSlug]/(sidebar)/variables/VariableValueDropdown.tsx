@@ -58,7 +58,7 @@ import {
 
 const editVariableValueFormSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
-  resourceFilter: resourceCondition
+  resourceSelector: resourceCondition
     .nullish()
     .refine((data) => data == null || isValidResourceCondition(data), {
       message: "Invalid resource condition",
@@ -148,7 +148,7 @@ const EditVariableValueDialog: React.FC<{
 
             <FormField
               control={form.control}
-              name="resourceFilter"
+              name="resourceSelector"
               render={({ field: { value, onChange } }) => (
                 <FormItem>
                   <FormLabel>Resource filter</FormLabel>
@@ -182,7 +182,7 @@ const EditVariableValueDialog: React.FC<{
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => form.setValue("resourceFilter", null)}
+                onClick={() => form.setValue("resourceSelector", null)}
               >
                 Clear filter
               </Button>

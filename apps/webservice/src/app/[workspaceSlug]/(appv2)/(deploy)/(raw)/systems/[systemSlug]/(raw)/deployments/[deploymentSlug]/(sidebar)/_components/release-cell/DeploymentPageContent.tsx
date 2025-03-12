@@ -88,8 +88,8 @@ const EnvHeader: React.FC<EnvHeaderProps> = ({
   deployment,
   workspace,
 }) => {
-  const { resourceFilter: envResourceFilter } = environment;
-  const { resourceFilter: deploymentResourceFilter } = deployment;
+  const { resourceSelector: envResourceFilter } = environment;
+  const { resourceSelector: deploymentResourceFilter } = deployment;
 
   const filter: ResourceCondition = {
     type: FilterType.Comparison,
@@ -131,15 +131,15 @@ const DirectoryHeader: React.FC<DirectoryHeaderProps> = ({
   directory,
   workspace,
 }) => {
-  const resourceFilters = directory.environments
-    .map((env) => env.resourceFilter)
+  const resourceSelectors = directory.environments
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
   const filter: ResourceCondition | undefined =
-    resourceFilters.length > 0
+    resourceSelectors.length > 0
       ? {
           type: FilterType.Comparison,
           operator: ComparisonOperator.Or,
-          conditions: resourceFilters,
+          conditions: resourceSelectors,
         }
       : undefined;
 

@@ -267,7 +267,7 @@
                     "description": "The timeout for the deployment",
                     "example": 60
                   },
-                  "resourceFilter": {
+                  "resourceSelector": {
                     "type": "object",
                     "description": "The resource filter for the deployment",
                     "example": {
@@ -437,7 +437,7 @@
                   "description": {
                     "type": "string"
                   },
-                  "resourceFilter": {
+                  "resourceSelector": {
                     "type": "object",
                     "additionalProperties": true
                   },
@@ -3044,7 +3044,7 @@
             "format": "uuid",
             "nullable": true
           },
-          "resourceFilter": {
+          "resourceSelector": {
             "type": "object",
             "nullable": true,
             "additionalProperties": true

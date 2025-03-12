@@ -27,7 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import { api } from "~/trpc/server";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
@@ -112,7 +112,7 @@ export default async function ResourceProvidersPage(props: {
 
   const providers = resourceProviders.map((provider) => {
     const filter: ResourceCondition = {
-      type: ResourceFilterType.Provider,
+      type: ResourceConditionType.Provider,
       value: provider.id,
       operator: "equals",
     };

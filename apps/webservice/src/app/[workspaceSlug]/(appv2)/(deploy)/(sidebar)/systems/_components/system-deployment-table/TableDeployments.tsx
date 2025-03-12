@@ -30,7 +30,7 @@ const EnvHeader: React.FC<{
   environment: SCHEMA.Environment;
   workspace: SCHEMA.Workspace;
 }> = ({ environment: env, workspace }) => {
-  const filter = env.resourceFilter ?? undefined;
+  const filter = env.resourceSelector ?? undefined;
   const { data, isLoading } = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId: workspace.id, filter, limit: 0 },
     { enabled: filter != null },
@@ -64,15 +64,15 @@ const DirectoryHeader: React.FC<{
   };
   workspace: SCHEMA.Workspace;
 }> = ({ directory, workspace }) => {
-  const resourceFilters = directory.environments
-    .map((env) => env.resourceFilter)
+  const resourceSelectors = directory.environments
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
   const filter: ResourceCondition | undefined =
-    resourceFilters.length > 0
+    resourceSelectors.length > 0
       ? {
           type: FilterType.Comparison,
           operator: ComparisonOperator.Or,
-          conditions: resourceFilters,
+          conditions: resourceSelectors,
         }
       : undefined;
 

@@ -49,13 +49,13 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     api.workspace.bySlug.useQuery(workspaceSlug);
 
   const filter: ResourceCondition | undefined =
-    environment.resourceFilter != null
+    environment.resourceSelector != null
       ? {
           type: FilterType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
-            environment.resourceFilter,
-            deployment.resourceFilter,
+            environment.resourceSelector,
+            deployment.resourceSelector,
           ].filter(isPresent),
         }
       : undefined;

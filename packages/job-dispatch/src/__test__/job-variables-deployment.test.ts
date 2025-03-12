@@ -86,19 +86,19 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
     id: "0",
     variableId: "0",
     value: "test1",
-    resourceFilter: null,
+    resourceSelector: null,
   },
   {
     id: "1",
     variableId: "0",
     value: "test2",
-    resourceFilter: null,
+    resourceSelector: null,
   },
   {
     id: "2",
     variableId: "0",
     value: "test3",
-    resourceFilter: null,
+    resourceSelector: null,
   },
 ];
 
@@ -249,7 +249,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [
@@ -319,7 +319,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [
@@ -386,7 +386,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [
@@ -453,7 +453,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [
@@ -520,7 +520,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [
@@ -617,7 +617,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [
@@ -714,7 +714,7 @@ describe("job-variables-deployment", () => {
       description: null,
       systemId: "0",
       policyId: "0",
-      resourceFilter: null,
+      resourceSelector: null,
       directory: "",
       createdAt: new Date(),
       environments: [

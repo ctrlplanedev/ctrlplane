@@ -6,25 +6,25 @@ import { and, eq, inArray, isNotNull, isNull, ne } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { ComparisonOperator } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 export const getEventsForEnvironmentDeleted = async (
   environment: SCHEMA.Environment,
 ): Promise<HookEvent[]> => {
-  if (environment.resourceFilter == null) return [];
+  if (environment.resourceSelector == null) return [];
   const resources = await db
     .select()
     .from(SCHEMA.resource)
     .where(
       and(
-        SCHEMA.resourceMatchesMetadata(db, environment.resourceFilter),
+        SCHEMA.resourceMatchesMetadata(db, environment.resourceSelector),
         isNull(SCHEMA.resource.deletedAt),
       ),
     );
   if (resources.length === 0) return [];
 
   const checks = and(
-    isNotNull(SCHEMA.environment.resourceFilter),
+    isNotNull(SCHEMA.environment.resourceSelector),
     ne(SCHEMA.environment.id, environment.id),
   );
   const system = await db.query.system.findFirst({
@@ -34,11 +34,11 @@ export const getEventsForEnvironmentDeleted = async (
   if (system == null) return [];
 
   const envFilters = system.environments
-    .map((e) => e.resourceFilter)
+    .map((e) => e.resourceSelector)
     .filter(isPresent);
 
   const removedFromSystemFilter: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ComparisonOperator.Or,
     not: true,
     conditions: envFilters,

@@ -34,7 +34,7 @@ export const openapi: Swagger.SwaggerV3 = {
                   description: {
                     type: "string",
                   },
-                  resourceFilter: {
+                  resourceSelector: {
                     type: "object",
                     additionalProperties: true,
                   },

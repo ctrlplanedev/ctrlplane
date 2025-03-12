@@ -93,21 +93,21 @@ const ResourceViewsCombobox: React.FC<{
 };
 
 const filterForm = z.object({
-  resourceFilter: resourceCondition.optional(),
+  resourceSelector: resourceCondition.optional(),
 });
 
 const getFilter = (
-  resourceFilter: ResourceCondition | null,
+  resourceSelector: ResourceCondition | null,
 ): ResourceCondition | undefined => {
-  if (resourceFilter == null) return undefined;
-  if (!isComparisonCondition(resourceFilter))
+  if (resourceSelector == null) return undefined;
+  if (!isComparisonCondition(resourceSelector))
     return {
       type: FilterType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
-      conditions: [resourceFilter],
+      conditions: [resourceSelector],
     };
-  return resourceFilter;
+  return resourceSelector;
 };
 
 export const EditFilterForm: React.FC<{
@@ -117,12 +117,14 @@ export const EditFilterForm: React.FC<{
   const update = api.environment.update.useMutation();
   const form = useForm({
     schema: filterForm,
-    defaultValues: { resourceFilter: getFilter(environment.resourceFilter) },
+    defaultValues: {
+      resourceSelector: getFilter(environment.resourceSelector),
+    },
   });
 
-  const { resourceFilter } = form.watch();
+  const { resourceSelector } = form.watch();
 
-  const filter = resourceFilter ?? undefined;
+  const filter = resourceSelector ?? undefined;
   const resources = api.resource.byWorkspaceId.list.useQuery(
     { workspaceId, filter },
     { enabled: workspaceId !== "" },
@@ -134,7 +136,7 @@ export const EditFilterForm: React.FC<{
     update
       .mutateAsync({
         id: environment.id,
-        data: { ...data, resourceFilter: resourceFilter ?? null },
+        data: { ...data, resourceSelector: resourceSelector ?? null },
       })
       .then(() => form.reset(data))
       .then(() => utils.environment.bySystemId.invalidate(environment.systemId))
@@ -147,7 +149,7 @@ export const EditFilterForm: React.FC<{
         <div className="space-y-2">
           <FormField
             control={form.control}
-            name="resourceFilter"
+            name="resourceSelector"
             render={({ field: { onChange } }) => (
               <FormItem>
                 <FormControl>
@@ -157,7 +159,7 @@ export const EditFilterForm: React.FC<{
                       onChange={onChange}
                     />
                     <ResourceConditionRender
-                      condition={resourceFilter ?? defaultCondition}
+                      condition={resourceSelector ?? defaultCondition}
                       onChange={onChange}
                     />
                   </>
@@ -179,12 +181,12 @@ export const EditFilterForm: React.FC<{
             >
               Save
             </Button>
-            {resourceFilter != null && (
+            {resourceSelector != null && (
               <Button
                 variant="outline"
                 type="button"
                 onClick={() =>
-                  form.setValue("resourceFilter", undefined, {
+                  form.setValue("resourceSelector", undefined, {
                     shouldValidate: true,
                     shouldDirty: true,
                     shouldTouch: true,
@@ -197,7 +199,7 @@ export const EditFilterForm: React.FC<{
           </div>
         </div>
 
-        {resourceFilter != null &&
+        {resourceSelector != null &&
           resources.data != null &&
           resources.data.total > 0 && (
             <Card className="rounded-md p-0">

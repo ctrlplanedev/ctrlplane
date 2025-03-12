@@ -84,15 +84,15 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
 
   const envsWithFilter =
     system?.environments
-      .filter((e) => e.resourceFilter != null)
-      .map((e) => ({ ...e, resourceFilter: e.resourceFilter! })) ?? [];
+      .filter((e) => e.resourceSelector != null)
+      .map((e) => ({ ...e, resourceSelector: e.resourceSelector! })) ?? [];
 
-  const resourceFilter = deployment.resourceFilter ?? undefined;
+  const resourceSelector = deployment.resourceSelector ?? undefined;
   const timeout =
     deployment.timeout != null
       ? prettyMilliseconds(deployment.timeout)
       : undefined;
-  const defaultValues = { ...deployment, resourceFilter, timeout };
+  const defaultValues = { ...deployment, resourceSelector, timeout };
   const form = useForm({ schema, defaultValues, mode: "onSubmit" });
   const { handleSubmit, setError } = form;
 
@@ -101,14 +101,14 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   const updateDeployment = api.deployment.update.useMutation();
   const onSubmit = handleSubmit((data) => {
     const filter =
-      data.resourceFilter == null || isEmptyCondition(data.resourceFilter)
+      data.resourceSelector == null || isEmptyCondition(data.resourceSelector)
         ? null
-        : data.resourceFilter;
+        : data.resourceSelector;
     const timeout =
       data.timeout != null && data.timeout !== ""
         ? ms(data.timeout) / 1000
         : null;
-    const updates = { ...data, resourceFilter: filter, timeout };
+    const updates = { ...data, resourceSelector: filter, timeout };
 
     updateDeployment
       .mutateAsync({ id: deployment.id, data: updates })
@@ -261,7 +261,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
           />
           <FormField
             control={form.control}
-            name="resourceFilter"
+            name="resourceSelector"
             render={({ field: { value, onChange } }) => (
               <FormItem>
                 <FormLabel>Resource Filter</FormLabel>
@@ -285,7 +285,7 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
                   {envsWithFilter.length > 0 && value != null && (
                     <DeploymentResourcesDialog
                       environments={envsWithFilter}
-                      resourceFilter={value}
+                      resourceSelector={value}
                       workspaceId={workspaceId}
                     />
                   )}

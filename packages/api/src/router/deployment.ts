@@ -596,7 +596,7 @@ export const deploymentRouter = createTRPCRouter({
         .where(
           and(
             eq(system.workspaceId, tg.workspaceId),
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
           ),
         );
 
@@ -610,7 +610,7 @@ export const deploymentRouter = createTRPCRouter({
             .leftJoin(release, eq(release.deploymentId, deployment.id))
             .innerJoin(
               resource,
-              resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
+              resourceMatchesMetadata(ctx.db, env.environment.resourceSelector),
             )
             .leftJoin(
               releaseJobTrigger,

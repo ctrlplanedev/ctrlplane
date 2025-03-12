@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 import {
-  ResourceFilterType,
+  ResourceConditionType,
   ResourceOperator,
 } from "@ctrlplane/validators/resources";
 
@@ -35,10 +35,10 @@ export const SystemActionsDropdown: React.FC<SystemActionsDropdownProps> = ({
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const envFilters = system.environments
-    .map((env) => env.resourceFilter)
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
   const filter: ResourceCondition = {
-    type: ResourceFilterType.Comparison,
+    type: ResourceConditionType.Comparison,
     operator: ResourceOperator.Or,
     conditions: envFilters,
   };

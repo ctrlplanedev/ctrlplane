@@ -228,14 +228,14 @@ export const systemRouter = createTRPCRouter({
         .where(
           and(
             eq(environment.systemId, input.systemId),
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
           ),
         );
 
       const filter: ResourceCondition = {
         type: FilterType.Comparison,
         operator: ComparisonOperator.Or,
-        conditions: envsWithFilter.map((env) => env.resourceFilter!),
+        conditions: envsWithFilter.map((env) => env.resourceSelector!),
       };
 
       const itemsPromise = ctx.db

@@ -24,10 +24,10 @@ const EnvironmentHealth: React.FC<EnvironmentHealthProps> = ({
   const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
     {
       workspaceId: environment.system.workspaceId,
-      filter: environment.resourceFilter ?? undefined,
+      filter: environment.resourceSelector ?? undefined,
       limit: 0,
     },
-    { enabled: environment.resourceFilter != null },
+    { enabled: environment.resourceSelector != null },
   );
 
   const unhealthyResourcesQ = api.environment.stats.unhealthyResources.useQuery(

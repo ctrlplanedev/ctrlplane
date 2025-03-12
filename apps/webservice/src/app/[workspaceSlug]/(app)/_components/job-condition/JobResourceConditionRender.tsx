@@ -21,7 +21,7 @@ import {
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
-import { ResourceFilterType } from "@ctrlplane/validators/resources";
+import { ResourceConditionType } from "@ctrlplane/validators/resources";
 
 import type { JobConditionRenderProps } from "./job-condition-props";
 import { api } from "~/trpc/react";
@@ -46,7 +46,7 @@ export const JobResourceConditionRender: React.FC<
   const workspace = workspaceQ.data;
 
   const searchFilter: ResourceCondition = {
-    type: ResourceFilterType.Name,
+    type: ResourceConditionType.Name,
     operator: ColumnOperator.Contains,
     value: searchDebounced,
   };
@@ -57,7 +57,7 @@ export const JobResourceConditionRender: React.FC<
   );
   const system = systemQ.data;
   const envFilters =
-    system?.environments.map((env) => env.resourceFilter).filter(isPresent) ??
+    system?.environments.map((env) => env.resourceSelector).filter(isPresent) ??
     [];
 
   const systemFilter: ResourceCondition = {

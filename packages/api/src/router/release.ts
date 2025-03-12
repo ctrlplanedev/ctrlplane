@@ -577,19 +577,19 @@ export const releaseRouter = createTRPCRouter({
           .where(eq(deployment.id, deploymentId))
           .then(takeFirst);
 
-        if (env.environment.resourceFilter == null)
+        if (env.environment.resourceSelector == null)
           return {
             ...rel.release,
             approval: rel.environment_policy_approval,
             resourceCount: 0,
           };
 
-        const resourceFilter: ResourceCondition = {
+        const resourceSelector: ResourceCondition = {
           type: FilterType.Comparison,
           operator: ComparisonOperator.And,
           conditions: [
-            env.environment.resourceFilter,
-            dep.resourceFilter,
+            env.environment.resourceSelector,
+            dep.resourceSelector,
           ].filter(isPresent),
         };
 
@@ -599,7 +599,7 @@ export const releaseRouter = createTRPCRouter({
           .where(
             and(
               eq(resource.workspaceId, env.system.workspaceId),
-              resourceMatchesMetadata(ctx.db, resourceFilter),
+              resourceMatchesMetadata(ctx.db, resourceSelector),
               isNull(resource.deletedAt),
             ),
           )

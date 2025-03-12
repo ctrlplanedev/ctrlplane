@@ -27,7 +27,7 @@ type ResourceDeploymentRowProps = {
 };
 
 const getFilter = (resourceId: string, deploymentId: string): JobCondition => {
-  const resourceFilter: JobCondition = {
+  const resourceSelector: JobCondition = {
     type: JobFilterType.JobResource,
     operator: ColumnOperator.Equals,
     value: resourceId,
@@ -42,7 +42,7 @@ const getFilter = (resourceId: string, deploymentId: string): JobCondition => {
   return {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [resourceFilter, deploymentFilter],
+    conditions: [resourceSelector, deploymentFilter],
   };
 };
 

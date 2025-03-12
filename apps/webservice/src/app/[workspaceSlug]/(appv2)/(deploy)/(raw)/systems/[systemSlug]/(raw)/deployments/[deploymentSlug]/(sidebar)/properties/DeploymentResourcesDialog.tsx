@@ -32,26 +32,27 @@ import { api } from "~/trpc/react";
 type Environment = {
   id: string;
   name: string;
-  resourceFilter: ResourceCondition;
+  resourceSelector: ResourceCondition;
 };
 type DeploymentResourcesDialogProps = {
   environments: Environment[];
-  resourceFilter: ResourceCondition;
+  resourceSelector: ResourceCondition;
   workspaceId: string;
 };
 
 export const DeploymentResourcesDialog: React.FC<
   DeploymentResourcesDialogProps
-> = ({ environments, resourceFilter, workspaceId }) => {
+> = ({ environments, resourceSelector, workspaceId }) => {
   const [selectedEnvironment, setSelectedEnvironment] =
     useState<Environment | null>(environments[0] ?? null);
 
   const filter: ResourceCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [selectedEnvironment?.resourceFilter, resourceFilter].filter(
-      isPresent,
-    ),
+    conditions: [
+      selectedEnvironment?.resourceSelector,
+      resourceSelector,
+    ].filter(isPresent),
   };
   const isFilterValid = isValidResourceCondition(filter);
 
@@ -71,7 +72,7 @@ export const DeploymentResourcesDialog: React.FC<
           variant="outline"
           className="flex items-center gap-2"
           type="button"
-          disabled={!isValidResourceCondition(resourceFilter)}
+          disabled={!isValidResourceCondition(resourceSelector)}
         >
           <IconFilter className="h-4 w-4" /> View Resources
         </Button>

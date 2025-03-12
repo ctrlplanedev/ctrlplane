@@ -32,7 +32,7 @@ export const environmentStatsRouter = createTRPCRouter({
         .where(eq(SCHEMA.environment.id, input))
         .then(takeFirstOrNull);
 
-      if (environment?.resourceFilter == null) return [];
+      if (environment?.resourceSelector == null) return [];
 
       const statusRankSubquery = ctx.db
         .select({
@@ -86,7 +86,10 @@ export const environmentStatsRouter = createTRPCRouter({
                 .limit(1),
             ),
             isNull(SCHEMA.resource.deletedAt),
-            SCHEMA.resourceMatchesMetadata(ctx.db, environment.resourceFilter),
+            SCHEMA.resourceMatchesMetadata(
+              ctx.db,
+              environment.resourceSelector,
+            ),
           ),
         );
     }),

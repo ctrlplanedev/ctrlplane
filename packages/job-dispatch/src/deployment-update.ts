@@ -43,7 +43,7 @@ const moveRunbooksLinkedToHooksToNewSystem = async (
 };
 
 const getResourcesInNewSystem = async (deployment: SCHEMA.Deployment) => {
-  const hasFilter = isNotNull(SCHEMA.environment.resourceFilter);
+  const hasFilter = isNotNull(SCHEMA.environment.resourceSelector);
   const newSystem = await db.query.system.findFirst({
     where: eq(SCHEMA.system.id, deployment.systemId),
     with: { environments: { where: hasFilter } },
@@ -52,7 +52,7 @@ const getResourcesInNewSystem = async (deployment: SCHEMA.Deployment) => {
   if (newSystem == null) return [];
 
   const filters = newSystem.environments
-    .map((env) => env.resourceFilter)
+    .map((env) => env.resourceSelector)
     .filter(isPresent);
 
   if (filters.length === 0) return [];
@@ -111,7 +111,7 @@ const handleDeploymentFilterChanged = async (
   const isInSystem: ResourceCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.Or,
-    conditions: environments.map((e) => e.resourceFilter).filter(isPresent),
+    conditions: environments.map((e) => e.resourceSelector).filter(isPresent),
   };
 
   const oldResourcesFilter: ResourceCondition = {
@@ -123,7 +123,7 @@ const handleDeploymentFilterChanged = async (
   const newResourcesFilter: ResourceCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [deployment.resourceFilter, isInSystem].filter(isPresent),
+    conditions: [deployment.resourceSelector, isInSystem].filter(isPresent),
   };
 
   const oldResources = await db.query.resource.findMany({
@@ -193,11 +193,14 @@ export const updateDeployment = async (
     );
 
   if (
-    !_.isEqual(prevDeployment.resourceFilter, updatedDeployment.resourceFilter)
+    !_.isEqual(
+      prevDeployment.resourceSelector,
+      updatedDeployment.resourceSelector,
+    )
   )
     await handleDeploymentFilterChanged(
       updatedDeployment,
-      prevDeployment.resourceFilter,
+      prevDeployment.resourceSelector,
       userId,
     );
 

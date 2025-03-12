@@ -241,18 +241,18 @@ export const environmentRouter = createTRPCRouter({
         .returning()
         .then(takeFirst);
 
-      const { resourceFilter } = input.data;
+      const { resourceSelector } = input.data;
       const isUpdatingResourceFilter =
-        resourceFilter != null || oldEnv.environment.resourceFilter != null;
+        resourceSelector != null || oldEnv.environment.resourceSelector != null;
       if (isUpdatingResourceFilter) {
         const hasResourceFiltersChanged = !_.isEqual(
-          oldEnv.environment.resourceFilter,
-          resourceFilter,
+          oldEnv.environment.resourceSelector,
+          resourceSelector,
         );
 
         if (hasResourceFiltersChanged) {
           const isOtherEnv = and(
-            isNotNull(environment.resourceFilter),
+            isNotNull(environment.resourceSelector),
             ne(environment.id, input.id),
           );
           const sys = await ctx.db.query.system.findFirst({
@@ -261,14 +261,15 @@ export const environmentRouter = createTRPCRouter({
           });
 
           const otherEnvFilters =
-            sys?.environments.map((e) => e.resourceFilter).filter(isPresent) ??
-            [];
+            sys?.environments
+              .map((e) => e.resourceSelector)
+              .filter(isPresent) ?? [];
 
           const oldQuery = resourceMatchesMetadata(
             ctx.db,
-            oldEnv.environment.resourceFilter,
+            oldEnv.environment.resourceSelector,
           );
-          const newQuery = resourceMatchesMetadata(ctx.db, resourceFilter);
+          const newQuery = resourceMatchesMetadata(ctx.db, resourceSelector);
 
           const newResources =
             newQuery != null
