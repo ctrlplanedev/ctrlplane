@@ -79,7 +79,7 @@ export class JobAgent {
   ) {}
 
   private agent:
-    | operations["updateJobAgent"]["responses"]["200"]["content"]["application/json"]
+    | operations["upsertJobAgent"]["responses"]["200"]["content"]["application/json"]
     | null = null;
 
   async get() {
