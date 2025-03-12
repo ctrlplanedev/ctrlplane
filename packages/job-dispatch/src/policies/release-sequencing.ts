@@ -51,7 +51,7 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
           db.execute(sql<schema.Job[]>`
             select 1 from ${schema.job}
             inner join ${schema.releaseJobTrigger} as rjt2 on ${schema.job.id} = rjt2.job_id
-            inner join ${schema.release} as release2 on rjt2.release_id = release2.id
+            inner join ${schema.release} as release2 on rjt2.deployment_version_id = release2.id
             inner join ${schema.resource} on rjt2.resource_id = ${schema.resource.id}
             where rjt2.environment_id = ${schema.releaseJobTrigger.environmentId}
             and release2.deployment_id = ${schema.deployment.id}
