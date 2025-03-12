@@ -28,7 +28,7 @@ export const deploymentVariable = pgTable(
     description: text("description").notNull().default(""),
     deploymentId: uuid("deployment_id")
       .notNull()
-      .references(() => deployment.id),
+      .references(() => deployment.id, { onDelete: "cascade" }),
     defaultValueId: uuid("default_value_id")
       .references((): any => deploymentVariableValue.id, {
         onDelete: "set null",
@@ -109,7 +109,7 @@ export const deploymentVariableSet = pgTable(
     id: uuid("id").notNull().primaryKey().defaultRandom(),
     deploymentId: uuid("deployment_id")
       .notNull()
-      .references(() => deployment.id),
+      .references(() => deployment.id, { onDelete: "cascade" }),
     variableSetId: uuid("variable_set_id")
       .notNull()
       .references(() => variableSet.id, { onDelete: "cascade" }),
