@@ -43,9 +43,12 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
     )
     .then((rows) =>
       _.chain(rows)
-        .groupBy((r) => [r.release.deploymentId, r.environment.policyId])
+        .groupBy((r) => [
+          r.deployment_version.deploymentId,
+          r.environment.policyId,
+        ])
         .map((groupedTriggers) => ({
-          deploymentId: groupedTriggers[0]!.release.deploymentId,
+          deploymentId: groupedTriggers[0]!.deployment_version.deploymentId,
           policyId: groupedTriggers[0]!.environment.policyId,
           concurrencyLimit:
             groupedTriggers[0]!.environment_policy.concurrencyLimit,

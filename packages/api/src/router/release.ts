@@ -105,11 +105,11 @@ export const releaseRouter = createTRPCRouter({
           .offset(input.offset)
           .then((data) =>
             _.chain(data)
-              .groupBy((r) => r.release.id)
+              .groupBy((r) => r.deployment_version.id)
               .map((r) => ({
-                ...r[0]!.release,
+                ...r[0]!.deployment_version,
                 releaseDependencies: r
-                  .map((rd) => rd.release_dependency)
+                  .map((rd) => rd.deployment_version_dependency)
                   .filter(isPresent),
               }))
               .value(),
@@ -150,12 +150,12 @@ export const releaseRouter = createTRPCRouter({
         .where(eq(release.id, input))
         .then((rows) =>
           _.chain(rows)
-            .groupBy((r) => r.release.id)
+            .groupBy((r) => r.deployment_version.id)
             .map((r) => ({
-              ...r[0]!.release,
+              ...r[0]!.deployment_version,
               dependencies: r
                 .filter(isPresent)
-                .map((r) => r.release_dependency!),
+                .map((r) => r.deployment_version_dependency!),
             }))
             .value()
             .at(0),
@@ -289,9 +289,9 @@ export const releaseRouter = createTRPCRouter({
         .where(inArray(release.id, input))
         .then((rows) =>
           _.chain(rows)
-            .groupBy((e) => [e.environment.id, e.release.id])
+            .groupBy((e) => [e.environment.id, e.deployment_version.id])
             .map((v) => ({
-              release: v[0]!.release,
+              release: v[0]!.deployment_version,
               environment: v[0]!.environment,
               environmentPolicy: v[0]!.environment_policy
                 ? {
@@ -489,7 +489,7 @@ export const releaseRouter = createTRPCRouter({
           .orderBy(desc(release.createdAt))
           .limit(1)
           .then(takeFirstOrNull)
-          .then((r) => r?.release ?? null),
+          .then((r) => r?.deployment_version ?? null),
       ),
 
     byDeploymentAndEnvironment: protectedProcedure
@@ -557,10 +557,10 @@ export const releaseRouter = createTRPCRouter({
             and(
               eq(release.status, ReleaseStatus.Ready),
               eq(release.deploymentId, deploymentId),
-              env.release_channel != null
+              env.deployment_version_channel != null
                 ? releaseMatchesCondition(
                     ctx.db,
-                    env.release_channel.releaseFilter,
+                    env.deployment_version_channel.releaseFilter,
                   )
                 : undefined,
             ),
@@ -579,7 +579,7 @@ export const releaseRouter = createTRPCRouter({
 
         if (env.environment.resourceFilter == null)
           return {
-            ...rel.release,
+            ...rel.deployment_version,
             approval: rel.environment_policy_approval,
             resourceCount: 0,
           };
@@ -606,7 +606,7 @@ export const releaseRouter = createTRPCRouter({
           .then(takeFirst);
 
         return {
-          ...rel.release,
+          ...rel.deployment_version,
           approval: rel.environment_policy_approval,
           resourceCount: resourceCount.count,
         };

@@ -94,7 +94,7 @@ const spinUpNewJobs = async () => {
         );
         if (!parseResult.success) {
           await job.update({
-            status: "failed",
+            status: "failure",
             message:
               "Invalid job agent configuration: " + parseResult.error.message,
           });

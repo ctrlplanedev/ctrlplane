@@ -26,7 +26,7 @@ export const isPassingReleaseDependencyPolicy = async (
 
       if (release.length === 0) return trigger;
 
-      const deps = release.map((r) => r.release_dependency);
+      const deps = release.map((r) => r.deployment_version_dependency);
 
       if (deps.length === 0) return trigger;
 

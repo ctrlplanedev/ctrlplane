@@ -157,7 +157,7 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
         releaseJobTrigger: {
           ...row.release_job_trigger,
           job: row.job,
-          release: row.release,
+          release: row.deployment_version,
           resourceId: row.resource.id,
         },
       })),

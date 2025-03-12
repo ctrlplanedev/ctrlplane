@@ -174,7 +174,8 @@ class ReleaseJobTriggerBuilder {
       causedById: this._causedById,
       resourceId: v.resource.id,
       environmentId: v.environment.id,
-      releaseId: v.release.id,
+      releaseId:
+        "deployment_version" in v ? v.deployment_version.id : v.release.id,
       jobId: "",
     }));
 
@@ -196,7 +197,9 @@ class ReleaseJobTriggerBuilder {
 
     const jobInserts = wt
       .map((t) => {
-        const release = releases.find((r) => r.release.id === t.releaseId);
+        const release = releases.find(
+          (r) => r.deployment_version.id === t.releaseId,
+        );
         if (!release) return null;
         return {
           jobAgentId: release.job_agent.id,

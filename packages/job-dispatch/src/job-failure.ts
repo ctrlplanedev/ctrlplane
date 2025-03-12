@@ -29,7 +29,7 @@ export const onJobFailure = async (job: schema.Job) => {
     .from(schema.releaseJobTrigger)
     .where(
       and(
-        eq(schema.releaseJobTrigger.releaseId, jobInfo.release.id),
+        eq(schema.releaseJobTrigger.releaseId, jobInfo.deployment_version.id),
         eq(
           schema.releaseJobTrigger.environmentId,
           jobInfo.release_job_trigger.environmentId,
@@ -48,7 +48,7 @@ export const onJobFailure = async (job: schema.Job) => {
   if (releaseJobTriggerCount >= jobInfo.deployment.retryCount) return;
 
   const createTrigger = createReleaseJobTriggers(db, "retry")
-    .releases([jobInfo.release.id])
+    .releases([jobInfo.deployment_version.id])
     .resources([jobInfo.release_job_trigger.resourceId])
     .environments([jobInfo.release_job_trigger.environmentId]);
 
@@ -65,7 +65,7 @@ export const onJobFailure = async (job: schema.Job) => {
     .dispatch()
     .then(() =>
       logger.info(
-        `Retry job for release ${jobInfo.release.id} and resource ${jobInfo.release_job_trigger.resourceId} created and dispatched.`,
+        `Retry job for deployment version ${jobInfo.deployment_version.id} and resource ${jobInfo.release_job_trigger.resourceId} created and dispatched.`,
       ),
     );
 };
