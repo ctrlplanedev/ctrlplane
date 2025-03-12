@@ -158,7 +158,9 @@ const DeploymentNode: React.FC<
   const [selectedRelease, setSelectedRelease] = useState(
     data.latestActiveRelease?.id,
   );
-  const releases = api.release.list.useQuery({ deploymentId: data.id });
+  const releases = api.deployment.version.list.useQuery({
+    deploymentId: data.id,
+  });
   const release = releases.data?.items.find((r) => r.id === selectedRelease);
 
   const onLayout = useOnLayout();

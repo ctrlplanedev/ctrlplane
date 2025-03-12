@@ -25,6 +25,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentStatsRouter } from "./deployment-stats";
 import { deploymentVariableRouter } from "./deployment-variable";
+import { versionRouter } from "./deployment-version";
 
 const releaseChannelRouter = createTRPCRouter({
   create: protectedProcedure
@@ -347,6 +348,7 @@ export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   releaseChannel: releaseChannelRouter,
   hook: hookRouter,
+  version: versionRouter,
   distributionById: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

@@ -37,7 +37,7 @@ export const ApprovalDialog: React.FC<{
       releaseId: release.id,
     });
     if (environmentId != null)
-      utils.release.latest.byDeploymentAndEnvironment.invalidate({
+      utils.deployment.version.latest.byDeploymentAndEnvironment.invalidate({
         deploymentId: release.deploymentId,
         environmentId,
       });

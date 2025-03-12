@@ -116,7 +116,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const { deploymentId } = releaseChannel;
   const filter = getFinalFilter(form.watch("releaseFilter"));
 
-  const releasesQ = api.release.list.useQuery({
+  const releasesQ = api.deployment.version.list.useQuery({
     deploymentId,
     filter,
     limit: 5,

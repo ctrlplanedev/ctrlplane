@@ -210,7 +210,7 @@ const ReleaseJobTriggerChildRow: React.FC<ReleaseJobTriggerRowProps> = ({
   );
 };
 
-type Release = RouterOutputs["release"]["list"]["items"][number];
+type Release = RouterOutputs["deployment"]["version"]["list"]["items"][number];
 
 type ReleaseRowsProps = {
   release: Release;

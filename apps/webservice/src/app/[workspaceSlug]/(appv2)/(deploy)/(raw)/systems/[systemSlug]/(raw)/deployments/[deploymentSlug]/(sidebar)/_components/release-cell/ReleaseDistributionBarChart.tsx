@@ -9,7 +9,7 @@ export const ReleaseDistributionBarChart: React.FC<{
   deploymentId: string;
   showPreviousReleaseDistro: number;
 }> = ({ deploymentId, showPreviousReleaseDistro }) => {
-  const releases = api.release.list.useQuery(
+  const releases = api.deployment.version.list.useQuery(
     { deploymentId },
     { refetchInterval: 10_000 },
   );

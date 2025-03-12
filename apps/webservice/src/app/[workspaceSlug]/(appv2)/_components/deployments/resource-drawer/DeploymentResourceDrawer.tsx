@@ -74,7 +74,7 @@ export const DeploymentResourceDrawer: React.FC = () => {
   };
 
   const { data: releaseWithTriggersData, ...releaseWithTriggersQ } =
-    api.release.list.useQuery(
+    api.deployment.version.list.useQuery(
       {
         deploymentId: deploymentId ?? "",
         filter: releaseFilter ?? undefined,
