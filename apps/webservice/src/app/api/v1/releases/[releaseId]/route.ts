@@ -42,9 +42,9 @@ export const PATCH = request()
 
     try {
       const release = await ctx.db
-        .update(SCHEMA.release)
+        .update(SCHEMA.deploymentVersion)
         .set(body)
-        .where(eq(SCHEMA.release.id, releaseId))
+        .where(eq(SCHEMA.deploymentVersion.id, releaseId))
         .returning()
         .then(takeFirst);
 

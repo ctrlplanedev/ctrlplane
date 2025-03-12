@@ -66,8 +66,8 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
   const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);
   const rels = await db
     .select()
-    .from(schema.release)
-    .where(inArray(schema.release.id, releaseIds));
+    .from(schema.deploymentVersion)
+    .where(inArray(schema.deploymentVersion.id, releaseIds));
 
   const promises = wf.map(async (wf) => {
     const env = envs.find((e) => e.environment.id === wf.environmentId);
@@ -85,10 +85,10 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
 
     const matchingRelease = await db
       .select()
-      .from(schema.release)
+      .from(schema.deploymentVersion)
       .where(
         and(
-          eq(schema.release.id, release.id),
+          eq(schema.deploymentVersion.id, release.id),
           schema.releaseMatchesCondition(db, releaseChannelFilter),
         ),
       )

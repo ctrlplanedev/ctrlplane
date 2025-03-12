@@ -21,10 +21,13 @@ export const getDeploymentVariables = (tx: Tx, releaseId: string) =>
     .select()
     .from(SCHEMA.deploymentVariable)
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.release.deploymentId, SCHEMA.deploymentVariable.deploymentId),
+      SCHEMA.deploymentVersion,
+      eq(
+        SCHEMA.deploymentVersion.deploymentId,
+        SCHEMA.deploymentVariable.deploymentId,
+      ),
     )
-    .where(eq(SCHEMA.release.id, releaseId));
+    .where(eq(SCHEMA.deploymentVersion.id, releaseId));
 
 export const getResource = (tx: Tx, resourceId: string) =>
   tx

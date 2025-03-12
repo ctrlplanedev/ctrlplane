@@ -70,7 +70,7 @@ const CreatedCell: React.FC<CreatedCellProps> = ({ releaseJobTrigger }) => (
 
 type DropdownCellProps = {
   releaseJobTrigger?: ReleaseJobTrigger;
-  release: SCHEMA.Release;
+  release: SCHEMA.DeploymentVersion;
   environmentId: string;
   resource: SCHEMA.Resource;
   deployment: SCHEMA.Deployment;
@@ -84,7 +84,7 @@ const DropdownCell: React.FC<DropdownCellProps> = () => (
 
 type ReleaseJobTriggerRowProps = {
   releaseJobTrigger?: ReleaseJobTrigger;
-  release: SCHEMA.Release;
+  release: SCHEMA.DeploymentVersion;
   environment: SCHEMA.Environment & { system: SCHEMA.System };
   deployment: SCHEMA.Deployment;
   resource: SCHEMA.Resource;

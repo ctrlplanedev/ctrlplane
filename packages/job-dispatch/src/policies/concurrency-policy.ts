@@ -24,8 +24,8 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,
@@ -62,7 +62,7 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
   const activeJobsPerDeploymentAndPolicy = await db
     .select({
       count: count(),
-      deploymentId: schema.release.deploymentId,
+      deploymentId: schema.deploymentVersion.deploymentId,
       policyId: schema.environment.policyId,
     })
     .from(schema.job)
@@ -75,8 +75,8 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
       eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
     )
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,
@@ -88,7 +88,7 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
         ne(schema.job.status, JobStatus.Pending),
         isNull(schema.resource.deletedAt),
         inArray(
-          schema.release.deploymentId,
+          schema.deploymentVersion.deploymentId,
           triggersGroupedByDeploymentAndPolicy
             .filter((t) => t.concurrencyLimit != null)
             .map((t) => t.deploymentId),
@@ -101,7 +101,10 @@ export const isPassingConcurrencyPolicy: ReleaseIdPolicyChecker = async (
         ),
       ),
     )
-    .groupBy(schema.release.deploymentId, schema.environment.policyId);
+    .groupBy(
+      schema.deploymentVersion.deploymentId,
+      schema.environment.policyId,
+    );
 
   return triggersGroupedByDeploymentAndPolicy
     .map((info) => {

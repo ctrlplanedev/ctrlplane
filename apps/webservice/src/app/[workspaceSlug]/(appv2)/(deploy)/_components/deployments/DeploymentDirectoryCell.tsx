@@ -24,7 +24,7 @@ type DeploymentDirectoryCellProps = {
   };
   deployment: SCHEMA.Deployment;
   systemSlug: string;
-  release?: SCHEMA.Release;
+  release?: SCHEMA.DeploymentVersion;
 };
 
 export const DeploymentDirectoryCell: React.FC<

@@ -4,7 +4,7 @@ import React from "react";
 import { IconBolt, IconTarget } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
 
-type TriggerNodeProps = NodeProps<SCHEMA.Release & { label: string }>;
+type TriggerNodeProps = NodeProps<SCHEMA.DeploymentVersion & { label: string }>;
 
 export const TriggerNode: React.FC<TriggerNodeProps> = ({ data }) => (
   <>

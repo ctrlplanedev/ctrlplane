@@ -21,8 +21,8 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,
@@ -35,7 +35,10 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
     .leftJoin(
       schema.environmentPolicyApproval,
       and(
-        eq(schema.environmentPolicyApproval.releaseId, schema.release.id),
+        eq(
+          schema.environmentPolicyApproval.releaseId,
+          schema.deploymentVersion.id,
+        ),
         eq(
           schema.environmentPolicyApproval.policyId,
           schema.environmentPolicy.id,

@@ -1,8 +1,4 @@
-import type {
-  EnvironmentPolicy,
-  EnvironmentPolicyDeployment,
-  Release,
-} from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import { useEffect, useState } from "react";
 import { differenceInMilliseconds } from "date-fns";
@@ -18,9 +14,9 @@ import { ApprovalCheck } from "./ApprovalCheck";
 import { Cancelled, Loading, Passing, Waiting } from "./StatusIcons";
 
 type PolicyNodeProps = NodeProps<
-  EnvironmentPolicy & {
-    release: Release;
-    policyDeployments: Array<EnvironmentPolicyDeployment>;
+  SCHEMA.EnvironmentPolicy & {
+    release: SCHEMA.DeploymentVersion;
+    policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>;
   }
 >;
 

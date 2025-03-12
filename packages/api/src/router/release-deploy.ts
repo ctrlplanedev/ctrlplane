@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { and, eq, isNull, takeFirstOrNull } from "@ctrlplane/db";
-import { environment, release, resource } from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   cancelPreviousJobsForRedeployedTriggers,
@@ -85,9 +85,12 @@ export const releaseDeployRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const t = await ctx.db
         .select()
-        .from(resource)
+        .from(SCHEMA.resource)
         .where(
-          and(eq(resource.id, input.resourceId), isNull(resource.deletedAt)),
+          and(
+            eq(SCHEMA.resource.id, input.resourceId),
+            isNull(SCHEMA.resource.deletedAt),
+          ),
         )
         .then(takeFirstOrNull);
       if (!t) throw new Error("Resource not found");
@@ -96,15 +99,15 @@ export const releaseDeployRouter = createTRPCRouter({
 
       const rel = await ctx.db
         .select()
-        .from(release)
-        .where(eq(release.id, input.releaseId))
+        .from(SCHEMA.deploymentVersion)
+        .where(eq(SCHEMA.deploymentVersion.id, input.releaseId))
         .then(takeFirstOrNull);
       if (!rel) throw new Error("Release not found");
 
       const env = await ctx.db
         .select()
-        .from(environment)
-        .where(eq(environment.id, input.environmentId))
+        .from(SCHEMA.environment)
+        .where(eq(SCHEMA.environment.id, input.environmentId))
         .then(takeFirstOrNull);
       if (!env) throw new Error("Environment not found");
 

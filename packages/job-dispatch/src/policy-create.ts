@@ -3,33 +3,36 @@ import type { ReleaseJobTrigger } from "@ctrlplane/db/schema";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray } from "@ctrlplane/db";
-import {
-  environment,
-  environmentPolicy,
-  environmentPolicyApproval,
-  release,
-  releaseJobTrigger,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 
 export const createJobApprovals = async (
   db: Tx,
   releaseJobTriggers: ReleaseJobTrigger[],
 ) => {
   const policiesToCheck = await db
-    .selectDistinctOn([release.id, environmentPolicy.id])
-    .from(releaseJobTrigger)
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
+    .selectDistinctOn([
+      SCHEMA.deploymentVersion.id,
+      SCHEMA.environmentPolicy.id,
+    ])
+    .from(SCHEMA.releaseJobTrigger)
     .innerJoin(
-      environmentPolicy,
+      SCHEMA.deploymentVersion,
+      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+    )
+    .innerJoin(
+      SCHEMA.environment,
+      eq(SCHEMA.releaseJobTrigger.environmentId, SCHEMA.environment.id),
+    )
+    .innerJoin(
+      SCHEMA.environmentPolicy,
       and(
-        eq(environment.policyId, environmentPolicy.id),
-        eq(environmentPolicy.approvalRequirement, "manual"),
+        eq(SCHEMA.environment.policyId, SCHEMA.environmentPolicy.id),
+        eq(SCHEMA.environmentPolicy.approvalRequirement, "manual"),
       ),
     )
     .where(
       inArray(
-        release.id,
+        SCHEMA.deploymentVersion.id,
         releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
       ),
     );
@@ -37,7 +40,7 @@ export const createJobApprovals = async (
   if (policiesToCheck.length === 0) return;
 
   await db
-    .insert(environmentPolicyApproval)
+    .insert(SCHEMA.environmentPolicyApproval)
     .values(
       policiesToCheck.map((p) => ({
         policyId: p.environment_policy.id,

@@ -1,11 +1,6 @@
 "use client";
 
-import type {
-  Deployment,
-  Job,
-  Release,
-  ReleaseJobTrigger,
-} from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
@@ -21,7 +16,7 @@ import { format } from "date-fns";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 export const ReleaseIcon: React.FC<{
-  job?: Job;
+  job?: SCHEMA.Job;
 }> = ({ job }) => {
   if (job?.status === JobStatus.Pending)
     return (
@@ -79,10 +74,10 @@ export const ReleaseIcon: React.FC<{
 };
 
 export const ReleaseCell: React.FC<{
-  deployment: Deployment;
-  releaseJobTrigger: ReleaseJobTrigger & {
-    release?: Partial<Release>;
-    job?: Job;
+  deployment: SCHEMA.Deployment;
+  releaseJobTrigger: SCHEMA.ReleaseJobTrigger & {
+    release?: Partial<SCHEMA.DeploymentVersion>;
+    job?: SCHEMA.Job;
   };
 }> = ({ deployment, releaseJobTrigger }) => {
   const params = useParams<{ workspaceSlug: string; systemSlug: string }>();

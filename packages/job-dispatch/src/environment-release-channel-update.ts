@@ -72,12 +72,12 @@ const cancelJobsForExcludedReleases = async (
       eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
     )
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+      SCHEMA.deploymentVersion,
+      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
     )
     .where(
       and(
-        eq(SCHEMA.release.deploymentId, deploymentId),
+        eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
         eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
         eq(SCHEMA.job.status, JobStatus.Pending),
         SCHEMA.releaseMatchesCondition(db, excludedReleasesFilter),
@@ -100,14 +100,14 @@ const getLatestReleaseMatchingFilter = (
 ) =>
   db
     .select()
-    .from(SCHEMA.release)
+    .from(SCHEMA.deploymentVersion)
     .where(
       and(
-        eq(SCHEMA.release.deploymentId, deploymentId),
+        eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
         SCHEMA.releaseMatchesCondition(db, releaseFilter),
       ),
     )
-    .orderBy(desc(SCHEMA.release.createdAt))
+    .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
     .then(takeFirstOrNull);
 

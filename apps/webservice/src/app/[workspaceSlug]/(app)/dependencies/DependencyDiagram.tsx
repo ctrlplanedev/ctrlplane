@@ -1,6 +1,6 @@
 "use client";
 
-import type { Deployment, Release } from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { EdgeProps, NodeProps, ReactFlowInstance } from "reactflow";
 import { useCallback, useEffect, useState } from "react";
 import { IconSelector } from "@tabler/icons-react";
@@ -103,7 +103,7 @@ const DepEdge: React.FC<EdgeProps> = ({
 const ReleaseSelector: React.FC<{
   value: string;
   onChange: (id: string) => void;
-  releases: Release[];
+  releases: SCHEMA.DeploymentVersion[];
 }> = ({ value, onChange, releases }) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -148,7 +148,9 @@ const ReleaseSelector: React.FC<{
 
 const DeploymentNode: React.FC<
   NodeProps<
-    Deployment & { latestActiveRelease: { id: string; version: string } | null }
+    SCHEMA.Deployment & {
+      latestActiveRelease: { id: string; version: string } | null;
+    }
   >
 > = ({ data }) => {
   const { getEdges, setEdges } = useReactFlow();
@@ -222,7 +224,9 @@ const edgeTypes = { default: DepEdge };
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const DependencyDiagram: React.FC<{
   deployments: Array<
-    Deployment & { latestActiveRelease: { id: string; version: string } | null }
+    SCHEMA.Deployment & {
+      latestActiveRelease: { id: string; version: string } | null;
+    }
   >;
 }> = ({ deployments }) => {
   const [nodes, _, onNodesChange] = useNodesState(
@@ -262,7 +266,9 @@ const DependencyDiagram: React.FC<{
 
 export const Diagram: React.FC<{
   deployments: Array<
-    Deployment & { latestActiveRelease: { id: string; version: string } | null }
+    SCHEMA.Deployment & {
+      latestActiveRelease: { id: string; version: string } | null;
+    }
   >;
 }> = ({ deployments }) => {
   return (

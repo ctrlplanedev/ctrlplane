@@ -12,12 +12,12 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   deploymentVariable,
+  deploymentVersion,
   entityRole,
   environment,
   environmentPolicy,
   job,
   jobAgent,
-  release,
   releaseChannel,
   releaseJobTrigger,
   resource,
@@ -94,8 +94,11 @@ const getReleaseScopes = async (id: string) => {
     .from(workspace)
     .innerJoin(system, eq(system.workspaceId, workspace.id))
     .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .innerJoin(release, eq(release.deploymentId, deployment.id))
-    .where(eq(release.id, id))
+    .innerJoin(
+      deploymentVersion,
+      eq(deploymentVersion.deploymentId, deployment.id),
+    )
+    .where(eq(deploymentVersion.id, id))
     .then(takeFirst);
 
   return [
@@ -353,8 +356,11 @@ const getJobScopes = async (id: string) => {
     .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
     .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+    .innerJoin(
+      deploymentVersion,
+      eq(releaseJobTrigger.releaseId, deploymentVersion.id),
+    )
+    .innerJoin(deployment, eq(deploymentVersion.deploymentId, deployment.id))
     .innerJoin(system, eq(deployment.systemId, system.id))
     .innerJoin(workspace, eq(system.workspaceId, workspace.id))
     .where(and(eq(job.id, id), isNull(resource.deletedAt)))
