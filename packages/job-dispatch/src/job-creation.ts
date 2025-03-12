@@ -79,7 +79,7 @@ export const onJobCompletion = async (je: schema.Job) => {
     .from(schema.releaseJobTrigger)
     .innerJoin(
       schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
@@ -93,7 +93,7 @@ export const onJobCompletion = async (je: schema.Job) => {
     .then(takeFirst);
 
   const isDependentOnTriggerForCriteria = and(
-    eq(schema.releaseJobTrigger.releaseId, triggers.deployment_version.id),
+    eq(schema.releaseJobTrigger.versionId, triggers.deployment_version.id),
     eq(
       schema.environmentPolicyDeployment.environmentId,
       triggers.release_job_trigger.environmentId,
@@ -125,7 +125,7 @@ export const onJobCompletion = async (je: schema.Job) => {
     .from(schema.releaseJobTrigger)
     .innerJoin(
       schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
@@ -152,7 +152,7 @@ export const onJobCompletion = async (je: schema.Job) => {
       and(
         eq(
           schema.releaseDependency.releaseId,
-          schema.releaseJobTrigger.releaseId,
+          schema.releaseJobTrigger.versionId,
         ),
         eq(schema.releaseDependency.deploymentId, triggers.deployment.id),
       ),

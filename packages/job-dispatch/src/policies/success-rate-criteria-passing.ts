@@ -32,7 +32,7 @@ const isSuccessCriteriaPassing = async (
     .where(
       and(
         eq(schema.environmentPolicyDeployment.policyId, policy.id),
-        eq(schema.releaseJobTrigger.releaseId, release.id),
+        eq(schema.releaseJobTrigger.versionId, release.id),
       ),
     );
 
@@ -67,7 +67,7 @@ export const isPassingCriteriaPolicy: ReleaseIdPolicyChecker = async (
     .from(schema.releaseJobTrigger)
     .innerJoin(
       schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,

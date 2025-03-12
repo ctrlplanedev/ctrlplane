@@ -78,7 +78,7 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
     .from(schema.releaseJobTrigger)
     .innerJoin(
       schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,

@@ -376,7 +376,7 @@ export const versionRouter = createTRPCRouter({
           )
           .where(
             and(
-              eq(SCHEMA.releaseJobTrigger.releaseId, releaseId),
+              eq(SCHEMA.releaseJobTrigger.versionId, releaseId),
               eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
               isNull(SCHEMA.resource.deletedAt),
             ),
@@ -440,7 +440,7 @@ export const versionRouter = createTRPCRouter({
           )
           .innerJoin(
             SCHEMA.deploymentVersion,
-            eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+            eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
           )
           .orderBy(
             SCHEMA.releaseJobTrigger.resourceId,
@@ -487,7 +487,7 @@ export const versionRouter = createTRPCRouter({
                   .where(
                     and(
                       eq(
-                        SCHEMA.releaseJobTrigger.releaseId,
+                        SCHEMA.releaseJobTrigger.versionId,
                         SCHEMA.deploymentVersion.id,
                       ),
                       eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
@@ -511,7 +511,7 @@ export const versionRouter = createTRPCRouter({
                   .where(
                     and(
                       eq(
-                        SCHEMA.releaseJobTrigger.releaseId,
+                        SCHEMA.releaseJobTrigger.versionId,
                         SCHEMA.deploymentVersion.id,
                       ),
                       eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),

@@ -35,7 +35,7 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
     .from(schema.releaseJobTrigger)
     .innerJoin(
       schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
@@ -51,7 +51,7 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
           db.execute(sql<schema.Job[]>`
             select 1 from ${schema.job}
             inner join ${schema.releaseJobTrigger} as rjt2 on ${schema.job.id} = rjt2.job_id
-            inner join ${schema.deploymentVersion} as release2 on rjt2.deployment_version_id = release2.id
+            inner join ${schema.deploymentVersion} as release2 on rjt2.version_id = release2.id
             inner join ${schema.resource} on rjt2.resource_id = ${schema.resource.id}
             where rjt2.environment_id = ${schema.releaseJobTrigger.environmentId}
             and release2.deployment_id = ${schema.deployment.id}
@@ -129,7 +129,7 @@ const isReleaseLatestActiveForEnvironment = async (
     .from(schema.deploymentVersion)
     .innerJoin(
       schema.releaseJobTrigger,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
     .innerJoin(
@@ -174,17 +174,17 @@ export const isPassingNewerThanLastActiveReleasePolicy: ReleaseIdPolicyChecker =
   async (db, releaseJobTriggers) => {
     if (releaseJobTriggers.length === 0) return [];
 
-    const releaseIds = releaseJobTriggers.map((rjt) => rjt.releaseId);
+    const versionIds = releaseJobTriggers.map((rjt) => rjt.versionId);
     const releases = await db
       .select()
       .from(schema.deploymentVersion)
-      .where(inArray(schema.deploymentVersion.id, releaseIds));
+      .where(inArray(schema.deploymentVersion.id, versionIds));
 
     return _.chain(releaseJobTriggers)
-      .groupBy((rjt) => [rjt.releaseId, rjt.environmentId])
+      .groupBy((rjt) => [rjt.versionId, rjt.environmentId])
       .map(async (groupedTriggers) => {
         const release = releases.find(
-          (r) => r.id === groupedTriggers[0]!.releaseId,
+          (r) => r.id === groupedTriggers[0]!.versionId,
         );
         if (!release) return [];
         const { environmentId } = groupedTriggers[0]!;

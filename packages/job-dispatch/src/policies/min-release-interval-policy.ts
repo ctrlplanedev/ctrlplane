@@ -42,7 +42,7 @@ const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
             .where(
               and(
                 eq(
-                  SCHEMA.releaseJobTrigger.releaseId,
+                  SCHEMA.releaseJobTrigger.versionId,
                   SCHEMA.deploymentVersion.id,
                 ),
                 eq(
@@ -64,7 +64,7 @@ const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
             .where(
               and(
                 eq(
-                  SCHEMA.releaseJobTrigger.releaseId,
+                  SCHEMA.releaseJobTrigger.versionId,
                   SCHEMA.deploymentVersion.id,
                 ),
                 eq(
@@ -101,7 +101,7 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
     .where(
       inArray(
         SCHEMA.deploymentVersion.id,
-        releaseJobTriggers.map((rjt) => rjt.releaseId),
+        releaseJobTriggers.map((rjt) => rjt.versionId),
       ),
     );
 
@@ -152,10 +152,10 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
     );
 
   return _.chain(releaseJobTriggers)
-    .groupBy((rjt) => [rjt.environmentId, rjt.releaseId])
+    .groupBy((rjt) => [rjt.environmentId, rjt.versionId])
     .filter((groupedTriggers) => {
       const release = releases.find(
-        (r) => r.id === groupedTriggers[0]!.releaseId,
+        (r) => r.id === groupedTriggers[0]!.versionId,
       );
       if (!release) return false;
 

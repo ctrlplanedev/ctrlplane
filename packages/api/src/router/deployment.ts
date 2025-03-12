@@ -383,7 +383,7 @@ export const deploymentRouter = createTRPCRouter({
         )
         .innerJoin(
           SCHEMA.deploymentVersion,
-          eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.releaseId),
+          eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.versionId),
         )
         .innerJoin(
           SCHEMA.resource,
@@ -652,7 +652,7 @@ export const deploymentRouter = createTRPCRouter({
               and(
                 eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
                 eq(
-                  SCHEMA.releaseJobTrigger.releaseId,
+                  SCHEMA.releaseJobTrigger.versionId,
                   SCHEMA.deploymentVersion.id,
                 ),
                 eq(

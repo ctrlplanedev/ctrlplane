@@ -23,7 +23,7 @@ export const cancelPreviousJobsForRedeployedTriggers = async (
       or(
         ...releaseJobTriggers.map((trigger) =>
           and(
-            eq(schema.releaseJobTrigger.releaseId, trigger.releaseId),
+            eq(schema.releaseJobTrigger.versionId, trigger.versionId),
             eq(schema.releaseJobTrigger.environmentId, trigger.environmentId),
             eq(schema.releaseJobTrigger.resourceId, trigger.resourceId),
             eq(schema.job.status, JobStatus.Pending),

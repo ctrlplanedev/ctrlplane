@@ -14,7 +14,7 @@ export const run = async () =>
     )
     .innerJoin(
       SCHEMA.releaseJobTrigger,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+      eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
     )
     .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id))
     .where(

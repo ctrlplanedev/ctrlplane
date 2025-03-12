@@ -29,7 +29,7 @@ export const determineVariablesForReleaseJob = async (
 ): Promise<schema.JobVariable[]> => {
   const variables = await utils.getDeploymentVariables(
     tx,
-    job.releaseJobTrigger.releaseId,
+    job.releaseJobTrigger.versionId,
   );
 
   if (variables.length === 0) return [];
