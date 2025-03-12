@@ -6,7 +6,7 @@ import { environmentPolicy } from "./environment.js";
 import { releaseChannel } from "./release.js";
 
 export const environmentPolicyReleaseChannel = pgTable(
-  "environment_policy_release_channel",
+  "environment_policy_deployment_version_channel",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     policyId: uuid("policy_id")
