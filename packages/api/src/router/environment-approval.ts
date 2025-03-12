@@ -106,13 +106,13 @@ export const approvalRouter = createTRPCRouter({
           eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
         )
         .innerJoin(
-          SCHEMA.release,
-          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+          SCHEMA.deploymentVersion,
+          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
         )
         .where(
           and(
             eq(SCHEMA.environmentPolicyApproval.id, envApproval.id),
-            eq(SCHEMA.release.id, input.releaseId),
+            eq(SCHEMA.deploymentVersion.id, input.releaseId),
             eq(SCHEMA.job.status, JobStatus.Pending),
           ),
         );

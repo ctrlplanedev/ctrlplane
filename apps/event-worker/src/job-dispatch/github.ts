@@ -3,16 +3,7 @@ import _ from "lodash";
 
 import { and, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  environment,
-  githubEntity,
-  release,
-  releaseJobTrigger,
-  runbook,
-  runbookJobTrigger,
-  system,
-  workspace,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { updateJob } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { configSchema } from "@ctrlplane/validators/github";
@@ -27,35 +18,53 @@ const getGithubEntity = async (
 ) => {
   const releaseGhEntityPromise = db
     .select()
-    .from(githubEntity)
-    .innerJoin(workspace, eq(githubEntity.workspaceId, workspace.id))
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(environment, eq(environment.systemId, system.id))
+    .from(SCHEMA.githubEntity)
     .innerJoin(
-      releaseJobTrigger,
-      eq(releaseJobTrigger.environmentId, environment.id),
+      SCHEMA.workspace,
+      eq(SCHEMA.githubEntity.workspaceId, SCHEMA.workspace.id),
+    )
+    .innerJoin(
+      SCHEMA.system,
+      eq(SCHEMA.system.workspaceId, SCHEMA.workspace.id),
+    )
+    .innerJoin(
+      SCHEMA.environment,
+      eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+    )
+    .innerJoin(
+      SCHEMA.releaseJobTrigger,
+      eq(SCHEMA.releaseJobTrigger.environmentId, SCHEMA.environment.id),
     )
     .where(
       and(
-        eq(githubEntity.installationId, installationId),
-        eq(githubEntity.slug, owner),
-        eq(releaseJobTrigger.jobId, jobId),
+        eq(SCHEMA.githubEntity.installationId, installationId),
+        eq(SCHEMA.githubEntity.slug, owner),
+        eq(SCHEMA.releaseJobTrigger.jobId, jobId),
       ),
     )
     .then(takeFirstOrNull);
 
   const runbookGhEntityPromise = db
     .select()
-    .from(githubEntity)
-    .innerJoin(workspace, eq(githubEntity.workspaceId, workspace.id))
-    .innerJoin(system, eq(system.workspaceId, workspace.id))
-    .innerJoin(runbook, eq(runbook.systemId, system.id))
-    .innerJoin(runbookJobTrigger, eq(runbookJobTrigger.runbookId, runbook.id))
+    .from(SCHEMA.githubEntity)
+    .innerJoin(
+      SCHEMA.workspace,
+      eq(SCHEMA.githubEntity.workspaceId, SCHEMA.workspace.id),
+    )
+    .innerJoin(
+      SCHEMA.system,
+      eq(SCHEMA.system.workspaceId, SCHEMA.workspace.id),
+    )
+    .innerJoin(SCHEMA.runbook, eq(SCHEMA.runbook.systemId, SCHEMA.system.id))
+    .innerJoin(
+      SCHEMA.runbookJobTrigger,
+      eq(SCHEMA.runbookJobTrigger.runbookId, SCHEMA.runbook.id),
+    )
     .where(
       and(
-        eq(githubEntity.installationId, installationId),
-        eq(githubEntity.slug, owner),
-        eq(runbookJobTrigger.jobId, jobId),
+        eq(SCHEMA.githubEntity.installationId, installationId),
+        eq(SCHEMA.githubEntity.slug, owner),
+        eq(SCHEMA.runbookJobTrigger.jobId, jobId),
       ),
     )
     .then(takeFirstOrNull);
@@ -72,10 +81,13 @@ const getGithubEntity = async (
 
 const getReleaseJobAgentConfig = (jobId: string) =>
   db
-    .select({ jobAgentConfig: release.jobAgentConfig })
-    .from(release)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.releaseId, release.id))
-    .where(eq(releaseJobTrigger.jobId, jobId))
+    .select({ jobAgentConfig: SCHEMA.deploymentVersion.jobAgentConfig })
+    .from(SCHEMA.deploymentVersion)
+    .innerJoin(
+      SCHEMA.releaseJobTrigger,
+      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+    )
+    .where(eq(SCHEMA.releaseJobTrigger.jobId, jobId))
     .then(takeFirstOrNull)
     .then((r) => r?.jobAgentConfig);
 

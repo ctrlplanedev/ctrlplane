@@ -69,7 +69,7 @@ const resource: SCHEMA.Resource = {
   deletedAt: null,
 };
 
-const deployment_version: SCHEMA.Release = {
+const deployment_version: SCHEMA.DeploymentVersion = {
   id: "0",
   name: "test",
   config: {},
@@ -104,7 +104,7 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
 
 type variable = {
   deployment_variable: SCHEMA.DeploymentVariable;
-  deployment_version: SCHEMA.Release;
+  deployment_version: SCHEMA.DeploymentVersion;
 };
 
 describe("job-variables-deployment", () => {

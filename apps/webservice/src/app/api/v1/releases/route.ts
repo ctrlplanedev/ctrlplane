@@ -53,21 +53,24 @@ export const POST = request()
       try {
         const prevRelease = await db
           .select()
-          .from(schema.release)
+          .from(schema.deploymentVersion)
           .where(
             and(
-              eq(schema.release.deploymentId, body.deploymentId),
-              eq(schema.release.version, version),
+              eq(schema.deploymentVersion.deploymentId, body.deploymentId),
+              eq(schema.deploymentVersion.version, version),
             ),
           )
           .then(takeFirstOrNull);
 
         const release = await db
-          .insert(schema.release)
+          .insert(schema.deploymentVersion)
           .values({ ...body, name: relName })
           .onConflictDoUpdate({
-            target: [schema.release.deploymentId, schema.release.version],
-            set: buildConflictUpdateColumns(schema.release, [
+            target: [
+              schema.deploymentVersion.deploymentId,
+              schema.deploymentVersion.version,
+            ],
+            set: buildConflictUpdateColumns(schema.deploymentVersion, [
               "name",
               "status",
               "message",

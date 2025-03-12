@@ -23,7 +23,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { user } from "./auth.js";
-import { release } from "./release.js";
+import { deploymentVersion } from "./release.js";
 import { system } from "./system.js";
 
 export const directoryPath = z
@@ -261,7 +261,7 @@ export const environmentPolicyApproval = pgTable(
       .references(() => environmentPolicy.id, { onDelete: "cascade" }),
     releaseId: uuid("release_id")
       .notNull()
-      .references(() => release.id, { onDelete: "cascade" }),
+      .references(() => deploymentVersion.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
     userId: uuid("user_id").references(() => user.id, { onDelete: "set null" }),
     approvedAt: timestamp("approved_at", {

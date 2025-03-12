@@ -1,4 +1,4 @@
-import type { Environment, Release } from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import React from "react";
 import { Handle, Position } from "reactflow";
@@ -11,7 +11,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { api } from "~/trpc/react";
 
 type EnvironmentNodeProps = NodeProps<
-  Environment & { label: string; release: Release }
+  SCHEMA.Environment & { label: string; release: SCHEMA.DeploymentVersion }
 >;
 
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {

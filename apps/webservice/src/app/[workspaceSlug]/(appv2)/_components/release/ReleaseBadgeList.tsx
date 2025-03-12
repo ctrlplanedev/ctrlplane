@@ -4,7 +4,7 @@ import { Badge } from "@ctrlplane/ui/badge";
 
 type ReleaseBadgeListProps = {
   releases: {
-    items: SCHEMA.Release[];
+    items: SCHEMA.DeploymentVersion[];
     total: number;
   };
 };

@@ -5,15 +5,7 @@ import { isPresent } from "ts-is-present";
 
 import { and, eq, isNull, notInArray } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  deployment,
-  environment,
-  job,
-  release,
-  releaseJobTrigger,
-  releaseMetadata,
-  resource,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { getUser } from "~/app/api/v1/auth";
@@ -29,24 +21,42 @@ export const GET = async (
 
   const je = await db
     .select()
-    .from(job)
-    .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-    .leftJoin(environment, eq(environment.id, releaseJobTrigger.environmentId))
-    .leftJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
-    .leftJoin(release, eq(release.id, releaseJobTrigger.releaseId))
-    .leftJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
-    .leftJoin(deployment, eq(deployment.id, release.deploymentId))
+    .from(SCHEMA.job)
+    .innerJoin(
+      SCHEMA.releaseJobTrigger,
+      eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+    )
+    .leftJoin(
+      SCHEMA.environment,
+      eq(SCHEMA.environment.id, SCHEMA.releaseJobTrigger.environmentId),
+    )
+    .leftJoin(
+      SCHEMA.resource,
+      eq(SCHEMA.resource.id, SCHEMA.releaseJobTrigger.resourceId),
+    )
+    .leftJoin(
+      SCHEMA.deploymentVersion,
+      eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.releaseId),
+    )
+    .leftJoin(
+      SCHEMA.releaseMetadata,
+      eq(SCHEMA.releaseMetadata.releaseId, SCHEMA.deploymentVersion.id),
+    )
+    .leftJoin(
+      SCHEMA.deployment,
+      eq(SCHEMA.deployment.id, SCHEMA.deploymentVersion.deploymentId),
+    )
     .where(
       and(
-        eq(job.jobAgentId, params.agentId),
-        notInArray(job.status, [
+        eq(SCHEMA.job.jobAgentId, params.agentId),
+        notInArray(SCHEMA.job.status, [
           JobStatus.Failure,
           JobStatus.Cancelled,
           JobStatus.Skipped,
           JobStatus.Successful,
           JobStatus.InvalidJobAgent,
         ]),
-        isNull(resource.deletedAt),
+        isNull(SCHEMA.resource.deletedAt),
       ),
     )
     .then((rows) =>

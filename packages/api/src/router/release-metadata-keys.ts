@@ -2,12 +2,7 @@ import _ from "lodash";
 import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
-import {
-  deployment,
-  release,
-  releaseMetadata,
-  system,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -24,11 +19,17 @@ export const releaseMetadataKeysRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ input, ctx }) =>
       ctx.db
-        .selectDistinct({ key: releaseMetadata.key })
-        .from(release)
-        .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
-        .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-        .where(eq(deployment.systemId, input))
+        .selectDistinct({ key: SCHEMA.releaseMetadata.key })
+        .from(SCHEMA.deploymentVersion)
+        .innerJoin(
+          SCHEMA.releaseMetadata,
+          eq(SCHEMA.releaseMetadata.releaseId, SCHEMA.deploymentVersion.id),
+        )
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+        )
+        .where(eq(SCHEMA.deployment.systemId, input))
         .then((r) => r.map((row) => row.key)),
     ),
 
@@ -43,12 +44,21 @@ export const releaseMetadataKeysRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ input, ctx }) =>
       ctx.db
-        .selectDistinct({ key: releaseMetadata.key })
-        .from(release)
-        .innerJoin(releaseMetadata, eq(releaseMetadata.releaseId, release.id))
-        .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-        .innerJoin(system, eq(deployment.systemId, system.id))
-        .where(eq(system.workspaceId, input))
+        .selectDistinct({ key: SCHEMA.releaseMetadata.key })
+        .from(SCHEMA.deploymentVersion)
+        .innerJoin(
+          SCHEMA.releaseMetadata,
+          eq(SCHEMA.releaseMetadata.releaseId, SCHEMA.deploymentVersion.id),
+        )
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+        )
+        .innerJoin(
+          SCHEMA.system,
+          eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
+        )
+        .where(eq(SCHEMA.system.workspaceId, input))
         .then((r) => r.map((row) => row.key)),
     ),
 });

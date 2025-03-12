@@ -17,12 +17,12 @@ export const isPassingReleaseDependencyPolicy = async (
     async (trigger) => {
       const release = await db
         .select()
-        .from(schema.release)
+        .from(schema.deploymentVersion)
         .innerJoin(
           schema.releaseDependency,
-          eq(schema.release.id, schema.releaseDependency.releaseId),
+          eq(schema.deploymentVersion.id, schema.releaseDependency.releaseId),
         )
-        .where(eq(schema.release.id, trigger.releaseId));
+        .where(eq(schema.deploymentVersion.id, trigger.releaseId));
 
       if (release.length === 0) return trigger;
 
@@ -107,14 +107,14 @@ export const isPassingReleaseDependencyPolicy = async (
 
         const resourceFulfillingDependency = await db
           .select()
-          .from(schema.release)
+          .from(schema.deploymentVersion)
           .innerJoin(
             schema.deployment,
-            eq(schema.release.deploymentId, schema.deployment.id),
+            eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
           )
           .innerJoin(
             latestJobSubquery,
-            eq(latestJobSubquery.releaseId, schema.release.id),
+            eq(latestJobSubquery.releaseId, schema.deploymentVersion.id),
           )
           .where(
             and(
