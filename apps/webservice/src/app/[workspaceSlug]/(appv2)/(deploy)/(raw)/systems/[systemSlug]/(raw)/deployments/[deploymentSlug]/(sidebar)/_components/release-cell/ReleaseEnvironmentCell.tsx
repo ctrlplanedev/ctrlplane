@@ -4,10 +4,12 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
+import { IconAlertCircle } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 import { isPresent } from "ts-is-present";
 
 import { Button } from "@ctrlplane/ui/button";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   ComparisonOperator,
   FilterType,
@@ -17,6 +19,7 @@ import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ApprovalDialog";
+import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ReleaseDropdownMenu";
 import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
 import { Release } from "./TableCells";
@@ -24,6 +27,7 @@ import { Release } from "./TableCells";
 type Release = {
   id: string;
   version: string;
+  name: string;
   createdAt: Date;
   status: ReleaseStatusType;
   deploymentId: string;
@@ -35,15 +39,11 @@ type ReleaseEnvironmentCellProps = {
   release: Release;
 };
 
-const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
-  environment,
-  deployment,
-  release,
-}) => {
-  const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-  }>();
+const useGetResourceCount = (
+  environment: SCHEMA.Environment,
+  deployment: SCHEMA.Deployment,
+) => {
+  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
 
   const { data: workspace, isLoading: isWorkspaceLoading } =
     api.workspace.bySlug.useQuery(workspaceSlug);
@@ -65,6 +65,27 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
       { workspaceId: workspace?.id ?? "", filter, limit: 0 },
       { enabled: workspace != null && filter != null },
     );
+
+  return {
+    resourceCount: resources?.total ?? 0,
+    isResourceCountLoading: isResourcesLoading || isWorkspaceLoading,
+  };
+};
+
+const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
+  environment,
+  deployment,
+  release,
+}) => {
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+
+  const { resourceCount, isResourceCountLoading } = useGetResourceCount(
+    environment,
+    deployment,
+  );
 
   const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
     api.release.blocked.useQuery([release.id]);
@@ -91,13 +112,20 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     isStatusesLoading ||
     isBlockedEnvsLoading ||
     isApprovalLoading ||
-    isWorkspaceLoading ||
-    isResourcesLoading;
+    isResourceCountLoading;
 
   if (isLoading)
-    return <p className="text-xs text-muted-foreground">Loading...</p>;
+    return (
+      <div className="flex h-full w-full items-center gap-2">
+        <Skeleton className="h-6 w-6 rounded-full" />
+        <div className="flex flex-col gap-2">
+          <Skeleton className="h-[16px] w-20 rounded-full" />
+          <Skeleton className="h-3 w-20 rounded-full" />
+        </div>
+      </div>
+    );
 
-  if ((resources?.total ?? 0) === 0)
+  if (resourceCount === 0)
     return (
       <div className="text-center text-xs text-muted-foreground/70">
         No resources
@@ -120,17 +148,19 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
 
   if (showRelease)
     return (
-      <Release
-        workspaceSlug={workspaceSlug}
-        systemSlug={systemSlug}
-        deploymentSlug={deployment.slug}
-        releaseId={release.id}
-        version={release.version}
-        environment={environment}
-        name={release.version}
-        deployedAt={release.createdAt}
-        statuses={statuses.map((s) => s.job.status)}
-      />
+      <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
+        <Release
+          workspaceSlug={workspaceSlug}
+          systemSlug={systemSlug}
+          deploymentSlug={deployment.slug}
+          releaseId={release.id}
+          version={release.version}
+          environment={environment}
+          name={release.version}
+          deployedAt={release.createdAt}
+          statuses={statuses.map((s) => s.job.status)}
+        />
+      </div>
     );
 
   if (release.status === ReleaseStatus.Building)
@@ -176,13 +206,27 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
         release={release}
         environmentId={environment.id}
       >
-        <Button
-          className="w-full border-dashed border-neutral-700/60 bg-transparent text-center text-neutral-700 hover:border-blue-400 hover:bg-transparent hover:text-blue-400"
-          variant="outline"
-          size="sm"
-        >
-          Pending approval
-        </Button>
+        <div className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50">
+          <div className="flex items-center gap-2">
+            <div className="rounded-full bg-yellow-400 p-1 dark:text-black">
+              <IconAlertCircle className="h-4 w-4" strokeWidth={2} />
+            </div>
+            <div>
+              <div className="max-w-36 truncate font-semibold">
+                <span className="whitespace-nowrap">{release.version}</span>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Approval required
+              </div>
+            </div>
+          </div>
+
+          <ReleaseDropdownMenu
+            release={release}
+            environment={environment}
+            isReleaseActive={false}
+          />
+        </div>
       </ApprovalDialog>
     );
 

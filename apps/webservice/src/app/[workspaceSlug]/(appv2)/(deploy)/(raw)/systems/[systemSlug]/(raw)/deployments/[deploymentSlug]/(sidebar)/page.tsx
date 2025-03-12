@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
-import { DeploymentPageContent } from "./_components/release-cell/DeploymentPageContent";
+import { DeploymentPageContent } from "./DeploymentPageContent";
 
 type PageProps = {
   params: Promise<{
