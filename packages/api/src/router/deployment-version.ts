@@ -46,7 +46,7 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { releaseDeployRouter } from "./release-deploy";
 import { releaseMetadataKeysRouter } from "./release-metadata-keys";
 
-export const releaseRouter = createTRPCRouter({
+export const versionRouter = createTRPCRouter({
   list: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>

@@ -68,7 +68,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   const isLocalConditionValid =
     localCondition == null || isValidReleaseCondition(localCondition);
   const filter = localCondition ?? undefined;
-  const releasesQ = api.release.list.useQuery(
+  const releasesQ = api.deployment.version.list.useQuery(
     { deploymentId: deploymentId ?? "", filter, limit: 5 },
     { enabled: deploymentId != null && isLocalConditionValid },
   );

@@ -16,7 +16,7 @@ export default async function PropertiesPage(props: {
 }) {
   const { releaseId } = await props.params;
 
-  const release = await api.release.byId(releaseId);
+  const release = await api.deployment.version.byId(releaseId);
   if (release == null) notFound();
 
   const { metadata } = release;

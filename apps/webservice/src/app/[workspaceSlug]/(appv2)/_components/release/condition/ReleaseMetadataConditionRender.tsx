@@ -21,11 +21,11 @@ export const ReleaseMetadataConditionRender: React.FC<
   );
   const system = systemQ.data;
 
-  const workspaceMetadataKeys = api.release.metadataKeys.byWorkspace.useQuery(
+  const workspaceMetadataKeys = api.deployment.version.metadataKeys.byWorkspace.useQuery(
     workspace?.id ?? "",
     { enabled: workspace != null && system == null },
   );
-  const systemMetadataKeys = api.release.metadataKeys.bySystem.useQuery(
+  const systemMetadataKeys = api.deployment.version.metadataKeys.bySystem.useQuery(
     system?.id ?? "",
     { enabled: system != null },
   );

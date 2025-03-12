@@ -37,7 +37,7 @@ export const useReleaseChannel = (
     conditions: _.compact([versionFilter, filter]),
   };
 
-  const releasesQ = api.release.list.useQuery(
+  const releasesQ = api.deployment.version.list.useQuery(
     { deploymentId, filter: releaseFilter, limit: 0 },
     { enabled: filter != null && enabled },
   );

@@ -50,7 +50,7 @@ const RedeployReleaseDialog: React.FC<{
   children: React.ReactNode;
 }> = ({ release, environment, children }) => {
   const router = useRouter();
-  const redeploy = api.release.deploy.toEnvironment.useMutation();
+  const redeploy = api.deployment.version.deploy.toEnvironment.useMutation();
 
   const [isOpen, setIsOpen] = useState(false);
   return (
@@ -98,7 +98,7 @@ const ForceReleaseDialog: React.FC<{
   environment: { id: string; name: string };
   children: React.ReactNode;
 }> = ({ release, environment, children }) => {
-  const forceDeploy = api.release.deploy.toEnvironment.useMutation();
+  const forceDeploy = api.deployment.version.deploy.toEnvironment.useMutation();
   const router = useRouter();
   return (
     <AlertDialog>

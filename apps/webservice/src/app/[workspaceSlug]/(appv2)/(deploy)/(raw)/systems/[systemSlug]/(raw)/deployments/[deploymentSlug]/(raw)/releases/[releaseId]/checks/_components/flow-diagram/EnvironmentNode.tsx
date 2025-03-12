@@ -191,7 +191,7 @@ const MinReleaseIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   const { data: latestRelease, isLoading } =
-    api.release.latest.completed.useQuery(
+    api.deployment.version.latest.completed.useQuery(
       { deploymentId, environmentId },
       { enabled: policy != null },
     );

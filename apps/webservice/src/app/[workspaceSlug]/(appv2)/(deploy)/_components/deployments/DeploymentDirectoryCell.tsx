@@ -34,7 +34,7 @@ export const DeploymentDirectoryCell: React.FC<
   const { ref, inView } = useInView();
 
   const { data: releaseResult, isLoading: isReleaseLoading } =
-    api.release.list.useQuery(
+    api.deployment.version.list.useQuery(
       { deploymentId: deployment.id, limit: 1 },
       {
         enabled: inView && directory.environments.length > 0 && release == null,
@@ -44,7 +44,7 @@ export const DeploymentDirectoryCell: React.FC<
   const rel = release ?? releaseResult?.items[0];
 
   const { data: statusesResult, isLoading: isStatusesLoading } =
-    api.release.status.bySystemDirectory.useQuery(
+    api.deployment.version.status.bySystemDirectory.useQuery(
       { releaseId: rel?.id ?? "", directory: directory.path },
       { enabled: inView && rel != null },
     );

@@ -189,7 +189,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const { systemSlug } = useParams<{ systemSlug: string }>();
 
-  const releases = api.release.list.useQuery(
+  const releases = api.deployment.version.list.useQuery(
     { deploymentId: deployment.id, filter: filter ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
