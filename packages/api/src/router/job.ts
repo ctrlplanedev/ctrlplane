@@ -432,6 +432,46 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .then(processReleaseJobTriggerWithAdditionalDataRows),
     ),
 
+  byReleaseAndEnvironmentId: protectedProcedure
+    .input(
+      z.object({
+        releaseId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+        limit: z.number().int().nonnegative().max(1000).default(500),
+        offset: z.number().int().nonnegative().default(0),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.JobList)
+          .on({ type: "environment", id: input.environmentId }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(schema.releaseJobTrigger)
+        .innerJoin(
+          schema.job,
+          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+        )
+        .where(
+          and(
+            eq(schema.releaseJobTrigger.releaseId, input.releaseId),
+            eq(schema.releaseJobTrigger.environmentId, input.environmentId),
+          ),
+        )
+        .orderBy(desc(schema.job.createdAt))
+        .limit(input.limit)
+        .offset(input.offset)
+        .then((rows) =>
+          rows.map((row) => ({
+            ...row.release_job_trigger,
+            job: row.job,
+          })),
+        ),
+    ),
+
   byId: protectedProcedure
     .input(z.string().uuid())
     .meta({
