@@ -1,6 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
+import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -10,6 +11,9 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
+import * as schema from "@ctrlplane/db/schema";
+
+const log = logger.child({ module: "api/v1/deployments" });
 
 export const POST = request()
   .use(authn)
@@ -55,3 +59,36 @@ export const POST = request()
       );
     }
   });
+
+export const GET = request()
+    .use(authn)
+    .use(
+        authz(({ ctx, can }) =>
+            can
+                .perform(Permission.DeploymentList)
+                .on({ type: "workspace", id: ctx.body.workspaceId }),
+        ),
+    )
+    .handle(async (ctx) =>
+        ctx.db
+            .select()
+            .from(schema.deployment)
+            .orderBy(schema.deployment.slug)
+            .then((deployments) => ({ data: deployments }))
+            .then((paginated) =>
+                NextResponse.json(paginated, { status: httpStatus.CREATED }),
+            )
+            .catch((error) => {
+              if (error instanceof z.ZodError)
+                return NextResponse.json(
+                    { error: error.errors },
+                    { status: httpStatus.BAD_REQUEST },
+                );
+
+              log.error("Error getting systems:", error);
+              return NextResponse.json(
+                  { error: "Internal Server Error" },
+                  { status: httpStatus.INTERNAL_SERVER_ERROR },
+              );
+            }),
+    );

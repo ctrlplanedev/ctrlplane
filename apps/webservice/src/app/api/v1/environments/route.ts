@@ -1,6 +1,7 @@
 import type { PermissionChecker } from "@ctrlplane/auth/utils";
 import type { User } from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
+import httpStatus from "http-status";
 import _ from "lodash";
 import { z } from "zod";
 
@@ -13,6 +14,8 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
+
+const log = logger.child({ module: "api/v1/environments" });
 
 const body = schema.createEnvironment.extend({
   releaseChannels: z.array(z.string()),
@@ -79,3 +82,36 @@ export const POST = request()
       }
     },
   );
+
+export const GET = request()
+    .use(authn)
+    .use(
+        authz(({ ctx, can }) =>
+            can
+                .perform(Permission.EnvironmentList)
+                .on({ type: "workspace", id: ctx.body.workspaceId }),
+        ),
+    )
+    .handle(async (ctx) =>
+        ctx.db
+            .select()
+            .from(schema.environment)
+            .orderBy(schema.environment.name)
+            .then((environments) => ({ data: environments }))
+            .then((paginated) =>
+                NextResponse.json(paginated, { status: httpStatus.CREATED }),
+            )
+            .catch((error) => {
+                if (error instanceof z.ZodError)
+                    return NextResponse.json(
+                        { error: error.errors },
+                        { status: httpStatus.BAD_REQUEST },
+                    );
+
+                log.error("Error getting systems:", error);
+                return NextResponse.json(
+                    { error: "Internal Server Error" },
+                    { status: httpStatus.INTERNAL_SERVER_ERROR },
+                );
+            }),
+    );
