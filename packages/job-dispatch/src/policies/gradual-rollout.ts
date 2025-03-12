@@ -97,7 +97,11 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
 
   return Promise.all(
     policies.map(async (p) => {
-      const { release_job_trigger, environment_policy, release } = p;
+      const {
+        release_job_trigger,
+        environment_policy,
+        deployment_version: release,
+      } = p;
       if (
         environment_policy == null ||
         environment_policy.rolloutDuration === 0

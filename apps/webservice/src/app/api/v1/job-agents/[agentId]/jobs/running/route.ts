@@ -59,11 +59,11 @@ export const GET = async (
           target: jobRows[0]!.resource,
           deployment: jobRows[0]!.deployment,
           release:
-            jobRows[0]!.release != null
+            jobRows[0]!.deployment_version != null
               ? {
-                  ...jobRows[0]!.release,
+                  ...jobRows[0]!.deployment_version,
                   metadata: jobRows
-                    .map((r) => r.release_metadata)
+                    .map((r) => r.deployment_version_metadata)
                     .filter(isPresent),
                 }
               : null,

@@ -102,7 +102,9 @@ export const GET = request()
       );
 
     const release =
-      row.release != null ? { ...row.release, metadata: {} } : null;
+      row.deployment_version != null
+        ? { ...row.deployment_version, metadata: {} }
+        : null;
 
     const je = {
       job: row.job,

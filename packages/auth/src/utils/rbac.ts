@@ -99,8 +99,8 @@ const getReleaseScopes = async (id: string) => {
     .then(takeFirst);
 
   return [
-    { type: "release" as const, id: result.release.id },
-    { type: "deployment" as const, id: result.deployment.id },
+    { type: "release" as const, id: result.deployment_version.id },
+    { type: "deployment" as const, id: result.deployment_version.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
@@ -117,7 +117,10 @@ const getReleaseChannelScopes = async (id: string) => {
     .then(takeFirst);
 
   return [
-    { type: "releaseChannel" as const, id: result.release_channel.id },
+    {
+      type: "releaseChannel" as const,
+      id: result.deployment_version_channel.id,
+    },
     { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
@@ -363,7 +366,7 @@ const getJobScopes = async (id: string) => {
     { type: "job" as const, id: result.job.id },
     { type: "resource" as const, id: result.resource.id },
     { type: "environment" as const, id: result.environment.id },
-    { type: "release" as const, id: result.release.id },
+    { type: "release" as const, id: result.deployment_version.id },
     { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },

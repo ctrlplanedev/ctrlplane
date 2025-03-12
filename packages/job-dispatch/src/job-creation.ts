@@ -93,7 +93,7 @@ export const onJobCompletion = async (je: schema.Job) => {
     .then(takeFirst);
 
   const isDependentOnTriggerForCriteria = and(
-    eq(schema.releaseJobTrigger.releaseId, triggers.release.id),
+    eq(schema.releaseJobTrigger.releaseId, triggers.deployment_version.id),
     eq(
       schema.environmentPolicyDeployment.environmentId,
       triggers.release_job_trigger.environmentId,
@@ -103,7 +103,7 @@ export const onJobCompletion = async (je: schema.Job) => {
   const isWaitingOnConcurrencyRequirementInSameRelease = and(
     isNotNull(schema.environmentPolicy.concurrencyLimit),
     eq(schema.environmentPolicy.id, triggers.environment.policyId),
-    eq(schema.release.deploymentId, triggers.release.deploymentId),
+    eq(schema.release.deploymentId, triggers.deployment_version.deploymentId),
     eq(schema.job.status, JobStatus.Pending),
   );
 
@@ -114,7 +114,7 @@ export const onJobCompletion = async (je: schema.Job) => {
   const isWaitingOnJobToFinish = and(
     eq(schema.environment.id, triggers.release_job_trigger.environmentId),
     eq(schema.deployment.id, triggers.deployment.id),
-    ne(schema.release.id, triggers.release.id),
+    ne(schema.release.id, triggers.deployment_version.id),
   );
 
   const affectedReleaseJobTriggers = await db

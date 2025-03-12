@@ -157,7 +157,7 @@ export const policyRouter = createTRPCRouter({
         .then((rows) => {
           const policy = rows.at(0)!;
           const releaseChannels = _.chain(rows)
-            .map((r) => r.release_channel)
+            .map((r) => r.deployment_version_channel)
             .filter(isPresent)
             .uniqBy((r) => r.id)
             .value();
@@ -196,7 +196,7 @@ export const policyRouter = createTRPCRouter({
         .then((rows) => {
           const policy = rows.at(0)!;
           const releaseChannels = _.chain(rows)
-            .map((r) => r.release_channel)
+            .map((r) => r.deployment_version_channel)
             .filter(isPresent)
             .uniqBy((r) => r.id)
             .value();

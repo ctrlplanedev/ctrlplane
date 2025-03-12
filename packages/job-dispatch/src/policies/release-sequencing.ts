@@ -71,10 +71,13 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
     ])
     .flatMap((rjt) => {
       const maxRelease = _.maxBy(rjt, (rjt) => [
-        rjt.release.createdAt,
-        rjt.release.version,
+        rjt.deployment_version.createdAt,
+        rjt.deployment_version.version,
       ]);
-      return rjt.filter((rjt) => rjt.release.id === maxRelease?.release.id);
+      return rjt.filter(
+        (rjt) =>
+          rjt.deployment_version.id === maxRelease?.deployment_version.id,
+      );
     })
     .map((rjt) => rjt.release_job_trigger)
     .value();
@@ -156,8 +159,8 @@ const isReleaseLatestActiveForEnvironment = async (
   if (!latestActiveRelease) return true;
 
   return (
-    release.id === latestActiveRelease.release.id ||
-    isAfter(release.createdAt, latestActiveRelease.release.createdAt)
+    release.id === latestActiveRelease.deployment_version.id ||
+    isAfter(release.createdAt, latestActiveRelease.deployment_version.createdAt)
   );
 };
 

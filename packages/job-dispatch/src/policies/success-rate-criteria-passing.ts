@@ -91,7 +91,7 @@ export const isPassingCriteriaPolicy: ReleaseIdPolicyChecker = async (
       const isPassing = await isSuccessCriteriaPassing(
         db,
         policy.environment_policy,
-        policy.release,
+        policy.deployment_version,
       );
 
       return isPassing ? policy.release_job_trigger : null;

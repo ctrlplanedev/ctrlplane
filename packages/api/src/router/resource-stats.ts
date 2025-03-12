@@ -102,7 +102,7 @@ const healthRouter = createTRPCRouter({
           rows.map((row) => ({
             ...row.job,
             deployment: row.deployment,
-            release: row.release,
+            release: row.deployment_version,
           })),
         );
     }),

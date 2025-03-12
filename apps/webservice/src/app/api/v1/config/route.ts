@@ -174,7 +174,9 @@ const upsertReleases = async (db: Tx, config: CacV1, userId: string) => {
         .groupBy((d) => d.deployment.id)
         .map((deploymentGroup) => ({
           ...deploymentGroup[0]!,
-          releases: deploymentGroup.map((d) => d.release).filter(isPresent),
+          releases: deploymentGroup
+            .map((d) => d.deployment_version)
+            .filter(isPresent),
         }))
         .value(),
     );
