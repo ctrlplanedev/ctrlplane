@@ -46,9 +46,9 @@ import { useReleaseFilter } from "~/app/[workspaceSlug]/(appv2)/_components/rele
 import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/DeploymentDirectoryCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { JobHistoryPopover } from "./JobHistoryPopover";
-import { ReleaseDistributionGraphPopover } from "./ReleaseDistributionPopover";
-import { LazyReleaseEnvironmentCell } from "./ReleaseEnvironmentCell";
+import { JobHistoryPopover } from "./_components/release-cell/JobHistoryPopover";
+import { ReleaseDistributionGraphPopover } from "./_components/release-cell/ReleaseDistributionPopover";
+import { LazyReleaseEnvironmentCell } from "./_components/release-cell/ReleaseEnvironmentCell";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
@@ -312,7 +312,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       router.push(releaseUrl(release.id).baseUrl())
                     }
                   >
-                    <TableCell className="sticky left-0 z-10 flex h-[60px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 text-base">
+                    <TableCell className="sticky left-0 z-10 flex h-[70px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 text-base">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
@@ -341,7 +341,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     </TableCell>
                     {environments.map((env) => (
                       <TableCell
-                        className="h-[60px] w-[220px] border-l px-3 py-2"
+                        className="h-[70px] w-[220px] border-l px-3 py-2"
                         onClick={(e) => e.stopPropagation()}
                         key={env.id}
                       >
@@ -355,15 +355,17 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                     {directories.map((dir) => (
                       <TableCell
                         key={dir.path}
-                        className="h-[60px] w-[220px] border-l px-1 py-0"
+                        className="h-[70px] w-[220px] border-l"
                       >
-                        <DeploymentDirectoryCell
-                          key={dir.path}
-                          directory={dir}
-                          deployment={deployment}
-                          release={release}
-                          systemSlug={systemSlug}
-                        />
+                        <div className="w-[220px] shrink-0">
+                          <DeploymentDirectoryCell
+                            key={dir.path}
+                            directory={dir}
+                            deployment={deployment}
+                            release={release}
+                            systemSlug={systemSlug}
+                          />
+                        </div>
                       </TableCell>
                     ))}
                   </TableRow>
