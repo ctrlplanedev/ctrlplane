@@ -129,7 +129,9 @@ export const CreateReleaseDialog: React.FC<{
       releaseDependencies,
       name: data.version.trim(),
     });
-    await utils.deployment.version.list.invalidate({ deploymentId: release.deploymentId });
+    await utils.deployment.version.list.invalidate({
+      deploymentId: release.deploymentId,
+    });
 
     const deployment = deployments.data?.find(
       (d) => d.id === data.deploymentId,
