@@ -385,7 +385,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.DeploymentGet)
+          .perform(Permission.DeploymentVersionGet)
           .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
