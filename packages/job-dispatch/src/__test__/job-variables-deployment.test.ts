@@ -69,7 +69,7 @@ const resource: SCHEMA.Resource = {
   deletedAt: null,
 };
 
-const release: SCHEMA.Release = {
+const deployment_version: SCHEMA.Release = {
   id: "0",
   name: "test",
   config: {},
@@ -104,7 +104,7 @@ const variableValues: SCHEMA.DeploymentVariableValue[] = [
 
 type variable = {
   deployment_variable: SCHEMA.DeploymentVariable;
-  release: SCHEMA.Release;
+  deployment_version: SCHEMA.Release;
 };
 
 describe("job-variables-deployment", () => {
@@ -123,7 +123,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: "0",
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -161,7 +161,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: "0",
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getDeploymentVariables).mockResolvedValue(variables);
@@ -196,7 +196,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: null,
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -231,7 +231,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: "0",
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -301,7 +301,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: "0",
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -370,7 +370,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: "0",
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -437,7 +437,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: null,
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -504,7 +504,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: null,
         },
-        release,
+        deployment_version,
       },
     ];
     vi.mocked(utils.getResourceVariableValue).mockResolvedValue(null);
@@ -598,7 +598,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: null,
         },
-        release,
+        deployment_version,
       },
     ];
 
@@ -695,7 +695,7 @@ describe("job-variables-deployment", () => {
           key: "test",
           defaultValueId: null,
         },
-        release,
+        deployment_version,
       },
     ];
 

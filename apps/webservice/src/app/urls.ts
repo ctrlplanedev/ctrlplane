@@ -17,8 +17,30 @@ const workspace = (slug: string) => {
     deployments: () => buildUrl(slug, "deployments"),
     agents: () => buildUrl(slug, "agents"),
     insights: () => buildUrl(slug, "insights"),
-    resources: () => buildUrl(slug, "resources"),
+    resources: () => resources(slug),
     settings: () => buildUrl(slug, "settings"),
+  };
+};
+
+const resources = (workspaceSlug: string) => ({
+  baseUrl: () => buildUrl(workspaceSlug, "resources"),
+  list: () => buildUrl(workspaceSlug, "resources", "list"),
+  providers: () => providers(workspaceSlug),
+  groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
+  views: () => buildUrl(workspaceSlug, "resources", "views"),
+});
+
+const providers = (workspaceSlug: string) => {
+  const providersBase = [workspaceSlug, "resources", "providers"];
+  return {
+    baseUrl: () => buildUrl(...providersBase),
+    integrations: () => {
+      const integrationsBase = [...providersBase, "integrations"];
+      return {
+        baseUrl: () => buildUrl(...integrationsBase),
+        azure: () => buildUrl(...integrationsBase, "azure"),
+      };
+    },
   };
 };
 

@@ -1,4 +1,5 @@
-import type { JobCondition, JobStatusType } from "@ctrlplane/validators/jobs";
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import type { JobStatusType } from "@ctrlplane/validators/jobs";
 import Link from "next/link";
 import { IconCircle, IconLoader2 } from "@tabler/icons-react";
 import { capitalCase } from "change-case";
@@ -12,18 +13,14 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
+import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
-import {
-  ColumnOperator,
-  ComparisonOperator,
-  FilterType,
-} from "@ctrlplane/validators/conditions";
-import { activeStatusType, JobFilterType } from "@ctrlplane/validators/jobs";
+import { activeStatusType } from "@ctrlplane/validators/jobs";
 
 import { DeploymentBarChart } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/deployments/charts/DeploymentBarChart";
 import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ReleaseDropdownMenu";
@@ -33,6 +30,26 @@ import {
 } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_utils/status-color";
 import { api } from "~/trpc/react";
 import { StatusIcon } from "./StatusIcon";
+
+const Message: React.FC<{
+  trigger: SCHEMA.ReleaseJobTrigger & { job: SCHEMA.Job };
+}> = ({ trigger }) => {
+  const { data, isLoading } = api.resource.byId.useQuery(trigger.resourceId);
+
+  return (
+    <div>
+      <div className="flex items-center gap-1">
+        <IconCircle fill={getStatusColor(trigger.job.status)} strokeWidth={0} />
+        {isLoading ? <Skeleton className="h-3 w-10" /> : data?.name}
+      </div>
+      {trigger.job.message != null && trigger.job.message !== "" && (
+        <div className="text-xs text-muted-foreground">
+          {capitalCase(trigger.job.status)} — {trigger.job.message}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const Release: React.FC<{
   name: string;
@@ -57,35 +74,14 @@ export const Release: React.FC<{
     statuses,
   } = props;
 
-  const isSameRelease: JobCondition = {
-    type: JobFilterType.Release,
-    operator: ColumnOperator.Equals,
-    value: releaseId,
-  };
-
-  const isSameEnvironment: JobCondition = {
-    type: JobFilterType.Environment,
-    operator: ColumnOperator.Equals,
-    value: environment.id,
-  };
-
-  const filter: JobCondition = {
-    type: FilterType.Comparison,
-    operator: ComparisonOperator.And,
-    conditions: [isSameRelease, isSameEnvironment],
-  };
-
-  const workspaceId = api.workspace.bySlug.useQuery(workspaceSlug);
-
-  const releaseJobTriggersQ = api.job.config.byWorkspaceId.list.useQuery(
-    { workspaceId: workspaceId.data?.id ?? "", filter },
-    { enabled: isPresent(workspaceId.data?.id) },
+  const releaseJobTriggersQ = api.job.config.byReleaseAndEnvironmentId.useQuery(
+    { releaseId, environmentId: environment.id },
   );
 
   const releaseJobTriggers = releaseJobTriggersQ.data ?? [];
 
   const latestJobsByResource = _.chain(releaseJobTriggers)
-    .groupBy((r) => r.resource.id)
+    .groupBy((r) => r.resourceId)
     .mapValues((triggers) =>
       _.maxBy(triggers, (t) => new Date(t.job.createdAt)),
     )
@@ -103,7 +99,7 @@ export const Release: React.FC<{
     .value();
 
   const configuredWithMessages = releaseJobTriggers.filter((d) =>
-    [d.job, d.resource, d.job.message].every(isPresent),
+    isPresent(d.job.message),
   );
 
   return (
@@ -148,20 +144,7 @@ export const Release: React.FC<{
               {configuredWithMessages.length > 0 && (
                 <Card className="max-h-[250px] space-y-1 overflow-y-auto p-2 text-sm">
                   {configuredWithMessages.map((d) => (
-                    <div key={d.id}>
-                      <div className="flex items-center gap-1">
-                        <IconCircle
-                          fill={getStatusColor(d.job.status)}
-                          strokeWidth={0}
-                        />
-                        {d.resource.name}
-                      </div>
-                      {d.job.message != null && d.job.message !== "" && (
-                        <div className="text-xs text-muted-foreground">
-                          {capitalCase(d.job.status)} — {d.job.message}
-                        </div>
-                      )}
-                    </div>
+                    <Message key={d.id} trigger={d} />
                   ))}
                 </Card>
               )}

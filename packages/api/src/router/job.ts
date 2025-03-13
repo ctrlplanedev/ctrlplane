@@ -192,7 +192,10 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 },
                 jobAgent: v[0]!.job_agent,
                 resource: v[0]!.resource,
-                release: { ...v[0]!.release, deployment: v[0]!.deployment },
+                release: {
+                  ...v[0]!.deployment_version,
+                  deployment: v[0]!.deployment,
+                },
                 environment: v[0]!.environment,
               }))
               .value(),
@@ -420,7 +423,53 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .orderBy(desc(schema.releaseJobTrigger.createdAt))
         .limit(input.limit)
         .offset(input.offset)
+        .then((r) =>
+          r.map((row) => ({
+            ...row,
+            release: row.deployment_version,
+          })),
+        )
         .then(processReleaseJobTriggerWithAdditionalDataRows),
+    ),
+
+  byReleaseAndEnvironmentId: protectedProcedure
+    .input(
+      z.object({
+        releaseId: z.string().uuid(),
+        environmentId: z.string().uuid(),
+        limit: z.number().int().nonnegative().max(1000).default(500),
+        offset: z.number().int().nonnegative().default(0),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.JobList)
+          .on({ type: "environment", id: input.environmentId }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(schema.releaseJobTrigger)
+        .innerJoin(
+          schema.job,
+          eq(schema.releaseJobTrigger.jobId, schema.job.id),
+        )
+        .where(
+          and(
+            eq(schema.releaseJobTrigger.releaseId, input.releaseId),
+            eq(schema.releaseJobTrigger.environmentId, input.environmentId),
+          ),
+        )
+        .orderBy(desc(schema.job.createdAt))
+        .limit(input.limit)
+        .offset(input.offset)
+        .then((rows) =>
+          rows.map((row) => ({
+            ...row.release_job_trigger,
+            job: row.job,
+          })),
+        ),
     ),
 
   byId: protectedProcedure
@@ -474,6 +523,12 @@ const releaseJobTriggerRouter = createTRPCRouter({
           ),
         )
         .where(and(eq(schema.job.id, input), isNull(schema.resource.deletedAt)))
+        .then((r) =>
+          r.map((row) => ({
+            ...row,
+            release: row.deployment_version,
+          })),
+        )
         .then(processReleaseJobTriggerWithAdditionalDataRows)
         .then(takeFirst);
 
@@ -768,7 +823,7 @@ export const jobRouter = createTRPCRouter({
             agent: t.job_agent,
             resource: t.resource,
             deployment: t.deployment,
-            release: { ...t.release },
+            release: { ...t.deployment_version },
             environment: t.environment,
           })),
         ),

@@ -14,6 +14,7 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Channel } from "@ctrlplane/validators/events";
 
+import { urls } from "~/app/urls";
 import { env } from "~/env";
 
 type Params = {
@@ -110,7 +111,14 @@ export const GET = async (
         { status: FORBIDDEN },
       );
 
-    const nextStepsUrl = `${baseUrl}/${workspace.slug}/resource-providers/integrations/azure`;
+    const azureUrl = urls
+      .workspace(workspace.slug)
+      .resources()
+      .providers()
+      .integrations()
+      .azure();
+
+    const nextStepsUrl = `${baseUrl}/${azureUrl}`;
 
     if (resourceProviderId != null)
       return db

@@ -29,6 +29,7 @@ import { SidebarTrigger } from "@ctrlplane/ui/sidebar";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { JobConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/job/condition/JobConditionBadge";
 import { JobConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_components/job/condition/JobConditionDialog";
@@ -87,10 +88,27 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   );
 
   const sortedAndGroupedTriggers = Object.entries(triggersByResource)
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([_, a], [__, b]) =>
+      a[0]!.resource.name.localeCompare(b[0]!.resource.name),
+    )
     .map(([, triggers]) =>
       triggers.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
-    );
+    )
+    .sort((a, b) => {
+      if (
+        a[0]!.job.status === JobStatus.Failure &&
+        b[0]!.job.status !== JobStatus.Failure
+      )
+        return -1;
+
+      if (
+        a[0]!.job.status !== JobStatus.Failure &&
+        b[0]!.job.status === JobStatus.Failure
+      )
+        return 1;
+
+      return a[0]!.job.status.localeCompare(b[0]!.job.status);
+    });
 
   const statusCounts = _.chain(latestStatusesByResource)
     .groupBy((s) => s)

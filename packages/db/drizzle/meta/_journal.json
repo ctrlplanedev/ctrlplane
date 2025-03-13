@@ -526,6 +526,13 @@
       "when": 1741026605759,
       "tag": "0074_nebulous_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1741759085793,
+      "tag": "0075_safe_red_wolf",
+      "breakpoints": true
     }
   ]
 }

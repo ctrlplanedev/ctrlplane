@@ -1,6 +1,6 @@
 import { SidebarProvider } from "@ctrlplane/ui/sidebar";
 
-import { TerminalSessionsProvider } from "~/app/terminal/TerminalSessionsProvider";
+import { TerminalSessionsProvider } from "~/app/terminal/_components/TerminalSessionsProvider";
 import { Sidebars } from "./sidebars";
 
 export default function WorkspaceLayout({

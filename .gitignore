@@ -56,11 +56,5 @@ dist/
 #otel
 /otel
 
-#email generated
-packages/emails/src/Welcome.jsx
-packages/emails/src/client/env.js
-packages/emails/src/client/index.js
-packages/emails/tailwind.config.js
-
 # IDE files
 .idea/

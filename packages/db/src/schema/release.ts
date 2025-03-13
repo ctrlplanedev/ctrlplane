@@ -53,7 +53,7 @@ import { job } from "./job.js";
 import { resource } from "./resource.js";
 
 export const releaseChannel = pgTable(
-  "release_channel",
+  "deployment_version_channel",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
@@ -61,7 +61,7 @@ export const releaseChannel = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    releaseFilter: jsonb("release_filter")
+    releaseFilter: jsonb("deployment_version_selector")
       .$type<ReleaseCondition | null>()
       .default(sql`NULL`),
   },
@@ -75,16 +75,16 @@ export const createReleaseChannel = createInsertSchema(releaseChannel, {
 export const updateReleaseChannel = createReleaseChannel.partial();
 
 export const releaseDependency = pgTable(
-  "release_dependency",
+  "deployment_version_dependency",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    releaseId: uuid("release_id")
+    releaseId: uuid("deployment_version_id")
       .notNull()
       .references(() => release.id, { onDelete: "cascade" }),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    releaseFilter: jsonb("release_filter")
+    releaseFilter: jsonb("deployment_version_selector")
       .$type<ReleaseCondition | null>()
       .default(sql`NULL`),
   },
@@ -97,18 +97,18 @@ const createReleaseDependency = createInsertSchema(releaseDependency, {
   releaseFilter: releaseCondition,
 }).omit({ id: true });
 
-export const releaseStatus = pgEnum("release_status", [
+export const releaseStatus = pgEnum("deployment_version_status", [
   "building",
   "ready",
   "failed",
 ]);
 
 export const release = pgTable(
-  "release",
+  "deployment_version",
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    version: text("version").notNull(),
+    version: text("tag").notNull(),
     config: jsonb("config")
       .notNull()
       .default("{}")
@@ -126,7 +126,7 @@ export const release = pgTable(
   },
   (t) => ({
     unq: uniqueIndex().on(t.deploymentId, t.version),
-    createdAtIdx: index("release_created_at_idx").on(t.createdAt),
+    createdAtIdx: index("deployment_version_created_at_idx").on(t.createdAt),
   }),
 );
 
@@ -153,10 +153,10 @@ export const createRelease = createInsertSchema(release, {
 export const updateRelease = createRelease.partial();
 export type UpdateRelease = z.infer<typeof updateRelease>;
 export const releaseMetadata = pgTable(
-  "release_metadata",
+  "deployment_version_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
-    releaseId: uuid("release_id")
+    releaseId: uuid("deployment_version_id")
       .references(() => release.id, { onDelete: "cascade" })
       .notNull(),
     key: text("key").notNull(),
@@ -191,7 +191,7 @@ export const releaseJobTrigger = pgTable(
     type: releaseJobTriggerType("type").notNull(),
     causedById: uuid("caused_by_id").references(() => user.id),
 
-    releaseId: uuid("release_id")
+    releaseId: uuid("deployment_version_id")
       .references(() => release.id, { onDelete: "cascade" })
       .notNull(),
     resourceId: uuid("resource_id")

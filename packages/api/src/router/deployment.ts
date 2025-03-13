@@ -402,7 +402,7 @@ export const deploymentRouter = createTRPCRouter({
         .then((r) =>
           r.map((row) => ({
             ...row.latest_jobs,
-            release: row.release,
+            release: row.deployment_version,
             resource: row.resource,
             releaseJobTrigger: row.release_job_trigger,
           })),
@@ -533,7 +533,7 @@ export const deploymentRouter = createTRPCRouter({
                 system: { ...r[0].system, workspace: r[0].workspace },
                 agent: r[0].job_agent,
                 releaseChannels: r
-                  .map((r) => r.release_channel)
+                  .map((r) => r.deployment_version_channel)
                   .filter(isPresent),
               },
         ),
@@ -565,7 +565,7 @@ export const deploymentRouter = createTRPCRouter({
               ...t[0]!.deployment,
               system: t[0]!.system,
               releaseChannels: _.chain(t)
-                .map((a) => a.release_channel)
+                .map((a) => a.deployment_version_channel)
                 .filter(isPresent)
                 .uniqBy((a) => a.id)
                 .value(),
@@ -645,7 +645,7 @@ export const deploymentRouter = createTRPCRouter({
                     ? {
                         ...row.release_job_trigger,
                         job: row.job!,
-                        release: row.release!,
+                        release: row.deployment_version!,
                         resourceId: row.resource.id,
                       }
                     : null,

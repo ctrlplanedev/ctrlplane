@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { urls } from "~/app/urls";
+
 export const CombinationsTable: React.FC<{
   workspaceSlug: string;
   combinations: Array<{
@@ -20,6 +22,7 @@ export const CombinationsTable: React.FC<{
   }>;
 }> = ({ workspaceSlug, combinations }) => {
   const router = useRouter();
+  const resourceListUrl = urls.workspace(workspaceSlug).resources().list();
   return (
     <Table className="w-full">
       <TableHeader>
@@ -53,9 +56,7 @@ export const CombinationsTable: React.FC<{
                   }),
                 );
                 query.set("filter", filterHash);
-                return router.push(
-                  `/${workspaceSlug}/resources?${query.toString()}`,
-                );
+                return router.push(`${resourceListUrl}?${query.toString()}`);
               }}
             >
               <TableCell>

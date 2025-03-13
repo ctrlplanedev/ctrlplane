@@ -40,7 +40,7 @@ const convertEksClusterToKubernetesResource = (
 
   return {
     name: cluster.name ?? "",
-    identifier: `aws/${accountId}/eks/${cluster.name}`,
+    identifier: cluster.arn ?? "",
     version: "kubernetes/v1" as const,
     kind: "ClusterAPI" as const,
     config: {
@@ -49,6 +49,7 @@ const convertEksClusterToKubernetesResource = (
         method: "aws/eks" as const,
         region: region!,
         clusterName: cluster.name!,
+        accountId,
       },
       status: cluster.status ?? "UNKNOWN",
       server: {
@@ -65,6 +66,8 @@ const convertEksClusterToKubernetesResource = (
       "aws/arn": cluster.arn,
       "aws/region": region,
       "aws/platform-version": cluster.platformVersion,
+      "aws/account-id": accountId,
+      "aws/eks-role-arn": cluster.roleArn,
 
       "kubernetes/status": cluster.status,
       "kubernetes/version-major": major,

@@ -68,7 +68,7 @@ export const getJobStatus = async (namespace: string, name: string) => {
       logger.info(
         `Job ${name} in namespace ${namespace} completed successfully`,
       );
-      return { status: "completed" as const, message };
+      return { status: "successful" as const, message };
     }
 
     logger.warn(`Job ${name} in namespace ${namespace} has an unknown status`);
