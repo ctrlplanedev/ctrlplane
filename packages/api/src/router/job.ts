@@ -47,7 +47,7 @@ const releaseJobTriggerQuery = (tx: Tx) =>
     )
     .innerJoin(
       schema.deploymentVersion,
-      eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
@@ -230,7 +230,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           )
           .innerJoin(
             schema.deploymentVersion,
-            eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+            eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
           )
           .innerJoin(
             schema.deployment,
@@ -350,7 +350,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
           )
           .innerJoin(
             schema.deploymentVersion,
-            eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+            eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
           )
           .where(
             and(
@@ -457,7 +457,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         )
         .where(
           and(
-            eq(schema.releaseJobTrigger.releaseId, input.releaseId),
+            eq(schema.releaseJobTrigger.versionId, input.releaseId),
             eq(schema.releaseJobTrigger.environmentId, input.environmentId),
           ),
         )
@@ -782,7 +782,7 @@ const metadataKeysRouter = createTRPCRouter({
         .from(schema.deploymentVersion)
         .innerJoin(
           schema.releaseJobTrigger,
-          eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+          eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
         )
         .innerJoin(
           schema.job,

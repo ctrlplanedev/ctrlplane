@@ -46,7 +46,7 @@ const job: Job = {
     id: "0",
     jobId: "0",
     type: "new_release",
-    releaseId: "0",
+    versionId: "0",
     resourceId: "0",
     environmentId: "0",
     createdAt: new Date(),

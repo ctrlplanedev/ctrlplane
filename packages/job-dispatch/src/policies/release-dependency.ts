@@ -22,7 +22,7 @@ export const isPassingReleaseDependencyPolicy = async (
           schema.releaseDependency,
           eq(schema.deploymentVersion.id, schema.releaseDependency.releaseId),
         )
-        .where(eq(schema.deploymentVersion.id, trigger.releaseId));
+        .where(eq(schema.deploymentVersion.id, trigger.versionId));
 
       if (release.length === 0) return trigger;
 
@@ -90,11 +90,11 @@ export const isPassingReleaseDependencyPolicy = async (
           .select({
             id: schema.releaseJobTrigger.id,
             resourceId: schema.releaseJobTrigger.resourceId,
-            releaseId: schema.releaseJobTrigger.releaseId,
+            versionId: schema.releaseJobTrigger.versionId,
             status: schema.job.status,
             createdAt: schema.job.createdAt,
             rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY ${schema.releaseJobTrigger.resourceId}, ${schema.releaseJobTrigger.releaseId}
+              PARTITION BY ${schema.releaseJobTrigger.resourceId}, ${schema.releaseJobTrigger.versionId}
               ORDER BY ${schema.job.createdAt} DESC
             )`.as("rank"),
           })
@@ -114,7 +114,7 @@ export const isPassingReleaseDependencyPolicy = async (
           )
           .innerJoin(
             latestJobSubquery,
-            eq(latestJobSubquery.releaseId, schema.deploymentVersion.id),
+            eq(latestJobSubquery.versionId, schema.deploymentVersion.id),
           )
           .where(
             and(

@@ -80,7 +80,7 @@ const healthRouter = createTRPCRouter({
         .from(SCHEMA.deploymentVersion)
         .innerJoin(
           SCHEMA.releaseJobTrigger,
-          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
         )
         .innerJoin(
           SCHEMA.job,

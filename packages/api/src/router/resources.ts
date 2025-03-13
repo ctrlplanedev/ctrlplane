@@ -104,7 +104,7 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
     .from(schema.deploymentVersion)
     .innerJoin(
       schema.releaseJobTrigger,
-      eq(schema.deploymentVersion.id, schema.releaseJobTrigger.releaseId),
+      eq(schema.deploymentVersion.id, schema.releaseJobTrigger.versionId),
     )
     .as("rank_subquery");
 
@@ -123,7 +123,7 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
     .innerJoin(
       schema.releaseJobTrigger,
       and(
-        eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+        eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
         eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
       ),
     )

@@ -191,7 +191,7 @@ export const releaseJobTrigger = pgTable(
     type: releaseJobTriggerType("type").notNull(),
     causedById: uuid("caused_by_id").references(() => user.id),
 
-    releaseId: uuid("deployment_version_id")
+    versionId: uuid("deployment_version_id")
       .references(() => deploymentVersion.id, { onDelete: "cascade" })
       .notNull(),
     resourceId: uuid("resource_id")

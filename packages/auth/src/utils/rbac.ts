@@ -358,7 +358,7 @@ const getJobScopes = async (id: string) => {
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
     .innerJoin(
       deploymentVersion,
-      eq(releaseJobTrigger.releaseId, deploymentVersion.id),
+      eq(releaseJobTrigger.versionId, deploymentVersion.id),
     )
     .innerJoin(deployment, eq(deploymentVersion.deploymentId, deployment.id))
     .innerJoin(system, eq(deployment.systemId, system.id))

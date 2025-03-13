@@ -17,7 +17,7 @@ export const createJobApprovals = async (
     .from(SCHEMA.releaseJobTrigger)
     .innerJoin(
       SCHEMA.deploymentVersion,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+      eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
     )
     .innerJoin(
       SCHEMA.environment,
@@ -33,7 +33,7 @@ export const createJobApprovals = async (
     .where(
       inArray(
         SCHEMA.deploymentVersion.id,
-        releaseJobTriggers.map((t) => t.releaseId).filter(isPresent),
+        releaseJobTriggers.map((t) => t.versionId).filter(isPresent),
       ),
     );
 

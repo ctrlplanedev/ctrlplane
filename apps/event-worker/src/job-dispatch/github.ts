@@ -85,7 +85,7 @@ const getReleaseJobAgentConfig = (jobId: string) =>
     .from(SCHEMA.deploymentVersion)
     .innerJoin(
       SCHEMA.releaseJobTrigger,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.deploymentVersion.id),
+      eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
     )
     .where(eq(SCHEMA.releaseJobTrigger.jobId, jobId))
     .then(takeFirstOrNull)

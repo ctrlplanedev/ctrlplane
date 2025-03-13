@@ -172,7 +172,7 @@ class ReleaseJobTriggerBuilder {
       causedById: this._causedById,
       resourceId: v.resource.id,
       environmentId: v.environment.id,
-      releaseId:
+      versionId:
         "deployment_version" in v ? v.deployment_version.id : v.release.id,
       jobId: "",
     }));
@@ -195,14 +195,14 @@ class ReleaseJobTriggerBuilder {
       .where(
         inArray(
           SCHEMA.deploymentVersion.id,
-          wt.map((t) => t.releaseId),
+          wt.map((t) => t.versionId),
         ),
       );
 
     const jobInserts = wt
       .map((t) => {
         const release = releases.find(
-          (r) => r.deployment_version.id === t.releaseId,
+          (r) => r.deployment_version.id === t.versionId,
         );
         if (!release) return null;
         return {

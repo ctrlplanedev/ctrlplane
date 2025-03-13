@@ -83,7 +83,7 @@ export const ReleaseCell: React.FC<{
   const params = useParams<{ workspaceSlug: string; systemSlug: string }>();
   return (
     <Link
-      href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${deployment.slug}/releases/${releaseJobTrigger.releaseId}`}
+      href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${deployment.slug}/releases/${releaseJobTrigger.versionId}`}
       className="flex items-center gap-2"
     >
       <ReleaseIcon job={releaseJobTrigger.job} />

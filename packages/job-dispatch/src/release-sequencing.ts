@@ -32,7 +32,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
       ${schema.deploymentVersion.createdAt} as cancelReleaseCreatedAt
     from ${schema.job}
     inner join ${schema.releaseJobTrigger} on ${schema.job.id} = ${schema.releaseJobTrigger.jobId}
-    inner join ${schema.deploymentVersion} on ${schema.releaseJobTrigger.releaseId} = ${schema.deploymentVersion.id}
+    inner join ${schema.deploymentVersion} on ${schema.releaseJobTrigger.versionId} = ${schema.deploymentVersion.id}
     inner join ${schema.deployment} on ${schema.deploymentVersion.deploymentId} = ${schema.deployment.id}
     where ${schema.job.status} = ${JobStatus.Pending}
   `;
@@ -40,7 +40,7 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   const jobsToCancelQuery = sql`
     select distinct triggers.jobIdToCancel
     from ${schema.releaseJobTrigger}
-    inner join ${schema.deploymentVersion} on ${schema.releaseJobTrigger.releaseId} = ${schema.deploymentVersion.id}
+    inner join ${schema.deploymentVersion} on ${schema.releaseJobTrigger.versionId} = ${schema.deploymentVersion.id}
     inner join ${schema.deployment} on ${schema.deploymentVersion.deploymentId} = ${schema.deployment.id}
     inner join ${schema.environment} on ${schema.releaseJobTrigger.environmentId} = ${schema.environment.id}
     left join ${schema.environmentPolicy} on ${schema.environment.policyId} = ${schema.environmentPolicy.id}

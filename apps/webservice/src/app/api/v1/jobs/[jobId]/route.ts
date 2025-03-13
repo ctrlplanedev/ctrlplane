@@ -83,7 +83,7 @@ export const GET = request()
       )
       .leftJoin(
         schema.deploymentVersion,
-        eq(schema.releaseJobTrigger.releaseId, schema.deploymentVersion.id),
+        eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
       )
       .leftJoin(
         schema.deployment,

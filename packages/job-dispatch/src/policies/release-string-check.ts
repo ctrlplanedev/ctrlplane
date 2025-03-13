@@ -63,17 +63,17 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
         .value(),
     );
 
-  const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);
+  const versionIds = wf.map((v) => v.versionId).filter(isPresent);
   const rels = await db
     .select()
     .from(schema.deploymentVersion)
-    .where(inArray(schema.deploymentVersion.id, releaseIds));
+    .where(inArray(schema.deploymentVersion.id, versionIds));
 
   const promises = wf.map(async (wf) => {
     const env = envs.find((e) => e.environment.id === wf.environmentId);
     if (env == null) return null;
 
-    const release = rels.find((r) => r.id === wf.releaseId);
+    const release = rels.find((r) => r.id === wf.versionId);
     if (release == null) return null;
 
     const policyReleaseChannel = env.policy.releaseChannels.find(
