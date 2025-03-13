@@ -132,7 +132,7 @@ export const deploymentVersion = pgTable(
 
 export type DeploymentVersion = InferSelectModel<typeof deploymentVersion>;
 
-export const createRelease = createInsertSchema(deploymentVersion, {
+export const createDeploymentVersion = createInsertSchema(deploymentVersion, {
   version: z.string().min(1),
   name: z.string().optional(),
   config: z.record(z.any()),
@@ -150,9 +150,9 @@ export const createRelease = createInsertSchema(deploymentVersion, {
       .default([]),
   });
 
-export const updateRelease = createRelease.partial();
-export type UpdateRelease = z.infer<typeof updateRelease>;
-export const releaseMetadata = pgTable(
+export const updateDeploymentVersion = createDeploymentVersion.partial();
+export type UpdateDeploymentVersion = z.infer<typeof updateDeploymentVersion>;
+export const deploymentVersionMetadata = pgTable(
   "deployment_version_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
@@ -229,11 +229,11 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return notExists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, deploymentVersion.id),
-            eq(releaseMetadata.key, cond.key),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
           ),
         )
         .limit(1),
@@ -243,12 +243,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, deploymentVersion.id),
-            eq(releaseMetadata.key, cond.key),
-            sql`${releaseMetadata.value} ~ ${cond.value}`,
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            sql`${deploymentVersionMetadata.value} ~ ${cond.value}`,
           ),
         )
         .limit(1),
@@ -258,12 +258,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, deploymentVersion.id),
-            eq(releaseMetadata.key, cond.key),
-            ilike(releaseMetadata.value, `${cond.value}%`),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            ilike(deploymentVersionMetadata.value, `${cond.value}%`),
           ),
         )
         .limit(1),
@@ -273,12 +273,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, deploymentVersion.id),
-            eq(releaseMetadata.key, cond.key),
-            ilike(releaseMetadata.value, `%${cond.value}`),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            ilike(deploymentVersionMetadata.value, `%${cond.value}`),
           ),
         )
         .limit(1),
@@ -288,12 +288,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, deploymentVersion.id),
-            eq(releaseMetadata.key, cond.key),
-            ilike(releaseMetadata.value, `%${cond.value}%`),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            ilike(deploymentVersionMetadata.value, `%${cond.value}%`),
           ),
         )
         .limit(1),
@@ -302,12 +302,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   return exists(
     tx
       .select({ value: sql<number>`1` })
-      .from(releaseMetadata)
+      .from(deploymentVersionMetadata)
       .where(
         and(
-          eq(releaseMetadata.releaseId, deploymentVersion.id),
-          eq(releaseMetadata.key, cond.key),
-          eq(releaseMetadata.value, cond.value),
+          eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+          eq(deploymentVersionMetadata.key, cond.key),
+          eq(deploymentVersionMetadata.value, cond.value),
         ),
       )
       .limit(1),
@@ -353,7 +353,7 @@ const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
   return cond.not ? not(con) : con;
 };
 
-export function releaseMatchesCondition(
+export function deploymentVersionMatchesCondition(
   tx: Tx,
   condition?: ReleaseCondition | null,
 ): SQL<unknown> | undefined {

@@ -44,7 +44,7 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { releaseDeployRouter } from "./release-deploy";
-import { releaseMetadataKeysRouter } from "./release-metadata-keys";
+import { deploymentVersionMetadataKeysRouter } from "./release-metadata-keys";
 
 export const versionRouter = createTRPCRouter({
   list: protectedProcedure
@@ -68,7 +68,7 @@ export const versionRouter = createTRPCRouter({
         SCHEMA.deploymentVersion.deploymentId,
         input.deploymentId,
       );
-      const releaseConditionCheck = SCHEMA.releaseMatchesCondition(
+      const releaseConditionCheck = SCHEMA.deploymentVersionMatchesCondition(
         ctx.db,
         input.filter,
       );
@@ -158,8 +158,8 @@ export const versionRouter = createTRPCRouter({
             metadata: Object.fromEntries(
               await ctx.db
                 .select()
-                .from(SCHEMA.releaseMetadata)
-                .where(eq(SCHEMA.releaseMetadata.releaseId, data.id))
+                .from(SCHEMA.deploymentVersionMetadata)
+                .where(eq(SCHEMA.deploymentVersionMetadata.releaseId, data.id))
                 .then((r) => r.map((k) => [k.key, k.value])),
             ),
           };
@@ -175,7 +175,7 @@ export const versionRouter = createTRPCRouter({
           .perform(Permission.DeploymentVersionCreate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
-    .input(SCHEMA.createRelease)
+    .input(SCHEMA.createDeploymentVersion)
     .mutation(async ({ ctx, input }) => {
       const { name, ...rest } = input;
       const relName = name == null || name === "" ? rest.version : name;
@@ -212,7 +212,9 @@ export const versionRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string().uuid(), data: SCHEMA.updateRelease }))
+    .input(
+      z.object({ id: z.string().uuid(), data: SCHEMA.updateDeploymentVersion }),
+    )
     .mutation(async ({ ctx, input: { id, data } }) =>
       db
         .update(SCHEMA.deploymentVersion)
@@ -326,7 +328,10 @@ export const versionRouter = createTRPCRouter({
           .where(
             and(
               eq(SCHEMA.deploymentVersion.id, rel.id),
-              SCHEMA.releaseMatchesCondition(db, releaseChannelFilter),
+              SCHEMA.deploymentVersionMatchesCondition(
+                db,
+                releaseChannelFilter,
+              ),
             ),
           )
           .then(takeFirstOrNull);
@@ -613,7 +618,7 @@ export const versionRouter = createTRPCRouter({
               eq(SCHEMA.deploymentVersion.status, ReleaseStatus.Ready),
               eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
               env.deployment_version_channel != null
-                ? SCHEMA.releaseMatchesCondition(
+                ? SCHEMA.deploymentVersionMatchesCondition(
                     ctx.db,
                     env.deployment_version_channel.releaseFilter,
                   )
@@ -668,5 +673,5 @@ export const versionRouter = createTRPCRouter({
       }),
   }),
 
-  metadataKeys: releaseMetadataKeysRouter,
+  metadataKeys: deploymentVersionMetadataKeysRouter,
 });

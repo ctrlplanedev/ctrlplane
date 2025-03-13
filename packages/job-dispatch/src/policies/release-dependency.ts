@@ -118,7 +118,7 @@ export const isPassingReleaseDependencyPolicy = async (
           )
           .where(
             and(
-              schema.releaseMatchesCondition(db, dep.releaseFilter),
+              schema.deploymentVersionMatchesCondition(db, dep.releaseFilter),
               eq(schema.deployment.id, dep.deploymentId),
               inArray(latestJobSubquery.resourceId, allIds),
               eq(latestJobSubquery.rank, 1),

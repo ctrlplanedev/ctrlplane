@@ -96,7 +96,7 @@ const releaseChannelRouter = createTRPCRouter({
             .where(
               and(
                 eq(SCHEMA.deploymentVersion.deploymentId, channel.deploymentId),
-                SCHEMA.releaseMatchesCondition(ctx.db, filter),
+                SCHEMA.deploymentVersionMatchesCondition(ctx.db, filter),
               ),
             )
             .then(takeFirst)

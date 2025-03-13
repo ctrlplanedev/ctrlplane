@@ -27,7 +27,7 @@ import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const bodySchema = schema.createRelease.and(
+const bodySchema = schema.createDeploymentVersion.and(
   z.object({
     metadata: z.record(z.string()).optional(),
     status: z.nativeEnum(ReleaseStatus).optional(),
@@ -83,7 +83,7 @@ export const POST = request()
 
         if (Object.keys(metadata).length > 0)
           await db
-            .insert(schema.releaseMetadata)
+            .insert(schema.deploymentVersionMetadata)
             .values(
               Object.entries(metadata).map(([key, value]) => ({
                 releaseId: release.id,
@@ -93,12 +93,13 @@ export const POST = request()
             )
             .onConflictDoUpdate({
               target: [
-                schema.releaseMetadata.releaseId,
-                schema.releaseMetadata.key,
+                schema.deploymentVersionMetadata.releaseId,
+                schema.deploymentVersionMetadata.key,
               ],
-              set: buildConflictUpdateColumns(schema.releaseMetadata, [
-                "value",
-              ]),
+              set: buildConflictUpdateColumns(
+                schema.deploymentVersionMetadata,
+                ["value"],
+              ),
             });
 
         const shouldTrigger =

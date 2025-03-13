@@ -19,7 +19,7 @@ import { authn, authz } from "../../auth";
 import { parseBody } from "../../body-parser";
 import { request } from "../../middleware";
 
-const patchSchema = SCHEMA.updateRelease.and(
+const patchSchema = SCHEMA.updateDeploymentVersion.and(
   z.object({ metadata: z.record(z.string()).optional() }),
 );
 
@@ -50,7 +50,7 @@ export const PATCH = request()
 
       if (Object.keys(body.metadata ?? {}).length > 0)
         await ctx.db
-          .insert(SCHEMA.releaseMetadata)
+          .insert(SCHEMA.deploymentVersionMetadata)
           .values(
             Object.entries(body.metadata ?? {}).map(([key, value]) => ({
               releaseId,
@@ -60,10 +60,12 @@ export const PATCH = request()
           )
           .onConflictDoUpdate({
             target: [
-              SCHEMA.releaseMetadata.key,
-              SCHEMA.releaseMetadata.releaseId,
+              SCHEMA.deploymentVersionMetadata.key,
+              SCHEMA.deploymentVersionMetadata.releaseId,
             ],
-            set: buildConflictUpdateColumns(SCHEMA.releaseMetadata, ["value"]),
+            set: buildConflictUpdateColumns(SCHEMA.deploymentVersionMetadata, [
+              "value",
+            ]),
           });
 
       await createReleaseJobTriggers(ctx.db, "release_updated")

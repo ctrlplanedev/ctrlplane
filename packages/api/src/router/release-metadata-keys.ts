@@ -7,7 +7,7 @@ import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const releaseMetadataKeysRouter = createTRPCRouter({
+export const deploymentVersionMetadataKeysRouter = createTRPCRouter({
   bySystem: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -19,11 +19,14 @@ export const releaseMetadataKeysRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ input, ctx }) =>
       ctx.db
-        .selectDistinct({ key: SCHEMA.releaseMetadata.key })
+        .selectDistinct({ key: SCHEMA.deploymentVersionMetadata.key })
         .from(SCHEMA.deploymentVersion)
         .innerJoin(
-          SCHEMA.releaseMetadata,
-          eq(SCHEMA.releaseMetadata.releaseId, SCHEMA.deploymentVersion.id),
+          SCHEMA.deploymentVersionMetadata,
+          eq(
+            SCHEMA.deploymentVersionMetadata.releaseId,
+            SCHEMA.deploymentVersion.id,
+          ),
         )
         .innerJoin(
           SCHEMA.deployment,
@@ -44,11 +47,14 @@ export const releaseMetadataKeysRouter = createTRPCRouter({
     .input(z.string().uuid())
     .query(async ({ input, ctx }) =>
       ctx.db
-        .selectDistinct({ key: SCHEMA.releaseMetadata.key })
+        .selectDistinct({ key: SCHEMA.deploymentVersionMetadata.key })
         .from(SCHEMA.deploymentVersion)
         .innerJoin(
-          SCHEMA.releaseMetadata,
-          eq(SCHEMA.releaseMetadata.releaseId, SCHEMA.deploymentVersion.id),
+          SCHEMA.deploymentVersionMetadata,
+          eq(
+            SCHEMA.deploymentVersionMetadata.releaseId,
+            SCHEMA.deploymentVersion.id,
+          ),
         )
         .innerJoin(
           SCHEMA.deployment,

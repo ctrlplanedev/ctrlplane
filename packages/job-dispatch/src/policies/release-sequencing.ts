@@ -146,7 +146,7 @@ const isReleaseLatestActiveForEnvironment = async (
         isNull(schema.resource.deletedAt),
         eq(schema.deploymentVersion.deploymentId, release.deploymentId),
         eq(schema.releaseJobTrigger.environmentId, environmentId),
-        schema.releaseMatchesCondition(
+        schema.deploymentVersionMatchesCondition(
           db,
           environment.release_channel?.rcReleaseFilter,
         ),
