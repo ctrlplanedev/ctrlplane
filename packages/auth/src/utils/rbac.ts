@@ -109,7 +109,7 @@ const getDeploymentVersionScopes = async (id: string) => {
   ];
 };
 
-const getReleaseChannelScopes = async (id: string) => {
+const getDeploymentVersionChannelScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
@@ -124,7 +124,7 @@ const getReleaseChannelScopes = async (id: string) => {
 
   return [
     {
-      type: "releaseChannel" as const,
+      type: "deploymentVersionChannel" as const,
       id: result.deployment_version_channel.id,
     },
     { type: "deployment" as const, id: result.deployment.id },
@@ -399,7 +399,7 @@ export const scopeHandlers: Record<
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
   deploymentVersion: getDeploymentVersionScopes,
-  releaseChannel: getReleaseChannelScopes,
+  deploymentVersionChannel: getDeploymentVersionChannelScopes,
   resourceMetadataGroup: getResourceMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,

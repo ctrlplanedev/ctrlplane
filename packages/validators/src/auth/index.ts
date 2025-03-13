@@ -87,11 +87,11 @@ export enum Permission {
   DeploymentVersionUpdate = "deploymentVersion.update",
   DeploymentVersionList = "deploymentVersion.list",
 
-  ReleaseChannelGet = "releaseChannel.get",
-  ReleaseChannelList = "releaseChannel.list",
-  ReleaseChannelCreate = "releaseChannel.create",
-  ReleaseChannelUpdate = "releaseChannel.update",
-  ReleaseChannelDelete = "releaseChannel.delete",
+  DeploymentVersionChannelGet = "deploymentVersionChannel.get",
+  DeploymentVersionChannelList = "deploymentVersionChannel.list",
+  DeploymentVersionChannelCreate = "deploymentVersionChannel.create",
+  DeploymentVersionChannelUpdate = "deploymentVersionChannel.update",
+  DeploymentVersionChannelDelete = "deploymentVersionChannel.delete",
 
   RunbookTrigger = "runbook.trigger",
   RunbookDelete = "runbook.delete",
