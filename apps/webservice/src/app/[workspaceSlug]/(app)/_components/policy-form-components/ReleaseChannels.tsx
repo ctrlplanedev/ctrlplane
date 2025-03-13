@@ -14,10 +14,10 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 type Deployment = SCHEMA.Deployment & {
-  releaseChannels: SCHEMA.ReleaseChannel[];
+  releaseChannels: SCHEMA.DeploymentVersionChannel[];
 };
 
-type Policy = { releaseChannels: SCHEMA.ReleaseChannel[] };
+type Policy = { releaseChannels: SCHEMA.DeploymentVersionChannel[] };
 
 type DeploymentSelectProps = {
   deployment: Deployment;

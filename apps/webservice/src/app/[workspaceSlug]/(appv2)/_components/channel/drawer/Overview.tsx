@@ -38,7 +38,7 @@ import { ReleaseBadgeList } from "~/app/[workspaceSlug]/(appv2)/_components/rele
 import { api } from "~/trpc/react";
 
 type OverviewProps = {
-  releaseChannel: SCHEMA.ReleaseChannel;
+  releaseChannel: SCHEMA.DeploymentVersionChannel;
 };
 
 const getFinalFilter = (filter: ReleaseCondition | null) =>

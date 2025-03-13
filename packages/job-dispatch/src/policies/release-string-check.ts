@@ -21,15 +21,15 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
   const policyRCSubquery = db
     .select({
       releaseChannelPolicyId: schema.environmentPolicyReleaseChannel.policyId,
-      releaseChannelDeploymentId: schema.releaseChannel.deploymentId,
-      releaseChannelFilter: schema.releaseChannel.releaseFilter,
+      releaseChannelDeploymentId: schema.deploymentVersionChannel.deploymentId,
+      releaseChannelFilter: schema.deploymentVersionChannel.releaseFilter,
     })
     .from(schema.environmentPolicyReleaseChannel)
     .innerJoin(
-      schema.releaseChannel,
+      schema.deploymentVersionChannel,
       eq(
         schema.environmentPolicyReleaseChannel.channelId,
-        schema.releaseChannel.id,
+        schema.deploymentVersionChannel.id,
       ),
     )
     .as("policyRCSubquery");

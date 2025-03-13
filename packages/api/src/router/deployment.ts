@@ -29,7 +29,7 @@ import { versionRouter } from "./deployment-version";
 
 const releaseChannelRouter = createTRPCRouter({
   create: protectedProcedure
-    .input(SCHEMA.createReleaseChannel)
+    .input(SCHEMA.createDeploymentVersionChannel)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser.perform(Permission.ReleaseChannelCreate).on({
@@ -38,12 +38,15 @@ const releaseChannelRouter = createTRPCRouter({
         }),
     })
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(SCHEMA.releaseChannel).values(input).returning(),
+      ctx.db.insert(SCHEMA.deploymentVersionChannel).values(input).returning(),
     ),
 
   update: protectedProcedure
     .input(
-      z.object({ id: z.string().uuid(), data: SCHEMA.updateReleaseChannel }),
+      z.object({
+        id: z.string().uuid(),
+        data: SCHEMA.updateDeploymentVersionChannel,
+      }),
     )
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -53,9 +56,9 @@ const releaseChannelRouter = createTRPCRouter({
     })
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(SCHEMA.releaseChannel)
+        .update(SCHEMA.deploymentVersionChannel)
         .set(input.data)
-        .where(eq(SCHEMA.releaseChannel.id, input.id))
+        .where(eq(SCHEMA.deploymentVersionChannel.id, input.id))
         .returning(),
     ),
 
@@ -69,8 +72,8 @@ const releaseChannelRouter = createTRPCRouter({
     })
     .mutation(({ ctx, input }) =>
       ctx.db
-        .delete(SCHEMA.releaseChannel)
-        .where(eq(SCHEMA.releaseChannel.id, input)),
+        .delete(SCHEMA.deploymentVersionChannel)
+        .where(eq(SCHEMA.deploymentVersionChannel.id, input)),
     ),
 
   list: createTRPCRouter({
@@ -85,8 +88,8 @@ const releaseChannelRouter = createTRPCRouter({
       .query(async ({ ctx, input }) => {
         const channels = await ctx.db
           .select()
-          .from(SCHEMA.releaseChannel)
-          .where(eq(SCHEMA.releaseChannel.deploymentId, input));
+          .from(SCHEMA.deploymentVersionChannel)
+          .where(eq(SCHEMA.deploymentVersionChannel.deploymentId, input));
 
         const promises = channels.map(async (channel) => {
           const filter = channel.releaseFilter ?? undefined;
@@ -116,8 +119,8 @@ const releaseChannelRouter = createTRPCRouter({
           .on({ type: "releaseChannel", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const rc = await ctx.db.query.releaseChannel.findFirst({
-        where: eq(SCHEMA.releaseChannel.id, input),
+      const rc = await ctx.db.query.deploymentVersionChannel.findFirst({
+        where: eq(SCHEMA.deploymentVersionChannel.id, input),
         with: {
           environmentPolicyReleaseChannels: {
             with: { environmentPolicy: true },
@@ -530,8 +533,11 @@ export const deploymentRouter = createTRPCRouter({
           eq(SCHEMA.jobAgent.id, SCHEMA.deployment.jobAgentId),
         )
         .leftJoin(
-          SCHEMA.releaseChannel,
-          eq(SCHEMA.releaseChannel.deploymentId, SCHEMA.deployment.id),
+          SCHEMA.deploymentVersionChannel,
+          eq(
+            SCHEMA.deploymentVersionChannel.deploymentId,
+            SCHEMA.deployment.id,
+          ),
         )
         .where(
           and(
@@ -567,8 +573,11 @@ export const deploymentRouter = createTRPCRouter({
         .select()
         .from(SCHEMA.deployment)
         .leftJoin(
-          SCHEMA.releaseChannel,
-          eq(SCHEMA.releaseChannel.deploymentId, SCHEMA.deployment.id),
+          SCHEMA.deploymentVersionChannel,
+          eq(
+            SCHEMA.deploymentVersionChannel.deploymentId,
+            SCHEMA.deployment.id,
+          ),
         )
         .innerJoin(
           SCHEMA.system,

@@ -16,12 +16,12 @@ import {
 } from "@ctrlplane/db";
 import {
   createEnvironment,
+  deploymentVersionChannel,
   environment,
   environmentMetadata,
   environmentPolicy,
   environmentPolicyReleaseChannel,
   environmentPolicyReleaseWindow,
-  releaseChannel,
   resource,
   resourceMatchesMetadata,
   system,
@@ -58,16 +58,19 @@ export const environmentRouter = createTRPCRouter({
       const policyRCSubquery = ctx.db
         .select({
           releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
-          releaseChannelDeploymentId: releaseChannel.deploymentId,
-          releaseChannelDescription: releaseChannel.description,
-          releaseChannelFilter: releaseChannel.releaseFilter,
-          releaseChannelId: releaseChannel.id,
-          releaseChannelName: releaseChannel.name,
+          releaseChannelDeploymentId: deploymentVersionChannel.deploymentId,
+          releaseChannelDescription: deploymentVersionChannel.description,
+          releaseChannelFilter: deploymentVersionChannel.releaseFilter,
+          releaseChannelId: deploymentVersionChannel.id,
+          releaseChannelName: deploymentVersionChannel.name,
         })
         .from(environmentPolicyReleaseChannel)
         .innerJoin(
-          releaseChannel,
-          eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+          deploymentVersionChannel,
+          eq(
+            environmentPolicyReleaseChannel.channelId,
+            deploymentVersionChannel.id,
+          ),
         )
         .as("policyRCSubquery");
 

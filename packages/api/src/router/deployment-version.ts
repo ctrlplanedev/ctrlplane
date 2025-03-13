@@ -254,18 +254,19 @@ export const versionRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const policyRCSubquery = db
         .select({
-          releaseChannelId: SCHEMA.releaseChannel.id,
+          releaseChannelId: SCHEMA.deploymentVersionChannel.id,
           releaseChannelPolicyId:
             SCHEMA.environmentPolicyReleaseChannel.policyId,
-          releaseChannelDeploymentId: SCHEMA.releaseChannel.deploymentId,
-          releaseChannelFilter: SCHEMA.releaseChannel.releaseFilter,
+          releaseChannelDeploymentId:
+            SCHEMA.deploymentVersionChannel.deploymentId,
+          releaseChannelFilter: SCHEMA.deploymentVersionChannel.releaseFilter,
         })
         .from(SCHEMA.environmentPolicyReleaseChannel)
         .innerJoin(
-          SCHEMA.releaseChannel,
+          SCHEMA.deploymentVersionChannel,
           eq(
             SCHEMA.environmentPolicyReleaseChannel.channelId,
-            SCHEMA.releaseChannel.id,
+            SCHEMA.deploymentVersionChannel.id,
           ),
         )
         .as("policyRCSubquery");
@@ -588,10 +589,10 @@ export const versionRouter = createTRPCRouter({
             ),
           )
           .leftJoin(
-            SCHEMA.releaseChannel,
+            SCHEMA.deploymentVersionChannel,
             eq(
               SCHEMA.environmentPolicyReleaseChannel.channelId,
-              SCHEMA.releaseChannel.id,
+              SCHEMA.deploymentVersionChannel.id,
             ),
           )
           .where(eq(SCHEMA.environment.id, environmentId))
