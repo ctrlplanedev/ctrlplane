@@ -32,7 +32,7 @@ const releaseChannelRouter = createTRPCRouter({
     .input(SCHEMA.createDeploymentVersionChannel)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseChannelCreate).on({
+        canUser.perform(Permission.DeploymentVersionChannelCreate).on({
           type: "deployment",
           id: input.deploymentId,
         }),
@@ -51,8 +51,8 @@ const releaseChannelRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseChannelUpdate)
-          .on({ type: "releaseChannel", id: input.id }),
+          .perform(Permission.DeploymentVersionChannelUpdate)
+          .on({ type: "deploymentVersionChannel", id: input.id }),
     })
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -67,8 +67,8 @@ const releaseChannelRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseChannelDelete)
-          .on({ type: "releaseChannel", id: input }),
+          .perform(Permission.DeploymentVersionChannelDelete)
+          .on({ type: "deploymentVersionChannel", id: input }),
     })
     .mutation(({ ctx, input }) =>
       ctx.db
@@ -82,7 +82,7 @@ const releaseChannelRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.ReleaseChannelList)
+            .perform(Permission.DeploymentVersionChannelList)
             .on({ type: "deployment", id: input }),
       })
       .query(async ({ ctx, input }) => {
@@ -115,8 +115,8 @@ const releaseChannelRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseChannelGet)
-          .on({ type: "releaseChannel", id: input }),
+          .perform(Permission.DeploymentVersionChannelGet)
+          .on({ type: "deploymentVersionChannel", id: input }),
     })
     .query(async ({ ctx, input }) => {
       const rc = await ctx.db.query.deploymentVersionChannel.findFirst({

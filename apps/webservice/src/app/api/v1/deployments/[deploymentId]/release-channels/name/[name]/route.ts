@@ -12,7 +12,7 @@ export const DELETE = request()
   .use(
     authz(async ({ can, extra: { params } }) =>
       can
-        .perform(Permission.ReleaseChannelDelete)
+        .perform(Permission.DeploymentVersionChannelDelete)
         .on({ type: "deployment", id: params.deploymentId }),
     ),
   )

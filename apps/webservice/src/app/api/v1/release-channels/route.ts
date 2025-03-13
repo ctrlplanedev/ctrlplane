@@ -16,7 +16,7 @@ export const POST = request()
   .use(
     authz(({ ctx, can }) =>
       can
-        .perform(Permission.ReleaseChannelCreate)
+        .perform(Permission.DeploymentVersionChannelCreate)
         .on({ type: "deployment", id: ctx.body.deploymentId }),
     ),
   )
