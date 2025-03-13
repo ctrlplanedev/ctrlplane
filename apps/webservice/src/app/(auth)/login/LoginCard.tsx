@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconBrandGoogleFilled, IconLock } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
@@ -135,6 +136,15 @@ export const LoginCard: React.FC<{
               <IconLock /> Continue with SSO
             </Button>
           )}
+
+          <div className="text-center">
+            <Link
+              href="/sign-up"
+              className="text-xs text-muted-foreground hover:text-white"
+            >
+              Don&apos;t have an account? Sign up
+            </Link>
+          </div>
         </div>
       </div>
     </div>

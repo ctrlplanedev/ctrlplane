@@ -41,12 +41,8 @@ setup("authenticate", async ({ page }) => {
 
   // Save signed-in state
   await page.context().storageState({ path: path.join(authDir, "user.json") });
-});
 
-// Create a workspace fixture
-setup("create workspace", async ({ page }) => {
   const workspaceName = generateRandomWorkspaceName();
-
   // Navigate to workspace creation if not already there
   const currentUrl = page.url();
   if (!currentUrl.includes("/workspaces/create")) {
@@ -55,12 +51,12 @@ setup("create workspace", async ({ page }) => {
 
   // Create initial workspace
   await page.getByRole("textbox", { name: /name/i }).fill(workspaceName);
+  await page.getByRole("textbox", { name: /url/i }).fill(workspaceName);
+
   await page.getByRole("button", { name: /create/i }).click();
 
   // Wait for workspace creation and redirect
-  await expect(page).toHaveURL(new RegExp(`/${workspaceName}.*`), {
-    timeout: 10000,
-  });
+  await expect(page).toHaveURL(`/${workspaceName}`, { timeout: 10_000 });
 
   // Store the workspace information
   const workspaceData: WorkspaceFixture = {
