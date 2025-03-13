@@ -38,7 +38,7 @@ import { useReleaseFilter } from "../release-condition/useReleaseFilter";
 import { ReleaseBadgeList } from "../ReleaseBadgeList";
 
 type OverviewProps = {
-  releaseChannel: SCHEMA.ReleaseChannel;
+  releaseChannel: SCHEMA.DeploymentVersionChannel;
 };
 
 const getFinalFilter = (filter: ReleaseCondition | null) =>

@@ -21,8 +21,8 @@ const getReleaseFilter = (channelId: string | null) =>
   channelId != null
     ? db
         .select()
-        .from(SCHEMA.releaseChannel)
-        .where(eq(SCHEMA.releaseChannel.id, channelId))
+        .from(SCHEMA.deploymentVersionChannel)
+        .where(eq(SCHEMA.deploymentVersionChannel.id, channelId))
         .then(takeFirstOrNull)
         .then((r) => r?.releaseFilter ?? null)
     : null;

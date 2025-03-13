@@ -52,7 +52,7 @@ import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
 
-export const releaseChannel = pgTable(
+export const deploymentVersionChannel = pgTable(
   "deployment_version_channel",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -68,11 +68,15 @@ export const releaseChannel = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.name) }),
 );
 
-export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
-export const createReleaseChannel = createInsertSchema(releaseChannel, {
-  releaseFilter: releaseCondition,
-}).omit({ id: true });
-export const updateReleaseChannel = createReleaseChannel.partial();
+export type DeploymentVersionChannel = InferSelectModel<
+  typeof deploymentVersionChannel
+>;
+export const createDeploymentVersionChannel = createInsertSchema(
+  deploymentVersionChannel,
+  { releaseFilter: releaseCondition },
+).omit({ id: true });
+export const updateDeploymentVersionChannel =
+  createDeploymentVersionChannel.partial();
 
 export const releaseDependency = pgTable(
   "deployment_version_dependency",

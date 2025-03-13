@@ -175,7 +175,7 @@ type DeploymentPageContentProps = {
   deployment: Deployment;
   environments: schema.Environment[];
   directories: { path: string; environments: schema.Environment[] }[];
-  releaseChannel: schema.ReleaseChannel | null;
+  releaseChannel: schema.DeploymentVersionChannel | null;
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({

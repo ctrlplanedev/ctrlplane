@@ -43,7 +43,7 @@ type ReleaseConditionDialogProps = {
     condition: ReleaseCondition | null,
     releaseChannelId?: string | null,
   ) => void;
-  releaseChannels?: SCHEMA.ReleaseChannel[];
+  releaseChannels?: SCHEMA.DeploymentVersionChannel[];
   children: React.ReactNode;
 };
 

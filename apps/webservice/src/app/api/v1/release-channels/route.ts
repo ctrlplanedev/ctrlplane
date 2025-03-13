@@ -2,7 +2,7 @@ import type { z } from "zod";
 import { NextResponse } from "next/server";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
-import { createReleaseChannel } from "@ctrlplane/db/schema";
+import { createDeploymentVersionChannel } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -12,7 +12,7 @@ import { request } from "../middleware";
 
 export const POST = request()
   .use(authn)
-  .use(parseBody(createReleaseChannel))
+  .use(parseBody(createDeploymentVersionChannel))
   .use(
     authz(({ ctx, can }) =>
       can
@@ -20,15 +20,15 @@ export const POST = request()
         .on({ type: "deployment", id: ctx.body.deploymentId }),
     ),
   )
-  .handle<{ body: z.infer<typeof createReleaseChannel> }>(
+  .handle<{ body: z.infer<typeof createDeploymentVersionChannel> }>(
     async ({ db, body }) => {
       const releaseChannel = await db
         .select()
-        .from(SCHEMA.releaseChannel)
+        .from(SCHEMA.deploymentVersionChannel)
         .where(
           and(
-            eq(SCHEMA.releaseChannel.deploymentId, body.deploymentId),
-            eq(SCHEMA.releaseChannel.name, body.name),
+            eq(SCHEMA.deploymentVersionChannel.deploymentId, body.deploymentId),
+            eq(SCHEMA.deploymentVersionChannel.name, body.name),
           ),
         )
         .then(takeFirstOrNull);
@@ -40,7 +40,7 @@ export const POST = request()
         );
 
       return db
-        .insert(SCHEMA.releaseChannel)
+        .insert(SCHEMA.deploymentVersionChannel)
         .values(body)
         .returning()
         .then(takeFirst)

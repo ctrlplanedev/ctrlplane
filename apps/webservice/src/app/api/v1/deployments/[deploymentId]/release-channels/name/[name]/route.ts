@@ -20,11 +20,14 @@ export const DELETE = request()
     async (ctx, { params }) => {
       try {
         await ctx.db
-          .delete(schema.releaseChannel)
+          .delete(schema.deploymentVersionChannel)
           .where(
             and(
-              eq(schema.releaseChannel.deploymentId, params.deploymentId),
-              eq(schema.releaseChannel.name, params.name),
+              eq(
+                schema.deploymentVersionChannel.deploymentId,
+                params.deploymentId,
+              ),
+              eq(schema.deploymentVersionChannel.name, params.name),
             ),
           );
 

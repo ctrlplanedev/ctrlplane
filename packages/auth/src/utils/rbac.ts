@@ -13,12 +13,12 @@ import {
   deployment,
   deploymentVariable,
   deploymentVersion,
+  deploymentVersionChannel,
   entityRole,
   environment,
   environmentPolicy,
   job,
   jobAgent,
-  releaseChannel,
   releaseJobTrigger,
   resource,
   resourceMetadataGroup,
@@ -115,8 +115,11 @@ const getReleaseChannelScopes = async (id: string) => {
     .from(workspace)
     .innerJoin(system, eq(system.workspaceId, workspace.id))
     .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .innerJoin(releaseChannel, eq(releaseChannel.deploymentId, deployment.id))
-    .where(eq(releaseChannel.id, id))
+    .innerJoin(
+      deploymentVersionChannel,
+      eq(deploymentVersionChannel.deploymentId, deployment.id),
+    )
+    .where(eq(deploymentVersionChannel.id, id))
     .then(takeFirst);
 
   return [
