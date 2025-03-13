@@ -82,10 +82,10 @@ export enum Permission {
   EnvironmentUpdate = "environment.update",
   EnvironmentList = "environment.list",
 
-  ReleaseCreate = "release.create",
-  ReleaseGet = "release.get",
-  ReleaseUpdate = "release.update",
-  ReleaseList = "release.list",
+  DeploymentVersionCreate = "deploymentVersion.create",
+  DeploymentVersionGet = "deploymentVersion.get",
+  DeploymentVersionUpdate = "deploymentVersion.update",
+  DeploymentVersionList = "deploymentVersion.list",
 
   ReleaseChannelGet = "releaseChannel.get",
   ReleaseChannelList = "releaseChannel.list",

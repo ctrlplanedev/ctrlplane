@@ -11,7 +11,7 @@ export const releaseMetadataKeysRouter = createTRPCRouter({
   bySystem: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseGet).on({
+        canUser.perform(Permission.DeploymentVersionGet).on({
           type: "system",
           id: input,
         }),
@@ -36,7 +36,7 @@ export const releaseMetadataKeysRouter = createTRPCRouter({
   byWorkspace: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseGet).on({
+        canUser.perform(Permission.DeploymentVersionGet).on({
           type: "workspace",
           id: input,
         }),

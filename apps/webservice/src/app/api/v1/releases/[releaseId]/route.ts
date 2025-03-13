@@ -29,8 +29,8 @@ export const PATCH = request()
   .use(
     authz(({ can, extra: { params } }) =>
       can
-        .perform(Permission.ReleaseUpdate)
-        .on({ type: "release", id: params.releaseId }),
+        .perform(Permission.DeploymentVersionUpdate)
+        .on({ type: "deploymentVersion", id: params.releaseId }),
     ),
   )
   .handle<

@@ -88,7 +88,7 @@ export const checkEntityPermissionForResource = async (
   return role != null;
 };
 
-const getReleaseScopes = async (id: string) => {
+const getDeploymentVersionScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
@@ -102,8 +102,8 @@ const getReleaseScopes = async (id: string) => {
     .then(takeFirst);
 
   return [
-    { type: "release" as const, id: result.deployment_version.id },
-    { type: "deployment" as const, id: result.deployment_version.id },
+    { type: "deploymentVersion" as const, id: result.deployment_version.id },
+    { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
@@ -372,7 +372,7 @@ const getJobScopes = async (id: string) => {
     { type: "job" as const, id: result.job.id },
     { type: "resource" as const, id: result.resource.id },
     { type: "environment" as const, id: result.environment.id },
-    { type: "release" as const, id: result.deployment_version.id },
+    { type: "deploymentVersion" as const, id: result.deployment_version.id },
     { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
@@ -395,7 +395,7 @@ export const scopeHandlers: Record<
   workspace: getWorkspaceScopes,
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
-  release: getReleaseScopes,
+  deploymentVersion: getDeploymentVersionScopes,
   releaseChannel: getReleaseChannelScopes,
   resourceMetadataGroup: getResourceMetadataGroupScopes,
   variableSet: getVariableSetScopes,

@@ -19,7 +19,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({
@@ -65,7 +65,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentUpdate)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({ policyId: z.string().uuid(), releaseId: z.string().uuid() }),
@@ -127,7 +127,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentUpdate)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
@@ -161,7 +161,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
