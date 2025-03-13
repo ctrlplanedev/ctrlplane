@@ -39,8 +39,11 @@ export const GET = async (
       eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.versionId),
     )
     .leftJoin(
-      SCHEMA.releaseMetadata,
-      eq(SCHEMA.releaseMetadata.releaseId, SCHEMA.deploymentVersion.id),
+      SCHEMA.deploymentVersionMetadata,
+      eq(
+        SCHEMA.deploymentVersionMetadata.releaseId,
+        SCHEMA.deploymentVersion.id,
+      ),
     )
     .leftJoin(
       SCHEMA.deployment,

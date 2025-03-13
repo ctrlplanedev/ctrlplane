@@ -89,7 +89,7 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
       .where(
         and(
           eq(schema.deploymentVersion.id, release.id),
-          schema.releaseMatchesCondition(db, releaseChannelFilter),
+          schema.deploymentVersionMatchesCondition(db, releaseChannelFilter),
         ),
       )
       .then(takeFirstOrNull);

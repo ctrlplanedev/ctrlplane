@@ -235,7 +235,9 @@ const upsertReleases = async (db: Tx, config: CacV1, userId: string) => {
     .filter(isPresent);
 
   if (releaseMetadataInserts.length > 0)
-    await db.insert(schema.releaseMetadata).values(releaseMetadataInserts);
+    await db
+      .insert(schema.deploymentVersionMetadata)
+      .values(releaseMetadataInserts);
 
   await createReleaseJobTriggers(db, "new_release")
     .causedById(userId)

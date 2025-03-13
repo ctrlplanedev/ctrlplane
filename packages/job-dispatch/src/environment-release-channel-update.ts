@@ -80,7 +80,7 @@ const cancelJobsForExcludedReleases = async (
         eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
         eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
         eq(SCHEMA.job.status, JobStatus.Pending),
-        SCHEMA.releaseMatchesCondition(db, excludedReleasesFilter),
+        SCHEMA.deploymentVersionMatchesCondition(db, excludedReleasesFilter),
       ),
     )
     .then((rows) => rows.map((r) => r.job.id));
@@ -104,7 +104,7 @@ const getLatestReleaseMatchingFilter = (
     .where(
       and(
         eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
-        SCHEMA.releaseMatchesCondition(db, releaseFilter),
+        SCHEMA.deploymentVersionMatchesCondition(db, releaseFilter),
       ),
     )
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
