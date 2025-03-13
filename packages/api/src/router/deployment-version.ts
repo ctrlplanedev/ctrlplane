@@ -51,7 +51,7 @@ export const versionRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseList)
+          .perform(Permission.DeploymentVersionList)
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(
@@ -122,8 +122,8 @@ export const versionRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseGet)
-          .on({ type: "release", id: input }),
+          .perform(Permission.DeploymentVersionGet)
+          .on({ type: "deploymentVersion", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
@@ -172,7 +172,7 @@ export const versionRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseCreate)
+          .perform(Permission.DeploymentVersionCreate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(SCHEMA.createRelease)
@@ -241,9 +241,9 @@ export const versionRouter = createTRPCRouter({
   blocked: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseGet).on(
+        canUser.perform(Permission.DeploymentVersionGet).on(
           ...(input as string[]).map((t) => ({
-            type: "release" as const,
+            type: "deploymentVersion" as const,
             id: t,
           })),
         ),
@@ -353,8 +353,8 @@ export const versionRouter = createTRPCRouter({
       )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.ReleaseGet).on({
-            type: "release",
+          canUser.perform(Permission.DeploymentVersionGet).on({
+            type: "deploymentVersion",
             id: input.releaseId,
           }),
       })
@@ -400,8 +400,8 @@ export const versionRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           "releaseId" in input
-            ? canUser.perform(Permission.ReleaseGet).on({
-                type: "release",
+            ? canUser.perform(Permission.DeploymentVersionGet).on({
+                type: "deploymentVersion",
                 id: input.releaseId,
               })
             : canUser.perform(Permission.DeploymentGet).on({
@@ -460,7 +460,7 @@ export const versionRouter = createTRPCRouter({
       )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.ReleaseGet).on({
+          canUser.perform(Permission.DeploymentVersionGet).on({
             type: "deployment",
             id: input.deploymentId,
           }),

@@ -386,7 +386,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({
@@ -772,8 +772,8 @@ const metadataKeysRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseGet)
-          .on({ type: "release", id: input }),
+          .perform(Permission.DeploymentVersionGet)
+          .on({ type: "deploymentVersion", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>

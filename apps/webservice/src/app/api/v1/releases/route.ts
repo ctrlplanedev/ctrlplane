@@ -40,7 +40,7 @@ export const POST = request()
   .use(
     authz(({ ctx, can }) =>
       can
-        .perform(Permission.ReleaseCreate)
+        .perform(Permission.DeploymentVersionCreate)
         .on({ type: "deployment", id: ctx.body.deploymentId }),
     ),
   )
