@@ -105,7 +105,7 @@ export const LoginCard: React.FC<{
               />
 
               <FormRootError />
-              <Button type="submit" className="w-full">
+              <Button name="login" type="submit" className="w-full">
                 Login
               </Button>
             </form>
