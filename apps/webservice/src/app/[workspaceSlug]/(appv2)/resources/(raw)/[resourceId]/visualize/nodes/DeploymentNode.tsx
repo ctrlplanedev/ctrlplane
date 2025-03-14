@@ -6,7 +6,7 @@ import { Handle, Position } from "reactflow";
 import { cn } from "@ctrlplane/ui";
 import { JobStatus, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
-import { useDeploymentEnvResourceDrawer } from "~/app/[workspaceSlug]/(app)/_components/deployment-resource-drawer/useDeploymentResourceDrawer";
+import { useDeploymentEnvResourceDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/deployments/resource-drawer/useDeploymentResourceDrawer";
 import { ReleaseIcon } from "~/app/[workspaceSlug]/(appv2)/_components/resources/ReleaseCell";
 import { api } from "~/trpc/react";
 
