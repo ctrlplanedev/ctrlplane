@@ -1,8 +1,8 @@
 import React from "react";
 import { IconChartBar, IconCube, IconSettings } from "@tabler/icons-react";
 
-import { EnvironmentDrawer } from "../(app)/_components/environment-drawer/EnvironmentDrawer";
-import { EnvironmentPolicyDrawer } from "../(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
+import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/environment/drawer/EnvironmentDrawer";
+import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/policy/drawer/EnvironmentPolicyDrawer";
 import { ReleaseChannelDrawer } from "./_components/channel/drawer/ReleaseChannelDrawer";
 import { DeploymentResourceDrawer } from "./_components/deployments/resource-drawer/DeploymentResourceDrawer";
 import { JobDrawer } from "./_components/job/drawer/JobDrawer";

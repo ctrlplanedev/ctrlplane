@@ -6,7 +6,7 @@ import React from "react";
 import { IconPlant } from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
 
-import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment-drawer/EnvironmentDrawer";
+import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/environment/drawer/EnvironmentDrawer";
 
 type Environment = NonNullable<
   RouterOutputs["resource"]["relationships"]

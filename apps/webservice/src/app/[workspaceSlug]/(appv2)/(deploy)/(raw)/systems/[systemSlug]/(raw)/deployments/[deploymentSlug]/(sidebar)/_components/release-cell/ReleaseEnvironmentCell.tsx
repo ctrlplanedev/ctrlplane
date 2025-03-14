@@ -17,7 +17,7 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/release-channel-drawer/useReleaseChannelDrawer";
+import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/channel/drawer/useReleaseChannelDrawer";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ApprovalDialog";
 import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(appv2)/(deploy)/_components/release/ReleaseDropdownMenu";
 import { api } from "~/trpc/react";

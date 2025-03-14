@@ -22,15 +22,15 @@ import ReactFlow, {
 import colors from "tailwindcss/colors";
 import { isPresent } from "ts-is-present";
 
-import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment-drawer/EnvironmentDrawer";
-import { useEnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment-policy-drawer/EnvironmentPolicyDrawer";
-import { ArrowEdge } from "~/app/[workspaceSlug]/(app)/_components/reactflow/ArrowEdge";
+import { useEnvironmentDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/environment/drawer/EnvironmentDrawer";
+import { useEnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/policy/drawer/EnvironmentPolicyDrawer";
+import { ArrowEdge } from "~/app/[workspaceSlug]/(appv2)/_components/reactflow/ArrowEdge";
 import {
   createEdgesFromPolicyDeployment,
   createEdgesWhereEnvironmentHasNoPolicy,
   createEdgesWherePolicyHasNoEnvironment,
-} from "~/app/[workspaceSlug]/(app)/_components/reactflow/edges";
-import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(app)/_components/reactflow/layout";
+} from "~/app/[workspaceSlug]/(appv2)/_components/reactflow/edges";
+import { useLayoutAndFitView } from "~/app/[workspaceSlug]/(appv2)/_components/reactflow/layout";
 import { api } from "~/trpc/react";
 import { useDeleteNodeDialog } from "./DeleteNodeDialog";
 import { useHandleEdgeDelete, useOnEdgeClick } from "./edges";

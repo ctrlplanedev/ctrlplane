@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 import { ColumnOperator } from "@ctrlplane/validators/conditions";
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
-import { DailyJobsChart } from "~/app/[workspaceSlug]/(app)/_components/DailyJobsChart";
+import { DailyJobsChart } from "~/app/[workspaceSlug]/(appv2)/insights/DailyJobsChart";
 import { api } from "~/trpc/react";
 
 type JobHistoryPopoverProps = {
