@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
 
+
+
 import { eq } from "@ctrlplane/db";
-import { resource, workspace } from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
+import { resource } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+
+
 
 import { authn, authz } from "../../../auth";
 import { request } from "../../../middleware";
 
-const log = logger.child({
-  module: "api/v1/workspaces/:workspaceId/resources",
-});
+
+type ListRequestParams = {params: {workspaceId: string}};
 
 export const GET = request()
   .use(authn)
@@ -22,10 +24,10 @@ export const GET = request()
         .on({ type: "workspace", id: (await params).workspaceId }),
     ),
   )
-  .handle<unknown, { params: { workspaceId: string } }>(
-    async (ctx, { params }) => {
+  .handle<unknown, Promise<ListRequestParams>>(
+    async (ctx, extra) => {
       try {
-        const { workspaceId } = await params;
+        const { workspaceId } = (await extra).params;
         const resources = await ctx.db
           .select()
           .from(resource)

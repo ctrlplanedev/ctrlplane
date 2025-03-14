@@ -9,23 +9,21 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../../../auth";
 import { request } from "../../../middleware";
 
-const log = logger.child({
-  module: "api/v1/workspaces/:workspaceId/environments",
-});
+type ListRequestParams = {params: {workspaceId: string}};
 
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra: { params } }) =>
+    authz(async ({ can, extra: { params } }) =>
       can
         .perform(Permission.EnvironmentList)
-        .on({ type: "workspace", id: params.workspaceId }),
+        .on({ type: "workspace", id: (await params).workspaceId }),
     ),
   )
-  .handle<unknown, { params: { workspaceId: string } }>(
-    async (ctx, { params }) => {
+  .handle<unknown, Promise<ListRequestParams>>(
+    async (ctx, extra) => {
       try {
-        const { workspaceId } = await params;
+          const { workspaceId } = (await extra).params;
         const environments = await ctx.db
           .select()
           .from(environment)

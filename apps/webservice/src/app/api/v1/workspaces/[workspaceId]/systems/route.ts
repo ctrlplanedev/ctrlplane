@@ -8,19 +8,21 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../../../auth";
 import { request } from "../../../middleware";
 
+type ListRequestParams = {params: {workspaceId: string}};
+
 export const GET = request()
   .use(authn)
   .use(
-    authz(({ can, extra: { params } }) =>
+    authz(async ({ can, extra: { params } }) =>
       can
         .perform(Permission.SystemList)
-        .on({ type: "workspace", id: params.workspaceId }),
+        .on({ type: "workspace", id: (await params).workspaceId }),
     ),
   )
-  .handle<unknown, { params: { workspaceId: string } }>(
-    async (ctx, { params }) => {
+  .handle<unknown, Promise<ListRequestParams>>(
+    async (ctx, extra) => {
       try {
-        const { workspaceId } = await params;
+        const { workspaceId } = (await extra).params;
         const systems = await ctx.db
           .select()
           .from(system)
