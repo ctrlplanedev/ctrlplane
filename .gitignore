@@ -55,3 +55,6 @@ dist/
 
 #otel
 /otel
+
+# IDE files
+.idea/

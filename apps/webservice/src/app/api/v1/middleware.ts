@@ -12,7 +12,7 @@ export type Context<T = object> = BaseContext & T;
 
 export type Handler<
   C extends BaseContext = BaseContext,
-  E extends object = object,
+  E extends object|Promise<object> = object,
 > = (ctx: C, extra: E) => Promise<Response>;
 
 export type Middleware<TNext = object, TPrev = object, Extra = object> = (

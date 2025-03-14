@@ -1,6 +1,7 @@
 import type { Tx } from "@ctrlplane/db";
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
+import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
@@ -10,6 +11,9 @@ import { Permission } from "@ctrlplane/validators/auth";
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
+import * as schema from "@ctrlplane/db/schema";
+
+const log = logger.child({ module: "api/v1/deployments" });
 
 export const POST = request()
   .use(authn)

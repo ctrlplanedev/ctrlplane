@@ -2291,6 +2291,80 @@
         }
       }
     },
+    "/v1/workspaces/:workspaceId/deployments": {
+      "parameters": [
+        {
+          "name": "workspaceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The ID of the workspace"
+        }
+      ],
+      "get": {
+        "summary": "List all deployments",
+        "operationId": "listDeployments",
+        "responses": {
+          "200": {
+            "description": "All deployments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Deployment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/:workspaceId/environments": {
+      "parameters": [
+        {
+          "name": "workspaceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The ID of the workspace"
+        }
+      ],
+      "get": {
+        "summary": "List all environments",
+        "operationId": "listEnvironments",
+        "responses": {
+          "200": {
+            "description": "All environments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Environment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/workspaces/{workspaceId}": {
       "get": {
         "summary": "Get a workspace",
@@ -2657,6 +2731,80 @@
           },
           "500": {
             "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/v1/workspaces/:workspaceId/resources": {
+      "parameters": [
+        {
+          "name": "workspaceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The ID of the workspace"
+        }
+      ],
+      "get": {
+        "summary": "List all resources",
+        "operationId": "listResources",
+        "responses": {
+          "200": {
+            "description": "All resources",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Resource"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/workspaces/:workspaceId/systems": {
+      "parameters": [
+        {
+          "name": "workspaceId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "The ID of the workspace"
+        }
+      ],
+      "get": {
+        "summary": "List all systems",
+        "operationId": "listSystems",
+        "responses": {
+          "200": {
+            "description": "All systems",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/System"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
