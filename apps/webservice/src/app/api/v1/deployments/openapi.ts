@@ -110,28 +110,6 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
       },
-      get: {
-        summary: "List all deployments",
-        operationId: "listDeployments",
-        responses: {
-          "200": {
-            description: "All deployments",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    data: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/Deployment" },
-                    }
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     },
   },
 };

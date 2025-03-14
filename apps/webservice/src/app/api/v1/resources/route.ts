@@ -70,36 +70,3 @@ export const POST = request()
       return NextResponse.json({ count: resources.all.length });
     },
   );
-
-export const GET = request()
-    .use(authn)
-    .use(
-        authz(({ ctx, can }) =>
-            can
-                .perform(Permission.ResourceList)
-                .on({ type: "workspace", id: ctx.body.workspaceId }),
-        ),
-    )
-    .handle(async (ctx) =>
-        ctx.db
-            .select()
-            .from(resource)
-            .orderBy(resource.name)
-            .then((environments) => ({ data: environments }))
-            .then((paginated) =>
-                NextResponse.json(paginated, { status: httpStatus.CREATED }),
-            )
-            .catch((error) => {
-                if (error instanceof z.ZodError)
-                    return NextResponse.json(
-                        { error: error.errors },
-                        { status: httpStatus.BAD_REQUEST },
-                    );
-
-                log.error("Error getting systems:", error);
-                return NextResponse.json(
-                    { error: "Internal Server Error" },
-                    { status: httpStatus.INTERNAL_SERVER_ERROR },
-                );
-            }),
-    );

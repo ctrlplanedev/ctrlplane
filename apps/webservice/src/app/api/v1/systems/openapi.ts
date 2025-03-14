@@ -106,28 +106,6 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
       },
-      get: {
-        summary: "List all systems",
-        operationId: "listSystems",
-        responses: {
-          "200": {
-            description: "All systems",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    data: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/System" },
-                    }
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
     },
   },
 };
