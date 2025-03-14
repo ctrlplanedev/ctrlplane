@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
-import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
-import { workspace, environment } from "@ctrlplane/db/schema";
+import { environment, system } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -23,27 +22,30 @@ export const GET = request()
         .on({ type: "workspace", id: params.workspaceId }),
     ),
   )
-  .handle<unknown, { params: { workspaceId: string } }>(async (ctx, { params }) =>
-    ctx.db
-      .select()
-      .from(environment)
-      .where(eq(workspace.id, params.workspaceId))
-      .orderBy(environment.name)
-      .then((environments) => ({ data: environments }))
-      .then((paginated) =>
-        NextResponse.json(paginated, { status: httpStatus.CREATED }),
-      )
-      .catch((error) => {
-        if (error instanceof z.ZodError)
-          return NextResponse.json(
-            { error: error.errors },
-            { status: httpStatus.BAD_REQUEST },
-          );
-
-        log.error("Error getting systems:", error);
+  .handle<unknown, { params: { workspaceId: string } }>(
+    async (ctx, { params }) => {
+      try {
+        const { workspaceId } = await params;
+        const environments = await ctx.db
+          .select()
+          .from(environment)
+          .leftJoin(system, eq(system.id, environment.systemId))
+          .where(eq(system.workspaceId, workspaceId))
+          .orderBy(environment.name);
         return NextResponse.json(
-          { error: "Internal Server Error" },
+          { data: environments },
+          { status: httpStatus.OK },
+        );
+      } catch (error) {
+        //console.dir(error);
+
+        return NextResponse.json(
+          {
+            error: "Internal Server Error",
+            message: error instanceof Error ? error.message : "Unknown error",
+          },
           { status: httpStatus.INTERNAL_SERVER_ERROR },
         );
-      }),
+      }
+    },
   );

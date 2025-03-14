@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
-import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
-import * as schema from "@ctrlplane/db/schema";
-import * as SCHEMA from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
+import { system } from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../../auth";
 import { request } from "../../../middleware";
-
-const log = logger.child({ module: "api/v1/workspaces/:workspaceId/systems" });
 
 export const GET = request()
   .use(authn)
@@ -23,28 +18,25 @@ export const GET = request()
     ),
   )
   .handle<unknown, { params: { workspaceId: string } }>(
-    async (ctx, { params }) =>
-      ctx.db
-        .select()
-        .from(schema.system)
-        .where(eq(SCHEMA.workspace.id, params.workspaceId))
-        .orderBy(schema.system.slug)
-        .then((systems) => ({ data: systems }))
-        .then((paginated) =>
-          NextResponse.json(paginated, { status: httpStatus.CREATED }),
-        )
-        .catch((error) => {
-          console.log(error);
-          if (error instanceof z.ZodError)
-            return NextResponse.json(
-              { error: error.errors },
-              { status: httpStatus.BAD_REQUEST },
-            );
+    async (ctx, { params }) => {
+      try {
+        const { workspaceId } = await params;
+        const systems = await ctx.db
+          .select()
+          .from(system)
+          .where(eq(system.workspaceId, workspaceId))
+          .orderBy(system.slug);
+        return NextResponse.json({ data: systems }, { status: httpStatus.OK });
+      } catch (error) {
+        //console.dir(error);
 
-          log.error("Error getting systems:", error);
-          return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: httpStatus.INTERNAL_SERVER_ERROR },
-          );
-        }),
+        return NextResponse.json(
+          {
+            error: "Internal Server Error",
+            message: error instanceof Error ? error.message : "Unknown error",
+          },
+          { status: httpStatus.INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
   );

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
-import { z } from "zod";
 
 import { eq } from "@ctrlplane/db";
-import { deployment, workspace } from "@ctrlplane/db/schema";
+import { deployment, system } from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
@@ -24,28 +23,29 @@ export const GET = request()
     ),
   )
   .handle<unknown, { params: { workspaceId: string } }>(
-    async (ctx, { params }) =>
-      ctx.db
-        .select()
-        .from(deployment)
-        .where(eq(workspace.id, params.workspaceId))
-        .orderBy(deployment.slug)
-        .then((deployments) => ({ data: deployments }))
-        .then((paginated) =>
-          NextResponse.json(paginated, { status: httpStatus.CREATED }),
-        )
-        .catch((error) => {
-          console.log(error);
-          if (error instanceof z.ZodError)
-            return NextResponse.json(
-              { error: error.errors },
-              { status: httpStatus.BAD_REQUEST },
-            );
+    async (ctx, { params }) => {
+      try {
+        const { workspaceId } = await params;
+        const deployments = await ctx.db
+          .select()
+          .from(deployment)
+          .leftJoin(system, eq(system.id, deployment.systemId))
+          .where(eq(system.workspaceId, workspaceId))
+          .orderBy(deployment.slug);
+        return NextResponse.json(
+          { data: deployments },
+          { status: httpStatus.OK },
+        );
+      } catch (error) {
+        //console.dir(error);
 
-          log.error("Error getting systems:", error);
-          return NextResponse.json(
-            { error: "Internal Server Error" },
-            { status: httpStatus.INTERNAL_SERVER_ERROR },
-          );
-        }),
+        return NextResponse.json(
+          {
+            error: "Internal Server Error",
+            message: error instanceof Error ? error.message : "Unknown error",
+          },
+          { status: httpStatus.INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
   );
