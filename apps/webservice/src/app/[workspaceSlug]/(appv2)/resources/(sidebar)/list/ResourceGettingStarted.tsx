@@ -38,7 +38,7 @@ export const ResourceGettingStarted: React.FC<{ workspace: Workspace }> = ({
             href="https://docs.ctrlplane.dev/core-concepts/resources"
             target="_blank"
             passHref
-            className={buttonVariants({ variant: "secondary", size: "sm" })}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             Documentation
           </Link>

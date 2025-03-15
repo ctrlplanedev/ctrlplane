@@ -1,7 +1,8 @@
 import type { Workspace } from "@ctrlplane/db/schema";
+import Link from "next/link";
 import { IconTopologyComplex } from "@tabler/icons-react";
 
-import { Button } from "@ctrlplane/ui/button";
+import { Button, buttonVariants } from "@ctrlplane/ui/button";
 
 import { CreateSystemDialog } from "../_components/CreateSystem";
 
@@ -27,9 +28,14 @@ export const SystemGettingStarted: React.FC<{
           <CreateSystemDialog {...props}>
             <Button size="sm">Create System</Button>
           </CreateSystemDialog>
-          <Button size="sm" variant="secondary">
+          <Link
+            href="https://docs.ctrlplane.dev/core-concepts/systems"
+            target="_blank"
+            passHref
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
             Documentation
-          </Button>
+          </Link>
         </div>
       </div>
     </div>
