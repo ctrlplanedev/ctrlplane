@@ -37,7 +37,7 @@ export const UserAvatarMenu = ({
         <Avatar className="size-7 cursor-pointer transition-all hover:ring-2 hover:ring-primary/20">
           <AvatarImage
             src={viewer.image ?? undefined}
-            alt={viewer.name || viewer.email}
+            alt={viewer.name ?? viewer.email}
           />
           <AvatarFallback>
             <IconUser className="h-4 w-4" />
@@ -47,7 +47,7 @@ export const UserAvatarMenu = ({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col gap-1">
-            <p className="font-medium">{viewer.name || "User"}</p>
+            <p className="font-medium">{viewer.name ?? "User"}</p>
             <p className="truncate text-xs text-muted-foreground">
               {viewer.email}
             </p>

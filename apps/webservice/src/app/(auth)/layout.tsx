@@ -19,16 +19,6 @@ export default function AuthLayout({
       <div className="pointer-events-none absolute left-1/2 top-0 z-10 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/10" />
       <div className="pointer-events-none absolute left-1/2 top-0 z-10 h-[900px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/5" />
       
-      {/* Logo in background */}
-      <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 opacity-[0.02]">
-        <Image
-          src="/android-chrome-512x512.png"
-          alt="Ctrlplane Logo Background"
-          width={800}
-          height={800}
-          className="h-auto w-auto"
-        />
-      </div>
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-screen-xl px-4">

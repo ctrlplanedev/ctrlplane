@@ -80,7 +80,7 @@ export const LoginCard: React.FC<{
   });
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto w-full" style={{ maxWidth: "350px" }}>
       <div className="mb-6 flex items-center justify-center">
         <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 p-2">
           <Image
@@ -184,7 +184,7 @@ export const LoginCard: React.FC<{
               <Button
                 onClick={() => signIn("google")}
                 variant="outline"
-                className="h-10 w-full gap-2 border-border/50 bg-white text-neutral-900 hover:bg-neutral-50"
+                className="h-10 w-full gap-2 border-border/50 bg-white text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
               >
                 <IconBrandGoogleFilled className="h-4 w-4" /> 
                 <span>Google</span>
@@ -195,7 +195,7 @@ export const LoginCard: React.FC<{
               <Button
                 onClick={() => signIn("oidc")}
                 variant="outline"
-                className="h-10 w-full gap-2 border-border/50 bg-background/50 backdrop-blur-sm"
+                className="h-10 w-full gap-2 border-border/50 bg-background/50 text-foreground hover:bg-background/70 hover:text-foreground backdrop-blur-sm"
               >
                 <IconLock className="h-4 w-4" /> 
                 <span>Single Sign-On (SSO)</span>
@@ -204,17 +204,19 @@ export const LoginCard: React.FC<{
           </div>
         </CardContent>
         
-        <CardFooter className="flex justify-center border-t border-border/30 bg-muted/20 p-4">
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link
-              href="/sign-up"
-              className="font-medium text-primary hover:text-primary/80"
-            >
-              Sign up for free
-            </Link>
-          </p>
-        </CardFooter>
+        {isCredentialsAuthEnabled && (
+          <CardFooter className="flex justify-center border-t border-border/30 bg-muted/20 p-4">
+            <p className="text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link
+                href="/sign-up"
+                className="font-medium text-primary hover:text-primary/80"
+              >
+                Sign up for free
+              </Link>
+            </p>
+          </CardFooter>
+        )}
       </Card>
     </div>
   );

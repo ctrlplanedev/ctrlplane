@@ -90,7 +90,7 @@ export const SignUpCard: React.FC = () => {
   });
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto w-full" style={{ maxWidth: "350px" }}>
       <div className="mb-6 flex items-center justify-center">
         <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 p-2">
           <Image
