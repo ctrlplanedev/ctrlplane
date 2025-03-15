@@ -11,8 +11,6 @@ import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const log = logger.child({ module: "api/v1/deployments" });
-
 export const POST = request()
   .use(authn)
   .use(parseBody(SCHEMA.createDeployment))

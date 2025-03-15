@@ -5,7 +5,6 @@ import { z } from "zod";
 import { db } from "@ctrlplane/db/client";
 import { createResource } from "@ctrlplane/db/schema";
 import { upsertResources } from "@ctrlplane/job-dispatch";
-import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
