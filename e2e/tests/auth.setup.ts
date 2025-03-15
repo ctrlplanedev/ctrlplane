@@ -1,14 +1,14 @@
 import fs from "fs";
 import path from "path";
 import { expect, test as setup } from "@playwright/test";
-import { nanoid } from "nanoid";
+import { faker } from "@faker-js/faker";
 
 const generateRandomUsername = () =>
-  `testuser_${nanoid(10)}`.toLocaleLowerCase();
+  `testuser_${faker.string.alphanumeric(10)}`.toLocaleLowerCase();
 const generateRandomEmail = (username: string) =>
   `${username}@example.com`.toLocaleLowerCase();
 export const generateRandomWorkspaceName = () =>
-  `workspace_${nanoid(8)}`.toLocaleLowerCase();
+  `workspace_${faker.string.alphanumeric(8)}`.toLocaleLowerCase();
 
 // Ensure auth directory exists
 const authDir = path.join(process.cwd(), ".auth");
@@ -50,9 +50,9 @@ setup("authenticate", async ({ page }) => {
   }
 
   // Create initial workspace
-  await page.getByRole("textbox", { name: /name/i }).fill(workspaceName);
-  await page.getByRole("textbox", { name: /url/i }).fill(workspaceName);
-
+  await page
+    .getByRole("textbox", { name: /name/i })
+    .pressSequentially(workspaceName, { delay: 100 });
   await page.getByRole("button", { name: /create/i }).click();
 
   // Wait for workspace creation and redirect
