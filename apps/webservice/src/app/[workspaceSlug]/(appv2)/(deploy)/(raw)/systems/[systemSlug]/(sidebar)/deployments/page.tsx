@@ -6,8 +6,8 @@ import { CreateDeploymentDialog } from "~/app/[workspaceSlug]/(appv2)/_component
 import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
-import DeploymentTable from "./TableDeployments";
 import { DeploymentGettingStarted } from "./DeploymentGettingStarted";
+import DeploymentTable from "./TableDeployments";
 
 export default async function DeploymentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;

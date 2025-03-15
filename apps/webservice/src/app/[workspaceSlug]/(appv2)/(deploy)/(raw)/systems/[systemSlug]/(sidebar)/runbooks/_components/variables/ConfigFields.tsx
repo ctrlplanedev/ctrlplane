@@ -30,8 +30,8 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
 
-import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionBadge";
-import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
+import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionBadge";
+import { ResourceConditionDialog } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionDialog";
 
 export const ConfigTypeSelector: React.FC<{
   value: string | undefined;

@@ -194,7 +194,9 @@ export const SystemsPageContent: React.FC<{
                   </div>
                   <div className="flex flex-col">
                     <span className="text-2xl font-bold">{totalSystems}</span>
-                    <span className="text-sm text-muted-foreground">Systems</span>
+                    <span className="text-sm text-muted-foreground">
+                      Systems
+                    </span>
                   </div>
                 </div>
               </Card>
@@ -205,7 +207,9 @@ export const SystemsPageContent: React.FC<{
                     <IconShip className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-2xl font-bold">{totalDeployments}</span>
+                    <span className="text-2xl font-bold">
+                      {totalDeployments}
+                    </span>
                     <span className="text-sm text-muted-foreground">
                       Deployments
                     </span>
@@ -219,7 +223,9 @@ export const SystemsPageContent: React.FC<{
                     <IconPlant className="h-6 w-6 text-primary" />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-2xl font-bold">{totalEnvironments}</span>
+                    <span className="text-2xl font-bold">
+                      {totalEnvironments}
+                    </span>
                     <span className="text-sm text-muted-foreground">
                       Environments
                     </span>
@@ -302,30 +308,35 @@ export const SystemsPageContent: React.FC<{
         )}
 
         {/* Empty State */}
-        {!isLoading && systems.length === 0 && (
-          search ? (
+        {!isLoading &&
+          systems.length === 0 &&
+          (search ? (
             <Card className="flex flex-col items-center justify-center p-12 text-center">
               <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/5">
                 <IconTopologyComplex className="h-10 w-10 text-primary/60" />
               </div>
               <h3 className="mb-2 text-xl font-semibold">No systems found</h3>
               <p className="mb-8 max-w-md text-muted-foreground">
-                No systems match your search "{search}". Try a different search term.
+                No systems match your search "{search}". Try a different search
+                term.
               </p>
             </Card>
           ) : (
             <div className="h-full w-full p-20">
               <div className="container m-auto max-w-xl space-y-6 p-20">
                 <div className="relative -ml-1 text-neutral-500">
-                  <IconTopologyComplex className="h-10 w-10" strokeWidth={0.5} />
+                  <IconTopologyComplex
+                    className="h-10 w-10"
+                    strokeWidth={0.5}
+                  />
                 </div>
                 <div className="font-semibold">Systems</div>
                 <div className="prose prose-invert text-sm text-muted-foreground">
                   <p>
                     Systems serve as a high-level category or grouping for your
-                    deployments. A system encompasses a set of related deployments that
-                    share common characteristics, such as the same environments and
-                    environment policies.
+                    deployments. A system encompasses a set of related
+                    deployments that share common characteristics, such as the
+                    same environments and environment policies.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -336,15 +347,17 @@ export const SystemsPageContent: React.FC<{
                     href="https://docs.ctrlplane.dev/core-concepts/systems"
                     target="_blank"
                     passHref
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                    })}
                   >
                     Documentation
                   </Link>
                 </div>
               </div>
             </div>
-          )
-        )}
+          ))}
 
         {/* System List */}
         {isLoading &&
@@ -367,7 +380,8 @@ export const SystemsPageContent: React.FC<{
         {/* Results Summary */}
         {!isLoading && systems.length > 0 && (
           <div className="mt-4 text-sm text-muted-foreground">
-            Showing {systems.length} {systems.length === 1 ? "system" : "systems"}
+            Showing {systems.length}{" "}
+            {systems.length === 1 ? "system" : "systems"}
             {search && <span> for search "{search}"</span>}
           </div>
         )}
