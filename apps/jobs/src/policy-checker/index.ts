@@ -42,7 +42,7 @@ export const run = async () => {
         ),
         eq(
           schema.environmentPolicyApproval.releaseId,
-          schema.releaseJobTrigger.releaseId,
+          schema.releaseJobTrigger.versionId,
         ),
       ),
     )

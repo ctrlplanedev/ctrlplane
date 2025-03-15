@@ -21,8 +21,8 @@ const getReleaseFilter = (channelId: string | null) =>
   channelId != null
     ? db
         .select()
-        .from(SCHEMA.releaseChannel)
-        .where(eq(SCHEMA.releaseChannel.id, channelId))
+        .from(SCHEMA.deploymentVersionChannel)
+        .where(eq(SCHEMA.deploymentVersionChannel.id, channelId))
         .then(takeFirstOrNull)
         .then((r) => r?.releaseFilter ?? null)
     : null;
@@ -72,15 +72,15 @@ const cancelJobsForExcludedReleases = async (
       eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
     )
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+      SCHEMA.deploymentVersion,
+      eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
     )
     .where(
       and(
-        eq(SCHEMA.release.deploymentId, deploymentId),
+        eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
         eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
         eq(SCHEMA.job.status, JobStatus.Pending),
-        SCHEMA.releaseMatchesCondition(db, excludedReleasesFilter),
+        SCHEMA.deploymentVersionMatchesCondition(db, excludedReleasesFilter),
       ),
     )
     .then((rows) => rows.map((r) => r.job.id));
@@ -100,14 +100,14 @@ const getLatestReleaseMatchingFilter = (
 ) =>
   db
     .select()
-    .from(SCHEMA.release)
+    .from(SCHEMA.deploymentVersion)
     .where(
       and(
-        eq(SCHEMA.release.deploymentId, deploymentId),
-        SCHEMA.releaseMatchesCondition(db, releaseFilter),
+        eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
+        SCHEMA.deploymentVersionMatchesCondition(db, releaseFilter),
       ),
     )
-    .orderBy(desc(SCHEMA.release.createdAt))
+    .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
     .then(takeFirstOrNull);
 

@@ -78,12 +78,12 @@ export const onJobCompletion = async (je: schema.Job) => {
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
-      eq(schema.release.deploymentId, schema.deployment.id),
+      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
     )
     .innerJoin(
       schema.environment,
@@ -93,7 +93,7 @@ export const onJobCompletion = async (je: schema.Job) => {
     .then(takeFirst);
 
   const isDependentOnTriggerForCriteria = and(
-    eq(schema.releaseJobTrigger.releaseId, triggers.deployment_version.id),
+    eq(schema.releaseJobTrigger.versionId, triggers.deployment_version.id),
     eq(
       schema.environmentPolicyDeployment.environmentId,
       triggers.release_job_trigger.environmentId,
@@ -103,7 +103,10 @@ export const onJobCompletion = async (je: schema.Job) => {
   const isWaitingOnConcurrencyRequirementInSameRelease = and(
     isNotNull(schema.environmentPolicy.concurrencyLimit),
     eq(schema.environmentPolicy.id, triggers.environment.policyId),
-    eq(schema.release.deploymentId, triggers.deployment_version.deploymentId),
+    eq(
+      schema.deploymentVersion.deploymentId,
+      triggers.deployment_version.deploymentId,
+    ),
     eq(schema.job.status, JobStatus.Pending),
   );
 
@@ -114,19 +117,19 @@ export const onJobCompletion = async (je: schema.Job) => {
   const isWaitingOnJobToFinish = and(
     eq(schema.environment.id, triggers.release_job_trigger.environmentId),
     eq(schema.deployment.id, triggers.deployment.id),
-    ne(schema.release.id, triggers.deployment_version.id),
+    ne(schema.deploymentVersion.id, triggers.deployment_version.id),
   );
 
   const affectedReleaseJobTriggers = await db
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
-      eq(schema.release.deploymentId, schema.deployment.id),
+      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
     )
     .innerJoin(schema.job, eq(schema.releaseJobTrigger.jobId, schema.job.id))
     .innerJoin(
@@ -149,7 +152,7 @@ export const onJobCompletion = async (je: schema.Job) => {
       and(
         eq(
           schema.releaseDependency.releaseId,
-          schema.releaseJobTrigger.releaseId,
+          schema.releaseJobTrigger.versionId,
         ),
         eq(schema.releaseDependency.deploymentId, triggers.deployment.id),
       ),

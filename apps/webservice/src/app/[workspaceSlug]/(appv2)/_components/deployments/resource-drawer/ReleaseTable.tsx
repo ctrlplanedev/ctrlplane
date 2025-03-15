@@ -12,7 +12,8 @@ import {
 
 import { ReleaseRows } from "./TableRow";
 
-type ReleaseWithTriggers = RouterOutputs["release"]["list"]["items"][number];
+type ReleaseWithTriggers =
+  RouterOutputs["deployment"]["version"]["list"]["items"][number];
 
 type ReleaseTableProps = {
   releasesWithTriggers: ReleaseWithTriggers[];

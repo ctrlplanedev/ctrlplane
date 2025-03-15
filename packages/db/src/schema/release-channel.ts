@@ -3,7 +3,7 @@ import { pgTable, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 import { deployment } from "./deployment.js";
 import { environmentPolicy } from "./environment.js";
-import { releaseChannel } from "./release.js";
+import { deploymentVersionChannel } from "./release.js";
 
 export const environmentPolicyReleaseChannel = pgTable(
   "environment_policy_deployment_version_channel",
@@ -14,7 +14,7 @@ export const environmentPolicyReleaseChannel = pgTable(
       .references(() => environmentPolicy.id, { onDelete: "cascade" }),
     channelId: uuid("channel_id")
       .notNull()
-      .references(() => releaseChannel.id, { onDelete: "cascade" }),
+      .references(() => deploymentVersionChannel.id, { onDelete: "cascade" }),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),

@@ -12,13 +12,13 @@ import { db } from "@ctrlplane/db/client";
 import {
   deployment,
   deploymentVariable,
+  deploymentVersion,
+  deploymentVersionChannel,
   entityRole,
   environment,
   environmentPolicy,
   job,
   jobAgent,
-  release,
-  releaseChannel,
   releaseJobTrigger,
   resource,
   resourceMetadataGroup,
@@ -88,37 +88,43 @@ export const checkEntityPermissionForResource = async (
   return role != null;
 };
 
-const getReleaseScopes = async (id: string) => {
+const getDeploymentVersionScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
     .innerJoin(system, eq(system.workspaceId, workspace.id))
     .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .innerJoin(release, eq(release.deploymentId, deployment.id))
-    .where(eq(release.id, id))
+    .innerJoin(
+      deploymentVersion,
+      eq(deploymentVersion.deploymentId, deployment.id),
+    )
+    .where(eq(deploymentVersion.id, id))
     .then(takeFirst);
 
   return [
-    { type: "release" as const, id: result.deployment_version.id },
-    { type: "deployment" as const, id: result.deployment_version.id },
+    { type: "deploymentVersion" as const, id: result.deployment_version.id },
+    { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
   ];
 };
 
-const getReleaseChannelScopes = async (id: string) => {
+const getDeploymentVersionChannelScopes = async (id: string) => {
   const result = await db
     .select()
     .from(workspace)
     .innerJoin(system, eq(system.workspaceId, workspace.id))
     .innerJoin(deployment, eq(deployment.systemId, system.id))
-    .innerJoin(releaseChannel, eq(releaseChannel.deploymentId, deployment.id))
-    .where(eq(releaseChannel.id, id))
+    .innerJoin(
+      deploymentVersionChannel,
+      eq(deploymentVersionChannel.deploymentId, deployment.id),
+    )
+    .where(eq(deploymentVersionChannel.id, id))
     .then(takeFirst);
 
   return [
     {
-      type: "releaseChannel" as const,
+      type: "deploymentVersionChannel" as const,
       id: result.deployment_version_channel.id,
     },
     { type: "deployment" as const, id: result.deployment.id },
@@ -353,8 +359,11 @@ const getJobScopes = async (id: string) => {
     .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
     .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
     .innerJoin(environment, eq(releaseJobTrigger.environmentId, environment.id))
-    .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-    .innerJoin(deployment, eq(release.deploymentId, deployment.id))
+    .innerJoin(
+      deploymentVersion,
+      eq(releaseJobTrigger.versionId, deploymentVersion.id),
+    )
+    .innerJoin(deployment, eq(deploymentVersion.deploymentId, deployment.id))
     .innerJoin(system, eq(deployment.systemId, system.id))
     .innerJoin(workspace, eq(system.workspaceId, workspace.id))
     .where(and(eq(job.id, id), isNull(resource.deletedAt)))
@@ -366,7 +375,7 @@ const getJobScopes = async (id: string) => {
     { type: "job" as const, id: result.job.id },
     { type: "resource" as const, id: result.resource.id },
     { type: "environment" as const, id: result.environment.id },
-    { type: "release" as const, id: result.deployment_version.id },
+    { type: "deploymentVersion" as const, id: result.deployment_version.id },
     { type: "deployment" as const, id: result.deployment.id },
     { type: "system" as const, id: result.system.id },
     { type: "workspace" as const, id: result.workspace.id },
@@ -389,8 +398,8 @@ export const scopeHandlers: Record<
   workspace: getWorkspaceScopes,
   environment: getEnvironmentScopes,
   environmentPolicy: getEnvironmentPolicyScopes,
-  release: getReleaseScopes,
-  releaseChannel: getReleaseChannelScopes,
+  deploymentVersion: getDeploymentVersionScopes,
+  deploymentVersionChannel: getDeploymentVersionChannelScopes,
   resourceMetadataGroup: getResourceMetadataGroupScopes,
   variableSet: getVariableSetScopes,
   jobAgent: getJobAgentScopes,

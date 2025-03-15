@@ -18,25 +18,7 @@ import {
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
-import {
-  createRelease,
-  deployment,
-  environment,
-  environmentPolicy,
-  environmentPolicyApproval,
-  environmentPolicyReleaseChannel,
-  job,
-  release,
-  releaseChannel,
-  releaseDependency,
-  releaseJobTrigger,
-  releaseMatchesCondition,
-  releaseMetadata,
-  resource,
-  resourceMatchesMetadata,
-  system,
-  updateRelease,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
   createJobApprovals,
@@ -62,14 +44,14 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { releaseDeployRouter } from "./release-deploy";
-import { releaseMetadataKeysRouter } from "./release-metadata-keys";
+import { deploymentVersionMetadataKeysRouter } from "./release-metadata-keys";
 
-export const releaseRouter = createTRPCRouter({
+export const versionRouter = createTRPCRouter({
   list: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseList)
+          .perform(Permission.DeploymentVersionList)
           .on({ type: "deployment", id: input.deploymentId }),
     })
     .input(
@@ -82,8 +64,11 @@ export const releaseRouter = createTRPCRouter({
       }),
     )
     .query(({ ctx, input }) => {
-      const deploymentIdCheck = eq(release.deploymentId, input.deploymentId);
-      const releaseConditionCheck = releaseMatchesCondition(
+      const deploymentIdCheck = eq(
+        SCHEMA.deploymentVersion.deploymentId,
+        input.deploymentId,
+      );
+      const releaseConditionCheck = SCHEMA.deploymentVersionMatchesCondition(
         ctx.db,
         input.filter,
       );
@@ -94,13 +79,16 @@ export const releaseRouter = createTRPCRouter({
       const getItems = async () =>
         ctx.db
           .select()
-          .from(release)
+          .from(SCHEMA.deploymentVersion)
           .leftJoin(
-            releaseDependency,
-            eq(release.id, releaseDependency.releaseId),
+            SCHEMA.releaseDependency,
+            eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseDependency.releaseId),
           )
           .where(checks)
-          .orderBy(desc(release.createdAt), desc(release.version))
+          .orderBy(
+            desc(SCHEMA.deploymentVersion.createdAt),
+            desc(SCHEMA.deploymentVersion.version),
+          )
           .limit(input.limit)
           .offset(input.offset)
           .then((data) =>
@@ -119,7 +107,7 @@ export const releaseRouter = createTRPCRouter({
         .select({
           count: count().mapWith(Number),
         })
-        .from(release)
+        .from(SCHEMA.deploymentVersion)
         .where(checks)
         .then(takeFirst)
         .then((t) => t.count);
@@ -134,20 +122,23 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseGet)
-          .on({ type: "release", id: input }),
+          .perform(Permission.DeploymentVersionGet)
+          .on({ type: "deploymentVersion", id: input }),
     })
     .input(z.string().uuid())
     .query(({ ctx, input }) =>
       ctx.db
         .select()
-        .from(release)
-        .leftJoin(deployment, eq(release.deploymentId, deployment.id))
+        .from(SCHEMA.deploymentVersion)
         .leftJoin(
-          releaseDependency,
-          eq(releaseDependency.releaseId, release.id),
+          SCHEMA.deployment,
+          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
         )
-        .where(eq(release.id, input))
+        .leftJoin(
+          SCHEMA.releaseDependency,
+          eq(SCHEMA.releaseDependency.releaseId, SCHEMA.deploymentVersion.id),
+        )
+        .where(eq(SCHEMA.deploymentVersion.id, input))
         .then((rows) =>
           _.chain(rows)
             .groupBy((r) => r.deployment_version.id)
@@ -167,8 +158,8 @@ export const releaseRouter = createTRPCRouter({
             metadata: Object.fromEntries(
               await ctx.db
                 .select()
-                .from(releaseMetadata)
-                .where(eq(releaseMetadata.releaseId, data.id))
+                .from(SCHEMA.deploymentVersionMetadata)
+                .where(eq(SCHEMA.deploymentVersionMetadata.releaseId, data.id))
                 .then((r) => r.map((k) => [k.key, k.value])),
             ),
           };
@@ -181,15 +172,15 @@ export const releaseRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseCreate)
+          .perform(Permission.DeploymentVersionCreate)
           .on({ type: "deployment", id: input.deploymentId }),
     })
-    .input(createRelease)
+    .input(SCHEMA.createDeploymentVersion)
     .mutation(async ({ ctx, input }) => {
       const { name, ...rest } = input;
       const relName = name == null || name === "" ? rest.version : name;
       const rel = await db
-        .insert(release)
+        .insert(SCHEMA.deploymentVersion)
         .values({ ...rest, name: relName })
         .returning()
         .then(takeFirst);
@@ -199,7 +190,7 @@ export const releaseRouter = createTRPCRouter({
         releaseId: rel.id,
       }));
       if (releaseDeps.length > 0)
-        await db.insert(releaseDependency).values(releaseDeps);
+        await db.insert(SCHEMA.releaseDependency).values(releaseDeps);
 
       const releaseJobTriggers = await createReleaseJobTriggers(
         db,
@@ -221,12 +212,14 @@ export const releaseRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string().uuid(), data: updateRelease }))
+    .input(
+      z.object({ id: z.string().uuid(), data: SCHEMA.updateDeploymentVersion }),
+    )
     .mutation(async ({ ctx, input: { id, data } }) =>
       db
-        .update(release)
+        .update(SCHEMA.deploymentVersion)
         .set(data)
-        .where(eq(release.id, id))
+        .where(eq(SCHEMA.deploymentVersion.id, id))
         .returning()
         .then(takeFirst)
         .then((rel) =>
@@ -250,9 +243,9 @@ export const releaseRouter = createTRPCRouter({
   blocked: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseGet).on(
+        canUser.perform(Permission.DeploymentVersionGet).on(
           ...(input as string[]).map((t) => ({
-            type: "release" as const,
+            type: "deploymentVersion" as const,
             id: t,
           })),
         ),
@@ -261,32 +254,46 @@ export const releaseRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const policyRCSubquery = db
         .select({
-          releaseChannelId: releaseChannel.id,
-          releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
-          releaseChannelDeploymentId: releaseChannel.deploymentId,
-          releaseChannelFilter: releaseChannel.releaseFilter,
+          releaseChannelId: SCHEMA.deploymentVersionChannel.id,
+          releaseChannelPolicyId:
+            SCHEMA.environmentPolicyReleaseChannel.policyId,
+          releaseChannelDeploymentId:
+            SCHEMA.deploymentVersionChannel.deploymentId,
+          releaseChannelFilter: SCHEMA.deploymentVersionChannel.releaseFilter,
         })
-        .from(environmentPolicyReleaseChannel)
+        .from(SCHEMA.environmentPolicyReleaseChannel)
         .innerJoin(
-          releaseChannel,
-          eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+          SCHEMA.deploymentVersionChannel,
+          eq(
+            SCHEMA.environmentPolicyReleaseChannel.channelId,
+            SCHEMA.deploymentVersionChannel.id,
+          ),
         )
         .as("policyRCSubquery");
 
       const envs = await db
         .select()
-        .from(release)
-        .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-        .innerJoin(environment, eq(deployment.systemId, environment.systemId))
+        .from(SCHEMA.deploymentVersion)
+        .innerJoin(
+          SCHEMA.deployment,
+          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+        )
+        .innerJoin(
+          SCHEMA.environment,
+          eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
+        )
         .leftJoin(
-          environmentPolicy,
-          eq(environment.policyId, environmentPolicy.id),
+          SCHEMA.environmentPolicy,
+          eq(SCHEMA.environment.policyId, SCHEMA.environmentPolicy.id),
         )
         .leftJoin(
           policyRCSubquery,
-          eq(policyRCSubquery.releaseChannelPolicyId, environmentPolicy.id),
+          eq(
+            policyRCSubquery.releaseChannelPolicyId,
+            SCHEMA.environmentPolicy.id,
+          ),
         )
-        .where(inArray(release.id, input))
+        .where(inArray(SCHEMA.deploymentVersion.id, input))
         .then((rows) =>
           _.chain(rows)
             .groupBy((e) => [e.environment.id, e.deployment_version.id])
@@ -318,11 +325,14 @@ export const releaseRouter = createTRPCRouter({
 
         const matchingRelease = await db
           .select()
-          .from(release)
+          .from(SCHEMA.deploymentVersion)
           .where(
             and(
-              eq(release.id, rel.id),
-              releaseMatchesCondition(db, releaseChannelFilter),
+              eq(SCHEMA.deploymentVersion.id, rel.id),
+              SCHEMA.deploymentVersionMatchesCondition(
+                db,
+                releaseChannelFilter,
+              ),
             ),
           )
           .then(takeFirstOrNull);
@@ -349,23 +359,32 @@ export const releaseRouter = createTRPCRouter({
       )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.ReleaseGet).on({
-            type: "release",
+          canUser.perform(Permission.DeploymentVersionGet).on({
+            type: "deploymentVersion",
             id: input.releaseId,
           }),
       })
       .query(({ input: { releaseId, environmentId } }) =>
         db
-          .selectDistinctOn([releaseJobTrigger.resourceId])
-          .from(job)
-          .innerJoin(releaseJobTrigger, eq(job.id, releaseJobTrigger.jobId))
-          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
-          .orderBy(releaseJobTrigger.resourceId, desc(job.createdAt))
+          .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
+          .from(SCHEMA.job)
+          .innerJoin(
+            SCHEMA.releaseJobTrigger,
+            eq(SCHEMA.job.id, SCHEMA.releaseJobTrigger.jobId),
+          )
+          .innerJoin(
+            SCHEMA.resource,
+            eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+          )
+          .orderBy(
+            SCHEMA.releaseJobTrigger.resourceId,
+            desc(SCHEMA.job.createdAt),
+          )
           .where(
             and(
-              eq(releaseJobTrigger.releaseId, releaseId),
-              eq(releaseJobTrigger.environmentId, environmentId),
-              isNull(resource.deletedAt),
+              eq(SCHEMA.releaseJobTrigger.versionId, releaseId),
+              eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
+              isNull(SCHEMA.resource.deletedAt),
             ),
           ),
       ),
@@ -387,8 +406,8 @@ export const releaseRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           "releaseId" in input
-            ? canUser.perform(Permission.ReleaseGet).on({
-                type: "release",
+            ? canUser.perform(Permission.DeploymentVersionGet).on({
+                type: "deploymentVersion",
                 id: input.releaseId,
               })
             : canUser.perform(Permission.DeploymentGet).on({
@@ -399,28 +418,40 @@ export const releaseRouter = createTRPCRouter({
       .query(({ input }) => {
         const { directory, exact } = input;
         const isMatchingDirectory = exact
-          ? eq(environment.directory, directory)
+          ? eq(SCHEMA.environment.directory, directory)
           : or(
-              eq(environment.directory, directory),
-              like(environment.directory, `${directory}/%`),
+              eq(SCHEMA.environment.directory, directory),
+              like(SCHEMA.environment.directory, `${directory}/%`),
             );
 
         const releaseCheck =
           "releaseId" in input
-            ? eq(release.id, input.releaseId)
-            : eq(release.deploymentId, input.deploymentId);
+            ? eq(SCHEMA.deploymentVersion.id, input.releaseId)
+            : eq(SCHEMA.deploymentVersion.deploymentId, input.deploymentId);
 
         return db
-          .selectDistinctOn([releaseJobTrigger.resourceId])
-          .from(job)
-          .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
-          .innerJoin(resource, eq(releaseJobTrigger.resourceId, resource.id))
+          .selectDistinctOn([SCHEMA.releaseJobTrigger.resourceId])
+          .from(SCHEMA.job)
           .innerJoin(
-            environment,
-            eq(releaseJobTrigger.environmentId, environment.id),
+            SCHEMA.releaseJobTrigger,
+            eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
           )
-          .innerJoin(release, eq(releaseJobTrigger.releaseId, release.id))
-          .orderBy(releaseJobTrigger.resourceId, desc(job.createdAt))
+          .innerJoin(
+            SCHEMA.resource,
+            eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+          )
+          .innerJoin(
+            SCHEMA.environment,
+            eq(SCHEMA.releaseJobTrigger.environmentId, SCHEMA.environment.id),
+          )
+          .innerJoin(
+            SCHEMA.deploymentVersion,
+            eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
+          )
+          .orderBy(
+            SCHEMA.releaseJobTrigger.resourceId,
+            desc(SCHEMA.job.createdAt),
+          )
           .where(and(releaseCheck, isMatchingDirectory));
       }),
   }),
@@ -435,7 +466,7 @@ export const releaseRouter = createTRPCRouter({
       )
       .meta({
         authorizationCheck: ({ canUser, input }) =>
-          canUser.perform(Permission.ReleaseGet).on({
+          canUser.perform(Permission.DeploymentVersionGet).on({
             type: "deployment",
             id: input.deploymentId,
           }),
@@ -443,24 +474,30 @@ export const releaseRouter = createTRPCRouter({
       .query(({ input: { deploymentId, environmentId } }) =>
         db
           .select()
-          .from(release)
-          .innerJoin(environment, eq(environment.id, environmentId))
+          .from(SCHEMA.deploymentVersion)
+          .innerJoin(
+            SCHEMA.environment,
+            eq(SCHEMA.environment.id, environmentId),
+          )
           .where(
             and(
-              eq(release.deploymentId, deploymentId),
+              eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
               exists(
                 db
                   .select()
-                  .from(releaseJobTrigger)
+                  .from(SCHEMA.releaseJobTrigger)
                   .innerJoin(
-                    resource,
-                    eq(releaseJobTrigger.resourceId, resource.id),
+                    SCHEMA.resource,
+                    eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
                   )
                   .where(
                     and(
-                      eq(releaseJobTrigger.releaseId, release.id),
-                      eq(releaseJobTrigger.environmentId, environmentId),
-                      isNull(resource.deletedAt),
+                      eq(
+                        SCHEMA.releaseJobTrigger.versionId,
+                        SCHEMA.deploymentVersion.id,
+                      ),
+                      eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
+                      isNull(SCHEMA.resource.deletedAt),
                     ),
                   )
                   .limit(1),
@@ -468,25 +505,34 @@ export const releaseRouter = createTRPCRouter({
               notExists(
                 db
                   .select()
-                  .from(releaseJobTrigger)
-                  .innerJoin(job, eq(releaseJobTrigger.jobId, job.id))
+                  .from(SCHEMA.releaseJobTrigger)
                   .innerJoin(
-                    resource,
-                    eq(releaseJobTrigger.resourceId, resource.id),
+                    SCHEMA.job,
+                    eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+                  )
+                  .innerJoin(
+                    SCHEMA.resource,
+                    eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
                   )
                   .where(
                     and(
-                      eq(releaseJobTrigger.releaseId, release.id),
-                      eq(releaseJobTrigger.environmentId, environmentId),
-                      inArray(job.status, [...activeStatus, JobStatus.Pending]),
-                      isNull(resource.deletedAt),
+                      eq(
+                        SCHEMA.releaseJobTrigger.versionId,
+                        SCHEMA.deploymentVersion.id,
+                      ),
+                      eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
+                      inArray(SCHEMA.job.status, [
+                        ...activeStatus,
+                        JobStatus.Pending,
+                      ]),
+                      isNull(SCHEMA.resource.deletedAt),
                     ),
                   )
                   .limit(1),
               ),
             ),
           )
-          .orderBy(desc(release.createdAt))
+          .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
           .limit(1)
           .then(takeFirstOrNull)
           .then((r) => r?.deployment_version ?? null),
@@ -520,52 +566,67 @@ export const releaseRouter = createTRPCRouter({
 
         const env = await ctx.db
           .select()
-          .from(environment)
-          .innerJoin(system, eq(environment.systemId, system.id))
+          .from(SCHEMA.environment)
           .innerJoin(
-            environmentPolicy,
-            eq(environment.policyId, environmentPolicy.id),
+            SCHEMA.system,
+            eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+          )
+          .innerJoin(
+            SCHEMA.environmentPolicy,
+            eq(SCHEMA.environment.policyId, SCHEMA.environmentPolicy.id),
           )
           .leftJoin(
-            environmentPolicyReleaseChannel,
+            SCHEMA.environmentPolicyReleaseChannel,
             and(
               eq(
-                environmentPolicyReleaseChannel.policyId,
-                environmentPolicy.id,
+                SCHEMA.environmentPolicyReleaseChannel.policyId,
+                SCHEMA.environmentPolicy.id,
               ),
-              eq(environmentPolicyReleaseChannel.deploymentId, deploymentId),
+              eq(
+                SCHEMA.environmentPolicyReleaseChannel.deploymentId,
+                deploymentId,
+              ),
             ),
           )
           .leftJoin(
-            releaseChannel,
-            eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+            SCHEMA.deploymentVersionChannel,
+            eq(
+              SCHEMA.environmentPolicyReleaseChannel.channelId,
+              SCHEMA.deploymentVersionChannel.id,
+            ),
           )
-          .where(eq(environment.id, environmentId))
+          .where(eq(SCHEMA.environment.id, environmentId))
           .then(takeFirst);
 
         const rel = await ctx.db
           .select()
-          .from(release)
+          .from(SCHEMA.deploymentVersion)
           .leftJoin(
-            environmentPolicyApproval,
+            SCHEMA.environmentPolicyApproval,
             and(
-              eq(environmentPolicyApproval.releaseId, release.id),
-              eq(environmentPolicyApproval.policyId, env.environment.policyId),
+              eq(
+                SCHEMA.environmentPolicyApproval.releaseId,
+                SCHEMA.deploymentVersion.id,
+              ),
+              eq(
+                SCHEMA.environmentPolicyApproval.policyId,
+                env.environment.policyId,
+              ),
             ),
           )
           .where(
             and(
-              eq(release.status, ReleaseStatus.Ready),
-              eq(release.deploymentId, deploymentId),
+              eq(SCHEMA.deploymentVersion.status, ReleaseStatus.Ready),
+              eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
               env.deployment_version_channel != null
-                ? releaseMatchesCondition(
+                ? SCHEMA.deploymentVersionMatchesCondition(
                     ctx.db,
                     env.deployment_version_channel.releaseFilter,
                   )
                 : undefined,
             ),
           )
-          .orderBy(desc(release.createdAt))
+          .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
           .limit(1)
           .then(takeFirstOrNull);
 
@@ -573,8 +634,8 @@ export const releaseRouter = createTRPCRouter({
 
         const dep = await ctx.db
           .select()
-          .from(deployment)
-          .where(eq(deployment.id, deploymentId))
+          .from(SCHEMA.deployment)
+          .where(eq(SCHEMA.deployment.id, deploymentId))
           .then(takeFirst);
 
         if (env.environment.resourceFilter == null)
@@ -595,12 +656,12 @@ export const releaseRouter = createTRPCRouter({
 
         const resourceCount = await ctx.db
           .select({ count: count() })
-          .from(resource)
+          .from(SCHEMA.resource)
           .where(
             and(
-              eq(resource.workspaceId, env.system.workspaceId),
-              resourceMatchesMetadata(ctx.db, resourceFilter),
-              isNull(resource.deletedAt),
+              eq(SCHEMA.resource.workspaceId, env.system.workspaceId),
+              SCHEMA.resourceMatchesMetadata(ctx.db, resourceFilter),
+              isNull(SCHEMA.resource.deletedAt),
             ),
           )
           .then(takeFirst);
@@ -613,5 +674,5 @@ export const releaseRouter = createTRPCRouter({
       }),
   }),
 
-  metadataKeys: releaseMetadataKeysRouter,
+  metadataKeys: deploymentVersionMetadataKeysRouter,
 });

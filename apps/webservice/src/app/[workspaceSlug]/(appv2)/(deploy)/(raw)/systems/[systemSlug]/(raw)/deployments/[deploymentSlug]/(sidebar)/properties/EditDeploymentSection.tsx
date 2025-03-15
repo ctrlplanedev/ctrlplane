@@ -1,8 +1,15 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { IconInfoCircle, IconX } from "@tabler/icons-react";
+import {
+  IconFilter,
+  IconId,
+  IconInfoCircle,
+  IconSettings,
+  IconX,
+} from "@tabler/icons-react";
 import ms from "ms";
 import prettyMilliseconds from "pretty-ms";
 import { z } from "zod";
@@ -16,7 +23,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormRootError,
   useForm,
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
@@ -41,6 +47,7 @@ import {
 
 import { ResourceConditionRender } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionRender";
 import { api } from "~/trpc/react";
+import { DeleteDeploymentSection } from "./DeleteDeploymentSection";
 import { DeploymentResourcesDialog } from "./DeploymentResourcesDialog";
 
 const timeoutSchema = z
@@ -81,6 +88,13 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
   workspaceId,
 }) => {
   const system = systems.find((s) => s.id === deployment.systemId);
+  const [successMessages, setSuccessMessages] = useState<
+    Record<string, boolean>
+  >({
+    properties: false,
+    jobConfig: false,
+    resourceFilter: false,
+  });
 
   const envsWithFilter =
     system?.environments
@@ -94,217 +108,357 @@ export const EditDeploymentSection: React.FC<EditDeploymentSectionProps> = ({
       : undefined;
   const defaultValues = { ...deployment, resourceFilter, timeout };
   const form = useForm({ schema, defaultValues, mode: "onSubmit" });
-  const { handleSubmit, setError } = form;
+  const { setError, formState, watch, getValues } = form;
 
-  const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
   const router = useRouter();
   const updateDeployment = api.deployment.update.useMutation();
-  const onSubmit = handleSubmit((data) => {
-    const filter =
-      data.resourceFilter == null || isEmptyCondition(data.resourceFilter)
-        ? null
-        : data.resourceFilter;
-    const timeout =
-      data.timeout != null && data.timeout !== ""
-        ? ms(data.timeout) / 1000
-        : null;
-    const updates = { ...data, resourceFilter: filter, timeout };
 
-    updateDeployment
-      .mutateAsync({ id: deployment.id, data: updates })
-      .then((updatedDeployment) => {
-        if (
-          data.slug !== deployment.slug ||
-          updatedDeployment.systemId !== deployment.systemId
-        )
-          router.replace(
-            `/${workspaceSlug}/systems/${updatedDeployment.system.slug}/deployments/${data.slug}/properties`,
-          );
-        router.refresh();
-      })
-      .catch(() =>
-        setError("root", {
-          message: "Deployment with this slug already exists",
-        }),
-      );
-  });
+  const showSuccessMessage = (section: string) => {
+    setSuccessMessages((prev) => ({ ...prev, [section]: true }));
+    setTimeout(() => {
+      setSuccessMessages((prev) => ({ ...prev, [section]: false }));
+    }, 3000);
+  };
+
+  const onSubmit = async (section: string) => {
+    try {
+      const currentValues = getValues();
+      const filter =
+        currentValues.resourceFilter == null ||
+        isEmptyCondition(currentValues.resourceFilter)
+          ? null
+          : currentValues.resourceFilter;
+      const timeout =
+        currentValues.timeout != null && currentValues.timeout !== ""
+          ? ms(currentValues.timeout) / 1000
+          : null;
+      const updates = { ...currentValues, resourceFilter: filter, timeout };
+
+      const updatedDeployment = await updateDeployment.mutateAsync({
+        id: deployment.id,
+        data: updates,
+      });
+
+      if (
+        currentValues.slug !== deployment.slug ||
+        updatedDeployment.systemId !== deployment.systemId
+      ) {
+        router.replace(
+          `/${workspaceSlug}/systems/${updatedDeployment.system.slug}/deployments/${currentValues.slug}/properties`,
+        );
+      }
+
+      showSuccessMessage(section);
+      router.refresh();
+    } catch {
+      setError("root", {
+        message: "Deployment with this slug already exists",
+      });
+    }
+  };
+
+  // Watch for changes in each section
+  const watchName = watch("name");
+  const watchSlug = watch("slug");
+  const watchDescription = watch("description");
+  const watchSystemId = watch("systemId");
+  const watchRetryCount = watch("retryCount");
+  const watchTimeout = watch("timeout");
+  const watchResourceFilter = watch("resourceFilter");
+
+  const propertiesDirty =
+    watchName !== defaultValues.name ||
+    watchSlug !== defaultValues.slug ||
+    watchDescription !== defaultValues.description ||
+    watchSystemId !== defaultValues.systemId;
+
+  const jobConfigDirty =
+    watchRetryCount !== defaultValues.retryCount ||
+    watchTimeout !== defaultValues.timeout;
+
+  const resourceFilterDirty =
+    JSON.stringify(watchResourceFilter) !==
+    JSON.stringify(defaultValues.resourceFilter);
+
   return (
-    <div className="space-y-2">
-      <h2 className="" id="properties">
-        Properties
-      </h2>
-
+    <div className="space-y-8">
       <Form {...form}>
-        <form onSubmit={onSubmit} className="space-y-2">
-          <FormField
-            control={form.control}
-            name="id"
-            render={() => (
-              <FormItem>
-                <FormLabel>ID</FormLabel>
-                <Input value={deployment.id} disabled />
-              </FormItem>
-            )}
-          />
+        <form className="space-y-8">
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <IconId className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-medium">Properties</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                These are the core identifiers for your deployment
+              </p>
+            </div>
 
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Website, Identity Service..."
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="slug"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Slug</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl>
-                  <Textarea {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="systemId"
-            render={({ field: { value, onChange } }) => (
-              <FormItem>
-                <FormLabel>System</FormLabel>
-                <FormControl>
-                  <Select value={value} onValueChange={onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a system" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {systems.map((system) => (
-                        <SelectItem key={system.id} value={system.id}>
-                          {system.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="retryCount"
-            render={({ field: { value, onChange } }) => (
-              <FormItem>
-                <FormLabel>Retry Count</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    value={value}
-                    onChange={(e) => onChange(e.target.valueAsNumber)}
-                    min={0}
-                    step={1}
-                    className="w-16"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="timeout"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-2">
-                  Timeout
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <IconInfoCircle className="h-3 w-3 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent className="p-2 text-xs text-muted-foreground">
-                        If a job for this deployment takes longer than the
-                        timeout, it will be marked as failed.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </FormLabel>
-                <FormControl>
-                  <Input {...field} className="w-16" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="resourceFilter"
-            render={({ field: { value, onChange } }) => (
-              <FormItem>
-                <FormLabel>Resource Filter</FormLabel>
-                <FormControl>
-                  <ResourceConditionRender
-                    condition={value ?? defaultCondition}
-                    onChange={onChange}
-                  />
-                </FormControl>
-                <div className="flex items-center gap-2">
-                  <FormControl>
-                    <Button
-                      variant="outline"
-                      type="button"
-                      className="flex items-center gap-2"
-                      onClick={() => onChange(null)}
-                    >
-                      <IconX className="h-4 w-4" /> Clear
-                    </Button>
-                  </FormControl>
-                  {envsWithFilter.length > 0 && value != null && (
-                    <DeploymentResourcesDialog
-                      environments={envsWithFilter}
-                      resourceFilter={value}
-                      workspaceId={workspaceId}
-                    />
-                  )}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <div className="space-y-4">
+              <FormField
+                name="id"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>ID</FormLabel>
+                    <Input value={deployment.id} disabled />
+                  </FormItem>
+                )}
+              />
 
-          <FormRootError />
+              <FormField
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Website, Identity Service..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <Button
-            type="submit"
-            disabled={form.formState.isSubmitting || !form.formState.isDirty}
-          >
-            Save
-          </Button>
+              <FormField
+                name="slug"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Slug</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Describe the purpose of this deployment..."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="systemId"
+                render={({ field: { value, onChange } }) => (
+                  <FormItem>
+                    <FormLabel>System</FormLabel>
+                    <FormControl>
+                      <Select value={value} onValueChange={onChange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a system" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {systems.map((system) => (
+                            <SelectItem key={system.id} value={system.id}>
+                              {system.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  className="gap-2"
+                  onClick={() => onSubmit("properties")}
+                  disabled={!propertiesDirty || formState.isSubmitting}
+                >
+                  {successMessages.properties ? "Saved" : "Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b" />
+
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <IconSettings className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-medium">Job Configuration</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Configure how jobs for this deployment are executed
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="retryCount"
+                render={({ field: { value, onChange } }) => (
+                  <FormItem>
+                    <FormLabel>Retry Count</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        value={value}
+                        onChange={(e) => onChange(e.target.valueAsNumber)}
+                        min={0}
+                        step={1}
+                        className="w-32"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Number of times to retry the job if it fails
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="timeout"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      Timeout
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <IconInfoCircle className="h-4 w-4 text-muted-foreground" />
+                          </TooltipTrigger>
+                          <TooltipContent className="p-2 text-sm">
+                            If a job for this deployment takes longer than the
+                            timeout, it will be marked as failed. Format
+                            examples: "30s", "5m", "1h"
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className="w-32"
+                        placeholder="e.g. 5m"
+                      />
+                    </FormControl>
+                    <p className="text-xs text-muted-foreground">
+                      Maximum time a job can run before timing out (e.g. "30s",
+                      "5m", "1h")
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  className="gap-2"
+                  onClick={() => onSubmit("jobConfig")}
+                  disabled={!jobConfigDirty || formState.isSubmitting}
+                >
+                  {successMessages.jobConfig ? "Saved" : "Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b" />
+
+          {/* Resource Filter Section */}
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <IconFilter className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-lg font-medium">Resource Selection</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Define which resources can be used with this deployment
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <FormField
+                control={form.control}
+                name="resourceFilter"
+                render={({ field: { value, onChange } }) => (
+                  <FormItem className="space-y-2">
+                    <FormLabel>Resource Filter</FormLabel>
+                    <FormControl>
+                      <div className="rounded-md border border-border p-4">
+                        <ResourceConditionRender
+                          condition={value ?? defaultCondition}
+                          onChange={onChange}
+                        />
+                      </div>
+                    </FormControl>
+                    <div className="flex items-center gap-2 pt-2">
+                      <FormControl>
+                        <Button
+                          variant="outline"
+                          type="button"
+                          className="flex items-center gap-2"
+                          onClick={() => onChange(null)}
+                        >
+                          <IconX className="h-4 w-4" /> Clear Filter
+                        </Button>
+                      </FormControl>
+                      {envsWithFilter.length > 0 && value != null && (
+                        <DeploymentResourcesDialog
+                          environments={envsWithFilter}
+                          resourceFilter={value}
+                          workspaceId={workspaceId}
+                        />
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => onSubmit("resourceFilter")}
+                  disabled={!resourceFilterDirty || formState.isSubmitting}
+                >
+                  {successMessages.resourceFilter ? "Saved" : "Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </form>
       </Form>
+
+      {/* Danger Zone */}
+      <div className="border-b" />
+
+      <div className="rounded-md border border-destructive/20 bg-destructive/5 p-4">
+        <DeleteDeploymentSection
+          deployment={deployment}
+          workspaceSlug={workspaceSlug}
+          systemSlug={systemSlug}
+        />
+      </div>
     </div>
   );
 };

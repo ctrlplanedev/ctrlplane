@@ -53,8 +53,8 @@ export const POST = request()
 
           const channels = await tx
             .select()
-            .from(schema.releaseChannel)
-            .where(inArray(schema.releaseChannel.id, releaseChannels))
+            .from(schema.deploymentVersionChannel)
+            .where(inArray(schema.deploymentVersionChannel.id, releaseChannels))
             .then((rows) =>
               _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
                 channelId: r.id,

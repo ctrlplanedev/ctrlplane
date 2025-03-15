@@ -88,7 +88,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   );
 
   const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
-    api.release.blocked.useQuery([release.id]);
+    api.deployment.version.blocked.useQuery([release.id]);
 
   const { data: approval, isLoading: isApprovalLoading } =
     api.environment.policy.approval.statusByReleasePolicyId.useQuery({
@@ -101,7 +101,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   );
 
   const { data: statuses, isLoading: isStatusesLoading } =
-    api.release.status.byEnvironmentId.useQuery(
+    api.deployment.version.status.byEnvironmentId.useQuery(
       { releaseId: release.id, environmentId: environment.id },
       { refetchInterval: 2_000 },
     );

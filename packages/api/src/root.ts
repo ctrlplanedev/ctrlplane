@@ -3,7 +3,6 @@ import { deploymentRouter } from "./router/deployment";
 import { environmentRouter } from "./router/environment";
 import { githubRouter } from "./router/github";
 import { jobRouter } from "./router/job";
-import { releaseRouter } from "./router/release";
 import { resourceRouter } from "./router/resources";
 import { runbookRouter } from "./router/runbook";
 import { runtimeRouter } from "./router/runtime";
@@ -17,7 +16,6 @@ import { createTRPCRouter } from "./trpc";
 export const appRouter = createTRPCRouter({
   deployment: deploymentRouter,
   environment: environmentRouter,
-  release: releaseRouter,
   system: systemRouter,
   workspace: workspaceRouter,
   job: jobRouter,

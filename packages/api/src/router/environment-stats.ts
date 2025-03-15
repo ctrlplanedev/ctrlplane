@@ -39,7 +39,7 @@ export const environmentStatsRouter = createTRPCRouter({
           environmentId: SCHEMA.releaseJobTrigger.environmentId,
           resourceId: SCHEMA.releaseJobTrigger.resourceId,
           systemId: SCHEMA.deployment.systemId,
-          rank: sql<number>`row_number() over (partition by ${SCHEMA.release.deploymentId}, ${SCHEMA.releaseJobTrigger.resourceId} order by ${SCHEMA.job.startedAt} desc)`.as(
+          rank: sql<number>`row_number() over (partition by ${SCHEMA.deploymentVersion.deploymentId}, ${SCHEMA.releaseJobTrigger.resourceId} order by ${SCHEMA.job.startedAt} desc)`.as(
             "rank",
           ),
           status: SCHEMA.job.status,
@@ -50,12 +50,12 @@ export const environmentStatsRouter = createTRPCRouter({
           eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
         )
         .innerJoin(
-          SCHEMA.release,
-          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+          SCHEMA.deploymentVersion,
+          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
         )
         .innerJoin(
           SCHEMA.deployment,
-          eq(SCHEMA.release.deploymentId, SCHEMA.deployment.id),
+          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
         )
         .where(
           and(

@@ -9,12 +9,12 @@ export const run = async () =>
     .select({ id: SCHEMA.job.id })
     .from(SCHEMA.deployment)
     .innerJoin(
-      SCHEMA.release,
-      eq(SCHEMA.release.deploymentId, SCHEMA.deployment.id),
+      SCHEMA.deploymentVersion,
+      eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
     )
     .innerJoin(
       SCHEMA.releaseJobTrigger,
-      eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+      eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
     )
     .innerJoin(SCHEMA.job, eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id))
     .where(

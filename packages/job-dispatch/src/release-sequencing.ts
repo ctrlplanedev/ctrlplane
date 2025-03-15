@@ -26,29 +26,29 @@ export const cancelOldReleaseJobTriggersOnJobDispatch = async (
   const triggersSubquery = sql`
     select 
       ${schema.job.id} as jobIdToCancel, 
-      ${schema.release.id} as cancelReleaseId, 
+      ${schema.deploymentVersion.id} as cancelReleaseId, 
       ${schema.deployment.id} as cancelDeploymentId, 
       ${schema.releaseJobTrigger.environmentId} as cancelEnvironmentId,
-      ${schema.release.createdAt} as cancelReleaseCreatedAt
+      ${schema.deploymentVersion.createdAt} as cancelReleaseCreatedAt
     from ${schema.job}
     inner join ${schema.releaseJobTrigger} on ${schema.job.id} = ${schema.releaseJobTrigger.jobId}
-    inner join ${schema.release} on ${schema.releaseJobTrigger.releaseId} = ${schema.release.id}
-    inner join ${schema.deployment} on ${schema.release.deploymentId} = ${schema.deployment.id}
+    inner join ${schema.deploymentVersion} on ${schema.releaseJobTrigger.versionId} = ${schema.deploymentVersion.id}
+    inner join ${schema.deployment} on ${schema.deploymentVersion.deploymentId} = ${schema.deployment.id}
     where ${schema.job.status} = ${JobStatus.Pending}
   `;
 
   const jobsToCancelQuery = sql`
     select distinct triggers.jobIdToCancel
     from ${schema.releaseJobTrigger}
-    inner join ${schema.release} on ${schema.releaseJobTrigger.releaseId} = ${schema.release.id}
-    inner join ${schema.deployment} on ${schema.release.deploymentId} = ${schema.deployment.id}
+    inner join ${schema.deploymentVersion} on ${schema.releaseJobTrigger.versionId} = ${schema.deploymentVersion.id}
+    inner join ${schema.deployment} on ${schema.deploymentVersion.deploymentId} = ${schema.deployment.id}
     inner join ${schema.environment} on ${schema.releaseJobTrigger.environmentId} = ${schema.environment.id}
     left join ${schema.environmentPolicy} on ${schema.environment.policyId} = ${schema.environmentPolicy.id}
     inner join (${triggersSubquery}) as triggers on 
       ${schema.deployment.id} = triggers.cancelDeploymentId
       and ${schema.releaseJobTrigger.environmentId} = triggers.cancelEnvironmentId
-      and ${schema.release.id} != triggers.cancelReleaseId
-      and ${schema.release.createdAt} > triggers.cancelReleaseCreatedAt
+      and ${schema.deploymentVersion.id} != triggers.cancelReleaseId
+      and ${schema.deploymentVersion.createdAt} > triggers.cancelReleaseCreatedAt
     where ${inArray(
       schema.releaseJobTrigger.id,
       releaseJobTriggers.map((t) => t.id),

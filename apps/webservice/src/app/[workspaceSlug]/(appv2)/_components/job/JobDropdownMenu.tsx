@@ -88,7 +88,7 @@ export const OverrideJobStatusDialog: React.FC<{
       .mutateAsync({ ids: jobIds, data })
       .then(() => utils.job.config.byReleaseId.invalidate())
       .then(() => jobIds.map((id) => utils.job.config.byId.invalidate(id)))
-      .then(() => utils.release.list.invalidate())
+      .then(() => utils.deployment.version.list.invalidate())
       .then(() => setOpen(false))
       .then(() => onClose()),
   );
@@ -180,7 +180,7 @@ const ForceReleaseResourceDialog: React.FC<{
   onClose,
   children,
 }) => {
-  const forceRelease = api.release.deploy.toResource.useMutation();
+  const forceRelease = api.deployment.version.deploy.toResource.useMutation();
   const utils = api.useUtils();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -217,7 +217,7 @@ const ForceReleaseResourceDialog: React.FC<{
                   environmentId: environmentId,
                   isForcedRelease: true,
                 })
-                .then(() => utils.release.list.invalidate())
+                .then(() => utils.deployment.version.list.invalidate())
                 .then(() => router.refresh())
                 .then(() => setOpen(false))
                 .then(() => onClose())
@@ -239,7 +239,7 @@ const RedeployReleaseDialog: React.FC<{
 }> = ({ release, environmentId, resource, children }) => {
   const router = useRouter();
   const utils = api.useUtils();
-  const redeploy = api.release.deploy.toResource.useMutation();
+  const redeploy = api.deployment.version.deploy.toResource.useMutation();
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -268,7 +268,7 @@ const RedeployReleaseDialog: React.FC<{
                   resourceId: resource.id,
                   releaseId: release.id,
                 })
-                .then(() => utils.release.list.invalidate())
+                .then(() => utils.deployment.version.list.invalidate())
                 .then(() => router.refresh())
                 .then(() => setIsOpen(false))
             }

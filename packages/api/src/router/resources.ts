@@ -94,17 +94,17 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
 ) => {
   const rankSubquery = db
     .select({
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.release.deploymentId}, ${schema.releaseJobTrigger.resourceId} ORDER BY ${schema.releaseJobTrigger.createdAt} DESC)`.as(
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${schema.deploymentVersion.deploymentId}, ${schema.releaseJobTrigger.resourceId} ORDER BY ${schema.releaseJobTrigger.createdAt} DESC)`.as(
         "rank",
       ),
-      rankDeploymentId: schema.release.deploymentId,
+      rankDeploymentId: schema.deploymentVersion.deploymentId,
       rankResourceId: schema.releaseJobTrigger.resourceId,
       rankTriggerId: schema.releaseJobTrigger.id,
     })
-    .from(schema.release)
+    .from(schema.deploymentVersion)
     .innerJoin(
       schema.releaseJobTrigger,
-      eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+      eq(schema.deploymentVersion.id, schema.releaseJobTrigger.versionId),
     )
     .as("rank_subquery");
 
@@ -117,13 +117,13 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
       eq(schema.environment.systemId, schema.system.id),
     )
     .innerJoin(
-      schema.release,
-      eq(schema.release.deploymentId, schema.deployment.id),
+      schema.deploymentVersion,
+      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
     )
     .innerJoin(
       schema.releaseJobTrigger,
       and(
-        eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+        eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
         eq(schema.releaseJobTrigger.environmentId, schema.environment.id),
       ),
     )
@@ -134,7 +134,10 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
     .innerJoin(
       rankSubquery,
       and(
-        eq(rankSubquery.rankDeploymentId, schema.release.deploymentId),
+        eq(
+          rankSubquery.rankDeploymentId,
+          schema.deploymentVersion.deploymentId,
+        ),
         eq(rankSubquery.rankResourceId, resourceId),
         eq(rankSubquery.rankTriggerId, schema.releaseJobTrigger.id),
       ),

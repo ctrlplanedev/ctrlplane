@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconBolt, IconTag } from "@tabler/icons-react";
+import { IconBolt, IconCategory, IconObjectScan, IconSettings, IconTag } from "@tabler/icons-react";
 
 import {
   Command,
@@ -81,7 +81,21 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
 
               <CommandGroup heading="Systems">
                 {systems.data?.items.map((system) => (
-                  <CommandItem key={system.id}>{system.name}</CommandItem>
+                  <Link
+                    key={system.id}
+                    href={`/${workspaceSlug}/systems/${system.slug}`}
+                    className="block w-full"
+                  >
+                    <CommandItem className="flex items-center">
+                      <div className="mr-2 rounded-full bg-primary/10 p-1">
+                        <IconCategory className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">{system.name}</div>
+                        <div className="text-xs text-muted-foreground">System</div>
+                      </div>
+                    </CommandItem>
+                  </Link>
                 ))}
               </CommandGroup>
 
@@ -93,13 +107,24 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
                       <Link
                         key={resource.id}
                         href={`/${workspaceSlug}/resources/${resource.id}`}
+                        className="block w-full"
                       >
-                        <CommandItem>{resource.name}</CommandItem>
+                        <CommandItem className="flex items-center">
+                          <div className="mr-2 rounded-full bg-blue-500/10 p-1">
+                            <IconObjectScan className="h-4 w-4 text-blue-500" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{resource.name}</div>
+                            <div className="text-xs text-muted-foreground">{resource.kind} • {resource.identifier}</div>
+                          </div>
+                        </CommandItem>
                       </Link>
                     ))}
 
                     {(resources.data?.total ?? 0) > 5 && (
-                      <CommandItem disabled>. . .</CommandItem>
+                      <CommandItem className="text-center text-sm text-muted-foreground">
+                        + {(resources.data?.total ?? 0) - 5} more resources
+                      </CommandItem>
                     )}
                   </CommandGroup>
                 </>
@@ -107,9 +132,39 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
 
               <CommandSeparator />
               <CommandGroup heading="Settings">
-                <CommandItem>Profile</CommandItem>
-                <CommandItem>Billing</CommandItem>
-                <CommandItem>Settings</CommandItem>
+                <Link
+                  href={`/${workspaceSlug}/_settings/account/profile`}
+                  className="block w-full"
+                >
+                  <CommandItem className="flex items-center">
+                    <div className="mr-2 rounded-full bg-secondary p-1">
+                      <IconSettings className="h-4 w-4 text-secondary-foreground" />
+                    </div>
+                    <span>Profile</span>
+                  </CommandItem>
+                </Link>
+                <Link
+                  href={`/${workspaceSlug}/_settings/workspace/billing`}
+                  className="block w-full"
+                >
+                  <CommandItem className="flex items-center">
+                    <div className="mr-2 rounded-full bg-secondary p-1">
+                      <IconSettings className="h-4 w-4 text-secondary-foreground" />
+                    </div>
+                    <span>Billing</span>
+                  </CommandItem>
+                </Link>
+                <Link
+                  href={`/${workspaceSlug}/_settings/workspace`}
+                  className="block w-full"
+                >
+                  <CommandItem className="flex items-center">
+                    <div className="mr-2 rounded-full bg-secondary p-1">
+                      <IconSettings className="h-4 w-4 text-secondary-foreground" />
+                    </div>
+                    <span>Settings</span>
+                  </CommandItem>
+                </Link>
               </CommandGroup>
             </CommandList>
           </Command>

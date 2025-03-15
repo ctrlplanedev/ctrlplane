@@ -42,7 +42,7 @@ export const ReleaseDrawer: React.FC = () => {
   const { releaseId, removeReleaseId } = useReleaseDrawer();
   const isOpen = releaseId != null && releaseId != "";
   const setIsOpen = removeReleaseId;
-  const releaseQ = api.release.byId.useQuery(releaseId ?? "", {
+  const releaseQ = api.deployment.version.byId.useQuery(releaseId ?? "", {
     enabled: isOpen,
     refetchInterval: 10_000,
   });

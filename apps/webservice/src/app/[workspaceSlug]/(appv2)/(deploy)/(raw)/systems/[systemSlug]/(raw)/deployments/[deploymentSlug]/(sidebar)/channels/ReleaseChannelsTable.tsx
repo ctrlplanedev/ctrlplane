@@ -15,7 +15,7 @@ import {
 import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/channel/drawer/useReleaseChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/release/condition/ReleaseConditionBadge";
 
-type ReleaseChannel = SCHEMA.ReleaseChannel & { total: number };
+type ReleaseChannel = SCHEMA.DeploymentVersionChannel & { total: number };
 
 type ReleaseChannelTableProps = { releaseChannels: ReleaseChannel[] };
 
