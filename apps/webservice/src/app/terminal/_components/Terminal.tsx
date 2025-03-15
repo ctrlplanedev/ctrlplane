@@ -53,8 +53,8 @@ const Terminal: React.FC<{
             }
           />
           {!showPrompt && (
-            <div className="text-[0.02em] text-neutral-500">
-              ⌘K to generate a command
+            <div className="fixed bottom-2 right-2 rounded-md bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm border border-border/30">
+              Press <kbd className="bg-secondary px-1.5 py-0.5 rounded-md text-xs font-semibold inline-block mx-1">⌘K</kbd> to generate a command
             </div>
           )}
         </>
