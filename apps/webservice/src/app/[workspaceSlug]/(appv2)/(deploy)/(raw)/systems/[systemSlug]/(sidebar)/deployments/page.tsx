@@ -7,8 +7,9 @@ import { PageHeader } from "~/app/[workspaceSlug]/(appv2)/_components/PageHeader
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
 import DeploymentTable from "./TableDeployments";
+import { DeploymentGettingStarted } from "./DeploymentGettingStarted";
 
-export default async function EnvironmentsPage(props: {
+export default async function DeploymentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
 }) {
   const params = await props.params;
@@ -25,6 +26,7 @@ export default async function EnvironmentsPage(props: {
   ]);
 
   const { directories, rootEnvironments } = roots;
+  const hasDeployments = deployments.length > 0;
 
   return (
     <div className="flex min-w-0 flex-col overflow-x-auto">
@@ -42,14 +44,21 @@ export default async function EnvironmentsPage(props: {
         </CreateDeploymentDialog>
       </PageHeader>
 
-      <DeploymentTable
-        workspace={workspace}
-        systemSlug={params.systemSlug}
-        rootEnvironments={rootEnvironments}
-        directories={directories}
-        deployments={deployments}
-        className="border-b"
-      />
+      {hasDeployments ? (
+        <DeploymentTable
+          workspace={workspace}
+          systemSlug={params.systemSlug}
+          rootEnvironments={rootEnvironments}
+          directories={directories}
+          deployments={deployments}
+          className="border-b"
+        />
+      ) : (
+        <DeploymentGettingStarted
+          workspaceSlug={params.workspaceSlug}
+          systemId={system.id}
+        />
+      )}
     </div>
   );
 }

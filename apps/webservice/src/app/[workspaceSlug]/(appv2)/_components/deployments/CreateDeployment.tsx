@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 import { Textarea } from "@ctrlplane/ui/textarea";
+import { Switch } from "@ctrlplane/ui/switch";
 
 import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
 import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
@@ -47,6 +48,7 @@ export const CreateDeploymentDialog: React.FC<{
   onSuccess?: () => void;
 }> = ({ children, onSuccess, ...props }) => {
   const [open, setOpen] = useState(false);
+  const [configureJobAgentNow, setConfigureJobAgentNow] = useState(false);
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const { data: workspace, ...workspaceQ } =
     api.workspace.bySlug.useQuery(workspaceSlug);
@@ -201,47 +203,6 @@ export const CreateDeploymentDialog: React.FC<{
                     </FormItem>
                   )}
                 />
-                {workspace != null && (
-                  <FormField
-                    control={form.control}
-                    name="jobAgentId"
-                    render={({ field: { value, onChange } }) => (
-                      <FormItem>
-                        <FormLabel>Job Agent</FormLabel>
-                        <FormControl>
-                          <JobAgentSelector
-                            className="max-w-[350px]"
-                            jobAgents={jobAgents}
-                            workspace={workspace}
-                            value={value ?? undefined}
-                            onChange={onChange}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-                {workspace != null && (
-                  <FormField
-                    control={form.control}
-                    name="jobAgentConfig"
-                    render={({ field: { value, onChange } }) => (
-                      <FormItem>
-                        <FormLabel>Config</FormLabel>
-                        <FormControl>
-                          <JobAgentConfig
-                            workspace={workspace}
-                            jobAgent={selectedJobAgent}
-                            value={value ?? {}}
-                            onChange={onChange}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
                 <FormField
                   control={form.control}
                   name="retryCount"
@@ -262,6 +223,64 @@ export const CreateDeploymentDialog: React.FC<{
                     </FormItem>
                   )}
                 />
+
+                {/* Job Agent Configuration Toggle */}
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="configure-job-agent"
+                    checked={configureJobAgentNow}
+                    onCheckedChange={setConfigureJobAgentNow}
+                  />
+                  <label
+                    htmlFor="configure-job-agent"
+                    className="cursor-pointer text-sm font-medium"
+                  >
+                    Configure Job Agent now
+                  </label>
+                </div>
+                
+                {configureJobAgentNow && workspace != null && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="jobAgentId"
+                      render={({ field: { value, onChange } }) => (
+                        <FormItem>
+                          <FormLabel>Job Agent</FormLabel>
+                          <FormControl>
+                            <JobAgentSelector
+                              className="max-w-[350px]"
+                              jobAgents={jobAgents}
+                              workspace={workspace}
+                              value={value ?? undefined}
+                              onChange={onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="jobAgentConfig"
+                      render={({ field: { value, onChange } }) => (
+                        <FormItem>
+                          <FormLabel>Config</FormLabel>
+                          <FormControl>
+                            <JobAgentConfig
+                              workspace={workspace}
+                              jobAgent={selectedJobAgent}
+                              value={value ?? {}}
+                              onChange={onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+                
                 <FormRootError />
                 <DialogFooter>
                   <Button type="submit">Create</Button>
