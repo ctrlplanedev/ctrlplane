@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
 import { TopNavSearch } from "./TopNavSearch";
-import { WorkspaceDropdown } from "./WorkspaceDropdown";
 import { UserAvatarMenu } from "./UserAvatarMenu";
+import { WorkspaceDropdown } from "./WorkspaceDropdown";
 
 export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
   workspaceSlug,
@@ -35,10 +35,7 @@ export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
       </div>
 
       <div>
-        <UserAvatarMenu 
-          workspaceSlug={workspaceSlug} 
-          viewer={viewer} 
-        />
+        <UserAvatarMenu workspaceSlug={workspaceSlug} viewer={viewer} />
       </div>
     </nav>
   );

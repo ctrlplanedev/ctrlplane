@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconMail, IconLockAccess, IconUser } from "@tabler/icons-react";
+import { IconLockAccess, IconMail, IconUser } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
@@ -62,7 +62,7 @@ export const SignUpCard: React.FC = () => {
 
   const onSubmit = form.handleSubmit((data) => {
     setLoading(true);
-    
+
     signUp
       .mutateAsync(data)
       .then(() => {
@@ -79,9 +79,10 @@ export const SignUpCard: React.FC = () => {
       .catch((error) => {
         console.error("Sign up error:", error);
         form.setError("root", {
-          message: error.message === "Email already exists" 
-            ? "This email is already registered. Please sign in instead." 
-            : "Sign up failed. Please try again.",
+          message:
+            error.message === "Email already exists"
+              ? "This email is already registered. Please sign in instead."
+              : "Sign up failed. Please try again.",
         });
       })
       .finally(() => {
@@ -103,15 +104,17 @@ export const SignUpCard: React.FC = () => {
           <div className="absolute inset-0 animate-pulse rounded-full border border-primary/20"></div>
         </div>
       </div>
-      
+
       <Card className="overflow-hidden border-border/30 bg-card/60 shadow-xl backdrop-blur-sm">
         <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="text-center text-2xl font-bold">Create an account</CardTitle>
+          <CardTitle className="text-center text-2xl font-bold">
+            Create an account
+          </CardTitle>
           <CardDescription className="text-center">
             Get started with Ctrlplane for free
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-4">
           <Form {...form}>
             <form onSubmit={onSubmit} className="space-y-4">
@@ -124,9 +127,9 @@ export const SignUpCard: React.FC = () => {
                     <FormControl>
                       <div className="relative">
                         <IconUser className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          {...field} 
-                          className="bg-background/50 pl-10" 
+                        <Input
+                          {...field}
+                          className="bg-background/50 pl-10"
                           placeholder="John Doe"
                         />
                       </div>
@@ -145,9 +148,9 @@ export const SignUpCard: React.FC = () => {
                     <FormControl>
                       <div className="relative">
                         <IconMail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                          {...field} 
-                          className="bg-background/50 pl-10" 
+                        <Input
+                          {...field}
+                          className="bg-background/50 pl-10"
                           placeholder="you@company.com"
                         />
                       </div>
@@ -178,9 +181,9 @@ export const SignUpCard: React.FC = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormRootError />
-              
+
               <div className="mt-2 space-y-4">
                 <Button
                   type="submit"
@@ -188,20 +191,27 @@ export const SignUpCard: React.FC = () => {
                   size="lg"
                   disabled={loading || signUp.isPending}
                 >
-                  {loading || signUp.isPending ? "Creating account..." : "Create account"}
+                  {loading || signUp.isPending
+                    ? "Creating account..."
+                    : "Create account"}
                 </Button>
-                
+
                 <p className="px-6 text-center text-xs text-muted-foreground">
-                  By clicking "Create account", you agree to our 
-                  <Link href="#" className="mx-1 text-primary hover:underline">Terms of Service</Link>
+                  By clicking "Create account", you agree to our
+                  <Link href="#" className="mx-1 text-primary hover:underline">
+                    Terms of Service
+                  </Link>
                   and acknowledge our
-                  <Link href="#" className="mx-1 text-primary hover:underline">Privacy Policy</Link>.
+                  <Link href="#" className="mx-1 text-primary hover:underline">
+                    Privacy Policy
+                  </Link>
+                  .
                 </p>
               </div>
             </form>
           </Form>
         </CardContent>
-        
+
         <CardFooter className="flex justify-center border-t border-border/30 bg-muted/20 p-4">
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
