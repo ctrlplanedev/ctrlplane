@@ -1,11 +1,9 @@
 import type { Tx } from "@ctrlplane/db";
 import { NextResponse } from "next/server";
 import httpStatus from "http-status";
-import { z } from "zod";
 
 import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import * as schema from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 

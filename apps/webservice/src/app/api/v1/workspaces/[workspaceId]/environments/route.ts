@@ -3,7 +3,6 @@ import httpStatus from "http-status";
 
 import { eq } from "@ctrlplane/db";
 import { environment, system } from "@ctrlplane/db/schema";
-import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../../../auth";
