@@ -18,12 +18,15 @@ export const DeploymentGettingStarted: React.FC<{
         <div className="font-semibold">Deployments</div>
         <div className="prose prose-invert text-sm text-muted-foreground">
           <p>
-            Deployments represent applications, services, or infrastructure components that you want to manage through CtrlPlane. 
-            Each deployment can have multiple releases and be deployed to different environments.
+            Deployments represent applications, services, or infrastructure
+            components that you want to manage through Ctrlplane. Each
+            deployment can have multiple releases and be deployed to different
+            environments.
           </p>
           <p>
-            Create a deployment to start managing your release process, tracking versions across environments, 
-            and applying governance policies to your release workflow.
+            Create a deployment to start managing your release process, tracking
+            versions across environments, and applying governance policies to
+            your release workflow.
           </p>
         </div>
         <div className="flex items-center gap-2">
