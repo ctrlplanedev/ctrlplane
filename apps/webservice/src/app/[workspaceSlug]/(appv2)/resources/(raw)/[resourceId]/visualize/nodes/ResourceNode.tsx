@@ -3,8 +3,8 @@ import { Handle, Position } from "reactflow";
 
 import { cn } from "@ctrlplane/ui";
 
-import { useResourceDrawer } from "~/app/[workspaceSlug]/(app)/_components/resource-drawer/useResourceDrawer";
-import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/ResourceIcon";
+import { useResourceDrawer } from "~/app/[workspaceSlug]/(appv2)/_components/resources/drawer/useResourceDrawer";
+import { ResourceIcon } from "~/app/[workspaceSlug]/(appv2)/_components/resources/ResourceIcon";
 
 type ResourceNodeProps = NodeProps<{
   name: string;

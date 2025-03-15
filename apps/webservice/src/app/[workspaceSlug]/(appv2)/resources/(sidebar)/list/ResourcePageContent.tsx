@@ -24,14 +24,14 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/resources";
 
-import { NoFilterMatch } from "~/app/[workspaceSlug]/(app)/_components/filter/NoFilterMatch";
-import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionBadge";
+import { NoFilterMatch } from "~/app/[workspaceSlug]/(appv2)/_components/filter/NoFilterMatch";
+import { ResourceConditionBadge } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionBadge";
 import {
   CreateResourceViewDialog,
   ResourceConditionDialog,
-} from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceConditionDialog";
-import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/ResourceViewActionsDropdown";
-import { useResourceFilter } from "~/app/[workspaceSlug]/(app)/_components/resource-condition/useResourceFilter";
+} from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceConditionDialog";
+import { ResourceViewActionsDropdown } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/ResourceViewActionsDropdown";
+import { useResourceFilter } from "~/app/[workspaceSlug]/(appv2)/_components/resources/condition/useResourceFilter";
 import { api } from "~/trpc/react";
 import { exportResources } from "./export-resources";
 import { ResourceGettingStarted } from "./ResourceGettingStarted";

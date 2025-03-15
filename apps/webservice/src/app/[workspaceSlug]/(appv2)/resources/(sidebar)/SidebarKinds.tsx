@@ -19,8 +19,8 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { ResourceFilterType } from "@ctrlplane/validators/resources";
 
+import { ResourceIcon } from "~/app/[workspaceSlug]/(appv2)/_components/resources/ResourceIcon";
 import { api } from "~/trpc/react";
-import { ResourceIcon } from "../../../(app)/_components/ResourceIcon";
 
 export const SidebarGroupKinds: React.FC<{ workspace: Workspace }> = ({
   workspace,
