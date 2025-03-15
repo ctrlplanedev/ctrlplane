@@ -1,6 +1,6 @@
 "use client";
 
-import type { Release, ReleaseDependency } from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { IconSparkles } from "@tabler/icons-react";
 import { format } from "date-fns";
 import yaml from "js-yaml";
@@ -16,9 +16,9 @@ const ReleaseConfigInfo: React.FC<{ config: Record<string, any> }> = ({
 }) => <ConfigEditor value={yaml.dump(config)} readOnly />;
 
 export const OverviewContent: React.FC<{
-  release: Release & {
+  release: SCHEMA.DeploymentVersion & {
     metadata: Record<string, string>;
-    dependencies: ReleaseDependency[];
+    dependencies: SCHEMA.ReleaseDependency[];
   };
 }> = ({ release }) => {
   const { metadata } = release;

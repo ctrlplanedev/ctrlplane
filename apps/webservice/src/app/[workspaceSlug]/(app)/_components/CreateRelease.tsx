@@ -74,7 +74,7 @@ export const CreateReleaseDialog: React.FC<{
   version?: string;
   onClose?: () => void;
 }> = ({ children, ...props }) => {
-  const create = api.release.create.useMutation();
+  const create = api.deployment.version.create.useMutation();
   const form = useForm({
     schema: releaseForm,
     defaultValues: {
@@ -129,7 +129,9 @@ export const CreateReleaseDialog: React.FC<{
       releaseDependencies,
       name: data.version.trim(),
     });
-    await utils.release.list.invalidate({ deploymentId: release.deploymentId });
+    await utils.deployment.version.list.invalidate({
+      deploymentId: release.deploymentId,
+    });
 
     const deployment = deployments.data?.find(
       (d) => d.id === data.deploymentId,

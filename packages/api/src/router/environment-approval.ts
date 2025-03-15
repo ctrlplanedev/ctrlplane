@@ -19,7 +19,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({
@@ -65,7 +65,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentUpdate)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({ policyId: z.string().uuid(), releaseId: z.string().uuid() }),
@@ -106,13 +106,13 @@ export const approvalRouter = createTRPCRouter({
           eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
         )
         .innerJoin(
-          SCHEMA.release,
-          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+          SCHEMA.deploymentVersion,
+          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
         )
         .where(
           and(
             eq(SCHEMA.environmentPolicyApproval.id, envApproval.id),
-            eq(SCHEMA.release.id, input.releaseId),
+            eq(SCHEMA.deploymentVersion.id, input.releaseId),
             eq(SCHEMA.job.status, JobStatus.Pending),
           ),
         );
@@ -127,7 +127,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentUpdate)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
@@ -161,7 +161,7 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "release", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.releaseId }),
     })
     .input(
       z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),

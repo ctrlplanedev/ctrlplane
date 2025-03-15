@@ -8,17 +8,7 @@ import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNotNull, isNull, sql } from "@ctrlplane/db";
-import {
-  deployment,
-  environment,
-  job,
-  jobAgent,
-  release,
-  releaseJobTrigger,
-  resource,
-  resourceMatchesMetadata,
-  system,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
 type FilterFunc = (
@@ -88,34 +78,42 @@ class ReleaseJobTriggerBuilder {
   _where() {
     return and(
       ...[
-        this.releaseIds && inArray(release.id, this.releaseIds),
-        this.deploymentIds && inArray(deployment.id, this.deploymentIds),
-        this.environmentIds && inArray(environment.id, this.environmentIds),
+        this.releaseIds &&
+          inArray(SCHEMA.deploymentVersion.id, this.releaseIds),
+        this.deploymentIds && inArray(SCHEMA.deployment.id, this.deploymentIds),
+        this.environmentIds &&
+          inArray(SCHEMA.environment.id, this.environmentIds),
       ].filter(isPresent),
-      isNotNull(environment.resourceFilter),
+      isNotNull(SCHEMA.environment.resourceFilter),
     );
   }
 
   _baseQuery() {
     return this.tx
       .select()
-      .from(environment)
-      .innerJoin(deployment, eq(deployment.systemId, environment.systemId))
-      .innerJoin(system, eq(environment.systemId, system.id));
+      .from(SCHEMA.environment)
+      .innerJoin(
+        SCHEMA.deployment,
+        eq(SCHEMA.deployment.systemId, SCHEMA.environment.systemId),
+      )
+      .innerJoin(
+        SCHEMA.system,
+        eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+      );
   }
 
   _releaseSubQuery() {
     return this.tx
       .select({
-        id: release.id,
-        deploymentId: release.deploymentId,
-        version: release.version,
+        id: SCHEMA.deploymentVersion.id,
+        deploymentId: SCHEMA.deploymentVersion.deploymentId,
+        version: SCHEMA.deploymentVersion.version,
         rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY deployment_id ORDER BY created_at DESC)`.as(
           "rank",
         ),
       })
-      .from(release)
-      .where(eq(release.status, ReleaseStatus.Ready))
+      .from(SCHEMA.deploymentVersion)
+      .where(eq(SCHEMA.deploymentVersion.status, ReleaseStatus.Ready))
       .as("release");
   }
 
@@ -123,16 +121,16 @@ class ReleaseJobTriggerBuilder {
     const latestActiveReleaseSubQuery = this._releaseSubQuery();
     const releaseJobTriggers = this.releaseIds
       ? this._baseQuery().innerJoin(
-          release,
+          SCHEMA.deploymentVersion,
           and(
-            eq(release.deploymentId, deployment.id),
-            eq(release.status, ReleaseStatus.Ready),
+            eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+            eq(SCHEMA.deploymentVersion.status, ReleaseStatus.Ready),
           ),
         )
       : this._baseQuery().innerJoin(
           latestActiveReleaseSubQuery,
           and(
-            eq(latestActiveReleaseSubQuery.deploymentId, deployment.id),
+            eq(latestActiveReleaseSubQuery.deploymentId, SCHEMA.deployment.id),
             eq(latestActiveReleaseSubQuery.rank, 1),
           ),
         );
@@ -145,15 +143,15 @@ class ReleaseJobTriggerBuilder {
         const { workspaceId } = release.system;
         const resources = await this.tx
           .select()
-          .from(resource)
+          .from(SCHEMA.resource)
           .where(
             and(
-              resourceMatchesMetadata(this.tx, resourceFilter),
-              resourceMatchesMetadata(this.tx, deploymentResourceFilter),
-              eq(resource.workspaceId, workspaceId),
-              isNull(resource.lockedAt),
-              isNull(resource.deletedAt),
-              this.resourceIds && inArray(resource.id, this.resourceIds),
+              SCHEMA.resourceMatchesMetadata(this.tx, resourceFilter),
+              SCHEMA.resourceMatchesMetadata(this.tx, deploymentResourceFilter),
+              eq(SCHEMA.resource.workspaceId, workspaceId),
+              isNull(SCHEMA.resource.lockedAt),
+              isNull(SCHEMA.resource.deletedAt),
+              this.resourceIds && inArray(SCHEMA.resource.id, this.resourceIds),
             ),
           );
 
@@ -174,7 +172,7 @@ class ReleaseJobTriggerBuilder {
       causedById: this._causedById,
       resourceId: v.resource.id,
       environmentId: v.environment.id,
-      releaseId:
+      versionId:
         "deployment_version" in v ? v.deployment_version.id : v.release.id,
       jobId: "",
     }));
@@ -185,20 +183,26 @@ class ReleaseJobTriggerBuilder {
 
     const releases = await this.tx
       .select()
-      .from(release)
-      .innerJoin(deployment, eq(release.deploymentId, deployment.id))
-      .innerJoin(jobAgent, eq(deployment.jobAgentId, jobAgent.id))
+      .from(SCHEMA.deploymentVersion)
+      .innerJoin(
+        SCHEMA.deployment,
+        eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+      )
+      .innerJoin(
+        SCHEMA.jobAgent,
+        eq(SCHEMA.deployment.jobAgentId, SCHEMA.jobAgent.id),
+      )
       .where(
         inArray(
-          release.id,
-          wt.map((t) => t.releaseId),
+          SCHEMA.deploymentVersion.id,
+          wt.map((t) => t.versionId),
         ),
       );
 
     const jobInserts = wt
       .map((t) => {
         const release = releases.find(
-          (r) => r.deployment_version.id === t.releaseId,
+          (r) => r.deployment_version.id === t.versionId,
         );
         if (!release) return null;
         return {
@@ -213,14 +217,17 @@ class ReleaseJobTriggerBuilder {
 
     if (jobInserts.length === 0) return [];
 
-    const jobs = await this.tx.insert(job).values(jobInserts).returning();
+    const jobs = await this.tx
+      .insert(SCHEMA.job)
+      .values(jobInserts)
+      .returning();
     const wtWithJobId = wt.map((t, index) => ({
       ...t,
       jobId: jobs[index]!.id,
     }));
 
     const releaseJobTriggers = await this.tx
-      .insert(releaseJobTrigger)
+      .insert(SCHEMA.releaseJobTrigger)
       .values(wtWithJobId)
       .returning();
 

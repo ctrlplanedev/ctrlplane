@@ -10,7 +10,7 @@ import type { ReleaseIdPolicyChecker } from "./utils.js";
 const isSuccessCriteriaPassing = async (
   db: Tx,
   policy: schema.EnvironmentPolicy,
-  release: schema.Release,
+  release: schema.DeploymentVersion,
 ) => {
   if (policy.successType === "optional") return true;
 
@@ -32,7 +32,7 @@ const isSuccessCriteriaPassing = async (
     .where(
       and(
         eq(schema.environmentPolicyDeployment.policyId, policy.id),
-        eq(schema.releaseJobTrigger.releaseId, release.id),
+        eq(schema.releaseJobTrigger.versionId, release.id),
       ),
     );
 
@@ -66,8 +66,8 @@ export const isPassingCriteriaPolicy: ReleaseIdPolicyChecker = async (
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,

@@ -82,14 +82,17 @@ export async function dispatchJobsForAddedResources(
     ({ id, releaseFilter }) =>
       db
         .select()
-        .from(SCHEMA.release)
+        .from(SCHEMA.deploymentVersion)
         .where(
           and(
-            eq(SCHEMA.release.deploymentId, id),
-            SCHEMA.releaseMatchesCondition(db, releaseFilter ?? undefined),
+            eq(SCHEMA.deploymentVersion.deploymentId, id),
+            SCHEMA.deploymentVersionMatchesCondition(
+              db,
+              releaseFilter ?? undefined,
+            ),
           ),
         )
-        .orderBy(desc(SCHEMA.release.createdAt))
+        .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
         .limit(1)
         .then(takeFirstOrNull),
   );

@@ -38,7 +38,7 @@ import { ReleaseBadgeList } from "~/app/[workspaceSlug]/(appv2)/_components/rele
 import { api } from "~/trpc/react";
 
 type OverviewProps = {
-  releaseChannel: SCHEMA.ReleaseChannel;
+  releaseChannel: SCHEMA.DeploymentVersionChannel;
 };
 
 const getFinalFilter = (filter: ReleaseCondition | null) =>
@@ -116,7 +116,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const { deploymentId } = releaseChannel;
   const filter = getFinalFilter(form.watch("releaseFilter"));
 
-  const releasesQ = api.release.list.useQuery({
+  const releasesQ = api.deployment.version.list.useQuery({
     deploymentId,
     filter,
     limit: 5,

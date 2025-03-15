@@ -17,12 +17,12 @@ export const isPassingReleaseDependencyPolicy = async (
     async (trigger) => {
       const release = await db
         .select()
-        .from(schema.release)
+        .from(schema.deploymentVersion)
         .innerJoin(
           schema.releaseDependency,
-          eq(schema.release.id, schema.releaseDependency.releaseId),
+          eq(schema.deploymentVersion.id, schema.releaseDependency.releaseId),
         )
-        .where(eq(schema.release.id, trigger.releaseId));
+        .where(eq(schema.deploymentVersion.id, trigger.versionId));
 
       if (release.length === 0) return trigger;
 
@@ -90,11 +90,11 @@ export const isPassingReleaseDependencyPolicy = async (
           .select({
             id: schema.releaseJobTrigger.id,
             resourceId: schema.releaseJobTrigger.resourceId,
-            releaseId: schema.releaseJobTrigger.releaseId,
+            versionId: schema.releaseJobTrigger.versionId,
             status: schema.job.status,
             createdAt: schema.job.createdAt,
             rank: sql<number>`ROW_NUMBER() OVER (
-              PARTITION BY ${schema.releaseJobTrigger.resourceId}, ${schema.releaseJobTrigger.releaseId}
+              PARTITION BY ${schema.releaseJobTrigger.resourceId}, ${schema.releaseJobTrigger.versionId}
               ORDER BY ${schema.job.createdAt} DESC
             )`.as("rank"),
           })
@@ -107,18 +107,18 @@ export const isPassingReleaseDependencyPolicy = async (
 
         const resourceFulfillingDependency = await db
           .select()
-          .from(schema.release)
+          .from(schema.deploymentVersion)
           .innerJoin(
             schema.deployment,
-            eq(schema.release.deploymentId, schema.deployment.id),
+            eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
           )
           .innerJoin(
             latestJobSubquery,
-            eq(latestJobSubquery.releaseId, schema.release.id),
+            eq(latestJobSubquery.versionId, schema.deploymentVersion.id),
           )
           .where(
             and(
-              schema.releaseMatchesCondition(db, dep.releaseFilter),
+              schema.deploymentVersionMatchesCondition(db, dep.releaseFilter),
               eq(schema.deployment.id, dep.deploymentId),
               inArray(latestJobSubquery.resourceId, allIds),
               eq(latestJobSubquery.rank, 1),

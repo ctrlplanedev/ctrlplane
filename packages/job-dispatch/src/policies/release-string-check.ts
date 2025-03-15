@@ -21,15 +21,15 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
   const policyRCSubquery = db
     .select({
       releaseChannelPolicyId: schema.environmentPolicyReleaseChannel.policyId,
-      releaseChannelDeploymentId: schema.releaseChannel.deploymentId,
-      releaseChannelFilter: schema.releaseChannel.releaseFilter,
+      releaseChannelDeploymentId: schema.deploymentVersionChannel.deploymentId,
+      releaseChannelFilter: schema.deploymentVersionChannel.releaseFilter,
     })
     .from(schema.environmentPolicyReleaseChannel)
     .innerJoin(
-      schema.releaseChannel,
+      schema.deploymentVersionChannel,
       eq(
         schema.environmentPolicyReleaseChannel.channelId,
-        schema.releaseChannel.id,
+        schema.deploymentVersionChannel.id,
       ),
     )
     .as("policyRCSubquery");
@@ -63,17 +63,17 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
         .value(),
     );
 
-  const releaseIds = wf.map((v) => v.releaseId).filter(isPresent);
+  const versionIds = wf.map((v) => v.versionId).filter(isPresent);
   const rels = await db
     .select()
-    .from(schema.release)
-    .where(inArray(schema.release.id, releaseIds));
+    .from(schema.deploymentVersion)
+    .where(inArray(schema.deploymentVersion.id, versionIds));
 
   const promises = wf.map(async (wf) => {
     const env = envs.find((e) => e.environment.id === wf.environmentId);
     if (env == null) return null;
 
-    const release = rels.find((r) => r.id === wf.releaseId);
+    const release = rels.find((r) => r.id === wf.versionId);
     if (release == null) return null;
 
     const policyReleaseChannel = env.policy.releaseChannels.find(
@@ -85,11 +85,11 @@ export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
 
     const matchingRelease = await db
       .select()
-      .from(schema.release)
+      .from(schema.deploymentVersion)
       .where(
         and(
-          eq(schema.release.id, release.id),
-          schema.releaseMatchesCondition(db, releaseChannelFilter),
+          eq(schema.deploymentVersion.id, release.id),
+          schema.deploymentVersionMatchesCondition(db, releaseChannelFilter),
         ),
       )
       .then(takeFirstOrNull);

@@ -98,7 +98,7 @@ export const CreateReleaseChannelDialog: React.FC<
   const releaseFilterUrl =
     filterHash != null ? `${baseUrl}?filter=${filterHash}` : baseUrl;
 
-  const releasesQ = api.release.list.useQuery(
+  const releasesQ = api.deployment.version.list.useQuery(
     { deploymentId, filter, limit: 5 },
     { enabled: filter != null, placeholderData: (prev) => prev },
   );

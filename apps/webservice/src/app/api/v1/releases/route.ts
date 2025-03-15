@@ -27,7 +27,7 @@ import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const bodySchema = schema.createRelease.and(
+const bodySchema = schema.createDeploymentVersion.and(
   z.object({
     metadata: z.record(z.string()).optional(),
     status: z.nativeEnum(ReleaseStatus).optional(),
@@ -40,7 +40,7 @@ export const POST = request()
   .use(
     authz(({ ctx, can }) =>
       can
-        .perform(Permission.ReleaseCreate)
+        .perform(Permission.DeploymentVersionCreate)
         .on({ type: "deployment", id: ctx.body.deploymentId }),
     ),
   )
@@ -53,21 +53,24 @@ export const POST = request()
       try {
         const prevRelease = await db
           .select()
-          .from(schema.release)
+          .from(schema.deploymentVersion)
           .where(
             and(
-              eq(schema.release.deploymentId, body.deploymentId),
-              eq(schema.release.version, version),
+              eq(schema.deploymentVersion.deploymentId, body.deploymentId),
+              eq(schema.deploymentVersion.version, version),
             ),
           )
           .then(takeFirstOrNull);
 
         const release = await db
-          .insert(schema.release)
+          .insert(schema.deploymentVersion)
           .values({ ...body, name: relName })
           .onConflictDoUpdate({
-            target: [schema.release.deploymentId, schema.release.version],
-            set: buildConflictUpdateColumns(schema.release, [
+            target: [
+              schema.deploymentVersion.deploymentId,
+              schema.deploymentVersion.version,
+            ],
+            set: buildConflictUpdateColumns(schema.deploymentVersion, [
               "name",
               "status",
               "message",
@@ -80,7 +83,7 @@ export const POST = request()
 
         if (Object.keys(metadata).length > 0)
           await db
-            .insert(schema.releaseMetadata)
+            .insert(schema.deploymentVersionMetadata)
             .values(
               Object.entries(metadata).map(([key, value]) => ({
                 releaseId: release.id,
@@ -90,12 +93,13 @@ export const POST = request()
             )
             .onConflictDoUpdate({
               target: [
-                schema.releaseMetadata.releaseId,
-                schema.releaseMetadata.key,
+                schema.deploymentVersionMetadata.releaseId,
+                schema.deploymentVersionMetadata.key,
               ],
-              set: buildConflictUpdateColumns(schema.releaseMetadata, [
-                "value",
-              ]),
+              set: buildConflictUpdateColumns(
+                schema.deploymentVersionMetadata,
+                ["value"],
+              ),
             });
 
         const shouldTrigger =

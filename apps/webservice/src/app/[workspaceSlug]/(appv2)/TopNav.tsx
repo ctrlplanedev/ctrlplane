@@ -1,13 +1,10 @@
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { IconUser } from "@tabler/icons-react";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
 
 import { api } from "~/trpc/server";
 import { TopNavSearch } from "./TopNavSearch";
 import { WorkspaceDropdown } from "./WorkspaceDropdown";
+import { UserAvatarMenu } from "./UserAvatarMenu";
 
 export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
   workspaceSlug,
@@ -38,14 +35,10 @@ export const TopNav: React.FC<{ workspaceSlug: string }> = async ({
       </div>
 
       <div>
-        <Avatar className="size-7">
-          <Link href={`/${workspaceSlug}/settings/account/profile`}>
-            <AvatarImage src={viewer.image ?? undefined} />
-            <AvatarFallback>
-              <IconUser />
-            </AvatarFallback>
-          </Link>
-        </Avatar>
+        <UserAvatarMenu 
+          workspaceSlug={workspaceSlug} 
+          viewer={viewer} 
+        />
       </div>
     </nav>
   );

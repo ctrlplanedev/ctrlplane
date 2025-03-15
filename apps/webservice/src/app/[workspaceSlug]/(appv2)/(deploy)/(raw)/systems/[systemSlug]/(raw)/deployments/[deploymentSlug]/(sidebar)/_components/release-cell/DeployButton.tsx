@@ -12,7 +12,7 @@ export const DeployButton: React.FC<{
   environmentId: string;
   className?: string;
 }> = ({ releaseId, environmentId, className }) => {
-  const deploy = api.release.deploy.toEnvironment.useMutation();
+  const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
   const router = useRouter();
 
   return (

@@ -1,12 +1,6 @@
 "use client";
 
-import type {
-  Environment,
-  EnvironmentPolicy,
-  EnvironmentPolicyDeployment,
-  Release,
-  Workspace,
-} from "@ctrlplane/db/schema";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeTypes } from "reactflow";
 import ReactFlow, { useEdgesState, useNodesState } from "reactflow";
 
@@ -27,12 +21,12 @@ const nodeTypes: NodeTypes = {
   trigger: TriggerNode,
 };
 export const FlowDiagram: React.FC<{
-  workspace: Workspace;
+  workspace: SCHEMA.Workspace;
   systemId: string;
-  release: Release;
-  envs: Array<Environment>;
-  policies: Array<EnvironmentPolicy>;
-  policyDeployments: Array<EnvironmentPolicyDeployment>;
+  release: SCHEMA.DeploymentVersion;
+  envs: Array<SCHEMA.Environment>;
+  policies: Array<SCHEMA.EnvironmentPolicy>;
+  policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>;
 }> = ({ workspace, release, envs, policies, policyDeployments }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>([
     {

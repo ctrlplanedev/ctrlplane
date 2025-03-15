@@ -175,7 +175,7 @@ type DeploymentPageContentProps = {
   deployment: Deployment;
   environments: schema.Environment[];
   directories: { path: string; environments: schema.Environment[] }[];
-  releaseChannel: schema.ReleaseChannel | null;
+  releaseChannel: schema.DeploymentVersionChannel | null;
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
@@ -189,7 +189,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const { systemSlug } = useParams<{ systemSlug: string }>();
 
-  const releases = api.release.list.useQuery(
+  const releases = api.deployment.version.list.useQuery(
     { deploymentId: deployment.id, filter: filter ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );

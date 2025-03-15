@@ -52,7 +52,7 @@ import { environment } from "./environment.js";
 import { job } from "./job.js";
 import { resource } from "./resource.js";
 
-export const releaseChannel = pgTable(
+export const deploymentVersionChannel = pgTable(
   "deployment_version_channel",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -68,11 +68,15 @@ export const releaseChannel = pgTable(
   (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.name) }),
 );
 
-export type ReleaseChannel = InferSelectModel<typeof releaseChannel>;
-export const createReleaseChannel = createInsertSchema(releaseChannel, {
-  releaseFilter: releaseCondition,
-}).omit({ id: true });
-export const updateReleaseChannel = createReleaseChannel.partial();
+export type DeploymentVersionChannel = InferSelectModel<
+  typeof deploymentVersionChannel
+>;
+export const createDeploymentVersionChannel = createInsertSchema(
+  deploymentVersionChannel,
+  { releaseFilter: releaseCondition },
+).omit({ id: true });
+export const updateDeploymentVersionChannel =
+  createDeploymentVersionChannel.partial();
 
 export const releaseDependency = pgTable(
   "deployment_version_dependency",
@@ -80,7 +84,7 @@ export const releaseDependency = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     releaseId: uuid("deployment_version_id")
       .notNull()
-      .references(() => release.id, { onDelete: "cascade" }),
+      .references(() => deploymentVersion.id, { onDelete: "cascade" }),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
@@ -103,7 +107,7 @@ export const releaseStatus = pgEnum("deployment_version_status", [
   "failed",
 ]);
 
-export const release = pgTable(
+export const deploymentVersion = pgTable(
   "deployment_version",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -130,9 +134,9 @@ export const release = pgTable(
   }),
 );
 
-export type Release = InferSelectModel<typeof release>;
+export type DeploymentVersion = InferSelectModel<typeof deploymentVersion>;
 
-export const createRelease = createInsertSchema(release, {
+export const createDeploymentVersion = createInsertSchema(deploymentVersion, {
   version: z.string().min(1),
   name: z.string().optional(),
   config: z.record(z.any()),
@@ -150,14 +154,14 @@ export const createRelease = createInsertSchema(release, {
       .default([]),
   });
 
-export const updateRelease = createRelease.partial();
-export type UpdateRelease = z.infer<typeof updateRelease>;
-export const releaseMetadata = pgTable(
+export const updateDeploymentVersion = createDeploymentVersion.partial();
+export type UpdateDeploymentVersion = z.infer<typeof updateDeploymentVersion>;
+export const deploymentVersionMetadata = pgTable(
   "deployment_version_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
     releaseId: uuid("deployment_version_id")
-      .references(() => release.id, { onDelete: "cascade" })
+      .references(() => deploymentVersion.id, { onDelete: "cascade" })
       .notNull(),
     key: text("key").notNull(),
     value: text("value").notNull(),
@@ -191,8 +195,8 @@ export const releaseJobTrigger = pgTable(
     type: releaseJobTriggerType("type").notNull(),
     causedById: uuid("caused_by_id").references(() => user.id),
 
-    releaseId: uuid("deployment_version_id")
-      .references(() => release.id, { onDelete: "cascade" })
+    versionId: uuid("deployment_version_id")
+      .references(() => deploymentVersion.id, { onDelete: "cascade" })
       .notNull(),
     resourceId: uuid("resource_id")
       .references(() => resource.id, { onDelete: "cascade" })
@@ -229,11 +233,11 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return notExists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, release.id),
-            eq(releaseMetadata.key, cond.key),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
           ),
         )
         .limit(1),
@@ -243,12 +247,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, release.id),
-            eq(releaseMetadata.key, cond.key),
-            sql`${releaseMetadata.value} ~ ${cond.value}`,
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            sql`${deploymentVersionMetadata.value} ~ ${cond.value}`,
           ),
         )
         .limit(1),
@@ -258,12 +262,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, release.id),
-            eq(releaseMetadata.key, cond.key),
-            ilike(releaseMetadata.value, `${cond.value}%`),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            ilike(deploymentVersionMetadata.value, `${cond.value}%`),
           ),
         )
         .limit(1),
@@ -273,12 +277,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, release.id),
-            eq(releaseMetadata.key, cond.key),
-            ilike(releaseMetadata.value, `%${cond.value}`),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            ilike(deploymentVersionMetadata.value, `%${cond.value}`),
           ),
         )
         .limit(1),
@@ -288,12 +292,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
     return exists(
       tx
         .select({ value: sql<number>`1` })
-        .from(releaseMetadata)
+        .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(releaseMetadata.releaseId, release.id),
-            eq(releaseMetadata.key, cond.key),
-            ilike(releaseMetadata.value, `%${cond.value}%`),
+            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.key, cond.key),
+            ilike(deploymentVersionMetadata.value, `%${cond.value}%`),
           ),
         )
         .limit(1),
@@ -302,12 +306,12 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   return exists(
     tx
       .select({ value: sql<number>`1` })
-      .from(releaseMetadata)
+      .from(deploymentVersionMetadata)
       .where(
         and(
-          eq(releaseMetadata.releaseId, release.id),
-          eq(releaseMetadata.key, cond.key),
-          eq(releaseMetadata.value, cond.value),
+          eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+          eq(deploymentVersionMetadata.key, cond.key),
+          eq(deploymentVersionMetadata.value, cond.value),
         ),
       )
       .limit(1),
@@ -316,23 +320,25 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
 
 const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
   const date = new Date(cond.value);
-  if (cond.operator === DateOperator.Before) return lt(release.createdAt, date);
-  if (cond.operator === DateOperator.After) return gt(release.createdAt, date);
+  if (cond.operator === DateOperator.Before)
+    return lt(deploymentVersion.createdAt, date);
+  if (cond.operator === DateOperator.After)
+    return gt(deploymentVersion.createdAt, date);
   if (cond.operator === DateOperator.BeforeOrOn)
-    return lte(release.createdAt, date);
-  return gte(release.createdAt, date);
+    return lte(deploymentVersion.createdAt, date);
+  return gte(deploymentVersion.createdAt, date);
 };
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
-    return eq(release.version, cond.value);
+    return eq(deploymentVersion.version, cond.value);
   if (cond.operator === ColumnOperator.StartsWith)
-    return ilike(release.version, `${cond.value}%`);
+    return ilike(deploymentVersion.version, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
-    return ilike(release.version, `%${cond.value}`);
+    return ilike(deploymentVersion.version, `%${cond.value}`);
   if (cond.operator === ColumnOperator.Contains)
-    return ilike(release.version, `%${cond.value}%`);
-  return sql`${release.version} ~ ${cond.value}`;
+    return ilike(deploymentVersion.version, `%${cond.value}%`);
+  return sql`${deploymentVersion.version} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
@@ -351,7 +357,7 @@ const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
   return cond.not ? not(con) : con;
 };
 
-export function releaseMatchesCondition(
+export function deploymentVersionMatchesCondition(
   tx: Tx,
   condition?: ReleaseCondition | null,
 ): SQL<unknown> | undefined {

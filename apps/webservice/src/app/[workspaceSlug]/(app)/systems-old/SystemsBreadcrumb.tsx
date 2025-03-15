@@ -50,7 +50,9 @@ export const SystemBreadcrumbNavbar = async ({
         })
       : null;
 
-  const release = versionId ? await api.release.byId(versionId) : null;
+  const release = versionId
+    ? await api.deployment.version.byId(versionId)
+    : null;
 
   const crumbs = [
     {

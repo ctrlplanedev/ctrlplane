@@ -161,7 +161,7 @@ export const deploymentStatsRouter = createTRPCRouter({
 
       const inactiveDeploymentChecks = or(
         isNull(schema.job),
-        isNull(schema.release),
+        isNull(schema.deploymentVersion),
         isNull(schema.releaseJobTrigger),
       );
 
@@ -184,12 +184,12 @@ export const deploymentStatsRouter = createTRPCRouter({
         })
         .from(schema.deployment)
         .leftJoin(
-          schema.release,
-          eq(schema.release.deploymentId, schema.deployment.id),
+          schema.deploymentVersion,
+          eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
         )
         .leftJoin(
           schema.releaseJobTrigger,
-          eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+          eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
         )
         .leftJoin(schema.job, eq(schema.job.id, schema.releaseJobTrigger.jobId))
         .innerJoin(
@@ -242,12 +242,12 @@ export const deploymentStatsRouter = createTRPCRouter({
           eq(schema.releaseJobTrigger.jobId, schema.job.id),
         )
         .innerJoin(
-          schema.release,
-          eq(schema.release.id, schema.releaseJobTrigger.releaseId),
+          schema.deploymentVersion,
+          eq(schema.deploymentVersion.id, schema.releaseJobTrigger.versionId),
         )
         .innerJoin(
           schema.deployment,
-          eq(schema.deployment.id, schema.release.deploymentId),
+          eq(schema.deployment.id, schema.deploymentVersion.deploymentId),
         )
         .innerJoin(
           schema.system,
@@ -297,12 +297,12 @@ export const deploymentStatsRouter = createTRPCRouter({
           eq(schema.releaseJobTrigger.jobId, schema.job.id),
         )
         .innerJoin(
-          schema.release,
-          eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+          schema.deploymentVersion,
+          eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
         )
         .where(
           and(
-            eq(schema.release.deploymentId, deploymentId),
+            eq(schema.deploymentVersion.deploymentId, deploymentId),
             inArray(schema.job.status, analyticsStatuses),
             gte(schema.job.completedAt, startDate),
             lt(schema.job.completedAt, endDate),

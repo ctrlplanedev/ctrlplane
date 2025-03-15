@@ -20,19 +20,40 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        success: "bg-green-600 text-white shadow-sm hover:bg-green-700",
+        warning: "bg-amber-500 text-white shadow-sm hover:bg-amber-600",
+        info: "bg-blue-500 text-white shadow-sm hover:bg-blue-600"
       },
       size: {
         default: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
         xs: "h-7 rounded-md px-2 text-xs",
         lg: "h-10 rounded-md px-8",
+        xl: "h-12 rounded-md px-10 text-base",
         icon: "h-9 w-9",
+        "icon-sm": "h-7 w-7",
+        "icon-lg": "h-11 w-11",
+        "full": "w-full"
       },
+      alignment: {
+        left: "justify-start",
+        center: "justify-center",
+        right: "justify-end",
+        between: "justify-between"
+      }
     },
     defaultVariants: {
       variant: "default",
       size: "default",
+      alignment: "center"
     },
+    compoundVariants: [
+      {
+        size: "full",
+        alignment: "center",
+        className: "w-full justify-center"
+      }
+    ]
   },
 );
 

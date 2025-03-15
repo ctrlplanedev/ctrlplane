@@ -46,7 +46,7 @@ import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../common.js";
 import { jobAgent } from "./job-agent.js";
-import { release, releaseJobTrigger } from "./release.js";
+import { deploymentVersion, releaseJobTrigger } from "./release.js";
 import { jobResourceRelationship, resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
@@ -257,14 +257,14 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
-    return eq(release.version, cond.value);
+    return eq(deploymentVersion.version, cond.value);
   if (cond.operator === ColumnOperator.StartsWith)
-    return ilike(release.version, `${cond.value}%`);
+    return ilike(deploymentVersion.version, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
-    return ilike(release.version, `%${cond.value}`);
+    return ilike(deploymentVersion.version, `%${cond.value}`);
   if (cond.operator === ColumnOperator.Contains)
-    return ilike(release.version, `%${cond.value}%`);
-  return sql`${release.version} ~ ${cond.value}`;
+    return ilike(deploymentVersion.version, `%${cond.value}%`);
+  return sql`${deploymentVersion.version} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
@@ -273,13 +273,14 @@ const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
   if (cond.type === FilterType.CreatedAt) return buildCreatedAtCondition(cond);
   if (cond.type === JobFilterType.Status) return eq(job.status, cond.value);
   if (cond.type === JobFilterType.Deployment)
-    return eq(release.deploymentId, cond.value);
+    return eq(deploymentVersion.deploymentId, cond.value);
   if (cond.type === JobFilterType.Environment)
     return eq(releaseJobTrigger.environmentId, cond.value);
   if (cond.type === FilterType.Version) return buildVersionCondition(cond);
   if (cond.type === JobFilterType.JobResource)
     return and(eq(resource.id, cond.value), isNull(resource.deletedAt))!;
-  if (cond.type === JobFilterType.Release) return eq(release.id, cond.value);
+  if (cond.type === JobFilterType.Release)
+    return eq(deploymentVersion.id, cond.value);
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =

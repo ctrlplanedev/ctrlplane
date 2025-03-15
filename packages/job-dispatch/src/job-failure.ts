@@ -12,12 +12,12 @@ export const onJobFailure = async (job: schema.Job) => {
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.deployment,
-      eq(schema.release.deploymentId, schema.deployment.id),
+      eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
     )
     .where(eq(schema.releaseJobTrigger.jobId, job.id))
     .then(takeFirstOrNull);
@@ -29,7 +29,7 @@ export const onJobFailure = async (job: schema.Job) => {
     .from(schema.releaseJobTrigger)
     .where(
       and(
-        eq(schema.releaseJobTrigger.releaseId, jobInfo.deployment_version.id),
+        eq(schema.releaseJobTrigger.versionId, jobInfo.deployment_version.id),
         eq(
           schema.releaseJobTrigger.environmentId,
           jobInfo.release_job_trigger.environmentId,

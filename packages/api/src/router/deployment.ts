@@ -13,30 +13,7 @@ import {
   takeFirst,
   takeFirstOrNull,
 } from "@ctrlplane/db";
-import {
-  createDeployment,
-  createHook,
-  createReleaseChannel,
-  deployment,
-  environment,
-  hook,
-  job,
-  jobAgent,
-  release,
-  releaseChannel,
-  releaseJobTrigger,
-  releaseMatchesCondition,
-  resource,
-  resourceMatchesMetadata,
-  runbook,
-  runbookVariable,
-  runhook,
-  system,
-  updateDeployment as updateDeploymentSchema,
-  updateHook,
-  updateReleaseChannel,
-  workspace,
-} from "@ctrlplane/db/schema";
+import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   getEventsForDeploymentRemoved,
   handleEvent,
@@ -48,34 +25,40 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentStatsRouter } from "./deployment-stats";
 import { deploymentVariableRouter } from "./deployment-variable";
+import { versionRouter } from "./deployment-version";
 
 const releaseChannelRouter = createTRPCRouter({
   create: protectedProcedure
-    .input(createReleaseChannel)
+    .input(SCHEMA.createDeploymentVersionChannel)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.ReleaseChannelCreate).on({
+        canUser.perform(Permission.DeploymentVersionChannelCreate).on({
           type: "deployment",
           id: input.deploymentId,
         }),
     })
     .mutation(({ ctx, input }) =>
-      ctx.db.insert(releaseChannel).values(input).returning(),
+      ctx.db.insert(SCHEMA.deploymentVersionChannel).values(input).returning(),
     ),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string().uuid(), data: updateReleaseChannel }))
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        data: SCHEMA.updateDeploymentVersionChannel,
+      }),
+    )
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseChannelUpdate)
-          .on({ type: "releaseChannel", id: input.id }),
+          .perform(Permission.DeploymentVersionChannelUpdate)
+          .on({ type: "deploymentVersionChannel", id: input.id }),
     })
     .mutation(({ ctx, input }) =>
       ctx.db
-        .update(releaseChannel)
+        .update(SCHEMA.deploymentVersionChannel)
         .set(input.data)
-        .where(eq(releaseChannel.id, input.id))
+        .where(eq(SCHEMA.deploymentVersionChannel.id, input.id))
         .returning(),
     ),
 
@@ -84,11 +67,13 @@ const releaseChannelRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseChannelDelete)
-          .on({ type: "releaseChannel", id: input }),
+          .perform(Permission.DeploymentVersionChannelDelete)
+          .on({ type: "deploymentVersionChannel", id: input }),
     })
     .mutation(({ ctx, input }) =>
-      ctx.db.delete(releaseChannel).where(eq(releaseChannel.id, input)),
+      ctx.db
+        .delete(SCHEMA.deploymentVersionChannel)
+        .where(eq(SCHEMA.deploymentVersionChannel.id, input)),
     ),
 
   list: createTRPCRouter({
@@ -97,24 +82,24 @@ const releaseChannelRouter = createTRPCRouter({
       .meta({
         authorizationCheck: ({ canUser, input }) =>
           canUser
-            .perform(Permission.ReleaseChannelList)
+            .perform(Permission.DeploymentVersionChannelList)
             .on({ type: "deployment", id: input }),
       })
       .query(async ({ ctx, input }) => {
         const channels = await ctx.db
           .select()
-          .from(releaseChannel)
-          .where(eq(releaseChannel.deploymentId, input));
+          .from(SCHEMA.deploymentVersionChannel)
+          .where(eq(SCHEMA.deploymentVersionChannel.deploymentId, input));
 
         const promises = channels.map(async (channel) => {
           const filter = channel.releaseFilter ?? undefined;
           const total = await ctx.db
             .select({ count: count() })
-            .from(release)
+            .from(SCHEMA.deploymentVersion)
             .where(
               and(
-                eq(release.deploymentId, channel.deploymentId),
-                releaseMatchesCondition(ctx.db, filter),
+                eq(SCHEMA.deploymentVersion.deploymentId, channel.deploymentId),
+                SCHEMA.deploymentVersionMatchesCondition(ctx.db, filter),
               ),
             )
             .then(takeFirst)
@@ -130,12 +115,12 @@ const releaseChannelRouter = createTRPCRouter({
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
-          .perform(Permission.ReleaseChannelGet)
-          .on({ type: "releaseChannel", id: input }),
+          .perform(Permission.DeploymentVersionChannelGet)
+          .on({ type: "deploymentVersionChannel", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const rc = await ctx.db.query.releaseChannel.findFirst({
-        where: eq(releaseChannel.id, input),
+      const rc = await ctx.db.query.deploymentVersionChannel.findFirst({
+        where: eq(SCHEMA.deploymentVersionChannel.id, input),
         with: {
           environmentPolicyReleaseChannels: {
             with: { environmentPolicy: true },
@@ -149,8 +134,8 @@ const releaseChannelRouter = createTRPCRouter({
 
       const envs = await ctx.db
         .select()
-        .from(environment)
-        .where(inArray(environment.policyId, policyIds));
+        .from(SCHEMA.environment)
+        .where(inArray(SCHEMA.environment.policyId, policyIds));
 
       return {
         ...rc,
@@ -179,7 +164,10 @@ const hookRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db.query.hook
         .findMany({
-          where: and(eq(hook.scopeId, input), eq(hook.scopeType, "deployment")),
+          where: and(
+            eq(SCHEMA.hook.scopeId, input),
+            eq(SCHEMA.hook.scopeType, "deployment"),
+          ),
           with: { runhooks: { with: { runbook: true } } },
         })
         .then((rows) =>
@@ -196,8 +184,8 @@ const hookRouter = createTRPCRouter({
       authorizationCheck: async ({ canUser, ctx, input }) => {
         const h = await ctx.db
           .select()
-          .from(hook)
-          .where(eq(hook.id, input))
+          .from(SCHEMA.hook)
+          .where(eq(SCHEMA.hook.id, input))
           .then(takeFirstOrNull);
         if (h == null) return false;
         if (h.scopeType !== "deployment") return false;
@@ -208,11 +196,11 @@ const hookRouter = createTRPCRouter({
       },
     })
     .query(({ ctx, input }) =>
-      ctx.db.query.hook.findFirst({ where: eq(hook.id, input) }),
+      ctx.db.query.hook.findFirst({ where: eq(SCHEMA.hook.id, input) }),
     ),
 
   create: protectedProcedure
-    .input(createHook)
+    .input(SCHEMA.createHook)
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
@@ -223,11 +211,11 @@ const hookRouter = createTRPCRouter({
       ctx.db.transaction(async (tx) => {
         const dep = await tx
           .select()
-          .from(deployment)
-          .where(eq(deployment.id, input.scopeId))
+          .from(SCHEMA.deployment)
+          .where(eq(SCHEMA.deployment.id, input.scopeId))
           .then(takeFirst);
         const h = await tx
-          .insert(hook)
+          .insert(SCHEMA.hook)
           .values(input)
           .returning()
           .then(takeFirst);
@@ -236,7 +224,7 @@ const hookRouter = createTRPCRouter({
           return { ...h, runhook: null };
 
         const rb = await tx
-          .insert(runbook)
+          .insert(SCHEMA.runbook)
           .values({
             name: h.name,
             systemId: dep.systemId,
@@ -248,12 +236,12 @@ const hookRouter = createTRPCRouter({
 
         if (input.variables.length > 0)
           await tx
-            .insert(runbookVariable)
+            .insert(SCHEMA.runbookVariable)
             .values(input.variables.map((v) => ({ ...v, runbookId: rb.id })))
             .returning();
 
         const rh = await tx
-          .insert(runhook)
+          .insert(SCHEMA.runhook)
           .values({ hookId: h.id, runbookId: rb.id })
           .returning()
           .then(takeFirst);
@@ -262,13 +250,13 @@ const hookRouter = createTRPCRouter({
     ),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string().uuid(), data: updateHook }))
+    .input(z.object({ id: z.string().uuid(), data: SCHEMA.updateHook }))
     .meta({
       authorizationCheck: async ({ canUser, ctx, input }) => {
         const h = await ctx.db
           .select()
-          .from(hook)
-          .where(eq(hook.id, input.id))
+          .from(SCHEMA.hook)
+          .where(eq(SCHEMA.hook.id, input.id))
           .then(takeFirstOrNull);
         if (h == null) return false;
         if (h.scopeType !== "deployment") return false;
@@ -281,26 +269,28 @@ const hookRouter = createTRPCRouter({
     .mutation(({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
         const h = await tx
-          .update(hook)
+          .update(SCHEMA.hook)
           .set(input.data)
-          .where(eq(hook.id, input.id))
+          .where(eq(SCHEMA.hook.id, input.id))
           .returning()
           .then(takeFirst);
 
         const dep = await tx
           .select()
-          .from(deployment)
-          .where(eq(deployment.id, h.scopeId))
+          .from(SCHEMA.deployment)
+          .where(eq(SCHEMA.deployment.id, h.scopeId))
           .then(takeFirst);
 
         const rh = await tx
           .select()
-          .from(runhook)
-          .where(eq(runhook.hookId, h.id))
+          .from(SCHEMA.runhook)
+          .where(eq(SCHEMA.runhook.hookId, h.id))
           .then(takeFirstOrNull);
 
         if (rh != null)
-          await tx.delete(runbook).where(eq(runbook.id, rh.runbookId));
+          await tx
+            .delete(SCHEMA.runbook)
+            .where(eq(SCHEMA.runbook.id, rh.runbookId));
 
         const { jobAgentId, jobAgentConfig } = input.data;
         if (jobAgentId == null || jobAgentConfig == null) {
@@ -308,7 +298,7 @@ const hookRouter = createTRPCRouter({
         }
 
         const rb = await tx
-          .insert(runbook)
+          .insert(SCHEMA.runbook)
           .values({
             name: h.name,
             systemId: dep.systemId,
@@ -320,14 +310,14 @@ const hookRouter = createTRPCRouter({
 
         if (input.data.variables != null && input.data.variables.length > 0)
           await tx
-            .insert(runbookVariable)
+            .insert(SCHEMA.runbookVariable)
             .values(
               input.data.variables.map((v) => ({ ...v, runbookId: rb.id })),
             )
             .returning();
 
         const updatedRh = await tx
-          .insert(runhook)
+          .insert(SCHEMA.runhook)
           .values({ hookId: h.id, runbookId: rb.id })
           .returning()
           .then(takeFirst);
@@ -341,8 +331,8 @@ const hookRouter = createTRPCRouter({
       authorizationCheck: async ({ canUser, ctx, input }) => {
         const h = await ctx.db
           .select()
-          .from(hook)
-          .where(eq(hook.id, input))
+          .from(SCHEMA.hook)
+          .where(eq(SCHEMA.hook.id, input))
           .then(takeFirstOrNull);
         if (h == null) return false;
         if (h.scopeType !== "deployment") return false;
@@ -353,7 +343,7 @@ const hookRouter = createTRPCRouter({
       },
     })
     .mutation(({ ctx, input }) =>
-      ctx.db.delete(hook).where(eq(hook.id, input)),
+      ctx.db.delete(SCHEMA.hook).where(eq(SCHEMA.hook.id, input)),
     ),
 });
 
@@ -361,6 +351,7 @@ export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
   releaseChannel: releaseChannelRouter,
   hook: hookRouter,
+  version: versionRouter,
   distributionById: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
@@ -372,31 +363,40 @@ export const deploymentRouter = createTRPCRouter({
     .query(({ ctx, input }) => {
       const latestJobsPerResource = ctx.db
         .select({
-          id: job.id,
-          status: job.status,
-          resourceId: releaseJobTrigger.resourceId,
-          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${releaseJobTrigger.resourceId} ORDER BY ${job.createdAt} DESC)`.as(
+          id: SCHEMA.job.id,
+          status: SCHEMA.job.status,
+          resourceId: SCHEMA.releaseJobTrigger.resourceId,
+          rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${SCHEMA.releaseJobTrigger.resourceId} ORDER BY ${SCHEMA.job.createdAt} DESC)`.as(
             "rank",
           ),
         })
-        .from(job)
-        .innerJoin(releaseJobTrigger, eq(releaseJobTrigger.jobId, job.id))
+        .from(SCHEMA.job)
+        .innerJoin(
+          SCHEMA.releaseJobTrigger,
+          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+        )
         .as("latest_jobs");
 
       return ctx.db
         .select()
         .from(latestJobsPerResource)
         .innerJoin(
-          releaseJobTrigger,
-          eq(releaseJobTrigger.jobId, latestJobsPerResource.id),
+          SCHEMA.releaseJobTrigger,
+          eq(SCHEMA.releaseJobTrigger.jobId, latestJobsPerResource.id),
         )
-        .innerJoin(release, eq(release.id, releaseJobTrigger.releaseId))
-        .innerJoin(resource, eq(resource.id, releaseJobTrigger.resourceId))
+        .innerJoin(
+          SCHEMA.deploymentVersion,
+          eq(SCHEMA.deploymentVersion.id, SCHEMA.releaseJobTrigger.versionId),
+        )
+        .innerJoin(
+          SCHEMA.resource,
+          eq(SCHEMA.resource.id, SCHEMA.releaseJobTrigger.resourceId),
+        )
         .where(
           and(
-            eq(release.deploymentId, input),
+            eq(SCHEMA.deploymentVersion.deploymentId, input),
             eq(latestJobsPerResource.rank, 1),
-            isNull(resource.deletedAt),
+            isNull(SCHEMA.resource.deletedAt),
           ),
         )
         .then((r) =>
@@ -416,10 +416,10 @@ export const deploymentRouter = createTRPCRouter({
           .perform(Permission.DeploymentCreate)
           .on({ type: "system", id: input.systemId }),
     })
-    .input(createDeployment)
+    .input(SCHEMA.createDeployment)
     .mutation(({ ctx, input }) =>
       ctx.db
-        .insert(deployment)
+        .insert(SCHEMA.deployment)
         .values({ ...input, description: input.description ?? "" })
         .returning()
         .then(takeFirst),
@@ -432,7 +432,7 @@ export const deploymentRouter = createTRPCRouter({
           .perform(Permission.DeploymentUpdate)
           .on({ type: "deployment", id: input.id }),
     })
-    .input(z.object({ id: z.string().uuid(), data: updateDeploymentSchema }))
+    .input(z.object({ id: z.string().uuid(), data: SCHEMA.updateDeployment }))
     .mutation(({ ctx, input }) =>
       updateDeployment(input.id, input.data, ctx.session.user.id),
     ),
@@ -448,14 +448,14 @@ export const deploymentRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const dep = await ctx.db
         .select()
-        .from(deployment)
-        .where(eq(deployment.id, input))
+        .from(SCHEMA.deployment)
+        .where(eq(SCHEMA.deployment.id, input))
         .then(takeFirst);
       const events = await getEventsForDeploymentRemoved(dep, dep.systemId);
       await Promise.allSettled(events.map(handleEvent));
       return ctx.db
-        .delete(deployment)
-        .where(eq(deployment.id, input))
+        .delete(SCHEMA.deployment)
+        .where(eq(SCHEMA.deployment.id, input))
         .returning()
         .then(takeFirst);
     }),
@@ -471,8 +471,8 @@ export const deploymentRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db
         .select()
-        .from(deployment)
-        .where(eq(deployment.id, input))
+        .from(SCHEMA.deployment)
+        .where(eq(SCHEMA.deployment.id, input))
         .then(takeFirst),
     ),
 
@@ -489,15 +489,24 @@ export const deploymentRouter = createTRPCRouter({
         const { workspaceSlug, deploymentSlug, systemSlug } = input;
         const sys = await ctx.db
           .select()
-          .from(deployment)
-          .innerJoin(system, eq(system.id, deployment.systemId))
-          .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-          .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+          .from(SCHEMA.deployment)
+          .innerJoin(
+            SCHEMA.system,
+            eq(SCHEMA.system.id, SCHEMA.deployment.systemId),
+          )
+          .innerJoin(
+            SCHEMA.workspace,
+            eq(SCHEMA.system.workspaceId, SCHEMA.workspace.id),
+          )
+          .leftJoin(
+            SCHEMA.jobAgent,
+            eq(SCHEMA.jobAgent.id, SCHEMA.deployment.jobAgentId),
+          )
           .where(
             and(
-              eq(deployment.slug, deploymentSlug),
-              eq(system.slug, systemSlug),
-              eq(workspace.slug, workspaceSlug),
+              eq(SCHEMA.deployment.slug, deploymentSlug),
+              eq(SCHEMA.system.slug, systemSlug),
+              eq(SCHEMA.workspace.slug, workspaceSlug),
             ),
           )
           .then(takeFirstOrNull);
@@ -510,19 +519,31 @@ export const deploymentRouter = createTRPCRouter({
     .query(({ ctx, input: { workspaceSlug, deploymentSlug, systemSlug } }) =>
       ctx.db
         .select()
-        .from(deployment)
-        .innerJoin(system, eq(system.id, deployment.systemId))
-        .innerJoin(workspace, eq(system.workspaceId, workspace.id))
-        .leftJoin(jobAgent, eq(jobAgent.id, deployment.jobAgentId))
+        .from(SCHEMA.deployment)
+        .innerJoin(
+          SCHEMA.system,
+          eq(SCHEMA.system.id, SCHEMA.deployment.systemId),
+        )
+        .innerJoin(
+          SCHEMA.workspace,
+          eq(SCHEMA.system.workspaceId, SCHEMA.workspace.id),
+        )
         .leftJoin(
-          releaseChannel,
-          eq(releaseChannel.deploymentId, deployment.id),
+          SCHEMA.jobAgent,
+          eq(SCHEMA.jobAgent.id, SCHEMA.deployment.jobAgentId),
+        )
+        .leftJoin(
+          SCHEMA.deploymentVersionChannel,
+          eq(
+            SCHEMA.deploymentVersionChannel.deploymentId,
+            SCHEMA.deployment.id,
+          ),
         )
         .where(
           and(
-            eq(deployment.slug, deploymentSlug),
-            eq(system.slug, systemSlug),
-            eq(workspace.slug, workspaceSlug),
+            eq(SCHEMA.deployment.slug, deploymentSlug),
+            eq(SCHEMA.system.slug, systemSlug),
+            eq(SCHEMA.workspace.slug, workspaceSlug),
           ),
         )
         .then((r) =>
@@ -550,14 +571,20 @@ export const deploymentRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db
         .select()
-        .from(deployment)
+        .from(SCHEMA.deployment)
         .leftJoin(
-          releaseChannel,
-          eq(releaseChannel.deploymentId, deployment.id),
+          SCHEMA.deploymentVersionChannel,
+          eq(
+            SCHEMA.deploymentVersionChannel.deploymentId,
+            SCHEMA.deployment.id,
+          ),
         )
-        .innerJoin(system, eq(deployment.systemId, system.id))
-        .where(eq(deployment.systemId, input))
-        .orderBy(deployment.name)
+        .innerJoin(
+          SCHEMA.system,
+          eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
+        )
+        .where(eq(SCHEMA.deployment.systemId, input))
+        .orderBy(SCHEMA.deployment.name)
         .then((ts) =>
           _.chain(ts)
             .groupBy((t) => t.deployment.id)
@@ -585,18 +612,23 @@ export const deploymentRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const tg = await ctx.db
         .select()
-        .from(resource)
-        .where(and(eq(resource.id, input), isNull(resource.deletedAt)))
+        .from(SCHEMA.resource)
+        .where(
+          and(eq(SCHEMA.resource.id, input), isNull(SCHEMA.resource.deletedAt)),
+        )
         .then(takeFirst);
 
       const envs = await ctx.db
         .select()
-        .from(environment)
-        .innerJoin(system, eq(environment.systemId, system.id))
+        .from(SCHEMA.environment)
+        .innerJoin(
+          SCHEMA.system,
+          eq(SCHEMA.environment.systemId, SCHEMA.system.id),
+        )
         .where(
           and(
-            eq(system.workspaceId, tg.workspaceId),
-            isNotNull(environment.resourceFilter),
+            eq(SCHEMA.system.workspaceId, tg.workspaceId),
+            isNotNull(SCHEMA.environment.resourceFilter),
           ),
         );
 
@@ -604,36 +636,57 @@ export const deploymentRouter = createTRPCRouter({
         envs.map((env) =>
           ctx.db
             .select()
-            .from(deployment)
-            .innerJoin(system, eq(system.id, deployment.systemId))
-            .innerJoin(environment, eq(environment.systemId, system.id))
-            .leftJoin(release, eq(release.deploymentId, deployment.id))
+            .from(SCHEMA.deployment)
             .innerJoin(
-              resource,
-              resourceMatchesMetadata(ctx.db, env.environment.resourceFilter),
+              SCHEMA.system,
+              eq(SCHEMA.deployment.systemId, SCHEMA.system.id),
+            )
+            .innerJoin(
+              SCHEMA.environment,
+              eq(SCHEMA.environment.systemId, SCHEMA.system.id),
             )
             .leftJoin(
-              releaseJobTrigger,
-              and(
-                eq(releaseJobTrigger.resourceId, resource.id),
-                eq(releaseJobTrigger.releaseId, release.id),
-                eq(releaseJobTrigger.environmentId, environment.id),
+              SCHEMA.deploymentVersion,
+              eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
+            )
+            .innerJoin(
+              SCHEMA.resource,
+              SCHEMA.resourceMatchesMetadata(
+                ctx.db,
+                env.environment.resourceFilter,
               ),
             )
-            .leftJoin(job, eq(releaseJobTrigger.jobId, job.id))
+            .leftJoin(
+              SCHEMA.releaseJobTrigger,
+              and(
+                eq(SCHEMA.releaseJobTrigger.resourceId, SCHEMA.resource.id),
+                eq(
+                  SCHEMA.releaseJobTrigger.versionId,
+                  SCHEMA.deploymentVersion.id,
+                ),
+                eq(
+                  SCHEMA.releaseJobTrigger.environmentId,
+                  SCHEMA.environment.id,
+                ),
+              ),
+            )
+            .leftJoin(
+              SCHEMA.job,
+              eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+            )
             .where(
               and(
-                eq(resource.id, input),
-                eq(environment.id, env.environment.id),
-                isNull(resource.deletedAt),
-                inArray(job.status, [
+                eq(SCHEMA.resource.id, input),
+                eq(SCHEMA.environment.id, env.environment.id),
+                isNull(SCHEMA.resource.deletedAt),
+                inArray(SCHEMA.job.status, [
                   JobStatus.Successful,
                   JobStatus.Pending,
                   JobStatus.InProgress,
                 ]),
               ),
             )
-            .orderBy(deployment.id, releaseJobTrigger.createdAt)
+            .orderBy(SCHEMA.deployment.id, SCHEMA.releaseJobTrigger.createdAt)
             .limit(500)
             .then((r) =>
               r.map((row) => ({
@@ -666,9 +719,12 @@ export const deploymentRouter = createTRPCRouter({
     .query(({ ctx, input }) =>
       ctx.db
         .select()
-        .from(deployment)
-        .innerJoin(system, eq(system.id, deployment.systemId))
-        .where(eq(system.workspaceId, input))
+        .from(SCHEMA.deployment)
+        .innerJoin(
+          SCHEMA.system,
+          eq(SCHEMA.system.id, SCHEMA.deployment.systemId),
+        )
+        .where(eq(SCHEMA.system.workspaceId, input))
         .then((r) =>
           r.map((row) => ({
             ...row.deployment,

@@ -14,12 +14,12 @@ import {
 import {
   createEnvironmentPolicy,
   createEnvironmentPolicyDeployment,
+  deploymentVersionChannel,
   environment,
   environmentPolicy,
   environmentPolicyDeployment,
   environmentPolicyReleaseChannel,
   environmentPolicyReleaseWindow,
-  releaseChannel,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
 import { handleEnvironmentPolicyReleaseChannelUpdate } from "@ctrlplane/job-dispatch";
@@ -37,8 +37,11 @@ const basePolicyQuery = (db: Tx) =>
       eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
     )
     .leftJoin(
-      releaseChannel,
-      eq(environmentPolicyReleaseChannel.channelId, releaseChannel.id),
+      deploymentVersionChannel,
+      eq(
+        environmentPolicyReleaseChannel.channelId,
+        deploymentVersionChannel.id,
+      ),
     )
     .leftJoin(
       environmentPolicyReleaseWindow,

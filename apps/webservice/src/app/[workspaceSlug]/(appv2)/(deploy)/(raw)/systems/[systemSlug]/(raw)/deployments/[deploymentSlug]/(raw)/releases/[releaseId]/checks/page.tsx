@@ -24,7 +24,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
 
-  const release = await api.release.byId(params.releaseId);
+  const release = await api.deployment.version.byId(params.releaseId);
   if (release == null) return notFound();
 
   return {
@@ -34,7 +34,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
 export default async function ChecksPage(props: PageProps) {
   const params = await props.params;
-  const releasePromise = api.release.byId(params.releaseId);
+  const releasePromise = api.deployment.version.byId(params.releaseId);
   const deploymentPromise = api.deployment.bySlug(params);
   const [release, deployment] = await Promise.all([
     releasePromise,

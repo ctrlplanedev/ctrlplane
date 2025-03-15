@@ -82,12 +82,12 @@ export const GET = request()
         eq(schema.releaseJobTrigger.resourceId, schema.resource.id),
       )
       .leftJoin(
-        schema.release,
-        eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+        schema.deploymentVersion,
+        eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
       )
       .leftJoin(
         schema.deployment,
-        eq(schema.release.deploymentId, schema.deployment.id),
+        eq(schema.deploymentVersion.deploymentId, schema.deployment.id),
       )
       .where(
         and(eq(schema.job.id, params.jobId), isNull(schema.resource.deletedAt)),

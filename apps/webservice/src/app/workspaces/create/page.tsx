@@ -34,7 +34,7 @@ import { api } from "~/trpc/react";
 const workspaceForm = z.object(workspaceSchema.shape);
 type WorkspaceFormValues = z.infer<typeof workspaceForm>;
 
-export default function WorkspaceJoin() {
+export default function WorkspaceCreate() {
   const { data: session } = useSession();
   const create = api.workspace.create.useMutation();
   const router = useRouter();
@@ -63,17 +63,22 @@ export default function WorkspaceJoin() {
     }
   });
 
+  if (session == null) {
+    router.push("/sign-in");
+    return null;
+  }
+
   return (
     <>
       <div className="flex justify-end p-6">
         <DropdownMenu>
           <DropdownMenuTrigger className="ml-auto rounded-md p-2 px-4 text-left text-sm hover:bg-neutral-800/70">
             <div className="text-muted-foreground">Logged in as:</div>
-            <div>{session?.user.email}</div>
+            <div>{session.user.email}</div>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-[250px]">
             <DropdownMenuItem className="flex items-center gap-2 p-2">
-              <div className="flex-grow">{session?.user.email}</div>
+              <div className="flex-grow">{session.user.email}</div>
               <IconCheck className="h-4 w-4 text-green-400" />
             </DropdownMenuItem>
             <DropdownMenuSeparator />

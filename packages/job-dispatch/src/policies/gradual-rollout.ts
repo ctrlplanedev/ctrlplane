@@ -27,7 +27,7 @@ export const isReleaseJobTriggerInRolloutWindow = (
 
 const getRolloutStart = async (
   db: Tx,
-  release: schema.Release,
+  release: schema.DeploymentVersion,
   policy: schema.EnvironmentPolicy,
 ) => {
   if (policy.approvalRequirement === "automatic") return release.createdAt;
@@ -77,8 +77,8 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
     .select()
     .from(schema.releaseJobTrigger)
     .innerJoin(
-      schema.release,
-      eq(schema.releaseJobTrigger.releaseId, schema.release.id),
+      schema.deploymentVersion,
+      eq(schema.releaseJobTrigger.versionId, schema.deploymentVersion.id),
     )
     .innerJoin(
       schema.environment,

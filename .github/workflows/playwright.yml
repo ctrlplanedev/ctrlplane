@@ -1,0 +1,63 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: e2e
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # - name: Setup
+      #   uses: ./tooling/github/setup
+
+      # - name: Login to Docker Hub
+      #   uses: docker/login-action@v3
+
+      # - name: Set up Docker Compose
+      #   run: |
+      #     sed -i "s/ctrlplane\/webservice:.*/ctrlplane\/webservice:${GITHUB_SHA::7}/g" docker-compose.yaml
+      #     sed -i "s/ctrlplane\/event-worker:.*/ctrlplane\/event-worker:${GITHUB_SHA::7}/g" docker-compose.yaml
+      #     sed -i "s/ctrlplane\/jobs:.*/ctrlplane\/jobs:${GITHUB_SHA::7}/g" docker-compose.yaml
+      #     sed -i "s/ctrlplane\/pty-proxy:.*/ctrlplane\/pty-proxy:${GITHUB_SHA::7}/g" docker-compose.yaml
+
+      #     sed -i "s/ctrlplane\/migrations:.*/ctrlplane\/migrations:${GITHUB_SHA::7}/g" docker-compose.yaml
+
+      #     docker-compose pull
+      #     docker-compose up -d
+
+      # - name: Wait for services to be ready
+      #   run: |
+      #     # Wait for webservice to be ready
+      #     timeout 60s bash -c 'until curl -s http://localhost:3000; do sleep 2; done'
+
+      #     # Add other health checks as needed
+      #     sleep 10 # Give additional time for all services to stabilize
+
+      # - name: Install Playwright Browsers
+      #   run: pnpm exec playwright install --with-deps
+
+      # - name: Run Playwright tests
+      #   run: pnpm exec playwright test
+      #   env:
+      #     BASE_URL: http://localhost:3000
+
+      # - uses: actions/upload-artifact@v4
+      #   if: ${{ !cancelled() }}
+      #   with:
+      #     name: playwright-report
+      #     path: playwright-report/
+      #     retention-days: 5
+
+      # - name: Docker Compose Logs on Failure
+      #   if: failure()
+      #   run: docker-compose logs

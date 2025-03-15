@@ -32,18 +32,18 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   systemSlug,
 }) => {
   const { data: release, isLoading: isReleaseLoading } =
-    api.release.latest.byDeploymentAndEnvironment.useQuery({
+    api.deployment.version.latest.byDeploymentAndEnvironment.useQuery({
       deploymentId: deployment.id,
       environmentId: environment.id,
     });
 
   const { data: statuses, isLoading: isStatusesLoading } =
-    api.release.status.byEnvironmentId.useQuery(
+    api.deployment.version.status.byEnvironmentId.useQuery(
       { releaseId: release?.id ?? "", environmentId: environment.id },
       { refetchInterval: 2_000, enabled: release != null },
     );
 
-  const deploy = api.release.deploy.toEnvironment.useMutation();
+  const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
   const router = useRouter();
 
   const isLoading = isStatusesLoading || isReleaseLoading;

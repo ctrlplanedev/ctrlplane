@@ -21,14 +21,14 @@ import type { ReleaseIdPolicyChecker } from "./utils";
 const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
   db
     .select({
-      deploymentId: SCHEMA.release.deploymentId,
-      createdAt: SCHEMA.release.createdAt,
+      deploymentId: SCHEMA.deploymentVersion.deploymentId,
+      createdAt: SCHEMA.deploymentVersion.createdAt,
       environmentId: SCHEMA.environment.id,
-      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${SCHEMA.release.deploymentId}, ${SCHEMA.environment.id} ORDER BY ${SCHEMA.release.createdAt} DESC)`.as(
+      rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY ${SCHEMA.deploymentVersion.deploymentId}, ${SCHEMA.environment.id} ORDER BY ${SCHEMA.deploymentVersion.createdAt} DESC)`.as(
         "rank",
       ),
     })
-    .from(SCHEMA.release)
+    .from(SCHEMA.deploymentVersion)
     .innerJoin(
       SCHEMA.environment,
       inArray(SCHEMA.environment.id, environmentIds),
@@ -41,7 +41,10 @@ const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
             .from(SCHEMA.releaseJobTrigger)
             .where(
               and(
-                eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+                eq(
+                  SCHEMA.releaseJobTrigger.versionId,
+                  SCHEMA.deploymentVersion.id,
+                ),
                 eq(
                   SCHEMA.releaseJobTrigger.environmentId,
                   SCHEMA.environment.id,
@@ -60,7 +63,10 @@ const latestCompletedReleaseSubQuery = (db: Tx, environmentIds: string[]) =>
             )
             .where(
               and(
-                eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+                eq(
+                  SCHEMA.releaseJobTrigger.versionId,
+                  SCHEMA.deploymentVersion.id,
+                ),
                 eq(
                   SCHEMA.releaseJobTrigger.environmentId,
                   SCHEMA.environment.id,
@@ -91,11 +97,11 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
 
   const releases = await db
     .select()
-    .from(SCHEMA.release)
+    .from(SCHEMA.deploymentVersion)
     .where(
       inArray(
-        SCHEMA.release.id,
-        releaseJobTriggers.map((rjt) => rjt.releaseId),
+        SCHEMA.deploymentVersion.id,
+        releaseJobTriggers.map((rjt) => rjt.versionId),
       ),
     );
 
@@ -146,10 +152,10 @@ export const isPassingMinReleaseIntervalPolicy: ReleaseIdPolicyChecker = async (
     );
 
   return _.chain(releaseJobTriggers)
-    .groupBy((rjt) => [rjt.environmentId, rjt.releaseId])
+    .groupBy((rjt) => [rjt.environmentId, rjt.versionId])
     .filter((groupedTriggers) => {
       const release = releases.find(
-        (r) => r.id === groupedTriggers[0]!.releaseId,
+        (r) => r.id === groupedTriggers[0]!.versionId,
       );
       if (!release) return false;
 

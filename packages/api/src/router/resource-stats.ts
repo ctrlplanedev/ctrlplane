@@ -76,11 +76,11 @@ const healthRouter = createTRPCRouter({
       const { resourceId, systemId } = input;
 
       return ctx.db
-        .selectDistinctOn([SCHEMA.release.deploymentId])
-        .from(SCHEMA.release)
+        .selectDistinctOn([SCHEMA.deploymentVersion.deploymentId])
+        .from(SCHEMA.deploymentVersion)
         .innerJoin(
           SCHEMA.releaseJobTrigger,
-          eq(SCHEMA.releaseJobTrigger.releaseId, SCHEMA.release.id),
+          eq(SCHEMA.releaseJobTrigger.versionId, SCHEMA.deploymentVersion.id),
         )
         .innerJoin(
           SCHEMA.job,
@@ -88,7 +88,7 @@ const healthRouter = createTRPCRouter({
         )
         .innerJoin(
           SCHEMA.deployment,
-          eq(SCHEMA.release.deploymentId, SCHEMA.deployment.id),
+          eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
         )
         .where(
           and(
@@ -97,7 +97,10 @@ const healthRouter = createTRPCRouter({
             inArray(SCHEMA.job.status, analyticsStatuses),
           ),
         )
-        .orderBy(SCHEMA.release.deploymentId, desc(SCHEMA.job.startedAt))
+        .orderBy(
+          SCHEMA.deploymentVersion.deploymentId,
+          desc(SCHEMA.job.startedAt),
+        )
         .then((rows) =>
           rows.map((row) => ({
             ...row.job,

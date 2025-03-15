@@ -37,7 +37,7 @@ export default async function ReleaseLayout(props: {
   }>;
 }) {
   const params = await props.params;
-  const release = await api.release.byId(params.releaseId);
+  const release = await api.deployment.version.byId(params.releaseId);
   if (release == null) notFound();
 
   const deployment = await api.deployment.byId(release.deploymentId);
