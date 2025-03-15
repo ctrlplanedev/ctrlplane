@@ -3,7 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconBolt, IconCategory, IconObjectScan, IconSettings, IconTag } from "@tabler/icons-react";
+import {
+  IconBolt,
+  IconCategory,
+  IconObjectScan,
+  IconSettings,
+  IconTag,
+} from "@tabler/icons-react";
 
 import {
   Command,
@@ -92,7 +98,9 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
                       </div>
                       <div>
                         <div className="font-medium">{system.name}</div>
-                        <div className="text-xs text-muted-foreground">System</div>
+                        <div className="text-xs text-muted-foreground">
+                          System
+                        </div>
                       </div>
                     </CommandItem>
                   </Link>
@@ -115,7 +123,9 @@ export const SearchDialog: React.FC<{ children: React.ReactNode }> = ({
                           </div>
                           <div>
                             <div className="font-medium">{resource.name}</div>
-                            <div className="text-xs text-muted-foreground">{resource.kind} • {resource.identifier}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {resource.kind} • {resource.identifier}
+                            </div>
                           </div>
                         </CommandItem>
                       </Link>

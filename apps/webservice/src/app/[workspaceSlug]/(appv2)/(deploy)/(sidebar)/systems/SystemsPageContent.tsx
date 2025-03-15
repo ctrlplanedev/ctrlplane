@@ -337,7 +337,8 @@ export const SystemsPageContent: React.FC<{
         {/* Results Summary */}
         {!isLoading && systems.length > 0 && (
           <div className="mt-4 text-sm text-muted-foreground">
-            Showing {systems.length} {systems.length === 1 ? "system" : "systems"}
+            Showing {systems.length}{" "}
+            {systems.length === 1 ? "system" : "systems"}
             {search && <span> for search "{search}"</span>}
           </div>
         )}

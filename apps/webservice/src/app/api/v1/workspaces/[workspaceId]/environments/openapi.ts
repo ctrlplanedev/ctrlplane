@@ -32,8 +32,8 @@ export const openapi: Swagger.SwaggerV3 = {
                   properties: {
                     data: {
                       type: "array",
-                      items: {$ref: "#/components/schemas/Environment"},
-                    }
+                      items: { $ref: "#/components/schemas/Environment" },
+                    },
                   },
                 },
               },

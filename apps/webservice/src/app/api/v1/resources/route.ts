@@ -1,17 +1,17 @@
 import type * as schema from "@ctrlplane/db/schema";
 import { NextResponse } from "next/server";
-import { z } from "zod";
 import httpStatus from "http-status";
+import { z } from "zod";
 
 import { db } from "@ctrlplane/db/client";
-import {createResource, resource} from "@ctrlplane/db/schema";
+import { createResource, resource } from "@ctrlplane/db/schema";
 import { upsertResources } from "@ctrlplane/job-dispatch";
+import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
-import {logger} from "@ctrlplane/logger";
 
 const log = logger.child({ module: "api/v1/deployments" });
 

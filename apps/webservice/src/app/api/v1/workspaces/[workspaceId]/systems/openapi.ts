@@ -30,7 +30,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     data: {
                       type: "array",
                       items: { $ref: "#/components/schemas/System" },
-                    }
+                    },
                   },
                 },
               },
