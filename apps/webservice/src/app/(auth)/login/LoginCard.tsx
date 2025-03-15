@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconBrandGoogleFilled, IconLock, IconMail, IconLockAccess } from "@tabler/icons-react";
+import {
+  IconBrandGoogleFilled,
+  IconLock,
+  IconLockAccess,
+  IconMail,
+} from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
@@ -59,18 +64,18 @@ export const LoginCard: React.FC<{
   const onSubmit = form.handleSubmit(async (data, event) => {
     event?.preventDefault();
     setLoading(true);
-    
+
     try {
-      await signIn("credentials", { 
+      await signIn("credentials", {
         ...data,
-        redirect: false 
+        redirect: false,
       }).then((response) => {
         if (response?.error) {
           throw new Error(response.error);
         }
         router.push("/");
       });
-    } catch (error) {
+    } catch {
       form.setError("root", {
         message: "Sign in failed. Please check your credentials and try again.",
       });
@@ -93,15 +98,17 @@ export const LoginCard: React.FC<{
           <div className="absolute inset-0 animate-pulse rounded-full border border-primary/20"></div>
         </div>
       </div>
-      
+
       <Card className="overflow-hidden border-border/30 bg-card/60 shadow-xl backdrop-blur-sm">
         <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="text-center text-2xl font-bold">Welcome back</CardTitle>
+          <CardTitle className="text-center text-2xl font-bold">
+            Welcome back
+          </CardTitle>
           <CardDescription className="text-center">
             Sign in to your Ctrlplane account
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {isCredentialsAuthEnabled && (
             <Form {...form}>
@@ -115,9 +122,9 @@ export const LoginCard: React.FC<{
                       <FormControl>
                         <div className="relative">
                           <IconMail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                          <Input 
-                            {...field} 
-                            className="bg-background/50 pl-10" 
+                          <Input
+                            {...field}
+                            className="bg-background/50 pl-10"
                             placeholder="you@example.com"
                           />
                         </div>
@@ -134,8 +141,8 @@ export const LoginCard: React.FC<{
                     <FormItem>
                       <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
-                        <Link 
-                          href="#" 
+                        <Link
+                          href="#"
                           className="text-xs text-primary hover:text-primary/80"
                         >
                           Forgot password?
@@ -158,9 +165,9 @@ export const LoginCard: React.FC<{
                 />
 
                 <FormRootError />
-                <Button 
-                  name="login" 
-                  type="submit" 
+                <Button
+                  name="login"
+                  type="submit"
                   className="w-full"
                   disabled={loading}
                 >
@@ -186,7 +193,7 @@ export const LoginCard: React.FC<{
                 variant="outline"
                 className="h-10 w-full gap-2 border-border/50 bg-white text-neutral-900 hover:bg-neutral-50 hover:text-neutral-900"
               >
-                <IconBrandGoogleFilled className="h-4 w-4" /> 
+                <IconBrandGoogleFilled className="h-4 w-4" />
                 <span>Google</span>
               </Button>
             )}
@@ -195,15 +202,15 @@ export const LoginCard: React.FC<{
               <Button
                 onClick={() => signIn("oidc")}
                 variant="outline"
-                className="h-10 w-full gap-2 border-border/50 bg-background/50 text-foreground hover:bg-background/70 hover:text-foreground backdrop-blur-sm"
+                className="h-10 w-full gap-2 border-border/50 bg-background/50 text-foreground backdrop-blur-sm hover:bg-background/70 hover:text-foreground"
               >
-                <IconLock className="h-4 w-4" /> 
+                <IconLock className="h-4 w-4" />
                 <span>Single Sign-On (SSO)</span>
               </Button>
             )}
           </div>
         </CardContent>
-        
+
         {isCredentialsAuthEnabled && (
           <CardFooter className="flex justify-center border-t border-border/30 bg-muted/20 p-4">
             <p className="text-center text-sm text-muted-foreground">
