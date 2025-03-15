@@ -336,21 +336,10 @@ export const SystemsPageContent: React.FC<{
 
         {/* Results Summary */}
         {!isLoading && systems.length > 0 && (
-          <Card className="mt-4 flex items-center gap-2 p-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-              <IconTopologyComplex className="h-4 w-4 text-primary" />
-            </div>
-            <div className="text-sm">
-              <span className="font-medium">{systems.length}</span>{" "}
-              {systems.length === 1 ? "system" : "systems"} found
-              {search && (
-                <span>
-                  {" "}
-                  for search "<span className="font-medium">{search}</span>"
-                </span>
-              )}
-            </div>
-          </Card>
+          <div className="mt-4 text-sm text-muted-foreground">
+            Showing {systems.length} {systems.length === 1 ? "system" : "systems"}
+            {search && <span> for search "{search}"</span>}
+          </div>
         )}
       </div>
     </div>
