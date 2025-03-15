@@ -35,8 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ctrlplane/ui/select";
-import { Textarea } from "@ctrlplane/ui/textarea";
 import { Switch } from "@ctrlplane/ui/switch";
+import { Textarea } from "@ctrlplane/ui/textarea";
 
 import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
 import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
@@ -203,26 +203,6 @@ export const CreateDeploymentDialog: React.FC<{
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="retryCount"
-                  render={({ field: { value, onChange } }) => (
-                    <FormItem>
-                      <FormLabel>Retry Count</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={value}
-                          onChange={(e) => onChange(e.target.valueAsNumber)}
-                          className="w-16"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 {/* Job Agent Configuration Toggle */}
                 <div className="flex items-center space-x-2">
@@ -238,7 +218,7 @@ export const CreateDeploymentDialog: React.FC<{
                     Configure Job Agent now
                   </label>
                 </div>
-                
+
                 {configureJobAgentNow && workspace != null && (
                   <>
                     <FormField
@@ -280,7 +260,7 @@ export const CreateDeploymentDialog: React.FC<{
                     />
                   </>
                 )}
-                
+
                 <FormRootError />
                 <DialogFooter>
                   <Button type="submit">Create</Button>
