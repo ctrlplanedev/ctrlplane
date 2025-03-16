@@ -10,18 +10,19 @@ import { ReleaseFilterType } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 
-export const useReleaseChannel = (
+export const useDeploymentVersionChannel = (
   deploymentId: string,
   environmentId: string,
   releaseVersion: string,
   enabled = true,
 ) => {
   const environment = api.environment.byId.useQuery(environmentId, { enabled });
-  const policyReleaseChannel = environment.data?.policy.releaseChannels.find(
-    (prc) => prc.deploymentId === deploymentId,
-  );
-  const rcId = policyReleaseChannel?.id ?? null;
-  const { releaseFilter: filter } = policyReleaseChannel ?? {
+  const policyDeploymentVersionChannel =
+    environment.data?.policy.releaseChannels.find(
+      (prc) => prc.deploymentId === deploymentId,
+    );
+  const rcId = policyDeploymentVersionChannel?.id ?? null;
+  const { releaseFilter: filter } = policyDeploymentVersionChannel ?? {
     releaseFilter: null,
   };
 
@@ -42,15 +43,15 @@ export const useReleaseChannel = (
     { enabled: filter != null && enabled },
   );
 
-  const hasReleaseChannel = rcId != null;
-  const isReleaseChannelMatchingFilter =
+  const hasDeploymentVersionChannel = rcId != null;
+  const isDeploymentVersionChannelMatchingFilter =
     filter == null ||
     (releasesQ.data?.total != null && releasesQ.data.total > 0);
 
   const loading = environment.isLoading || releasesQ.isLoading;
 
-  const isPassingReleaseChannel =
-    !hasReleaseChannel || isReleaseChannelMatchingFilter;
+  const isPassingDeploymentVersionChannel =
+    !hasDeploymentVersionChannel || isDeploymentVersionChannelMatchingFilter;
 
-  return { isPassingReleaseChannel, releaseChannelId: rcId, loading };
+  return { isPassingDeploymentVersionChannel, releaseChannelId: rcId, loading };
 };

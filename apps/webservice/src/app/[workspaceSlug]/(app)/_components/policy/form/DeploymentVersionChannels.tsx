@@ -1,6 +1,4 @@
-"use client";
-
-import type { RouterOutputs } from "@ctrlplane/api";
+import type * as SCHEMA from "@ctrlplane/db/schema";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -15,14 +13,16 @@ import {
 } from "@ctrlplane/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
-import { useUpdatePolicy } from "../useUpdatePolicy";
+type Deployment = SCHEMA.Deployment & {
+  releaseChannels: SCHEMA.DeploymentVersionChannel[];
+};
 
-type Deployment = RouterOutputs["deployment"]["bySystemId"][number];
+type Policy = { releaseChannels: SCHEMA.DeploymentVersionChannel[] };
 
 type DeploymentSelectProps = {
   deployment: Deployment;
   releaseChannels: Record<string, string | null>;
-  updateReleaseChannel: (
+  updateDeploymentVersionChannel: (
     deploymentId: string,
     channelId: string | null,
   ) => Promise<void>;
@@ -31,7 +31,7 @@ type DeploymentSelectProps = {
 const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   deployment,
   releaseChannels,
-  updateReleaseChannel,
+  updateDeploymentVersionChannel,
 }) => {
   const [open, setOpen] = useState(false);
   const releaseChannelId = releaseChannels[deployment.id];
@@ -40,15 +40,15 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   );
 
   const onChange = (channelId: string | null) =>
-    updateReleaseChannel(deployment.id, channelId);
+    updateDeploymentVersionChannel(deployment.id, channelId);
 
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug?: string;
     systemSlug?: string;
   }>();
 
-  const sortedReleaseChannels = deployment.releaseChannels.sort((a, b) =>
-    a.name.localeCompare(b.name),
+  const sortedDeploymentVersionChannels = deployment.releaseChannels.sort(
+    (a, b) => a.name.localeCompare(b.name),
   );
 
   return (
@@ -72,7 +72,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
           <Command>
             <CommandInput placeholder="Search release channels..." />
             <CommandList>
-              {sortedReleaseChannels.length === 0 && (
+              {sortedDeploymentVersionChannels.length === 0 && (
                 <CommandItem>
                   <Link
                     href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/release-channels`}
@@ -82,8 +82,8 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
                   </Link>
                 </CommandItem>
               )}
-              {sortedReleaseChannels.length > 0 &&
-                sortedReleaseChannels.map((rc) => (
+              {sortedDeploymentVersionChannels.length > 0 &&
+                sortedDeploymentVersionChannels.map((rc) => (
                   <CommandItem
                     key={rc.name}
                     value={rc.id}
@@ -110,47 +110,44 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   );
 };
 
-type ReleaseChannelProps = {
-  environmentPolicy: RouterOutputs["environment"]["policy"]["byEnvironmentId"];
+type DeploymentVersionChannelProps = {
+  environmentPolicy: Policy;
   deployments: Deployment[];
+  isLoading: boolean;
+  onUpdate: (data: SCHEMA.UpdateEnvironmentPolicy) => Promise<void>;
 };
 
-export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
-  environmentPolicy,
-  deployments,
-}) => {
-  const { onUpdate, isPending } = useUpdatePolicy(environmentPolicy.id);
-
-  const deploymentsWithReleaseChannels = deployments.filter(
+export const DeploymentVersionChannels: React.FC<
+  DeploymentVersionChannelProps
+> = ({ environmentPolicy, deployments, isLoading, onUpdate }) => {
+  const deploymentsWithDeploymentVersionChannels = deployments.filter(
     (d) => d.releaseChannels.length > 0,
   );
 
   const { releaseChannels } = environmentPolicy;
-  const currReleaseChannels = Object.fromEntries(
-    deploymentsWithReleaseChannels.map((d) => [
+  const currDeploymentVersionChannels = Object.fromEntries(
+    deploymentsWithDeploymentVersionChannels.map((d) => [
       d.id,
       releaseChannels.find((rc) => rc.deploymentId === d.id)?.id ?? null,
     ]),
   );
 
-  const updateReleaseChannel = (
+  const updateDeploymentVersionChannel = (
     deploymentId: string,
     channelId: string | null,
   ) =>
     onUpdate({
-      releaseChannels: { ...currReleaseChannels, [deploymentId]: channelId },
+      releaseChannels: {
+        ...currDeploymentVersionChannels,
+        [deploymentId]: channelId,
+      },
     });
 
   return (
     <div className="space-y-4">
       <h1 className="flex items-center gap-2 text-lg font-medium">
         Release Channels{" "}
-        {isPending && (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <IconLoader2 className="h-4 w-4 animate-spin" />
-            Saving...
-          </div>
-        )}
+        {isLoading && <IconLoader2 className="h-4 w-4 animate-spin" />}
       </h1>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -161,8 +158,8 @@ export const ReleaseChannels: React.FC<ReleaseChannelProps> = ({
           <DeploymentSelect
             key={d.id}
             deployment={d}
-            releaseChannels={currReleaseChannels}
-            updateReleaseChannel={updateReleaseChannel}
+            releaseChannels={currDeploymentVersionChannels}
+            updateDeploymentVersionChannel={updateDeploymentVersionChannel}
           />
         ))}
       </div>

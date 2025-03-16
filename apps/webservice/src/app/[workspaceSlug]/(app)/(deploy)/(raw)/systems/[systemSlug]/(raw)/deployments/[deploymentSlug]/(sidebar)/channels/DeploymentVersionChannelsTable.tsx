@@ -12,17 +12,21 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useReleaseChannelDrawer";
+import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionBadge";
 
-type ReleaseChannel = SCHEMA.DeploymentVersionChannel & { total: number };
+type DeploymentVersionChannel = SCHEMA.DeploymentVersionChannel & {
+  total: number;
+};
 
-type ReleaseChannelTableProps = { releaseChannels: ReleaseChannel[] };
+type DeploymentVersionChannelTableProps = {
+  releaseChannels: DeploymentVersionChannel[];
+};
 
-export const ReleaseChannelsTable: React.FC<ReleaseChannelTableProps> = ({
-  releaseChannels,
-}) => {
-  const { setReleaseChannelId } = useReleaseChannelDrawer();
+export const DeploymentVersionChannelsTable: React.FC<
+  DeploymentVersionChannelTableProps
+> = ({ releaseChannels }) => {
+  const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
   return (
     <Table className="table-fixed">
       <TableHeader>
@@ -38,7 +42,7 @@ export const ReleaseChannelsTable: React.FC<ReleaseChannelTableProps> = ({
           <TableRow
             key={releaseChannel.id}
             className="cursor-pointer"
-            onClick={() => setReleaseChannelId(releaseChannel.id)}
+            onClick={() => setDeploymentVersionChannelId(releaseChannel.id)}
           >
             <TableCell>{releaseChannel.name}</TableCell>
             <TableCell>{releaseChannel.description}</TableCell>

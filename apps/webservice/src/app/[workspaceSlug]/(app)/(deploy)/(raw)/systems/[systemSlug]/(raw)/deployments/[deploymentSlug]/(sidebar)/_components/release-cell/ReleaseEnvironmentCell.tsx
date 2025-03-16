@@ -17,7 +17,7 @@ import {
 import { JobStatus } from "@ctrlplane/validators/jobs";
 import { ReleaseStatus } from "@ctrlplane/validators/releases";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useReleaseChannelDrawer";
+import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ApprovalDialog";
 import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
 import { api } from "~/trpc/react";
@@ -106,7 +106,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
       { refetchInterval: 2_000 },
     );
 
-  const { setReleaseChannelId } = useReleaseChannelDrawer();
+  const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
 
   const isLoading =
     isStatusesLoading ||
@@ -135,16 +135,18 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   const isAlreadyDeployed = statuses != null && statuses.length > 0;
 
   const hasJobAgent = deployment.jobAgentId != null;
-  const isBlockedByReleaseChannel = blockedEnv != null;
+  const isBlockedByDeploymentVersionChannel = blockedEnv != null;
 
   const isPendingApproval = approval?.status === "pending";
 
-  const showBlockedByReleaseChannel =
-    isBlockedByReleaseChannel &&
+  const showBlockedByDeploymentVersionChannel =
+    isBlockedByDeploymentVersionChannel &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
   const showRelease =
-    isAlreadyDeployed && !showBlockedByReleaseChannel && !isPendingApproval;
+    isAlreadyDeployed &&
+    !showBlockedByDeploymentVersionChannel &&
+    !isPendingApproval;
 
   if (showRelease)
     return (
@@ -175,7 +177,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
       <div className="text-center text-xs text-red-500">Release failed</div>
     );
 
-  if (showBlockedByReleaseChannel)
+  if (showBlockedByDeploymentVersionChannel)
     return (
       <div className="text-center text-xs text-muted-foreground/70">
         Blocked by{" "}
@@ -183,7 +185,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
           variant="link"
           size="sm"
           onClick={() =>
-            setReleaseChannelId(blockedEnv.releaseChannelId ?? null)
+            setDeploymentVersionChannelId(blockedEnv.releaseChannelId ?? null)
           }
           className="px-0 text-muted-foreground/70"
         >

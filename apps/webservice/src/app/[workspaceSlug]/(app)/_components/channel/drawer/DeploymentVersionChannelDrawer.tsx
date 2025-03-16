@@ -14,16 +14,16 @@ import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 
 import { api } from "~/trpc/react";
 import { TabButton } from "../../drawer/TabButton";
+import { DeploymentVersionChannelDropdown } from "./DeploymentVersionChannelDropdown";
 import { Overview } from "./Overview";
-import { ReleaseChannelDropdown } from "./ReleaseChannelDropdown";
 import { Usage } from "./Usage";
-import { useReleaseChannelDrawer } from "./useReleaseChannelDrawer";
+import { useDeploymentVersionChannelDrawer } from "./useDeploymentVersionChannelDrawer";
 
-export const ReleaseChannelDrawer: React.FC = () => {
-  const { releaseChannelId, removeReleaseChannelId } =
-    useReleaseChannelDrawer();
+export const DeploymentVersionChannelDrawer: React.FC = () => {
+  const { releaseChannelId, removeDeploymentVersionChannelId } =
+    useDeploymentVersionChannelDrawer();
   const isOpen = Boolean(releaseChannelId);
-  const setIsOpen = removeReleaseChannelId;
+  const setIsOpen = removeDeploymentVersionChannelId;
 
   const releaseChannelQ = api.deployment.releaseChannel.byId.useQuery(
     releaseChannelId ?? "",
@@ -50,11 +50,13 @@ export const ReleaseChannelDrawer: React.FC = () => {
           <>
             <DrawerTitle className="flex items-center gap-2 border-b p-6">
               {releaseChannel.name}
-              <ReleaseChannelDropdown releaseChannelId={releaseChannel.id}>
+              <DeploymentVersionChannelDropdown
+                releaseChannelId={releaseChannel.id}
+              >
                 <Button variant="ghost" size="icon" className="h-6 w-6">
                   <IconDotsVertical className="h-4 w-4" />
                 </Button>
-              </ReleaseChannelDropdown>
+              </DeploymentVersionChannelDropdown>
             </DrawerTitle>
 
             <div className="flex w-full gap-6 p-6">

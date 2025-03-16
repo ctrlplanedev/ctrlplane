@@ -3,7 +3,7 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 
 import { ApprovalAndGovernance } from "~/app/[workspaceSlug]/(app)/_components/policy/form/ApprovalAndGovernance";
 import { DeploymentControl } from "~/app/[workspaceSlug]/(app)/_components/policy/form/DeploymentControl";
-import { ReleaseChannels } from "~/app/[workspaceSlug]/(app)/_components/policy/form/ReleaseChannels";
+import { DeploymentVersionChannels } from "~/app/[workspaceSlug]/(app)/_components/policy/form/DeploymentVersionChannels";
 import { ReleaseManagement } from "~/app/[workspaceSlug]/(app)/_components/policy/form/ReleaseManagement";
 import { RolloutAndTiming } from "~/app/[workspaceSlug]/(app)/_components/policy/form/RolloutAndTiming";
 import { EnvironmentDrawerTab } from "../tabs";
@@ -58,8 +58,8 @@ export const UpdateOverridePolicy: React.FC<UpdateOverridePolicyProps> = ({
           isLoading={isUpdating}
         />
       )}
-      {activeTab === EnvironmentDrawerTab.ReleaseChannels && (
-        <ReleaseChannels
+      {activeTab === EnvironmentDrawerTab.DeploymentVersionChannels && (
+        <DeploymentVersionChannels
           environmentPolicy={environmentPolicy}
           onUpdate={onUpdate}
           isLoading={isUpdating}

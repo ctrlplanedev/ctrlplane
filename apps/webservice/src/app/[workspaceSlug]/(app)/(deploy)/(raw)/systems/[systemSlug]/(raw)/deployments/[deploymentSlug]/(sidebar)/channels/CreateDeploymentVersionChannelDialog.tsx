@@ -41,7 +41,7 @@ import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
-type CreateReleaseChannelDialogProps = {
+type CreateDeploymentVersionChannelDialogProps = {
   deploymentId: string;
   children: React.ReactNode;
 };
@@ -57,8 +57,8 @@ const schema = z.object({
     .refine((cond) => cond == null || isValidReleaseCondition(cond)),
 });
 
-export const CreateReleaseChannelDialog: React.FC<
-  CreateReleaseChannelDialogProps
+export const CreateDeploymentVersionChannelDialog: React.FC<
+  CreateDeploymentVersionChannelDialogProps
 > = ({ deploymentId, children }) => {
   const [open, setOpen] = useState(false);
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
@@ -67,14 +67,14 @@ export const CreateReleaseChannelDialog: React.FC<
     deploymentSlug: string;
   }>();
 
-  const createReleaseChannel =
+  const createDeploymentVersionChannel =
     api.deployment.releaseChannel.create.useMutation();
   const router = useRouter();
 
   const form = useForm({ schema });
   const onSubmit = form.handleSubmit((data) => {
     const filter = getFinalFilter(data.releaseFilter);
-    createReleaseChannel
+    createDeploymentVersionChannel
       .mutateAsync({ ...data, deploymentId, releaseFilter: filter })
       .then(() => form.reset(data))
       .then(() => router.refresh())
@@ -186,7 +186,10 @@ export const CreateReleaseChannelDialog: React.FC<
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={createReleaseChannel.isPending}>
+              <Button
+                type="submit"
+                disabled={createDeploymentVersionChannel.isPending}
+              >
                 Create
               </Button>
             </DialogFooter>

@@ -58,9 +58,8 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const { setFilter, releaseChannelId } = useReleaseFilter();
 
-  const [localReleaseChannelId, setLocalReleaseChannelId] = useState<
-    string | null
-  >(releaseChannelId);
+  const [localDeploymentVersionChannelId, setLocalDeploymentVersionChannelId] =
+    useState<string | null>(releaseChannelId);
 
   const [localCondition, setLocalCondition] = useState<ReleaseCondition | null>(
     condition ?? defaultCondition,
@@ -90,7 +89,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
             if (value === "new-filter")
               setLocalCondition(localCondition ?? defaultCondition);
             if (value === "release-channels")
-              setLocalReleaseChannelId(releaseChannelId);
+              setLocalDeploymentVersionChannelId(releaseChannelId);
           }}
         >
           {releaseChannels.length > 0 && (
@@ -109,13 +108,13 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
               </DialogDescription>
             </DialogHeader>
             <Select
-              value={localReleaseChannelId ?? undefined}
+              value={localDeploymentVersionChannelId ?? undefined}
               onValueChange={(value) => {
                 const releaseChannel = releaseChannels.find(
                   (rc) => rc.id === value,
                 );
                 if (releaseChannel == null) return;
-                setLocalReleaseChannelId(value);
+                setLocalDeploymentVersionChannelId(value);
                 setLocalCondition(releaseChannel.releaseFilter);
               }}
             >
@@ -139,17 +138,17 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
               <Button
                 onClick={() => {
                   const releaseChannel = releaseChannels.find(
-                    (rc) => rc.id === localReleaseChannelId,
+                    (rc) => rc.id === localDeploymentVersionChannelId,
                   );
                   if (releaseChannel == null) return;
                   setFilter(
                     releaseChannel.releaseFilter,
-                    localReleaseChannelId,
+                    localDeploymentVersionChannelId,
                   );
                   setOpen(false);
                   setError(null);
                 }}
-                disabled={localReleaseChannelId == null}
+                disabled={localDeploymentVersionChannelId == null}
               >
                 Save
               </Button>

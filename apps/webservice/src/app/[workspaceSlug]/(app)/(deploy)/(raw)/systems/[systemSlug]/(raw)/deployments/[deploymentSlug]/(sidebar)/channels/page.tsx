@@ -1,9 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
-import { ReleaseChannelsTable } from "./ReleaseChannelsTable";
+import { DeploymentVersionChannelsTable } from "./DeploymentVersionChannelsTable";
 
-export default async function ReleaseChannelsPage(props: {
+export default async function DeploymentVersionChannelsPage(props: {
   params: Promise<{
     workspaceSlug: string;
     systemSlug: string;
@@ -26,7 +26,7 @@ export default async function ReleaseChannelsPage(props: {
 
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-full overflow-auto">
-      <ReleaseChannelsTable releaseChannels={releaseChannels} />
+      <DeploymentVersionChannelsTable releaseChannels={releaseChannels} />
     </div>
   );
 }

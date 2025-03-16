@@ -24,8 +24,8 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { JobFilterType, JobStatus } from "@ctrlplane/validators/jobs";
 
-import { useReleaseChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useReleaseChannelDrawer";
-import { useReleaseChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useReleaseChannel";
+import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
+import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
 import { api } from "~/trpc/react";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
@@ -132,14 +132,14 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   );
 };
 
-const ReleaseChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
+const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   deploymentId,
   environmentId,
   releaseVersion,
 }) => {
-  const { setReleaseChannelId } = useReleaseChannelDrawer();
-  const { isPassingReleaseChannel, releaseChannelId, loading } =
-    useReleaseChannel(deploymentId, environmentId, releaseVersion);
+  const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
+  const { isPassingDeploymentVersionChannel, releaseChannelId, loading } =
+    useDeploymentVersionChannel(deploymentId, environmentId, releaseVersion);
 
   return (
     <div className="flex items-center gap-2">
@@ -149,36 +149,40 @@ const ReleaseChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
           <Cancelled /> No release channel
         </>
       )}
-      {!loading && releaseChannelId != null && !isPassingReleaseChannel && (
-        <>
-          <Failing />
-          <span className="flex items-center gap-1">
-            Blocked by{" "}
-            <Button
-              variant="link"
-              onClick={() => setReleaseChannelId(releaseChannelId)}
-              className="h-fit px-0 py-0 text-inherit underline-offset-2"
-            >
-              release channel
-            </Button>
-          </span>
-        </>
-      )}
-      {!loading && releaseChannelId != null && isPassingReleaseChannel && (
-        <>
-          <Passing />
-          <span className="flex items-center gap-1">
-            Passing{" "}
-            <Button
-              variant="link"
-              onClick={() => setReleaseChannelId(releaseChannelId)}
-              className="h-fit px-0 py-0 text-inherit underline-offset-2"
-            >
-              release channel
-            </Button>
-          </span>
-        </>
-      )}
+      {!loading &&
+        releaseChannelId != null &&
+        !isPassingDeploymentVersionChannel && (
+          <>
+            <Failing />
+            <span className="flex items-center gap-1">
+              Blocked by{" "}
+              <Button
+                variant="link"
+                onClick={() => setDeploymentVersionChannelId(releaseChannelId)}
+                className="h-fit px-0 py-0 text-inherit underline-offset-2"
+              >
+                release channel
+              </Button>
+            </span>
+          </>
+        )}
+      {!loading &&
+        releaseChannelId != null &&
+        isPassingDeploymentVersionChannel && (
+          <>
+            <Passing />
+            <span className="flex items-center gap-1">
+              Passing{" "}
+              <Button
+                variant="link"
+                onClick={() => setDeploymentVersionChannelId(releaseChannelId)}
+                className="h-fit px-0 py-0 text-inherit underline-offset-2"
+              >
+                release channel
+              </Button>
+            </span>
+          </>
+        )}
     </div>
   );
 };
@@ -265,7 +269,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
       <Separator className="!m-0 bg-neutral-800" />
       <div className="px-2 pb-2">
         <WaitingOnActiveCheck {...data} />
-        <ReleaseChannelCheck {...data} />
+        <DeploymentVersionChannelCheck {...data} />
         <MinReleaseIntervalCheck {...data} />
       </div>
     </div>

@@ -99,11 +99,11 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const router = useRouter();
   const utils = api.useUtils();
 
-  const updateReleaseChannel =
+  const updateDeploymentVersionChannel =
     api.deployment.releaseChannel.update.useMutation();
   const onSubmit = form.handleSubmit((data) => {
     const releaseFilter = getFinalFilter(data.releaseFilter);
-    updateReleaseChannel
+    updateDeploymentVersionChannel
       .mutateAsync({ id: releaseChannel.id, data: { ...data, releaseFilter } })
       .then(() => form.reset({ ...data, releaseFilter }))
       .then(() =>
@@ -187,7 +187,10 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
         <div className="flex gap-2">
           <Button
             type="submit"
-            disabled={updateReleaseChannel.isPending || !form.formState.isDirty}
+            disabled={
+              updateDeploymentVersionChannel.isPending ||
+              !form.formState.isDirty
+            }
           >
             Save
           </Button>
