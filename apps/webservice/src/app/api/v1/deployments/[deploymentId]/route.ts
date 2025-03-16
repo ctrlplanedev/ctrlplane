@@ -98,12 +98,11 @@ export const PATCH = request()
           .where(eq(SCHEMA.deployment.id, deploymentId))
           .then(takeFirstOrNull);
 
-        if (deployment == null) {
+        if (deployment == null)
           return NextResponse.json(
             { error: "Deployment not found" },
             { status: httpStatus.NOT_FOUND },
           );
-        }
 
         const updatedDeployment = await db
           .update(SCHEMA.deployment)
