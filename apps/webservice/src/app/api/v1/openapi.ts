@@ -72,11 +72,6 @@ export const openapi: Swagger.SwaggerV3 = {
           jobAgentConfig: { type: "object", additionalProperties: true },
           retryCount: { type: "integer" },
           timeout: { type: "integer", nullable: true },
-          resourceFilter: {
-            type: "object",
-            nullable: true,
-            additionalProperties: true,
-          },
         },
         required: [
           "id",

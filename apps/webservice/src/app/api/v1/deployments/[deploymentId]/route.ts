@@ -88,7 +88,7 @@ export const PATCH = request()
   .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
     async ({ db, req }, { params }) => {
       try {
-        const deploymentId = (await params).deploymentId;
+        const { deploymentId } = await params;
 
         const body = await req.json();
 

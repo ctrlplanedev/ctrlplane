@@ -3118,11 +3118,6 @@
           "timeout": {
             "type": "integer",
             "nullable": true
-          },
-          "resourceFilter": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": true
           }
         },
         "required": [
