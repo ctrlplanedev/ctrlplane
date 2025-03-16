@@ -9,13 +9,7 @@ import { useInView } from "react-intersection-observer";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@ctrlplane/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { toast } from "@ctrlplane/ui/toast";
 

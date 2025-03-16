@@ -23,14 +23,15 @@ export const TotalJobs: React.FC<TotalJobsProps> = ({
   });
 
   return (
-    <Card className="w-full rounded-md bg-inherit">
-      <CardHeader>
-        <CardTitle>Total Jobs</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading && <Skeleton className="h-7 w-16" />}
-        {!isLoading && (
-          <p className="text-xl font-semibold">{data?.totalJobs ?? 0}</p>
+    <Card className="shadow-sm">
+      <CardContent className="pt-6 px-6">
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="flex flex-col">
+            <p className="text-sm font-medium text-muted-foreground mb-1">Total Jobs</p>
+            <p className="text-3xl font-semibold">{(data?.totalJobs ?? 0).toLocaleString()}</p>
+          </div>
         )}
       </CardContent>
     </Card>
