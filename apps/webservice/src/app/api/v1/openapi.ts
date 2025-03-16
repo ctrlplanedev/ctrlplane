@@ -96,10 +96,11 @@ export const openapi: Swagger.SwaggerV3 = {
           },
           {
             type: "object",
-            nullable: true,
             additionalProperties: true,
           },
         ],
+        required: ["id"],
+        additionalProperties: true,
       },
       Release: {
         type: "object",
