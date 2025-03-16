@@ -18,7 +18,7 @@ import {
   environment,
   environmentPolicy,
   environmentPolicyDeployment,
-  environmentPolicyReleaseChannel,
+  environmentPolicyDeploymentVersionChannel,
   environmentPolicyReleaseWindow,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
@@ -33,13 +33,16 @@ const basePolicyQuery = (db: Tx) =>
     .select()
     .from(environmentPolicy)
     .leftJoin(
-      environmentPolicyReleaseChannel,
-      eq(environmentPolicyReleaseChannel.policyId, environmentPolicy.id),
+      environmentPolicyDeploymentVersionChannel,
+      eq(
+        environmentPolicyDeploymentVersionChannel.policyId,
+        environmentPolicy.id,
+      ),
     )
     .leftJoin(
       deploymentVersionChannel,
       eq(
-        environmentPolicyReleaseChannel.channelId,
+        environmentPolicyDeploymentVersionChannel.channelId,
         deploymentVersionChannel.id,
       ),
     )
@@ -159,7 +162,7 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.environmentId, input))
         .then((rows) => {
           const policy = rows.at(0)!;
-          const releaseChannels = _.chain(rows)
+          const versionChannels = _.chain(rows)
             .map((r) => r.deployment_version_channel)
             .filter(isPresent)
             .uniqBy((r) => r.id)
@@ -178,7 +181,7 @@ export const policyRouter = createTRPCRouter({
 
           return {
             ...policy.environment_policy,
-            releaseChannels,
+            versionChannels,
             releaseWindows,
           };
         }),
@@ -198,7 +201,7 @@ export const policyRouter = createTRPCRouter({
         .where(eq(environmentPolicy.id, input))
         .then((rows) => {
           const policy = rows.at(0)!;
-          const releaseChannels = _.chain(rows)
+          const versionChannels = _.chain(rows)
             .map((r) => r.deployment_version_channel)
             .filter(isPresent)
             .uniqBy((r) => r.id)
@@ -223,7 +226,7 @@ export const policyRouter = createTRPCRouter({
 
           return {
             ...policy.environment_policy,
-            releaseChannels,
+            versionChannels,
             releaseWindows,
             environments,
           };
@@ -253,7 +256,7 @@ export const policyRouter = createTRPCRouter({
     })
     .input(z.object({ id: z.string().uuid(), data: updateEnvironmentPolicy }))
     .mutation(async ({ ctx, input }) => {
-      const { releaseChannels, releaseWindows, ...data } = input.data;
+      const { versionChannels, releaseWindows, ...data } = input.data;
       const hasUpdates = Object.entries(data).length > 0;
       if (hasUpdates)
         await ctx.db
@@ -263,17 +266,20 @@ export const policyRouter = createTRPCRouter({
           .returning()
           .then(takeFirst);
 
-      if (releaseChannels != null) {
-        const prevReleaseChannels = await ctx.db
+      if (versionChannels != null) {
+        const prevVersionChannels = await ctx.db
           .select({
-            deploymentId: environmentPolicyReleaseChannel.deploymentId,
-            channelId: environmentPolicyReleaseChannel.channelId,
+            deploymentId:
+              environmentPolicyDeploymentVersionChannel.deploymentId,
+            channelId: environmentPolicyDeploymentVersionChannel.channelId,
           })
-          .from(environmentPolicyReleaseChannel)
-          .where(eq(environmentPolicyReleaseChannel.policyId, input.id));
+          .from(environmentPolicyDeploymentVersionChannel)
+          .where(
+            eq(environmentPolicyDeploymentVersionChannel.policyId, input.id),
+          );
 
         const [nulled, set] = _.partition(
-          Object.entries(releaseChannels),
+          Object.entries(versionChannels),
           ([_, channelId]) => channelId == null,
         );
 
@@ -287,43 +293,46 @@ export const policyRouter = createTRPCRouter({
         await ctx.db.transaction(async (db) => {
           if (nulledIds.length > 0)
             await db
-              .delete(environmentPolicyReleaseChannel)
+              .delete(environmentPolicyDeploymentVersionChannel)
               .where(
                 inArray(
-                  environmentPolicyReleaseChannel.deploymentId,
+                  environmentPolicyDeploymentVersionChannel.deploymentId,
                   nulledIds,
                 ),
               );
 
           if (setChannels.length > 0)
             await db
-              .insert(environmentPolicyReleaseChannel)
+              .insert(environmentPolicyDeploymentVersionChannel)
               .values(setChannels)
               .onConflictDoUpdate({
                 target: [
-                  environmentPolicyReleaseChannel.policyId,
-                  environmentPolicyReleaseChannel.deploymentId,
+                  environmentPolicyDeploymentVersionChannel.policyId,
+                  environmentPolicyDeploymentVersionChannel.deploymentId,
                 ],
                 set: buildConflictUpdateColumns(
-                  environmentPolicyReleaseChannel,
+                  environmentPolicyDeploymentVersionChannel,
                   ["channelId"],
                 ),
               });
         });
 
-        const newReleaseChannels = await ctx.db
+        const newVersionChannels = await ctx.db
           .select({
-            deploymentId: environmentPolicyReleaseChannel.deploymentId,
-            channelId: environmentPolicyReleaseChannel.channelId,
+            deploymentId:
+              environmentPolicyDeploymentVersionChannel.deploymentId,
+            channelId: environmentPolicyDeploymentVersionChannel.channelId,
           })
-          .from(environmentPolicyReleaseChannel)
-          .where(eq(environmentPolicyReleaseChannel.policyId, input.id));
+          .from(environmentPolicyDeploymentVersionChannel)
+          .where(
+            eq(environmentPolicyDeploymentVersionChannel.policyId, input.id),
+          );
 
         const prevMap = Object.fromEntries(
-          prevReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
+          prevVersionChannels.map((r) => [r.deploymentId, r.channelId]),
         );
         const newMap = Object.fromEntries(
-          newReleaseChannels.map((r) => [r.deploymentId, r.channelId]),
+          newVersionChannels.map((r) => [r.deploymentId, r.channelId]),
         );
 
         await handleEnvironmentPolicyReleaseChannelUpdate(

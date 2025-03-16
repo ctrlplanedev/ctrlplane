@@ -61,7 +61,7 @@ export const deploymentVersionChannel = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    releaseFilter: jsonb("deployment_version_selector")
+    versionSelector: jsonb("deployment_version_selector")
       .$type<ReleaseCondition | null>()
       .default(sql`NULL`),
   },
@@ -73,7 +73,7 @@ export type DeploymentVersionChannel = InferSelectModel<
 >;
 export const createDeploymentVersionChannel = createInsertSchema(
   deploymentVersionChannel,
-  { releaseFilter: releaseCondition },
+  { versionSelector: releaseCondition },
 ).omit({ id: true });
 export const updateDeploymentVersionChannel =
   createDeploymentVersionChannel.partial();

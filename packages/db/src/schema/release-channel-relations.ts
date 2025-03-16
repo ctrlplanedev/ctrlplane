@@ -1,25 +1,27 @@
 import { relations } from "drizzle-orm";
 
 import { environmentPolicy } from "./environment.js";
-import { environmentPolicyReleaseChannel } from "./release-channel.js";
+import { environmentPolicyDeploymentVersionChannel } from "./release-channel.js";
 import { deploymentVersionChannel } from "./release.js";
 
 export const releaseChannelRelations = relations(
   deploymentVersionChannel,
   ({ many }) => ({
-    environmentPolicyReleaseChannels: many(environmentPolicyReleaseChannel),
+    environmentPolicyDeploymentVersionChannels: many(
+      environmentPolicyDeploymentVersionChannel,
+    ),
   }),
 );
 
-export const environmentPolicyReleaseChannelRelations = relations(
-  environmentPolicyReleaseChannel,
+export const environmentPolicyDeploymentVersionChannelRelations = relations(
+  environmentPolicyDeploymentVersionChannel,
   ({ one }) => ({
     environmentPolicy: one(environmentPolicy, {
-      fields: [environmentPolicyReleaseChannel.policyId],
+      fields: [environmentPolicyDeploymentVersionChannel.policyId],
       references: [environmentPolicy.id],
     }),
-    releaseChannel: one(deploymentVersionChannel, {
-      fields: [environmentPolicyReleaseChannel.channelId],
+    deploymentVersionChannel: one(deploymentVersionChannel, {
+      fields: [environmentPolicyDeploymentVersionChannel.channelId],
       references: [deploymentVersionChannel.id],
     }),
   }),

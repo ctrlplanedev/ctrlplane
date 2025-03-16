@@ -90,20 +90,20 @@ const isReleaseLatestActiveForEnvironment = async (
 ) => {
   const releaseChannelSubquery = db
     .select({
-      rcPolicyId: schema.environmentPolicyReleaseChannel.policyId,
-      rcReleaseFilter: schema.deploymentVersionChannel.releaseFilter,
+      rcPolicyId: schema.environmentPolicyDeploymentVersionChannel.policyId,
+      rcReleaseFilter: schema.deploymentVersionChannel.versionSelector,
     })
-    .from(schema.environmentPolicyReleaseChannel)
+    .from(schema.environmentPolicyDeploymentVersionChannel)
     .innerJoin(
       schema.deploymentVersionChannel,
       eq(
-        schema.environmentPolicyReleaseChannel.channelId,
+        schema.environmentPolicyDeploymentVersionChannel.channelId,
         schema.deploymentVersionChannel.id,
       ),
     )
     .where(
       eq(
-        schema.environmentPolicyReleaseChannel.deploymentId,
+        schema.environmentPolicyDeploymentVersionChannel.deploymentId,
         release.deploymentId,
       ),
     )

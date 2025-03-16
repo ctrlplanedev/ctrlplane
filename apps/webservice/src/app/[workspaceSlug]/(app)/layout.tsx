@@ -1,50 +1,67 @@
-import { notFound, redirect } from "next/navigation";
+import React from "react";
+import { IconChartBar, IconCube, IconSettings } from "@tabler/icons-react";
 
-import { auth } from "@ctrlplane/auth";
-import { SidebarInset } from "@ctrlplane/ui/sidebar";
+import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
+import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
+import { DeploymentVersionChannelDrawer } from "./_components/channel/drawer/DeploymentVersionChannelDrawer";
+import { DeploymentResourceDrawer } from "./_components/deployments/resource-drawer/DeploymentResourceDrawer";
+import { JobDrawer } from "./_components/job/drawer/JobDrawer";
+import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
+import { DeploymentsSidebarIcon } from "./DeploymentsSidebarIcon";
+import { TopNav } from "./TopNav";
+import { TopSidebarIcon } from "./TopSidebarIcon";
 
-import { api } from "~/trpc/server";
-import { DeploymentResourceDrawer } from "./_components/deployment-resource-drawer/DeploymentResourceDrawer";
-import { EnvironmentDrawer } from "./_components/environment-drawer/EnvironmentDrawer";
-import { EnvironmentPolicyDrawer } from "./_components/environment-policy-drawer/EnvironmentPolicyDrawer";
-import { ReleaseChannelDrawer } from "./_components/release-channel-drawer/ReleaseChannelDrawer";
-import { ReleaseDrawer } from "./_components/release-drawer/ReleaseDrawer";
-import { ResourceDrawer } from "./_components/resource-drawer/ResourceDrawer";
-import { VariableSetDrawer } from "./_components/variable-set-drawer/VariableSetDrawer";
-import { AppSidebar } from "./AppSidebar";
-import { AppSidebarPopoverProvider } from "./AppSidebarPopoverContext";
+export const metadata = { title: "Ctrlplane" };
 
-type Props = {
-  children: React.ReactNode;
+export default async function Layout(props: {
   params: Promise<{ workspaceSlug: string }>;
-};
-
-export default async function WorkspaceLayout(props: Props) {
+  children: React.ReactNode;
+}) {
   const params = await props.params;
-
-  const { workspaceSlug } = params;
-
-  const { children } = props;
-
-  const session = await auth();
-  if (session == null) redirect("/login");
-
-  const workspace = await api.workspace.bySlug(workspaceSlug).catch(() => null);
-  if (workspace == null) notFound();
-
   return (
-    <AppSidebarPopoverProvider>
-      <AppSidebar workspace={workspace} />
-      <SidebarInset>{children}</SidebarInset>
+    <>
+      <div className="flex h-screen w-full flex-col bg-[#111111]">
+        <TopNav workspaceSlug={params.workspaceSlug} />
 
-      <ResourceDrawer />
-      <ReleaseDrawer />
-      <ReleaseChannelDrawer />
+        <div className="flex h-full flex-1">
+          <aside className="flex flex-col bg-[#111111] pt-2">
+            <DeploymentsSidebarIcon />
+
+            <TopSidebarIcon
+              icon={<IconCube />}
+              label="Resources"
+              href={`/${params.workspaceSlug}/resources`}
+            />
+            <TopSidebarIcon
+              icon={<IconChartBar />}
+              label="Insights"
+              href={`/${params.workspaceSlug}/insights`}
+            />
+            <div className="flex-grow" />
+            {/* <TopSidebarIcon
+            icon={<IconPlug />}
+            label="Connect"
+            href={`/${params.workspaceSlug}/integrations`}
+          /> */}
+            <TopSidebarIcon
+              icon={<IconSettings />}
+              label="Settings"
+              href={`/${params.workspaceSlug}/settings`}
+            />
+          </aside>
+
+          <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-[calc(100vh-57px)] flex-1 overflow-auto rounded-tl-lg border-l border-t bg-neutral-950">
+            {props.children}
+          </div>
+        </div>
+      </div>
+
       <EnvironmentDrawer />
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
+      <DeploymentVersionChannelDrawer />
+      <JobDrawer />
       <DeploymentResourceDrawer />
-      {/* <TerminalDrawer /> */}
-    </AppSidebarPopoverProvider>
+    </>
   );
 }

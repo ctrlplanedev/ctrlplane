@@ -22,7 +22,7 @@ const buttonVariants = cva(
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-green-600 text-white shadow-sm hover:bg-green-700",
         warning: "bg-amber-500 text-white shadow-sm hover:bg-amber-600",
-        info: "bg-blue-500 text-white shadow-sm hover:bg-blue-600"
+        info: "bg-blue-500 text-white shadow-sm hover:bg-blue-600",
       },
       size: {
         default: "h-9 px-4 py-2",
@@ -33,27 +33,27 @@ const buttonVariants = cva(
         icon: "h-9 w-9",
         "icon-sm": "h-7 w-7",
         "icon-lg": "h-11 w-11",
-        "full": "w-full"
+        full: "w-full",
       },
       alignment: {
         left: "justify-start",
         center: "justify-center",
         right: "justify-end",
-        between: "justify-between"
-      }
+        between: "justify-between",
+      },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
-      alignment: "center"
+      alignment: "center",
     },
     compoundVariants: [
       {
         size: "full",
         alignment: "center",
-        className: "w-full justify-center"
-      }
-    ]
+        className: "w-full justify-center",
+      },
+    ],
   },
 );
 

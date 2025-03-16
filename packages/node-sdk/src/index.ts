@@ -17,7 +17,7 @@ export function createClient(options: ClientOptions & { apiKey: string }) {
   });
 }
 /**
- * Class for managing target providers in the CtrlPlane API
+ * Class for managing target providers in the Ctrlplane API
  */
 export class ResourceProvider {
   /**
