@@ -9,6 +9,7 @@ import {
   IconRefresh,
   IconSettings,
   IconTrash,
+  IconVariable,
 } from "@tabler/icons-react";
 
 import {
@@ -21,6 +22,7 @@ import {
 } from "@ctrlplane/ui/dropdown-menu";
 import { toast } from "@ctrlplane/ui/toast";
 
+import { urls } from "~/app/urls";
 import { DeleteEnvironmentDialog } from "./DeleteEnvironmentDialog";
 
 type EnvironmentDropdownProps = {
@@ -39,7 +41,11 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
     systemSlug: string;
   }>();
 
-  const basePath = `/${workspaceSlug}/systems/${systemSlug}/environments/${environment.id}`;
+  // Use URL builder for constructing environment URLs
+  const environmentUrls = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .environment(environment.id);
 
   const copyEnvironmentId = () => {
     navigator.clipboard.writeText(environment.id);
@@ -56,7 +62,7 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => router.push(basePath)}
+            onClick={() => router.push(environmentUrls.baseUrl())}
           >
             <IconExternalLink className="h-4 w-4" />
             View Details
@@ -64,7 +70,7 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
 
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => router.push(`${basePath}/deployments`)}
+            onClick={() => router.push(environmentUrls.deployments())}
           >
             <IconChartBar className="h-4 w-4" />
             View Deployments
@@ -72,7 +78,7 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
 
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => router.push(`${basePath}/resources`)}
+            onClick={() => router.push(environmentUrls.resources())}
           >
             <IconRefresh className="h-4 w-4" />
             View Resources
@@ -84,7 +90,7 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => router.push(`${basePath}/settings`)}
+            onClick={() => router.push(environmentUrls.settings())}
           >
             <IconSettings className="h-4 w-4" />
             Settings
@@ -92,10 +98,18 @@ export const EnvironmentDropdown: React.FC<EnvironmentDropdownProps> = ({
 
           <DropdownMenuItem
             className="flex cursor-pointer items-center gap-2"
-            onClick={() => router.push(`${basePath}/policies`)}
+            onClick={() => router.push(environmentUrls.policies())}
           >
             <IconLock className="h-4 w-4" />
             Policies
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            className="flex cursor-pointer items-center gap-2"
+            onClick={() => router.push(environmentUrls.variables())}
+          >
+            <IconVariable className="h-4 w-4" />
+            Variables
           </DropdownMenuItem>
 
           <DropdownMenuItem
