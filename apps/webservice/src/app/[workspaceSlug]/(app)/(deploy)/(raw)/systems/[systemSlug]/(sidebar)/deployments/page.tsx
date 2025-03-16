@@ -54,10 +54,7 @@ export default async function DeploymentsPage(props: {
           className="border-b"
         />
       ) : (
-        <DeploymentGettingStarted
-          workspaceSlug={params.workspaceSlug}
-          systemId={system.id}
-        />
+        <DeploymentGettingStarted systemId={system.id} />
       )}
     </div>
   );
