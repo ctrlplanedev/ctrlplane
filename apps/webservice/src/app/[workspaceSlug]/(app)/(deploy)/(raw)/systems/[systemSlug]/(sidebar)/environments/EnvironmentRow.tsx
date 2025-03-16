@@ -79,22 +79,6 @@ const LazyEnvironmentHealth: React.FC<EnvironmentHealthProps> = (props) => {
   );
 };
 
-// Distribution colors list to cycle through
-const distributionColors = [
-  "#10b981", // Green
-  "#6366f1", // Indigo
-  "#f97316", // Orange
-  "#06b6d4", // Cyan
-  "#8b5cf6", // Purple
-  "#ec4899", // Pink
-  "#f43f5e", // Rose
-  "#eab308", // Yellow
-];
-
-// Function to get color based on index, cycling through the available colors
-const getDistributionColor = (index: number) =>
-  distributionColors[index % distributionColors.length];
-
 export const EnvironmentCard: React.FC<{
   environment: Environment;
 }> = ({ environment }) => {
@@ -116,13 +100,8 @@ export const EnvironmentCard: React.FC<{
     environment.id,
   );
 
-  // Mock data for version distribution and failure rate
+  // Mock data for failure rate
   // In a real implementation, fetch this data from an API
-  const versionDistribution = [
-    { version: "v1.0.3", percentage: 60 },
-    { version: "v1.0.2", percentage: 30 },
-    { version: "v1.0.1", percentage: 10 },
-  ];
 
   const latestReleaseFailureRate = 3.2; // percentage
 
@@ -254,81 +233,6 @@ export const EnvironmentCard: React.FC<{
             </span>
           </div>
         </CardContent>
-
-        <CardFooter className="flex flex-col">
-          <div className="mb-2 w-full">
-            <span className="text-xs text-muted-foreground">
-              Version Distribution
-            </span>
-          </div>
-          <div className="relative w-full">
-            <div className="flex h-2 w-full overflow-hidden rounded-full bg-neutral-100/10">
-              {versionDistribution.map((version, index) => (
-                <div
-                  key={index}
-                  className="h-full"
-                  style={{
-                    width: `${version.percentage}%`,
-                    backgroundColor: getDistributionColor(index),
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="relative mt-1 h-8 w-full">
-              {versionDistribution.map((version, index) => {
-                // Calculate position based on previous percentages
-                const previousPercentages = versionDistribution
-                  .slice(0, index)
-                  .reduce((sum, v) => sum + v.percentage, 0);
-
-                // Center position calculation
-                const centerPosition =
-                  previousPercentages + version.percentage / 2;
-
-                return (
-                  <div
-                    key={index}
-                    className="absolute flex items-center gap-1"
-                    style={{
-                      left: `${centerPosition}%`,
-                      transform: "translateX(-50%)",
-                    }}
-                  >
-                    <div
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: getDistributionColor(index) }}
-                    />
-                    <span className="whitespace-nowrap text-xs text-muted-foreground">
-                      {version.version}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {totalCount > 0 && (
-            <div className="mt-4 flex w-full items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                Resource Health
-              </span>
-              <div className="flex gap-1">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "h-1.5 w-4 rounded-full",
-                      i < (healthyCount * 6) / totalCount
-                        ? "bg-green-500"
-                        : "bg-red-500",
-                    )}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </CardFooter>
       </Card>
     </Link>
   );
