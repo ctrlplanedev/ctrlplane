@@ -287,7 +287,7 @@ export const JobDropdownMenu: React.FC<{
   resource: { id: string; name: string; lockedAt: Date | null } | null;
   deployment: SCHEMA.Deployment;
   job: { id: string; status: JobStatus };
-  isPassingReleaseChannel: boolean;
+  isPassingDeploymentVersionChannel: boolean;
   children: React.ReactNode;
 }> = ({
   release,
@@ -295,7 +295,7 @@ export const JobDropdownMenu: React.FC<{
   resource,
   environmentId,
   job,
-  isPassingReleaseChannel,
+  isPassingDeploymentVersionChannel,
   children,
 }) => {
   const [open, setOpen] = useState(false);
@@ -324,7 +324,7 @@ export const JobDropdownMenu: React.FC<{
             </TooltipProvider>
           )}
 
-          {!isActive && !isPassingReleaseChannel && (
+          {!isActive && !isPassingDeploymentVersionChannel && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -343,7 +343,7 @@ export const JobDropdownMenu: React.FC<{
             </TooltipProvider>
           )}
 
-          {!isActive && isPassingReleaseChannel && (
+          {!isActive && isPassingDeploymentVersionChannel && (
             <RedeployReleaseDialog
               release={release}
               environmentId={environmentId}

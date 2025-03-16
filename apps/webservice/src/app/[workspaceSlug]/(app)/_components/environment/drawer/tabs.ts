@@ -4,6 +4,6 @@ export enum EnvironmentDrawerTab {
   Approval = "approval",
   Concurrency = "concurrency",
   Management = "management",
-  ReleaseChannels = "release-channels",
+  DeploymentVersionChannels = "release-channels",
   Rollout = "rollout",
 }

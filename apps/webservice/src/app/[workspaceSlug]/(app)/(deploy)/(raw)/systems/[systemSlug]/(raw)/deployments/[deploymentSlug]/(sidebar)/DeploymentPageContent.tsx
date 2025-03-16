@@ -175,7 +175,7 @@ type DeploymentPageContentProps = {
   deployment: Deployment;
   environments: schema.Environment[];
   directories: { path: string; environments: schema.Environment[] }[];
-  releaseChannel: schema.DeploymentVersionChannel | null;
+  deploymentVersionChannel: schema.DeploymentVersionChannel | null;
 };
 
 export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
@@ -183,7 +183,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   deployment,
   environments,
   directories,
-  releaseChannel,
+  deploymentVersionChannel,
 }) => {
   const { filter, setFilter } = useReleaseFilter();
 
@@ -211,7 +211,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
           <ReleaseConditionDialog
             condition={filter}
             onChange={setFilter}
-            releaseChannels={deployment.releaseChannels}
+            deploymentVersionChannels={deployment.versionChannels}
           >
             <div className="flex items-center gap-2">
               <Button
@@ -222,7 +222,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                 <IconFilter className="h-4 w-4" />
               </Button>
 
-              {filter != null && releaseChannel == null && (
+              {filter != null && deploymentVersionChannel == null && (
                 <ReleaseConditionBadge condition={filter} />
               )}
             </div>

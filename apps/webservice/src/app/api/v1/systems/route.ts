@@ -11,7 +11,7 @@ import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const log = logger.child({ module: "api/v1/systems" });
+const log = logger.child({ module: "api/v1/workspaces/:workspaceId/systems" });
 
 export const POST = request()
   .use(authn)

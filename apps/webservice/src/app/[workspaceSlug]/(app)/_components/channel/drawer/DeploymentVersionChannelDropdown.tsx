@@ -23,17 +23,15 @@ import {
 
 import { api } from "~/trpc/react";
 
-type DeleteReleaseChannelDialogProps = {
-  releaseChannelId: string;
+type DeleteDeploymentVersionChannelDialogProps = {
+  deploymentVersionChannelId: string;
   onClose: () => void;
   children: React.ReactNode;
 };
 
-const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
-  releaseChannelId,
-  onClose,
-  children,
-}) => {
+const DeleteDeploymentVersionChannelDialog: React.FC<
+  DeleteDeploymentVersionChannelDialogProps
+> = ({ deploymentVersionChannelId, onClose, children }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -45,11 +43,11 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
     router.replace(`${url.pathname}?${url.searchParams.toString()}`);
   };
 
-  const deleteReleaseChannel =
-    api.deployment.releaseChannel.delete.useMutation();
+  const deleteDeploymentVersionChannel =
+    api.deployment.version.channel.delete.useMutation();
   const onDelete = () =>
-    deleteReleaseChannel
-      .mutateAsync(releaseChannelId)
+    deleteDeploymentVersionChannel
+      .mutateAsync(deploymentVersionChannelId)
       .then(() => deleteParams())
       .then(() => router.refresh())
       .then(() => setOpen(false));
@@ -77,7 +75,7 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
           <div className="flex-grow" />
           <AlertDialogAction
             onClick={onDelete}
-            disabled={deleteReleaseChannel.isPending}
+            disabled={deleteDeploymentVersionChannel.isPending}
             className={buttonVariants({ variant: "destructive" })}
           >
             Delete
@@ -88,22 +86,21 @@ const DeleteReleaseChannelDialog: React.FC<DeleteReleaseChannelDialogProps> = ({
   );
 };
 
-type ReleaseChannelDropdownProps = {
-  releaseChannelId: string;
+type DeploymentVersionChannelDropdownProps = {
+  deploymentVersionChannelId: string;
   children: React.ReactNode;
 };
 
-export const ReleaseChannelDropdown: React.FC<ReleaseChannelDropdownProps> = ({
-  releaseChannelId,
-  children,
-}) => {
+export const DeploymentVersionChannelDropdown: React.FC<
+  DeploymentVersionChannelDropdownProps
+> = ({ deploymentVersionChannelId, children }) => {
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DeleteReleaseChannelDialog
-          releaseChannelId={releaseChannelId}
+        <DeleteDeploymentVersionChannelDialog
+          deploymentVersionChannelId={deploymentVersionChannelId}
           onClose={() => setOpen(false)}
         >
           <DropdownMenuItem
@@ -113,7 +110,7 @@ export const ReleaseChannelDropdown: React.FC<ReleaseChannelDropdownProps> = ({
             <IconTrash className="h-4 w-4 text-red-500" />
             Delete
           </DropdownMenuItem>
-        </DeleteReleaseChannelDialog>
+        </DeleteDeploymentVersionChannelDialog>
       </DropdownMenuContent>
     </DropdownMenu>
   );

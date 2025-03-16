@@ -176,8 +176,12 @@ export const EnvironmentDrawer: React.FC = () => {
                     label="Release Management"
                   />
                   <TabButton
-                    active={tab === EnvironmentDrawerTab.ReleaseChannels}
-                    onClick={() => setTab(EnvironmentDrawerTab.ReleaseChannels)}
+                    active={
+                      tab === EnvironmentDrawerTab.DeploymentVersionChannels
+                    }
+                    onClick={() =>
+                      setTab(EnvironmentDrawerTab.DeploymentVersionChannels)
+                    }
                     icon={<IconDeviceRemote className="h-4 w-4" />}
                     label="Release Channels"
                   />

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@ctrlplane/ui/button";
 
 import { CreateReleaseDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/CreateRelease";
-import { CreateReleaseChannelDialog } from "../channels/CreateReleaseChannelDialog";
+import { CreateDeploymentVersionChannelDialog } from "../channels/CreateDeploymentVersionChannelDialog";
 import { CreateVariableDialog } from "../variables/CreateVariableDialog";
 
 export const DeploymentCTA: React.FC<{
@@ -27,11 +27,11 @@ export const DeploymentCTA: React.FC<{
 
   if (tab === "channels")
     return (
-      <CreateReleaseChannelDialog deploymentId={deploymentId}>
+      <CreateDeploymentVersionChannelDialog deploymentId={deploymentId}>
         <Button variant="outline" className="flex items-center gap-2" size="sm">
           New Channel
         </Button>
-      </CreateReleaseChannelDialog>
+      </CreateDeploymentVersionChannelDialog>
     );
 
   return (

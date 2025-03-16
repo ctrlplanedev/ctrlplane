@@ -3,7 +3,7 @@ import { IconChartBar, IconCube, IconSettings } from "@tabler/icons-react";
 
 import { EnvironmentDrawer } from "~/app/[workspaceSlug]/(app)/_components/environment/drawer/EnvironmentDrawer";
 import { EnvironmentPolicyDrawer } from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
-import { ReleaseChannelDrawer } from "./_components/channel/drawer/ReleaseChannelDrawer";
+import { DeploymentVersionChannelDrawer } from "./_components/channel/drawer/DeploymentVersionChannelDrawer";
 import { DeploymentResourceDrawer } from "./_components/deployments/resource-drawer/DeploymentResourceDrawer";
 import { JobDrawer } from "./_components/job/drawer/JobDrawer";
 import { VariableSetDrawer } from "./_components/variable-set/VariableSetDrawer";
@@ -59,7 +59,7 @@ export default async function Layout(props: {
       <EnvironmentDrawer />
       <EnvironmentPolicyDrawer />
       <VariableSetDrawer />
-      <ReleaseChannelDrawer />
+      <DeploymentVersionChannelDrawer />
       <JobDrawer />
       <DeploymentResourceDrawer />
     </>

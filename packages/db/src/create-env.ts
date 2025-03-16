@@ -6,13 +6,13 @@ import { takeFirst } from "./common.js";
 import * as SCHEMA from "./schema/index.js";
 import { environment, environmentPolicy } from "./schema/index.js";
 
-const createReleaseChannels = (
+const createVersionChannels = (
   db: Tx,
   policyId: string,
-  releaseChannels: { channelId: string; deploymentId: string }[],
+  deploymentVersionChannels: { channelId: string; deploymentId: string }[],
 ) =>
-  db.insert(SCHEMA.environmentPolicyReleaseChannel).values(
-    releaseChannels.map(({ channelId, deploymentId }) => ({
+  db.insert(SCHEMA.environmentPolicyDeploymentVersionChannel).values(
+    deploymentVersionChannels.map(({ channelId, deploymentId }) => ({
       policyId,
       channelId,
       deploymentId,
@@ -23,7 +23,7 @@ export const createEnv = async (
   db: Tx,
   input: z.infer<typeof SCHEMA.createEnvironment>,
 ) => {
-  const { metadata, releaseChannels } = input;
+  const { metadata, versionChannels } = input;
   const overridePolicyId = await db
     .insert(environmentPolicy)
     .values({ name: input.name, systemId: input.systemId })
@@ -47,8 +47,8 @@ export const createEnv = async (
       })),
     );
 
-  if (releaseChannels != null && releaseChannels.length > 0)
-    await createReleaseChannels(db, policyId, releaseChannels);
+  if (versionChannels != null && versionChannels.length > 0)
+    await createVersionChannels(db, policyId, versionChannels);
 
   await db
     .update(environmentPolicy)

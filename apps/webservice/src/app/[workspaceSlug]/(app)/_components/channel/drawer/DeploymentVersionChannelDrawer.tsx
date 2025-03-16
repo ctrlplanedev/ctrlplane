@@ -14,24 +14,25 @@ import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 
 import { api } from "~/trpc/react";
 import { TabButton } from "../../drawer/TabButton";
+import { DeploymentVersionChannelDropdown } from "./DeploymentVersionChannelDropdown";
 import { Overview } from "./Overview";
-import { ReleaseChannelDropdown } from "./ReleaseChannelDropdown";
 import { Usage } from "./Usage";
-import { useReleaseChannelDrawer } from "./useReleaseChannelDrawer";
+import { useDeploymentVersionChannelDrawer } from "./useDeploymentVersionChannelDrawer";
 
-export const ReleaseChannelDrawer: React.FC = () => {
-  const { releaseChannelId, removeReleaseChannelId } =
-    useReleaseChannelDrawer();
-  const isOpen = Boolean(releaseChannelId);
-  const setIsOpen = removeReleaseChannelId;
+export const DeploymentVersionChannelDrawer: React.FC = () => {
+  const { deploymentVersionChannelId, removeDeploymentVersionChannelId } =
+    useDeploymentVersionChannelDrawer();
+  const isOpen = Boolean(deploymentVersionChannelId);
+  const setIsOpen = removeDeploymentVersionChannelId;
 
-  const releaseChannelQ = api.deployment.releaseChannel.byId.useQuery(
-    releaseChannelId ?? "",
-    { enabled: isOpen },
-  );
-  const releaseChannel = releaseChannelQ.data;
+  const deploymentVersionChannelQ =
+    api.deployment.version.channel.byId.useQuery(
+      deploymentVersionChannelId ?? "",
+      { enabled: isOpen },
+    );
+  const deploymentVersionChannel = deploymentVersionChannelQ.data;
 
-  const loading = releaseChannelQ.isLoading;
+  const loading = deploymentVersionChannelQ.isLoading;
 
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -46,15 +47,17 @@ export const ReleaseChannelDrawer: React.FC = () => {
             <IconLoader2 className="h-8 w-8 animate-spin" />
           </div>
         )}
-        {!loading && releaseChannel != null && (
+        {!loading && deploymentVersionChannel != null && (
           <>
             <DrawerTitle className="flex items-center gap-2 border-b p-6">
-              {releaseChannel.name}
-              <ReleaseChannelDropdown releaseChannelId={releaseChannel.id}>
+              {deploymentVersionChannel.name}
+              <DeploymentVersionChannelDropdown
+                deploymentVersionChannelId={deploymentVersionChannel.id}
+              >
                 <Button variant="ghost" size="icon" className="h-6 w-6">
                   <IconDotsVertical className="h-4 w-4" />
                 </Button>
-              </ReleaseChannelDropdown>
+              </DeploymentVersionChannelDropdown>
             </DrawerTitle>
 
             <div className="flex w-full gap-6 p-6">
@@ -75,10 +78,12 @@ export const ReleaseChannelDrawer: React.FC = () => {
 
               <div className="w-full overflow-auto p-6">
                 {activeTab === "overview" && (
-                  <Overview releaseChannel={releaseChannel} />
+                  <Overview
+                    deploymentVersionChannel={deploymentVersionChannel}
+                  />
                 )}
                 {activeTab === "usage" && (
-                  <Usage usage={releaseChannel.usage} />
+                  <Usage usage={deploymentVersionChannel.usage} />
                 )}
               </div>
             </div>

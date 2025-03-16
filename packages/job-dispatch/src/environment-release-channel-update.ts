@@ -17,14 +17,14 @@ import { createJobApprovals } from "./policy-create.js";
 import { createReleaseJobTriggers } from "./release-job-trigger.js";
 import { cancelOldReleaseJobTriggersOnJobDispatch } from "./release-sequencing.js";
 
-const getReleaseFilter = (channelId: string | null) =>
+const getVersionSelector = (channelId: string | null) =>
   channelId != null
     ? db
         .select()
         .from(SCHEMA.deploymentVersionChannel)
         .where(eq(SCHEMA.deploymentVersionChannel.id, channelId))
         .then(takeFirstOrNull)
-        .then((r) => r?.releaseFilter ?? null)
+        .then((r) => r?.versionSelector ?? null)
     : null;
 
 const createFilterForExcludedReleases = (
@@ -143,8 +143,8 @@ const handleReleaseChannelUpdate = async (
   if (oldChannelId === newChannelId) return;
 
   const [oldReleaseFilter, newReleaseFilter] = await Promise.all([
-    getReleaseFilter(oldChannelId),
-    getReleaseFilter(newChannelId),
+    getVersionSelector(oldChannelId),
+    getVersionSelector(newChannelId),
   ]);
 
   const excludedReleasesFilter = createFilterForExcludedReleases(
