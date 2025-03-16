@@ -138,18 +138,41 @@ const versionChannelRouter = createTRPCRouter({
           .on({ type: "deploymentVersionChannel", id: input }),
     })
     .query(async ({ ctx, input }) => {
-      const rc = await ctx.db.query.deploymentVersionChannel.findFirst({
-        where: eq(SCHEMA.deploymentVersionChannel.id, input),
-        with: {
-          environmentPolicyDeploymentVersionChannels: {
-            with: { environmentPolicy: true },
-          },
-        },
-      });
+      const rc = await ctx.db
+        .select()
+        .from(SCHEMA.deploymentVersionChannel)
+        .innerJoin(
+          SCHEMA.environmentPolicyDeploymentVersionChannel,
+          eq(
+            SCHEMA.environmentPolicyDeploymentVersionChannel.channelId,
+            SCHEMA.deploymentVersionChannel.id,
+          ),
+        )
+        .innerJoin(
+          SCHEMA.environmentPolicy,
+          eq(
+            SCHEMA.environmentPolicyDeploymentVersionChannel.policyId,
+            SCHEMA.environmentPolicy.id,
+          ),
+        )
+        .where(eq(SCHEMA.deploymentVersionChannel.id, input))
+        .then((rows) => {
+          const first = rows[0];
+          if (first == null) return null;
+
+          const channels = _.chain(rows)
+            .groupBy((r) => r.deployment_version_channel.id)
+            .map((r) => ({
+              ...r[0]!.deployment_version_channel,
+              policies: r.map((r) => r.environment_policy),
+            }))
+            .value();
+
+          return { ...first.deployment_version_channel, channels };
+        });
+
       if (rc == null) return null;
-      const policyIds = rc.environmentPolicyDeploymentVersionChannels.map(
-        (eprc) => eprc.environmentPolicy.id,
-      );
+      const policyIds = rc.channels.flatMap((c) => c.policies.map((p) => p.id));
 
       const envs = await ctx.db
         .select()
@@ -159,13 +182,11 @@ const versionChannelRouter = createTRPCRouter({
       return {
         ...rc,
         usage: {
-          policies: rc.environmentPolicyDeploymentVersionChannels.map(
-            (eprc) => ({
-              ...eprc.environmentPolicy,
-              environments: envs.filter(
-                (e) => e.policyId === eprc.environmentPolicy.id,
-              ),
-            }),
+          policies: rc.channels.flatMap((c) =>
+            c.policies.map((p) => ({
+              ...p,
+              environments: envs.filter((e) => e.policyId === p.id),
+            })),
           ),
         },
       };
