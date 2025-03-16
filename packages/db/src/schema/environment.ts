@@ -82,7 +82,7 @@ export const createEnvironment = createInsertSchema(environment, {
 })
   .omit({ id: true, policyId: true })
   .extend({
-    releaseChannels: z
+    versionChannels: z
       .array(
         z.object({
           channelId: z.string().uuid(),
@@ -201,7 +201,7 @@ const overridePolicyFKConstraint: {
 export const createEnvironmentPolicy = createInsertSchema(environmentPolicy)
   .omit({ id: true })
   .extend({
-    releaseChannels: z.record(z.string().uuid().nullable()).optional(),
+    versionChannels: z.record(z.string().uuid().nullable()).optional(),
     releaseWindows: z
       .array(
         z.object({

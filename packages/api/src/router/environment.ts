@@ -20,7 +20,7 @@ import {
   environment,
   environmentMetadata,
   environmentPolicy,
-  environmentPolicyReleaseChannel,
+  environmentPolicyDeploymentVersionChannel,
   environmentPolicyReleaseWindow,
   resource,
   resourceMatchesMetadata,
@@ -57,18 +57,20 @@ export const environmentRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const policyRCSubquery = ctx.db
         .select({
-          releaseChannelPolicyId: environmentPolicyReleaseChannel.policyId,
-          releaseChannelDeploymentId: deploymentVersionChannel.deploymentId,
+          releaseChannelPolicyId:
+            environmentPolicyDeploymentVersionChannel.policyId,
+          releaseChannelDeploymentId:
+            environmentPolicyDeploymentVersionChannel.deploymentId,
           releaseChannelDescription: deploymentVersionChannel.description,
-          releaseChannelFilter: deploymentVersionChannel.releaseFilter,
+          releaseChannelFilter: deploymentVersionChannel.versionSelector,
           releaseChannelId: deploymentVersionChannel.id,
           releaseChannelName: deploymentVersionChannel.name,
         })
-        .from(environmentPolicyReleaseChannel)
+        .from(environmentPolicyDeploymentVersionChannel)
         .innerJoin(
           deploymentVersionChannel,
           eq(
-            environmentPolicyReleaseChannel.channelId,
+            environmentPolicyDeploymentVersionChannel.channelId,
             deploymentVersionChannel.id,
           ),
         )
@@ -101,14 +103,14 @@ export const environmentRouter = createTRPCRouter({
 
           const policy = {
             ...env.environment_policy,
-            releaseChannels: _.chain(rows)
+            versionChannels: _.chain(rows)
               .map((r) => r.policyRCSubquery)
               .filter(isPresent)
               .uniqBy((r) => r.releaseChannelId)
               .map((r) => ({
                 deploymentId: r.releaseChannelDeploymentId,
                 description: r.releaseChannelDescription,
-                releaseFilter: r.releaseChannelFilter,
+                versionSelector: r.releaseChannelFilter,
                 id: r.releaseChannelId,
                 name: r.releaseChannelName,
               }))

@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 
+import { urls } from "~/app/urls";
+
 export default async function WorkspacePage(props: {
   params: Promise<{ workspaceSlug: string }>;
 }) {
-  const params = await props.params;
-  redirect(`/${params.workspaceSlug}/systems`);
+  const { workspaceSlug } = await props.params;
+  const systems = urls.workspace(workspaceSlug).systems();
+  redirect(systems);
 }
