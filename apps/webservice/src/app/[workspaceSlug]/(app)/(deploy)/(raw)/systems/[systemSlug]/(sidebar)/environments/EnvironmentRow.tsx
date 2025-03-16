@@ -1,15 +1,23 @@
 "use client";
 
 import type { RouterOutputs } from "@ctrlplane/api";
-import React from "react";
+import React, { useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { IconDots } from "@tabler/icons-react";
+import { IconCheck, IconCopy, IconDots } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 
 import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
+import { toast } from "@ctrlplane/ui/toast";
 
 import { api } from "~/trpc/react";
 import { EnvironmentDropdown } from "./EnvironmentDropdown";
@@ -68,6 +76,261 @@ const LazyEnvironmentHealth: React.FC<EnvironmentHealthProps> = (props) => {
       {!inView && <Skeleton className="h-4 w-20 rounded-full" />}
       {inView && <EnvironmentHealth {...props} />}
     </div>
+  );
+};
+
+// Distribution colors list to cycle through
+const distributionColors = [
+  "#10b981", // Green
+  "#6366f1", // Indigo
+  "#f97316", // Orange
+  "#06b6d4", // Cyan
+  "#8b5cf6", // Purple
+  "#ec4899", // Pink
+  "#f43f5e", // Rose
+  "#eab308", // Yellow
+];
+
+// Function to get color based on index, cycling through the available colors
+const getDistributionColor = (index: number) =>
+  distributionColors[index % distributionColors.length];
+
+export const EnvironmentCard: React.FC<{
+  environment: Environment;
+}> = ({ environment }) => {
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+
+  const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
+    {
+      workspaceId: environment.system.workspaceId,
+      filter: environment.resourceFilter ?? undefined,
+      limit: 0,
+    },
+    { enabled: environment.resourceFilter != null },
+  );
+
+  const unhealthyResourcesQ = api.environment.stats.unhealthyResources.useQuery(
+    environment.id,
+  );
+
+  // Mock data for version distribution and failure rate
+  // In a real implementation, fetch this data from an API
+  const versionDistribution = [
+    { version: "v1.0.3", percentage: 60 },
+    { version: "v1.0.2", percentage: 30 },
+    { version: "v1.0.1", percentage: 10 },
+  ];
+
+  const latestReleaseFailureRate = 3.2; // percentage
+
+  const unhealthyCount = unhealthyResourcesQ.data?.length ?? 0;
+  const totalCount = allResourcesQ.data?.total ?? 0;
+  const healthyCount = totalCount - unhealthyCount;
+  const status =
+    totalCount > 0
+      ? unhealthyCount === 0
+        ? "Healthy"
+        : "Issues Detected"
+      : "No Resources";
+  const statusColor =
+    totalCount > 0 ? (unhealthyCount === 0 ? "green" : "red") : "neutral";
+
+  return (
+    <Link
+      href={`/${workspaceSlug}/systems/${systemSlug}/environments/${environment.id}`}
+      className="block"
+    >
+      <Card className="transition-shadow duration-300 hover:shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div className="flex items-center space-x-2">
+            <div
+              className={cn(
+                "h-3 w-3 animate-pulse rounded-full",
+                statusColor === "green"
+                  ? "bg-green-400"
+                  : statusColor === "red"
+                    ? "bg-red-400"
+                    : "bg-neutral-400",
+              )}
+            />
+            <CardTitle className="text-sm font-medium">
+              {environment.name}
+            </CardTitle>
+          </div>
+          <div className="flex items-center">
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-xs font-semibold",
+                statusColor === "green"
+                  ? "bg-green-500/20 text-green-400"
+                  : statusColor === "red"
+                    ? "bg-red-500/20 text-red-400"
+                    : "bg-neutral-500/20 text-neutral-400",
+              )}
+            >
+              {status}
+            </span>
+            <div className="ml-2">
+              <EnvironmentDropdown environment={environment}>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <IconDots className="h-4 w-4" />
+                </Button>
+              </EnvironmentDropdown>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="mt-4 space-y-3">
+          <div className="flex justify-between">
+            <span className="text-sm text-muted-foreground">Resources</span>
+            <span className="text-sm font-medium">
+              {totalCount > 0 ? `${totalCount} total` : "None"}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-muted-foreground">Health</span>
+            <span
+              className={cn(
+                "text-sm font-medium",
+                statusColor === "green"
+                  ? "text-green-400"
+                  : statusColor === "red"
+                    ? "text-red-400"
+                    : "text-neutral-400",
+              )}
+            >
+              {totalCount > 0
+                ? `${healthyCount}/${totalCount} Healthy`
+                : "No resources"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Environment ID
+            </span>
+            <div className="flex items-center gap-1">
+              <span className="text-sm font-medium">
+                {environment.id.substring(0, 8)}...
+              </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-5 w-5 rounded-full hover:bg-neutral-800/50"
+                onClick={useCallback(
+                  (e: React.MouseEvent<HTMLButtonElement>) => {
+                    e.preventDefault();
+                    navigator.clipboard.writeText(environment.id);
+                    toast.success("Environment ID copied to clipboard", {
+                      description: environment.id,
+                      duration: 2000,
+                      icon: <IconCheck className="h-4 w-4" />,
+                    });
+                  },
+                  [environment.id],
+                )}
+                title="Copy environment ID"
+              >
+                <IconCopy className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-sm text-muted-foreground">
+              Latest Release
+            </span>
+            <span className="text-sm font-medium">
+              {latestReleaseFailureRate > 5 ? (
+                <span className="text-red-400">
+                  {latestReleaseFailureRate}% failure rate
+                </span>
+              ) : (
+                <span className="text-green-400">
+                  {latestReleaseFailureRate}% failure rate
+                </span>
+              )}
+            </span>
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex flex-col">
+          <div className="mb-2 w-full">
+            <span className="text-xs text-muted-foreground">
+              Version Distribution
+            </span>
+          </div>
+          <div className="relative w-full">
+            <div className="flex h-2 w-full overflow-hidden rounded-full bg-neutral-100/10">
+              {versionDistribution.map((version, index) => (
+                <div
+                  key={index}
+                  className="h-full"
+                  style={{
+                    width: `${version.percentage}%`,
+                    backgroundColor: getDistributionColor(index),
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="relative mt-1 h-8 w-full">
+              {versionDistribution.map((version, index) => {
+                // Calculate position based on previous percentages
+                const previousPercentages = versionDistribution
+                  .slice(0, index)
+                  .reduce((sum, v) => sum + v.percentage, 0);
+
+                // Center position calculation
+                const centerPosition =
+                  previousPercentages + version.percentage / 2;
+
+                return (
+                  <div
+                    key={index}
+                    className="absolute flex items-center gap-1"
+                    style={{
+                      left: `${centerPosition}%`,
+                      transform: "translateX(-50%)",
+                    }}
+                  >
+                    <div
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: getDistributionColor(index) }}
+                    />
+                    <span className="whitespace-nowrap text-xs text-muted-foreground">
+                      {version.version}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {totalCount > 0 && (
+            <div className="mt-4 flex w-full items-center justify-between">
+              <span className="text-xs text-muted-foreground">
+                Resource Health
+              </span>
+              <div className="flex gap-1">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "h-1.5 w-4 rounded-full",
+                      i < (healthyCount * 6) / totalCount
+                        ? "bg-green-500"
+                        : "bg-red-500",
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </CardFooter>
+      </Card>
+    </Link>
   );
 };
 

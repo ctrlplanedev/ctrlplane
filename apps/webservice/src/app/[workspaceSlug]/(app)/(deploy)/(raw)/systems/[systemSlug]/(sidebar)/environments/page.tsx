@@ -6,7 +6,7 @@ import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
 import { CreateEnvironmentDialog } from "./CreateEnvironmentDialog";
-import { EnvironmentRow } from "./EnvironmentRow";
+import { EnvironmentCard } from "./EnvironmentRow";
 
 export default async function EnvironmentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
@@ -28,9 +28,19 @@ export default async function EnvironmentsPage(props: {
         </CreateEnvironmentDialog>
       </PageHeader>
 
-      {environments.map((environment) => (
-        <EnvironmentRow key={environment.id} environment={environment} />
-      ))}
+      <div className="m-2 grid grid-cols-1 gap-6 p-4 md:grid-cols-2 lg:grid-cols-3">
+        {environments.map((environment) => (
+          <EnvironmentCard key={environment.id} environment={environment} />
+        ))}
+
+        {environments.length === 0 && (
+          <div className="col-span-full flex h-32 items-center justify-center rounded-lg border border-dashed border-neutral-800">
+            <p className="text-sm text-neutral-400">
+              No environments found. Create your first environment.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
