@@ -75,3 +75,52 @@ export const DELETE = request()
       }
     },
   );
+
+export const PATCH = request()
+  .use(authn)
+  .use(
+    authz(async ({ can, extra: { params } }) => {
+      const unwrappedParams = await params;
+      return can
+        .perform(Permission.DeploymentUpdate)
+        .on({ type: "deployment", id: unwrappedParams.deploymentId });
+    }),
+  )
+  .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
+    async ({ db, req }, { params }) => {
+      try {
+        const unwrappedParams = await params;
+        const deploymentId = unwrappedParams.deploymentId;
+
+        const body = await req.json();
+
+        const deployment = await db
+          .select()
+          .from(SCHEMA.deployment)
+          .where(eq(SCHEMA.deployment.id, deploymentId))
+          .then(takeFirstOrNull);
+
+        if (deployment == null) {
+          return NextResponse.json(
+            { error: "Deployment not found" },
+            { status: httpStatus.NOT_FOUND },
+          );
+        }
+
+        const updatedDeployment = await db
+          .update(SCHEMA.deployment)
+          .set(body)
+          .where(eq(SCHEMA.deployment.id, deploymentId))
+          .returning()
+          .then(takeFirstOrNull);
+
+        return NextResponse.json(updatedDeployment);
+      } catch (error) {
+        logger.error("Failed to update deployment", { error: error });
+        return NextResponse.json(
+          { error: "Failed to update deployment" },
+          { status: httpStatus.INTERNAL_SERVER_ERROR },
+        );
+      }
+    },
+  );
