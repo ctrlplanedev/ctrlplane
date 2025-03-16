@@ -35,10 +35,11 @@ import {
 import { ReleaseConditionRender } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionRender";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release/condition/useReleaseFilter";
 import { ReleaseBadgeList } from "~/app/[workspaceSlug]/(app)/_components/release/ReleaseBadgeList";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type OverviewProps = {
-  releaseChannel: SCHEMA.DeploymentVersionChannel;
+  deploymentVersionChannel: SCHEMA.DeploymentVersionChannel;
 };
 
 const getFinalFilter = (filter: ReleaseCondition | null) =>
@@ -46,24 +47,28 @@ const getFinalFilter = (filter: ReleaseCondition | null) =>
 
 const getReleaseFilterUrl = (
   workspaceSlug: string,
-  releaseChannelId: string,
+  deploymentVersionChannelId: string,
   systemSlug?: string,
   deploymentSlug?: string,
   filter?: ReleaseCondition,
 ) => {
   if (filter == null || systemSlug == null || deploymentSlug == null)
     return null;
-  const baseUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`;
+  const baseUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .baseUrl();
   const filterHash = LZString.compressToEncodedURIComponent(
     JSON.stringify(filter),
   );
-  return `${baseUrl}/releases?filter=${filterHash}&release-channel-id=${releaseChannelId}`;
+  return `${baseUrl}?filter=${filterHash}&deployment-version-channel-id=${deploymentVersionChannelId}`;
 };
 
 const schema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().max(1000).optional(),
-  releaseFilter: releaseCondition
+  versionSelector: releaseCondition
     .nullable()
     .refine((r) => r == null || isValidReleaseCondition(r)),
 });
@@ -82,7 +87,9 @@ const getFilter = (
   return releaseFilter;
 };
 
-export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
+export const Overview: React.FC<OverviewProps> = ({
+  deploymentVersionChannel,
+}) => {
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
     workspaceSlug: string;
     systemSlug?: string;
@@ -91,30 +98,35 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const { filter: paramFilter, setFilter } = useReleaseFilter();
 
   const defaultValues = {
-    ...releaseChannel,
-    releaseFilter: getFilter(releaseChannel.releaseFilter),
-    description: releaseChannel.description ?? undefined,
+    ...deploymentVersionChannel,
+    versionSelector: getFilter(deploymentVersionChannel.versionSelector),
+    description: deploymentVersionChannel.description ?? undefined,
   };
   const form = useForm({ schema, defaultValues });
   const router = useRouter();
   const utils = api.useUtils();
 
-  const updateReleaseChannel =
-    api.deployment.releaseChannel.update.useMutation();
+  const updateDeploymentVersionChannel =
+    api.deployment.version.channel.update.useMutation();
   const onSubmit = form.handleSubmit((data) => {
-    const releaseFilter = getFinalFilter(data.releaseFilter);
-    updateReleaseChannel
-      .mutateAsync({ id: releaseChannel.id, data: { ...data, releaseFilter } })
-      .then(() => form.reset({ ...data, releaseFilter }))
+    const versionSelector = getFinalFilter(data.versionSelector);
+    updateDeploymentVersionChannel
+      .mutateAsync({
+        id: deploymentVersionChannel.id,
+        data: { ...data, versionSelector },
+      })
+      .then(() => form.reset({ ...data, versionSelector }))
       .then(() =>
-        utils.deployment.releaseChannel.byId.invalidate(releaseChannel.id),
+        utils.deployment.version.channel.byId.invalidate(
+          deploymentVersionChannel.id,
+        ),
       )
-      .then(() => paramFilter != null && setFilter(releaseFilter ?? null))
+      .then(() => paramFilter != null && setFilter(versionSelector ?? null))
       .then(() => router.refresh());
   });
 
-  const { deploymentId } = releaseChannel;
-  const filter = getFinalFilter(form.watch("releaseFilter"));
+  const { deploymentId } = deploymentVersionChannel;
+  const filter = getFinalFilter(form.watch("versionSelector"));
 
   const releasesQ = api.deployment.version.list.useQuery({
     deploymentId,
@@ -124,7 +136,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
   const releases = releasesQ.data;
   const releaseFilterUrl = getReleaseFilterUrl(
     workspaceSlug,
-    releaseChannel.id,
+    deploymentVersionChannel.id,
     systemSlug,
     deploymentSlug,
     filter,
@@ -163,7 +175,7 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
 
         <FormField
           control={form.control}
-          name="releaseFilter"
+          name="versionSelector"
           render={({ field: { value, onChange } }) => (
             <FormItem>
               <FormLabel className="flex items-center gap-1">
@@ -187,7 +199,10 @@ export const Overview: React.FC<OverviewProps> = ({ releaseChannel }) => {
         <div className="flex gap-2">
           <Button
             type="submit"
-            disabled={updateReleaseChannel.isPending || !form.formState.isDirty}
+            disabled={
+              updateDeploymentVersionChannel.isPending ||
+              !form.formState.isDirty
+            }
           >
             Save
           </Button>

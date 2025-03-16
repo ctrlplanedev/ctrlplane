@@ -22,7 +22,9 @@ export const createJobsForNewEnvironment = async (
     with: {
       policy: {
         with: {
-          environmentPolicyReleaseChannels: { with: { releaseChannel: true } },
+          environmentPolicyDeploymentVersionChannels: {
+            with: { deploymentVersionChannel: true },
+          },
         },
       },
       system: { with: { deployments: true } },
@@ -32,7 +34,7 @@ export const createJobsForNewEnvironment = async (
 
   const { system, policy } = releaseChannels;
   const { workspaceId, deployments } = system;
-  const { environmentPolicyReleaseChannels } = policy;
+  const { environmentPolicyDeploymentVersionChannels } = policy;
 
   const resources = await db
     .select()
@@ -47,10 +49,10 @@ export const createJobsForNewEnvironment = async (
   if (resources.length === 0) return;
 
   const releasePromises = deployments.map(async (deployment) => {
-    const channel = environmentPolicyReleaseChannels.find(
+    const channel = environmentPolicyDeploymentVersionChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
-    const { releaseFilter } = channel?.releaseChannel ?? {};
+    const { versionSelector } = channel?.deploymentVersionChannel ?? {};
     return db
       .select()
       .from(SCHEMA.deploymentVersion)
@@ -59,7 +61,7 @@ export const createJobsForNewEnvironment = async (
           eq(SCHEMA.deploymentVersion.deploymentId, deployment.id),
           SCHEMA.deploymentVersionMatchesCondition(
             db,
-            releaseFilter ?? undefined,
+            versionSelector ?? undefined,
           ),
         ),
       )

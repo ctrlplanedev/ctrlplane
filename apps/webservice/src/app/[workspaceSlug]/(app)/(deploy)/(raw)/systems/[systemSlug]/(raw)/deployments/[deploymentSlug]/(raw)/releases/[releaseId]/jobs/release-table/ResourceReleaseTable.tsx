@@ -36,7 +36,7 @@ import { JobConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/job/
 import { useJobDrawer } from "~/app/[workspaceSlug]/(app)/_components/job/drawer/useJobDrawer";
 import { JobDropdownMenu } from "~/app/[workspaceSlug]/(app)/_components/job/JobDropdownMenu";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
-import { useReleaseChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useReleaseChannel";
+import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
 import { useFilter } from "~/app/[workspaceSlug]/(app)/_hooks/useFilter";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/react";
@@ -133,10 +133,16 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
       return newState;
     });
 
-  const { isPassingReleaseChannel, loading: releaseChannelLoading } =
-    useReleaseChannel(deployment.id, environment.id, release.version);
+  const {
+    isPassingDeploymentVersionChannel,
+    loading: deploymentVersionChannelLoading,
+  } = useDeploymentVersionChannel(
+    deployment.id,
+    environment.id,
+    release.version,
+  );
 
-  const loading = approvalsQ.isLoading || releaseChannelLoading;
+  const loading = approvalsQ.isLoading || deploymentVersionChannelLoading;
 
   if (allTriggers.length === 0) return null;
 
@@ -312,7 +318,9 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                             id: trigger.job.id,
                             status: trigger.job.status,
                           }}
-                          isPassingReleaseChannel={isPassingReleaseChannel}
+                          isPassingDeploymentVersionChannel={
+                            isPassingDeploymentVersionChannel
+                          }
                         >
                           <Button
                             variant="ghost"
@@ -417,8 +425,8 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                                     id: trigger.job.id,
                                     status: trigger.job.status,
                                   }}
-                                  isPassingReleaseChannel={
-                                    isPassingReleaseChannel
+                                  isPassingDeploymentVersionChannel={
+                                    isPassingDeploymentVersionChannel
                                   }
                                 >
                                   <Button

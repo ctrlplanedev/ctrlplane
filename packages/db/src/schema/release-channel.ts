@@ -5,7 +5,7 @@ import { deployment } from "./deployment.js";
 import { environmentPolicy } from "./environment.js";
 import { deploymentVersionChannel } from "./release.js";
 
-export const environmentPolicyReleaseChannel = pgTable(
+export const environmentPolicyDeploymentVersionChannel = pgTable(
   "environment_policy_deployment_version_channel",
   {
     id: uuid("id").primaryKey().defaultRandom(),
@@ -25,6 +25,6 @@ export const environmentPolicyReleaseChannel = pgTable(
   }),
 );
 
-export type EnvironmentPolicyReleaseChannel = InferSelectModel<
-  typeof environmentPolicyReleaseChannel
+export type EnvironmentPolicyDeploymentVersionChannel = InferSelectModel<
+  typeof environmentPolicyDeploymentVersionChannel
 >;

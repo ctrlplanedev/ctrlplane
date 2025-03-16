@@ -13,7 +13,7 @@ import { Button, buttonVariants } from "@ctrlplane/ui/button";
 import { Drawer, DrawerContent, DrawerTitle } from "@ctrlplane/ui/drawer";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
-import { useReleaseChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useReleaseChannel";
+import { useDeploymentVersionChannel } from "~/app/[workspaceSlug]/(app)/_hooks/channel/useDeploymentVersionChannel";
 import { api } from "~/trpc/react";
 import { MetadataInfo } from "../../MetadataInfo";
 import { JobDropdownMenu } from "../JobDropdownMenu";
@@ -39,15 +39,17 @@ export const JobDrawer: React.FC = () => {
       ? (JSON.parse(linksMetadata) as Record<string, string>)
       : null;
 
-  const { isPassingReleaseChannel, loading: releaseChannelLoading } =
-    useReleaseChannel(
-      job?.release.deployment.id ?? "",
-      job?.environmentId ?? "",
-      job?.release.version ?? "",
-      jobQ.isSuccess,
-    );
+  const {
+    isPassingDeploymentVersionChannel,
+    loading: deploymentVersionChannelLoading,
+  } = useDeploymentVersionChannel(
+    job?.release.deployment.id ?? "",
+    job?.environmentId ?? "",
+    job?.release.version ?? "",
+    jobQ.isSuccess,
+  );
 
-  const loading = jobQ.isLoading || releaseChannelLoading;
+  const loading = jobQ.isLoading || deploymentVersionChannelLoading;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -75,7 +77,9 @@ export const JobDrawer: React.FC = () => {
                     resource={job.resource}
                     deployment={job.release.deployment}
                     job={job.job}
-                    isPassingReleaseChannel={isPassingReleaseChannel}
+                    isPassingDeploymentVersionChannel={
+                      isPassingDeploymentVersionChannel
+                    }
                   >
                     <Button variant="ghost" size="icon" className="h-6 w-6">
                       <IconDotsVertical className="h-3 w-3" />

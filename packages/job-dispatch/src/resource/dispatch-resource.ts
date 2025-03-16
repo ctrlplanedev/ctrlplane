@@ -36,7 +36,9 @@ const getEnvironmentWithReleaseChannels = (db: Tx, envId: string) =>
     with: {
       policy: {
         with: {
-          environmentPolicyReleaseChannels: { with: { releaseChannel: true } },
+          environmentPolicyDeploymentVersionChannels: {
+            with: { deploymentVersionChannel: true },
+          },
         },
       },
       system: { with: { deployments: true } },
@@ -65,21 +67,21 @@ export async function dispatchJobsForAddedResources(
 
   const { policy, system } = environment;
   const { deployments } = system;
-  const { environmentPolicyReleaseChannels } = policy;
+  const { environmentPolicyDeploymentVersionChannels } = policy;
   const deploymentsWithReleaseFilter = deployments.map((deployment) => {
-    const policy = environmentPolicyReleaseChannels.find(
+    const policy = environmentPolicyDeploymentVersionChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
 
-    const { releaseFilter } = policy?.releaseChannel ?? {};
-    return { ...deployment, releaseFilter };
+    const { versionSelector } = policy?.deploymentVersionChannel ?? {};
+    return { ...deployment, versionSelector };
   });
 
   log.debug("Fetching latest releases", {
     deploymentCount: deployments.length,
   });
   const releasePromises = deploymentsWithReleaseFilter.map(
-    ({ id, releaseFilter }) =>
+    ({ id, versionSelector }) =>
       db
         .select()
         .from(SCHEMA.deploymentVersion)
@@ -88,7 +90,7 @@ export async function dispatchJobsForAddedResources(
             eq(SCHEMA.deploymentVersion.deploymentId, id),
             SCHEMA.deploymentVersionMatchesCondition(
               db,
-              releaseFilter ?? undefined,
+              versionSelector ?? undefined,
             ),
           ),
         )

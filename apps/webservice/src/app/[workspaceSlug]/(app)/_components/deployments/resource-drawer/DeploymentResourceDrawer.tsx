@@ -46,8 +46,8 @@ export const DeploymentResourceDrawer: React.FC = () => {
     { enabled: isOpen },
   );
 
-  const { releaseFilter } =
-    environment?.policy.releaseChannels.find(
+  const { versionSelector } =
+    environment?.policy.versionChannels.find(
       (rc) => rc.deploymentId === deploymentId,
     ) ?? {};
 
@@ -77,7 +77,7 @@ export const DeploymentResourceDrawer: React.FC = () => {
     api.deployment.version.list.useQuery(
       {
         deploymentId: deploymentId ?? "",
-        filter: releaseFilter ?? undefined,
+        filter: versionSelector ?? undefined,
         jobFilter,
         limit: 100,
       },

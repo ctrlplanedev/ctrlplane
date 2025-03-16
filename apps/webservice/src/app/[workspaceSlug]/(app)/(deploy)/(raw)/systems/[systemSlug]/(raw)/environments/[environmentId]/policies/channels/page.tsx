@@ -1,5 +1,5 @@
 import { api } from "~/trpc/server";
-import { ReleaseChannels } from "./ReleaseChannels";
+import { DeploymentVersionChannels } from "./DeploymentVersionChannels";
 
 export default async function ChannelsPage(props: {
   params: Promise<{
@@ -16,6 +16,9 @@ export default async function ChannelsPage(props: {
   const deployments = await api.deployment.bySystemId(system.id);
 
   return (
-    <ReleaseChannels environmentPolicy={policy} deployments={deployments} />
+    <DeploymentVersionChannels
+      environmentPolicy={policy}
+      deployments={deployments}
+    />
   );
 }

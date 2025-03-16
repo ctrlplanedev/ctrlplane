@@ -26,7 +26,7 @@ import {
 import { TabButton } from "~/app/[workspaceSlug]/(app)/_components/drawer/TabButton";
 import { ApprovalAndGovernance } from "~/app/[workspaceSlug]/(app)/_components/policy/form/ApprovalAndGovernance";
 import { DeploymentControl } from "~/app/[workspaceSlug]/(app)/_components/policy/form/DeploymentControl";
-import { ReleaseChannels } from "~/app/[workspaceSlug]/(app)/_components/policy/form/ReleaseChannels";
+import { DeploymentVersionChannels } from "~/app/[workspaceSlug]/(app)/_components/policy/form/DeploymentVersionChannels";
 import { ReleaseManagement } from "~/app/[workspaceSlug]/(app)/_components/policy/form/ReleaseManagement";
 import { RolloutAndTiming } from "~/app/[workspaceSlug]/(app)/_components/policy/form/RolloutAndTiming";
 import { api } from "~/trpc/react";
@@ -39,7 +39,7 @@ export enum EnvironmentPolicyDrawerTab {
   Approval = "approval",
   Concurrency = "concurrency",
   Management = "management",
-  ReleaseChannels = "release-channels",
+  DeploymentVersionChannels = "release-channels",
   Rollout = "rollout",
 }
 
@@ -116,7 +116,7 @@ const PolicyDropdownMenu: React.FC<{
 type ViewProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
-    releaseChannels: SCHEMA.DeploymentVersionChannel[];
+    versionChannels: SCHEMA.DeploymentVersionChannel[];
   };
   activeTab: EnvironmentPolicyDrawerTab;
 };
@@ -156,8 +156,8 @@ const View: React.FC<ViewProps> = ({ environmentPolicy, activeTab }) => {
           isLoading={isLoading}
         />
       )}
-      {activeTab === EnvironmentPolicyDrawerTab.ReleaseChannels && (
-        <ReleaseChannels
+      {activeTab === EnvironmentPolicyDrawerTab.DeploymentVersionChannels && (
+        <DeploymentVersionChannels
           environmentPolicy={environmentPolicy}
           onUpdate={onUpdate}
           isLoading={isLoading}
@@ -241,8 +241,12 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
               label="Release Management"
             />
             <TabButton
-              active={tab === EnvironmentPolicyDrawerTab.ReleaseChannels}
-              onClick={() => setTab(EnvironmentPolicyDrawerTab.ReleaseChannels)}
+              active={
+                tab === EnvironmentPolicyDrawerTab.DeploymentVersionChannels
+              }
+              onClick={() =>
+                setTab(EnvironmentPolicyDrawerTab.DeploymentVersionChannels)
+              }
               icon={<IconFilter className="h-4 w-4" />}
               label="Release Channels"
             />

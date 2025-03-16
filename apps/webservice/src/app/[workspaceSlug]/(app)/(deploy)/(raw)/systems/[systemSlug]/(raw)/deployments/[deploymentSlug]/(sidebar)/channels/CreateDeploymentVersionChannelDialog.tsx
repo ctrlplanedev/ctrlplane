@@ -41,7 +41,7 @@ import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
-type CreateReleaseChannelDialogProps = {
+type CreateDeploymentVersionChannelDialogProps = {
   deploymentId: string;
   children: React.ReactNode;
 };
@@ -52,13 +52,13 @@ const getFinalFilter = (filter?: ReleaseCondition) =>
 const schema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().max(1000).optional(),
-  releaseFilter: releaseCondition
+  versionSelector: releaseCondition
     .optional()
     .refine((cond) => cond == null || isValidReleaseCondition(cond)),
 });
 
-export const CreateReleaseChannelDialog: React.FC<
-  CreateReleaseChannelDialogProps
+export const CreateDeploymentVersionChannelDialog: React.FC<
+  CreateDeploymentVersionChannelDialogProps
 > = ({ deploymentId, children }) => {
   const [open, setOpen] = useState(false);
   const { workspaceSlug, systemSlug, deploymentSlug } = useParams<{
@@ -67,23 +67,23 @@ export const CreateReleaseChannelDialog: React.FC<
     deploymentSlug: string;
   }>();
 
-  const createReleaseChannel =
-    api.deployment.releaseChannel.create.useMutation();
+  const createDeploymentVersionChannel =
+    api.deployment.version.channel.create.useMutation();
   const router = useRouter();
 
   const form = useForm({ schema });
   const onSubmit = form.handleSubmit((data) => {
-    const filter = getFinalFilter(data.releaseFilter);
-    createReleaseChannel
-      .mutateAsync({ ...data, deploymentId, releaseFilter: filter })
+    const filter = getFinalFilter(data.versionSelector);
+    createDeploymentVersionChannel
+      .mutateAsync({ ...data, deploymentId, versionSelector: filter })
       .then(() => form.reset(data))
       .then(() => router.refresh())
       .then(() => setOpen(false))
       .catch((error) => toast.error(error.message));
   });
 
-  const { releaseFilter } = form.watch();
-  const filter = getFinalFilter(releaseFilter);
+  const { versionSelector } = form.watch();
+  const filter = getFinalFilter(versionSelector);
 
   const filterHash =
     filter != null
@@ -143,7 +143,7 @@ export const CreateReleaseChannelDialog: React.FC<
 
             <FormField
               control={form.control}
-              name="releaseFilter"
+              name="versionSelector"
               render={({ field: { value, onChange } }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>
@@ -186,7 +186,10 @@ export const CreateReleaseChannelDialog: React.FC<
             />
 
             <DialogFooter>
-              <Button type="submit" disabled={createReleaseChannel.isPending}>
+              <Button
+                type="submit"
+                disabled={createDeploymentVersionChannel.isPending}
+              >
                 Create
               </Button>
             </DialogFooter>
