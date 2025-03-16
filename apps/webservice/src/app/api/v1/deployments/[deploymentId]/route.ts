@@ -80,17 +80,15 @@ export const PATCH = request()
   .use(authn)
   .use(
     authz(async ({ can, extra: { params } }) => {
-      const unwrappedParams = await params;
       return can
         .perform(Permission.DeploymentUpdate)
-        .on({ type: "deployment", id: unwrappedParams.deploymentId });
+        .on({ type: "deployment", id: (await params).deploymentId });
     }),
   )
   .handle<{ db: Tx }, { params: Promise<{ deploymentId: string }> }>(
     async ({ db, req }, { params }) => {
       try {
-        const unwrappedParams = await params;
-        const deploymentId = unwrappedParams.deploymentId;
+        const deploymentId = (await params).deploymentId;
 
         const body = await req.json();
 
