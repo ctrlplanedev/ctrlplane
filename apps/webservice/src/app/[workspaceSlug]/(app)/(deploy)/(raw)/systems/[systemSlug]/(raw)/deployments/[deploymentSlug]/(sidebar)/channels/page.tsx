@@ -21,12 +21,14 @@ export default async function DeploymentVersionChannelsPage(props: {
   });
   if (!deployment) notFound();
 
-  const releaseChannels =
-    await api.deployment.releaseChannel.list.byDeploymentId(deployment.id);
+  const deploymentVersionChannels =
+    await api.deployment.version.channel.list.byDeploymentId(deployment.id);
 
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 h-full overflow-auto">
-      <DeploymentVersionChannelsTable releaseChannels={releaseChannels} />
+      <DeploymentVersionChannelsTable
+        deploymentVersionChannels={deploymentVersionChannels}
+      />
     </div>
   );
 }

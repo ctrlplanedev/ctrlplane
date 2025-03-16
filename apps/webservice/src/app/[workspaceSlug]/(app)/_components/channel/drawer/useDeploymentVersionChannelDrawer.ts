@@ -1,11 +1,11 @@
 import { useRouter, useSearchParams } from "next/navigation";
 
-const param = "release_channel_id";
+export const param = "deployment-version-channel-id";
 
 export const useDeploymentVersionChannelDrawer = () => {
   const router = useRouter();
   const params = useSearchParams();
-  const releaseChannelId = params.get(param);
+  const deploymentVersionChannelId = params.get(param);
 
   const setDeploymentVersionChannelId = (id: string | null) => {
     const url = new URL(window.location.href);
@@ -18,7 +18,7 @@ export const useDeploymentVersionChannelDrawer = () => {
     setDeploymentVersionChannelId(null);
 
   return {
-    releaseChannelId,
+    deploymentVersionChannelId,
     setDeploymentVersionChannelId,
     removeDeploymentVersionChannelId,
   };

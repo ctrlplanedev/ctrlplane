@@ -10,7 +10,7 @@ import { EnvironmentDrawerTab } from "../tabs";
 import { useUpdateOverridePolicy } from "./useOverridePolicy";
 
 type Deployment = SCHEMA.Deployment & {
-  releaseChannels: SCHEMA.DeploymentVersionChannel[];
+  versionChannels: SCHEMA.DeploymentVersionChannel[];
 };
 
 type Policy = NonNullable<

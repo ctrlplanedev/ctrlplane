@@ -138,19 +138,22 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   releaseVersion,
 }) => {
   const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
-  const { isPassingDeploymentVersionChannel, releaseChannelId, loading } =
-    useDeploymentVersionChannel(deploymentId, environmentId, releaseVersion);
+  const {
+    isPassingDeploymentVersionChannel,
+    deploymentVersionChannelId,
+    loading,
+  } = useDeploymentVersionChannel(deploymentId, environmentId, releaseVersion);
 
   return (
     <div className="flex items-center gap-2">
       {loading && <Loading />}
-      {!loading && releaseChannelId == null && (
+      {!loading && deploymentVersionChannelId == null && (
         <>
           <Cancelled /> No release channel
         </>
       )}
       {!loading &&
-        releaseChannelId != null &&
+        deploymentVersionChannelId != null &&
         !isPassingDeploymentVersionChannel && (
           <>
             <Failing />
@@ -158,7 +161,9 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
               Blocked by{" "}
               <Button
                 variant="link"
-                onClick={() => setDeploymentVersionChannelId(releaseChannelId)}
+                onClick={() =>
+                  setDeploymentVersionChannelId(deploymentVersionChannelId)
+                }
                 className="h-fit px-0 py-0 text-inherit underline-offset-2"
               >
                 release channel
@@ -167,7 +172,7 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
           </>
         )}
       {!loading &&
-        releaseChannelId != null &&
+        deploymentVersionChannelId != null &&
         isPassingDeploymentVersionChannel && (
           <>
             <Passing />
@@ -175,7 +180,9 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
               Passing{" "}
               <Button
                 variant="link"
-                onClick={() => setDeploymentVersionChannelId(releaseChannelId)}
+                onClick={() =>
+                  setDeploymentVersionChannelId(deploymentVersionChannelId)
+                }
                 className="h-fit px-0 py-0 text-inherit underline-offset-2"
               >
                 release channel

@@ -116,7 +116,7 @@ const PolicyDropdownMenu: React.FC<{
 type ViewProps = {
   environmentPolicy: SCHEMA.EnvironmentPolicy & {
     releaseWindows: SCHEMA.EnvironmentPolicyReleaseWindow[];
-    releaseChannels: SCHEMA.DeploymentVersionChannel[];
+    versionChannels: SCHEMA.DeploymentVersionChannel[];
   };
   activeTab: EnvironmentPolicyDrawerTab;
 };

@@ -52,7 +52,7 @@ const getFinalFilter = (filter?: ReleaseCondition) =>
 const schema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().max(1000).optional(),
-  releaseFilter: releaseCondition
+  versionSelector: releaseCondition
     .optional()
     .refine((cond) => cond == null || isValidReleaseCondition(cond)),
 });
@@ -68,22 +68,22 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
   }>();
 
   const createDeploymentVersionChannel =
-    api.deployment.releaseChannel.create.useMutation();
+    api.deployment.version.channel.create.useMutation();
   const router = useRouter();
 
   const form = useForm({ schema });
   const onSubmit = form.handleSubmit((data) => {
-    const filter = getFinalFilter(data.releaseFilter);
+    const filter = getFinalFilter(data.versionSelector);
     createDeploymentVersionChannel
-      .mutateAsync({ ...data, deploymentId, releaseFilter: filter })
+      .mutateAsync({ ...data, deploymentId, versionSelector: filter })
       .then(() => form.reset(data))
       .then(() => router.refresh())
       .then(() => setOpen(false))
       .catch((error) => toast.error(error.message));
   });
 
-  const { releaseFilter } = form.watch();
-  const filter = getFinalFilter(releaseFilter);
+  const { versionSelector } = form.watch();
+  const filter = getFinalFilter(versionSelector);
 
   const filterHash =
     filter != null
@@ -143,7 +143,7 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
 
             <FormField
               control={form.control}
-              name="releaseFilter"
+              name="versionSelector"
               render={({ field: { value, onChange } }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>

@@ -18,12 +18,12 @@ export const useDeploymentVersionChannel = (
 ) => {
   const environment = api.environment.byId.useQuery(environmentId, { enabled });
   const policyDeploymentVersionChannel =
-    environment.data?.policy.releaseChannels.find(
+    environment.data?.policy.versionChannels.find(
       (prc) => prc.deploymentId === deploymentId,
     );
   const rcId = policyDeploymentVersionChannel?.id ?? null;
-  const { releaseFilter: filter } = policyDeploymentVersionChannel ?? {
-    releaseFilter: null,
+  const { versionSelector: filter } = policyDeploymentVersionChannel ?? {
+    versionSelector: null,
   };
 
   const versionFilter: ReleaseCondition = {
@@ -53,5 +53,9 @@ export const useDeploymentVersionChannel = (
   const isPassingDeploymentVersionChannel =
     !hasDeploymentVersionChannel || isDeploymentVersionChannelMatchingFilter;
 
-  return { isPassingDeploymentVersionChannel, releaseChannelId: rcId, loading };
+  return {
+    isPassingDeploymentVersionChannel,
+    deploymentVersionChannelId: rcId,
+    loading,
+  };
 };

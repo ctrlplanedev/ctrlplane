@@ -22,7 +22,7 @@ export const POST = request()
   )
   .handle<{ body: z.infer<typeof createDeploymentVersionChannel> }>(
     async ({ db, body }) => {
-      const releaseChannel = await db
+      const deploymentVersionChannel = await db
         .select()
         .from(SCHEMA.deploymentVersionChannel)
         .where(
@@ -33,9 +33,12 @@ export const POST = request()
         )
         .then(takeFirstOrNull);
 
-      if (releaseChannel)
+      if (deploymentVersionChannel)
         return NextResponse.json(
-          { error: "Release channel already exists", id: releaseChannel.id },
+          {
+            error: "Release channel already exists",
+            id: deploymentVersionChannel.id,
+          },
           { status: 409 },
         );
 
@@ -44,7 +47,9 @@ export const POST = request()
         .values(body)
         .returning()
         .then(takeFirst)
-        .then((releaseChannel) => NextResponse.json(releaseChannel))
+        .then((deploymentVersionChannel) =>
+          NextResponse.json(deploymentVersionChannel),
+        )
         .catch((error) => NextResponse.json({ error }, { status: 500 }));
     },
   );

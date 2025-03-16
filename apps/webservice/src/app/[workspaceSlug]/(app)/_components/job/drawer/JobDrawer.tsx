@@ -39,15 +39,17 @@ export const JobDrawer: React.FC = () => {
       ? (JSON.parse(linksMetadata) as Record<string, string>)
       : null;
 
-  const { isPassingDeploymentVersionChannel, loading: releaseChannelLoading } =
-    useDeploymentVersionChannel(
-      job?.release.deployment.id ?? "",
-      job?.environmentId ?? "",
-      job?.release.version ?? "",
-      jobQ.isSuccess,
-    );
+  const {
+    isPassingDeploymentVersionChannel,
+    loading: deploymentVersionChannelLoading,
+  } = useDeploymentVersionChannel(
+    job?.release.deployment.id ?? "",
+    job?.environmentId ?? "",
+    job?.release.version ?? "",
+    jobQ.isSuccess,
+  );
 
-  const loading = jobQ.isLoading || releaseChannelLoading;
+  const loading = jobQ.isLoading || deploymentVersionChannelLoading;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>

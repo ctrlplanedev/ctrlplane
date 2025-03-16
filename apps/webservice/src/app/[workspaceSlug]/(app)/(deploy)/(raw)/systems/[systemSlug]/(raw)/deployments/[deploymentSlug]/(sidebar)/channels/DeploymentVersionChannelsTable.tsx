@@ -20,12 +20,12 @@ type DeploymentVersionChannel = SCHEMA.DeploymentVersionChannel & {
 };
 
 type DeploymentVersionChannelTableProps = {
-  releaseChannels: DeploymentVersionChannel[];
+  deploymentVersionChannels: DeploymentVersionChannel[];
 };
 
 export const DeploymentVersionChannelsTable: React.FC<
   DeploymentVersionChannelTableProps
-> = ({ releaseChannels }) => {
+> = ({ deploymentVersionChannels }) => {
   const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
   return (
     <Table className="table-fixed">
@@ -38,22 +38,24 @@ export const DeploymentVersionChannelsTable: React.FC<
         </TableRow>
       </TableHeader>
       <TableBody>
-        {releaseChannels.map((releaseChannel) => (
+        {deploymentVersionChannels.map((deploymentVersionChannel) => (
           <TableRow
-            key={releaseChannel.id}
+            key={deploymentVersionChannel.id}
             className="cursor-pointer"
-            onClick={() => setDeploymentVersionChannelId(releaseChannel.id)}
+            onClick={() =>
+              setDeploymentVersionChannelId(deploymentVersionChannel.id)
+            }
           >
-            <TableCell>{releaseChannel.name}</TableCell>
-            <TableCell>{releaseChannel.description}</TableCell>
+            <TableCell>{deploymentVersionChannel.name}</TableCell>
+            <TableCell>{deploymentVersionChannel.description}</TableCell>
             <TableCell>
-              {releaseChannel.releaseFilter != null && (
+              {deploymentVersionChannel.versionSelector != null && (
                 <ReleaseConditionBadge
-                  condition={releaseChannel.releaseFilter}
+                  condition={deploymentVersionChannel.versionSelector}
                 />
               )}
             </TableCell>
-            <TableCell>{releaseChannel.total}</TableCell>
+            <TableCell>{deploymentVersionChannel.total}</TableCell>
           </TableRow>
         ))}
       </TableBody>

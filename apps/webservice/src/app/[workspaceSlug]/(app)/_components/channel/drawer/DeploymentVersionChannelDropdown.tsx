@@ -24,14 +24,14 @@ import {
 import { api } from "~/trpc/react";
 
 type DeleteDeploymentVersionChannelDialogProps = {
-  releaseChannelId: string;
+  deploymentVersionChannelId: string;
   onClose: () => void;
   children: React.ReactNode;
 };
 
 const DeleteDeploymentVersionChannelDialog: React.FC<
   DeleteDeploymentVersionChannelDialogProps
-> = ({ releaseChannelId, onClose, children }) => {
+> = ({ deploymentVersionChannelId, onClose, children }) => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
 
@@ -44,10 +44,10 @@ const DeleteDeploymentVersionChannelDialog: React.FC<
   };
 
   const deleteDeploymentVersionChannel =
-    api.deployment.releaseChannel.delete.useMutation();
+    api.deployment.version.channel.delete.useMutation();
   const onDelete = () =>
     deleteDeploymentVersionChannel
-      .mutateAsync(releaseChannelId)
+      .mutateAsync(deploymentVersionChannelId)
       .then(() => deleteParams())
       .then(() => router.refresh())
       .then(() => setOpen(false));
@@ -87,20 +87,20 @@ const DeleteDeploymentVersionChannelDialog: React.FC<
 };
 
 type DeploymentVersionChannelDropdownProps = {
-  releaseChannelId: string;
+  deploymentVersionChannelId: string;
   children: React.ReactNode;
 };
 
 export const DeploymentVersionChannelDropdown: React.FC<
   DeploymentVersionChannelDropdownProps
-> = ({ releaseChannelId, children }) => {
+> = ({ deploymentVersionChannelId, children }) => {
   const [open, setOpen] = useState(false);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent>
         <DeleteDeploymentVersionChannelDialog
-          releaseChannelId={releaseChannelId}
+          deploymentVersionChannelId={deploymentVersionChannelId}
           onClose={() => setOpen(false)}
         >
           <DropdownMenuItem

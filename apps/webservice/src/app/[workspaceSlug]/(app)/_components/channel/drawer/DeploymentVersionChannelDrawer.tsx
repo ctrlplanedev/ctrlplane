@@ -20,18 +20,19 @@ import { Usage } from "./Usage";
 import { useDeploymentVersionChannelDrawer } from "./useDeploymentVersionChannelDrawer";
 
 export const DeploymentVersionChannelDrawer: React.FC = () => {
-  const { releaseChannelId, removeDeploymentVersionChannelId } =
+  const { deploymentVersionChannelId, removeDeploymentVersionChannelId } =
     useDeploymentVersionChannelDrawer();
-  const isOpen = Boolean(releaseChannelId);
+  const isOpen = Boolean(deploymentVersionChannelId);
   const setIsOpen = removeDeploymentVersionChannelId;
 
-  const releaseChannelQ = api.deployment.releaseChannel.byId.useQuery(
-    releaseChannelId ?? "",
-    { enabled: isOpen },
-  );
-  const releaseChannel = releaseChannelQ.data;
+  const deploymentVersionChannelQ =
+    api.deployment.version.channel.byId.useQuery(
+      deploymentVersionChannelId ?? "",
+      { enabled: isOpen },
+    );
+  const deploymentVersionChannel = deploymentVersionChannelQ.data;
 
-  const loading = releaseChannelQ.isLoading;
+  const loading = deploymentVersionChannelQ.isLoading;
 
   const [activeTab, setActiveTab] = useState("overview");
 
@@ -46,12 +47,12 @@ export const DeploymentVersionChannelDrawer: React.FC = () => {
             <IconLoader2 className="h-8 w-8 animate-spin" />
           </div>
         )}
-        {!loading && releaseChannel != null && (
+        {!loading && deploymentVersionChannel != null && (
           <>
             <DrawerTitle className="flex items-center gap-2 border-b p-6">
-              {releaseChannel.name}
+              {deploymentVersionChannel.name}
               <DeploymentVersionChannelDropdown
-                releaseChannelId={releaseChannel.id}
+                deploymentVersionChannelId={deploymentVersionChannel.id}
               >
                 <Button variant="ghost" size="icon" className="h-6 w-6">
                   <IconDotsVertical className="h-4 w-4" />
@@ -77,10 +78,12 @@ export const DeploymentVersionChannelDrawer: React.FC = () => {
 
               <div className="w-full overflow-auto p-6">
                 {activeTab === "overview" && (
-                  <Overview releaseChannel={releaseChannel} />
+                  <Overview
+                    deploymentVersionChannel={deploymentVersionChannel}
+                  />
                 )}
                 {activeTab === "usage" && (
-                  <Usage usage={releaseChannel.usage} />
+                  <Usage usage={deploymentVersionChannel.usage} />
                 )}
               </div>
             </div>

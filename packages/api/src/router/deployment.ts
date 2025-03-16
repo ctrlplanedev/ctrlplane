@@ -4,7 +4,6 @@ import { z } from "zod";
 
 import {
   and,
-  count,
   eq,
   inArray,
   isNotNull,
@@ -26,130 +25,6 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { deploymentStatsRouter } from "./deployment-stats";
 import { deploymentVariableRouter } from "./deployment-variable";
 import { versionRouter } from "./deployment-version";
-
-const releaseChannelRouter = createTRPCRouter({
-  create: protectedProcedure
-    .input(SCHEMA.createDeploymentVersionChannel)
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser.perform(Permission.DeploymentVersionChannelCreate).on({
-          type: "deployment",
-          id: input.deploymentId,
-        }),
-    })
-    .mutation(({ ctx, input }) =>
-      ctx.db.insert(SCHEMA.deploymentVersionChannel).values(input).returning(),
-    ),
-
-  update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        data: SCHEMA.updateDeploymentVersionChannel,
-      }),
-    )
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentVersionChannelUpdate)
-          .on({ type: "deploymentVersionChannel", id: input.id }),
-    })
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .update(SCHEMA.deploymentVersionChannel)
-        .set(input.data)
-        .where(eq(SCHEMA.deploymentVersionChannel.id, input.id))
-        .returning(),
-    ),
-
-  delete: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentVersionChannelDelete)
-          .on({ type: "deploymentVersionChannel", id: input }),
-    })
-    .mutation(({ ctx, input }) =>
-      ctx.db
-        .delete(SCHEMA.deploymentVersionChannel)
-        .where(eq(SCHEMA.deploymentVersionChannel.id, input)),
-    ),
-
-  list: createTRPCRouter({
-    byDeploymentId: protectedProcedure
-      .input(z.string().uuid())
-      .meta({
-        authorizationCheck: ({ canUser, input }) =>
-          canUser
-            .perform(Permission.DeploymentVersionChannelList)
-            .on({ type: "deployment", id: input }),
-      })
-      .query(async ({ ctx, input }) => {
-        const channels = await ctx.db
-          .select()
-          .from(SCHEMA.deploymentVersionChannel)
-          .where(eq(SCHEMA.deploymentVersionChannel.deploymentId, input));
-
-        const promises = channels.map(async (channel) => {
-          const filter = channel.releaseFilter ?? undefined;
-          const total = await ctx.db
-            .select({ count: count() })
-            .from(SCHEMA.deploymentVersion)
-            .where(
-              and(
-                eq(SCHEMA.deploymentVersion.deploymentId, channel.deploymentId),
-                SCHEMA.deploymentVersionMatchesCondition(ctx.db, filter),
-              ),
-            )
-            .then(takeFirst)
-            .then((r) => r.count);
-          return { ...channel, total };
-        });
-        return Promise.all(promises);
-      }),
-  }),
-
-  byId: protectedProcedure
-    .input(z.string().uuid())
-    .meta({
-      authorizationCheck: ({ canUser, input }) =>
-        canUser
-          .perform(Permission.DeploymentVersionChannelGet)
-          .on({ type: "deploymentVersionChannel", id: input }),
-    })
-    .query(async ({ ctx, input }) => {
-      const rc = await ctx.db.query.deploymentVersionChannel.findFirst({
-        where: eq(SCHEMA.deploymentVersionChannel.id, input),
-        with: {
-          environmentPolicyReleaseChannels: {
-            with: { environmentPolicy: true },
-          },
-        },
-      });
-      if (rc == null) return null;
-      const policyIds = rc.environmentPolicyReleaseChannels.map(
-        (eprc) => eprc.environmentPolicy.id,
-      );
-
-      const envs = await ctx.db
-        .select()
-        .from(SCHEMA.environment)
-        .where(inArray(SCHEMA.environment.policyId, policyIds));
-
-      return {
-        ...rc,
-        usage: {
-          policies: rc.environmentPolicyReleaseChannels.map((eprc) => ({
-            ...eprc.environmentPolicy,
-            environments: envs.filter(
-              (e) => e.policyId === eprc.environmentPolicy.id,
-            ),
-          })),
-        },
-      };
-    }),
-});
 
 const hookRouter = createTRPCRouter({
   list: protectedProcedure
@@ -349,7 +224,6 @@ const hookRouter = createTRPCRouter({
 
 export const deploymentRouter = createTRPCRouter({
   variable: deploymentVariableRouter,
-  releaseChannel: releaseChannelRouter,
   hook: hookRouter,
   version: versionRouter,
   distributionById: protectedProcedure
@@ -553,7 +427,7 @@ export const deploymentRouter = createTRPCRouter({
                 ...r[0].deployment,
                 system: { ...r[0].system, workspace: r[0].workspace },
                 agent: r[0].job_agent,
-                releaseChannels: r
+                versionChannels: r
                   .map((r) => r.deployment_version_channel)
                   .filter(isPresent),
               },
@@ -591,7 +465,7 @@ export const deploymentRouter = createTRPCRouter({
             .map((t) => ({
               ...t[0]!.deployment,
               system: t[0]!.system,
-              releaseChannels: _.chain(t)
+              versionChannels: _.chain(t)
                 .map((a) => a.deployment_version_channel)
                 .filter(isPresent)
                 .uniqBy((a) => a.id)

@@ -41,9 +41,9 @@ type ReleaseConditionDialogProps = {
   deploymentId?: string;
   onChange: (
     condition: ReleaseCondition | null,
-    releaseChannelId?: string | null,
+    deploymentVersionChannelId?: string | null,
   ) => void;
-  releaseChannels?: SCHEMA.DeploymentVersionChannel[];
+  deploymentVersionChannels?: SCHEMA.DeploymentVersionChannel[];
   children: React.ReactNode;
 };
 
@@ -51,15 +51,15 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   condition,
   deploymentId,
   onChange,
-  releaseChannels = [],
+  deploymentVersionChannels = [],
   children,
 }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setFilter, releaseChannelId } = useReleaseFilter();
+  const { setFilter, deploymentVersionChannelId } = useReleaseFilter();
 
   const [localDeploymentVersionChannelId, setLocalDeploymentVersionChannelId] =
-    useState<string | null>(releaseChannelId);
+    useState<string | null>(deploymentVersionChannelId);
 
   const [localCondition, setLocalCondition] = useState<ReleaseCondition | null>(
     condition ?? defaultCondition,
@@ -82,17 +82,19 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
       >
         <Tabs
           defaultValue={
-            releaseChannelId != null ? "release-channels" : "new-filter"
+            deploymentVersionChannelId != null
+              ? "release-channels"
+              : "new-filter"
           }
           className="space-y-4"
           onValueChange={(value) => {
             if (value === "new-filter")
               setLocalCondition(localCondition ?? defaultCondition);
             if (value === "release-channels")
-              setLocalDeploymentVersionChannelId(releaseChannelId);
+              setLocalDeploymentVersionChannelId(deploymentVersionChannelId);
           }}
         >
-          {releaseChannels.length > 0 && (
+          {deploymentVersionChannels.length > 0 && (
             <TabsList>
               <TabsTrigger value="release-channels">
                 Release Channels
@@ -110,24 +112,24 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
             <Select
               value={localDeploymentVersionChannelId ?? undefined}
               onValueChange={(value) => {
-                const releaseChannel = releaseChannels.find(
+                const deploymentVersionChannel = deploymentVersionChannels.find(
                   (rc) => rc.id === value,
                 );
-                if (releaseChannel == null) return;
+                if (deploymentVersionChannel == null) return;
                 setLocalDeploymentVersionChannelId(value);
-                setLocalCondition(releaseChannel.releaseFilter);
+                setLocalCondition(deploymentVersionChannel.versionSelector);
               }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select release channel..." />
               </SelectTrigger>
               <SelectContent>
-                {releaseChannels.length === 0 && (
+                {deploymentVersionChannels.length === 0 && (
                   <SelectGroup>
                     <SelectLabel>No release channels found</SelectLabel>
                   </SelectGroup>
                 )}
-                {releaseChannels.map((rc) => (
+                {deploymentVersionChannels.map((rc) => (
                   <SelectItem key={rc.id} value={rc.id}>
                     {rc.name}
                   </SelectItem>
@@ -137,12 +139,13 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
             <DialogFooter>
               <Button
                 onClick={() => {
-                  const releaseChannel = releaseChannels.find(
-                    (rc) => rc.id === localDeploymentVersionChannelId,
-                  );
-                  if (releaseChannel == null) return;
+                  const deploymentVersionChannel =
+                    deploymentVersionChannels.find(
+                      (rc) => rc.id === localDeploymentVersionChannelId,
+                    );
+                  if (deploymentVersionChannel == null) return;
                   setFilter(
-                    releaseChannel.releaseFilter,
+                    deploymentVersionChannel.versionSelector,
                     localDeploymentVersionChannelId,
                   );
                   setOpen(false);

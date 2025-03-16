@@ -185,7 +185,9 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
           variant="link"
           size="sm"
           onClick={() =>
-            setDeploymentVersionChannelId(blockedEnv.releaseChannelId ?? null)
+            setDeploymentVersionChannelId(
+              blockedEnv.deploymentVersionChannelId ?? null,
+            )
           }
           className="px-0 text-muted-foreground/70"
         >

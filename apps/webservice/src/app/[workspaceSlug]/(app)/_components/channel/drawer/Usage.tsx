@@ -2,7 +2,7 @@ import type { RouterOutputs } from "@ctrlplane/api";
 import { IconFilter } from "@tabler/icons-react";
 
 type UsageInfo = NonNullable<
-  RouterOutputs["deployment"]["releaseChannel"]["byId"]
+  RouterOutputs["deployment"]["version"]["channel"]["byId"]
 >["usage"];
 
 export const Usage: React.FC<{ usage: UsageInfo }> = ({ usage }) => {

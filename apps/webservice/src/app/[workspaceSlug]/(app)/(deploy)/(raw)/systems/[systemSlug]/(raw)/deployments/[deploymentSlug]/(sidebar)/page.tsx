@@ -35,8 +35,8 @@ export default async function DeploymentPage(props: PageProps) {
   const { system } = deployment;
   const roots = await api.system.directory.listRoots(system.id);
   const { rootEnvironments: environments, directories } = roots;
-  const releaseChannel = searchParams["release-channel-id"]
-    ? await api.deployment.releaseChannel.byId(
+  const deploymentVersionChannel = searchParams["release-channel-id"]
+    ? await api.deployment.version.channel.byId(
         searchParams["release-channel-id"],
       )
     : null;
@@ -47,7 +47,7 @@ export default async function DeploymentPage(props: PageProps) {
       deployment={deployment}
       environments={environments}
       directories={directories}
-      releaseChannel={releaseChannel}
+      deploymentVersionChannel={deploymentVersionChannel}
     />
   );
 }

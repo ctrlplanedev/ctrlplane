@@ -14,14 +14,14 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
 type Deployment = SCHEMA.Deployment & {
-  releaseChannels: SCHEMA.DeploymentVersionChannel[];
+  versionChannels: SCHEMA.DeploymentVersionChannel[];
 };
 
-type Policy = { releaseChannels: SCHEMA.DeploymentVersionChannel[] };
+type Policy = { versionChannels: SCHEMA.DeploymentVersionChannel[] };
 
 type DeploymentSelectProps = {
   deployment: Deployment;
-  releaseChannels: Record<string, string | null>;
+  deploymentVersionChannels: Record<string, string | null>;
   updateDeploymentVersionChannel: (
     deploymentId: string,
     channelId: string | null,
@@ -30,13 +30,13 @@ type DeploymentSelectProps = {
 
 const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
   deployment,
-  releaseChannels,
+  deploymentVersionChannels,
   updateDeploymentVersionChannel,
 }) => {
   const [open, setOpen] = useState(false);
-  const releaseChannelId = releaseChannels[deployment.id];
-  const releaseChannel = deployment.releaseChannels.find(
-    (rc) => rc.id === releaseChannelId,
+  const deploymentVersionChannelId = deploymentVersionChannels[deployment.id];
+  const deploymentVersionChannel = deployment.versionChannels.find(
+    (rc) => rc.id === deploymentVersionChannelId,
   );
 
   const onChange = (channelId: string | null) =>
@@ -47,7 +47,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
     systemSlug?: string;
   }>();
 
-  const sortedDeploymentVersionChannels = deployment.releaseChannels.sort(
+  const sortedDeploymentVersionChannels = deployment.versionChannels.sort(
     (a, b) => a.name.localeCompare(b.name),
   );
 
@@ -64,7 +64,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
           >
             <IconSelector className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">
-              {releaseChannel?.name ?? `Select release channel...`}
+              {deploymentVersionChannel?.name ?? `Select release channel...`}
             </span>
           </Button>
         </PopoverTrigger>
@@ -102,7 +102,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
       <Button
         variant="outline"
         onClick={() => onChange(null)}
-        disabled={releaseChannelId == null}
+        disabled={deploymentVersionChannelId == null}
       >
         Clear
       </Button>
@@ -121,14 +121,14 @@ export const DeploymentVersionChannels: React.FC<
   DeploymentVersionChannelProps
 > = ({ environmentPolicy, deployments, isLoading, onUpdate }) => {
   const deploymentsWithDeploymentVersionChannels = deployments.filter(
-    (d) => d.releaseChannels.length > 0,
+    (d) => d.versionChannels.length > 0,
   );
 
-  const { releaseChannels } = environmentPolicy;
+  const { versionChannels } = environmentPolicy;
   const currDeploymentVersionChannels = Object.fromEntries(
     deploymentsWithDeploymentVersionChannels.map((d) => [
       d.id,
-      releaseChannels.find((rc) => rc.deploymentId === d.id)?.id ?? null,
+      versionChannels.find((rc) => rc.deploymentId === d.id)?.id ?? null,
     ]),
   );
 
@@ -137,7 +137,7 @@ export const DeploymentVersionChannels: React.FC<
     channelId: string | null,
   ) =>
     onUpdate({
-      releaseChannels: {
+      versionChannels: {
         ...currDeploymentVersionChannels,
         [deploymentId]: channelId,
       },
@@ -158,7 +158,7 @@ export const DeploymentVersionChannels: React.FC<
           <DeploymentSelect
             key={d.id}
             deployment={d}
-            releaseChannels={currDeploymentVersionChannels}
+            deploymentVersionChannels={currDeploymentVersionChannels}
             updateDeploymentVersionChannel={updateDeploymentVersionChannel}
           />
         ))}

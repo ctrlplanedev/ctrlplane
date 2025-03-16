@@ -133,10 +133,16 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
       return newState;
     });
 
-  const { isPassingDeploymentVersionChannel, loading: releaseChannelLoading } =
-    useDeploymentVersionChannel(deployment.id, environment.id, release.version);
+  const {
+    isPassingDeploymentVersionChannel,
+    loading: deploymentVersionChannelLoading,
+  } = useDeploymentVersionChannel(
+    deployment.id,
+    environment.id,
+    release.version,
+  );
 
-  const loading = approvalsQ.isLoading || releaseChannelLoading;
+  const loading = approvalsQ.isLoading || deploymentVersionChannelLoading;
 
   if (allTriggers.length === 0) return null;
 
