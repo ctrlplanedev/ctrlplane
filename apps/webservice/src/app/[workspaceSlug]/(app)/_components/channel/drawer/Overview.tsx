@@ -35,6 +35,7 @@ import {
 import { ReleaseConditionRender } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionRender";
 import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release/condition/useReleaseFilter";
 import { ReleaseBadgeList } from "~/app/[workspaceSlug]/(app)/_components/release/ReleaseBadgeList";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type OverviewProps = {
@@ -53,11 +54,15 @@ const getReleaseFilterUrl = (
 ) => {
   if (filter == null || systemSlug == null || deploymentSlug == null)
     return null;
-  const baseUrl = `/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}`;
+  const baseUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .baseUrl();
   const filterHash = LZString.compressToEncodedURIComponent(
     JSON.stringify(filter),
   );
-  return `${baseUrl}/releases?filter=${filterHash}&deployment-version-channel-id=${deploymentVersionChannelId}`;
+  return `${baseUrl}?filter=${filterHash}&deployment-version-channel-id=${deploymentVersionChannelId}`;
 };
 
 const schema = z.object({

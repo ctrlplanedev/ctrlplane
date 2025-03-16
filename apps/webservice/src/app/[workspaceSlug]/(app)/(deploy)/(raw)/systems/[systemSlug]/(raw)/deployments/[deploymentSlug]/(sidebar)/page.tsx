@@ -12,7 +12,7 @@ type PageProps = {
     systemSlug: string;
     deploymentSlug: string;
   }>;
-  searchParams: Promise<{ "release-channel-id"?: string }>;
+  searchParams: Promise<{ "deployment-version-channel-id"?: string }>;
 };
 
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
@@ -35,9 +35,9 @@ export default async function DeploymentPage(props: PageProps) {
   const { system } = deployment;
   const roots = await api.system.directory.listRoots(system.id);
   const { rootEnvironments: environments, directories } = roots;
-  const deploymentVersionChannel = searchParams["release-channel-id"]
+  const deploymentVersionChannel = searchParams["deployment-version-channel-id"]
     ? await api.deployment.version.channel.byId(
-        searchParams["release-channel-id"],
+        searchParams["deployment-version-channel-id"],
       )
     : null;
 

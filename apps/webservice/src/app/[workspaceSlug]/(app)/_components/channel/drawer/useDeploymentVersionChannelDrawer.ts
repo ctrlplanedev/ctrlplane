@@ -1,6 +1,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 
-export const param = "deployment-version-channel-id";
+const param = "deployment_version_channel_id";
 
 export const useDeploymentVersionChannelDrawer = () => {
   const router = useRouter();
