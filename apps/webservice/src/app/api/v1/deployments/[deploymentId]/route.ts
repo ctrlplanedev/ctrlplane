@@ -92,6 +92,16 @@ export const PATCH = request()
 
         const body = await req.json();
 
+        const result = SCHEMA.updateDeployment.safeParse(body);
+        if (!result.success)
+          return NextResponse.json(
+            {
+              error: "Invalid request data",
+              details: result.error.format(),
+            },
+            { status: httpStatus.BAD_REQUEST },
+          );
+
         const deployment = await db
           .select()
           .from(SCHEMA.deployment)
