@@ -141,14 +141,14 @@ const versionChannelRouter = createTRPCRouter({
       const rc = await ctx.db
         .select()
         .from(SCHEMA.deploymentVersionChannel)
-        .innerJoin(
+        .leftJoin(
           SCHEMA.environmentPolicyDeploymentVersionChannel,
           eq(
             SCHEMA.environmentPolicyDeploymentVersionChannel.channelId,
             SCHEMA.deploymentVersionChannel.id,
           ),
         )
-        .innerJoin(
+        .leftJoin(
           SCHEMA.environmentPolicy,
           eq(
             SCHEMA.environmentPolicyDeploymentVersionChannel.policyId,
@@ -164,7 +164,7 @@ const versionChannelRouter = createTRPCRouter({
             .groupBy((r) => r.deployment_version_channel.id)
             .map((r) => ({
               ...r[0]!.deployment_version_channel,
-              policies: r.map((r) => r.environment_policy),
+              policies: r.map((r) => r.environment_policy).filter(isPresent),
             }))
             .value();
 
