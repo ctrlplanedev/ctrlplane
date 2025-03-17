@@ -6,8 +6,16 @@ import { IconPlug } from "@tabler/icons-react";
 
 import { Button } from "@ctrlplane/ui/button";
 
+import { urls } from "~/app/urls";
+
 export const ResourceProvidersGettingStarted: React.FC = () => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const integrationsUrl = urls
+    .workspace(workspaceSlug)
+    .resources()
+    .providers()
+    .integrations()
+    .baseUrl();
   return (
     <div className="h-full w-full p-20">
       <div className="container m-auto max-w-xl space-y-6 p-20">
@@ -25,10 +33,7 @@ export const ResourceProvidersGettingStarted: React.FC = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/${workspaceSlug}/resources/providers/integrations`}
-            passHref
-          >
+          <Link href={integrationsUrl} passHref>
             <Button size="sm">View integrations</Button>
           </Link>
           <Button size="sm" variant="secondary">

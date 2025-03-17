@@ -11,6 +11,7 @@ import { cn } from "@ctrlplane/ui";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { EnvironmentDropdown } from "./EnvironmentDropdown";
 
@@ -79,10 +80,16 @@ export const EnvironmentRow: React.FC<{
     systemSlug: string;
   }>();
 
+  const environmentUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .environment(environment.id)
+    .baseUrl();
+
   return (
     <Link
       className="flex items-center border-b p-4 hover:bg-muted/50"
-      href={`/${workspaceSlug}/systems/${systemSlug}/environments/${environment.id}`}
+      href={environmentUrl}
     >
       <div className="flex-1">{environment.name}</div>
       <div className="flex-1">

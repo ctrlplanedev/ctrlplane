@@ -26,7 +26,7 @@ export default async function Layout(props: {
   const workspaceUrls = urls.workspace(workspaceSlug);
   const deploymentsUrl = workspaceUrls.deployments();
   const systemsUrl = workspaceUrls.systems();
-  const agentsUrl = workspaceUrls.agents();
+  const agentsUrl = workspaceUrls.agents().baseUrl();
   return (
     <div className="relative">
       <SidebarProvider sidebarNames={[Sidebars.Deployments]}>

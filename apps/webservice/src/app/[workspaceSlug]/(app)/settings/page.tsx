@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 
 export default async function SettingsPage(props: {
@@ -8,5 +9,6 @@ export default async function SettingsPage(props: {
   const { workspaceSlug } = await props.params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
-  return redirect(`/${workspaceSlug}/settings/workspace/overview`);
+  const overviewUrl = urls.workspace(workspaceSlug).settings().baseUrl();
+  return redirect(overviewUrl);
 }

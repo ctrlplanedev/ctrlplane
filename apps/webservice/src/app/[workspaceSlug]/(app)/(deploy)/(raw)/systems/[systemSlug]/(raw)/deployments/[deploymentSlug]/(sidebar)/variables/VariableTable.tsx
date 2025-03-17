@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableRow } from "@ctrlplane/ui/table";
 
 import type { VariableData } from "./variable-data";
 import { ResourceIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ResourceIcon";
+import { urls } from "~/app/urls";
 import { useMatchSorterWithSearch } from "~/utils/useMatchSorter";
 import { VariableDropdown } from "./VariableDropdown";
 import { VariableValueDropdown } from "./VariableValueDropdown";
@@ -58,6 +59,8 @@ export const VariableTable: React.FC<{
       newState[valueId] = !currentValueState;
       return newState;
     });
+
+  const workspaceUrls = urls.workspace(workspaceSlug);
 
   return (
     <>
@@ -227,10 +230,11 @@ export const VariableTable: React.FC<{
                                     <TableCell
                                       className="h-10 cursor-pointer py-0 pl-[56px]"
                                       colSpan={2}
-                                      // onClick={() => setResourceId(r.id)}
                                     >
                                       <Link
-                                        href={`/${workspaceSlug}/resources/${r.id}`}
+                                        href={workspaceUrls
+                                          .resource(r.id)
+                                          .baseUrl()}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex h-full items-center border-l border-neutral-800 pl-7"
@@ -262,7 +266,7 @@ export const VariableTable: React.FC<{
                                       <div className="flex h-full items-center border-l border-neutral-800 pl-7 text-muted-foreground hover:text-white">
                                         <Link
                                           className="flex h-full items-center gap-2 border-l border-neutral-800 pl-6"
-                                          href={`/${workspaceSlug}/resources?filter=${v.filterHash}`}
+                                          href={`${workspaceUrls.resources().baseUrl()}?filter=${v.filterHash}`}
                                           target="_blank"
                                         >
                                           <IconDotsVertical className="h-4 w-4" />

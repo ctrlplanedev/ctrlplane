@@ -7,20 +7,17 @@ import {
 
 import { Card } from "@ctrlplane/ui/card";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 
 export const metadata = { title: "Integrations - Settings" };
 
 const IntegrationCard: React.FC<{
-  integration: string;
-  workspaceSlug: string;
+  href: string;
   children: React.ReactNode;
-}> = ({ children, integration, workspaceSlug }) => (
+}> = ({ children, href }) => (
   <Card className="flex h-full cursor-pointer flex-col justify-between space-y-4 rounded-md text-center hover:bg-muted/20">
-    <Link
-      href={`/${workspaceSlug}/settings/workspace/integrations/${integration}`}
-      className="p-5"
-    >
+    <Link href={href} className="p-5">
       {children}
     </Link>
   </Card>
@@ -43,6 +40,11 @@ export default async function IntegrationsPage(props: {
   const currentAwsAccountId =
     await api.workspace.integrations.aws.currentAwsAccountId();
 
+  const integrationsUrls = urls
+    .workspace(workspaceSlug)
+    .settings()
+    .integrations();
+
   return (
     <div className="container mx-auto max-w-3xl space-y-8 overflow-auto pt-8">
       <div className="space-y-1">
@@ -53,7 +55,7 @@ export default async function IntegrationsPage(props: {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <IntegrationCard integration="github" workspaceSlug={workspaceSlug}>
+        <IntegrationCard href={integrationsUrls.github()}>
           <IntegrationContent>
             <IntegrationHeading>
               <SiGithub className="text-4xl" />
@@ -67,7 +69,7 @@ export default async function IntegrationsPage(props: {
         </IntegrationCard>
 
         {currentAwsAccountId != null && (
-          <IntegrationCard integration="aws" workspaceSlug={workspaceSlug}>
+          <IntegrationCard href={integrationsUrls.aws()}>
             <IntegrationContent>
               <IntegrationHeading>
                 <SiAmazon className="text-4xl text-orange-400" />
@@ -81,7 +83,7 @@ export default async function IntegrationsPage(props: {
           </IntegrationCard>
         )}
 
-        <IntegrationCard integration="google" workspaceSlug={workspaceSlug}>
+        <IntegrationCard href={integrationsUrls.google()}>
           <IntegrationContent>
             <IntegrationHeading>
               <SiGooglecloud className="text-4xl text-red-400" />

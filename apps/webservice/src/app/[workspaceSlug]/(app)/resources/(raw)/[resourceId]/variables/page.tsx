@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 import { CreateResourceVariableDialog } from "./CreateResourceVariableDialog";
 import { ResourceVariableDropdown } from "./ResourceVariableDropdown";
@@ -106,7 +107,11 @@ export default async function VariablesPage(props: {
                   <TableCell>{v.value.value}</TableCell>
                   <TableCell>
                     <Link
-                      href={`/${workspaceSlug}/systems/${v.deployment.system.slug}/deployments/${v.deployment.slug}/variables`}
+                      href={urls
+                        .workspace(workspaceSlug)
+                        .system(v.deployment.system.slug)
+                        .deployment(v.deployment.slug)
+                        .variables()}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline-offset-1 hover:underline"

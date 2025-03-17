@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 
 export default async function VariablesPage(props: {
@@ -21,6 +22,12 @@ export default async function VariablesPage(props: {
   const { workspaceSlug, systemSlug, environmentId } = await props.params;
 
   const variableSets = await api.variableSet.byEnvironmentId(environmentId);
+
+  const variablesUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .environment(environmentId)
+    .variables();
 
   return (
     <Table>
@@ -40,7 +47,7 @@ export default async function VariablesPage(props: {
                 <TableCell>{val.value}</TableCell>
                 <TableCell>
                   <Link
-                    href={`/${workspaceSlug}/systems/${systemSlug}/environments/${environmentId}/variables?variable_set_id=${v.variableSet.id}`}
+                    href={`${variablesUrl}?variable_set_id=${v.variableSet.id}`}
                     className="underline-offset-2 hover:underline"
                   >
                     {v.variableSet.name}
