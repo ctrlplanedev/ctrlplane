@@ -21,7 +21,7 @@ export const GithubRedirectButton: React.FC<{
       className={className}
       onClick={() =>
         router.push(
-          `${urls.workspace(workspace.slug).settings()}/workspace/integrations/github`,
+          `${urls.workspace(workspace.slug).settings().integrations()}/github`,
         )
       }
     >

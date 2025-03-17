@@ -45,11 +45,7 @@ export const WorkspaceUpdateSection: React.FC<WorkspaceUpdateSectionProps> = ({
     update
       .mutateAsync({ id: workspace.id, data })
       .then(() => form.reset(data))
-      .then(() =>
-        router.push(
-          `${urls.workspace(data.slug).settings()}/workspace/general`,
-        ),
-      )
+      .then(() => router.push(urls.workspace(data.slug).settings().general()))
       .then(() => router.refresh()),
   );
 
