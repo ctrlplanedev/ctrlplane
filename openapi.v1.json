@@ -2364,7 +2364,7 @@
         }
       }
     },
-    "/v1/workspaces/:workspaceId/deployments": {
+    "/v1/workspaces/{workspaceId}/deployments": {
       "parameters": [
         {
           "name": "workspaceId",
@@ -2401,7 +2401,7 @@
         }
       }
     },
-    "/v1/workspaces/:workspaceId/environments": {
+    "/v1/workspaces/{workspaceId}/environments": {
       "parameters": [
         {
           "name": "workspaceId",
@@ -2808,7 +2808,7 @@
         }
       }
     },
-    "/v1/workspaces/:workspaceId/resources": {
+    "/v1/workspaces/{workspaceId}/resources": {
       "parameters": [
         {
           "name": "workspaceId",
@@ -2845,7 +2845,7 @@
         }
       }
     },
-    "/v1/workspaces/:workspaceId/systems": {
+    "/v1/workspaces/{workspaceId}/systems": {
       "parameters": [
         {
           "name": "workspaceId",
