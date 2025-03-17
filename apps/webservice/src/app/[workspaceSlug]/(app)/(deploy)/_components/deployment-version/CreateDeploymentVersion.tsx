@@ -48,7 +48,8 @@ import {
   isEmptyCondition,
 } from "@ctrlplane/validators/releases";
 
-import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionDialog";
+import { DeploymentVersionConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionDialog";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 const versionDependency = z.object({
@@ -56,7 +57,7 @@ const versionDependency = z.object({
   versionSelector: deploymentVersionCondition.nullable(),
 });
 
-const releaseForm = z.object({
+const versionForm = z.object({
   systemId: z.string().uuid(),
   deploymentId: z.string().uuid(),
   tag: z.string().min(1).max(255),
@@ -64,10 +65,10 @@ const releaseForm = z.object({
   versionDependencies: z.array(versionDependency).refine((deps) => {
     const deploymentIds = deps.map((d) => d.deploymentId);
     return new Set(deploymentIds).size === deploymentIds.length;
-  }, "Cannot reuse a deployment in multiple release dependencies"),
+  }, "Cannot reuse a deployment in multiple version dependencies"),
 });
 
-export const CreateReleaseDialog: React.FC<{
+export const CreateDeploymentVersionDialog: React.FC<{
   deploymentId?: string;
   systemId?: string;
   children?: React.ReactNode;
@@ -76,7 +77,7 @@ export const CreateReleaseDialog: React.FC<{
 }> = ({ children, ...props }) => {
   const create = api.deployment.version.create.useMutation();
   const form = useForm({
-    schema: releaseForm,
+    schema: versionForm,
     defaultValues: {
       deploymentId: props.deploymentId ?? "",
       systemId: props.systemId ?? "",
@@ -124,29 +125,33 @@ export const CreateReleaseDialog: React.FC<{
           ? null
           : dep.versionSelector,
     }));
-    const release = await create.mutateAsync({
+    const version = await create.mutateAsync({
       ...data,
       versionDependencies,
       name: data.tag.trim(),
     });
     await utils.deployment.version.list.invalidate({
-      deploymentId: release.deploymentId,
+      deploymentId: version.deploymentId,
     });
 
     const deployment = deployments.data?.find(
       (d) => d.id === data.deploymentId,
     );
     const system = systems.data?.items.find((s) => s.id === data.systemId);
-    router.push(
-      `/${workspaceSlug}/systems/${system?.slug}/deployments/${deployment?.slug}/releases/${release.id}`,
-    );
+    const url = urls
+      .workspace(workspaceSlug)
+      .system(system?.slug ?? "")
+      .deployment(deployment?.slug ?? "")
+      .release(version.id)
+      .baseUrl();
+    router.push(url);
     setOpen(false);
 
-    const numOfReleaseJobTriggers = release.releaseJobTriggers.length;
+    const numOfReleaseJobTriggers = version.releaseJobTriggers.length;
     toast(
       numOfReleaseJobTriggers === 0
-        ? `No resources to deploy release too.`
-        : `Dispatching ${release.releaseJobTriggers.length} job configuration${release.releaseJobTriggers.length > 1 ? "s" : ""}.`,
+        ? `No resources to deploy version to.`
+        : `Dispatching ${version.releaseJobTriggers.length} job configuration${version.releaseJobTriggers.length > 1 ? "s" : ""}.`,
       { dismissible: true, duration: 2_000 },
     );
 
@@ -168,11 +173,11 @@ export const CreateReleaseDialog: React.FC<{
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-3">
             <DialogHeader>
-              <DialogTitle>New Release</DialogTitle>
+              <DialogTitle>New Version</DialogTitle>
               <DialogDescription>
-                A release is a fixed snapshot of a deployment, therefore, all
+                A version is a fixed snapshot of a deployment, therefore, all
                 necessary assets must be fully prepared before creating a new
-                release.
+                version.
               </DialogDescription>
             </DialogHeader>
 
@@ -235,7 +240,7 @@ export const CreateReleaseDialog: React.FC<{
               name="tag"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Version</FormLabel>
+                  <FormLabel>Tag</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="v1.0.0, 20250101.1, ..."
@@ -259,11 +264,11 @@ export const CreateReleaseDialog: React.FC<{
             {advancedOptionsOpen && (
               <>
                 <div className="flex flex-col space-y-3">
-                  <Label>Release Dependencies</Label>
+                  <Label>Version Dependencies</Label>
                   <span className="text-sm text-muted-foreground">
                     Dependencies must be fulfilled for a resource before this
-                    Release can be applied to that resource. Read more about
-                    release dependencies here.
+                    version can be applied to that resource. Read more about
+                    version dependencies here.
                   </span>
 
                   {fields.map((_, index) => (
@@ -307,7 +312,7 @@ export const CreateReleaseDialog: React.FC<{
                         render={({ field: { value, onChange } }) => (
                           <FormItem>
                             <FormControl>
-                              <ReleaseConditionDialog
+                              <DeploymentVersionConditionDialog
                                 condition={value ?? defaultCondition}
                                 onChange={onChange}
                               >
@@ -319,7 +324,7 @@ export const CreateReleaseDialog: React.FC<{
                                     <IconFilterFilled className="h-4 w-4" />
                                   )}
                                 </Button>
-                              </ReleaseConditionDialog>
+                              </DeploymentVersionConditionDialog>
                             </FormControl>
                           </FormItem>
                         )}

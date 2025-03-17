@@ -22,14 +22,14 @@ import {
 } from "@ctrlplane/ui/tooltip";
 import { activeStatusType } from "@ctrlplane/validators/jobs";
 
+import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { DeploymentBarChart } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/charts/DeploymentBarChart";
-import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
 import {
   getStatusColor,
   statusColor,
 } from "~/app/[workspaceSlug]/(app)/(deploy)/_utils/status-color";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
-import { urls } from "../../../../../../urls";
 import { StatusIcon } from "./StatusIcon";
 
 const Message: React.FC<{
@@ -158,10 +158,12 @@ export const Release: React.FC<{
         </HoverCardContent>
       </HoverCard>
 
-      <ReleaseDropdownMenu
+      <DeploymentVersionDropdownMenu
         deploymentVersion={{ id: versionId, name }}
         environment={environment}
-        isReleaseActive={statuses.some((s) => activeStatusType.includes(s))}
+        isVersionBeingDeployed={statuses.some((s) =>
+          activeStatusType.includes(s),
+        )}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 
-import { CreateReleaseDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/CreateRelease";
+import { CreateDeploymentVersionDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/CreateDeploymentVersion";
 import { CreateDeploymentVersionChannelDialog } from "../channels/CreateDeploymentVersionChannelDialog";
 import { CreateVariableDialog } from "../variables/CreateVariableDialog";
 
@@ -35,10 +35,13 @@ export const DeploymentCTA: React.FC<{
     );
 
   return (
-    <CreateReleaseDialog deploymentId={deploymentId} systemId={systemId}>
+    <CreateDeploymentVersionDialog
+      deploymentId={deploymentId}
+      systemId={systemId}
+    >
       <Button variant="outline" className="flex items-center gap-2" size="sm">
-        New Release
+        New Version
       </Button>
-    </CreateReleaseDialog>
+    </CreateDeploymentVersionDialog>
   );
 };

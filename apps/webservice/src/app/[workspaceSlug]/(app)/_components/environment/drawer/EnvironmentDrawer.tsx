@@ -183,7 +183,7 @@ export const EnvironmentDrawer: React.FC = () => {
                       setTab(EnvironmentDrawerTab.DeploymentVersionChannels)
                     }
                     icon={<IconDeviceRemote className="h-4 w-4" />}
-                    label="Release Channels"
+                    label="Version Channels"
                   />
                   <TabButton
                     active={tab === EnvironmentDrawerTab.Rollout}

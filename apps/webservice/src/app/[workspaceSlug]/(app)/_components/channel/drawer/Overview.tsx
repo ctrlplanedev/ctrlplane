@@ -29,12 +29,12 @@ import {
   deploymentVersionCondition,
   isComparisonCondition,
   isEmptyCondition,
-  isValidReleaseCondition,
+  isValidDeploymentVersionCondition,
 } from "@ctrlplane/validators/releases";
 
-import { ReleaseConditionRender } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionRender";
-import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release/condition/useReleaseFilter";
-import { ReleaseBadgeList } from "~/app/[workspaceSlug]/(app)/_components/release/ReleaseBadgeList";
+import { DeploymentVersionConditionRender } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionRender";
+import { useDeploymentVersionSelector } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/useDeploymentVersionSelector";
+import { DeploymentVersionBadgeList } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/DeploymentVersionBadgeList";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
@@ -42,27 +42,27 @@ type OverviewProps = {
   deploymentVersionChannel: SCHEMA.DeploymentVersionChannel;
 };
 
-const getFinalFilter = (filter: DeploymentVersionCondition | null) =>
+const getFinalSelector = (filter: DeploymentVersionCondition | null) =>
   filter && !isEmptyCondition(filter) ? filter : undefined;
 
-const getReleaseFilterUrl = (
+const getVersionSelectorUrl = (
   workspaceSlug: string,
   deploymentVersionChannelId: string,
   systemSlug?: string,
   deploymentSlug?: string,
-  filter?: DeploymentVersionCondition,
+  selector?: DeploymentVersionCondition,
 ) => {
-  if (filter == null || systemSlug == null || deploymentSlug == null)
+  if (selector == null || systemSlug == null || deploymentSlug == null)
     return null;
   const baseUrl = urls
     .workspace(workspaceSlug)
     .system(systemSlug)
     .deployment(deploymentSlug)
     .baseUrl();
-  const filterHash = LZString.compressToEncodedURIComponent(
-    JSON.stringify(filter),
+  const selectorHash = LZString.compressToEncodedURIComponent(
+    JSON.stringify(selector),
   );
-  return `${baseUrl}?filter=${filterHash}&deployment-version-channel-id=${deploymentVersionChannelId}`;
+  return `${baseUrl}?selector=${selectorHash}&deployment-version-channel-id=${deploymentVersionChannelId}`;
 };
 
 const schema = z.object({
@@ -70,21 +70,21 @@ const schema = z.object({
   description: z.string().max(1000).optional(),
   versionSelector: deploymentVersionCondition
     .nullable()
-    .refine((r) => r == null || isValidReleaseCondition(r)),
+    .refine((r) => r == null || isValidDeploymentVersionCondition(r)),
 });
 
-const getFilter = (
-  releaseFilter: DeploymentVersionCondition | null,
+const getVersionSelector = (
+  versionSelector: DeploymentVersionCondition | null,
 ): DeploymentVersionCondition | null => {
-  if (releaseFilter == null) return null;
-  if (!isComparisonCondition(releaseFilter))
+  if (versionSelector == null) return null;
+  if (!isComparisonCondition(versionSelector))
     return {
       type: FilterType.Comparison,
       operator: ComparisonOperator.And,
       not: false,
-      conditions: [releaseFilter],
+      conditions: [versionSelector],
     };
-  return releaseFilter;
+  return versionSelector;
 };
 
 export const Overview: React.FC<OverviewProps> = ({
@@ -95,11 +95,14 @@ export const Overview: React.FC<OverviewProps> = ({
     systemSlug?: string;
     deploymentSlug?: string;
   }>();
-  const { filter: paramFilter, setFilter } = useReleaseFilter();
+  const { selector: paramSelector, setSelector } =
+    useDeploymentVersionSelector();
 
   const defaultValues = {
     ...deploymentVersionChannel,
-    versionSelector: getFilter(deploymentVersionChannel.versionSelector),
+    versionSelector: getVersionSelector(
+      deploymentVersionChannel.versionSelector,
+    ),
     description: deploymentVersionChannel.description ?? undefined,
   };
   const form = useForm({ schema, defaultValues });
@@ -109,7 +112,7 @@ export const Overview: React.FC<OverviewProps> = ({
   const updateDeploymentVersionChannel =
     api.deployment.version.channel.update.useMutation();
   const onSubmit = form.handleSubmit((data) => {
-    const versionSelector = getFinalFilter(data.versionSelector);
+    const versionSelector = getFinalSelector(data.versionSelector);
     updateDeploymentVersionChannel
       .mutateAsync({
         id: deploymentVersionChannel.id,
@@ -121,25 +124,25 @@ export const Overview: React.FC<OverviewProps> = ({
           deploymentVersionChannel.id,
         ),
       )
-      .then(() => paramFilter != null && setFilter(versionSelector ?? null))
+      .then(() => paramSelector != null && setSelector(versionSelector ?? null))
       .then(() => router.refresh());
   });
 
   const { deploymentId } = deploymentVersionChannel;
-  const filter = getFinalFilter(form.watch("versionSelector"));
+  const selector = getFinalSelector(form.watch("versionSelector"));
 
-  const releasesQ = api.deployment.version.list.useQuery({
+  const versionsQ = api.deployment.version.list.useQuery({
     deploymentId,
-    filter,
+    selector,
     limit: 5,
   });
-  const releases = releasesQ.data;
-  const releaseFilterUrl = getReleaseFilterUrl(
+  const versions = versionsQ.data;
+  const versionSelectorUrl = getVersionSelectorUrl(
     workspaceSlug,
     deploymentVersionChannel.id,
     systemSlug,
     deploymentSlug,
-    filter,
+    selector,
   );
 
   return (
@@ -180,18 +183,20 @@ export const Overview: React.FC<OverviewProps> = ({
             <FormItem>
               <FormLabel className="flex items-center gap-1">
                 Release Filter
-                {releases != null && <span>({releases.total})</span>}
-                {releasesQ.isLoading && (
+                {versions != null && <span>({versions.total})</span>}
+                {versionsQ.isLoading && (
                   <IconLoader2 className="h-3 w-3 animate-spin" />
                 )}
               </FormLabel>
               <FormControl>
-                <ReleaseConditionRender
+                <DeploymentVersionConditionRender
                   condition={value ?? defaultCondition}
                   onChange={onChange}
                 />
               </FormControl>
-              {releases != null && <ReleaseBadgeList releases={releases} />}
+              {versions != null && (
+                <DeploymentVersionBadgeList versions={versions} />
+              )}
             </FormItem>
           )}
         />
@@ -206,9 +211,9 @@ export const Overview: React.FC<OverviewProps> = ({
           >
             Save
           </Button>
-          {releaseFilterUrl != null && (
+          {versionSelectorUrl != null && (
             <Link
-              href={releaseFilterUrl}
+              href={versionSelectorUrl}
               target="_blank"
               className={cn(
                 buttonVariants({ variant: "outline" }),

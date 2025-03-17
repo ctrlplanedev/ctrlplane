@@ -23,6 +23,7 @@ import {
 import { JobFilterType, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
+import { urls } from "../../../../../urls";
 import { JobTableStatusIcon } from "../../job/JobTableStatusIcon";
 import { JobLinksCell } from "./JobLinksCell";
 
@@ -32,7 +33,7 @@ type ReleaseJobTrigger = SCHEMA.ReleaseJobTrigger & {
 
 type StatusCellProps = {
   releaseJobTrigger?: ReleaseJobTrigger;
-  releaseId: string;
+  versionId: string;
   environmentId: string;
 };
 
@@ -70,7 +71,7 @@ const CreatedCell: React.FC<CreatedCellProps> = ({ releaseJobTrigger }) => (
 
 type DropdownCellProps = {
   releaseJobTrigger?: ReleaseJobTrigger;
-  release: SCHEMA.DeploymentVersion;
+  version: SCHEMA.DeploymentVersion;
   environmentId: string;
   resource: SCHEMA.Resource;
   deployment: SCHEMA.Deployment;
@@ -84,7 +85,7 @@ const DropdownCell: React.FC<DropdownCellProps> = () => (
 
 type ReleaseJobTriggerRowProps = {
   releaseJobTrigger?: ReleaseJobTrigger;
-  release: SCHEMA.DeploymentVersion;
+  version: SCHEMA.DeploymentVersion;
   environment: SCHEMA.Environment & { system: SCHEMA.System };
   deployment: SCHEMA.Deployment;
   resource: SCHEMA.Resource;
@@ -97,7 +98,7 @@ type ReleaseJobTriggerParentRowProps = ReleaseJobTriggerRowProps & {
 
 const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
   releaseJobTrigger,
-  release,
+  version,
   environment,
   deployment,
   resource,
@@ -106,15 +107,17 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
 }) => {
   const router = useRouter();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(environment.system.slug)
+    .deployment(deployment.slug)
+    .release(version.id)
+    .baseUrl();
 
   return (
     <TableRow
-      key={releaseJobTrigger?.id ?? release.id}
-      onClick={() =>
-        router.push(
-          `/${workspaceSlug}/systems/${environment.system.slug}/deployments/${deployment.slug}/releases/${release.id}`,
-        )
-      }
+      key={releaseJobTrigger?.id ?? version.id}
+      onClick={() => router.push(versionUrl)}
       className="cursor-pointer"
     >
       <TableCell>
@@ -134,20 +137,20 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
                     )}
                   />
                 </Button>
-                <span className="truncate">{release.name}</span>
+                <span className="truncate">{version.name}</span>
               </div>
             </CollapsibleTrigger>
           </div>
         )}
         {!isExpandable && (
           <div className="flex">
-            <span className="truncate pl-7">{release.name}</span>
+            <span className="truncate pl-7">{version.name}</span>
           </div>
         )}
       </TableCell>
       <StatusCell
         releaseJobTrigger={releaseJobTrigger}
-        releaseId={release.id}
+        versionId={version.id}
         environmentId={environment.id}
       />
       <CreatedCell releaseJobTrigger={releaseJobTrigger} />
@@ -158,7 +161,7 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
       />
       <DropdownCell
         releaseJobTrigger={releaseJobTrigger}
-        release={release}
+        version={version}
         environmentId={environment.id}
         deployment={deployment}
         resource={resource}
@@ -169,28 +172,30 @@ const ReleaseJobTriggerParentRow: React.FC<ReleaseJobTriggerParentRowProps> = ({
 
 const ReleaseJobTriggerChildRow: React.FC<ReleaseJobTriggerRowProps> = ({
   releaseJobTrigger,
-  release,
+  version,
   environment,
   deployment,
   resource,
 }) => {
   const router = useRouter();
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(environment.system.slug)
+    .deployment(deployment.slug)
+    .release(version.id)
+    .baseUrl();
 
   return (
     <TableRow
-      key={releaseJobTrigger?.id ?? release.id}
-      onClick={() =>
-        router.push(
-          `/${workspaceSlug}/systems/${environment.system.slug}/deployments/${deployment.slug}/releases/${release.id}`,
-        )
-      }
+      key={releaseJobTrigger?.id ?? version.id}
+      onClick={() => router.push(versionUrl)}
       className="cursor-pointer"
     >
       <TableCell />
       <StatusCell
         releaseJobTrigger={releaseJobTrigger}
-        releaseId={release.id}
+        versionId={version.id}
         environmentId={environment.id}
       />
       <CreatedCell releaseJobTrigger={releaseJobTrigger} />
@@ -201,7 +206,7 @@ const ReleaseJobTriggerChildRow: React.FC<ReleaseJobTriggerRowProps> = ({
       />
       <DropdownCell
         releaseJobTrigger={releaseJobTrigger}
-        release={release}
+        version={version}
         environmentId={environment.id}
         deployment={deployment}
         resource={resource}
@@ -210,17 +215,17 @@ const ReleaseJobTriggerChildRow: React.FC<ReleaseJobTriggerRowProps> = ({
   );
 };
 
-type Release = RouterOutputs["deployment"]["version"]["list"]["items"][number];
+type Version = RouterOutputs["deployment"]["version"]["list"]["items"][number];
 
-type ReleaseRowsProps = {
-  release: Release;
+type VersionRowsProps = {
+  version: Version;
   environment: SCHEMA.Environment & { system: SCHEMA.System };
   deployment: SCHEMA.Deployment;
   resource: SCHEMA.Resource;
 };
 
-export const ReleaseRows: React.FC<ReleaseRowsProps> = ({
-  release,
+export const VersionRows: React.FC<VersionRowsProps> = ({
+  version,
   environment,
   deployment,
   resource,
@@ -233,7 +238,7 @@ export const ReleaseRows: React.FC<ReleaseRowsProps> = ({
   const isSameRelease: JobCondition = {
     type: JobFilterType.Release,
     operator: ColumnOperator.Equals,
-    value: release.id,
+    value: version.id,
   };
 
   const isSameResource: JobCondition = {
@@ -267,14 +272,14 @@ export const ReleaseRows: React.FC<ReleaseRowsProps> = ({
     <Collapsible asChild open={open} onOpenChange={setOpen}>
       <>
         <ReleaseJobTriggerParentRow
-          release={release}
+          version={version}
           environment={environment}
           deployment={deployment}
           resource={resource}
           releaseJobTrigger={releaseJobTriggers?.[0]}
           isExpandable={hasOtherReleaseJobTriggers}
           isExpanded={open}
-          key={releaseJobTriggers?.[0]?.id ?? `${release.id}-parent`}
+          key={releaseJobTriggers?.[0]?.id ?? `${version.id}-parent`}
         />
         <CollapsibleContent asChild>
           <>
@@ -282,7 +287,7 @@ export const ReleaseRows: React.FC<ReleaseRowsProps> = ({
               if (idx === 0) return null;
               return (
                 <ReleaseJobTriggerChildRow
-                  release={release}
+                  version={version}
                   releaseJobTrigger={trigger}
                   environment={environment}
                   deployment={deployment}

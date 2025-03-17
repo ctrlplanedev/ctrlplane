@@ -42,7 +42,7 @@ const triggerNode = {
   id: "trigger",
   type: "trigger",
   position: { x: 0, y: 0 },
-  data: { label: "On new release" },
+  data: { label: "On new version" },
 };
 
 const markerEnd = {

@@ -11,7 +11,6 @@ import { FlowDiagram } from "./_components/flow-diagram/FlowDiagram";
 
 type PageProps = {
   params: Promise<{
-    release: { id: string; version: string };
     workspaceSlug: string;
     systemSlug: string;
     deploymentSlug: string;

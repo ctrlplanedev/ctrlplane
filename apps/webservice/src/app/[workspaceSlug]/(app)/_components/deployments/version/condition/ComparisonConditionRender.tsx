@@ -38,11 +38,11 @@ import {
   isComparisonCondition,
 } from "@ctrlplane/validators/releases";
 
-import type { ReleaseConditionRenderProps } from "./release-condition-props";
-import { ReleaseConditionRender } from "./ReleaseConditionRender";
+import type { DeploymentVersionConditionRenderProps } from "./deployment-version-condition-props";
+import { DeploymentVersionConditionRender } from "./DeploymentVersionConditionRender";
 
 export const ComparisonConditionRender: React.FC<
-  ReleaseConditionRenderProps<ComparisonCondition>
+  DeploymentVersionConditionRenderProps<ComparisonCondition>
 > = ({ condition, onChange, depth = 0, className }) => {
   const setOperator = (
     operator: DeploymentVersionOperator.And | DeploymentVersionOperator.Or,
@@ -181,7 +181,7 @@ export const ComparisonConditionRender: React.FC<
                   </SelectContent>
                 </Select>
               )}
-              <ReleaseConditionRender
+              <DeploymentVersionConditionRender
                 key={index}
                 condition={subCond}
                 onChange={(c) => updateCondition(index, c)}
@@ -302,7 +302,7 @@ export const ComparisonConditionRender: React.FC<
                   })
                 }
               >
-                Version
+                Tag
               </DropdownMenuItem>
               {depth < 2 && (
                 <DropdownMenuItem

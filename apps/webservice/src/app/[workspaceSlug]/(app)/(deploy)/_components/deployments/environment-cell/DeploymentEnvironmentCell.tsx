@@ -13,8 +13,8 @@ import { useInView } from "react-intersection-observer";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
-import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ApprovalDialog";
-import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
+import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
+import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { api } from "~/trpc/react";
 import { Release } from "./ReleaseInfo";
 
@@ -144,10 +144,10 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
             </div>
           </div>
 
-          <ReleaseDropdownMenu
+          <DeploymentVersionDropdownMenu
             deploymentVersion={deploymentVersion}
             environment={environment}
-            isReleaseActive={false}
+            isVersionBeingDeployed={false}
           />
         </div>
       </ApprovalDialog>
@@ -179,10 +179,10 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           </div>
         </div>
 
-        <ReleaseDropdownMenu
+        <DeploymentVersionDropdownMenu
           deploymentVersion={deploymentVersion}
           environment={environment}
-          isReleaseActive={false}
+          isVersionBeingDeployed={false}
         />
       </Button>
     </div>

@@ -94,11 +94,13 @@ export const isCreatedAtCondition = (
 ): condition is CreatedAtCondition =>
   condition.type === DeploymentVersionConditionType.CreatedAt;
 
-export const isValidReleaseCondition = (
+export const isValidDeploymentVersionCondition = (
   condition: DeploymentVersionCondition,
 ): boolean => {
   if (isComparisonCondition(condition))
-    return condition.conditions.every((c) => isValidReleaseCondition(c));
+    return condition.conditions.every((c) =>
+      isValidDeploymentVersionCondition(c),
+    );
   if (isVersionCondition(condition)) return condition.value.length > 0;
   if (isCreatedAtCondition(condition)) return true;
   if (isMetadataCondition(condition)) {

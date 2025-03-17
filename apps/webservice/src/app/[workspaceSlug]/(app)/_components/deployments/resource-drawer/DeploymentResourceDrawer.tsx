@@ -17,7 +17,7 @@ import {
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
-import { ReleaseTable } from "./ReleaseTable";
+import { DeploymentVersionTable } from "./DeploymentVersionTable";
 import { useDeploymentEnvResourceDrawer } from "./useDeploymentResourceDrawer";
 
 export const DeploymentResourceDrawer: React.FC = () => {
@@ -73,23 +73,23 @@ export const DeploymentResourceDrawer: React.FC = () => {
     ],
   };
 
-  const { data: releaseWithTriggersData, ...releaseWithTriggersQ } =
+  const { data: versionsWithTriggersData, ...versionsWithTriggersQ } =
     api.deployment.version.list.useQuery(
       {
         deploymentId: deploymentId ?? "",
-        filter: versionSelector ?? undefined,
+        selector: versionSelector ?? undefined,
         jobFilter,
         limit: 100,
       },
       { enabled: deploymentId != null },
     );
-  const releaseWithTriggers = releaseWithTriggersData?.items ?? [];
+  const versionsWithTriggers = versionsWithTriggersData?.items ?? [];
 
   const loading =
     deploymentQ.isLoading ||
     resourceQ.isLoading ||
     environmentQ.isLoading ||
-    releaseWithTriggersQ.isLoading;
+    versionsWithTriggersQ.isLoading;
 
   return (
     <Drawer open={isOpen} onOpenChange={setIsOpen}>
@@ -127,8 +127,8 @@ export const DeploymentResourceDrawer: React.FC = () => {
               </DrawerTitle>
 
               <div className="flex flex-col gap-4 p-6">
-                <ReleaseTable
-                  releasesWithTriggers={releaseWithTriggers}
+                <DeploymentVersionTable
+                  versionsWithTriggers={versionsWithTriggers}
                   environment={environment}
                   deployment={deployment}
                   resource={resource}

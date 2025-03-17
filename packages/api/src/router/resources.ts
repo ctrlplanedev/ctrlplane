@@ -87,7 +87,7 @@ const environmentHasResource = (
     })
     .then((matchedResource) => matchedResource != null);
 
-const latestActiveReleaseByResourceAndEnvironmentId = (
+const latestDeployedVersionByResourceAndEnvironmentId = (
   db: Tx,
   resourceId: string,
   environmentId: string,
@@ -160,7 +160,7 @@ const latestActiveReleaseByResourceAndEnvironmentId = (
         releaseJobTrigger: {
           ...row.release_job_trigger,
           job: row.job,
-          release: row.deployment_version,
+          deploymentVersion: row.deployment_version,
           resourceId: row.resource.id,
         },
       })),
@@ -211,7 +211,7 @@ const getNodeDataForResource = async (
                     ...e,
                     resource,
                     latestActiveReleases:
-                      await latestActiveReleaseByResourceAndEnvironmentId(
+                      await latestDeployedVersionByResourceAndEnvironmentId(
                         db,
                         resource.id,
                         e.id,
@@ -391,7 +391,7 @@ export const resourceRouter = createTRPCRouter({
         }),
     ),
 
-  activeReleases: createTRPCRouter({
+  latestDeployedVersions: createTRPCRouter({
     byResourceAndEnvironmentId: protectedProcedure
       .input(
         z.object({
@@ -406,7 +406,7 @@ export const resourceRouter = createTRPCRouter({
             .on({ type: "resource", id: input.resourceId }),
       })
       .query(({ ctx, input }) =>
-        latestActiveReleaseByResourceAndEnvironmentId(
+        latestDeployedVersionByResourceAndEnvironmentId(
           ctx.db,
           input.resourceId,
           input.environmentId,

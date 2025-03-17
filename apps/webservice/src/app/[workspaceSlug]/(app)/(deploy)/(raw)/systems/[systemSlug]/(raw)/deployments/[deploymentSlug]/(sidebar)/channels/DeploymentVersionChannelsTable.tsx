@@ -13,7 +13,7 @@ import {
 } from "@ctrlplane/ui/table";
 
 import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
-import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionBadge";
+import { DeploymentVersionConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionBadge";
 
 type DeploymentVersionChannel = SCHEMA.DeploymentVersionChannel & {
   total: number;
@@ -33,8 +33,8 @@ export const DeploymentVersionChannelsTable: React.FC<
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Description</TableHead>
-          <TableHead>Release Filter</TableHead>
-          <TableHead>Total Releases</TableHead>
+          <TableHead>Version Selector</TableHead>
+          <TableHead>Total Versions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -50,7 +50,7 @@ export const DeploymentVersionChannelsTable: React.FC<
             <TableCell>{deploymentVersionChannel.description}</TableCell>
             <TableCell>
               {deploymentVersionChannel.versionSelector != null && (
-                <ReleaseConditionBadge
+                <DeploymentVersionConditionBadge
                   condition={deploymentVersionChannel.versionSelector}
                 />
               )}

@@ -62,35 +62,35 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
     value: JobStatus.InProgress,
   };
 
-  const isSameRelease: JobReleaseCondition = {
+  const isSameVersion: JobReleaseCondition = {
     type: JobFilterType.Release,
     operator: ColumnOperator.Equals,
     value: versionId,
   };
 
-  const isDifferentRelease: JobCondition = {
+  const isDifferentVersion: JobCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
     not: true,
-    conditions: [isSameRelease],
+    conditions: [isSameVersion],
   };
 
-  const pendingJobsForCurrentReleaseAndEnvFilter: JobCondition = {
+  const pendingJobsForCurrentVersionAndEnvFilter: JobCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [isSameEnvironment, isPending, isSameRelease],
+    conditions: [isSameEnvironment, isPending, isSameVersion],
   };
 
-  const inProgressJobsForDifferentReleaseAndCurrentEnvFilter: JobCondition = {
+  const inProgressJobsForDifferentVersionAndCurrentEnvFilter: JobCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [isSameEnvironment, isInProgress, isDifferentRelease],
+    conditions: [isSameEnvironment, isInProgress, isDifferentVersion],
   };
 
   const pendingJobsQ = api.job.config.byWorkspaceId.list.useQuery(
     {
       workspaceId,
-      filter: pendingJobsForCurrentReleaseAndEnvFilter,
+      filter: pendingJobsForCurrentVersionAndEnvFilter,
       limit: 1,
     },
     { refetchInterval: 5_000 },
@@ -99,7 +99,7 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const inProgressJobsQ = api.job.config.byWorkspaceId.list.useQuery(
     {
       workspaceId,
-      filter: inProgressJobsForDifferentReleaseAndCurrentEnvFilter,
+      filter: inProgressJobsForDifferentVersionAndCurrentEnvFilter,
       limit: 1,
     },
     { refetchInterval: 5_000 },
@@ -107,25 +107,25 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
 
   const loading = pendingJobsQ.isLoading || inProgressJobsQ.isLoading;
 
-  const isCurrentReleasePending =
+  const isCurrentVersionPending =
     pendingJobsQ.data != null && pendingJobsQ.data.length > 0;
-  const isSeparateReleaseInProgress =
+  const isSeparateVersionBeingDeployed =
     inProgressJobsQ.data != null && inProgressJobsQ.data.length > 0;
 
   const isWaitingOnActive =
-    isCurrentReleasePending && isSeparateReleaseInProgress;
+    isCurrentVersionPending && isSeparateVersionBeingDeployed;
 
   return (
     <div className="flex items-center gap-2">
       {loading && <Loading />}
       {!loading && isWaitingOnActive && (
         <>
-          <Waiting /> Another release is in progress
+          <Waiting /> Another version is being deployed
         </>
       )}
       {!loading && !isWaitingOnActive && (
         <>
-          <Passing /> All other releases finished
+          <Passing /> All other versions deployed
         </>
       )}
     </div>
@@ -149,7 +149,7 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
       {loading && <Loading />}
       {!loading && deploymentVersionChannelId == null && (
         <>
-          <Cancelled /> No release channel
+          <Cancelled /> No deployment version channel
         </>
       )}
       {!loading &&
@@ -166,7 +166,7 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
                 }
                 className="h-fit px-0 py-0 text-inherit underline-offset-2"
               >
-                release channel
+                deployment version channel
               </Button>
             </span>
           </>
@@ -185,7 +185,7 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
                 }
                 className="h-fit px-0 py-0 text-inherit underline-offset-2"
               >
-                release channel
+                deployment version channel
               </Button>
             </span>
           </>
@@ -194,26 +194,26 @@ const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   );
 };
 
-const MinReleaseIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
+const MinDeployIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   policy,
   deploymentId,
   environmentId,
 }) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
-  const { data: latestRelease, isLoading } =
+  const { data: latestDeployedVersion, isLoading } =
     api.deployment.version.latest.completed.useQuery(
       { deploymentId, environmentId },
       { enabled: policy != null },
     );
 
   useEffect(() => {
-    if (!latestRelease || !policy?.minimumReleaseInterval) return;
+    if (!latestDeployedVersion || !policy?.minimumReleaseInterval) return;
 
     const calculateTimeLeft = () => {
       const timePassed = differenceInMilliseconds(
         new Date(),
-        latestRelease.createdAt,
+        latestDeployedVersion.createdAt,
       );
       return Math.max(0, policy.minimumReleaseInterval - timePassed);
     };
@@ -228,7 +228,7 @@ const MinReleaseIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [latestRelease, policy?.minimumReleaseInterval]);
+  }, [latestDeployedVersion, policy?.minimumReleaseInterval]);
 
   if (policy == null) return null;
   const { minimumReleaseInterval } = policy;
@@ -240,7 +240,7 @@ const MinReleaseIntervalCheck: React.FC<EnvironmentNodeProps["data"]> = ({
       </div>
     );
 
-  if (latestRelease == null || timeLeft === 0)
+  if (latestDeployedVersion == null || timeLeft === 0)
     return (
       <div className="flex items-center gap-2">
         <Passing />
@@ -277,7 +277,7 @@ export const EnvironmentNode: React.FC<EnvironmentNodeProps> = ({ data }) => (
       <div className="px-2 pb-2">
         <WaitingOnActiveCheck {...data} />
         <DeploymentVersionChannelCheck {...data} />
-        <MinReleaseIntervalCheck {...data} />
+        <MinDeployIntervalCheck {...data} />
       </div>
     </div>
     <Handle

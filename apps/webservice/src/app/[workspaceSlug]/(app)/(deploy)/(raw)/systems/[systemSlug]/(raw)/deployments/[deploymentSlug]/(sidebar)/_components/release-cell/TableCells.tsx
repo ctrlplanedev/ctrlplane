@@ -39,8 +39,8 @@ import {
   JobStatus,
 } from "@ctrlplane/validators/jobs";
 
+import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { DeploymentBarChart } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/charts/DeploymentBarChart";
-import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
 import {
   getStatusColor,
   statusColor,
@@ -142,7 +142,7 @@ export const DeploymentVersion: React.FC<{
     statuses,
   } = props;
 
-  const isSameRelease: JobCondition = {
+  const isSameVersion: JobCondition = {
     type: JobFilterType.Release,
     operator: ColumnOperator.Equals,
     value: versionId,
@@ -157,7 +157,7 @@ export const DeploymentVersion: React.FC<{
   const filter: JobCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: [isSameRelease, isSameEnvironment],
+    conditions: [isSameVersion, isSameEnvironment],
   };
 
   const workspaceId = api.workspace.bySlug.useQuery(workspaceSlug);
@@ -255,10 +255,12 @@ export const DeploymentVersion: React.FC<{
         </HoverCardContent>
       </HoverCard>
 
-      <ReleaseDropdownMenu
+      <DeploymentVersionDropdownMenu
         deploymentVersion={{ id: versionId, name }}
         environment={environment}
-        isReleaseActive={statuses.some((s) => activeStatusType.includes(s))}
+        isVersionBeingDeployed={statuses.some((s) =>
+          activeStatusType.includes(s),
+        )}
       />
     </div>
   );
