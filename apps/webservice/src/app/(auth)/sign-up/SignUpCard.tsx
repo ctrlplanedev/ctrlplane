@@ -70,9 +70,7 @@ export const SignUpCard: React.FC = () => {
           ...data,
           redirect: false,
         }).then((response) => {
-          console.log(response);
           if (response?.error) throw new Error(response.error);
-          console.log("pushing to /");
           router.refresh();
         }),
       )
