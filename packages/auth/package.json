@@ -39,6 +39,7 @@
     "next-auth": "catalog:",
     "react": "catalog:react19",
     "react-dom": "catalog:react19",
+    "resend": "^4.1.2",
     "zod": "catalog:"
   },
   "devDependencies": {

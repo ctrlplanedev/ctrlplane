@@ -65,17 +65,15 @@ export const SignUpCard: React.FC = () => {
 
     signUp
       .mutateAsync(data)
-      .then(() => {
-        return signIn("credentials", {
+      .then(() =>
+        signIn("credentials", {
           ...data,
           redirect: false,
         }).then((response) => {
-          if (response?.error) {
-            throw new Error(response.error);
-          }
+          if (response?.error) throw new Error(response.error);
           router.push("/");
-        });
-      })
+        }),
+      )
       .catch((error) => {
         console.error("Sign up error:", error);
         form.setError("root", {
