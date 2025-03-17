@@ -18,6 +18,7 @@ import {
 import { buttonVariants } from "@ctrlplane/ui/button";
 import { toast } from "@ctrlplane/ui/toast";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type DeleteSystemProps = {
@@ -44,7 +45,7 @@ export const DeleteSystemDialog: React.FC<DeleteSystemProps> = ({
         utils.system.list.invalidate({
           workspaceId: system.workspaceId,
         });
-        router.push(`/${workspaceSlug}/systems`);
+        router.push(urls.workspace(workspaceSlug).systems());
         router.refresh();
         toast.success("System deleted successfully");
         onSuccess?.();

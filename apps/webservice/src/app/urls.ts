@@ -8,6 +8,16 @@ const buildUrl = (...segments: string[]) => {
   return `/${path}`;
 };
 
+const workspaceSettings = (slug: string) => {
+  return {
+    baseUrl: () => buildUrl(slug, "settings"),
+    members: () => buildUrl(slug, "settings", "members"),
+    general: () => buildUrl(slug, "settings", "general"),
+    account: () => buildUrl(slug, "settings", "account"),
+    integrations: () => buildUrl(slug, "settings", "integrations"),
+  };
+};
+
 // Workspace URL functions
 const workspace = (slug: string) => {
   return {
@@ -18,7 +28,7 @@ const workspace = (slug: string) => {
     agents: () => buildUrl(slug, "agents"),
     insights: () => buildUrl(slug, "insights"),
     resources: () => resources(slug),
-    settings: () => buildUrl(slug, "settings"),
+    settings: () => workspaceSettings(slug),
   };
 };
 

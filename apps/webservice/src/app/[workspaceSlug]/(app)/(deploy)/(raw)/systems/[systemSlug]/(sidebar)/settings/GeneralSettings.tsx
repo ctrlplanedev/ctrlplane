@@ -19,6 +19,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 export const GeneralSettings: React.FC<{ system: schema.System }> = ({
@@ -39,7 +40,9 @@ export const GeneralSettings: React.FC<{ system: schema.System }> = ({
       )
       .then(() => {
         if (data.slug != null && data.slug !== system.slug) {
-          router.push(`/${workspaceSlug}/systems/${data.slug}/settings`);
+          router.push(
+            `${urls.workspace(workspaceSlug).system(data.slug).baseUrl()}/settings`,
+          );
           return;
         }
         router.refresh();

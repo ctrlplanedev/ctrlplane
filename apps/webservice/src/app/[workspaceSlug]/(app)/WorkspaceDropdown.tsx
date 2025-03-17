@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 export const WorkspaceDropdown: React.FC<{
@@ -40,10 +41,10 @@ export const WorkspaceDropdown: React.FC<{
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56 bg-neutral-900">
-        <Link href={`/${workspace.slug}/settings/workspace/overview`}>
+        <Link href={urls.workspace(workspace.slug).settings().baseUrl()}>
           <DropdownMenuItem>Workspace settings</DropdownMenuItem>
         </Link>
-        <Link href={`/${workspace.slug}/settings/workspace/members`}>
+        <Link href={urls.workspace(workspace.slug).settings().members()}>
           <DropdownMenuItem>Invite and manage users</DropdownMenuItem>
         </Link>
 
@@ -59,7 +60,7 @@ export const WorkspaceDropdown: React.FC<{
               {workspaces.map((ws) => (
                 <Link
                   key={ws.id}
-                  href={`/${ws.slug}`}
+                  href={urls.workspace(ws.slug).baseUrl()}
                   passHref
                   onClick={() => update.mutate({ activeWorkspaceId: ws.id })}
                 >
@@ -75,7 +76,7 @@ export const WorkspaceDropdown: React.FC<{
               ))}
 
               <DropdownMenuSeparator />
-              <Link href={`/workspaces/create`} passHref>
+              <Link href="/workspaces/create" passHref>
                 <DropdownMenuItem>Create or join workspace</DropdownMenuItem>
               </Link>
             </DropdownMenuSubContent>

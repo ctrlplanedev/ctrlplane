@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconBulb, IconCheck, IconCopy } from "@tabler/icons-react";
+import { urls } from "~/app/urls";
 import { useFieldArray } from "react-hook-form";
 import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
@@ -96,7 +97,7 @@ export const AwsDialog: React.FC<{
     });
     await utils.resource.provider.byWorkspaceId.invalidate();
     router.refresh();
-    router.push(`/${workspace.slug}/resource-providers`);
+    router.push(urls.workspace(workspace.slug).resources().providers().baseUrl());
   });
   return (
     <Dialog>

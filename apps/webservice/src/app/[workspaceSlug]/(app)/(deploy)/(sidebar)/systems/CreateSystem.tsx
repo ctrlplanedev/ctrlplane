@@ -7,6 +7,7 @@ import slugify from "slugify";
 import { z } from "zod";
 
 import { systemSchema } from "@ctrlplane/db/schema";
+import { urls } from "~/app/urls";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -61,7 +62,7 @@ export const CreateSystemDialog: React.FC<{
     createSystem
       .mutateAsync({ workspaceId: workspace.id, ...system })
       .then(() => router.refresh())
-      .then(() => router.push(`/${workspace.slug}/systems/${system.slug}`))
+      .then(() => router.push(urls.workspace(workspace.slug).system(system.slug).baseUrl()))
       .then(() => onSuccess?.())
       .then(() => setOpen(false))
       .catch(() => setError("root", { message: errMsg })),

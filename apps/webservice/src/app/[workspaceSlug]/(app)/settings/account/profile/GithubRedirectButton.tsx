@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 
+import { urls } from "~/app/urls";
+
 export const GithubRedirectButton: React.FC<{
   variant?: React.ComponentProps<typeof Button>["variant"];
   className?: string;
@@ -18,7 +20,9 @@ export const GithubRedirectButton: React.FC<{
       variant={variant}
       className={className}
       onClick={() =>
-        router.push(`/${workspace.slug}/settings/workspace/integrations/github`)
+        router.push(
+          `${urls.workspace(workspace.slug).settings()}/workspace/integrations/github`,
+        )
       }
     >
       {githubUserId ? "Disconnect" : "Connect"}

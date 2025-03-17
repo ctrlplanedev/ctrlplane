@@ -38,6 +38,7 @@ import {
 import { Switch } from "@ctrlplane/ui/switch";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
+import { urls } from "~/app/urls";
 import { JobAgentConfig } from "~/components/form/job-agent/JobAgentConfig";
 import { JobAgentSelector } from "~/components/form/job-agent/JobAgentSelector";
 import { api } from "~/trpc/react";
@@ -98,7 +99,11 @@ export const CreateDeploymentDialog: React.FC<{
         () =>
           systemSlug != null &&
           router.push(
-            `/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}`,
+            urls
+              .workspace(workspaceSlug)
+              .system(systemSlug)
+              .deployment(deployment.slug)
+              .baseUrl(),
           ),
       )
       .then(() => setOpen(false))

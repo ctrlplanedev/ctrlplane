@@ -29,6 +29,7 @@ import {
 } from "@ctrlplane/ui/form";
 import { Input } from "@ctrlplane/ui/input";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 const workspaceForm = z.object(workspaceSchema.shape);
@@ -54,7 +55,7 @@ export default function WorkspaceCreate() {
   const onSubmit = handleSubmit(async (data) => {
     try {
       await create.mutateAsync(data);
-      router.push(`/${data.slug}`);
+      router.push(urls.workspace(data.slug).baseUrl());
     } catch {
       setError("root", {
         message: "Workspace with this name already exists",
@@ -64,7 +65,7 @@ export default function WorkspaceCreate() {
   });
 
   if (session == null) {
-    router.push("/sign-in");
+    router.push("/login");
     return null;
   }
 

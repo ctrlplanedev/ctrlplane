@@ -35,6 +35,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Switch } from "@ctrlplane/ui/switch";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 export const createGoogleSchema = z.object({
@@ -92,7 +93,9 @@ export const GoogleDialog: React.FC<{
     });
     await utils.resource.provider.byWorkspaceId.invalidate();
     router.refresh();
-    router.push(`/${workspace.slug}/resource-providers`);
+    router.push(
+      urls.workspace(workspace.slug).resources().providers().baseUrl(),
+    );
   });
   return (
     <Dialog>

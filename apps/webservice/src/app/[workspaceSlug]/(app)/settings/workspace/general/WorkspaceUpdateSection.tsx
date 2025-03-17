@@ -19,6 +19,7 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 const updateWorkspace = z.object({
@@ -44,7 +45,11 @@ export const WorkspaceUpdateSection: React.FC<WorkspaceUpdateSectionProps> = ({
     update
       .mutateAsync({ id: workspace.id, data })
       .then(() => form.reset(data))
-      .then(() => router.push(`/${data.slug}/settings/workspace/general`))
+      .then(() =>
+        router.push(
+          `${urls.workspace(data.slug).settings()}/workspace/general`,
+        ),
+      )
       .then(() => router.refresh()),
   );
 

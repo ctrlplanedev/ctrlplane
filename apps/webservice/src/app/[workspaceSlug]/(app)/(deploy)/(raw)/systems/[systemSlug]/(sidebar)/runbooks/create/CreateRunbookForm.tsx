@@ -4,6 +4,8 @@ import type { JobAgent, System, Workspace } from "@ctrlplane/db/schema";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 
+import { urls } from "~/app/urls";
+
 import { createRunbookVariable } from "@ctrlplane/db/schema";
 import { Button } from "@ctrlplane/ui/button";
 import {
@@ -56,7 +58,7 @@ export const CreateRunbook: React.FC<{
   const router = useRouter();
   const onSubmit = form.handleSubmit(async (data) => {
     const rb = await create.mutateAsync({ ...data, systemId: system.id });
-    router.push(`/${workspace.slug}/systems/${system.slug}/runbooks/${rb.id}`);
+    router.push(`${urls.workspace(workspace.slug).system(system.slug).baseUrl()}/runbooks/${rb.id}`);
     router.refresh();
   });
 

@@ -13,6 +13,7 @@ import {
 import { Button } from "@ctrlplane/ui/button";
 import { toast } from "@ctrlplane/ui/toast";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type DeleteDeploymentProps = {
@@ -40,7 +41,12 @@ export const DeleteDeploymentDialog: React.FC<DeleteDeploymentProps> = ({
     deleteDeployment
       .mutateAsync(id)
       .then(() => {
-        router.push(`/${params.workspaceSlug}/systems/${params.systemSlug}`);
+        router.push(
+          urls
+            .workspace(params.workspaceSlug)
+            .system(params.systemSlug)
+            .baseUrl(),
+        );
         router.refresh();
         toast.success("Deployment deleted successfully");
         setIsOpen(false);

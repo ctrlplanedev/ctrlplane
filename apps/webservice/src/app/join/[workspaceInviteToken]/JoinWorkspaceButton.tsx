@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 export const JoinWorkspaceButton: React.FC<{
@@ -15,7 +16,7 @@ export const JoinWorkspaceButton: React.FC<{
   const router = useRouter();
   const handleJoinWorkspace = async () => {
     await accept.mutateAsync(token);
-    router.push(`/${workspace.slug}`);
+    router.push(urls.workspace(workspace.slug).baseUrl());
   };
   return (
     <Button className="w-full" onClick={handleJoinWorkspace}>

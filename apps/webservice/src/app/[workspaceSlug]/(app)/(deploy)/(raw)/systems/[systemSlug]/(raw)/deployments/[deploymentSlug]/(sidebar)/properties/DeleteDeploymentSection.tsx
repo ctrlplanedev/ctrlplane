@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { IconAlertTriangle, IconTrash } from "@tabler/icons-react";
 
+import { urls } from "~/app/urls";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +37,7 @@ export const DeleteDeploymentSection: React.FC<
   const handleDelete = () => {
     deleteDeployment
       .mutateAsync(deployment.id)
-      .then(() => router.push(`/${workspaceSlug}/systems/${systemSlug}`))
+      .then(() => router.push(urls.workspace(workspaceSlug).system(systemSlug).baseUrl()))
       .catch((error) =>
         console.error(
           "Failed to delete deployment:",
