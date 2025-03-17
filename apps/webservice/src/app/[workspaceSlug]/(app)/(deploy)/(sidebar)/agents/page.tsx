@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { IconMenu2 } from "@tabler/icons-react";
 
@@ -15,6 +16,23 @@ import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
 import { AgentCard } from "./AgentCard";
+
+export const generateMetadata = async (props: {
+  params: { workspaceSlug: string };
+}): Promise<Metadata> => {
+  try {
+    const workspace = await api.workspace.bySlug(props.params.workspaceSlug);
+    return {
+      title: `Agents | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
+      description: `Manage deployment agents for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
+    };
+  } catch (error) {
+    return {
+      title: "Agents | Ctrlplane",
+      description: "Manage and monitor deployment agents in Ctrlplane.",
+    };
+  }
+};
 
 export default async function AgentsPage(props: {
   params: Promise<{ workspaceSlug: string }>;

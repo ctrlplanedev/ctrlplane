@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -7,6 +8,23 @@ import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
 import { CreateEnvironmentDialog } from "./CreateEnvironmentDialog";
 import { EnvironmentRow } from "./EnvironmentRow";
+
+export const generateMetadata = async (props: {
+  params: { workspaceSlug: string; systemSlug: string };
+}): Promise<Metadata> => {
+  try {
+    const system = await api.system.bySlug(props.params);
+    return {
+      title: `Environments | ${system.name} | Ctrlplane`,
+      description: `Manage environments for the ${system.name} system in Ctrlplane.`
+    };
+  } catch (error) {
+    return {
+      title: "Environments | Ctrlplane",
+      description: "Manage deployment environments in Ctrlplane."
+    };
+  }
+};
 
 export default async function EnvironmentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;

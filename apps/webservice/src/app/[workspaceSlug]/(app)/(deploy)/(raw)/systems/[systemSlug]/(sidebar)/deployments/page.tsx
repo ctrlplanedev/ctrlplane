@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -8,6 +9,23 @@ import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
 import { DeploymentGettingStarted } from "./DeploymentGettingStarted";
 import DeploymentTable from "./TableDeployments";
+
+export const generateMetadata = async (props: {
+  params: { workspaceSlug: string; systemSlug: string };
+}): Promise<Metadata> => {
+  try {
+    const system = await api.system.bySlug(props.params);
+    return {
+      title: `Deployments | ${system.name} | Ctrlplane`,
+      description: `Manage deployments for the ${system.name} system in Ctrlplane.`
+    };
+  } catch (error) {
+    return {
+      title: "Deployments | Ctrlplane",
+      description: "Manage system deployments in Ctrlplane."
+    };
+  }
+};
 
 export default async function DeploymentsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;
