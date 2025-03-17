@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { desc, sql } from "@ctrlplane/db";
@@ -15,6 +16,11 @@ import {
 } from "@ctrlplane/ui/table";
 
 import { api } from "~/trpc/server";
+
+export const metadata: Metadata = {
+  title: "Admin Dashboard | Ctrlplane",
+  description: "Administrative dashboard for managing Ctrlplane users and workspaces."
+};
 
 export default async function AdminPage() {
   const viewer = await api.user.viewer().catch(() => null);
