@@ -45,15 +45,12 @@ export const ColumnConditionRender: React.FC<ColumnConditionRenderProps> = ({
               Starts with
             </SelectItem>
             <SelectItem value={ColumnOperator.EndsWith}>Ends with</SelectItem>
-            <SelectItem value={ColumnOperator.Regex}>Regex</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="col-span-7">
         <Input
-          placeholder={
-            operator === ColumnOperator.Regex ? "^[a-zA-Z]+$" : "Value"
-          }
+          placeholder="Value"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           className="w-full cursor-pointer rounded-l-none"

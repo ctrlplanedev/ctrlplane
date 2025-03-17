@@ -95,7 +95,6 @@ export const MetadataConditionRender: React.FC<
             onValueChange={(
               v:
                 | MetadataOperator.Equals
-                | MetadataOperator.Regex
                 | MetadataOperator.Null
                 | MetadataOperator.StartsWith
                 | MetadataOperator.EndsWith
@@ -110,7 +109,6 @@ export const MetadataConditionRender: React.FC<
             </SelectTrigger>
             <SelectContent className="text-muted-foreground">
               <SelectItem value={MetadataOperator.Equals}>Equals</SelectItem>
-              <SelectItem value={MetadataOperator.Regex}>Regex</SelectItem>
               <SelectItem value={MetadataOperator.StartsWith}>
                 Starts with
               </SelectItem>
@@ -128,11 +126,7 @@ export const MetadataConditionRender: React.FC<
         {condition.operator !== MetadataOperator.Null ? (
           <div className="col-span-4">
             <Input
-              placeholder={
-                condition.operator === MetadataOperator.Regex
-                  ? "^[a-zA-Z]+$"
-                  : "Value"
-              }
+              placeholder="Value"
               value={condition.value}
               onChange={(e) => setValue(e.target.value)}
               className="rounded-l-none rounded-r-sm hover:bg-neutral-800/50"
