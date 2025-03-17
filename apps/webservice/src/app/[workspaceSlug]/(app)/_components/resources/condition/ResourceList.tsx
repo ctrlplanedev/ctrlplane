@@ -8,6 +8,7 @@ import * as LZString from "lz-string";
 import { Button } from "@ctrlplane/ui/button";
 import { Label } from "@ctrlplane/ui/label";
 
+import { urls } from "~/app/urls";
 import { ResourceIcon } from "../ResourceIcon";
 
 type Resource =
@@ -25,6 +26,7 @@ export const ResourceList: React.FC<ResourceListProps> = ({
   filter,
 }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
+  const resourcesUrl = urls.workspace(workspaceSlug).resources().baseUrl();
 
   return (
     <div className="space-y-4">
@@ -46,7 +48,7 @@ export const ResourceList: React.FC<ResourceListProps> = ({
       </div>
       <Button variant="outline" size="sm">
         <Link
-          href={`/${workspaceSlug}/resources?${new URLSearchParams({
+          href={`${resourcesUrl}?${new URLSearchParams({
             filter: LZString.compressToEncodedURIComponent(
               JSON.stringify(filter),
             ),

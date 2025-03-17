@@ -13,6 +13,8 @@ import {
 } from "@ctrlplane/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
+import { urls } from "~/app/urls";
+
 type Deployment = SCHEMA.Deployment & {
   versionChannels: SCHEMA.DeploymentVersionChannel[];
 };
@@ -43,13 +45,19 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
     updateDeploymentVersionChannel(deployment.id, channelId);
 
   const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug?: string;
+    workspaceSlug: string;
     systemSlug?: string;
   }>();
 
   const sortedDeploymentVersionChannels = deployment.versionChannels.sort(
     (a, b) => a.name.localeCompare(b.name),
   );
+
+  const versionChannelsUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug ?? "")
+    .deployment(deployment.slug)
+    .channels();
 
   return (
     <div className="flex items-center gap-2">
@@ -75,7 +83,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
               {sortedDeploymentVersionChannels.length === 0 && (
                 <CommandItem>
                   <Link
-                    href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/release-channels`}
+                    href={versionChannelsUrl}
                     className="w-full hover:text-blue-300"
                   >
                     <IconPlus className="h-4 w-4" /> Create version channel

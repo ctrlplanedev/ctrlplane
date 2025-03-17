@@ -15,6 +15,7 @@ import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
 import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { Release } from "./ReleaseInfo";
 
@@ -64,10 +65,16 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       <p className="text-xs text-muted-foreground/70">No versions released</p>
     );
 
+  const envResourcesUrl = urls
+    .workspace(workspace.slug)
+    .system(systemSlug)
+    .environment(environment.id)
+    .resources();
+
   if (deploymentVersion.resourceCount === 0)
     return (
       <Link
-        href={`/${workspace.slug}/systems/${systemSlug}/environments/${environment.id}/resources`}
+        href={envResourcesUrl}
         className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50"
         target="_blank"
         rel="noopener noreferrer"

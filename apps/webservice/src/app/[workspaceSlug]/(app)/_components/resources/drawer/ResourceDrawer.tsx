@@ -22,6 +22,7 @@ import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
 
 import { TabButton } from "~/app/[workspaceSlug]/(app)/_components/drawer/TabButton";
 import { EditResourceDialog } from "~/app/[workspaceSlug]/(app)/_components/resources/EditResource";
+import { urls } from "~/app/urls";
 // import { useTerminalSessions } from "~/app/terminal/TerminalSessionsProvider";
 import { api } from "~/trpc/react";
 import { DeploymentsContent } from "./DeploymentContent";
@@ -50,6 +51,11 @@ export const ResourceDrawer: React.FC = () => {
   const unlockResource = api.resource.unlock.useMutation();
   const router = useRouter();
   const utils = api.useUtils();
+
+  const resourceVisualizeUrl = urls
+    .workspace(workspaceSlug)
+    .resource(resourceId ?? "")
+    .visualize();
 
   const links =
     resource?.metadata[ReservedMetadataKey.Links] != null
@@ -123,7 +129,7 @@ export const ResourceDrawer: React.FC = () => {
               </Button>
 
               <Link
-                href={`/${workspaceSlug}/resources/${resource.id}/visualize`}
+                href={resourceVisualizeUrl}
                 className={buttonVariants({
                   variant: "outline",
                   size: "sm",

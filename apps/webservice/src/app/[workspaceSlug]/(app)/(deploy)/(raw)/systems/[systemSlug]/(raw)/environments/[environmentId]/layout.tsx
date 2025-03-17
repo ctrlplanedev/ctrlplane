@@ -25,6 +25,7 @@ import {
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { SidebarLink } from "~/app/[workspaceSlug]/(app)/resources/(sidebar)/SidebarLink";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 import { DailyResourceCountGraph } from "./insights/DailyResourcesCountGraph";
 
@@ -36,8 +37,8 @@ export default async function EnvironmentLayout(props: {
     environmentId: string;
   }>;
 }) {
-  const params = await props.params;
-  const environment = await api.environment.byId(params.environmentId);
+  const { workspaceSlug, systemSlug, environmentId } = await props.params;
+  const environment = await api.environment.byId(environmentId);
   if (environment == null) notFound();
 
   const endDate = new Date();
@@ -49,8 +50,8 @@ export default async function EnvironmentLayout(props: {
     endDate,
   });
 
-  const url = (tab: string) =>
-    `/${params.workspaceSlug}/systems/${params.systemSlug}/environments/${params.environmentId}/${tab}`;
+  const systemUrls = urls.workspace(workspaceSlug).system(systemSlug);
+  const environmentUrls = systemUrls.environment(environmentId);
   return (
     <SidebarProvider
       className="flex h-full w-full flex-col"
@@ -59,18 +60,14 @@ export default async function EnvironmentLayout(props: {
     >
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
-          <Link
-            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
-          >
+          <Link href={systemUrls.deployments()}>
             <IconArrowLeft className="size-5" />
           </Link>
           <Separator orientation="vertical" className="h-4" />
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink
-                  href={`/${params.workspaceSlug}/systems/${params.systemSlug}/environments`}
-                >
+                <BreadcrumbLink href={systemUrls.environments()}>
                   Environments
                 </BreadcrumbLink>
               </BreadcrumbItem>
@@ -92,10 +89,18 @@ export default async function EnvironmentLayout(props: {
           <SidebarContent>
             <SidebarGroup>
               <SidebarMenu>
-                <SidebarLink href={url("deployments")}>Deployments</SidebarLink>
-                <SidebarLink href={url("policies")}>Policies</SidebarLink>
-                <SidebarLink href={url("resources")}>Resources</SidebarLink>
-                <SidebarLink href={url("variables")}>Variables</SidebarLink>
+                <SidebarLink href={environmentUrls.deployments()}>
+                  Deployments
+                </SidebarLink>
+                <SidebarLink href={environmentUrls.policies()}>
+                  Policies
+                </SidebarLink>
+                <SidebarLink href={environmentUrls.resources()}>
+                  Resources
+                </SidebarLink>
+                <SidebarLink href={environmentUrls.variables()}>
+                  Variables
+                </SidebarLink>
               </SidebarMenu>
             </SidebarGroup>
           </SidebarContent>

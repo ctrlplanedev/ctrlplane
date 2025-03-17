@@ -23,6 +23,7 @@ import {
 
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 import { SidebarLink } from "../../(sidebar)/SidebarLink";
 
@@ -33,11 +34,15 @@ export default async function Layout(props: {
   const params = await props.params;
   const resource = await api.resource.byId(params.resourceId);
   if (resource == null) notFound();
+  const resourcesUrl = urls
+    .workspace(params.workspaceSlug)
+    .resources()
+    .baseUrl();
   return (
     <div className="flex h-full flex-col">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
-          <Link href={`/${params.workspaceSlug}/resources`}>
+          <Link href={resourcesUrl}>
             <IconArrowLeft className="size-5" />
           </Link>
           <Separator orientation="vertical" className="h-4" />

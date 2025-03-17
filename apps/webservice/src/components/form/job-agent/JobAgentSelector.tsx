@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@ctrlplane/ui/select";
 
+import { urls } from "~/app/urls";
+
 export const JobAgentSelectorInput: React.FC<{
   jobAgents: JobAgent[];
   value?: string;
@@ -43,19 +45,20 @@ export const JobAgentSelector: React.FC<{
   value?: string;
   onChange: (v: string) => void;
   className?: string;
-}> = ({ workspace, value, jobAgents, onChange, className }) => {
-  return (
-    <div className={cn("flex items-center gap-2", className)}>
-      <JobAgentSelectorInput
-        jobAgents={jobAgents}
-        value={value}
-        onChange={onChange}
-      />
-      <Link href={`/${workspace.slug}/job-agents/integrations`} passHref>
-        <Button className="flex items-center" variant="outline" size="icon">
-          <IconPlus className="h-4 w-4" />
-        </Button>
-      </Link>
-    </div>
-  );
-};
+}> = ({ workspace, value, jobAgents, onChange, className }) => (
+  <div className={cn("flex items-center gap-2", className)}>
+    <JobAgentSelectorInput
+      jobAgents={jobAgents}
+      value={value}
+      onChange={onChange}
+    />
+    <Link
+      href={urls.workspace(workspace.slug).agents().integrations()}
+      passHref
+    >
+      <Button className="flex items-center" variant="outline" size="icon">
+        <IconPlus className="h-4 w-4" />
+      </Button>
+    </Link>
+  </div>
+);

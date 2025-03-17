@@ -42,6 +42,7 @@ import { ResourceFilterType } from "@ctrlplane/validators/resources";
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { api } from "~/trpc/server";
+import { urls } from "../../../../../urls";
 import { ProviderActionsDropdown } from "./ProviderActionsDropdown";
 import { ResourceProvidersGettingStarted } from "./ResourceProvidersGettingStarted";
 
@@ -130,6 +131,13 @@ export default async function ResourceProvidersPage(props: {
     return { ...provider, filterLink };
   });
 
+  const integrationsUrl = urls
+    .workspace(workspaceSlug)
+    .resources()
+    .providers()
+    .integrations()
+    .baseUrl();
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader className="z-10 flex items-center justify-between">
@@ -151,7 +159,7 @@ export default async function ResourceProvidersPage(props: {
             buttonVariants({ variant: "outline", size: "sm" }),
             "gap-1.5",
           )}
-          href={`/${workspaceSlug}/resources/providers/integrations`}
+          href={integrationsUrl}
         >
           Add Provider
         </Link>

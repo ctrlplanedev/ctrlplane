@@ -45,6 +45,7 @@ import {
   getStatusColor,
   statusColor,
 } from "~/app/[workspaceSlug]/(app)/(deploy)/_utils/status-color";
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 const ReleaseIcon: React.FC<{
@@ -191,14 +192,18 @@ export const DeploymentVersion: React.FC<{
     [d.job, d.resource, d.job.message].every(isPresent),
   );
 
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .release(versionId)
+    .baseUrl();
+
   return (
     <div className="flex w-full items-center justify-between">
       <HoverCard>
         <HoverCardTrigger asChild>
-          <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/releases/${versionId}`}
-            className="flex w-full items-center gap-2"
-          >
+          <Link href={versionUrl} className="flex w-full items-center gap-2">
             <ReleaseIcon statuses={statuses} />
             <div className="w-full text-sm">
               <div className="flex items-center gap-2">

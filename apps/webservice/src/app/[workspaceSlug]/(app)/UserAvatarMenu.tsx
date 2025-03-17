@@ -14,6 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
+import { urls } from "~/app/urls";
+
 type UserAvatarMenuProps = {
   workspaceSlug: string;
   viewer: {
@@ -30,6 +32,12 @@ export const UserAvatarMenu = ({
   const handleSignOut = async () => {
     await signOut({ callbackUrl: "/login" });
   };
+
+  const profileUrl = urls
+    .workspace(workspaceSlug)
+    .settings()
+    .account()
+    .profile();
 
   return (
     <DropdownMenu>
@@ -55,7 +63,7 @@ export const UserAvatarMenu = ({
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
-        <Link href={`/${workspaceSlug}/settings/account/profile`}>
+        <Link href={profileUrl}>
           <DropdownMenuItem className="cursor-pointer">
             <IconSettings className="mr-2 h-4 w-4" />
             <span>Profile Settings</span>

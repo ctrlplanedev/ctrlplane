@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 type UniqueFilterResult = {
@@ -96,6 +97,7 @@ export const ResourceFilterUniquenessIndicator: FC<{
   currentNode: Node;
 }> = ({ nodes, workspaceId, workspaceSlug, currentNode }) => {
   const result = useResourceFilterUniqueness(nodes, workspaceId, currentNode);
+  const resourcesUrl = urls.workspace(workspaceSlug).resources().baseUrl();
 
   if (!currentNode.data.resourceFilter)
     return (
@@ -159,7 +161,7 @@ export const ResourceFilterUniquenessIndicator: FC<{
                   </span>{" "}
                   <span className="text-muted-foreground">has</span>{" "}
                   <Link
-                    href={`/${workspaceSlug}/resources?${new URLSearchParams({
+                    href={`${resourcesUrl}?${new URLSearchParams({
                       filter: compressedFilter,
                     })}`}
                     className="text-muted-foreground underline"
