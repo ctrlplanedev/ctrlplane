@@ -22,7 +22,7 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingReleaseStringCheckPolicy,
+  isPassingChannelSelectorPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { cacV1 } from "@ctrlplane/validators/cac";
@@ -127,26 +127,26 @@ const upsertDeployments = async (db: Tx, config: CacV1) => {
     });
 };
 
-const upsertReleases = async (db: Tx, config: CacV1, userId: string) => {
-  if (config.releases == null || entries(config.releases).length == 0) return;
+const upsertVersions = async (db: Tx, config: CacV1, userId: string) => {
+  if (config.versions == null || entries(config.versions).length == 0) return;
 
-  const releaseInfo = entries(config.releases ?? {})
-    .map(([slug, release]) => {
-      const [systemSlug, deploymentSlug, version] = slug.split("/");
-      if (systemSlug == null || deploymentSlug == null || version == null)
+  const versionInfo = entries(config.versions ?? {})
+    .map(([slug, version]) => {
+      const [systemSlug, deploymentSlug, tag] = slug.split("/");
+      if (systemSlug == null || deploymentSlug == null || tag == null)
         return null;
 
-      const name = release.name ?? version;
+      const name = version.name ?? tag;
       return {
         systemSlug,
         deploymentSlug,
-        release: { ...release, version, name },
+        version: { ...version, tag, name },
       };
     })
     .filter(isPresent);
 
-  const systemSlugs = releaseInfo.map(({ systemSlug }) => systemSlug);
-  const deploymentSlugs = releaseInfo.map(
+  const systemSlugs = versionInfo.map(({ systemSlug }) => systemSlug);
+  const deploymentSlugs = versionInfo.map(
     ({ deploymentSlug }) => deploymentSlug,
   );
 
@@ -174,75 +174,74 @@ const upsertReleases = async (db: Tx, config: CacV1, userId: string) => {
         .groupBy((d) => d.deployment.id)
         .map((deploymentGroup) => ({
           ...deploymentGroup[0]!,
-          releases: deploymentGroup
+          versions: deploymentGroup
             .map((d) => d.deployment_version)
             .filter(isPresent),
         }))
         .value(),
     );
 
-  const newReleases = releaseInfo.filter(
-    ({ systemSlug, deploymentSlug, release }) => {
+  const newVersions = versionInfo.filter(
+    ({ systemSlug, deploymentSlug, version }) => {
       const deployment = deployments.find(
         (d) =>
           d.deployment.slug === deploymentSlug && d.system.slug === systemSlug,
       );
       if (deployment == null) return false;
-      const existingRelease = deployment.releases.find(
-        (r) => r.version === release.version,
+      const existingRelease = deployment.versions.find(
+        (r) => r.tag === version.tag,
       );
       return existingRelease == null;
     },
   );
 
-  if (newReleases.length == 0) return;
+  if (newVersions.length == 0) return;
 
-  const releaseInserts = newReleases
-    .map(({ systemSlug, deploymentSlug, release }) => {
+  const versionInserts = newVersions
+    .map(({ systemSlug, deploymentSlug, version }) => {
       const deployment = deployments.find(
         (d) =>
           d.deployment.slug === deploymentSlug && d.system.slug === systemSlug,
       );
       if (deployment == null) return null;
-      return { ...release, deploymentId: deployment.deployment.id };
+      return { ...version, deploymentId: deployment.deployment.id };
     })
     .filter(isPresent);
 
-  const releases = await db
+  const versions = await db
     .insert(schema.deploymentVersion)
-    .values(releaseInserts)
+    .values(versionInserts)
     .returning();
 
-  const releaseMetadataInserts = newReleases
-    .flatMap(({ systemSlug, deploymentSlug, release }) => {
+  const versionMetadataInserts = newVersions
+    .flatMap(({ systemSlug, deploymentSlug, version }) => {
       const deployment = deployments.find(
         (d) =>
           d.deployment.slug === deploymentSlug && d.system.slug === systemSlug,
       );
       if (deployment == null) return [];
-      const rel = releases.find(
+      const ver = versions.find(
         (r) =>
-          r.version === release.version &&
-          r.deploymentId === deployment.deployment.id,
+          r.tag === version.tag && r.deploymentId === deployment.deployment.id,
       );
-      if (rel == null) return [];
-      return entries(release.metadata ?? {}).map(([key, value]) => ({
-        releaseId: rel.id,
+      if (ver == null) return [];
+      return entries(version.metadata ?? {}).map(([key, value]) => ({
+        versionId: ver.id,
         key,
         value,
       }));
     })
     .filter(isPresent);
 
-  if (releaseMetadataInserts.length > 0)
+  if (versionMetadataInserts.length > 0)
     await db
       .insert(schema.deploymentVersionMetadata)
-      .values(releaseMetadataInserts);
+      .values(versionMetadataInserts);
 
-  await createReleaseJobTriggers(db, "new_release")
+  await createReleaseJobTriggers(db, "new_version")
     .causedById(userId)
-    .filter(isPassingReleaseStringCheckPolicy)
-    .releases(releases.map((r) => r.id))
+    .filter(isPassingChannelSelectorPolicy)
+    .versions(versions.map((r) => r.id))
     .then(createJobApprovals)
     .insert()
     .then((releaseJobTriggers) => {
@@ -293,7 +292,7 @@ export const PATCH = async (req: NextRequest) => {
     try {
       await upsertSystems(db, config);
       await upsertDeployments(db, config);
-      await upsertReleases(db, config, user.id);
+      await upsertVersions(db, config, user.id);
     } catch (e) {
       return NextResponse.json({ error: e }, { status: 500 });
     }

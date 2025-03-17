@@ -41,7 +41,7 @@ export const GET = async (
     .leftJoin(
       SCHEMA.deploymentVersionMetadata,
       eq(
-        SCHEMA.deploymentVersionMetadata.releaseId,
+        SCHEMA.deploymentVersionMetadata.versionId,
         SCHEMA.deploymentVersion.id,
       ),
     )
@@ -72,6 +72,15 @@ export const GET = async (
           target: jobRows[0]!.resource,
           deployment: jobRows[0]!.deployment,
           release:
+            jobRows[0]!.deployment_version != null
+              ? {
+                  ...jobRows[0]!.deployment_version,
+                  metadata: jobRows
+                    .map((r) => r.deployment_version_metadata)
+                    .filter(isPresent),
+                }
+              : null,
+          version:
             jobRows[0]!.deployment_version != null
               ? {
                   ...jobRows[0]!.deployment_version,

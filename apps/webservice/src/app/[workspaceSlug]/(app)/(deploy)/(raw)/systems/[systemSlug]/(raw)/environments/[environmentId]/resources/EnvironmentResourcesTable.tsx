@@ -90,7 +90,9 @@ const HealthCell: React.FC<HealthCellProps> = ({
               }
             >
               <div className="col-span-1 text-left">{job.deployment.name}</div>
-              <div className="col-span-1 text-left">{job.release.version}</div>
+              <div className="col-span-1 text-left">
+                {job.deployment.version.tag}
+              </div>
               <div className="col-span-1 flex items-center gap-2">
                 <JobTableStatusIcon status={job.status} />
                 <span className="text-muted-foreground"> {job.status}</span>

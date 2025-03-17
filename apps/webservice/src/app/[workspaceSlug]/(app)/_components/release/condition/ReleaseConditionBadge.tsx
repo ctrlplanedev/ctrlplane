@@ -5,7 +5,7 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import type {
   ComparisonCondition,
-  ReleaseCondition,
+  DeploymentVersionCondition,
 } from "@ctrlplane/validators/releases";
 import React from "react";
 import { format } from "date-fns";
@@ -20,24 +20,24 @@ import {
 } from "@ctrlplane/ui/hover-card";
 import { ColumnOperator, DateOperator } from "@ctrlplane/validators/conditions";
 import {
+  DeploymentVersionOperator,
   isComparisonCondition,
   isCreatedAtCondition,
   isMetadataCondition,
   isVersionCondition,
-  ReleaseOperator,
 } from "@ctrlplane/validators/releases";
 
 const operatorVerbs = {
-  [ReleaseOperator.And]: "and",
-  [ReleaseOperator.Or]: "or",
-  [ReleaseOperator.Equals]: "is",
-  [ReleaseOperator.Null]: (
+  [DeploymentVersionOperator.And]: "and",
+  [DeploymentVersionOperator.Or]: "or",
+  [DeploymentVersionOperator.Equals]: "is",
+  [DeploymentVersionOperator.Null]: (
     <span>
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [ReleaseOperator.Regex]: "matches",
-  [ReleaseOperator.Like]: "contains",
+  [DeploymentVersionOperator.Regex]: "matches",
+  [DeploymentVersionOperator.Like]: "contains",
   [DateOperator.After]: "after",
   [DateOperator.Before]: "before",
   [DateOperator.AfterOrOn]: "after or on",
@@ -183,7 +183,7 @@ const StringifiedVersionCondition: React.FC<{
 );
 
 const StringifiedReleaseCondition: React.FC<{
-  condition: ReleaseCondition;
+  condition: DeploymentVersionCondition;
   depth?: number;
   truncate?: boolean;
   tabbed?: boolean;
@@ -213,7 +213,7 @@ const StringifiedReleaseCondition: React.FC<{
 };
 
 export const ReleaseConditionBadge: React.FC<{
-  condition: ReleaseCondition;
+  condition: DeploymentVersionCondition;
   tabbed?: boolean;
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>

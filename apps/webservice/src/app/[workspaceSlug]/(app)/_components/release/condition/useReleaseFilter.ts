@@ -1,4 +1,4 @@
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
@@ -14,7 +14,7 @@ export const useReleaseFilter = () => {
     deploymentVersionChannelParam,
   );
 
-  const filter = useMemo<ReleaseCondition | null>(() => {
+  const filter = useMemo<DeploymentVersionCondition | null>(() => {
     if (filterHash == null) return null;
     try {
       return JSON.parse(LZString.decompressFromEncodedURIComponent(filterHash));
@@ -25,7 +25,7 @@ export const useReleaseFilter = () => {
 
   const setFilter = useCallback(
     (
-      filter: ReleaseCondition | null,
+      filter: DeploymentVersionCondition | null,
       deploymentVersionChannelId?: string | null,
     ) => {
       const url = new URL(window.location.href);

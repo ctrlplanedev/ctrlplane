@@ -24,7 +24,7 @@ export const deploymentVersionMetadataKeysRouter = createTRPCRouter({
         .innerJoin(
           SCHEMA.deploymentVersionMetadata,
           eq(
-            SCHEMA.deploymentVersionMetadata.releaseId,
+            SCHEMA.deploymentVersionMetadata.versionId,
             SCHEMA.deploymentVersion.id,
           ),
         )
@@ -52,7 +52,7 @@ export const deploymentVersionMetadataKeysRouter = createTRPCRouter({
         .innerJoin(
           SCHEMA.deploymentVersionMetadata,
           eq(
-            SCHEMA.deploymentVersionMetadata.releaseId,
+            SCHEMA.deploymentVersionMetadata.versionId,
             SCHEMA.deploymentVersion.id,
           ),
         )

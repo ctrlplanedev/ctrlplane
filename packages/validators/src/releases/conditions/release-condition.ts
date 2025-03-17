@@ -10,20 +10,20 @@ import { createdAtCondition } from "../../conditions/date-condition.js";
 import { metadataCondition, versionCondition } from "../../conditions/index.js";
 import { comparisonCondition } from "./comparison-condition.js";
 
-export type ReleaseCondition =
+export type DeploymentVersionCondition =
   | ComparisonCondition
   | MetadataCondition
   | VersionCondition
   | CreatedAtCondition;
 
-export const releaseCondition = z.union([
+export const deploymentVersionCondition = z.union([
   comparisonCondition,
   metadataCondition,
   versionCondition,
   createdAtCondition,
 ]);
 
-export enum ReleaseOperator {
+export enum DeploymentVersionOperator {
   Equals = "equals",
   Like = "like",
   Regex = "regex",
@@ -36,28 +36,30 @@ export enum ReleaseOperator {
   AfterOrOn = "after-or-on",
 }
 
-export enum ReleaseFilterType {
+export enum DeploymentVersionConditionType {
   Metadata = "metadata",
   Version = "version",
   Comparison = "comparison",
   CreatedAt = "created-at",
 }
 
-export const defaultCondition: ReleaseCondition = {
-  type: ReleaseFilterType.Comparison,
-  operator: ReleaseOperator.And,
+export const defaultCondition: DeploymentVersionCondition = {
+  type: DeploymentVersionConditionType.Comparison,
+  operator: DeploymentVersionOperator.And,
   not: false,
   conditions: [],
 };
 
-export const isEmptyCondition = (condition: ReleaseCondition): boolean =>
-  condition.type === ReleaseFilterType.Comparison &&
+export const isEmptyCondition = (
+  condition: DeploymentVersionCondition,
+): boolean =>
+  condition.type === DeploymentVersionConditionType.Comparison &&
   condition.conditions.length === 0;
 
 export const isComparisonCondition = (
-  condition: ReleaseCondition,
+  condition: DeploymentVersionCondition,
 ): condition is ComparisonCondition =>
-  condition.type === ReleaseFilterType.Comparison;
+  condition.type === DeploymentVersionConditionType.Comparison;
 
 export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 
@@ -65,7 +67,7 @@ export const MAX_DEPTH_ALLOWED = 2; // 0 indexed
 // including any nested conditions
 export const doesConvertingToComparisonRespectMaxDepth = (
   depth: number,
-  condition: ReleaseCondition,
+  condition: DeploymentVersionCondition,
 ): boolean => {
   if (depth > MAX_DEPTH_ALLOWED) return false;
   if (isComparisonCondition(condition)) {
@@ -78,29 +80,29 @@ export const doesConvertingToComparisonRespectMaxDepth = (
 };
 
 export const isMetadataCondition = (
-  condition: ReleaseCondition,
+  condition: DeploymentVersionCondition,
 ): condition is MetadataCondition =>
-  condition.type === ReleaseFilterType.Metadata;
+  condition.type === DeploymentVersionConditionType.Metadata;
 
 export const isVersionCondition = (
-  condition: ReleaseCondition,
+  condition: DeploymentVersionCondition,
 ): condition is VersionCondition =>
-  condition.type === ReleaseFilterType.Version;
+  condition.type === DeploymentVersionConditionType.Version;
 
 export const isCreatedAtCondition = (
-  condition: ReleaseCondition,
+  condition: DeploymentVersionCondition,
 ): condition is CreatedAtCondition =>
-  condition.type === ReleaseFilterType.CreatedAt;
+  condition.type === DeploymentVersionConditionType.CreatedAt;
 
 export const isValidReleaseCondition = (
-  condition: ReleaseCondition,
+  condition: DeploymentVersionCondition,
 ): boolean => {
   if (isComparisonCondition(condition))
     return condition.conditions.every((c) => isValidReleaseCondition(c));
   if (isVersionCondition(condition)) return condition.value.length > 0;
   if (isCreatedAtCondition(condition)) return true;
   if (isMetadataCondition(condition)) {
-    if (condition.operator === ReleaseOperator.Null)
+    if (condition.operator === DeploymentVersionOperator.Null)
       return condition.value == null && condition.key.length > 0;
     return condition.key.length > 0;
   }

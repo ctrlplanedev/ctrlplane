@@ -22,7 +22,7 @@ import {
   environmentPolicyReleaseWindow,
   updateEnvironmentPolicy,
 } from "@ctrlplane/db/schema";
-import { handleEnvironmentPolicyReleaseChannelUpdate } from "@ctrlplane/job-dispatch";
+import { handleEnvironmentPolicyVersionChannelUpdate } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -335,7 +335,7 @@ export const policyRouter = createTRPCRouter({
           newVersionChannels.map((r) => [r.deploymentId, r.channelId]),
         );
 
-        await handleEnvironmentPolicyReleaseChannelUpdate(
+        await handleEnvironmentPolicyVersionChannelUpdate(
           input.id,
           prevMap,
           newMap,

@@ -72,7 +72,7 @@ export const isPassingNoActiveJobsPolicy: ReleaseIdPolicyChecker = async (
     .flatMap((rjt) => {
       const maxRelease = _.maxBy(rjt, (rjt) => [
         rjt.deployment_version.createdAt,
-        rjt.deployment_version.version,
+        rjt.deployment_version.tag,
       ]);
       return rjt.filter(
         (rjt) =>

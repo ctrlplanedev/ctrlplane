@@ -14,7 +14,7 @@ import type { ReleasePolicyChecker } from "./utils.js";
  * @returns A promise that resolves to the release job triggers that pass the
  * regex or semver policy, if any.
  */
-export const isPassingReleaseStringCheckPolicy: ReleasePolicyChecker = async (
+export const isPassingChannelSelectorPolicy: ReleasePolicyChecker = async (
   db,
   wf,
 ) => {

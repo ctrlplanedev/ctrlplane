@@ -32,8 +32,8 @@ import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 type EnvironmentNodeProps = NodeProps<{
   workspaceId: string;
   policy?: SCHEMA.EnvironmentPolicy;
-  releaseId: string;
-  releaseVersion: string;
+  versionId: string;
+  versionTag: string;
   deploymentId: string;
   environmentId: string;
   environmentName: string;
@@ -41,7 +41,7 @@ type EnvironmentNodeProps = NodeProps<{
 
 const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   workspaceId,
-  releaseId,
+  versionId,
   environmentId,
 }) => {
   const isSameEnvironment: EnvironmentCondition = {
@@ -65,7 +65,7 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   const isSameRelease: JobReleaseCondition = {
     type: JobFilterType.Release,
     operator: ColumnOperator.Equals,
-    value: releaseId,
+    value: versionId,
   };
 
   const isDifferentRelease: JobCondition = {
@@ -135,14 +135,14 @@ const WaitingOnActiveCheck: React.FC<EnvironmentNodeProps["data"]> = ({
 const DeploymentVersionChannelCheck: React.FC<EnvironmentNodeProps["data"]> = ({
   deploymentId,
   environmentId,
-  releaseVersion,
+  versionTag,
 }) => {
   const { setDeploymentVersionChannelId } = useDeploymentVersionChannelDrawer();
   const {
     isPassingDeploymentVersionChannel,
     deploymentVersionChannelId,
     loading,
-  } = useDeploymentVersionChannel(deploymentId, environmentId, releaseVersion);
+  } = useDeploymentVersionChannel(deploymentId, environmentId, versionTag);
 
   return (
     <div className="flex items-center gap-2">

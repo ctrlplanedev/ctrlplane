@@ -276,7 +276,7 @@ export const deploymentRouter = createTRPCRouter({
         .then((r) =>
           r.map((row) => ({
             ...row.latest_jobs,
-            release: row.deployment_version,
+            version: row.deployment_version,
             resource: row.resource,
             releaseJobTrigger: row.release_job_trigger,
           })),
@@ -572,7 +572,7 @@ export const deploymentRouter = createTRPCRouter({
                     ? {
                         ...row.release_job_trigger,
                         job: row.job!,
-                        release: row.deployment_version!,
+                        version: row.deployment_version!,
                         resourceId: row.resource.id,
                       }
                     : null,

@@ -5,11 +5,11 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 import { api } from "~/trpc/react";
 
-export const ReleaseDistributionBarChart: React.FC<{
+export const VersionDistributionBarChart: React.FC<{
   deploymentId: string;
-  showPreviousReleaseDistro: number;
-}> = ({ deploymentId, showPreviousReleaseDistro }) => {
-  const releases = api.deployment.version.list.useQuery(
+  showPreviousVersionDistro: number;
+}> = ({ deploymentId, showPreviousVersionDistro }) => {
+  const versions = api.deployment.version.list.useQuery(
     { deploymentId },
     { refetchInterval: 10_000 },
   );
@@ -17,15 +17,15 @@ export const ReleaseDistributionBarChart: React.FC<{
     refetchInterval: 2_000,
   });
 
-  const distro = _.chain(releases.data?.items ?? [])
-    .map((r) => ({
-      version: r.version,
-      count: (distribution.data ?? []).filter((d) => d.release.id === r.id)
+  const distro = _.chain(versions.data?.items ?? [])
+    .map((v) => ({
+      version: v.tag,
+      count: (distribution.data ?? []).filter((d) => d.version.id === v.id)
         .length,
     }))
-    .take(showPreviousReleaseDistro)
+    .take(showPreviousVersionDistro)
     .value();
-  const distroPadding = _.range(showPreviousReleaseDistro - distro.length).map(
+  const distroPadding = _.range(showPreviousVersionDistro - distro.length).map(
     () => ({ version: "", count: 0 }),
   );
 

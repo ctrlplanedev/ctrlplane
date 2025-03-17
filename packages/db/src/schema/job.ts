@@ -45,8 +45,9 @@ import {
 import { JobFilterType } from "@ctrlplane/validators/jobs";
 
 import type { Tx } from "../common.js";
+import { deploymentVersion } from "./deployment-version.js";
 import { jobAgent } from "./job-agent.js";
-import { deploymentVersion, releaseJobTrigger } from "./release.js";
+import { releaseJobTrigger } from "./release-job-trigger.js";
 import { jobResourceRelationship, resource } from "./resource.js";
 
 // if adding a new status, update the validators package @ctrlplane/validators/src/jobs/index.ts
@@ -257,14 +258,14 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
-    return eq(deploymentVersion.version, cond.value);
+    return eq(deploymentVersion.tag, cond.value);
   if (cond.operator === ColumnOperator.StartsWith)
-    return ilike(deploymentVersion.version, `${cond.value}%`);
+    return ilike(deploymentVersion.tag, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
-    return ilike(deploymentVersion.version, `%${cond.value}`);
+    return ilike(deploymentVersion.tag, `%${cond.value}`);
   if (cond.operator === ColumnOperator.Contains)
-    return ilike(deploymentVersion.version, `%${cond.value}%`);
-  return sql`${deploymentVersion.version} ~ ${cond.value}`;
+    return ilike(deploymentVersion.tag, `%${cond.value}%`);
+  return sql`${deploymentVersion.tag} ~ ${cond.value}`;
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {

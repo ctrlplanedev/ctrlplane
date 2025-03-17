@@ -3,8 +3,8 @@ import type {
   MetadataCondition,
   VersionCondition,
 } from "@ctrlplane/validators/conditions";
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
-import type { InferInsertModel, InferSelectModel, SQL } from "drizzle-orm";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
+import type { InferSelectModel, SQL } from "drizzle-orm";
 import {
   and,
   eq,
@@ -17,7 +17,6 @@ import {
   not,
   notExists,
   or,
-  relations,
   sql,
 } from "drizzle-orm";
 import {
@@ -39,18 +38,14 @@ import {
   MetadataOperator,
 } from "@ctrlplane/validators/conditions";
 import {
-  releaseCondition,
-  ReleaseFilterType,
-  ReleaseOperator,
-  ReleaseStatus,
+  deploymentVersionCondition,
+  DeploymentVersionConditionType,
+  DeploymentVersionOperator,
+  DeploymentVersionStatus,
 } from "@ctrlplane/validators/releases";
 
 import type { Tx } from "../common.js";
-import { user } from "./auth.js";
 import { deployment } from "./deployment.js";
-import { environment } from "./environment.js";
-import { job } from "./job.js";
-import { resource } from "./resource.js";
 
 export const deploymentVersionChannel = pgTable(
   "deployment_version_channel",
@@ -62,7 +57,7 @@ export const deploymentVersionChannel = pgTable(
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
     versionSelector: jsonb("deployment_version_selector")
-      .$type<ReleaseCondition | null>()
+      .$type<DeploymentVersionCondition | null>()
       .default(sql`NULL`),
   },
   (t) => ({ uniq: uniqueIndex().on(t.deploymentId, t.name) }),
@@ -73,35 +68,35 @@ export type DeploymentVersionChannel = InferSelectModel<
 >;
 export const createDeploymentVersionChannel = createInsertSchema(
   deploymentVersionChannel,
-  { versionSelector: releaseCondition },
+  { versionSelector: deploymentVersionCondition },
 ).omit({ id: true });
 export const updateDeploymentVersionChannel =
   createDeploymentVersionChannel.partial();
 
-export const releaseDependency = pgTable(
+export const versionDependency = pgTable(
   "deployment_version_dependency",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    releaseId: uuid("deployment_version_id")
+    versionId: uuid("deployment_version_id")
       .notNull()
       .references(() => deploymentVersion.id, { onDelete: "cascade" }),
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    releaseFilter: jsonb("deployment_version_selector")
-      .$type<ReleaseCondition | null>()
+    versionSelector: jsonb("deployment_version_selector")
+      .$type<DeploymentVersionCondition | null>()
       .default(sql`NULL`),
   },
-  (t) => ({ unq: uniqueIndex().on(t.releaseId, t.deploymentId) }),
+  (t) => ({ unq: uniqueIndex().on(t.versionId, t.deploymentId) }),
 );
 
-export type ReleaseDependency = InferSelectModel<typeof releaseDependency>;
+export type VersionDependency = InferSelectModel<typeof versionDependency>;
 
-const createReleaseDependency = createInsertSchema(releaseDependency, {
-  releaseFilter: releaseCondition,
+const createVersionDependency = createInsertSchema(versionDependency, {
+  versionSelector: deploymentVersionCondition,
 }).omit({ id: true });
 
-export const releaseStatus = pgEnum("deployment_version_status", [
+export const versionStatus = pgEnum("deployment_version_status", [
   "building",
   "ready",
   "failed",
@@ -112,7 +107,7 @@ export const deploymentVersion = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    version: text("tag").notNull(),
+    tag: text("tag").notNull(),
     config: jsonb("config")
       .notNull()
       .default("{}")
@@ -124,12 +119,12 @@ export const deploymentVersion = pgTable(
     deploymentId: uuid("deployment_id")
       .notNull()
       .references(() => deployment.id, { onDelete: "cascade" }),
-    status: releaseStatus("status").notNull().default("ready"),
+    status: versionStatus("status").notNull().default("ready"),
     message: text("message"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => ({
-    unq: uniqueIndex().on(t.deploymentId, t.version),
+    unq: uniqueIndex().on(t.deploymentId, t.tag),
     createdAtIdx: index("deployment_version_created_at_idx").on(t.createdAt),
   }),
 );
@@ -137,11 +132,11 @@ export const deploymentVersion = pgTable(
 export type DeploymentVersion = InferSelectModel<typeof deploymentVersion>;
 
 export const createDeploymentVersion = createInsertSchema(deploymentVersion, {
-  version: z.string().min(1),
+  tag: z.string().min(1),
   name: z.string().optional(),
   config: z.record(z.any()),
   jobAgentConfig: z.record(z.any()),
-  status: z.nativeEnum(ReleaseStatus),
+  status: z.nativeEnum(DeploymentVersionStatus),
   createdAt: z
     .string()
     .transform((s) => new Date(s))
@@ -149,8 +144,8 @@ export const createDeploymentVersion = createInsertSchema(deploymentVersion, {
 })
   .omit({ id: true })
   .extend({
-    releaseDependencies: z
-      .array(createReleaseDependency.omit({ releaseId: true }))
+    versionDependencies: z
+      .array(createVersionDependency.omit({ versionId: true }))
       .default([]),
   });
 
@@ -160,74 +155,15 @@ export const deploymentVersionMetadata = pgTable(
   "deployment_version_metadata",
   {
     id: uuid("id").primaryKey().defaultRandom().notNull(),
-    releaseId: uuid("deployment_version_id")
+    versionId: uuid("deployment_version_id")
       .references(() => deploymentVersion.id, { onDelete: "cascade" })
       .notNull(),
     key: text("key").notNull(),
     value: text("value").notNull(),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.key, t.releaseId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.key, t.versionId) }),
 );
 
-export const releaseJobTriggerType = pgEnum("release_job_trigger_type", [
-  "new_release", //  release was created
-  "release_updated", // release was updated
-  "new_resource", // new resource was added to an env
-  "resource_changed",
-  "api", // calling API
-  "redeploy", // redeploying
-  "force_deploy", // force deploying a release
-  "new_environment",
-  "variable_changed",
-  "retry", // retrying a failed job
-]);
-
-export const releaseJobTrigger = pgTable(
-  "release_job_trigger",
-  {
-    id: uuid("id").primaryKey().defaultRandom(),
-
-    jobId: uuid("job_id")
-      .notNull()
-      .references(() => job.id)
-      .unique(),
-
-    type: releaseJobTriggerType("type").notNull(),
-    causedById: uuid("caused_by_id").references(() => user.id),
-
-    versionId: uuid("deployment_version_id")
-      .references(() => deploymentVersion.id, { onDelete: "cascade" })
-      .notNull(),
-    resourceId: uuid("resource_id")
-      .references(() => resource.id, { onDelete: "cascade" })
-      .notNull(),
-    environmentId: uuid("environment_id")
-      .references(() => environment.id, { onDelete: "cascade" })
-      .notNull(),
-
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  () => ({}),
-);
-
-export type ReleaseJobTrigger = InferSelectModel<typeof releaseJobTrigger>;
-export type ReleaseJobTriggerType = ReleaseJobTrigger["type"];
-export type ReleaseJobTriggerInsert = InferInsertModel<
-  typeof releaseJobTrigger
->;
-export const releaseJobTriggerRelations = relations(
-  releaseJobTrigger,
-  ({ one }) => ({
-    job: one(job, {
-      fields: [releaseJobTrigger.jobId],
-      references: [job.id],
-    }),
-    resource: one(resource, {
-      fields: [releaseJobTrigger.resourceId],
-      references: [resource.id],
-    }),
-  }),
-);
 const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
   if (cond.operator === MetadataOperator.Null)
     return notExists(
@@ -236,7 +172,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
             eq(deploymentVersionMetadata.key, cond.key),
           ),
         )
@@ -250,7 +186,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
             eq(deploymentVersionMetadata.key, cond.key),
             sql`${deploymentVersionMetadata.value} ~ ${cond.value}`,
           ),
@@ -265,7 +201,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
             eq(deploymentVersionMetadata.key, cond.key),
             ilike(deploymentVersionMetadata.value, `${cond.value}%`),
           ),
@@ -280,7 +216,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
             eq(deploymentVersionMetadata.key, cond.key),
             ilike(deploymentVersionMetadata.value, `%${cond.value}`),
           ),
@@ -295,7 +231,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .from(deploymentVersionMetadata)
         .where(
           and(
-            eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+            eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
             eq(deploymentVersionMetadata.key, cond.key),
             ilike(deploymentVersionMetadata.value, `%${cond.value}%`),
           ),
@@ -309,7 +245,7 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
       .from(deploymentVersionMetadata)
       .where(
         and(
-          eq(deploymentVersionMetadata.releaseId, deploymentVersion.id),
+          eq(deploymentVersionMetadata.versionId, deploymentVersion.id),
           eq(deploymentVersionMetadata.key, cond.key),
           eq(deploymentVersionMetadata.value, cond.value),
         ),
@@ -331,35 +267,37 @@ const buildCreatedAtCondition = (cond: CreatedAtCondition): SQL => {
 
 const buildVersionCondition = (cond: VersionCondition): SQL => {
   if (cond.operator === ColumnOperator.Equals)
-    return eq(deploymentVersion.version, cond.value);
+    return eq(deploymentVersion.tag, cond.value);
   if (cond.operator === ColumnOperator.StartsWith)
-    return ilike(deploymentVersion.version, `${cond.value}%`);
+    return ilike(deploymentVersion.tag, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
-    return ilike(deploymentVersion.version, `%${cond.value}`);
+    return ilike(deploymentVersion.tag, `%${cond.value}`);
   if (cond.operator === ColumnOperator.Contains)
-    return ilike(deploymentVersion.version, `%${cond.value}%`);
-  return sql`${deploymentVersion.version} ~ ${cond.value}`;
+    return ilike(deploymentVersion.tag, `%${cond.value}%`);
+  return sql`${deploymentVersion.tag} ~ ${cond.value}`;
 };
 
-const buildCondition = (tx: Tx, cond: ReleaseCondition): SQL => {
-  if (cond.type === ReleaseFilterType.Metadata)
+const buildCondition = (tx: Tx, cond: DeploymentVersionCondition): SQL => {
+  if (cond.type === DeploymentVersionConditionType.Metadata)
     return buildMetadataCondition(tx, cond);
-  if (cond.type === ReleaseFilterType.CreatedAt)
+  if (cond.type === DeploymentVersionConditionType.CreatedAt)
     return buildCreatedAtCondition(cond);
-  if (cond.type === ReleaseFilterType.Version)
+  if (cond.type === DeploymentVersionConditionType.Version)
     return buildVersionCondition(cond);
 
   if (cond.conditions.length === 0) return sql`FALSE`;
 
   const subCon = cond.conditions.map((c) => buildCondition(tx, c));
   const con =
-    cond.operator === ReleaseOperator.And ? and(...subCon)! : or(...subCon)!;
+    cond.operator === DeploymentVersionOperator.And
+      ? and(...subCon)!
+      : or(...subCon)!;
   return cond.not ? not(con) : con;
 };
 
 export function deploymentVersionMatchesCondition(
   tx: Tx,
-  condition?: ReleaseCondition | null,
+  condition?: DeploymentVersionCondition | null,
 ): SQL<unknown> | undefined {
   return condition == null || Object.keys(condition).length === 0
     ? undefined

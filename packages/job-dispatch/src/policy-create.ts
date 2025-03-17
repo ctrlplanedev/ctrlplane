@@ -44,7 +44,7 @@ export const createJobApprovals = async (
     .values(
       policiesToCheck.map((p) => ({
         policyId: p.environment_policy.id,
-        releaseId: p.deployment_version.id,
+        deploymentVersionId: p.deployment_version.id,
       })),
     )
     .onConflictDoNothing();

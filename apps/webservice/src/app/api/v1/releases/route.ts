@@ -17,20 +17,22 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingReleaseStringCheckPolicy,
+  isPassingChannelSelectorPolicy,
 } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
-import { ReleaseStatus } from "@ctrlplane/validators/releases";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
-const bodySchema = schema.createDeploymentVersion.and(
+const bodySchema = schema.createDeploymentVersion.omit({ tag: true }).and(
   z.object({
     metadata: z.record(z.string()).optional(),
-    status: z.nativeEnum(ReleaseStatus).optional(),
+    status: z.nativeEnum(DeploymentVersionStatus).optional(),
+    tag: z.string().optional(),
+    version: z.string().optional(),
   }),
 );
 
@@ -47,28 +49,53 @@ export const POST = request()
   .handle<{ user: schema.User; body: z.infer<typeof bodySchema> }>(
     async (ctx) => {
       const { req, body } = ctx;
-      const { name, version, metadata = {} } = body;
-      const relName = name == null || name === "" ? version : name;
+      const { name, version, tag, metadata = {} } = body;
+      const getVersionName = () => {
+        if (name != null && name !== "") return name;
+        if (tag != null && tag !== "") return tag;
+        if (version != null && version !== "") return version;
+        return null;
+      };
+
+      const versionName = getVersionName();
+      if (versionName == null)
+        return NextResponse.json(
+          { error: "Invalid version name" },
+          { status: httpStatus.BAD_REQUEST },
+        );
+
+      const getVersionTag = () => {
+        if (tag != null && tag !== "") return tag;
+        if (version != null && version !== "") return version;
+        return null;
+      };
+
+      const versionTag = getVersionTag();
+      if (versionTag == null)
+        return NextResponse.json(
+          { error: "Invalid version tag" },
+          { status: httpStatus.BAD_REQUEST },
+        );
 
       try {
-        const prevRelease = await db
+        const prevVersion = await db
           .select()
           .from(schema.deploymentVersion)
           .where(
             and(
               eq(schema.deploymentVersion.deploymentId, body.deploymentId),
-              eq(schema.deploymentVersion.version, version),
+              eq(schema.deploymentVersion.tag, versionTag),
             ),
           )
           .then(takeFirstOrNull);
 
-        const release = await db
+        const depVersion = await db
           .insert(schema.deploymentVersion)
-          .values({ ...body, name: relName })
+          .values({ ...body, name: versionName, tag: versionTag })
           .onConflictDoUpdate({
             target: [
               schema.deploymentVersion.deploymentId,
-              schema.deploymentVersion.version,
+              schema.deploymentVersion.tag,
             ],
             set: buildConflictUpdateColumns(schema.deploymentVersion, [
               "name",
@@ -86,14 +113,14 @@ export const POST = request()
             .insert(schema.deploymentVersionMetadata)
             .values(
               Object.entries(metadata).map(([key, value]) => ({
-                releaseId: release.id,
+                versionId: depVersion.id,
                 key,
                 value,
               })),
             )
             .onConflictDoUpdate({
               target: [
-                schema.deploymentVersionMetadata.releaseId,
+                schema.deploymentVersionMetadata.versionId,
                 schema.deploymentVersionMetadata.key,
               ],
               set: buildConflictUpdateColumns(
@@ -103,15 +130,15 @@ export const POST = request()
             });
 
         const shouldTrigger =
-          prevRelease == null ||
-          (prevRelease.status !== ReleaseStatus.Ready &&
-            release.status === ReleaseStatus.Ready);
+          prevVersion == null ||
+          (prevVersion.status !== DeploymentVersionStatus.Ready &&
+            depVersion.status === DeploymentVersionStatus.Ready);
 
         if (shouldTrigger)
-          await createReleaseJobTriggers(db, "new_release")
+          await createReleaseJobTriggers(db, "new_version")
             .causedById(ctx.user.id)
-            .filter(isPassingReleaseStringCheckPolicy)
-            .releases([release.id])
+            .filter(isPassingChannelSelectorPolicy)
+            .versions([depVersion.id])
             .then(createJobApprovals)
             .insert()
             .then((releaseJobTriggers) => {
@@ -123,13 +150,13 @@ export const POST = request()
             })
             .then(() =>
               logger.info(
-                `Release for ${release.id} job triggers created and dispatched.`,
+                `Release for ${depVersion.id} job triggers created and dispatched.`,
                 req,
               ),
             );
 
         return NextResponse.json(
-          { ...release, metadata },
+          { ...depVersion, metadata },
           { status: httpStatus.CREATED },
         );
       } catch (error) {

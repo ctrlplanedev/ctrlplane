@@ -6,12 +6,12 @@ import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 
 export const ApprovalCheck: React.FC<{
   policyId: string;
-  release: { id: string; version: string; deploymentId: string };
-}> = ({ policyId, release }) => {
+  deploymentVersion: { id: string; tag: string; deploymentId: string };
+}> = ({ policyId, deploymentVersion }) => {
   const approvalStatus =
-    api.environment.policy.approval.statusByReleasePolicyId.useQuery({
+    api.environment.policy.approval.statusByVersionPolicyId.useQuery({
       policyId,
-      releaseId: release.id,
+      versionId: deploymentVersion.id,
     });
 
   if (approvalStatus.isLoading)
@@ -50,7 +50,10 @@ export const ApprovalCheck: React.FC<{
       </div>
 
       {status === "pending" && (
-        <ApprovalDialog policyId={policyId} release={release}>
+        <ApprovalDialog
+          policyId={policyId}
+          deploymentVersion={deploymentVersion}
+        >
           <Button size="sm" className="h-6 px-2 py-1">
             Review
           </Button>

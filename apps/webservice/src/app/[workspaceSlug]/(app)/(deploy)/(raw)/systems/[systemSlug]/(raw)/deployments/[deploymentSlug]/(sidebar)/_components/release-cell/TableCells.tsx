@@ -119,10 +119,10 @@ const ReleaseIcon: React.FC<{
   );
 };
 
-export const Release: React.FC<{
+export const DeploymentVersion: React.FC<{
   name: string;
-  version: string;
-  releaseId: string;
+  tag: string;
+  versionId: string;
   environment: { id: string; name: string };
   deployedAt: Date;
   workspaceSlug: string;
@@ -133,8 +133,8 @@ export const Release: React.FC<{
   const {
     name,
     deployedAt,
-    releaseId,
-    version,
+    versionId,
+    tag,
     environment,
     workspaceSlug,
     systemSlug,
@@ -145,7 +145,7 @@ export const Release: React.FC<{
   const isSameRelease: JobCondition = {
     type: JobFilterType.Release,
     operator: ColumnOperator.Equals,
-    value: releaseId,
+    value: versionId,
   };
 
   const isSameEnvironment: JobCondition = {
@@ -196,7 +196,7 @@ export const Release: React.FC<{
       <HoverCard>
         <HoverCardTrigger asChild>
           <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/releases/${releaseId}`}
+            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/releases/${versionId}`}
             className="flex w-full items-center gap-2"
           >
             <ReleaseIcon statuses={statuses} />
@@ -206,11 +206,11 @@ export const Release: React.FC<{
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="max-w-36 overflow-hidden text-ellipsis">
-                        <span className="whitespace-nowrap">{version}</span>
+                        <span className="whitespace-nowrap">{tag}</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px]">
-                      {version}
+                      {tag}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -256,7 +256,7 @@ export const Release: React.FC<{
       </HoverCard>
 
       <ReleaseDropdownMenu
-        release={{ id: releaseId, name }}
+        deploymentVersion={{ id: versionId, name }}
         environment={environment}
         isReleaseActive={statuses.some((s) => activeStatusType.includes(s))}
       />

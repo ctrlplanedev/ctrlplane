@@ -5,28 +5,28 @@ import React from "react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ctrlplane/ui/popover";
 
-import { ReleaseDistributionBarChart } from "./ReleaseDistributionBarChart";
+import { VersionDistributionBarChart } from "./VersionDistributionBarChart";
 
-export const ReleaseDistributionGraphPopover: React.FC<{
+export const VersionDistributionGraphPopover: React.FC<{
   children: React.ReactNode;
   deployment: Deployment;
 }> = ({ children, deployment }) => {
-  const showPreviousReleaseDistro = 30;
+  const showPreviousVersionDistro = 30;
 
   return (
     <Popover>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent className="w-[700px]">
         <div className="space-y-2">
-          <h4 className="font-medium leading-none">Release Distribution</h4>
+          <h4 className="font-medium leading-none">Version Distribution</h4>
           <p className="text-sm text-muted-foreground">
-            Distribution of the latest {showPreviousReleaseDistro} filtered
-            releases across resources.
+            Distribution of the latest {showPreviousVersionDistro} filtered
+            versions of {deployment.name} across resources.
           </p>
 
-          <ReleaseDistributionBarChart
+          <VersionDistributionBarChart
             deploymentId={deployment.id}
-            showPreviousReleaseDistro={showPreviousReleaseDistro}
+            showPreviousVersionDistro={showPreviousVersionDistro}
           />
         </div>
       </PopoverContent>

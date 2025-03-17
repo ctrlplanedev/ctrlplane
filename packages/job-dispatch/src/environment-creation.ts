@@ -17,7 +17,7 @@ export const createJobsForNewEnvironment = async (
   const { resourceFilter } = env;
   if (resourceFilter == null) return;
 
-  const releaseChannels = await db.query.environment.findFirst({
+  const versionChannels = await db.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, env.id),
     with: {
       policy: {
@@ -30,9 +30,9 @@ export const createJobsForNewEnvironment = async (
       system: { with: { deployments: true } },
     },
   });
-  if (releaseChannels == null) return;
+  if (versionChannels == null) return;
 
-  const { system, policy } = releaseChannels;
+  const { system, policy } = versionChannels;
   const { workspaceId, deployments } = system;
   const { environmentPolicyDeploymentVersionChannels } = policy;
 
@@ -48,7 +48,7 @@ export const createJobsForNewEnvironment = async (
     );
   if (resources.length === 0) return;
 
-  const releasePromises = deployments.map(async (deployment) => {
+  const versionPromises = deployments.map(async (deployment) => {
     const channel = environmentPolicyDeploymentVersionChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
@@ -69,10 +69,10 @@ export const createJobsForNewEnvironment = async (
       .limit(1)
       .then(takeFirstOrNull);
   });
-  const releases = await Promise.all(releasePromises).then((rows) =>
+  const versions = await Promise.all(versionPromises).then((rows) =>
     rows.filter(isPresent),
   );
-  if (releases.length === 0) return;
+  if (versions.length === 0) return;
 
   const releaseJobTriggers = await createReleaseJobTriggers(
     db,
@@ -80,7 +80,7 @@ export const createJobsForNewEnvironment = async (
   )
     .environments([env.id])
     .resources(resources.map((t) => t.id))
-    .releases(releases.map((r) => r.id))
+    .versions(versions.map((v) => v.id))
     .then(createJobApprovals)
     .insert();
   if (releaseJobTriggers.length === 0) return;

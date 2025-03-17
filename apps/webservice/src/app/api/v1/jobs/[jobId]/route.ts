@@ -16,7 +16,7 @@ type ApprovalJoinResult = {
   user: typeof schema.user.$inferSelect | null;
 };
 
-const getApprovalDetails = async (releaseId: string, policyId: string) =>
+const getApprovalDetails = async (versionId: string, policyId: string) =>
   db
     .select()
     .from(schema.environmentPolicyApproval)
@@ -26,7 +26,7 @@ const getApprovalDetails = async (releaseId: string, policyId: string) =>
     )
     .where(
       and(
-        eq(schema.environmentPolicyApproval.releaseId, releaseId),
+        eq(schema.environmentPolicyApproval.deploymentVersionId, versionId),
         eq(schema.environmentPolicyApproval.policyId, policyId),
       ),
     )
@@ -101,7 +101,7 @@ export const GET = request()
         { status: 404 },
       );
 
-    const release =
+    const version =
       row.deployment_version != null
         ? { ...row.deployment_version, metadata: {} }
         : null;
@@ -112,14 +112,14 @@ export const GET = request()
       environment: row.environment,
       resource: row.resource,
       deployment: row.deployment,
-      release,
+      version,
     };
 
     const policyId = je.environment?.policyId;
 
     const approval =
-      je.release?.id && policyId
-        ? await getApprovalDetails(je.release.id, policyId)
+      je.version?.id && policyId
+        ? await getApprovalDetails(je.version.id, policyId)
         : undefined;
 
     const jobVariableRows = await db

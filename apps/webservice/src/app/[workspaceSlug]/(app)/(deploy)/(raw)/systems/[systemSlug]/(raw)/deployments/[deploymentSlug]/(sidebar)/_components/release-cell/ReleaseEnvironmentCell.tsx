@@ -1,7 +1,7 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams } from "next/navigation";
 import { IconAlertCircle } from "@tabler/icons-react";
@@ -15,28 +15,28 @@ import {
   FilterType,
 } from "@ctrlplane/validators/conditions";
 import { JobStatus } from "@ctrlplane/validators/jobs";
-import { ReleaseStatus } from "@ctrlplane/validators/releases";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ApprovalDialog";
 import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
 import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
-import { Release } from "./TableCells";
+import { DeploymentVersion as DepVersion } from "./TableCells";
 
-type Release = {
+type DepVersion = {
   id: string;
-  version: string;
+  tag: string;
   name: string;
   createdAt: Date;
-  status: ReleaseStatusType;
+  status: DeploymentVersionStatusType;
   deploymentId: string;
 };
 
-type ReleaseEnvironmentCellProps = {
+type DeploymentVersionEnvironmentCellProps = {
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
-  release: Release;
+  deploymentVersion: DepVersion;
 };
 
 const useGetResourceCount = (
@@ -72,11 +72,9 @@ const useGetResourceCount = (
   };
 };
 
-const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
-  environment,
-  deployment,
-  release,
-}) => {
+const DeploymentVersionEnvironmentCell: React.FC<
+  DeploymentVersionEnvironmentCellProps
+> = ({ environment, deployment, deploymentVersion }) => {
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
     systemSlug: string;
@@ -88,11 +86,11 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   );
 
   const { data: blockedEnvsResult, isLoading: isBlockedEnvsLoading } =
-    api.deployment.version.blocked.useQuery([release.id]);
+    api.deployment.version.blocked.useQuery([deploymentVersion.id]);
 
   const { data: approval, isLoading: isApprovalLoading } =
-    api.environment.policy.approval.statusByReleasePolicyId.useQuery({
-      releaseId: release.id,
+    api.environment.policy.approval.statusByVersionPolicyId.useQuery({
+      versionId: deploymentVersion.id,
       policyId: environment.policyId,
     });
 
@@ -102,7 +100,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
 
   const { data: statuses, isLoading: isStatusesLoading } =
     api.deployment.version.status.byEnvironmentId.useQuery(
-      { releaseId: release.id, environmentId: environment.id },
+      { versionId: deploymentVersion.id, environmentId: environment.id },
       { refetchInterval: 2_000 },
     );
 
@@ -151,28 +149,28 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
   if (showRelease)
     return (
       <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
-        <Release
+        <DepVersion
           workspaceSlug={workspaceSlug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
-          releaseId={release.id}
-          version={release.version}
+          versionId={deploymentVersion.id}
+          tag={deploymentVersion.tag}
           environment={environment}
-          name={release.version}
-          deployedAt={release.createdAt}
+          name={deploymentVersion.name}
+          deployedAt={deploymentVersion.createdAt}
           statuses={statuses.map((s) => s.job.status)}
         />
       </div>
     );
 
-  if (release.status === ReleaseStatus.Building)
+  if (deploymentVersion.status === DeploymentVersionStatus.Building)
     return (
       <div className="text-center text-xs text-muted-foreground/70">
         Release is building
       </div>
     );
 
-  if (release.status === ReleaseStatus.Failed)
+  if (deploymentVersion.status === DeploymentVersionStatus.Failed)
     return (
       <div className="text-center text-xs text-red-500">Release failed</div>
     );
@@ -207,7 +205,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
     return (
       <ApprovalDialog
         policyId={approval.policyId}
-        release={release}
+        deploymentVersion={deploymentVersion}
         environmentId={environment.id}
       >
         <div className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50">
@@ -217,7 +215,9 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
             </div>
             <div>
               <div className="max-w-36 truncate font-semibold">
-                <span className="whitespace-nowrap">{release.version}</span>
+                <span className="whitespace-nowrap">
+                  {deploymentVersion.tag}
+                </span>
               </div>
               <div className="text-xs text-muted-foreground">
                 Approval required
@@ -226,7 +226,7 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
           </div>
 
           <ReleaseDropdownMenu
-            release={release}
+            deploymentVersion={deploymentVersion}
             environment={environment}
             isReleaseActive={false}
           />
@@ -234,18 +234,23 @@ const ReleaseEnvironmentCell: React.FC<ReleaseEnvironmentCellProps> = ({
       </ApprovalDialog>
     );
 
-  return <DeployButton releaseId={release.id} environmentId={environment.id} />;
+  return (
+    <DeployButton
+      deploymentVersionId={deploymentVersion.id}
+      environmentId={environment.id}
+    />
+  );
 };
 
 export const LazyReleaseEnvironmentCell: React.FC<
-  ReleaseEnvironmentCellProps
+  DeploymentVersionEnvironmentCellProps
 > = (props) => {
   const { ref, inView } = useInView();
 
   return (
     <div className="flex w-full items-center justify-center" ref={ref}>
       {!inView && <p className="text-xs text-muted-foreground">Loading...</p>}
-      {inView && <ReleaseEnvironmentCell {...props} />}
+      {inView && <DeploymentVersionEnvironmentCell {...props} />}
     </div>
   );
 };

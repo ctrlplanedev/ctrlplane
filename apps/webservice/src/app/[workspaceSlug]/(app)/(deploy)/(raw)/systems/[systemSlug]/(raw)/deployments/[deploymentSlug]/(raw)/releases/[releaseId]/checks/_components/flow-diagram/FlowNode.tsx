@@ -11,13 +11,16 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { api } from "~/trpc/react";
 
 type EnvironmentNodeProps = NodeProps<
-  SCHEMA.Environment & { label: string; release: SCHEMA.DeploymentVersion }
+  SCHEMA.Environment & {
+    label: string;
+    deploymentVersion: SCHEMA.DeploymentVersion;
+  }
 >;
 
 export const EnvironmentNode: React.FC<EnvironmentNodeProps> = (node) => {
   const { data } = node;
-  const releaseJobTriggers = api.job.config.byReleaseId.useQuery(
-    { releaseId: data.release.id },
+  const releaseJobTriggers = api.job.config.byDeploymentVersionId.useQuery(
+    { versionId: data.deploymentVersion.id },
     { refetchInterval: 10_000 },
   );
   const environmentJobs = releaseJobTriggers.data?.filter(

@@ -36,7 +36,7 @@ export const isPassingApprovalPolicy: ReleaseIdPolicyChecker = async (
       schema.environmentPolicyApproval,
       and(
         eq(
-          schema.environmentPolicyApproval.releaseId,
+          schema.environmentPolicyApproval.deploymentVersionId,
           schema.deploymentVersion.id,
         ),
         eq(

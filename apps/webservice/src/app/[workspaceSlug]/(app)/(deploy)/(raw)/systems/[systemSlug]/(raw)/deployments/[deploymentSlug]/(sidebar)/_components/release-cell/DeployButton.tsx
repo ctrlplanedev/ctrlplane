@@ -8,10 +8,10 @@ import { Button } from "@ctrlplane/ui/button";
 import { api } from "~/trpc/react";
 
 export const DeployButton: React.FC<{
-  releaseId: string;
+  deploymentVersionId: string;
   environmentId: string;
   className?: string;
-}> = ({ releaseId, environmentId, className }) => {
+}> = ({ deploymentVersionId, environmentId, className }) => {
   const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
   const router = useRouter();
 
@@ -27,7 +27,7 @@ export const DeployButton: React.FC<{
         deploy
           .mutateAsync({
             environmentId,
-            releaseId,
+            versionId: deploymentVersionId,
           })
           .then(() => router.refresh())
       }

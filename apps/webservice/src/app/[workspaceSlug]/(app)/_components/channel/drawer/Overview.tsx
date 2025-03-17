@@ -1,5 +1,5 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import type React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -26,10 +26,10 @@ import {
 } from "@ctrlplane/validators/conditions";
 import {
   defaultCondition,
+  deploymentVersionCondition,
   isComparisonCondition,
   isEmptyCondition,
   isValidReleaseCondition,
-  releaseCondition,
 } from "@ctrlplane/validators/releases";
 
 import { ReleaseConditionRender } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionRender";
@@ -42,7 +42,7 @@ type OverviewProps = {
   deploymentVersionChannel: SCHEMA.DeploymentVersionChannel;
 };
 
-const getFinalFilter = (filter: ReleaseCondition | null) =>
+const getFinalFilter = (filter: DeploymentVersionCondition | null) =>
   filter && !isEmptyCondition(filter) ? filter : undefined;
 
 const getReleaseFilterUrl = (
@@ -50,7 +50,7 @@ const getReleaseFilterUrl = (
   deploymentVersionChannelId: string,
   systemSlug?: string,
   deploymentSlug?: string,
-  filter?: ReleaseCondition,
+  filter?: DeploymentVersionCondition,
 ) => {
   if (filter == null || systemSlug == null || deploymentSlug == null)
     return null;
@@ -68,14 +68,14 @@ const getReleaseFilterUrl = (
 const schema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().max(1000).optional(),
-  versionSelector: releaseCondition
+  versionSelector: deploymentVersionCondition
     .nullable()
     .refine((r) => r == null || isValidReleaseCondition(r)),
 });
 
 const getFilter = (
-  releaseFilter: ReleaseCondition | null,
-): ReleaseCondition | null => {
+  releaseFilter: DeploymentVersionCondition | null,
+): DeploymentVersionCondition | null => {
   if (releaseFilter == null) return null;
   if (!isComparisonCondition(releaseFilter))
     return {

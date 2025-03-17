@@ -6,7 +6,6 @@ import { ResourceReleaseTable } from "./release-table/ResourceReleaseTable";
 
 type PageProps = {
   params: Promise<{
-    release: { id: string; version: string };
     workspaceSlug: string;
     systemSlug: string;
     deploymentSlug: string;
@@ -19,26 +18,26 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
 
-  const release = await api.deployment.version.byId(params.releaseId);
-  if (release == null) return notFound();
+  const deploymentVersion = await api.deployment.version.byId(params.releaseId);
+  if (deploymentVersion == null) return notFound();
 
   return {
-    title: `${release.version} | ${deployment.name} | ${deployment.system.name} | ${deployment.system.workspace.name}`,
+    title: `${deploymentVersion.tag} | ${deployment.name} | ${deployment.system.name} | ${deployment.system.workspace.name}`,
   };
 }
 
 export default async function ReleasePage(props: PageProps) {
   const params = await props.params;
-  const release = await api.deployment.version.byId(params.releaseId);
+  const deploymentVersion = await api.deployment.version.byId(params.releaseId);
   const deployment = await api.deployment.bySlug(params);
-  if (release == null || deployment == null) notFound();
+  if (deploymentVersion == null || deployment == null) notFound();
 
   const { system } = deployment;
   const environments = await api.environment.bySystemId(system.id);
 
   return (
     <ResourceReleaseTable
-      release={release}
+      deploymentVersion={deploymentVersion}
       deployment={deployment}
       environments={environments}
     />

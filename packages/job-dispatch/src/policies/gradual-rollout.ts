@@ -27,10 +27,10 @@ export const isReleaseJobTriggerInRolloutWindow = (
 
 const getRolloutStart = async (
   db: Tx,
-  release: schema.DeploymentVersion,
+  version: schema.DeploymentVersion,
   policy: schema.EnvironmentPolicy,
 ) => {
-  if (policy.approvalRequirement === "automatic") return release.createdAt;
+  if (policy.approvalRequirement === "automatic") return version.createdAt;
 
   const approval = await db
     .select()
@@ -38,7 +38,7 @@ const getRolloutStart = async (
     .where(
       and(
         eq(schema.environmentPolicyApproval.policyId, policy.id),
-        eq(schema.environmentPolicyApproval.releaseId, release.id),
+        eq(schema.environmentPolicyApproval.deploymentVersionId, version.id),
       ),
     )
     .then(takeFirstOrNull);
@@ -98,31 +98,23 @@ export const isPassingJobRolloutPolicy: ReleaseIdPolicyChecker = async (
   return Promise.all(
     policies.map(async (p) => {
       const {
-        release_job_trigger,
-        environment_policy,
-        deployment_version: release,
+        release_job_trigger: trigger,
+        environment_policy: policy,
+        deployment_version: version,
       } = p;
-      if (
-        environment_policy == null ||
-        environment_policy.rolloutDuration === 0
-      )
-        return release_job_trigger;
+      if (policy == null || policy.rolloutDuration === 0) return trigger;
 
-      const rolloutStart = await getRolloutStart(
-        db,
-        release,
-        environment_policy,
-      );
+      const rolloutStart = await getRolloutStart(db, version, policy);
       if (rolloutStart == null) return null;
 
       if (
         isReleaseJobTriggerInRolloutWindow(
-          release_job_trigger.resourceId,
+          trigger.resourceId,
           rolloutStart,
-          environment_policy.rolloutDuration,
+          policy.rolloutDuration,
         )
       )
-        return release_job_trigger;
+        return trigger;
 
       return null;
     }),

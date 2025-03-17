@@ -29,6 +29,7 @@ import {
   statusColor,
 } from "~/app/[workspaceSlug]/(app)/(deploy)/_utils/status-color";
 import { api } from "~/trpc/react";
+import { urls } from "../../../../../../urls";
 import { StatusIcon } from "./StatusIcon";
 
 const Message: React.FC<{
@@ -53,8 +54,8 @@ const Message: React.FC<{
 
 export const Release: React.FC<{
   name: string;
-  version: string;
-  releaseId: string;
+  tag: string;
+  versionId: string;
   environment: { id: string; name: string };
   deployedAt: Date;
   workspaceSlug: string;
@@ -65,8 +66,8 @@ export const Release: React.FC<{
   const {
     name,
     deployedAt,
-    releaseId,
-    version,
+    versionId,
+    tag,
     environment,
     workspaceSlug,
     systemSlug,
@@ -74,8 +75,8 @@ export const Release: React.FC<{
     statuses,
   } = props;
 
-  const releaseJobTriggersQ = api.job.config.byReleaseAndEnvironmentId.useQuery(
-    { releaseId, environmentId: environment.id },
+  const releaseJobTriggersQ = api.job.config.byVersionAndEnvironmentId.useQuery(
+    { versionId, environmentId: environment.id },
   );
 
   const releaseJobTriggers = releaseJobTriggersQ.data ?? [];
@@ -102,14 +103,18 @@ export const Release: React.FC<{
     isPresent(d.job.message),
   );
 
+  const versionUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .deployment(deploymentSlug)
+    .release(versionId)
+    .baseUrl();
+
   return (
     <div className="flex w-full items-center justify-between">
       <HoverCard>
         <HoverCardTrigger asChild>
-          <Link
-            href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deploymentSlug}/releases/${releaseId}`}
-            className="flex w-full items-center gap-2"
-          >
+          <Link href={versionUrl} className="flex w-full items-center gap-2">
             <StatusIcon statuses={statuses} />
             <div className="w-full">
               <div className="flex items-center gap-2">
@@ -117,11 +122,11 @@ export const Release: React.FC<{
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="max-w-36 truncate font-semibold">
-                        <span className="whitespace-nowrap">{version}</span>
+                        <span className="whitespace-nowrap">{tag}</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px]">
-                      {version}
+                      {tag}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -154,7 +159,7 @@ export const Release: React.FC<{
       </HoverCard>
 
       <ReleaseDropdownMenu
-        release={{ id: releaseId, name }}
+        deploymentVersion={{ id: versionId, name }}
         environment={environment}
         isReleaseActive={statuses.some((s) => activeStatusType.includes(s))}
       />

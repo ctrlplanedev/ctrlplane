@@ -20,11 +20,11 @@ import {
 import { api } from "~/trpc/react";
 
 export const ApprovalDialog: React.FC<{
-  release: { id: string; version: string; deploymentId: string };
+  deploymentVersion: { id: string; tag: string; deploymentId: string };
   policyId: string;
   environmentId?: string;
   children: React.ReactNode;
-}> = ({ release, policyId, environmentId, children }) => {
+}> = ({ deploymentVersion, policyId, environmentId, children }) => {
   const policyQ = api.environment.policy.byId.useQuery(policyId);
 
   const [open, setOpen] = useState(false);
@@ -32,26 +32,26 @@ export const ApprovalDialog: React.FC<{
   const reject = api.environment.policy.approval.reject.useMutation();
   const utils = api.useUtils();
   const invalidateApproval = () => {
-    utils.environment.policy.approval.statusByReleasePolicyId.invalidate({
+    utils.environment.policy.approval.statusByVersionPolicyId.invalidate({
       policyId,
-      releaseId: release.id,
+      versionId: deploymentVersion.id,
     });
     if (environmentId != null)
       utils.deployment.version.latest.byDeploymentAndEnvironment.invalidate({
-        deploymentId: release.deploymentId,
+        deploymentId: deploymentVersion.deploymentId,
         environmentId,
       });
   };
-  const releaseId = release.id;
+  const versionId = deploymentVersion.id;
   const onApprove = () =>
     approve
-      .mutateAsync({ releaseId, policyId })
+      .mutateAsync({ versionId, policyId })
       .then(() => router.refresh())
       .then(() => invalidateApproval())
       .then(() => setOpen(false));
   const onReject = () =>
     reject
-      .mutateAsync({ releaseId, policyId })
+      .mutateAsync({ versionId, policyId })
       .then(() => router.refresh())
       .then(() => invalidateApproval())
       .then(() => setOpen(false));
@@ -63,7 +63,8 @@ export const ApprovalDialog: React.FC<{
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Approve release <span className="truncate">{release.version}</span>
+            Approve release{" "}
+            <span className="truncate">{deploymentVersion.tag}</span>
           </DialogTitle>
           {policyQ.isLoading && (
             <DialogDescription className="flex items-center justify-center">

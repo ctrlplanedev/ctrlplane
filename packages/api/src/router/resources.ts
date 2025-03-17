@@ -25,8 +25,8 @@ import {
   deleteResources,
   dispatchReleaseJobTriggers,
   isPassingAllPoliciesExceptNewerThanLastActive,
+  isPassingChannelSelectorPolicy,
   isPassingNoPendingJobsPolicy,
-  isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import { resourceCondition } from "@ctrlplane/validators/resources";
@@ -774,7 +774,7 @@ export const resourceRouter = createTRPCRouter({
       return createReleaseJobTriggers(ctx.db, "redeploy")
         .causedById(ctx.session.user.id)
         .resources([input])
-        .filter(isPassingReleaseStringCheckPolicy)
+        .filter(isPassingChannelSelectorPolicy)
         .filter(isPassingNoPendingJobsPolicy)
         .then(createJobApprovals)
         .insert()

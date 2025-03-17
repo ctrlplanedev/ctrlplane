@@ -1,7 +1,14 @@
 import { isPresent } from "ts-is-present";
 import { z } from "zod";
 
-import { and, eq, sql, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import {
+  and,
+  eq,
+  inArray,
+  sql,
+  takeFirst,
+  takeFirstOrNull,
+} from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import {
   cancelOldReleaseJobTriggersOnJobDispatch,
@@ -14,16 +21,16 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
 export const approvalRouter = createTRPCRouter({
-  byReleaseId: protectedProcedure
+  byDeploymentVersionId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "deploymentVersion", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.versionId }),
     })
     .input(
       z.object({
-        releaseId: z.string(),
+        versionId: z.string(),
         status: z.enum(["pending", "approved", "rejected"]).optional(),
       }),
     )
@@ -45,7 +52,10 @@ export const approvalRouter = createTRPCRouter({
         .where(
           and(
             ...[
-              eq(SCHEMA.environmentPolicyApproval.releaseId, input.releaseId),
+              eq(
+                SCHEMA.environmentPolicyApproval.deploymentVersionId,
+                input.versionId,
+              ),
               input.status
                 ? eq(SCHEMA.environmentPolicyApproval.status, input.status)
                 : null,
@@ -65,10 +75,10 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentUpdate)
-          .on({ type: "deploymentVersion", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.versionId }),
     })
     .input(
-      z.object({ policyId: z.string().uuid(), releaseId: z.string().uuid() }),
+      z.object({ policyId: z.string().uuid(), versionId: z.string().uuid() }),
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
@@ -78,7 +88,10 @@ export const approvalRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),
-            eq(SCHEMA.environmentPolicyApproval.releaseId, input.releaseId),
+            eq(
+              SCHEMA.environmentPolicyApproval.deploymentVersionId,
+              input.versionId,
+            ),
           ),
         )
         .returning()
@@ -112,7 +125,7 @@ export const approvalRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.environmentPolicyApproval.id, envApproval.id),
-            eq(SCHEMA.deploymentVersion.id, input.releaseId),
+            eq(SCHEMA.deploymentVersion.id, input.versionId),
             eq(SCHEMA.job.status, JobStatus.Pending),
           ),
         );
@@ -127,10 +140,10 @@ export const approvalRouter = createTRPCRouter({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentUpdate)
-          .on({ type: "deploymentVersion", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.versionId }),
     })
     .input(
-      z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
+      z.object({ versionId: z.string().uuid(), policyId: z.string().uuid() }),
     )
     .mutation(({ ctx, input }) =>
       ctx.db.transaction(async (tx) => {
@@ -140,31 +153,53 @@ export const approvalRouter = createTRPCRouter({
           .where(
             and(
               eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),
-              eq(SCHEMA.environmentPolicyApproval.releaseId, input.releaseId),
+              eq(
+                SCHEMA.environmentPolicyApproval.deploymentVersionId,
+                input.versionId,
+              ),
             ),
           );
-        const updateResult = await tx.execute(
-          sql`UPDATE job
-                SET status = 'cancelled'
-                FROM release_job_trigger rjt
-                INNER JOIN environment env ON rjt.environment_id = env.id
-                WHERE job.status = 'pending'
-                  AND rjt.job_id = job.id
-                  AND rjt.release_id = ${input.releaseId}
-                  AND env.policy_id = ${input.policyId}`,
-        );
-        return { cancelledJobCount: updateResult.rowCount };
+
+        const jobs = await tx
+          .select()
+          .from(SCHEMA.job)
+          .innerJoin(
+            SCHEMA.releaseJobTrigger,
+            eq(SCHEMA.job.id, SCHEMA.releaseJobTrigger.jobId),
+          )
+          .innerJoin(
+            SCHEMA.environment,
+            eq(SCHEMA.releaseJobTrigger.environmentId, SCHEMA.environment.id),
+          )
+          .where(
+            and(
+              eq(SCHEMA.job.status, JobStatus.Pending),
+              eq(SCHEMA.releaseJobTrigger.versionId, input.versionId),
+              eq(SCHEMA.environment.policyId, input.policyId),
+            ),
+          );
+
+        await tx
+          .update(SCHEMA.job)
+          .set({ status: JobStatus.Cancelled })
+          .where(
+            inArray(
+              SCHEMA.job.id,
+              jobs.map((j) => j.job.id),
+            ),
+          );
+        return { cancelledJobCount: jobs.length };
       }),
     ),
-  statusByReleasePolicyId: protectedProcedure
+  statusByVersionPolicyId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet)
-          .on({ type: "deploymentVersion", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.versionId }),
     })
     .input(
-      z.object({ releaseId: z.string().uuid(), policyId: z.string().uuid() }),
+      z.object({ versionId: z.string().uuid(), policyId: z.string().uuid() }),
     )
     .query(({ ctx, input }) =>
       ctx.db
@@ -172,7 +207,10 @@ export const approvalRouter = createTRPCRouter({
         .from(SCHEMA.environmentPolicyApproval)
         .where(
           and(
-            eq(SCHEMA.environmentPolicyApproval.releaseId, input.releaseId),
+            eq(
+              SCHEMA.environmentPolicyApproval.deploymentVersionId,
+              input.versionId,
+            ),
             eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),
           ),
         )

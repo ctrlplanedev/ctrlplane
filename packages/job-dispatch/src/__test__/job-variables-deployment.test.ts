@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@ctrlplane/db/client";
 import { JobStatus } from "@ctrlplane/validators/jobs";
-import { ReleaseStatus } from "@ctrlplane/validators/releases";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import * as jobVariablesDeployment from "../job-variables-deployment/job-variables-deployment.js";
 import * as utils from "../job-variables-deployment/utils.js";
@@ -45,7 +45,7 @@ const job: Job = {
   release_job_trigger: {
     id: "0",
     jobId: "0",
-    type: "new_release",
+    type: "new_version",
     versionId: "0",
     resourceId: "0",
     environmentId: "0",
@@ -74,9 +74,9 @@ const deployment_version: SCHEMA.DeploymentVersion = {
   name: "test",
   config: {},
   createdAt: new Date(),
-  version: "0",
+  tag: "0",
   deploymentId: "0",
-  status: ReleaseStatus.Ready,
+  status: DeploymentVersionStatus.Ready,
   message: null,
   jobAgentConfig: {},
 };

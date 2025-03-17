@@ -111,7 +111,7 @@ export const onJobCompletion = async (je: schema.Job) => {
   );
 
   const isDependentOnVersionOfTriggerDeployment = isNotNull(
-    schema.releaseDependency.id,
+    schema.versionDependency.id,
   );
 
   const isWaitingOnJobToFinish = and(
@@ -148,13 +148,13 @@ export const onJobCompletion = async (je: schema.Job) => {
       ),
     )
     .leftJoin(
-      schema.releaseDependency,
+      schema.versionDependency,
       and(
         eq(
-          schema.releaseDependency.releaseId,
+          schema.versionDependency.versionId,
           schema.releaseJobTrigger.versionId,
         ),
-        eq(schema.releaseDependency.deploymentId, triggers.deployment.id),
+        eq(schema.versionDependency.deploymentId, triggers.deployment.id),
       ),
     )
     .where(
