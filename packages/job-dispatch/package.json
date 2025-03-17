@@ -37,7 +37,7 @@
     "ms": "^2.1.3",
     "murmurhash": "^2.0.1",
     "redis": "^4.6.15",
-    "semver": "^7.6.2",
+    "semver": "catalog:",
     "ts-is-present": "catalog:",
     "zod": "catalog:"
   },
@@ -47,7 +47,7 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/lodash": "catalog:",
     "@types/semver": "^7.5.8",
-    "dotenv-cli": "^7.4.2",
+    "dotenv-cli": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",

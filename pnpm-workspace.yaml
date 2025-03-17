@@ -5,13 +5,13 @@ packages:
   - integrations/*
 
 catalog:
-  eslint: ^9.11.1
+  eslint: ^9.22.0
   eslint-plugin-vitest: ^0.5.4
   typescript-eslint: ^8.13.0
-  prettier: ^3.4.2
-  tailwindcss: ^3.4.11
+  prettier: ^3.5.3
+  tailwindcss: ^3.4.17
   typescript: ^5.8.2
-  zod: ^3.23.8
+  zod: ^3.24.2
   "@t3-oss/env-core": ^0.11.1
   "@t3-oss/env-nextjs": ^0.11.1
   "date-fns": ^3.6.0
@@ -19,11 +19,18 @@ catalog:
   "tsx": ^4.19.1
   "lodash": ^4.17.21
   "@types/lodash": ^4.17.5
-  "next": ^14.2.17
+  "next": 15.2.1
   "next-auth": "5.0.0-beta.25"
-  "@next/eslint-plugin-next": ^14.2.6
+  "@next/eslint-plugin-next": ^15.2.2
   "bullmq": ^5.15.0
   "ts-is-present": ^1.2.2
+  react-hook-form: ^7.54.2
+  semver: ^7.7.1
+  superjson: ^2.2.2
+  "@octokit/auth-app": ^7.1.5
+  "@tabler/icons-react": ^3.31.0
+  "dotenv-cli": ^7.4.4
+  "@hookform/resolvers": ^3.10.0
 
 catalogs:
   react19:

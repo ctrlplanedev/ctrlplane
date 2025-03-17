@@ -31,7 +31,7 @@
     "handlebars": "^4.7.8",
     "lodash": "catalog:",
     "p-retry": "^6.2.0",
-    "semver": "^7.6.2",
+    "semver": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

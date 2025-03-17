@@ -52,7 +52,7 @@
     "@ctrlplane/tsconfig": "workspace:*",
     "@types/node": "catalog:node22",
     "@types/pg": "^8.11.6",
-    "dotenv-cli": "^7.4.2",
+    "dotenv-cli": "catalog:",
     "drizzle-kit": "^0.24.2",
     "eslint": "catalog:",
     "prettier": "catalog:",
