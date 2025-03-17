@@ -123,7 +123,7 @@ export const JobAgentSection: React.FC<{
             </AlertTitle>
             <AlertDescription>
               Job agents are used to dispatch jobs to the correct service.
-              Without an agent new releases will not take any action.
+              Without an agent new deployment versions will not take any action.
             </AlertDescription>
           </Alert>
         )}

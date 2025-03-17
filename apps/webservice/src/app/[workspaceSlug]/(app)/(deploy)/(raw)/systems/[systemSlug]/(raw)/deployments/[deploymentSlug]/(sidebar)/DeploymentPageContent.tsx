@@ -40,14 +40,14 @@ import {
 } from "@ctrlplane/validators/conditions";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
-import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionBadge";
-import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionDialog";
-import { useReleaseFilter } from "~/app/[workspaceSlug]/(app)/_components/release/condition/useReleaseFilter";
+import { DeploymentVersionConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionBadge";
+import { DeploymentVersionConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionDialog";
+import { useDeploymentVersionSelector } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/useDeploymentVersionSelector";
 import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployments/DeploymentDirectoryCell";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
+import { LazyDeploymentVersionEnvironmentCell } from "./_components/release-cell/DeploymentVersionEnvironmentCell";
 import { JobHistoryPopover } from "./_components/release-cell/JobHistoryPopover";
-import { LazyReleaseEnvironmentCell } from "./_components/release-cell/ReleaseEnvironmentCell";
 import { VersionDistributionGraphPopover } from "./_components/release-cell/VersionDistributionPopover";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
@@ -187,12 +187,12 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
   directories,
   deploymentVersionChannel,
 }) => {
-  const { filter, setFilter } = useReleaseFilter();
+  const { selector, setSelector } = useDeploymentVersionSelector();
 
   const { systemSlug } = useParams<{ systemSlug: string }>();
 
   const versions = api.deployment.version.list.useQuery(
-    { deploymentId: deployment.id, filter: filter ?? undefined, limit: 30 },
+    { deploymentId: deployment.id, selector: selector ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
 
@@ -210,9 +210,9 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
     <div className="flex flex-col">
       <div className="flex items-center gap-4 border-b border-neutral-800 p-1 px-2 text-sm">
         <div className="flex flex-grow items-center gap-2">
-          <ReleaseConditionDialog
-            condition={filter}
-            onChange={setFilter}
+          <DeploymentVersionConditionDialog
+            condition={selector}
+            onChange={setSelector}
             deploymentVersionChannels={deployment.versionChannels}
           >
             <div className="flex items-center gap-2">
@@ -224,11 +224,11 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                 <IconFilter className="h-4 w-4" />
               </Button>
 
-              {filter != null && deploymentVersionChannel == null && (
-                <ReleaseConditionBadge condition={filter} />
+              {selector != null && deploymentVersionChannel == null && (
+                <DeploymentVersionConditionBadge condition={selector} />
               )}
             </div>
-          </ReleaseConditionDialog>
+          </DeploymentVersionConditionDialog>
         </div>
 
         <div className="flex items-center gap-2 rounded-lg border border-neutral-800/50 px-2 py-1 text-sm text-muted-foreground">
@@ -284,7 +284,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               <TableRow className="hover:bg-transparent">
                 <TableHead className="sticky left-0 z-10 min-w-[500px] p-0">
                   <div className="flex h-[40px] items-center bg-background/70 pl-2">
-                    Version
+                    Name
                   </div>
                 </TableHead>
                 {environments.map((env) => (
@@ -347,7 +347,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         onClick={(e) => e.stopPropagation()}
                         key={env.id}
                       >
-                        <LazyReleaseEnvironmentCell
+                        <LazyDeploymentVersionEnvironmentCell
                           environment={env}
                           deployment={deployment}
                           deploymentVersion={version}

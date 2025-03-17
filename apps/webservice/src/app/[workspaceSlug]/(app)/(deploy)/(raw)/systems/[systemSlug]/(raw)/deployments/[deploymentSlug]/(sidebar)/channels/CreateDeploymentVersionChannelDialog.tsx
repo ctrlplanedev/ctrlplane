@@ -33,11 +33,11 @@ import {
   defaultCondition,
   deploymentVersionCondition,
   isEmptyCondition,
-  isValidReleaseCondition,
+  isValidDeploymentVersionCondition,
 } from "@ctrlplane/validators/releases";
 
-import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionBadge";
-import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionDialog";
+import { DeploymentVersionConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionBadge";
+import { DeploymentVersionConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/deployments/version/condition/DeploymentVersionConditionDialog";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
@@ -46,15 +46,15 @@ type CreateDeploymentVersionChannelDialogProps = {
   children: React.ReactNode;
 };
 
-const getFinalFilter = (filter?: DeploymentVersionCondition) =>
-  filter && !isEmptyCondition(filter) ? filter : undefined;
+const getFinalSelector = (selector?: DeploymentVersionCondition) =>
+  selector && !isEmptyCondition(selector) ? selector : undefined;
 
 const schema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().max(1000).optional(),
   versionSelector: deploymentVersionCondition
     .optional()
-    .refine((cond) => cond == null || isValidReleaseCondition(cond)),
+    .refine((cond) => cond == null || isValidDeploymentVersionCondition(cond)),
 });
 
 export const CreateDeploymentVersionChannelDialog: React.FC<
@@ -73,9 +73,9 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
 
   const form = useForm({ schema });
   const onSubmit = form.handleSubmit((data) => {
-    const filter = getFinalFilter(data.versionSelector);
+    const selector = getFinalSelector(data.versionSelector);
     createDeploymentVersionChannel
-      .mutateAsync({ ...data, deploymentId, versionSelector: filter })
+      .mutateAsync({ ...data, deploymentId, versionSelector: selector })
       .then(() => form.reset(data))
       .then(() => router.refresh())
       .then(() => setOpen(false))
@@ -83,11 +83,11 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
   });
 
   const { versionSelector } = form.watch();
-  const filter = getFinalFilter(versionSelector);
+  const selector = getFinalSelector(versionSelector);
 
-  const filterHash =
-    filter != null
-      ? LZString.compressToEncodedURIComponent(JSON.stringify(filter))
+  const selectorHash =
+    selector != null
+      ? LZString.compressToEncodedURIComponent(JSON.stringify(selector))
       : undefined;
 
   const baseUrl = urls
@@ -95,21 +95,21 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
     .system(systemSlug)
     .deployment(deploymentSlug)
     .releases();
-  const releaseFilterUrl =
-    filterHash != null ? `${baseUrl}?filter=${filterHash}` : baseUrl;
+  const versionSelectorUrl =
+    selectorHash != null ? `${baseUrl}?selector=${selectorHash}` : baseUrl;
 
-  const releasesQ = api.deployment.version.list.useQuery(
-    { deploymentId, filter, limit: 5 },
-    { enabled: filter != null, placeholderData: (prev) => prev },
+  const versionsQ = api.deployment.version.list.useQuery(
+    { deploymentId, selector, limit: 5 },
+    { enabled: selector != null, placeholderData: (prev) => prev },
   );
-  const releases = releasesQ.data;
+  const versions = versionsQ.data;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create Release Channel</DialogTitle>
+          <DialogTitle>Create Deployment Version Channel</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
@@ -147,12 +147,14 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
               render={({ field: { value, onChange } }) => (
                 <FormItem className="space-y-2">
                   <FormLabel>
-                    Release Filter ({releases?.total ?? "-"})
+                    Version Selector ({versions?.total ?? "-"})
                   </FormLabel>
-                  {value != null && <ReleaseConditionBadge condition={value} />}
+                  {value != null && (
+                    <DeploymentVersionConditionBadge condition={value} />
+                  )}
                   <FormControl>
                     <div className="flex items-center gap-2">
-                      <ReleaseConditionDialog
+                      <DeploymentVersionConditionDialog
                         condition={value ?? defaultCondition}
                         deploymentId={deploymentId}
                         onChange={onChange}
@@ -165,9 +167,9 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
                           <IconFilter className="h-4 w-4" />
                           Edit filter
                         </Button>
-                      </ReleaseConditionDialog>
+                      </DeploymentVersionConditionDialog>
 
-                      <Link href={releaseFilterUrl} target="_blank">
+                      <Link href={versionSelectorUrl} target="_blank">
                         <Button
                           variant="outline"
                           size="sm"
@@ -175,7 +177,7 @@ export const CreateDeploymentVersionChannelDialog: React.FC<
                           className="flex items-center gap-2"
                         >
                           <IconExternalLink className="h-4 w-4" />
-                          View releases
+                          View versions
                         </Button>
                       </Link>
                     </div>

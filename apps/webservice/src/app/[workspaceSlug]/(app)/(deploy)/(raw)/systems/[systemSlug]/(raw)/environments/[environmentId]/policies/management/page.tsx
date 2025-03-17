@@ -1,5 +1,5 @@
 import { api } from "~/trpc/server";
-import { ReleaseManagement } from "./ReleaseManagement";
+import { VersionManagement } from "./VersionManagement";
 
 export default async function ManagementPage(props: {
   params: Promise<{ environmentId: string }>;
@@ -7,5 +7,5 @@ export default async function ManagementPage(props: {
   const { environmentId } = await props.params;
   const policy = await api.environment.policy.byEnvironmentId(environmentId);
 
-  return <ReleaseManagement environmentPolicy={policy} />;
+  return <VersionManagement environmentPolicy={policy} />;
 }

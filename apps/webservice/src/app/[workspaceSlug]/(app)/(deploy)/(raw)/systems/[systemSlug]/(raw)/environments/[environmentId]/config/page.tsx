@@ -13,7 +13,9 @@ export default function EnvironmentConfigPage() {
             <a href="#release-management">Release Management</a>
           </div>
           <div>
-            <a href="#release-channels">Release Channels</a>
+            <a href="#deployment-version-channels">
+              Deployment Version Channels
+            </a>
           </div>
           <div>Rollout & Timing</div>
         </div>
@@ -34,8 +36,8 @@ export default function EnvironmentConfigPage() {
             </h2>
           </div>
           <div>
-            <h2 id="release-channels" className="font-bold">
-              Release Channels
+            <h2 id="deployment-version-channels" className="font-bold">
+              Deployment Version Channels
             </h2>
           </div>
           <div>

@@ -8,18 +8,18 @@ import {
   isVersionCondition,
 } from "@ctrlplane/validators/releases";
 
-import type { ReleaseConditionRenderProps } from "./release-condition-props";
+import type { DeploymentVersionConditionRenderProps } from "./deployment-version-condition-props";
 import { ComparisonConditionRender } from "./ComparisonConditionRender";
-import { CreatedAtConditionRender } from "./ReleaseCreatedAtConditionRender";
-import { ReleaseMetadataConditionRender } from "./ReleaseMetadataConditionRender";
-import { ReleaseVersionConditionRender } from "./ReleaseVersionConditionRender";
+import { DeploymentVersionCreatedAtConditionRender } from "./DeploymentVersionCreatedAtConditionRender";
+import { DeploymentVersionMetadataConditionRender } from "./DeploymentVersionMetadataConditionRender";
+import { DeploymentVersionTagConditionRender } from "./DeploymentVersionTagConditionRender";
 
 /**
  * The parent container should have min width of 1000px
  * to render this component properly.
  */
-export const ReleaseConditionRender: React.FC<
-  ReleaseConditionRenderProps<DeploymentVersionCondition>
+export const DeploymentVersionConditionRender: React.FC<
+  DeploymentVersionConditionRenderProps<DeploymentVersionCondition>
 > = ({ condition, onChange, onRemove, depth = 0, className }) => {
   if (isComparisonCondition(condition))
     return (
@@ -34,7 +34,7 @@ export const ReleaseConditionRender: React.FC<
 
   if (isMetadataCondition(condition))
     return (
-      <ReleaseMetadataConditionRender
+      <DeploymentVersionMetadataConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}
@@ -45,7 +45,7 @@ export const ReleaseConditionRender: React.FC<
 
   if (isCreatedAtCondition(condition))
     return (
-      <CreatedAtConditionRender
+      <DeploymentVersionCreatedAtConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}
@@ -56,7 +56,7 @@ export const ReleaseConditionRender: React.FC<
 
   if (isVersionCondition(condition))
     return (
-      <ReleaseVersionConditionRender
+      <DeploymentVersionTagConditionRender
         condition={condition}
         onChange={onChange}
         onRemove={onRemove}

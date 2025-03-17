@@ -348,7 +348,7 @@ export const JobComparisonConditionRender: React.FC<
                   })
                 }
               >
-                Release version
+                Deployment version
               </DropdownMenuItem>
               {depth < 2 && (
                 <DropdownMenuItem

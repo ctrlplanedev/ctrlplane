@@ -57,7 +57,7 @@ export const DeploymentDirectoryCell: React.FC<
 
   const statuses = statusesResult ?? [];
 
-  const getReleaseUrl = urls
+  const getVersionUrl = urls
     .workspace(workspaceSlug)
     .system(systemSlug)
     .deployment(deployment.slug).release;
@@ -75,13 +75,13 @@ export const DeploymentDirectoryCell: React.FC<
       )}
 
       {inView && !isLoading && version == null && (
-        <p className="text-xs text-muted-foreground/70">No versions released</p>
+        <p className="text-xs text-muted-foreground/70">No versions deployed</p>
       )}
 
       {inView && !isLoading && version != null && (
         <div className="flex w-full items-center justify-between rounded-md p-2 hover:bg-secondary/50">
           <Link
-            href={getReleaseUrl(version.id).baseUrl()}
+            href={getVersionUrl(version.id).baseUrl()}
             className="flex w-full items-center gap-2"
           >
             <StatusIcon statuses={statuses.map((s) => s.job.status)} />

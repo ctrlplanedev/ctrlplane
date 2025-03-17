@@ -79,7 +79,7 @@ const createEdgesFromDeploymentsToResources = (relationships: Relationships) =>
     );
     if (releaseJobTrigger == null) return null;
 
-    const { deploymentId } = releaseJobTrigger.release;
+    const { deploymentId } = releaseJobTrigger.deploymentVersion;
     const { environmentId } = releaseJobTrigger;
 
     return {

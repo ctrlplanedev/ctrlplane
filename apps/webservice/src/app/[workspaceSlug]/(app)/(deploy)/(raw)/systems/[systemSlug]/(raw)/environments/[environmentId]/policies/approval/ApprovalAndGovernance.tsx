@@ -45,8 +45,9 @@ export const ApprovalAndGovernance: React.FC<ApprovalAndGovernanceProps> = ({
         <div className="flex flex-col gap-1">
           <h1 className="text-lg font-medium">Approval gates</h1>
           <span className="text-sm text-muted-foreground">
-            If enabled, a release will require approval from an authorized user
-            before it can be deployed to any environment with this policy.
+            If enabled, a deployment version will require approval from an
+            authorized user before it can be deployed to any environment with
+            this policy.
           </span>
         </div>
 
@@ -69,9 +70,9 @@ export const ApprovalAndGovernance: React.FC<ApprovalAndGovernanceProps> = ({
           <h1 className="text-lg font-medium">Previous Deploy Status</h1>
           <span className="text-sm text-muted-foreground">
             Specify a minimum number of resources in dependent environments to
-            successfully be deployed to before triggering a release. For
-            example, specifying that all resources in QA must be deployed to
-            before releasing to PROD.
+            successfully be deployed to before deploying a version. For example,
+            specifying that all resources in QA must be successfully deployed to
+            before deploying to PROD.
           </span>
         </div>
 

@@ -51,7 +51,7 @@ export const PolicyTabs: React.FC = () => {
           href={`${baseUrl}/channels`}
           isActive={activeTab === "channels"}
         >
-          Release Channels
+          Deployment Version Channels
         </TabLink>
         <TabLink href={`${baseUrl}/rollout`} isActive={activeTab === "rollout"}>
           Rollout & Timing

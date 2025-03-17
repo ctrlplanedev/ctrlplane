@@ -108,17 +108,17 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
             Rollout and timing policies govern how and when deployments are
             rolled out to environments. These include incremental rollout
             strategies, scheduling deployments during specific windows, and
-            managing release timing to minimize risk and ensure stability during
-            the deployment process.
+            managing deployment timing to minimize risk and ensure stability
+            during the deployment process.
           </span>
         </div>
 
         <div className="space-y-4">
           <div className="flex flex-col gap-1">
-            <Label>Release Windows</Label>
+            <Label>Deployment Windows</Label>
             <span className="text-xs text-muted-foreground">
-              Release windows allow you to control when deployments can be
-              released into an environment.
+              Deployment windows allow you to control when deployment pipelines
+              can run for a given environment.
             </span>
           </div>
 
@@ -208,7 +208,7 @@ export const RolloutAndTiming: React.FC<RolloutAndTimingProps> = ({
               })
             }
           >
-            Add Release Window
+            Add Deployment Window
           </Button>
         </div>
 

@@ -63,7 +63,7 @@ export const ApprovalDialog: React.FC<{
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">
-            Approve release{" "}
+            Approve version{" "}
             <span className="truncate">{deploymentVersion.tag}</span>
           </DialogTitle>
           {policyQ.isLoading && (
@@ -74,7 +74,7 @@ export const ApprovalDialog: React.FC<{
           {!policyQ.isLoading && (
             <DialogDescription>
               <div className="flex flex-col gap-2">
-                Approves this release for the following environments:
+                Approves this version for the following environments:
                 <div className="flex flex-wrap gap-2">
                   {policyQ.data?.environments.map((env) => (
                     <Badge

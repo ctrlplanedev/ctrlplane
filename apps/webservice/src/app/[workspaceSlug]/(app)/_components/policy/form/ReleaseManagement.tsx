@@ -26,19 +26,19 @@ export const ReleaseManagement: React.FC<ReleaseManagementProps> = ({
         </h1>
         <span className="text-sm text-muted-foreground">
           Release management policies are concerned with how new and pending
-          releases are handled within the deployment pipeline. These include
+          versions are handled within the deployment pipeline. These include
           defining sequencing rules, such as whether to cancel or await pending
-          releases when a new release is triggered, ensuring that releases
-          happen in a controlled and predictable manner without conflicts or
+          jobs when a new version is created, ensuring that deployments happen
+          in a controlled and predictable manner without conflicts or
           disruptions.
         </span>
       </div>
       <div className="space-y-4">
         <div className="flex flex-col gap-1">
-          <Label>Release Sequencing</Label>
+          <Label>Job Sequencing</Label>
           <div className="text-sm text-muted-foreground">
-            Specify whether pending releases should be cancelled or awaited when
-            a new release is triggered.
+            Specify whether pending jobs should be cancelled or awaited when a
+            new version is created.
           </div>
         </div>
         <RadioGroup
@@ -49,14 +49,12 @@ export const ReleaseManagement: React.FC<ReleaseManagementProps> = ({
         >
           <div className="flex items-center space-x-3 space-y-0">
             <RadioGroupItem value="wait" id="release-sequencing-wait" />
-            <Label htmlFor="release-sequencing-wait">
-              Keep pending releases
-            </Label>
+            <Label htmlFor="release-sequencing-wait">Keep pending jobs</Label>
           </div>
           <div className="flex items-center space-x-3 space-y-0">
             <RadioGroupItem value="cancel" id="release-sequencing-cancel" />
             <Label htmlFor="release-sequencing-cancel">
-              Cancel pending releases
+              Cancel pending jobs
             </Label>
           </div>
         </RadioGroup>

@@ -27,16 +27,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 import {
   defaultCondition,
   isEmptyCondition,
-  isValidReleaseCondition,
+  isValidDeploymentVersionCondition,
   MAX_DEPTH_ALLOWED,
 } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
-import { ReleaseBadgeList } from "../ReleaseBadgeList";
-import { ReleaseConditionRender } from "./ReleaseConditionRender";
-import { useReleaseFilter } from "./useReleaseFilter";
+import { DeploymentVersionBadgeList } from "../DeploymentVersionBadgeList";
+import { DeploymentVersionConditionRender } from "./DeploymentVersionConditionRender";
+import { useDeploymentVersionSelector } from "./useDeploymentVersionSelector";
 
-type ReleaseConditionDialogProps = {
+type DeploymentVersionConditionDialogProps = {
   condition: DeploymentVersionCondition | null;
   deploymentId?: string;
   onChange: (
@@ -47,7 +47,9 @@ type ReleaseConditionDialogProps = {
   children: React.ReactNode;
 };
 
-export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
+export const DeploymentVersionConditionDialog: React.FC<
+  DeploymentVersionConditionDialogProps
+> = ({
   condition,
   deploymentId,
   onChange,
@@ -56,7 +58,8 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { setFilter, deploymentVersionChannelId } = useReleaseFilter();
+  const { setSelector, deploymentVersionChannelId } =
+    useDeploymentVersionSelector();
 
   const [localDeploymentVersionChannelId, setLocalDeploymentVersionChannelId] =
     useState<string | null>(deploymentVersionChannelId);
@@ -64,13 +67,13 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   const [localCondition, setLocalCondition] =
     useState<DeploymentVersionCondition | null>(condition ?? defaultCondition);
   const isLocalConditionValid =
-    localCondition == null || isValidReleaseCondition(localCondition);
-  const filter = localCondition ?? undefined;
-  const releasesQ = api.deployment.version.list.useQuery(
-    { deploymentId: deploymentId ?? "", filter, limit: 5 },
+    localCondition == null || isValidDeploymentVersionCondition(localCondition);
+  const selector = localCondition ?? undefined;
+  const versionsQ = api.deployment.version.list.useQuery(
+    { deploymentId: deploymentId ?? "", selector, limit: 5 },
     { enabled: deploymentId != null && isLocalConditionValid },
   );
-  const releases = releasesQ.data;
+  const versions = versionsQ.data;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -82,31 +85,32 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
         <Tabs
           defaultValue={
             deploymentVersionChannelId != null
-              ? "release-channels"
+              ? "deployment-version-channels"
               : "new-filter"
           }
           className="space-y-4"
           onValueChange={(value) => {
             if (value === "new-filter")
               setLocalCondition(localCondition ?? defaultCondition);
-            if (value === "release-channels")
+            if (value === "deployment-version-channels")
               setLocalDeploymentVersionChannelId(deploymentVersionChannelId);
           }}
         >
           {deploymentVersionChannels.length > 0 && (
             <TabsList>
-              <TabsTrigger value="release-channels">
-                Release Channels
+              <TabsTrigger value="deployment-version-channels">
+                Deployment Version Channels
               </TabsTrigger>
               <TabsTrigger value="new-filter">New Filter</TabsTrigger>
             </TabsList>
           )}
-          <TabsContent value="release-channels" className="space-y-4">
+          <TabsContent
+            value="deployment-version-channels"
+            className="space-y-4"
+          >
             <DialogHeader>
-              <DialogTitle>Select Release Channel</DialogTitle>
-              <DialogDescription>
-                View releases by release channel.
-              </DialogDescription>
+              <DialogTitle>Select Channel</DialogTitle>
+              <DialogDescription>View versions by channel.</DialogDescription>
             </DialogHeader>
             <Select
               value={localDeploymentVersionChannelId ?? undefined}
@@ -120,12 +124,12 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select release channel..." />
+                <SelectValue placeholder="Select channel..." />
               </SelectTrigger>
               <SelectContent>
                 {deploymentVersionChannels.length === 0 && (
                   <SelectGroup>
-                    <SelectLabel>No release channels found</SelectLabel>
+                    <SelectLabel>No channels found</SelectLabel>
                   </SelectGroup>
                 )}
                 {deploymentVersionChannels.map((rc) => (
@@ -143,7 +147,7 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
                       (rc) => rc.id === localDeploymentVersionChannelId,
                     );
                   if (deploymentVersionChannel == null) return;
-                  setFilter(
+                  setSelector(
                     deploymentVersionChannel.versionSelector,
                     localDeploymentVersionChannelId,
                   );
@@ -158,17 +162,19 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
           </TabsContent>
           <TabsContent value="new-filter" className="space-y-4">
             <DialogHeader>
-              <DialogTitle>Edit Release Condition</DialogTitle>
+              <DialogTitle>Edit Deployment Version Selector</DialogTitle>
               <DialogDescription>
-                Edit the release filter, up to a depth of{" "}
+                Edit the deployment version selector, up to a depth of{" "}
                 {MAX_DEPTH_ALLOWED + 1}.
               </DialogDescription>
             </DialogHeader>
-            <ReleaseConditionRender
+            <DeploymentVersionConditionRender
               condition={localCondition ?? defaultCondition}
               onChange={setLocalCondition}
             />
-            {releases != null && <ReleaseBadgeList releases={releases} />}
+            {versions != null && (
+              <DeploymentVersionBadgeList versions={versions} />
+            )}
             {error && <span className="text-sm text-red-600">{error}</span>}
             <DialogFooter>
               <Button
@@ -185,10 +191,10 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
                 onClick={() => {
                   if (
                     localCondition != null &&
-                    !isValidReleaseCondition(localCondition)
+                    !isValidDeploymentVersionCondition(localCondition)
                   ) {
                     setError(
-                      "Invalid release condition, ensure all fields are filled out correctly.",
+                      "Invalid version selector, ensure all fields are filled out correctly.",
                     );
                     return;
                   }

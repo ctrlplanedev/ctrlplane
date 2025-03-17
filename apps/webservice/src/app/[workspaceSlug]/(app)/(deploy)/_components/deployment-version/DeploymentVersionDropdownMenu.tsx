@@ -44,7 +44,7 @@ import {
 
 import { api } from "~/trpc/react";
 
-const RedeployReleaseDialog: React.FC<{
+const RedeployVersionDialog: React.FC<{
   deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
   children: React.ReactNode;
@@ -93,7 +93,7 @@ const RedeployReleaseDialog: React.FC<{
   );
 };
 
-const ForceReleaseDialog: React.FC<{
+const ForceDeployVersionDialog: React.FC<{
   deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
   children: React.ReactNode;
@@ -106,10 +106,10 @@ const ForceReleaseDialog: React.FC<{
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Force release {deploymentVersion.name} to {environment.name}?
+            Force deploy {deploymentVersion.name} to {environment.name}?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This will force the release to be deployed to all resources in the
+            This will force the version to be deployed to all resources in the
             environment regardless of any policies set on the environment.
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -136,12 +136,12 @@ const ForceReleaseDialog: React.FC<{
   );
 };
 
-const RedeployReleaseButton: React.FC<{
+const RedeployVersionButton: React.FC<{
   deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
-  isReleaseActive: boolean;
-}> = ({ deploymentVersion, environment, isReleaseActive }) =>
-  isReleaseActive ? (
+  isVersionBeingDeployed: boolean;
+}> = ({ deploymentVersion, environment, isVersionBeingDeployed }) =>
+  isVersionBeingDeployed ? (
     <HoverCard>
       <HoverCardTrigger asChild>
         <DropdownMenuItem
@@ -153,11 +153,11 @@ const RedeployReleaseButton: React.FC<{
         </DropdownMenuItem>
       </HoverCardTrigger>
       <HoverCardContent className="p-1 text-sm">
-        Cannot redeploy a release that is active
+        Cannot redeploy a version that is actively being deployed
       </HoverCardContent>
     </HoverCard>
   ) : (
-    <RedeployReleaseDialog
+    <RedeployVersionDialog
       deploymentVersion={deploymentVersion}
       environment={environment}
     >
@@ -168,14 +168,14 @@ const RedeployReleaseButton: React.FC<{
         <IconReload className="h-4 w-4" />
         <span>Redeploy</span>
       </DropdownMenuItem>
-    </RedeployReleaseDialog>
+    </RedeployVersionDialog>
   );
 
-export const ReleaseDropdownMenu: React.FC<{
+export const DeploymentVersionDropdownMenu: React.FC<{
   deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
-  isReleaseActive: boolean;
-}> = ({ deploymentVersion, environment, isReleaseActive }) => (
+  isVersionBeingDeployed: boolean;
+}> = ({ deploymentVersion, environment, isVersionBeingDeployed }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
@@ -187,12 +187,12 @@ export const ReleaseDropdownMenu: React.FC<{
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
-      <RedeployReleaseButton
+      <RedeployVersionButton
         deploymentVersion={deploymentVersion}
         environment={environment}
-        isReleaseActive={isReleaseActive}
+        isVersionBeingDeployed={isVersionBeingDeployed}
       />
-      <ForceReleaseDialog
+      <ForceDeployVersionDialog
         deploymentVersion={deploymentVersion}
         environment={environment}
       >
@@ -203,7 +203,7 @@ export const ReleaseDropdownMenu: React.FC<{
           <IconAlertTriangle className="h-4 w-4" />
           <span>Force deploy</span>
         </DropdownMenuItem>
-      </ForceReleaseDialog>
+      </ForceDeployVersionDialog>
     </DropdownMenuContent>
   </DropdownMenu>
 );

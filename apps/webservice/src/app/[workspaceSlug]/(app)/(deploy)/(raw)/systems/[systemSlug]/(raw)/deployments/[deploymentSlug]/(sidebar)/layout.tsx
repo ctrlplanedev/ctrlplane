@@ -50,18 +50,17 @@ export default async function DeploymentLayout(props: {
   const deployment = await api.deployment.bySlug(params).catch(() => null);
   if (system == null || deployment == null) notFound();
 
-  const deploymentUrl = urls
+  const systemUrls = urls
     .workspace(params.workspaceSlug)
-    .system(params.systemSlug)
-    .deployment(params.deploymentSlug);
+    .system(params.systemSlug);
+
+  const deploymentUrl = systemUrls.deployment(params.deploymentSlug);
 
   return (
     <div className="flex h-full w-full flex-col">
       <PageHeader className="justify-between">
         <div className="flex shrink-0 items-center gap-4">
-          <Link
-            href={`/${params.workspaceSlug}/systems/${params.systemSlug}/deployments`}
-          >
+          <Link href={systemUrls.deployments()}>
             <IconArrowLeft className="size-5" />
           </Link>
           <Separator orientation="vertical" className="h-4" />
@@ -107,7 +106,7 @@ export default async function DeploymentLayout(props: {
                   href={deploymentUrl.deployments()}
                   exact
                 >
-                  Deployments
+                  Versions
                 </SidebarLink>
                 <SidebarLink
                   icon={<IconVersions />}

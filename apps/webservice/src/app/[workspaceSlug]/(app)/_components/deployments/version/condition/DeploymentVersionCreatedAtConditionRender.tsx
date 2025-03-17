@@ -3,11 +3,11 @@ import type {
   DateOperatorType,
 } from "@ctrlplane/validators/conditions";
 
-import type { ReleaseConditionRenderProps } from "./release-condition-props";
+import type { DeploymentVersionConditionRenderProps } from "./deployment-version-condition-props";
 import { DateConditionRender } from "~/app/[workspaceSlug]/(app)/_components/filter/DateConditionRender";
 
-export const CreatedAtConditionRender: React.FC<
-  ReleaseConditionRenderProps<CreatedAtCondition>
+export const DeploymentVersionCreatedAtConditionRender: React.FC<
+  DeploymentVersionConditionRenderProps<CreatedAtCondition>
 > = ({ condition, onChange, className }) => {
   const setDate = (value: Date) =>
     onChange({ ...condition, value: value.toISOString() });

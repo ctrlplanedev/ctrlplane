@@ -3,35 +3,37 @@ import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import LZString from "lz-string";
 
-const filterParam = "filter";
-const deploymentVersionChannelParam = "release_channel_id_filter";
-export const useReleaseFilter = () => {
+const selectorParam = "selector";
+const deploymentVersionChannelParam = "deployment_version_channel_id_filter";
+export const useDeploymentVersionSelector = () => {
   const urlParams = useSearchParams();
   const router = useRouter();
 
-  const filterHash = urlParams.get(filterParam);
+  const selectorHash = urlParams.get(selectorParam);
   const deploymentVersionChannelId = urlParams.get(
     deploymentVersionChannelParam,
   );
 
-  const filter = useMemo<DeploymentVersionCondition | null>(() => {
-    if (filterHash == null) return null;
+  const selector = useMemo<DeploymentVersionCondition | null>(() => {
+    if (selectorHash == null) return null;
     try {
-      return JSON.parse(LZString.decompressFromEncodedURIComponent(filterHash));
+      return JSON.parse(
+        LZString.decompressFromEncodedURIComponent(selectorHash),
+      );
     } catch {
       return null;
     }
-  }, [filterHash]);
+  }, [selectorHash]);
 
-  const setFilter = useCallback(
+  const setSelector = useCallback(
     (
-      filter: DeploymentVersionCondition | null,
+      selector: DeploymentVersionCondition | null,
       deploymentVersionChannelId?: string | null,
     ) => {
       const url = new URL(window.location.href);
-      const filterJsonHash =
-        filter != null
-          ? LZString.compressToEncodedURIComponent(JSON.stringify(filter))
+      const selectorHash =
+        selector != null
+          ? LZString.compressToEncodedURIComponent(JSON.stringify(selector))
           : null;
 
       if (deploymentVersionChannelId == null)
@@ -42,10 +44,10 @@ export const useReleaseFilter = () => {
           deploymentVersionChannelId,
         );
 
-      if (filterJsonHash != null)
-        url.searchParams.set(filterParam, filterJsonHash);
+      if (selectorHash != null)
+        url.searchParams.set(selectorParam, selectorHash);
 
-      if (filterJsonHash == null) url.searchParams.delete(filterParam);
+      if (selectorHash == null) url.searchParams.delete(selectorParam);
 
       router.replace(`${url.pathname}?${url.searchParams.toString()}`);
     },
@@ -53,8 +55,8 @@ export const useReleaseFilter = () => {
   );
 
   return {
-    filter,
-    setFilter,
+    selector,
+    setSelector,
     deploymentVersionChannelId,
   };
 };

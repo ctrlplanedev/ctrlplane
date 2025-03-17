@@ -205,7 +205,7 @@ export const versionRouter = createTRPCRouter({
     .input(
       z.object({
         deploymentId: z.string(),
-        filter: deploymentVersionCondition.optional(),
+        selector: deploymentVersionCondition.optional(),
         jobFilter: jobCondition.optional(),
         limit: z.number().nonnegative().default(100),
         offset: z.number().nonnegative().default(0),
@@ -218,7 +218,7 @@ export const versionRouter = createTRPCRouter({
       );
       const versionSelectorCheck = SCHEMA.deploymentVersionMatchesCondition(
         ctx.db,
-        input.filter,
+        input.selector,
       );
       const checks = and(
         ...[deploymentIdCheck, versionSelectorCheck].filter(isPresent),

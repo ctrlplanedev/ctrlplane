@@ -4,11 +4,11 @@ import type {
 } from "@ctrlplane/validators/conditions";
 import React from "react";
 
-import type { ReleaseConditionRenderProps } from "./release-condition-props";
+import type { DeploymentVersionConditionRenderProps } from "./deployment-version-condition-props";
 import { ColumnConditionRender } from "~/app/[workspaceSlug]/(app)/_components/filter/ColumnConditionRender";
 
-export const ReleaseVersionConditionRender: React.FC<
-  ReleaseConditionRenderProps<VersionCondition>
+export const DeploymentVersionTagConditionRender: React.FC<
+  DeploymentVersionConditionRenderProps<VersionCondition>
 > = ({ condition, onChange, className }) => {
   const setOperator = (operator: ColumnOperatorType) =>
     onChange({ ...condition, operator });
@@ -21,7 +21,7 @@ export const ReleaseVersionConditionRender: React.FC<
       setOperator={setOperator}
       setValue={setValue}
       className={className}
-      title="Version"
+      title="Tag"
     />
   );
 };

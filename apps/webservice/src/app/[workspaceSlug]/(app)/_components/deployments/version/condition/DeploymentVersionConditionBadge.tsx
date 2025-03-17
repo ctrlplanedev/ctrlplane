@@ -84,7 +84,7 @@ const StringifiedComparisonCondition: React.FC<{
               {operatorVerbs[condition.operator]}
             </span>
           )}
-          <StringifiedReleaseCondition
+          <StringifiedDeploymentVersionCondition
             condition={subCondition}
             depth={depth + 1}
             truncate={truncate}
@@ -131,7 +131,7 @@ const StringifiedTabbedComparisonCondition: React.FC<{
               {operatorVerbs[condition.operator]}
             </div>
           )}
-          <StringifiedReleaseCondition
+          <StringifiedDeploymentVersionCondition
             condition={subCondition}
             depth={depth + 1}
             tabbed
@@ -170,11 +170,11 @@ const StringifiedCreatedAtCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedVersionCondition: React.FC<{
+const StringifiedTagCondition: React.FC<{
   condition: VersionCondition;
 }> = ({ condition }) => (
   <ConditionBadge>
-    <span className="text-white">version</span>
+    <span className="text-white">tag</span>
     <span className="text-muted-foreground">
       {operatorVerbs[condition.operator]}
     </span>
@@ -182,7 +182,7 @@ const StringifiedVersionCondition: React.FC<{
   </ConditionBadge>
 );
 
-const StringifiedReleaseCondition: React.FC<{
+const StringifiedDeploymentVersionCondition: React.FC<{
   condition: DeploymentVersionCondition;
   depth?: number;
   truncate?: boolean;
@@ -209,22 +209,25 @@ const StringifiedReleaseCondition: React.FC<{
     return <StringifiedCreatedAtCondition condition={condition} />;
 
   if (isVersionCondition(condition))
-    return <StringifiedVersionCondition condition={condition} />;
+    return <StringifiedTagCondition condition={condition} />;
 };
 
-export const ReleaseConditionBadge: React.FC<{
+export const DeploymentVersionConditionBadge: React.FC<{
   condition: DeploymentVersionCondition;
   tabbed?: boolean;
 }> = ({ condition, tabbed = false }) => (
   <HoverCard>
     <HoverCardTrigger asChild>
       <div className="cursor-pointer rounded-lg bg-inherit text-xs text-muted-foreground">
-        <StringifiedReleaseCondition condition={condition} truncate />
+        <StringifiedDeploymentVersionCondition condition={condition} truncate />
       </div>
     </HoverCardTrigger>
     <HoverCardContent align="start" className="w-full">
       <div className="cursor-pointer rounded-lg bg-neutral-950 text-xs text-muted-foreground">
-        <StringifiedReleaseCondition condition={condition} tabbed={tabbed} />
+        <StringifiedDeploymentVersionCondition
+          condition={condition}
+          tabbed={tabbed}
+        />
       </div>
     </HoverCardContent>
   </HoverCard>

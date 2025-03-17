@@ -10,20 +10,20 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { ReleaseRows } from "./TableRow";
+import { VersionRows } from "./TableRow";
 
-type ReleaseWithTriggers =
+type VersionWithTriggers =
   RouterOutputs["deployment"]["version"]["list"]["items"][number];
 
 type ReleaseTableProps = {
-  releasesWithTriggers: ReleaseWithTriggers[];
+  versionsWithTriggers: VersionWithTriggers[];
   environment: SCHEMA.Environment & { system: SCHEMA.System };
   deployment: SCHEMA.Deployment;
   resource: SCHEMA.Resource;
 };
 
-export const ReleaseTable: React.FC<ReleaseTableProps> = ({
-  releasesWithTriggers,
+export const DeploymentVersionTable: React.FC<ReleaseTableProps> = ({
+  versionsWithTriggers,
   environment,
   deployment,
   resource,
@@ -32,7 +32,7 @@ export const ReleaseTable: React.FC<ReleaseTableProps> = ({
     <Table className="table-fixed">
       <TableHeader>
         <TableRow>
-          <TableHead>Release</TableHead>
+          <TableHead>Version</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
           <TableHead>Links</TableHead>
@@ -40,22 +40,22 @@ export const ReleaseTable: React.FC<ReleaseTableProps> = ({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {releasesWithTriggers.map((release) => (
-          <ReleaseRows
-            release={release}
+        {versionsWithTriggers.map((version) => (
+          <VersionRows
+            version={version}
             environment={environment}
             deployment={deployment}
             resource={resource}
-            key={release.id}
+            key={version.id}
           />
         ))}
-        {releasesWithTriggers.length === 0 && (
+        {versionsWithTriggers.length === 0 && (
           <TableRow>
             <TableCell
               colSpan={5}
               className="text-center text-muted-foreground"
             >
-              No releases found
+              No versions deployed
             </TableCell>
           </TableRow>
         )}

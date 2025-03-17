@@ -165,7 +165,7 @@ export const OverrideJobStatusDialog: React.FC<{
   );
 };
 
-const ForceReleaseResourceDialog: React.FC<{
+const ForceDeployToResourceDialog: React.FC<{
   deploymentVersion: { id: string; tag: string };
   resource: { id: string; name: string };
   deploymentName: string;
@@ -180,7 +180,7 @@ const ForceReleaseResourceDialog: React.FC<{
   onClose,
   children,
 }) => {
-  const forceRelease = api.deployment.version.deploy.toResource.useMutation();
+  const forceDeploy = api.deployment.version.deploy.toResource.useMutation();
   const utils = api.useUtils();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -191,7 +191,7 @@ const ForceReleaseResourceDialog: React.FC<{
       <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Are you sure you want to force release?
+            Are you sure you want to force deploy?
           </AlertDialogTitle>
           <AlertDialogDescription>
             <span>
@@ -208,9 +208,9 @@ const ForceReleaseResourceDialog: React.FC<{
           <div className="flex-grow" />
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
-            disabled={forceRelease.isPending}
+            disabled={forceDeploy.isPending}
             onClick={() =>
-              forceRelease
+              forceDeploy
                 .mutateAsync({
                   versionId: deploymentVersion.id,
                   resourceId: resource.id,
@@ -223,7 +223,7 @@ const ForceReleaseResourceDialog: React.FC<{
                 .then(() => onClose())
             }
           >
-            Force Release
+            Force Deploy
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -231,7 +231,7 @@ const ForceReleaseResourceDialog: React.FC<{
   );
 };
 
-const RedeployReleaseDialog: React.FC<{
+const RedeployVersionDialog: React.FC<{
   deploymentVersion: { id: string; tag: string; name: string };
   environmentId: string;
   resource: { id: string; name: string };
@@ -254,7 +254,7 @@ const RedeployReleaseDialog: React.FC<{
             to {resource.name}?
           </DialogTitle>
           <DialogDescription>
-            This will redeploy the release to {resource.name}.
+            This will redeploy the version to {resource.name}.
           </DialogDescription>
         </DialogHeader>
 
@@ -337,14 +337,14 @@ export const JobDropdownMenu: React.FC<{
                   </DropdownMenuItem>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Release channel does not match filter
+                  Version channel does not match selector
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
 
           {!isActive && isPassingDeploymentVersionChannel && (
-            <RedeployReleaseDialog
+            <RedeployVersionDialog
               deploymentVersion={deploymentVersion}
               environmentId={environmentId}
               resource={resource}
@@ -356,7 +356,7 @@ export const JobDropdownMenu: React.FC<{
                 <IconReload className="h-4 w-4" />
                 <p>Redeploy</p>
               </DropdownMenuItem>
-            </RedeployReleaseDialog>
+            </RedeployVersionDialog>
           )}
 
           <OverrideJobStatusDialog
@@ -372,7 +372,7 @@ export const JobDropdownMenu: React.FC<{
             </DropdownMenuItem>
           </OverrideJobStatusDialog>
 
-          <ForceReleaseResourceDialog
+          <ForceDeployToResourceDialog
             deploymentVersion={deploymentVersion}
             deploymentName={deployment.name}
             resource={resource}
@@ -384,9 +384,9 @@ export const JobDropdownMenu: React.FC<{
               className="space-x-2"
             >
               <IconAlertTriangle size={16} />
-              <p>Force Release</p>
+              <p>Force Deploy</p>
             </DropdownMenuItem>
-          </ForceReleaseResourceDialog>
+          </ForceDeployToResourceDialog>
         </DropdownMenuContent>
       )}
     </DropdownMenu>

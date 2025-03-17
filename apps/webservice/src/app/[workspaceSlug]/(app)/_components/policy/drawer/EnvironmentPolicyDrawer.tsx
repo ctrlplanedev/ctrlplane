@@ -248,7 +248,7 @@ export const EnvironmentPolicyDrawer: React.FC = () => {
                 setTab(EnvironmentPolicyDrawerTab.DeploymentVersionChannels)
               }
               icon={<IconFilter className="h-4 w-4" />}
-              label="Release Channels"
+              label="Version Channels"
             />
             <TabButton
               active={tab === EnvironmentPolicyDrawerTab.Rollout}

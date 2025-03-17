@@ -18,8 +18,8 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import { useDeploymentVersionChannelDrawer } from "~/app/[workspaceSlug]/(app)/_components/channel/drawer/useDeploymentVersionChannelDrawer";
-import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ApprovalDialog";
-import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
+import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
+import { DeploymentVersionDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/DeploymentVersionDropdownMenu";
 import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
 import { DeploymentVersion as DepVersion } from "./TableCells";
@@ -141,12 +141,12 @@ const DeploymentVersionEnvironmentCell: React.FC<
     isBlockedByDeploymentVersionChannel &&
     !statuses?.some((s) => s.job.status === JobStatus.InProgress);
 
-  const showRelease =
+  const showVersion =
     isAlreadyDeployed &&
     !showBlockedByDeploymentVersionChannel &&
     !isPendingApproval;
 
-  if (showRelease)
+  if (showVersion)
     return (
       <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
         <DepVersion
@@ -166,13 +166,15 @@ const DeploymentVersionEnvironmentCell: React.FC<
   if (deploymentVersion.status === DeploymentVersionStatus.Building)
     return (
       <div className="text-center text-xs text-muted-foreground/70">
-        Release is building
+        Version is building
       </div>
     );
 
   if (deploymentVersion.status === DeploymentVersionStatus.Failed)
     return (
-      <div className="text-center text-xs text-red-500">Release failed</div>
+      <div className="text-center text-xs text-red-500">
+        Version build failed
+      </div>
     );
 
   if (showBlockedByDeploymentVersionChannel)
@@ -189,7 +191,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
           }
           className="px-0 text-muted-foreground/70"
         >
-          release channel
+          channel
         </Button>
       </div>
     );
@@ -225,10 +227,10 @@ const DeploymentVersionEnvironmentCell: React.FC<
             </div>
           </div>
 
-          <ReleaseDropdownMenu
+          <DeploymentVersionDropdownMenu
             deploymentVersion={deploymentVersion}
             environment={environment}
-            isReleaseActive={false}
+            isVersionBeingDeployed={false}
           />
         </div>
       </ApprovalDialog>
@@ -242,7 +244,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
   );
 };
 
-export const LazyReleaseEnvironmentCell: React.FC<
+export const LazyDeploymentVersionEnvironmentCell: React.FC<
   DeploymentVersionEnvironmentCellProps
 > = (props) => {
   const { ref, inView } = useInView();

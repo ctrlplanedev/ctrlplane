@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@ctrlplane/ui/dropdown-menu";
 
-import { CreateReleaseDialog } from "../../release/CreateRelease";
+import { CreateDeploymentVersionDialog } from "../../deployment-version/CreateDeploymentVersion";
 import { DeleteDeploymentDialog } from "./DeleteDeployment";
 import { EditDeploymentDialog } from "./EditDeploymentDialog";
 
@@ -43,7 +43,7 @@ export const DeploymentOptionsDropdown: React.FC<{
           forceMount
         >
           <DropdownMenuGroup>
-            <CreateReleaseDialog
+            <CreateDeploymentVersionDialog
               deploymentId={props.id}
               systemId={props.systemId}
             >
@@ -52,9 +52,9 @@ export const DeploymentOptionsDropdown: React.FC<{
                 onSelect={(e) => e.preventDefault()}
               >
                 <IconRocket className="h-4 w-4" />
-                New Release
+                New Version
               </DropdownMenuItem>
-            </CreateReleaseDialog>
+            </CreateDeploymentVersionDialog>
             <EditDeploymentDialog {...props}>
               <DropdownMenuItem
                 className="flex items-center gap-2"

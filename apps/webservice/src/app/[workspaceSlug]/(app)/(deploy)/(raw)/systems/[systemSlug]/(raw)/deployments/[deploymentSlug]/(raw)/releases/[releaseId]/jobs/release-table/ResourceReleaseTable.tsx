@@ -519,7 +519,7 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
       {!releaseJobTriggerQuery.isLoading && releaseJobTriggers.length === 0 && (
         <div className="flex w-full items-center justify-center py-8">
           <span className="text-sm text-muted-foreground">
-            No jobs found for this release
+            No jobs found for this version
           </span>
         </div>
       )}

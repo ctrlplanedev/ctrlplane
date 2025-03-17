@@ -1,14 +1,79 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import type { NodeProps } from "reactflow";
 import React from "react";
+import {
+  IconAlertCircle,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconCircleX,
+  IconClock,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { Handle, Position } from "reactflow";
 
 import { cn } from "@ctrlplane/ui";
 import { JobStatus, JobStatusReadable } from "@ctrlplane/validators/jobs";
 
 import { useDeploymentEnvResourceDrawer } from "~/app/[workspaceSlug]/(app)/_components/deployments/resource-drawer/useDeploymentResourceDrawer";
-import { ReleaseIcon } from "~/app/[workspaceSlug]/(app)/_components/resources/ReleaseCell";
 import { api } from "~/trpc/react";
+
+const StatusIcon: React.FC<{
+  job?: SCHEMA.Job;
+}> = ({ job }) => {
+  if (job?.status === JobStatus.Pending)
+    return (
+      <div className="rounded-full bg-blue-400 p-1 dark:text-black">
+        <IconClock strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.InProgress)
+    return (
+      <div className="animate-spin rounded-full bg-blue-400 p-1 dark:text-black">
+        <IconLoader2 strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Successful)
+    return (
+      <div className="rounded-full bg-green-400 p-1 dark:text-black">
+        <IconCircleCheck strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Cancelled)
+    return (
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+        <IconCircleX strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Failure)
+    return (
+      <div className="rounded-full bg-red-400 p-1 dark:text-black">
+        <IconCircleX strokeWidth={2} />
+      </div>
+    );
+
+  if (job?.status === JobStatus.Skipped)
+    return (
+      <div className="rounded-full bg-neutral-400 p-1 dark:text-black">
+        <IconCircleDashed strokeWidth={2} />
+      </div>
+    );
+
+  if (
+    job?.status === JobStatus.InvalidJobAgent ||
+    job?.status === JobStatus.InvalidIntegration
+  )
+    return (
+      <div className="rounded-full bg-orange-500 p-1 dark:text-black">
+        <IconAlertCircle strokeWidth={2} />
+      </div>
+    );
+
+  return null;
+};
 
 type DeploymentNodeProps = NodeProps<{
   label: string;
@@ -23,27 +88,27 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
 
   const resourceId = resource.id;
   const environmentId = environment.id;
-  const latestActiveReleasesQ =
-    api.resource.activeReleases.byResourceAndEnvironmentId.useQuery(
+  const latestDeployedVersionsQ =
+    api.resource.latestDeployedVersions.byResourceAndEnvironmentId.useQuery(
       { resourceId, environmentId },
       { refetchInterval: 5_000 },
     );
-  const latestActiveReleases = latestActiveReleasesQ.data ?? [];
-  const activeRelease = latestActiveReleases.find(
-    (r) => r.releaseJobTrigger.release.deploymentId === deployment.id,
+  const latestDeployedVersions = latestDeployedVersionsQ.data ?? [];
+  const latestDeployedVersion = latestDeployedVersions.find(
+    (r) => r.releaseJobTrigger.deploymentVersion.deploymentId === deployment.id,
   );
 
-  const isInProgress = latestActiveReleases.some(
+  const isInProgress = latestDeployedVersions.some(
     (r) => r.releaseJobTrigger.job.status === JobStatus.InProgress,
   );
-  const isPending = latestActiveReleases.some(
+  const isPending = latestDeployedVersions.some(
     (r) => r.releaseJobTrigger.job.status === JobStatus.Pending,
   );
-  const isSuccess = latestActiveReleases.every(
+  const isSuccess = latestDeployedVersions.every(
     (r) => r.releaseJobTrigger.job.status === JobStatus.Successful,
   );
 
-  const releaseJobTrigger = activeRelease?.releaseJobTrigger;
+  const releaseJobTrigger = latestDeployedVersion?.releaseJobTrigger;
 
   return (
     <>
@@ -59,18 +124,18 @@ export const DeploymentNode: React.FC<DeploymentNodeProps> = ({ data }) => {
           setDeploymentEnvResourceId(deployment.id, environment.id, resource.id)
         }
       >
-        <ReleaseIcon job={releaseJobTrigger?.job} />
+        <StatusIcon job={releaseJobTrigger?.job} />
         <div className="flex min-w-0 flex-1 flex-col items-start">
           <span className="w-full truncate">{deployment.name}</span>
           {releaseJobTrigger != null && (
             <span className="w-full truncate text-sm">
-              {releaseJobTrigger.release.name} -{" "}
+              {releaseJobTrigger.deploymentVersion.name} -{" "}
               {JobStatusReadable[releaseJobTrigger.job.status]}
             </span>
           )}
           {releaseJobTrigger == null && (
             <span className="w-full truncate text-sm text-muted-foreground">
-              No active release
+              No versions deployed
             </span>
           )}
         </div>

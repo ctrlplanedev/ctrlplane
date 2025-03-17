@@ -1,12 +1,12 @@
 import type { MetadataCondition } from "@ctrlplane/validators/conditions";
 import { useParams } from "next/navigation";
 
-import type { ReleaseConditionRenderProps } from "./release-condition-props";
+import type { DeploymentVersionConditionRenderProps } from "./deployment-version-condition-props";
 import { MetadataConditionRender } from "~/app/[workspaceSlug]/(app)/_components/filter/MetadataConditionRender";
 import { api } from "~/trpc/react";
 
-export const ReleaseMetadataConditionRender: React.FC<
-  ReleaseConditionRenderProps<MetadataCondition>
+export const DeploymentVersionMetadataConditionRender: React.FC<
+  DeploymentVersionConditionRenderProps<MetadataCondition>
 > = ({ condition, onChange, className }) => {
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;

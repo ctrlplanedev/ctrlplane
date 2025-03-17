@@ -1,6 +1,6 @@
 import { Button } from "@ctrlplane/ui/button";
 
-import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ApprovalDialog";
+import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
 import { api } from "~/trpc/react";
 import { Cancelled, Failing, Loading, Passing, Waiting } from "./StatusIcons";
 

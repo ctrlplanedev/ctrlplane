@@ -64,13 +64,13 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
           >
             <IconSelector className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">
-              {deploymentVersionChannel?.name ?? `Select release channel...`}
+              {deploymentVersionChannel?.name ?? `Select version channel...`}
             </span>
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="p-1">
           <Command>
-            <CommandInput placeholder="Search release channels..." />
+            <CommandInput placeholder="Search version channels..." />
             <CommandList>
               {sortedDeploymentVersionChannels.length === 0 && (
                 <CommandItem>
@@ -78,7 +78,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
                     href={`/${workspaceSlug}/systems/${systemSlug}/deployments/${deployment.slug}/release-channels`}
                     className="w-full hover:text-blue-300"
                   >
-                    <IconPlus className="h-4 w-4" /> Create release channel
+                    <IconPlus className="h-4 w-4" /> Create version channel
                   </Link>
                 </CommandItem>
               )}
@@ -146,13 +146,13 @@ export const DeploymentVersionChannels: React.FC<
   return (
     <div className="space-y-4">
       <h1 className="flex items-center gap-2 text-lg font-medium">
-        Release Channels{" "}
+        Deployment Version Channels{" "}
         {isLoading && <IconLoader2 className="h-4 w-4 animate-spin" />}
       </h1>
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="w-40">Deployment</span>
-          <span className="w-72">Release Channel</span>
+          <span className="w-72">Version Channel</span>
         </div>
         {deployments.map((d) => (
           <DeploymentSelect

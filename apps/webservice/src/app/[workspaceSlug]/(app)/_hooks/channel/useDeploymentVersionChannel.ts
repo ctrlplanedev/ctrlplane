@@ -22,36 +22,36 @@ export const useDeploymentVersionChannel = (
       (prc) => prc.deploymentId === deploymentId,
     );
   const rcId = policyDeploymentVersionChannel?.id ?? null;
-  const { versionSelector: filter } = policyDeploymentVersionChannel ?? {
+  const { versionSelector } = policyDeploymentVersionChannel ?? {
     versionSelector: null,
   };
 
-  const versionFilter: DeploymentVersionCondition = {
+  const tagSelector: DeploymentVersionCondition = {
     type: DeploymentVersionConditionType.Version,
     operator: ColumnOperator.Equals,
     value: versionTag,
   };
 
-  const releaseFilter: DeploymentVersionCondition = {
+  const selector: DeploymentVersionCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
-    conditions: _.compact([versionFilter, filter]),
+    conditions: _.compact([tagSelector, versionSelector]),
   };
 
-  const releasesQ = api.deployment.version.list.useQuery(
-    { deploymentId, filter: releaseFilter, limit: 0 },
-    { enabled: filter != null && enabled },
+  const versionsQ = api.deployment.version.list.useQuery(
+    { deploymentId, selector, limit: 0 },
+    { enabled: versionSelector != null && enabled },
   );
 
   const hasDeploymentVersionChannel = rcId != null;
-  const isDeploymentVersionChannelMatchingFilter =
-    filter == null ||
-    (releasesQ.data?.total != null && releasesQ.data.total > 0);
+  const isDeploymentVersionChannelMatchingSelector =
+    versionSelector == null ||
+    (versionsQ.data?.total != null && versionsQ.data.total > 0);
 
-  const loading = environment.isLoading || releasesQ.isLoading;
+  const loading = environment.isLoading || versionsQ.isLoading;
 
   const isPassingDeploymentVersionChannel =
-    !hasDeploymentVersionChannel || isDeploymentVersionChannelMatchingFilter;
+    !hasDeploymentVersionChannel || isDeploymentVersionChannelMatchingSelector;
 
   return {
     isPassingDeploymentVersionChannel,
