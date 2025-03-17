@@ -138,7 +138,10 @@ export const GET = request()
     const jobWithVariables = {
       ...je,
       variables,
-      release: { ...je.version, version: je.version?.tag },
+      release:
+        je.version != null
+          ? { ...je.version, version: je.version.tag }
+          : { version: undefined },
     };
     if (je.resource == null) return NextResponse.json(jobWithVariables);
 
