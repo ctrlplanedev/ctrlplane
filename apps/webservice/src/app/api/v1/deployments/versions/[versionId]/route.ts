@@ -15,9 +15,9 @@ import {
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { authn, authz } from "../../auth";
-import { parseBody } from "../../body-parser";
-import { request } from "../../middleware";
+import { authn, authz } from "~/app/api/v1/auth";
+import { parseBody } from "~/app/api/v1/body-parser";
+import { request } from "~/app/api/v1/middleware";
 
 const patchSchema = SCHEMA.updateDeploymentVersion.and(
   z.object({ metadata: z.record(z.string()).optional() }),
@@ -30,18 +30,18 @@ export const PATCH = request()
     authz(({ can, extra: { params } }) =>
       can
         .perform(Permission.DeploymentVersionUpdate)
-        .on({ type: "deploymentVersion", id: params.releaseId }),
+        .on({ type: "deploymentVersion", id: params.versionId }),
     ),
   )
   .handle<
     { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
-    { params: { releaseId: string } }
+    { params: { versionId: string } }
   >(async (ctx, { params }) => {
-    const { releaseId: versionId } = params;
+    const { versionId } = params;
     const { body, user, req } = ctx;
 
     try {
-      const release = await ctx.db
+      const deploymentVersion = await ctx.db
         .update(SCHEMA.deploymentVersion)
         .set(body)
         .where(eq(SCHEMA.deploymentVersion.id, versionId))
@@ -83,12 +83,12 @@ export const PATCH = request()
         })
         .then(() =>
           logger.info(
-            `Version for ${versionId} job triggers created and dispatched.`,
+            `Jobs for deployment version ${versionId} created and dispatched.`,
             req,
           ),
         );
 
-      return NextResponse.json(release);
+      return NextResponse.json(deploymentVersion);
     } catch (error) {
       logger.error(error);
       return NextResponse.json(

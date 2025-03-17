@@ -15,7 +15,7 @@ import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
-  deploymentVersionChannels: z.array(z.string()),
+  channels: z.array(z.string()),
   expiresAt: z.coerce
     .date()
     .min(new Date(), "Expires at must be in the future")
@@ -48,17 +48,12 @@ export const POST = request()
 
       try {
         return ctx.db.transaction(async (tx) => {
-          const { deploymentVersionChannels, metadata, ...rest } = ctx.body;
+          const { channels, metadata, ...rest } = ctx.body;
 
-          const channels = await tx
+          const depVersionChannels = await tx
             .select()
             .from(schema.deploymentVersionChannel)
-            .where(
-              inArray(
-                schema.deploymentVersionChannel.id,
-                deploymentVersionChannels,
-              ),
-            )
+            .where(inArray(schema.deploymentVersionChannel.id, channels))
             .then((rows) =>
               _.uniqBy(rows, (r) => r.deploymentId).map((r) => ({
                 channelId: r.id,
@@ -69,7 +64,7 @@ export const POST = request()
           const environment = await createEnv(tx, {
             ...rest,
             metadata,
-            versionChannels: channels,
+            versionChannels: depVersionChannels,
           });
 
           await createJobsForNewEnvironment(tx, environment);

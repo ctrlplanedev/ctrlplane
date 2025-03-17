@@ -7,8 +7,8 @@ import * as SCHEMA from "@ctrlplane/db/schema";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
 
-import { authn, authz } from "../../auth";
-import { request } from "../../middleware";
+import { authn, authz } from "~/app/api/v1/auth";
+import { request } from "~/app/api/v1/middleware";
 
 export const GET = request()
   .use(authn)

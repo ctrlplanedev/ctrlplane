@@ -32,12 +32,12 @@ export const DELETE = request()
           );
 
         return NextResponse.json(
-          { message: "Release channel deleted" },
+          { message: "Channel deleted" },
           { status: 200 },
         );
       } catch {
         return NextResponse.json(
-          { error: "Failed to delete release channel" },
+          { error: "Failed to delete channel" },
           { status: 500 },
         );
       }

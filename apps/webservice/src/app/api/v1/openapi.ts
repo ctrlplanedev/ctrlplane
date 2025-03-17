@@ -97,12 +97,12 @@ export const openapi: Swagger.SwaggerV3 = {
         required: ["id"],
         additionalProperties: true,
       },
-      Release: {
+      DeploymentVersion: {
         type: "object",
         properties: {
           id: { type: "string", format: "uuid" },
           name: { type: "string" },
-          version: { type: "string" },
+          tag: { type: "string" },
           config: { type: "object", additionalProperties: true },
           jobAgentConfig: { type: "object", additionalProperties: true },
           deploymentId: { type: "string", format: "uuid" },
@@ -112,7 +112,7 @@ export const openapi: Swagger.SwaggerV3 = {
         required: [
           "id",
           "name",
-          "version",
+          "tag",
           "config",
           "deploymentId",
           "createdAt",
@@ -143,18 +143,18 @@ export const openapi: Swagger.SwaggerV3 = {
             type: "string",
             enum: ["some", "all", "optional"],
             description:
-              "If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment",
+              "If a policy depends on an environment, whether or not the policy requires all, some, or no successful jobs in the environment",
           },
           successMinimum: {
             type: "number",
             description:
-              "If a policy depends on an environment, the minimum number of successful releases in the environment",
+              "If a policy depends on an environment, the minimum number of successful deployments to resources in the environment",
           },
           concurrencyLimit: {
             type: "number",
             nullable: true,
             description:
-              "The maximum number of concurrent releases in the environment",
+              "The maximum number of concurrent deployment pipeline runs in environments using this policy",
           },
           rolloutDuration: {
             type: "number",
@@ -163,13 +163,13 @@ export const openapi: Swagger.SwaggerV3 = {
           minimumReleaseInterval: {
             type: "number",
             description:
-              "The minimum interval between releases in milliseconds",
+              "The minimum interval between version deployments in milliseconds",
           },
           releaseSequencing: {
             type: "string",
             enum: ["wait", "cancel"],
             description:
-              "If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release",
+              "If a new deployment version is created, whether it will wait for the current deployment to finish before starting, or cancel the current deployment",
           },
         },
         required: [

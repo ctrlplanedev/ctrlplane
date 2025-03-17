@@ -4,21 +4,15 @@ import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
-  info: { title: "Ctrlplane API", version: "1.0.0" },
+  info: {
+    title: "Ctrlplane API",
+    version: "1.0.0",
+  },
   paths: {
-    "/v1/releases/{releaseId}": {
-      patch: {
-        summary: "Updates a release",
-        operationId: "updateRelease",
-        parameters: [
-          {
-            name: "releaseId",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "The release ID",
-          },
-        ],
+    "/v1/deployments/versions": {
+      post: {
+        summary: "Upserts a deployment version",
+        operationId: "upsertDeploymentVersion",
         requestBody: {
           required: true,
           content: {
@@ -26,7 +20,7 @@ export const openapi: Swagger.SwaggerV3 = {
               schema: {
                 type: "object",
                 properties: {
-                  version: { type: "string" },
+                  tag: { type: "string" },
                   deploymentId: { type: "string" },
                   createdAt: { type: "string", format: "date-time" },
                   name: { type: "string" },
@@ -45,6 +39,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     additionalProperties: { type: "string" },
                   },
                 },
+                required: ["version", "deploymentId"],
               },
             },
           },
@@ -54,7 +49,21 @@ export const openapi: Swagger.SwaggerV3 = {
             description: "OK",
             content: {
               "application/json": {
-                schema: { $ref: "#/components/schemas/Release" },
+                schema: { $ref: "#/components/schemas/DeploymentVersion" },
+              },
+            },
+          },
+          "409": {
+            description: "Deployment version already exists",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    error: { type: "string" },
+                    id: { type: "string" },
+                  },
+                },
               },
             },
           },

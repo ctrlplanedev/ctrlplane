@@ -188,10 +188,10 @@ const upsertVersions = async (db: Tx, config: CacV1, userId: string) => {
           d.deployment.slug === deploymentSlug && d.system.slug === systemSlug,
       );
       if (deployment == null) return false;
-      const existingRelease = deployment.versions.find(
+      const existingVersion = deployment.versions.find(
         (r) => r.tag === version.tag,
       );
-      return existingRelease == null;
+      return existingVersion == null;
     },
   );
 
