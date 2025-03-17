@@ -135,7 +135,11 @@ export const GET = request()
       }),
     );
 
-    const jobWithVariables = { ...je, variables };
+    const jobWithVariables = {
+      ...je,
+      variables,
+      release: { ...je.version, version: je.version?.tag },
+    };
     if (je.resource == null) return NextResponse.json(jobWithVariables);
 
     const metadata = await db
