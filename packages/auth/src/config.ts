@@ -37,7 +37,7 @@ export const isCredentialsAuthEnabled =
 
 let resend: Resend | null = null;
 const getResend = (): Resend | null => {
-  if (env.RESEND_API_KEY == null) return null;
+  if (env.RESEND_API_KEY == null || env.RESEND_AUDIENCE_ID == null) return null;
   if (resend == null) resend = new Resend(env.RESEND_API_KEY);
   return resend;
 };
@@ -135,7 +135,7 @@ export const authConfig: NextAuthConfig = {
       try {
         await resend.contacts.create({
           email: user.email,
-          audienceId: "Registered Users",
+          audienceId: env.RESEND_AUDIENCE_ID!,
           firstName: user.name?.split(" ")[0] ?? "",
           lastName: user.name?.split(" ").slice(1).join(" ") ?? "",
           unsubscribed: false,
