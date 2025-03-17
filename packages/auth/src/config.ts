@@ -4,11 +4,13 @@ import type { Provider } from "next-auth/providers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { Resend } from "resend";
 import { ZodError } from "zod";
 
 import { and, eq, isNull, takeFirst } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
+import { logger } from "@ctrlplane/logger";
 import { signInSchema } from "@ctrlplane/validators/auth";
 
 import { env } from "./env.js";
@@ -32,6 +34,13 @@ export const isCredentialsAuthEnabled =
   env.AUTH_CREDENTIALS_ENABLED === "auto"
     ? !isGoogleAuthEnabled && !isOIDCAuthEnabled
     : env.AUTH_CREDENTIALS_ENABLED === "true";
+
+let resend: Resend | null = null;
+const getResend = (): Resend | null => {
+  if (env.RESEND_API_KEY == null || env.RESEND_AUDIENCE_ID == null) return null;
+  if (resend == null) resend = new Resend(env.RESEND_API_KEY);
+  return resend;
+};
 
 const providers = (): Provider[] => {
   const p: Provider[] = [];
@@ -63,7 +72,8 @@ const providers = (): Provider[] => {
             const user = await getUserByCredentials(email, password);
             return user;
           } catch (error) {
-            console.log(error);
+            logger.error("Failed to authorize credentials: ", error);
+
             // Return `null` to indicate that the credentials are invalid
             if (error instanceof ZodError) return null;
             throw error;
@@ -116,11 +126,30 @@ export const authConfig: NextAuthConfig = {
   },
 
   events: {
+    createUser: async (opts) => {
+      const { user } = opts;
+      if (user.email == null || user.id == null) return;
+
+      const resend = getResend();
+      if (resend == null) return;
+      try {
+        await resend.contacts.create({
+          email: user.email,
+          audienceId: env.RESEND_AUDIENCE_ID!,
+          firstName: user.name?.split(" ")[0] ?? "",
+          lastName: user.name?.split(" ").slice(1).join(" ") ?? "",
+          unsubscribed: false,
+        });
+      } catch (error) {
+        logger.error("Failed to create contact in Resend:", error);
+      }
+    },
     signIn: async (opts) => {
       const { user } = opts;
       if (user.email == null || user.id == null) return;
       const domain = user.email.split("@")[1]!;
       if (opts.profile?.email_verified == null) return;
+
       const isNotAlreadyMember = isNull(schema.entityRole.id);
       const domainMatchingWorkspaces = await db
         .select()

@@ -310,7 +310,7 @@ export const githubRouter = createTRPCRouter({
             const userData = (await installationOctokit.request(
               "GET /user/{account_id}",
               {
-                account_id: installation.target_id.toString(),
+                account_id: installation.target_id,
                 headers: { "X-GitHub-Api-Version": "2022-11-28" },
               },
             )) as { data: { login: string; avatar_url: string } };
