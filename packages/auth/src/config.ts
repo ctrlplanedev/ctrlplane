@@ -117,78 +117,80 @@ export const authConfig: NextAuthConfig = {
         user: user,
       };
     },
-    redirect: ({ url }) => {
+    redirect: ({ url, baseUrl }) => {
       const params = new URLSearchParams(url);
       const token = params.get("inviteToken");
-      if (token != null) return `/join/${token}`;
-      return "/";
+      if (token != null) return `${baseUrl}/join/${token}`;
+      // https://stackoverflow.com/questions/76309710/typeerror-failed-to-construct-url-invalid-url-when-using-nextauth-js-credent
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      return baseUrl;
     },
   },
 
   events: {
-    createUser: async (opts) => {
-      const { user } = opts;
-      if (user.email == null || user.id == null) return;
-
-      const resend = getResend();
-      if (resend == null) return;
-      try {
-        await resend.contacts.create({
-          email: user.email,
-          audienceId: env.RESEND_AUDIENCE_ID!,
-          firstName: user.name?.split(" ")[0] ?? "",
-          lastName: user.name?.split(" ").slice(1).join(" ") ?? "",
-          unsubscribed: false,
-        });
-      } catch (error) {
-        logger.error("Failed to create contact in Resend:", error);
-      }
-    },
     signIn: async (opts) => {
       const { user } = opts;
       if (user.email == null || user.id == null) return;
       const domain = user.email.split("@")[1]!;
-      if (opts.profile?.email_verified == null) return;
+      const isEmailVerified = opts.profile?.email_verified !== null;
 
-      const isNotAlreadyMember = isNull(schema.entityRole.id);
-      const domainMatchingWorkspaces = await db
-        .select()
-        .from(schema.workspace)
-        .innerJoin(
-          schema.workspaceEmailDomainMatching,
-          and(
-            eq(
-              schema.workspaceEmailDomainMatching.workspaceId,
-              schema.workspace.id,
+      if (isEmailVerified) {
+        const isNotAlreadyMember = isNull(schema.entityRole.id);
+        const domainMatchingWorkspaces = await db
+          .select()
+          .from(schema.workspace)
+          .innerJoin(
+            schema.workspaceEmailDomainMatching,
+            and(
+              eq(
+                schema.workspaceEmailDomainMatching.workspaceId,
+                schema.workspace.id,
+              ),
             ),
-          ),
-        )
-        .leftJoin(
-          schema.entityRole,
-          and(
-            eq(schema.entityRole.scopeId, schema.workspace.id),
-            eq(schema.entityRole.entityId, user.id),
-            eq(schema.entityRole.entityType, "user"),
-          ),
-        )
-        .where(
-          and(
-            eq(schema.workspaceEmailDomainMatching.verified, true),
-            eq(schema.workspaceEmailDomainMatching.domain, domain),
-            isNotAlreadyMember,
-          ),
-        );
+          )
+          .leftJoin(
+            schema.entityRole,
+            and(
+              eq(schema.entityRole.scopeId, schema.workspace.id),
+              eq(schema.entityRole.entityId, user.id),
+              eq(schema.entityRole.entityType, "user"),
+            ),
+          )
+          .where(
+            and(
+              eq(schema.workspaceEmailDomainMatching.verified, true),
+              eq(schema.workspaceEmailDomainMatching.domain, domain),
+              isNotAlreadyMember,
+            ),
+          );
 
-      if (domainMatchingWorkspaces.length > 0)
-        await db.insert(schema.entityRole).values(
-          domainMatchingWorkspaces.map((b) => ({
-            roleId: b.workspace_email_domain_matching.roleId,
-            entityType: "user" as const,
-            entityId: user.id!,
-            scopeId: b.workspace.id,
-            scopeType: "workspace" as const,
-          })),
-        );
+        if (domainMatchingWorkspaces.length > 0)
+          await db.insert(schema.entityRole).values(
+            domainMatchingWorkspaces.map((b) => ({
+              roleId: b.workspace_email_domain_matching.roleId,
+              entityType: "user" as const,
+              entityId: user.id!,
+              scopeId: b.workspace.id,
+              scopeType: "workspace" as const,
+            })),
+          );
+      }
+
+      const resend = getResend();
+      if (resend != null && env.RESEND_AUDIENCE_ID != null)
+        try {
+          logger.info("Creating user in resend");
+          await resend.contacts.create({
+            email: user.email,
+            audienceId: env.RESEND_AUDIENCE_ID,
+            firstName: user.name?.split(" ")[0] ?? "",
+            lastName: user.name?.split(" ").slice(1).join(" ") ?? "",
+            unsubscribed: true,
+          });
+          logger.info("User created");
+        } catch (error) {
+          logger.error("Failed to create contact in Resend:", error);
+        }
     },
   },
 } satisfies NextAuthConfig;
