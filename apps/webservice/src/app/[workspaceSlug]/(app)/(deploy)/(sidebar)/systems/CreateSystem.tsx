@@ -7,7 +7,6 @@ import slugify from "slugify";
 import { z } from "zod";
 
 import { systemSchema } from "@ctrlplane/db/schema";
-import { urls } from "~/app/urls";
 import { Button } from "@ctrlplane/ui/button";
 import {
   Dialog,
@@ -31,6 +30,7 @@ import {
 import { Input } from "@ctrlplane/ui/input";
 import { Textarea } from "@ctrlplane/ui/textarea";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 const systemForm = z.object(systemSchema.shape);
@@ -62,7 +62,11 @@ export const CreateSystemDialog: React.FC<{
     createSystem
       .mutateAsync({ workspaceId: workspace.id, ...system })
       .then(() => router.refresh())
-      .then(() => router.push(urls.workspace(workspace.slug).system(system.slug).baseUrl()))
+      .then(() =>
+        router.push(
+          urls.workspace(workspace.slug).system(system.slug).baseUrl(),
+        ),
+      )
       .then(() => onSuccess?.())
       .then(() => setOpen(false))
       .catch(() => setError("root", { message: errMsg })),

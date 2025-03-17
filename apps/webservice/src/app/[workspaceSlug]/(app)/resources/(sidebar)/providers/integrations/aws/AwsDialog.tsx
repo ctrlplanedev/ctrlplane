@@ -5,7 +5,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconBulb, IconCheck, IconCopy } from "@tabler/icons-react";
-import { urls } from "~/app/urls";
 import { useFieldArray } from "react-hook-form";
 import { useCopyToClipboard } from "react-use";
 import { z } from "zod";
@@ -36,6 +35,7 @@ import { Input } from "@ctrlplane/ui/input";
 import { Label } from "@ctrlplane/ui/label";
 import { Switch } from "@ctrlplane/ui/switch";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 
 export const createAwsSchema = z.object({
@@ -97,7 +97,9 @@ export const AwsDialog: React.FC<{
     });
     await utils.resource.provider.byWorkspaceId.invalidate();
     router.refresh();
-    router.push(urls.workspace(workspace.slug).resources().providers().baseUrl());
+    router.push(
+      urls.workspace(workspace.slug).resources().providers().baseUrl(),
+    );
   });
   return (
     <Dialog>
