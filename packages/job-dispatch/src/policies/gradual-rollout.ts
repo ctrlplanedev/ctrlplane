@@ -38,7 +38,7 @@ const getRolloutStart = async (
     .where(
       and(
         eq(schema.environmentPolicyApproval.policyId, policy.id),
-        eq(schema.environmentPolicyApproval.versionId, version.id),
+        eq(schema.environmentPolicyApproval.deploymentVersionId, version.id),
       ),
     )
     .then(takeFirstOrNull);

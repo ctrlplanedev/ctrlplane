@@ -756,7 +756,7 @@ export const versionRouter = createTRPCRouter({
             SCHEMA.environmentPolicyApproval,
             and(
               eq(
-                SCHEMA.environmentPolicyApproval.versionId,
+                SCHEMA.environmentPolicyApproval.deploymentVersionId,
                 SCHEMA.deploymentVersion.id,
               ),
               eq(

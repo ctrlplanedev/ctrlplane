@@ -259,7 +259,7 @@ export const environmentPolicyApproval = pgTable(
     policyId: uuid("policy_id")
       .notNull()
       .references(() => environmentPolicy.id, { onDelete: "cascade" }),
-    versionId: uuid("release_id")
+    deploymentVersionId: uuid("release_id")
       .notNull()
       .references(() => deploymentVersion.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
@@ -269,7 +269,7 @@ export const environmentPolicyApproval = pgTable(
       precision: 0,
     }).default(sql`NULL`),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.versionId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.deploymentVersionId) }),
 );
 
 export type EnvironmentPolicyApproval = InferSelectModel<

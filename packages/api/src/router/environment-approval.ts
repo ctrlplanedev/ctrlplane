@@ -52,7 +52,10 @@ export const approvalRouter = createTRPCRouter({
         .where(
           and(
             ...[
-              eq(SCHEMA.environmentPolicyApproval.versionId, input.versionId),
+              eq(
+                SCHEMA.environmentPolicyApproval.deploymentVersionId,
+                input.versionId,
+              ),
               input.status
                 ? eq(SCHEMA.environmentPolicyApproval.status, input.status)
                 : null,
@@ -85,7 +88,10 @@ export const approvalRouter = createTRPCRouter({
         .where(
           and(
             eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),
-            eq(SCHEMA.environmentPolicyApproval.versionId, input.versionId),
+            eq(
+              SCHEMA.environmentPolicyApproval.deploymentVersionId,
+              input.versionId,
+            ),
           ),
         )
         .returning()
@@ -147,7 +153,10 @@ export const approvalRouter = createTRPCRouter({
           .where(
             and(
               eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),
-              eq(SCHEMA.environmentPolicyApproval.versionId, input.versionId),
+              eq(
+                SCHEMA.environmentPolicyApproval.deploymentVersionId,
+                input.versionId,
+              ),
             ),
           );
 
@@ -198,7 +207,10 @@ export const approvalRouter = createTRPCRouter({
         .from(SCHEMA.environmentPolicyApproval)
         .where(
           and(
-            eq(SCHEMA.environmentPolicyApproval.versionId, input.versionId),
+            eq(
+              SCHEMA.environmentPolicyApproval.deploymentVersionId,
+              input.versionId,
+            ),
             eq(SCHEMA.environmentPolicyApproval.policyId, input.policyId),
           ),
         )

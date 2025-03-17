@@ -26,7 +26,7 @@ const getApprovalDetails = async (versionId: string, policyId: string) =>
     )
     .where(
       and(
-        eq(schema.environmentPolicyApproval.versionId, versionId),
+        eq(schema.environmentPolicyApproval.deploymentVersionId, versionId),
         eq(schema.environmentPolicyApproval.policyId, policyId),
       ),
     )
