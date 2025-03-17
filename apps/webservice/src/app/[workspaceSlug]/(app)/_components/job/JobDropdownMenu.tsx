@@ -86,7 +86,7 @@ export const OverrideJobStatusDialog: React.FC<{
   const onSubmit = form.handleSubmit((data) =>
     updateJobs
       .mutateAsync({ ids: jobIds, data })
-      .then(() => utils.job.config.byReleaseId.invalidate())
+      .then(() => utils.job.config.byDeploymentVersionId.invalidate())
       .then(() => jobIds.map((id) => utils.job.config.byId.invalidate(id)))
       .then(() => utils.deployment.version.list.invalidate())
       .then(() => setOpen(false))
@@ -166,14 +166,14 @@ export const OverrideJobStatusDialog: React.FC<{
 };
 
 const ForceReleaseResourceDialog: React.FC<{
-  release: { id: string; version: string };
+  deploymentVersion: { id: string; tag: string };
   resource: { id: string; name: string };
   deploymentName: string;
   environmentId: string;
   onClose: () => void;
   children: React.ReactNode;
 }> = ({
-  release,
+  deploymentVersion,
   deploymentName,
   resource,
   environmentId,
@@ -198,7 +198,7 @@ const ForceReleaseResourceDialog: React.FC<{
               This will force <Badge variant="secondary">{resource.name}</Badge>{" "}
               onto{" "}
               <strong>
-                {deploymentName} {release.version}
+                {deploymentName} {deploymentVersion.tag}
               </strong>
             </span>
           </AlertDialogDescription>
@@ -212,7 +212,7 @@ const ForceReleaseResourceDialog: React.FC<{
             onClick={() =>
               forceRelease
                 .mutateAsync({
-                  releaseId: release.id,
+                  versionId: deploymentVersion.id,
                   resourceId: resource.id,
                   environmentId: environmentId,
                   isForcedRelease: true,
@@ -232,11 +232,11 @@ const ForceReleaseResourceDialog: React.FC<{
 };
 
 const RedeployReleaseDialog: React.FC<{
-  release: { id: string; name: string };
+  deploymentVersion: { id: string; tag: string; name: string };
   environmentId: string;
   resource: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ release, environmentId, resource, children }) => {
+}> = ({ deploymentVersion, environmentId, resource, children }) => {
   const router = useRouter();
   const utils = api.useUtils();
   const redeploy = api.deployment.version.deploy.toResource.useMutation();
@@ -249,7 +249,7 @@ const RedeployReleaseDialog: React.FC<{
           <DialogTitle>
             Redeploy{" "}
             <Badge variant="secondary" className="h-7 text-lg">
-              {release.name}
+              {deploymentVersion.name}
             </Badge>{" "}
             to {resource.name}?
           </DialogTitle>
@@ -266,7 +266,7 @@ const RedeployReleaseDialog: React.FC<{
                 .mutateAsync({
                   environmentId,
                   resourceId: resource.id,
-                  releaseId: release.id,
+                  versionId: deploymentVersion.id,
                 })
                 .then(() => utils.deployment.version.list.invalidate())
                 .then(() => router.refresh())
@@ -282,7 +282,7 @@ const RedeployReleaseDialog: React.FC<{
 };
 
 export const JobDropdownMenu: React.FC<{
-  release: { id: string; version: string; name: string };
+  deploymentVersion: { id: string; tag: string; name: string };
   environmentId: string;
   resource: { id: string; name: string; lockedAt: Date | null } | null;
   deployment: SCHEMA.Deployment;
@@ -290,7 +290,7 @@ export const JobDropdownMenu: React.FC<{
   isPassingDeploymentVersionChannel: boolean;
   children: React.ReactNode;
 }> = ({
-  release,
+  deploymentVersion,
   deployment,
   resource,
   environmentId,
@@ -345,7 +345,7 @@ export const JobDropdownMenu: React.FC<{
 
           {!isActive && isPassingDeploymentVersionChannel && (
             <RedeployReleaseDialog
-              release={release}
+              deploymentVersion={deploymentVersion}
               environmentId={environmentId}
               resource={resource}
             >
@@ -373,7 +373,7 @@ export const JobDropdownMenu: React.FC<{
           </OverrideJobStatusDialog>
 
           <ForceReleaseResourceDialog
-            release={release}
+            deploymentVersion={deploymentVersion}
             deploymentName={deployment.name}
             resource={resource}
             environmentId={environmentId}

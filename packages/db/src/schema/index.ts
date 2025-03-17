@@ -4,7 +4,7 @@ export * from "./resource-provider.js";
 export * from "./deployment.js";
 export * from "./environment.js";
 export * from "./environment-policy-deployment.js";
-export * from "./release.js";
+export * from "./deployment-version.js";
 export * from "./system.js";
 export * from "./runbook.js";
 export * from "./team.js";
@@ -21,6 +21,7 @@ export * from "./rbac.js";
 export * from "./job-agent.js";
 export * from "./event.js";
 export * from "./release-channel.js";
+export * from "./release-job-trigger.js";
 
 // relations
 export * from "./environment-relations.js";

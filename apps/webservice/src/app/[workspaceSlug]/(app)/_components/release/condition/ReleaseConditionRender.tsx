@@ -1,4 +1,4 @@
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import React from "react";
 
 import {
@@ -19,7 +19,7 @@ import { ReleaseVersionConditionRender } from "./ReleaseVersionConditionRender";
  * to render this component properly.
  */
 export const ReleaseConditionRender: React.FC<
-  ReleaseConditionRenderProps<ReleaseCondition>
+  ReleaseConditionRenderProps<DeploymentVersionCondition>
 > = ({ condition, onChange, onRemove, depth = 0, className }) => {
   if (isComparisonCondition(condition))
     return (

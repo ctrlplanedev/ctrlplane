@@ -33,8 +33,8 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
+  isPassingChannelSelectorPolicy,
   isPassingNoPendingJobsPolicy,
-  isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 import {
@@ -253,7 +253,7 @@ const valueRouter = createTRPCRouter({
           .resources(resourcesToTrigger.map((t) => t.id))
           .deployments([deploymentId])
           .filter(isPassingNoPendingJobsPolicy)
-          .filter(isPassingReleaseStringCheckPolicy)
+          .filter(isPassingChannelSelectorPolicy)
           .insert()
           .then((triggers) =>
             dispatchReleaseJobTriggers(ctx.db)

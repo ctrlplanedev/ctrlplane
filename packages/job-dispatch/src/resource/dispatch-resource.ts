@@ -30,7 +30,7 @@ const log = logger.child({ label: "dispatch-resource" });
  * @param envId - Environment ID to look up
  * @returns Promise resolving to the environment with its relationships or null if not found
  */
-const getEnvironmentWithReleaseChannels = (db: Tx, envId: string) =>
+const getEnvironmentWithVersionChannels = (db: Tx, envId: string) =>
   db.query.environment.findFirst({
     where: eq(SCHEMA.environment.id, envId),
     with: {
@@ -59,7 +59,7 @@ export async function dispatchJobsForAddedResources(
   if (resourceIds.length === 0) return;
   log.info("Dispatching jobs for added resources", { resourceIds, envId });
 
-  const environment = await getEnvironmentWithReleaseChannels(db, envId);
+  const environment = await getEnvironmentWithVersionChannels(db, envId);
   if (environment == null) {
     log.warn("Environment not found", { envId });
     return;
@@ -68,7 +68,7 @@ export async function dispatchJobsForAddedResources(
   const { policy, system } = environment;
   const { deployments } = system;
   const { environmentPolicyDeploymentVersionChannels } = policy;
-  const deploymentsWithReleaseFilter = deployments.map((deployment) => {
+  const deploymentsWithVersionSelector = deployments.map((deployment) => {
     const policy = environmentPolicyDeploymentVersionChannels.find(
       (prc) => prc.deploymentId === deployment.id,
     );
@@ -77,10 +77,10 @@ export async function dispatchJobsForAddedResources(
     return { ...deployment, versionSelector };
   });
 
-  log.debug("Fetching latest releases", {
+  log.debug("Fetching latest versions", {
     deploymentCount: deployments.length,
   });
-  const releasePromises = deploymentsWithReleaseFilter.map(
+  const versionPromises = deploymentsWithVersionSelector.map(
     ({ id, versionSelector }) =>
       db
         .select()
@@ -99,11 +99,11 @@ export async function dispatchJobsForAddedResources(
         .then(takeFirstOrNull),
   );
 
-  const releases = await Promise.all(releasePromises).then((rows) =>
+  const versions = await Promise.all(versionPromises).then((rows) =>
     rows.filter(isPresent),
   );
-  if (releases.length === 0) {
-    log.info("No releases found for deployments");
+  if (versions.length === 0) {
+    log.info("No versions found for deployments");
     return;
   }
 
@@ -111,7 +111,7 @@ export async function dispatchJobsForAddedResources(
   const releaseJobTriggers = await createReleaseJobTriggers(db, "new_resource")
     .resources(resourceIds)
     .environments([envId])
-    .releases(releases.map((r) => r.id))
+    .versions(versions.map((v) => v.id))
     .then(createJobApprovals)
     .insert();
 

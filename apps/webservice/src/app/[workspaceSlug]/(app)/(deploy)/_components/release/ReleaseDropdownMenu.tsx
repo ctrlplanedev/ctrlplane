@@ -45,10 +45,10 @@ import {
 import { api } from "~/trpc/react";
 
 const RedeployReleaseDialog: React.FC<{
-  release: { id: string; name: string };
+  deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ release, environment, children }) => {
+}> = ({ deploymentVersion, environment, children }) => {
   const router = useRouter();
   const redeploy = api.deployment.version.deploy.toEnvironment.useMutation();
 
@@ -61,12 +61,12 @@ const RedeployReleaseDialog: React.FC<{
           <DialogTitle>
             Redeploy{" "}
             <Badge variant="secondary" className="h-7 text-lg">
-              {release.name}
+              {deploymentVersion.name}
             </Badge>{" "}
             to {environment.name}?
           </DialogTitle>
           <DialogDescription>
-            This will redeploy the release to all resources in the environment.
+            This will redeploy the version to all resources in the environment.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,7 +77,7 @@ const RedeployReleaseDialog: React.FC<{
               redeploy
                 .mutateAsync({
                   environmentId: environment.id,
-                  releaseId: release.id,
+                  versionId: deploymentVersion.id,
                 })
                 .then(() => {
                   setIsOpen(false);
@@ -94,10 +94,10 @@ const RedeployReleaseDialog: React.FC<{
 };
 
 const ForceReleaseDialog: React.FC<{
-  release: { id: string; name: string };
+  deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
   children: React.ReactNode;
-}> = ({ release, environment, children }) => {
+}> = ({ deploymentVersion, environment, children }) => {
   const forceDeploy = api.deployment.version.deploy.toEnvironment.useMutation();
   const router = useRouter();
   return (
@@ -106,7 +106,7 @@ const ForceReleaseDialog: React.FC<{
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Force release {release.name} to {environment.name}?
+            Force release {deploymentVersion.name} to {environment.name}?
           </AlertDialogTitle>
           <AlertDialogDescription>
             This will force the release to be deployed to all resources in the
@@ -122,7 +122,7 @@ const ForceReleaseDialog: React.FC<{
               forceDeploy
                 .mutateAsync({
                   environmentId: environment.id,
-                  releaseId: release.id,
+                  versionId: deploymentVersion.id,
                   isForcedRelease: true,
                 })
                 .then(() => router.refresh())
@@ -137,10 +137,10 @@ const ForceReleaseDialog: React.FC<{
 };
 
 const RedeployReleaseButton: React.FC<{
-  release: { id: string; name: string };
+  deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
   isReleaseActive: boolean;
-}> = ({ release, environment, isReleaseActive }) =>
+}> = ({ deploymentVersion, environment, isReleaseActive }) =>
   isReleaseActive ? (
     <HoverCard>
       <HoverCardTrigger asChild>
@@ -157,7 +157,10 @@ const RedeployReleaseButton: React.FC<{
       </HoverCardContent>
     </HoverCard>
   ) : (
-    <RedeployReleaseDialog release={release} environment={environment}>
+    <RedeployReleaseDialog
+      deploymentVersion={deploymentVersion}
+      environment={environment}
+    >
       <DropdownMenuItem
         onSelect={(e) => e.preventDefault()}
         className="space-x-2"
@@ -169,10 +172,10 @@ const RedeployReleaseButton: React.FC<{
   );
 
 export const ReleaseDropdownMenu: React.FC<{
-  release: { id: string; name: string };
+  deploymentVersion: { id: string; name: string };
   environment: { id: string; name: string };
   isReleaseActive: boolean;
-}> = ({ release, environment, isReleaseActive }) => (
+}> = ({ deploymentVersion, environment, isReleaseActive }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <Button
@@ -185,11 +188,14 @@ export const ReleaseDropdownMenu: React.FC<{
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end">
       <RedeployReleaseButton
-        release={release}
+        deploymentVersion={deploymentVersion}
         environment={environment}
         isReleaseActive={isReleaseActive}
       />
-      <ForceReleaseDialog release={release} environment={environment}>
+      <ForceReleaseDialog
+        deploymentVersion={deploymentVersion}
+        environment={environment}
+      >
         <DropdownMenuItem
           onSelect={(e) => e.preventDefault()}
           className="space-x-2"

@@ -48,7 +48,7 @@ export const onJobFailure = async (job: schema.Job) => {
   if (releaseJobTriggerCount >= jobInfo.deployment.retryCount) return;
 
   const createTrigger = createReleaseJobTriggers(db, "retry")
-    .releases([jobInfo.deployment_version.id])
+    .versions([jobInfo.deployment_version.id])
     .resources([jobInfo.release_job_trigger.resourceId])
     .environments([jobInfo.release_job_trigger.environmentId]);
 

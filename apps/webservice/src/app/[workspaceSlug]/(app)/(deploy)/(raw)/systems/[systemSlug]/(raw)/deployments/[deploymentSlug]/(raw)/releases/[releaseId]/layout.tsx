@@ -37,10 +37,10 @@ export default async function ReleaseLayout(props: {
   }>;
 }) {
   const params = await props.params;
-  const release = await api.deployment.version.byId(params.releaseId);
-  if (release == null) notFound();
+  const version = await api.deployment.version.byId(params.releaseId);
+  if (version == null) notFound();
 
-  const deployment = await api.deployment.byId(release.deploymentId);
+  const deployment = await api.deployment.byId(version.deploymentId);
 
   const url = (tab: string) =>
     `/${params.workspaceSlug}/systems/${params.systemSlug}/deployments/${params.deploymentSlug}/releases/${params.releaseId}/${tab}`;
@@ -74,7 +74,7 @@ export default async function ReleaseLayout(props: {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{release.version}</BreadcrumbPage>
+                <BreadcrumbPage>{version.tag}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>

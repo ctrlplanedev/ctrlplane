@@ -9,7 +9,7 @@ import { isPresent } from "ts-is-present";
 
 import { and, eq, inArray, isNotNull, isNull, sql } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
-import { ReleaseStatus } from "@ctrlplane/validators/releases";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 type FilterFunc = (
   tx: Tx,
@@ -30,7 +30,7 @@ class ReleaseJobTriggerBuilder {
   private environmentIds?: string[];
   private resourceIds?: string[];
   private deploymentIds?: string[];
-  private releaseIds?: string[];
+  private versionIds?: string[];
 
   private _filters: FilterFunc[] = [];
   private _then: ThenFunc[] = [];
@@ -70,16 +70,16 @@ class ReleaseJobTriggerBuilder {
     return this;
   }
 
-  releases(ids: string[]) {
-    this.releaseIds = ids;
+  versions(ids: string[]) {
+    this.versionIds = ids;
     return this;
   }
 
   _where() {
     return and(
       ...[
-        this.releaseIds &&
-          inArray(SCHEMA.deploymentVersion.id, this.releaseIds),
+        this.versionIds &&
+          inArray(SCHEMA.deploymentVersion.id, this.versionIds),
         this.deploymentIds && inArray(SCHEMA.deployment.id, this.deploymentIds),
         this.environmentIds &&
           inArray(SCHEMA.environment.id, this.environmentIds),
@@ -102,45 +102,45 @@ class ReleaseJobTriggerBuilder {
       );
   }
 
-  _releaseSubQuery() {
+  _versionSubQuery() {
     return this.tx
       .select({
         id: SCHEMA.deploymentVersion.id,
         deploymentId: SCHEMA.deploymentVersion.deploymentId,
-        version: SCHEMA.deploymentVersion.version,
+        tag: SCHEMA.deploymentVersion.tag,
         rank: sql<number>`ROW_NUMBER() OVER (PARTITION BY deployment_id ORDER BY created_at DESC)`.as(
           "rank",
         ),
       })
       .from(SCHEMA.deploymentVersion)
-      .where(eq(SCHEMA.deploymentVersion.status, ReleaseStatus.Ready))
-      .as("release");
+      .where(eq(SCHEMA.deploymentVersion.status, DeploymentVersionStatus.Ready))
+      .as("version");
   }
 
   async _values() {
-    const latestActiveReleaseSubQuery = this._releaseSubQuery();
-    const releaseJobTriggers = this.releaseIds
+    const latestActiveVersionSubQuery = this._versionSubQuery();
+    const releaseJobTriggers = this.versionIds
       ? this._baseQuery().innerJoin(
           SCHEMA.deploymentVersion,
           and(
             eq(SCHEMA.deploymentVersion.deploymentId, SCHEMA.deployment.id),
-            eq(SCHEMA.deploymentVersion.status, ReleaseStatus.Ready),
+            eq(SCHEMA.deploymentVersion.status, DeploymentVersionStatus.Ready),
           ),
         )
       : this._baseQuery().innerJoin(
-          latestActiveReleaseSubQuery,
+          latestActiveVersionSubQuery,
           and(
-            eq(latestActiveReleaseSubQuery.deploymentId, SCHEMA.deployment.id),
-            eq(latestActiveReleaseSubQuery.rank, 1),
+            eq(latestActiveVersionSubQuery.deploymentId, SCHEMA.deployment.id),
+            eq(latestActiveVersionSubQuery.rank, 1),
           ),
         );
 
-    const releases = await releaseJobTriggers.where(this._where());
+    const versions = await releaseJobTriggers.where(this._where());
     return Promise.all(
-      releases.flatMap(async (release) => {
-        const { resourceFilter } = release.environment;
-        const { resourceFilter: deploymentResourceFilter } = release.deployment;
-        const { workspaceId } = release.system;
+      versions.flatMap(async (version) => {
+        const { resourceFilter } = version.environment;
+        const { resourceFilter: deploymentResourceFilter } = version.deployment;
+        const { workspaceId } = version.system;
         const resources = await this.tx
           .select()
           .from(SCHEMA.resource)
@@ -156,7 +156,7 @@ class ReleaseJobTriggerBuilder {
           );
 
         return resources.map((resource) => ({
-          ...release,
+          ...version,
           resource,
         }));
       }),
@@ -173,7 +173,7 @@ class ReleaseJobTriggerBuilder {
       resourceId: v.resource.id,
       environmentId: v.environment.id,
       versionId:
-        "deployment_version" in v ? v.deployment_version.id : v.release.id,
+        "deployment_version" in v ? v.deployment_version.id : v.version.id,
       jobId: "",
     }));
 
@@ -181,7 +181,7 @@ class ReleaseJobTriggerBuilder {
 
     if (wt.length === 0) return [];
 
-    const releases = await this.tx
+    const versions = await this.tx
       .select()
       .from(SCHEMA.deploymentVersion)
       .innerJoin(
@@ -201,15 +201,15 @@ class ReleaseJobTriggerBuilder {
 
     const jobInserts = wt
       .map((t) => {
-        const release = releases.find(
-          (r) => r.deployment_version.id === t.versionId,
+        const version = versions.find(
+          (v) => v.deployment_version.id === t.versionId,
         );
-        if (!release) return null;
+        if (!version) return null;
         return {
-          jobAgentId: release.job_agent.id,
+          jobAgentId: version.job_agent.id,
           jobAgentConfig: _.merge(
-            release.job_agent.config,
-            release.deployment.jobAgentConfig,
+            version.job_agent.config,
+            version.deployment.jobAgentConfig,
           ),
         };
       })

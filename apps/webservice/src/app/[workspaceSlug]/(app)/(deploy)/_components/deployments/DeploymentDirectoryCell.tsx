@@ -24,31 +24,36 @@ type DeploymentDirectoryCellProps = {
   };
   deployment: SCHEMA.Deployment;
   systemSlug: string;
-  release?: SCHEMA.DeploymentVersion;
+  deploymentVersion?: SCHEMA.DeploymentVersion;
 };
 
 export const DeploymentDirectoryCell: React.FC<
   DeploymentDirectoryCellProps
-> = ({ directory, deployment, systemSlug, release }) => {
+> = ({ directory, deployment, systemSlug, deploymentVersion }) => {
   const { workspaceSlug } = useParams<{ workspaceSlug: string }>();
   const { ref, inView } = useInView();
 
-  const { data: releaseResult, isLoading: isReleaseLoading } =
-    api.deployment.version.list.useQuery(
-      { deploymentId: deployment.id, limit: 1 },
-      {
-        enabled: inView && directory.environments.length > 0 && release == null,
-      },
-    );
+  const {
+    data: deploymentVersionResult,
+    isLoading: isDeploymentVersionLoading,
+  } = api.deployment.version.list.useQuery(
+    { deploymentId: deployment.id, limit: 1 },
+    {
+      enabled:
+        inView &&
+        directory.environments.length > 0 &&
+        deploymentVersion == null,
+    },
+  );
 
-  const rel = release ?? releaseResult?.items[0];
+  const version = deploymentVersionResult?.items[0];
 
   const { data: statusesResult, isLoading: isStatusesLoading } =
     api.deployment.version.status.bySystemDirectory.useQuery(
-      { releaseId: rel?.id ?? "", directory: directory.path },
-      { enabled: inView && rel != null },
+      { versionId: version?.id ?? "", directory: directory.path },
+      { enabled: inView && version != null },
     );
-  const isLoading = isReleaseLoading || isStatusesLoading;
+  const isLoading = isDeploymentVersionLoading || isStatusesLoading;
 
   const statuses = statusesResult ?? [];
 
@@ -69,14 +74,14 @@ export const DeploymentDirectoryCell: React.FC<
         </div>
       )}
 
-      {inView && !isLoading && rel == null && (
+      {inView && !isLoading && version == null && (
         <p className="text-xs text-muted-foreground/70">No versions released</p>
       )}
 
-      {inView && !isLoading && rel != null && (
+      {inView && !isLoading && version != null && (
         <div className="flex w-full items-center justify-between rounded-md p-2 hover:bg-secondary/50">
           <Link
-            href={getReleaseUrl(rel.id).baseUrl()}
+            href={getReleaseUrl(version.id).baseUrl()}
             className="flex w-full items-center gap-2"
           >
             <StatusIcon statuses={statuses.map((s) => s.job.status)} />
@@ -86,17 +91,17 @@ export const DeploymentDirectoryCell: React.FC<
                   <Tooltip>
                     <TooltipTrigger>
                       <div className="max-w-36 truncate font-semibold">
-                        <span className="whitespace-nowrap">{rel.version}</span>
+                        <span className="whitespace-nowrap">{version.tag}</span>
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-[200px]">
-                      {rel.version}
+                      {version.tag}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <div className="text-xs text-muted-foreground">
-                {format(rel.createdAt, "MMM d, hh:mm aa")}
+                {format(version.createdAt, "MMM d, hh:mm aa")}
               </div>
             </div>
           </Link>

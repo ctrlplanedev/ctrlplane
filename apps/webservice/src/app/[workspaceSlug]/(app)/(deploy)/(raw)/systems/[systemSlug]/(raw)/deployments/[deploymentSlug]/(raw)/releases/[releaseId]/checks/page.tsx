@@ -24,23 +24,25 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
 
-  const release = await api.deployment.version.byId(params.releaseId);
-  if (release == null) return notFound();
+  const deploymentVersion = await api.deployment.version.byId(params.releaseId);
+  if (deploymentVersion == null) return notFound();
 
   return {
-    title: `${release.version} | ${deployment.name} | ${deployment.system.name} | ${deployment.system.workspace.name}`,
+    title: `${deploymentVersion.tag} | ${deployment.name} | ${deployment.system.name} | ${deployment.system.workspace.name}`,
   };
 }
 
 export default async function ChecksPage(props: PageProps) {
   const params = await props.params;
-  const releasePromise = api.deployment.version.byId(params.releaseId);
+  const deploymentVersionPromise = api.deployment.version.byId(
+    params.releaseId,
+  );
   const deploymentPromise = api.deployment.bySlug(params);
-  const [release, deployment] = await Promise.all([
-    releasePromise,
+  const [deploymentVersion, deployment] = await Promise.all([
+    deploymentVersionPromise,
     deploymentPromise,
   ]);
-  if (release == null || deployment == null) return notFound();
+  if (deploymentVersion == null || deployment == null) return notFound();
 
   const { system } = deployment;
   const environmentsPromise = api.environment.bySystemId(system.id);
@@ -64,7 +66,7 @@ export default async function ChecksPage(props: PageProps) {
       <ReactFlowProvider>
         <FlowDiagram
           workspace={system.workspace}
-          release={release}
+          deploymentVersion={deploymentVersion}
           envs={environments}
           systemId={system.id}
           policies={policies}

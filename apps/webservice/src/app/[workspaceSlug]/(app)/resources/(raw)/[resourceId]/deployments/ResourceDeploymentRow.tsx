@@ -84,9 +84,7 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
       </TableCell>
 
       <TableCell className="p-4 align-middle">
-        {!isLoading && (
-          <span>{data?.[0]?.release.version ?? "No release"}</span>
-        )}
+        {!isLoading && <span>{data?.[0]?.version.tag ?? "No release"}</span>}
         {isLoading && <Skeleton className="h-3 w-8" />}
       </TableCell>
 

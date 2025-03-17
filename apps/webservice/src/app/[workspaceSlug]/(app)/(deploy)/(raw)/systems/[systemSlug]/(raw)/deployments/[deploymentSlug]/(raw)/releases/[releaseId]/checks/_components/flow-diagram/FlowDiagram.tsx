@@ -23,17 +23,17 @@ const nodeTypes: NodeTypes = {
 export const FlowDiagram: React.FC<{
   workspace: SCHEMA.Workspace;
   systemId: string;
-  release: SCHEMA.DeploymentVersion;
+  deploymentVersion: SCHEMA.DeploymentVersion;
   envs: Array<SCHEMA.Environment>;
   policies: Array<SCHEMA.EnvironmentPolicy>;
   policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>;
-}> = ({ workspace, release, envs, policies, policyDeployments }) => {
+}> = ({ workspace, deploymentVersion, envs, policies, policyDeployments }) => {
   const [nodes, _, onNodesChange] = useNodesState<{ label: string }>([
     {
       id: "trigger",
       type: "trigger",
       position: { x: 0, y: 0 },
-      data: { ...release, label: release.name },
+      data: { ...deploymentVersion, label: deploymentVersion.name },
     },
     ...policies.map((policy) => ({
       id: policy.id,
@@ -45,7 +45,7 @@ export const FlowDiagram: React.FC<{
           (p) => p.policyId === policy.id,
         ),
         label: policy.name,
-        release,
+        deploymentVersion,
       },
     })),
     ...envs.map((env) => {
@@ -56,9 +56,9 @@ export const FlowDiagram: React.FC<{
         position: { x: 0, y: 0 },
         data: {
           workspaceId: workspace.id,
-          releaseId: release.id,
-          releaseVersion: release.version,
-          deploymentId: release.deploymentId,
+          versionId: deploymentVersion.id,
+          versionTag: deploymentVersion.tag,
+          deploymentId: deploymentVersion.deploymentId,
           environmentId: env.id,
           environmentName: env.name,
           policy,

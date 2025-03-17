@@ -49,13 +49,13 @@ export const JobPropertiesTable: React.FC<JobPropertiesTableProps> = ({
             <td className="w-[110px] p-1 pr-2 text-muted-foreground">
               Deployment
             </td>
-            <td>{capitalCase(job.release.deployment.name)}</td>
+            <td>{capitalCase(job.deploymentVersion.deployment.name)}</td>
           </tr>
           <tr>
             <td className="w-[110px] p-1 pr-2 text-muted-foreground">
-              Release
+              Version
             </td>
-            <td>{job.release.name}</td>
+            <td>{job.deploymentVersion.name}</td>
           </tr>
           {job.causedBy != null && (
             <tr>

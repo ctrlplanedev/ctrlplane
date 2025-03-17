@@ -14,12 +14,12 @@ import { api } from "~/trpc/server";
 export default async function PropertiesPage(props: {
   params: Promise<{ releaseId: string }>;
 }) {
-  const { releaseId } = await props.params;
+  const { releaseId: versionId } = await props.params;
 
-  const release = await api.deployment.version.byId(releaseId);
-  if (release == null) notFound();
+  const version = await api.deployment.version.byId(versionId);
+  if (version == null) notFound();
 
-  const { metadata } = release;
+  const { metadata } = version;
   const links =
     metadata[ReservedMetadataKey.Links] != null
       ? (JSON.parse(metadata[ReservedMetadataKey.Links]) as Record<
@@ -44,21 +44,21 @@ export default async function PropertiesPage(props: {
               style={{ tableLayout: "fixed" }}
             >
               <tbody>
-                {release.name !== release.version && (
+                {version.name !== version.tag && (
                   <tr>
                     <td className="p-1 pr-2 text-muted-foreground">Name</td>
-                    <td>{release.name}</td>
+                    <td>{version.name}</td>
                   </tr>
                 )}
 
                 <tr>
                   <td className="p-1 pr-2 text-muted-foreground">Version</td>
-                  <td>{release.version}</td>
+                  <td>{version.tag}</td>
                 </tr>
 
                 <tr>
                   <td className="p-1 pr-2 text-muted-foreground">Created At</td>
-                  <td>{format(release.createdAt, "MM/dd/yyyy mm:hh:ss")}</td>
+                  <td>{format(version.createdAt, "MM/dd/yyyy mm:hh:ss")}</td>
                 </tr>
 
                 <tr>
@@ -104,7 +104,7 @@ export default async function PropertiesPage(props: {
         <div>
           <div className="mb-2 text-sm">Config</div>
           <div className="text-xs">
-            <ConfigEditor value={yaml.dump(release.config)} readOnly />
+            <ConfigEditor value={yaml.dump(version.config)} readOnly />
           </div>
         </div>
 

@@ -13,7 +13,7 @@ import {
 
 import { getEventsForDeploymentRemoved, handleEvent } from "./events/index.js";
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
-import { isPassingReleaseStringCheckPolicy } from "./policies/release-string-check.js";
+import { isPassingChannelSelectorPolicy } from "./policies/release-string-check.js";
 import { isPassingAllPolicies } from "./policy-checker.js";
 import { createJobApprovals } from "./policy-create.js";
 import { createReleaseJobTriggers } from "./release-job-trigger.js";
@@ -83,12 +83,12 @@ export const handleDeploymentSystemChanged = async (
 
   const createTriggers =
     userId != null
-      ? createReleaseJobTriggers(db, "new_release").causedById(userId)
-      : createReleaseJobTriggers(db, "new_release");
+      ? createReleaseJobTriggers(db, "new_version").causedById(userId)
+      : createReleaseJobTriggers(db, "new_version");
   await createTriggers
     .deployments([deployment.id])
     .resources(resources.map((r) => r.id))
-    .filter(isPassingReleaseStringCheckPolicy)
+    .filter(isPassingChannelSelectorPolicy)
     .then(createJobApprovals)
     .insert()
     .then((triggers) =>
@@ -150,13 +150,13 @@ const handleDeploymentFilterChanged = async (
 
   const createTriggers =
     userId != null
-      ? createReleaseJobTriggers(db, "new_release").causedById(userId)
-      : createReleaseJobTriggers(db, "new_release");
+      ? createReleaseJobTriggers(db, "new_version").causedById(userId)
+      : createReleaseJobTriggers(db, "new_version");
 
   await createTriggers
     .deployments([deployment.id])
     .resources(resourcesToAdd.map((r) => r.id))
-    .filter(isPassingReleaseStringCheckPolicy)
+    .filter(isPassingChannelSelectorPolicy)
     .then(createJobApprovals)
     .insert()
     .then((triggers) =>

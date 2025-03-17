@@ -19,8 +19,8 @@ export const isPassingReleaseDependencyPolicy = async (
         .select()
         .from(schema.deploymentVersion)
         .innerJoin(
-          schema.releaseDependency,
-          eq(schema.deploymentVersion.id, schema.releaseDependency.releaseId),
+          schema.versionDependency,
+          eq(schema.deploymentVersion.id, schema.versionDependency.versionId),
         )
         .where(eq(schema.deploymentVersion.id, trigger.versionId));
 
@@ -118,7 +118,7 @@ export const isPassingReleaseDependencyPolicy = async (
           )
           .where(
             and(
-              schema.deploymentVersionMatchesCondition(db, dep.releaseFilter),
+              schema.deploymentVersionMatchesCondition(db, dep.versionSelector),
               eq(schema.deployment.id, dep.deploymentId),
               inArray(latestJobSubquery.resourceId, allIds),
               eq(latestJobSubquery.rank, 1),

@@ -1,9 +1,9 @@
 import type { InferSelectModel } from "drizzle-orm";
 import { pgTable, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
+import { deploymentVersionChannel } from "./deployment-version.js";
 import { deployment } from "./deployment.js";
 import { environmentPolicy } from "./environment.js";
-import { deploymentVersionChannel } from "./release.js";
 
 export const environmentPolicyDeploymentVersionChannel = pgTable(
   "environment_policy_deployment_version_channel",

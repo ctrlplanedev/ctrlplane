@@ -31,7 +31,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   workspace,
   systemSlug,
 }) => {
-  const { data: release, isLoading: isReleaseLoading } =
+  const { data: deploymentVersion, isLoading: isReleaseLoading } =
     api.deployment.version.latest.byDeploymentAndEnvironment.useQuery({
       deploymentId: deployment.id,
       environmentId: environment.id,
@@ -39,8 +39,8 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
 
   const { data: statuses, isLoading: isStatusesLoading } =
     api.deployment.version.status.byEnvironmentId.useQuery(
-      { releaseId: release?.id ?? "", environmentId: environment.id },
-      { refetchInterval: 2_000, enabled: release != null },
+      { versionId: deploymentVersion?.id ?? "", environmentId: environment.id },
+      { refetchInterval: 2_000, enabled: deploymentVersion != null },
     );
 
   const deploy = api.deployment.version.deploy.toEnvironment.useMutation();
@@ -59,12 +59,12 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       </div>
     );
 
-  if (release == null)
+  if (deploymentVersion == null)
     return (
       <p className="text-xs text-muted-foreground/70">No versions released</p>
     );
 
-  if (release.resourceCount === 0)
+  if (deploymentVersion.resourceCount === 0)
     return (
       <Link
         href={`/${workspace.slug}/systems/${systemSlug}/environments/${environment.id}/resources`}
@@ -78,7 +78,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           </div>
           <div>
             <div className="max-w-36 truncate font-semibold">
-              <span className="whitespace-nowrap">{release.version}</span>
+              <span className="whitespace-nowrap">{deploymentVersion.tag}</span>
             </div>
             <div className="text-xs text-muted-foreground">No resources</div>
           </div>
@@ -91,7 +91,8 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   const hasJobAgent = deployment.jobAgentId != null;
 
   const isPendingApproval =
-    release.approval != null && release.approval.status === "pending";
+    deploymentVersion.approval != null &&
+    deploymentVersion.approval.status === "pending";
 
   const showRelease = isAlreadyDeployed && !isPendingApproval;
 
@@ -102,11 +103,11 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           workspaceSlug={workspace.slug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
-          releaseId={release.id}
-          version={release.version}
+          versionId={deploymentVersion.id}
+          tag={deploymentVersion.tag}
           environment={environment}
-          name={release.version}
-          deployedAt={release.createdAt}
+          name={deploymentVersion.tag}
+          deployedAt={deploymentVersion.createdAt}
           statuses={statuses.map((s) => s.job.status)}
         />
       </div>
@@ -119,11 +120,11 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
       </div>
     );
 
-  if (release.approval != null && isPendingApproval)
+  if (deploymentVersion.approval != null && isPendingApproval)
     return (
       <ApprovalDialog
-        policyId={release.approval.policyId}
-        release={release}
+        policyId={deploymentVersion.approval.policyId}
+        deploymentVersion={deploymentVersion}
         environmentId={environment.id}
       >
         <div className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-md p-2 hover:bg-secondary/50">
@@ -133,7 +134,9 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
             </div>
             <div>
               <div className="max-w-36 truncate font-semibold">
-                <span className="whitespace-nowrap">{release.version}</span>
+                <span className="whitespace-nowrap">
+                  {deploymentVersion.tag}
+                </span>
               </div>
               <div className="text-xs text-muted-foreground">
                 Approval required
@@ -142,7 +145,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           </div>
 
           <ReleaseDropdownMenu
-            release={release}
+            deploymentVersion={deploymentVersion}
             environment={environment}
             isReleaseActive={false}
           />
@@ -153,12 +156,12 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
   return (
     <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
       <Button
-        className="flex w-full items-center justify-between gap-2 bg-transparent hover:bg-transparent"
+        className="flex w-full items-center justify-between gap-2 bg-transparent p-0 hover:bg-transparent"
         onClick={() =>
           deploy
             .mutateAsync({
               environmentId: environment.id,
-              releaseId: release.id,
+              versionId: deploymentVersion.id,
             })
             .then(() => router.refresh())
         }
@@ -170,14 +173,14 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           </div>
           <div className="flex flex-col items-start">
             <div className="max-w-36 truncate font-semibold text-neutral-200">
-              <span className="whitespace-nowrap">{release.version}</span>
+              <span className="whitespace-nowrap">{deploymentVersion.tag}</span>
             </div>
             <div className="text-xs text-muted-foreground">Click to deploy</div>
           </div>
         </div>
 
         <ReleaseDropdownMenu
-          release={release}
+          deploymentVersion={deploymentVersion}
           environment={environment}
           isReleaseActive={false}
         />

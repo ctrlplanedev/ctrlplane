@@ -67,7 +67,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
     release_job_trigger: schema.ReleaseJobTrigger;
     job: schema.Job;
     resource: schema.Resource;
-    release: schema.DeploymentVersion;
+    deploymentVersion: schema.DeploymentVersion;
     deployment: schema.Deployment;
     environment: schema.Environment;
     job_agent: schema.JobAgent;
@@ -75,7 +75,7 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
     environment_policy: schema.EnvironmentPolicy | null;
     environment_policy_release_window: schema.EnvironmentPolicyReleaseWindow | null;
     user?: schema.User | null;
-    release_dependency?: schema.ReleaseDependency | null;
+    version_dependency?: schema.VersionDependency | null;
     deployment_name?: { deploymentName: string; deploymentId: string } | null;
     job_variable?: schema.JobVariable | null;
   }>,
@@ -103,13 +103,16 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
       },
       jobAgent: v[0]!.job_agent,
       resource: v[0]!.resource,
-      release: { ...v[0]!.release, deployment: v[0]!.deployment },
+      deploymentVersion: {
+        ...v[0]!.deploymentVersion,
+        deployment: v[0]!.deployment,
+      },
       environment: v[0]!.environment,
-      releaseDependencies: v
+      versionDependencies: v
         .map((r) =>
-          r.release_dependency != null
+          r.version_dependency != null
             ? {
-                ...r.release_dependency,
+                ...r.version_dependency,
                 deploymentName: r.deployment_name!.deploymentName,
               }
             : null,
@@ -119,9 +122,9 @@ const processReleaseJobTriggerWithAdditionalDataRows = (
         v[0]!.environment_policy != null
           ? rolloutDateFromReleaseJobTrigger(
               v[0]!.release_job_trigger.resourceId,
-              v[0]!.release.id,
+              v[0]!.deploymentVersion.id,
               v[0]!.environment.id,
-              v[0]!.release.createdAt,
+              v[0]!.deploymentVersion.createdAt,
               v[0]!.environment_policy.rolloutDuration,
               v
                 .map((r) => r.environment_policy_release_window)
@@ -192,7 +195,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
                 },
                 jobAgent: v[0]!.job_agent,
                 resource: v[0]!.resource,
-                release: {
+                version: {
                   ...v[0]!.deployment_version,
                   deployment: v[0]!.deployment,
                 },
@@ -381,16 +384,16 @@ const releaseJobTriggerRouter = createTRPCRouter({
       }),
   }),
 
-  byReleaseId: protectedProcedure
+  byDeploymentVersionId: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentVersionGet)
-          .on({ type: "deploymentVersion", id: input.releaseId }),
+          .on({ type: "deploymentVersion", id: input.versionId }),
     })
     .input(
       z.object({
-        releaseId: z.string().uuid(),
+        versionId: z.string().uuid(),
         filter: jobCondition.optional(),
         limit: z.number().int().nonnegative().max(1000).default(500),
         offset: z.number().int().nonnegative().default(0),
@@ -415,7 +418,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         )
         .where(
           and(
-            eq(schema.deploymentVersion.id, input.releaseId),
+            eq(schema.deploymentVersion.id, input.versionId),
             isNull(schema.resource.deletedAt),
             schema.releaseJobMatchesCondition(ctx.db, input.filter),
           ),
@@ -426,16 +429,16 @@ const releaseJobTriggerRouter = createTRPCRouter({
         .then((r) =>
           r.map((row) => ({
             ...row,
-            release: row.deployment_version,
+            deploymentVersion: row.deployment_version,
           })),
         )
         .then(processReleaseJobTriggerWithAdditionalDataRows),
     ),
 
-  byReleaseAndEnvironmentId: protectedProcedure
+  byVersionAndEnvironmentId: protectedProcedure
     .input(
       z.object({
-        releaseId: z.string().uuid(),
+        versionId: z.string().uuid(),
         environmentId: z.string().uuid(),
         limit: z.number().int().nonnegative().max(1000).default(500),
         offset: z.number().int().nonnegative().default(0),
@@ -457,7 +460,7 @@ const releaseJobTriggerRouter = createTRPCRouter({
         )
         .where(
           and(
-            eq(schema.releaseJobTrigger.versionId, input.releaseId),
+            eq(schema.releaseJobTrigger.versionId, input.versionId),
             eq(schema.releaseJobTrigger.environmentId, input.environmentId),
           ),
         )
@@ -512,21 +515,21 @@ const releaseJobTriggerRouter = createTRPCRouter({
           ),
         )
         .leftJoin(
-          schema.releaseDependency,
-          eq(schema.releaseDependency.releaseId, schema.deploymentVersion.id),
+          schema.versionDependency,
+          eq(schema.versionDependency.versionId, schema.deploymentVersion.id),
         )
         .leftJoin(
           deploymentName,
           eq(
             deploymentName.deploymentId,
-            schema.releaseDependency.deploymentId,
+            schema.versionDependency.deploymentId,
           ),
         )
         .where(and(eq(schema.job.id, input), isNull(schema.resource.deletedAt)))
         .then((r) =>
           r.map((row) => ({
             ...row,
-            release: row.deployment_version,
+            deploymentVersion: row.deployment_version,
           })),
         )
         .then(processReleaseJobTriggerWithAdditionalDataRows)
@@ -538,9 +541,9 @@ const releaseJobTriggerRouter = createTRPCRouter({
 
 const rolloutDateFromReleaseJobTrigger = (
   resourceId: string,
-  releaseId: string,
+  versionId: string,
   environmentId: string,
-  releaseCreatedAt: Date,
+  versionCreatedAt: Date,
   environmentPolicyDuration: number,
   releaseWindows: Array<{
     startTime: Date;
@@ -549,8 +552,8 @@ const rolloutDateFromReleaseJobTrigger = (
   }>,
 ) => {
   const rolloutDate = getRolloutDateForReleaseJobTrigger(
-    [releaseId, environmentId, resourceId].join(":"),
-    releaseCreatedAt,
+    [versionId, environmentId, resourceId].join(":"),
+    versionCreatedAt,
     environmentPolicyDuration,
   );
 

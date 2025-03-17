@@ -2,7 +2,7 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
-import type { ReleaseStatusType } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -38,7 +38,7 @@ import {
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
-import { ReleaseStatus } from "@ctrlplane/validators/releases";
+import { DeploymentVersionStatus } from "@ctrlplane/validators/releases";
 
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionBadge";
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionDialog";
@@ -47,8 +47,8 @@ import { DeploymentDirectoryCell } from "~/app/[workspaceSlug]/(app)/(deploy)/_c
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { JobHistoryPopover } from "./_components/release-cell/JobHistoryPopover";
-import { ReleaseDistributionGraphPopover } from "./_components/release-cell/ReleaseDistributionPopover";
 import { LazyReleaseEnvironmentCell } from "./_components/release-cell/ReleaseEnvironmentCell";
+import { ReleaseDistributionGraphPopover } from "./_components/release-cell/VersionDistributionPopover";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
@@ -58,8 +58,10 @@ type EnvHeaderProps = {
   workspace: schema.Workspace;
 };
 
-const StatusIcon: React.FC<{ status: ReleaseStatusType }> = ({ status }) => {
-  if (status === ReleaseStatus.Ready)
+const StatusIcon: React.FC<{ status: DeploymentVersionStatusType }> = ({
+  status,
+}) => {
+  if (status === DeploymentVersionStatus.Ready)
     return (
       <div className="relative h-[20px] w-[20px]">
         <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
@@ -67,7 +69,7 @@ const StatusIcon: React.FC<{ status: ReleaseStatusType }> = ({ status }) => {
       </div>
     );
 
-  if (status === ReleaseStatus.Building)
+  if (status === DeploymentVersionStatus.Building)
     return (
       <div className="relative h-[20px] w-[20px]">
         <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-yellow-400/20" />
@@ -189,17 +191,17 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
 
   const { systemSlug } = useParams<{ systemSlug: string }>();
 
-  const releases = api.deployment.version.list.useQuery(
+  const versions = api.deployment.version.list.useQuery(
     { deploymentId: deployment.id, filter: filter ?? undefined, limit: 30 },
     { refetchInterval: 2_000 },
   );
 
-  const releaseIds = releases.data?.items.map((r) => r.id) ?? [];
+  const versionIds = versions.data?.items.map((v) => v.id) ?? [];
 
-  const loading = releases.isLoading;
+  const loading = versions.isLoading;
   const router = useRouter();
 
-  const releaseUrl = urls
+  const versionUrl = urls
     .workspace(workspace.slug)
     .system(systemSlug)
     .deployment(deployment.slug).release;
@@ -235,7 +237,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             variant="outline"
             className="rounded-full border-neutral-800 text-inherit"
           >
-            {releases.data?.total ?? "-"}
+            {versions.data?.total ?? "-"}
           </Badge>
         </div>
 
@@ -249,7 +251,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               <IconGraph className="h-4 w-4" />
             </Button>
           </ReleaseDistributionGraphPopover>
-          {releaseIds.length > 0 && (
+          {versionIds.length > 0 && (
             <JobHistoryPopover deploymentId={deployment.id}>
               <Button
                 variant="ghost"
@@ -275,7 +277,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
         </div>
       )}
 
-      {!loading && releases.data && (
+      {!loading && versions.data && (
         <div className="flex h-full overflow-auto text-sm">
           <Table className="border-b">
             <TableHeader>
@@ -303,38 +305,38 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {releases.data.items.map((release) => {
+              {versions.data.items.map((version) => {
                 return (
                   <TableRow
-                    key={release.id}
+                    key={version.id}
                     className="cursor-pointer hover:bg-transparent"
                     onClick={() =>
-                      router.push(releaseUrl(release.id).baseUrl())
+                      router.push(versionUrl(version.id).baseUrl())
                     }
                   >
                     <TableCell className="sticky left-0 z-10 flex h-[70px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 text-base">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
-                            <StatusIcon status={release.status} />
+                            <StatusIcon status={version.status} />
                           </TooltipTrigger>
                           <TooltipContent
                             align="start"
                             className="bg-neutral-800 px-2 py-1 text-sm"
                           >
                             <span>
-                              {release.status}
-                              {release.message && `: ${release.message}`}
+                              {version.status}
+                              {version.message && `: ${version.message}`}
                             </span>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <span className="truncate">{release.name}</span>{" "}
+                      <span className="truncate">{version.name}</span>{" "}
                       <Badge
                         variant="secondary"
                         className="flex-shrink-0 text-xs hover:bg-secondary"
                       >
-                        {formatDistanceToNowStrict(release.createdAt, {
+                        {formatDistanceToNowStrict(version.createdAt, {
                           addSuffix: true,
                         })}
                       </Badge>
@@ -348,7 +350,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                         <LazyReleaseEnvironmentCell
                           environment={env}
                           deployment={deployment}
-                          release={release}
+                          deploymentVersion={version}
                         />
                       </TableCell>
                     ))}
@@ -362,7 +364,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                             key={dir.path}
                             directory={dir}
                             deployment={deployment}
-                            release={release}
+                            deploymentVersion={version}
                             systemSlug={systemSlug}
                           />
                         </div>

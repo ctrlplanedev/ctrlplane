@@ -76,7 +76,7 @@ export const ReleaseIcon: React.FC<{
 export const ReleaseCell: React.FC<{
   deployment: SCHEMA.Deployment;
   releaseJobTrigger: SCHEMA.ReleaseJobTrigger & {
-    release?: Partial<SCHEMA.DeploymentVersion>;
+    version?: Partial<SCHEMA.DeploymentVersion>;
     job?: SCHEMA.Job;
   };
 }> = ({ deployment, releaseJobTrigger }) => {
@@ -90,7 +90,7 @@ export const ReleaseCell: React.FC<{
       <div className="w-full text-sm">
         <div className="flex items-center justify-between">
           <span className="font-semibold">
-            {releaseJobTrigger.release?.version}
+            {releaseJobTrigger.version?.tag}
           </span>
         </div>
         <div className="text-left text-muted-foreground">

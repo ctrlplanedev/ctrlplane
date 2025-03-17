@@ -8,16 +8,19 @@ import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 
 type EnvironmentApprovalRowProps = {
   approval: EnvironmentPolicyApproval & { user?: User | null };
-  release: { id: string; version: string; deploymentId: string };
+  deploymentVersion: { id: string; tag: string; deploymentId: string };
 };
 
 export const EnvironmentApprovalRow: React.FC<EnvironmentApprovalRowProps> = ({
   approval,
-  release,
+  deploymentVersion,
 }) => {
   if (approval.status === "pending")
     return (
-      <ApprovalDialog release={release} policyId={approval.policyId}>
+      <ApprovalDialog
+        deploymentVersion={deploymentVersion}
+        policyId={approval.policyId}
+      >
         <Button size="sm" className="h-6">
           Review
         </Button>

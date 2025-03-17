@@ -9,28 +9,28 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPoliciesExceptNewerThanLastActive,
+  isPassingChannelSelectorPolicy,
   isPassingLockingPolicy,
-  isPassingReleaseStringCheckPolicy,
 } from "@ctrlplane/job-dispatch";
 import { Permission } from "@ctrlplane/validators/auth";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
-export const releaseDeployRouter = createTRPCRouter({
+export const versionDeployRouter = createTRPCRouter({
   toEnvironment: protectedProcedure
     .meta({
       authorizationCheck: ({ canUser, input }) =>
         canUser
           .perform(Permission.DeploymentGet, Permission.DeploymentVersionGet)
           .on(
-            { type: "deploymentVersion", id: input.releaseId },
+            { type: "deploymentVersion", id: input.versionId },
             { type: "environment", id: input.environmentId },
           ),
     })
     .input(
       z.object({
         environmentId: z.string(),
-        releaseId: z.string(),
+        versionId: z.string(),
         isForcedRelease: z.boolean().optional(),
       }),
     )
@@ -41,11 +41,11 @@ export const releaseDeployRouter = createTRPCRouter({
       )
         .causedById(ctx.session.user.id)
         .environments([input.environmentId])
-        .releases([input.releaseId])
+        .versions([input.versionId])
         .filter(
           input.isForcedRelease
             ? (_, releaseJobTriggers) => releaseJobTriggers
-            : isPassingReleaseStringCheckPolicy,
+            : isPassingChannelSelectorPolicy,
         )
         .then(cancelPreviousJobsForRedeployedTriggers)
         .then(input.isForcedRelease ? () => {} : createJobApprovals)
@@ -70,14 +70,14 @@ export const releaseDeployRouter = createTRPCRouter({
         canUser
           .perform(Permission.DeploymentVersionGet, Permission.ResourceUpdate)
           .on(
-            { type: "deploymentVersion", id: input.releaseId },
+            { type: "deploymentVersion", id: input.versionId },
             { type: "resource", id: input.resourceId },
           ),
     })
     .input(
       z.object({
         resourceId: z.string().uuid(),
-        releaseId: z.string().uuid(),
+        versionId: z.string().uuid(),
         environmentId: z.string().uuid(),
         isForcedRelease: z.boolean().optional(),
       }),
@@ -100,7 +100,7 @@ export const releaseDeployRouter = createTRPCRouter({
       const rel = await ctx.db
         .select()
         .from(SCHEMA.deploymentVersion)
-        .where(eq(SCHEMA.deploymentVersion.id, input.releaseId))
+        .where(eq(SCHEMA.deploymentVersion.id, input.versionId))
         .then(takeFirstOrNull);
       if (!rel) throw new Error("Release not found");
 
@@ -117,12 +117,12 @@ export const releaseDeployRouter = createTRPCRouter({
       )
         .causedById(ctx.session.user.id)
         .environments([env.id])
-        .releases([rel.id])
+        .versions([rel.id])
         .resources([t.id])
         .filter(
           input.isForcedRelease
             ? (_, releaseJobTriggers) => releaseJobTriggers
-            : isPassingReleaseStringCheckPolicy,
+            : isPassingChannelSelectorPolicy,
         )
         .then(cancelPreviousJobsForRedeployedTriggers)
         .then(input.isForcedRelease ? () => {} : createJobApprovals)

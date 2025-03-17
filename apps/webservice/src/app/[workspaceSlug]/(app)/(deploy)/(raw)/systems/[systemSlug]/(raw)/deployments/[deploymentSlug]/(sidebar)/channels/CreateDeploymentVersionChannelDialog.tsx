@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -31,9 +31,9 @@ import { Textarea } from "@ctrlplane/ui/textarea";
 import { toast } from "@ctrlplane/ui/toast";
 import {
   defaultCondition,
+  deploymentVersionCondition,
   isEmptyCondition,
   isValidReleaseCondition,
-  releaseCondition,
 } from "@ctrlplane/validators/releases";
 
 import { ReleaseConditionBadge } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionBadge";
@@ -46,13 +46,13 @@ type CreateDeploymentVersionChannelDialogProps = {
   children: React.ReactNode;
 };
 
-const getFinalFilter = (filter?: ReleaseCondition) =>
+const getFinalFilter = (filter?: DeploymentVersionCondition) =>
   filter && !isEmptyCondition(filter) ? filter : undefined;
 
 const schema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().max(1000).optional(),
-  versionSelector: releaseCondition
+  versionSelector: deploymentVersionCondition
     .optional()
     .refine((cond) => cond == null || isValidReleaseCondition(cond)),
 });

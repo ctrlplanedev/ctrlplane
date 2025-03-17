@@ -23,7 +23,7 @@ import {
 } from "@ctrlplane/validators/resources";
 
 import { user } from "./auth.js";
-import { deploymentVersion } from "./release.js";
+import { deploymentVersion } from "./deployment-version.js";
 import { system } from "./system.js";
 
 export const directoryPath = z
@@ -259,7 +259,7 @@ export const environmentPolicyApproval = pgTable(
     policyId: uuid("policy_id")
       .notNull()
       .references(() => environmentPolicy.id, { onDelete: "cascade" }),
-    releaseId: uuid("release_id")
+    versionId: uuid("release_id")
       .notNull()
       .references(() => deploymentVersion.id, { onDelete: "cascade" }),
     status: approvalStatusType("status").notNull().default("pending"),
@@ -269,7 +269,7 @@ export const environmentPolicyApproval = pgTable(
       precision: 0,
     }).default(sql`NULL`),
   },
-  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.releaseId) }),
+  (t) => ({ uniq: uniqueIndex().on(t.policyId, t.versionId) }),
 );
 
 export type EnvironmentPolicyApproval = InferSelectModel<

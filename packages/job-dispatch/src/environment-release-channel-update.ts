@@ -1,4 +1,4 @@
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { and, desc, eq, takeFirstOrNull } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
@@ -11,7 +11,7 @@ import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { dispatchReleaseJobTriggers } from "./job-dispatch.js";
 import { updateJob } from "./job-update.js";
-import { isPassingReleaseStringCheckPolicy } from "./policies/release-string-check.js";
+import { isPassingChannelSelectorPolicy } from "./policies/release-string-check.js";
 import { isPassingAllPoliciesExceptNewerThanLastActive } from "./policy-checker.js";
 import { createJobApprovals } from "./policy-create.js";
 import { createReleaseJobTriggers } from "./release-job-trigger.js";
@@ -27,20 +27,20 @@ const getVersionSelector = (channelId: string | null) =>
         .then((r) => r?.versionSelector ?? null)
     : null;
 
-const createFilterForExcludedReleases = (
-  oldReleaseFilter: ReleaseCondition | null,
-  newReleaseFilter: ReleaseCondition | null,
-): ReleaseCondition | null => {
-  if (oldReleaseFilter == null && newReleaseFilter == null) return null;
-  if (oldReleaseFilter == null && newReleaseFilter != null)
+const createSelectorForExcludedVersions = (
+  oldVersionSelector: DeploymentVersionCondition | null,
+  newVersionSelector: DeploymentVersionCondition | null,
+): DeploymentVersionCondition | null => {
+  if (oldVersionSelector == null && newVersionSelector == null) return null;
+  if (oldVersionSelector == null && newVersionSelector != null)
     return {
       type: FilterType.Comparison,
       not: true,
       operator: ComparisonOperator.And,
-      conditions: [newReleaseFilter],
+      conditions: [newVersionSelector],
     };
-  if (oldReleaseFilter != null && newReleaseFilter == null) return null;
-  if (oldReleaseFilter != null && newReleaseFilter != null)
+  if (oldVersionSelector != null && newVersionSelector == null) return null;
+  if (oldVersionSelector != null && newVersionSelector != null)
     return {
       type: FilterType.Comparison,
       operator: ComparisonOperator.And,
@@ -49,20 +49,20 @@ const createFilterForExcludedReleases = (
           type: FilterType.Comparison,
           not: true,
           operator: ComparisonOperator.And,
-          conditions: [newReleaseFilter],
+          conditions: [newVersionSelector],
         },
-        oldReleaseFilter,
+        oldVersionSelector,
       ],
     };
   return null;
 };
 
-const cancelJobsForExcludedReleases = async (
+const cancelJobsForExcludedVersions = async (
   environmentId: string,
   deploymentId: string,
-  excludedReleasesFilter: ReleaseCondition | null,
+  excludedVersionsSelector: DeploymentVersionCondition | null,
 ) => {
-  if (excludedReleasesFilter == null) return;
+  if (excludedVersionsSelector == null) return;
 
   const jobsToCancel = await db
     .select()
@@ -80,7 +80,7 @@ const cancelJobsForExcludedReleases = async (
         eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
         eq(SCHEMA.releaseJobTrigger.environmentId, environmentId),
         eq(SCHEMA.job.status, JobStatus.Pending),
-        SCHEMA.deploymentVersionMatchesCondition(db, excludedReleasesFilter),
+        SCHEMA.deploymentVersionMatchesCondition(db, excludedVersionsSelector),
       ),
     )
     .then((rows) => rows.map((r) => r.job.id));
@@ -94,9 +94,9 @@ const cancelJobsForExcludedReleases = async (
   );
 };
 
-const getLatestReleaseMatchingFilter = (
+const getLatestVersionFromSelector = (
   deploymentId: string,
-  releaseFilter: ReleaseCondition | null,
+  versionSelector: DeploymentVersionCondition | null,
 ) =>
   db
     .select()
@@ -104,24 +104,24 @@ const getLatestReleaseMatchingFilter = (
     .where(
       and(
         eq(SCHEMA.deploymentVersion.deploymentId, deploymentId),
-        SCHEMA.deploymentVersionMatchesCondition(db, releaseFilter),
+        SCHEMA.deploymentVersionMatchesCondition(db, versionSelector),
       ),
     )
     .orderBy(desc(SCHEMA.deploymentVersion.createdAt))
     .limit(1)
     .then(takeFirstOrNull);
 
-const triggerJobsForRelease = async (
+const triggerJobsForVersion = async (
   environmentId: string,
-  releaseId: string,
+  versionId: string,
 ) => {
   const releaseJobTriggers = await createReleaseJobTriggers(
     db,
     "new_environment",
   )
     .environments([environmentId])
-    .releases([releaseId])
-    .filter(isPassingReleaseStringCheckPolicy)
+    .versions([versionId])
+    .filter(isPassingChannelSelectorPolicy)
     .then(createJobApprovals)
     .insert();
 
@@ -134,7 +134,7 @@ const triggerJobsForRelease = async (
     .dispatch();
 };
 
-const handleReleaseChannelUpdate = async (
+const handleVersionChannelUpdate = async (
   environmentId: string,
   deploymentId: string,
   oldChannelId: string | null,
@@ -142,46 +142,46 @@ const handleReleaseChannelUpdate = async (
 ) => {
   if (oldChannelId === newChannelId) return;
 
-  const [oldReleaseFilter, newReleaseFilter] = await Promise.all([
+  const [oldVersionSelector, newVersionSelector] = await Promise.all([
     getVersionSelector(oldChannelId),
     getVersionSelector(newChannelId),
   ]);
 
-  const excludedReleasesFilter = createFilterForExcludedReleases(
-    oldReleaseFilter,
-    newReleaseFilter,
+  const excludedVersionsSelector = createSelectorForExcludedVersions(
+    oldVersionSelector,
+    newVersionSelector,
   );
 
-  const cancelJobsPromise = cancelJobsForExcludedReleases(
+  const cancelJobsPromise = cancelJobsForExcludedVersions(
     environmentId,
     deploymentId,
-    excludedReleasesFilter,
+    excludedVersionsSelector,
   );
 
-  const [latestReleaseMatchingNewFilter, latestReleaseMatchingOldFilter] =
+  const [latestVersionMatchingNewSelector, latestVersionMatchingOldSelector] =
     await Promise.all([
-      getLatestReleaseMatchingFilter(deploymentId, newReleaseFilter),
-      getLatestReleaseMatchingFilter(deploymentId, oldReleaseFilter),
+      getLatestVersionFromSelector(deploymentId, newVersionSelector),
+      getLatestVersionFromSelector(deploymentId, oldVersionSelector),
     ]);
 
   if (
-    latestReleaseMatchingNewFilter == null ||
-    latestReleaseMatchingNewFilter.id === latestReleaseMatchingOldFilter?.id
+    latestVersionMatchingNewSelector == null ||
+    latestVersionMatchingNewSelector.id === latestVersionMatchingOldSelector?.id
   )
     return;
 
-  const triggerJobsPromise = triggerJobsForRelease(
+  const triggerJobsPromise = triggerJobsForVersion(
     environmentId,
-    latestReleaseMatchingNewFilter.id,
+    latestVersionMatchingNewSelector.id,
   );
 
   await Promise.all([cancelJobsPromise, triggerJobsPromise]);
 };
 
-export const handleEnvironmentPolicyReleaseChannelUpdate = async (
+export const handleEnvironmentPolicyVersionChannelUpdate = async (
   policyId: string,
-  prevReleaseChannels: Record<string, string>,
-  newReleaseChannels: Record<string, string>,
+  prevVersionChannels: Record<string, string>,
+  newVersionChannels: Record<string, string>,
 ) => {
   const environments = await db
     .select()
@@ -202,12 +202,12 @@ export const handleEnvironmentPolicyReleaseChannelUpdate = async (
     .where(eq(SCHEMA.environmentPolicy.id, policyId))
     .then((rows) => rows.map((r) => r.deployment.id));
 
-  const environmentReleaseChannelUpdatePromises = environments.flatMap(
+  const environmentVersionChannelUpdatePromises = environments.flatMap(
     ({ environment }) =>
       deploymentIds.map((deploymentId) => {
-        const oldChannelId = prevReleaseChannels[deploymentId] ?? null;
-        const newChannelId = newReleaseChannels[deploymentId] ?? null;
-        return handleReleaseChannelUpdate(
+        const oldChannelId = prevVersionChannels[deploymentId] ?? null;
+        const newChannelId = newVersionChannels[deploymentId] ?? null;
+        return handleVersionChannelUpdate(
           environment.id,
           deploymentId,
           oldChannelId,
@@ -216,5 +216,5 @@ export const handleEnvironmentPolicyReleaseChannelUpdate = async (
       }),
   );
 
-  return Promise.all(environmentReleaseChannelUpdatePromises);
+  return Promise.all(environmentVersionChannelUpdatePromises);
 };

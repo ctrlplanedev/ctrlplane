@@ -1,8 +1,8 @@
 import { relations } from "drizzle-orm";
 
+import { deploymentVersionChannel } from "./deployment-version.js";
 import { environmentPolicy } from "./environment.js";
 import { environmentPolicyDeploymentVersionChannel } from "./release-channel.js";
-import { deploymentVersionChannel } from "./release.js";
 
 export const releaseChannelRelations = relations(
   deploymentVersionChannel,

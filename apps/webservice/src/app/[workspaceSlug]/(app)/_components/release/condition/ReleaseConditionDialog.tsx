@@ -1,7 +1,7 @@
 "use client";
 
 import type * as SCHEMA from "@ctrlplane/db/schema";
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import React, { useState } from "react";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -37,10 +37,10 @@ import { ReleaseConditionRender } from "./ReleaseConditionRender";
 import { useReleaseFilter } from "./useReleaseFilter";
 
 type ReleaseConditionDialogProps = {
-  condition: ReleaseCondition | null;
+  condition: DeploymentVersionCondition | null;
   deploymentId?: string;
   onChange: (
-    condition: ReleaseCondition | null,
+    condition: DeploymentVersionCondition | null,
     deploymentVersionChannelId?: string | null,
   ) => void;
   deploymentVersionChannels?: SCHEMA.DeploymentVersionChannel[];
@@ -61,9 +61,8 @@ export const ReleaseConditionDialog: React.FC<ReleaseConditionDialogProps> = ({
   const [localDeploymentVersionChannelId, setLocalDeploymentVersionChannelId] =
     useState<string | null>(deploymentVersionChannelId);
 
-  const [localCondition, setLocalCondition] = useState<ReleaseCondition | null>(
-    condition ?? defaultCondition,
-  );
+  const [localCondition, setLocalCondition] =
+    useState<DeploymentVersionCondition | null>(condition ?? defaultCondition);
   const isLocalConditionValid =
     localCondition == null || isValidReleaseCondition(localCondition);
   const filter = localCondition ?? undefined;

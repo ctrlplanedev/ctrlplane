@@ -1,4 +1,4 @@
-import type { ReleaseCondition } from "@ctrlplane/validators/releases";
+import type { DeploymentVersionCondition } from "@ctrlplane/validators/releases";
 import _ from "lodash";
 
 import {
@@ -6,14 +6,14 @@ import {
   ComparisonOperator,
   FilterType,
 } from "@ctrlplane/validators/conditions";
-import { ReleaseFilterType } from "@ctrlplane/validators/releases";
+import { DeploymentVersionConditionType } from "@ctrlplane/validators/releases";
 
 import { api } from "~/trpc/react";
 
 export const useDeploymentVersionChannel = (
   deploymentId: string,
   environmentId: string,
-  releaseVersion: string,
+  versionTag: string,
   enabled = true,
 ) => {
   const environment = api.environment.byId.useQuery(environmentId, { enabled });
@@ -26,13 +26,13 @@ export const useDeploymentVersionChannel = (
     versionSelector: null,
   };
 
-  const versionFilter: ReleaseCondition = {
-    type: ReleaseFilterType.Version,
+  const versionFilter: DeploymentVersionCondition = {
+    type: DeploymentVersionConditionType.Version,
     operator: ColumnOperator.Equals,
-    value: releaseVersion,
+    value: versionTag,
   };
 
-  const releaseFilter: ReleaseCondition = {
+  const releaseFilter: DeploymentVersionCondition = {
     type: FilterType.Comparison,
     operator: ComparisonOperator.And,
     conditions: _.compact([versionFilter, filter]),

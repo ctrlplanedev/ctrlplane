@@ -43,25 +43,25 @@ import { Switch } from "@ctrlplane/ui/switch";
 import { toast } from "@ctrlplane/ui/toast";
 import {
   defaultCondition,
+  deploymentVersionCondition,
+  DeploymentVersionStatus,
   isEmptyCondition,
-  releaseCondition,
-  ReleaseStatus,
 } from "@ctrlplane/validators/releases";
 
 import { ReleaseConditionDialog } from "~/app/[workspaceSlug]/(app)/_components/release/condition/ReleaseConditionDialog";
 import { api } from "~/trpc/react";
 
-const releaseDependency = z.object({
+const versionDependency = z.object({
   deploymentId: z.string().uuid(),
-  releaseFilter: releaseCondition.nullable(),
+  versionSelector: deploymentVersionCondition.nullable(),
 });
 
 const releaseForm = z.object({
   systemId: z.string().uuid(),
   deploymentId: z.string().uuid(),
-  version: z.string().min(1).max(255),
-  status: z.nativeEnum(ReleaseStatus),
-  releaseDependencies: z.array(releaseDependency).refine((deps) => {
+  tag: z.string().min(1).max(255),
+  status: z.nativeEnum(DeploymentVersionStatus),
+  versionDependencies: z.array(versionDependency).refine((deps) => {
     const deploymentIds = deps.map((d) => d.deploymentId);
     return new Set(deploymentIds).size === deploymentIds.length;
   }, "Cannot reuse a deployment in multiple release dependencies"),
@@ -71,7 +71,7 @@ export const CreateReleaseDialog: React.FC<{
   deploymentId?: string;
   systemId?: string;
   children?: React.ReactNode;
-  version?: string;
+  tag?: string;
   onClose?: () => void;
 }> = ({ children, ...props }) => {
   const create = api.deployment.version.create.useMutation();
@@ -80,9 +80,9 @@ export const CreateReleaseDialog: React.FC<{
     defaultValues: {
       deploymentId: props.deploymentId ?? "",
       systemId: props.systemId ?? "",
-      version: props.version ?? "",
-      releaseDependencies: [],
-      status: ReleaseStatus.Ready,
+      tag: props.tag ?? "",
+      versionDependencies: [],
+      status: DeploymentVersionStatus.Ready,
     },
   });
 
@@ -117,17 +117,17 @@ export const CreateReleaseDialog: React.FC<{
   const router = useRouter();
   const utils = api.useUtils();
   const onSubmit = form.handleSubmit(async (data) => {
-    const releaseDependencies = data.releaseDependencies.map((dep) => ({
+    const versionDependencies = data.versionDependencies.map((dep) => ({
       ...dep,
-      releaseFilter:
-        dep.releaseFilter == null || isEmptyCondition(dep.releaseFilter)
+      versionSelector:
+        dep.versionSelector == null || isEmptyCondition(dep.versionSelector)
           ? null
-          : dep.releaseFilter,
+          : dep.versionSelector,
     }));
     const release = await create.mutateAsync({
       ...data,
-      releaseDependencies,
-      name: data.version.trim(),
+      versionDependencies,
+      name: data.tag.trim(),
     });
     await utils.deployment.version.list.invalidate({
       deploymentId: release.deploymentId,
@@ -156,10 +156,10 @@ export const CreateReleaseDialog: React.FC<{
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "releaseDependencies",
+    name: "versionDependencies",
   });
 
-  const formErrors = form.formState.errors.releaseDependencies ?? null;
+  const formErrors = form.formState.errors.versionDependencies ?? null;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -232,7 +232,7 @@ export const CreateReleaseDialog: React.FC<{
             />
             <FormField
               control={form.control}
-              name="version"
+              name="tag"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Version</FormLabel>
@@ -270,7 +270,7 @@ export const CreateReleaseDialog: React.FC<{
                     <div key={index} className="flex items-center gap-2">
                       <FormField
                         control={form.control}
-                        name={`releaseDependencies.${index}.deploymentId`}
+                        name={`versionDependencies.${index}.deploymentId`}
                         render={({ field: { value, onChange } }) => (
                           <FormItem>
                             <FormControl>
@@ -303,7 +303,7 @@ export const CreateReleaseDialog: React.FC<{
 
                       <FormField
                         control={form.control}
-                        name={`releaseDependencies.${index}.releaseFilter`}
+                        name={`versionDependencies.${index}.versionSelector`}
                         render={({ field: { value, onChange } }) => (
                           <FormItem>
                             <FormControl>
@@ -340,7 +340,7 @@ export const CreateReleaseDialog: React.FC<{
                     variant="outline"
                     className="w-16"
                     onClick={() =>
-                      append({ deploymentId: "", releaseFilter: null })
+                      append({ deploymentId: "", versionSelector: null })
                     }
                   >
                     Add
@@ -359,13 +359,15 @@ export const CreateReleaseDialog: React.FC<{
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value={ReleaseStatus.Ready}>
+                            <SelectItem value={DeploymentVersionStatus.Ready}>
                               Ready
                             </SelectItem>
-                            <SelectItem value={ReleaseStatus.Building}>
+                            <SelectItem
+                              value={DeploymentVersionStatus.Building}
+                            >
                               Building
                             </SelectItem>
-                            <SelectItem value={ReleaseStatus.Failed}>
+                            <SelectItem value={DeploymentVersionStatus.Failed}>
                               Failed
                             </SelectItem>
                           </SelectContent>

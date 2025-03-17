@@ -15,7 +15,7 @@ import { Cancelled, Loading, Passing, Waiting } from "./StatusIcons";
 
 type PolicyNodeProps = NodeProps<
   SCHEMA.EnvironmentPolicy & {
-    release: SCHEMA.DeploymentVersion;
+    deploymentVersion: SCHEMA.DeploymentVersion;
     policyDeployments: Array<SCHEMA.EnvironmentPolicyDeployment>;
   }
 >;
@@ -23,11 +23,11 @@ type PolicyNodeProps = NodeProps<
 const MinSuccessCheck: React.FC<PolicyNodeProps["data"]> = ({
   successMinimum,
   successType,
-  release,
+  deploymentVersion,
   policyDeployments,
 }) => {
-  const allJobs = api.job.config.byReleaseId.useQuery(
-    { releaseId: release.id },
+  const allJobs = api.job.config.byDeploymentVersionId.useQuery(
+    { versionId: deploymentVersion.id },
     { refetchInterval: 10_000 },
   );
   const envIds = policyDeployments.map((p) => p.environmentId);
@@ -71,15 +71,15 @@ const GradualRolloutCheck: React.FC<PolicyNodeProps["data"]> = (data) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   const { data: approvalStatus, isLoading } =
-    api.environment.policy.approval.statusByReleasePolicyId.useQuery(
-      { policyId: data.id, releaseId: data.release.id },
+    api.environment.policy.approval.statusByVersionPolicyId.useQuery(
+      { policyId: data.id, versionId: data.deploymentVersion.id },
       { enabled: data.approvalRequirement === "manual" },
     );
 
   const startDate =
     data.approvalRequirement === "manual"
-      ? (approvalStatus?.approvedAt ?? data.release.createdAt)
-      : data.release.createdAt;
+      ? (approvalStatus?.approvedAt ?? data.deploymentVersion.createdAt)
+      : data.deploymentVersion.createdAt;
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -161,7 +161,10 @@ export const PolicyNode: React.FC<PolicyNodeProps> = ({ data }) => {
         {!noMinSuccess && <MinSuccessCheck {...data} />}
         {!noRollout && <GradualRolloutCheck {...data} />}
         {!noApproval && (
-          <ApprovalCheck policyId={data.id} release={data.release} />
+          <ApprovalCheck
+            policyId={data.id}
+            deploymentVersion={data.deploymentVersion}
+          />
         )}
 
         {noMinSuccess && noRollout && noApproval && (

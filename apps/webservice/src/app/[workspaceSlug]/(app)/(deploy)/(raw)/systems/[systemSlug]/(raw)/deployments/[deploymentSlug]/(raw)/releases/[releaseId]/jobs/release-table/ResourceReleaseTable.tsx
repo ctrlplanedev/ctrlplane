@@ -43,15 +43,15 @@ import { api } from "~/trpc/react";
 import { EnvironmentApprovalRow } from "./EnvironmentApprovalRow";
 import { EnvironmentRowDropdown } from "./EnvironmentRowDropdown";
 
-type Trigger = RouterOutputs["job"]["config"]["byReleaseId"][number];
+type Trigger = RouterOutputs["job"]["config"]["byDeploymentVersionId"][number];
 
 type CollapsibleTableRowProps = {
   environment: SCHEMA.Environment;
   environmentCount: number;
   deployment: SCHEMA.Deployment;
-  release: {
+  deploymentVersion: {
     id: string;
-    version: string;
+    tag: string;
     name: string;
     deploymentId: string;
   };
@@ -62,14 +62,15 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   environment,
   environmentCount,
   deployment,
-  release,
+  deploymentVersion,
   triggersByResource,
 }) => {
   const { setJobId } = useJobDrawer();
 
-  const approvalsQ = api.environment.policy.approval.byReleaseId.useQuery({
-    releaseId: release.id,
-  });
+  const approvalsQ =
+    api.environment.policy.approval.byDeploymentVersionId.useQuery({
+      versionId: deploymentVersion.id,
+    });
 
   const approvals = approvalsQ.data ?? [];
   const environmentApprovals = approvals.filter(
@@ -139,7 +140,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
   } = useDeploymentVersionChannel(
     deployment.id,
     environment.id,
-    release.version,
+    deploymentVersion.tag,
   );
 
   const loading = approvalsQ.isLoading || deploymentVersionChannelLoading;
@@ -193,7 +194,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                 <EnvironmentApprovalRow
                   key={approval.id}
                   approval={approval}
-                  release={release}
+                  deploymentVersion={deploymentVersion}
                 />
               ))}
 
@@ -310,7 +311,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end">
                         <JobDropdownMenu
-                          release={release}
+                          deploymentVersion={deploymentVersion}
                           deployment={deployment}
                           resource={trigger.resource}
                           environmentId={trigger.environmentId}
@@ -417,7 +418,7 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <div className="flex justify-end">
                                 <JobDropdownMenu
-                                  release={release}
+                                  deploymentVersion={deploymentVersion}
                                   deployment={deployment}
                                   resource={trigger.resource}
                                   environmentId={trigger.environmentId}
@@ -455,9 +456,9 @@ const CollapsibleTableRow: React.FC<CollapsibleTableRowProps> = ({
 };
 
 type ResourceReleaseTableProps = {
-  release: {
+  deploymentVersion: {
     id: string;
-    version: string;
+    tag: string;
     name: string;
     deploymentId: string;
   };
@@ -466,13 +467,13 @@ type ResourceReleaseTableProps = {
 };
 
 export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
-  release,
+  deploymentVersion,
   deployment,
   environments,
 }) => {
   const { filter, setFilter } = useFilter<JobCondition>();
-  const releaseJobTriggerQuery = api.job.config.byReleaseId.useQuery(
-    { releaseId: release.id, filter: filter ?? undefined },
+  const releaseJobTriggerQuery = api.job.config.byDeploymentVersionId.useQuery(
+    { versionId: deploymentVersion.id, filter: filter ?? undefined },
     { refetchInterval: 5_000 },
   );
   const releaseJobTriggers = releaseJobTriggerQuery.data ?? [];
@@ -532,7 +533,7 @@ export const ResourceReleaseTable: React.FC<ResourceReleaseTableProps> = ({
                 environment={environment!}
                 environmentCount={groupedTriggers.length}
                 deployment={deployment}
-                release={release}
+                deploymentVersion={deploymentVersion}
                 triggersByResource={resources}
               />
             ))}

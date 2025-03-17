@@ -57,14 +57,16 @@ export const environmentRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const policyRCSubquery = ctx.db
         .select({
-          releaseChannelPolicyId:
+          deploymentVersionChannelPolicyId:
             environmentPolicyDeploymentVersionChannel.policyId,
-          releaseChannelDeploymentId:
+          deploymentVersionChannelDeploymentId:
             environmentPolicyDeploymentVersionChannel.deploymentId,
-          releaseChannelDescription: deploymentVersionChannel.description,
-          releaseChannelFilter: deploymentVersionChannel.versionSelector,
-          releaseChannelId: deploymentVersionChannel.id,
-          releaseChannelName: deploymentVersionChannel.name,
+          deploymentVersionChannelDescription:
+            deploymentVersionChannel.description,
+          deploymentVersionChannelSelector:
+            deploymentVersionChannel.versionSelector,
+          deploymentVersionChannelId: deploymentVersionChannel.id,
+          deploymentVersionChannelName: deploymentVersionChannel.name,
         })
         .from(environmentPolicyDeploymentVersionChannel)
         .innerJoin(
@@ -90,7 +92,10 @@ export const environmentRouter = createTRPCRouter({
         .innerJoin(system, eq(environment.systemId, system.id))
         .leftJoin(
           policyRCSubquery,
-          eq(environmentPolicy.id, policyRCSubquery.releaseChannelPolicyId),
+          eq(
+            environmentPolicy.id,
+            policyRCSubquery.deploymentVersionChannelPolicyId,
+          ),
         )
         .leftJoin(
           environmentMetadata,
@@ -106,13 +111,13 @@ export const environmentRouter = createTRPCRouter({
             versionChannels: _.chain(rows)
               .map((r) => r.policyRCSubquery)
               .filter(isPresent)
-              .uniqBy((r) => r.releaseChannelId)
+              .uniqBy((r) => r.deploymentVersionChannelId)
               .map((r) => ({
-                deploymentId: r.releaseChannelDeploymentId,
-                description: r.releaseChannelDescription,
-                versionSelector: r.releaseChannelFilter,
-                id: r.releaseChannelId,
-                name: r.releaseChannelName,
+                deploymentId: r.deploymentVersionChannelDeploymentId,
+                description: r.deploymentVersionChannelDescription,
+                versionSelector: r.deploymentVersionChannelSelector,
+                id: r.deploymentVersionChannelId,
+                name: r.deploymentVersionChannelName,
               }))
               .value(),
             releaseWindows: _.chain(rows)

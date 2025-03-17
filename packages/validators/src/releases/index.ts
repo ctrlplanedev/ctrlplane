@@ -1,9 +1,9 @@
 export * from "./conditions/index.js";
 
-export enum ReleaseStatus {
+export enum DeploymentVersionStatus {
   Ready = "ready",
   Building = "building",
   Failed = "failed",
 }
 
-export type ReleaseStatusType = `${ReleaseStatus}`;
+export type DeploymentVersionStatusType = `${DeploymentVersionStatus}`;

@@ -43,9 +43,9 @@ export const JobDrawer: React.FC = () => {
     isPassingDeploymentVersionChannel,
     loading: deploymentVersionChannelLoading,
   } = useDeploymentVersionChannel(
-    job?.release.deployment.id ?? "",
+    job?.deploymentVersion.deployment.id ?? "",
     job?.environmentId ?? "",
-    job?.release.version ?? "",
+    job?.deploymentVersion.tag ?? "",
     jobQ.isSuccess,
   );
 
@@ -72,10 +72,10 @@ export const JobDrawer: React.FC = () => {
                 Job
                 {job != null && (
                   <JobDropdownMenu
-                    release={job.release}
+                    deploymentVersion={job.deploymentVersion}
                     environmentId={job.environment.id}
                     resource={job.resource}
-                    deployment={job.release.deployment}
+                    deployment={job.deploymentVersion.deployment}
                     job={job.job}
                     isPassingDeploymentVersionChannel={
                       isPassingDeploymentVersionChannel

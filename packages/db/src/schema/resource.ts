@@ -51,7 +51,7 @@ import {
 
 import type { Tx } from "../common.js";
 import { job } from "./job.js";
-import { releaseJobTrigger } from "./release.js";
+import { releaseJobTrigger } from "./release-job-trigger.js";
 import { resourceProvider } from "./resource-provider.js";
 import { workspace } from "./workspace.js";
 

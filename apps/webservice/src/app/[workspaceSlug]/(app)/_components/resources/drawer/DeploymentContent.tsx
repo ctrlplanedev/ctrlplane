@@ -47,8 +47,7 @@ export const DeploymentsContent: React.FC<{ resourceId: string }> = ({
                     "bg-green-500/30 text-green-400 text-muted-foreground",
                 )}
               >
-                {deployment.releaseJobTrigger?.release.version ??
-                  "No deployments"}
+                {deployment.releaseJobTrigger?.version.tag ?? "No deployments"}
               </div>
             </div>
 

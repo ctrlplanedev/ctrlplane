@@ -10,7 +10,7 @@ import {
   createReleaseJobTriggers,
   dispatchReleaseJobTriggers,
   isPassingAllPolicies,
-  isPassingReleaseStringCheckPolicy,
+  isPassingChannelSelectorPolicy,
 } from "@ctrlplane/job-dispatch";
 import { logger } from "@ctrlplane/logger";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -37,14 +37,14 @@ export const PATCH = request()
     { body: z.infer<typeof patchSchema>; user: SCHEMA.User },
     { params: { releaseId: string } }
   >(async (ctx, { params }) => {
-    const { releaseId } = params;
+    const { releaseId: versionId } = params;
     const { body, user, req } = ctx;
 
     try {
       const release = await ctx.db
         .update(SCHEMA.deploymentVersion)
         .set(body)
-        .where(eq(SCHEMA.deploymentVersion.id, releaseId))
+        .where(eq(SCHEMA.deploymentVersion.id, versionId))
         .returning()
         .then(takeFirst);
 
@@ -53,7 +53,7 @@ export const PATCH = request()
           .insert(SCHEMA.deploymentVersionMetadata)
           .values(
             Object.entries(body.metadata ?? {}).map(([key, value]) => ({
-              releaseId,
+              versionId,
               key,
               value,
             })),
@@ -61,17 +61,17 @@ export const PATCH = request()
           .onConflictDoUpdate({
             target: [
               SCHEMA.deploymentVersionMetadata.key,
-              SCHEMA.deploymentVersionMetadata.releaseId,
+              SCHEMA.deploymentVersionMetadata.versionId,
             ],
             set: buildConflictUpdateColumns(SCHEMA.deploymentVersionMetadata, [
               "value",
             ]),
           });
 
-      await createReleaseJobTriggers(ctx.db, "release_updated")
+      await createReleaseJobTriggers(ctx.db, "version_updated")
         .causedById(user.id)
-        .filter(isPassingReleaseStringCheckPolicy)
-        .releases([releaseId])
+        .filter(isPassingChannelSelectorPolicy)
+        .versions([versionId])
         .then(createJobApprovals)
         .insert()
         .then((releaseJobTriggers) => {
@@ -83,7 +83,7 @@ export const PATCH = request()
         })
         .then(() =>
           logger.info(
-            `Release for ${releaseId} job triggers created and dispatched.`,
+            `Version for ${versionId} job triggers created and dispatched.`,
             req,
           ),
         );
@@ -92,7 +92,7 @@ export const PATCH = request()
     } catch (error) {
       logger.error(error);
       return NextResponse.json(
-        { error: "Failed to update release" },
+        { error: "Failed to update version" },
         { status: httpStatus.INTERNAL_SERVER_ERROR },
       );
     }
