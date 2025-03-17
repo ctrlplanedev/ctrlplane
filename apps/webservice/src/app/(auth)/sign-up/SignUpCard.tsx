@@ -8,8 +8,6 @@ import { IconLockAccess, IconMail, IconUser } from "@tabler/icons-react";
 import { signIn } from "next-auth/react";
 import { useLocalStorage } from "react-use";
 
-import { urls } from "~/app/urls";
-
 import { Button } from "@ctrlplane/ui/button";
 import {
   Card,
