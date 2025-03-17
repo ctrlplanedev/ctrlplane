@@ -70,6 +70,8 @@ export const openapi: Swagger.SwaggerV3 = {
           systemId: { type: "string", format: "uuid" },
           jobAgentId: { type: "string", format: "uuid", nullable: true },
           jobAgentConfig: { type: "object", additionalProperties: true },
+          retryCount: { type: "integer" },
+          timeout: { type: "integer", nullable: true },
         },
         required: [
           "id",
@@ -79,6 +81,21 @@ export const openapi: Swagger.SwaggerV3 = {
           "systemId",
           "jobAgentConfig",
         ],
+      },
+      UpdateDeployment: {
+        type: "object",
+        description: "Schema for updating a deployment (all fields optional)",
+        allOf: [
+          {
+            $ref: "#/components/schemas/Deployment",
+          },
+          {
+            type: "object",
+            additionalProperties: true,
+          },
+        ],
+        required: ["id"],
+        additionalProperties: true,
       },
       Release: {
         type: "object",

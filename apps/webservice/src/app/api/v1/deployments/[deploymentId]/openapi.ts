@@ -88,6 +88,60 @@ export const openapi: Swagger.SwaggerV3 = {
           },
         },
       },
+      patch: {
+        summary: "Update a deployment",
+        operationId: "updateDeployment",
+        parameters: [
+          {
+            name: "deploymentId",
+            in: "path",
+            required: true,
+            schema: { type: "string", format: "uuid" },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/UpdateDeployment" },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Deployment updated",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Deployment" },
+              },
+            },
+          },
+          "404": {
+            description: "Deployment not found",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { error: { type: "string" } },
+                  required: ["error"],
+                },
+              },
+            },
+          },
+          "500": {
+            description: "Failed to update deployment",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { error: { type: "string" } },
+                  required: ["error"],
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
