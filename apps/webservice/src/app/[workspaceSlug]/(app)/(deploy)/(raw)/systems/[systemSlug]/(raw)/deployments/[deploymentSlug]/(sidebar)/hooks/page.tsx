@@ -12,7 +12,9 @@ type PageProps = {
   };
 };
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
   const deployment = await api.deployment.bySlug(params);
   if (!deployment) return notFound();
 

@@ -5,8 +5,6 @@ import type { AuthClient } from "google-auth-library";
 import { KubeConfig } from "@kubernetes/client-node";
 import _ from "lodash";
 
-import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-
 import { sourceCredentials } from "./client.js";
 
 export const getKubeConfig = async (

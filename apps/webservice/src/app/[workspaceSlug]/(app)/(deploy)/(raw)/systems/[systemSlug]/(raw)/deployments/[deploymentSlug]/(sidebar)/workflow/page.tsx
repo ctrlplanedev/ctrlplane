@@ -16,7 +16,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params;
   const deployment = await api.deployment.bySlug(params);
   if (deployment == null) return notFound();
-  
+
   return {
     title: `Job Agent | ${deployment.name} | ${deployment.system.name}`,
     description: `Configure job agent settings for ${deployment.name} deployment`,

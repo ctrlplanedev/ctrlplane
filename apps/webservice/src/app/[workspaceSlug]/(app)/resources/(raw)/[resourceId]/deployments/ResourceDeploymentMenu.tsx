@@ -1,5 +1,6 @@
 "use client";
 
+import type { JobStatus } from "@ctrlplane/validators/jobs";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { IconDotsVertical, IconReload } from "@tabler/icons-react";
@@ -25,7 +26,7 @@ import {
   HoverCardContent,
   HoverCardTrigger,
 } from "@ctrlplane/ui/hover-card";
-import { activeStatus, JobStatus } from "@ctrlplane/validators/jobs";
+import { activeStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -39,7 +40,6 @@ type ResourceDeploymentMenuProps = {
 };
 
 export const ResourceDeploymentMenu: React.FC<ResourceDeploymentMenuProps> = ({
-  deploymentId,
   deploymentName,
   versionId,
   versionTag,
