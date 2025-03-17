@@ -52,8 +52,12 @@ export const clusterToResource = (
       [ReservedMetadataKey.KubernetesFlavor]: "gke",
       [ReservedMetadataKey.KubernetesVersion]:
         masterVersion.version.split("-")[0] ?? "",
-
-      "kubernetes/status": cluster.status,
+      [ReservedMetadataKey.KubernetesStatus]:
+        cluster.status === "RUNNING"
+          ? "running"
+          : cluster.status === "PROVISIONING"
+            ? "creating"
+            : "unknown",
       "kubernetes/node-count": String(cluster.currentNodeCount ?? "unknown"),
 
       "kubernetes/master-version": masterVersion.version,

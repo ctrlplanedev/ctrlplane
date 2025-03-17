@@ -4,6 +4,7 @@ import type { ResourceProviderAws, Workspace } from "@ctrlplane/db/schema";
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 import { DescribeRegionsCommand } from "@aws-sdk/client-ec2";
 import {
+  ClusterStatus,
   DescribeClusterCommand,
   ListClustersCommand,
 } from "@aws-sdk/client-eks";
@@ -69,7 +70,12 @@ const convertEksClusterToKubernetesResource = (
       "aws/account-id": accountId,
       "aws/eks-role-arn": cluster.roleArn,
 
-      "kubernetes/status": cluster.status,
+      [ReservedMetadataKey.KubernetesStatus]:
+        cluster.status === ClusterStatus.ACTIVE
+          ? "running"
+          : cluster.status === ClusterStatus.CREATING
+            ? "creating"
+            : "unknown",
       "kubernetes/version-major": major,
       "kubernetes/version-minor": minor,
 

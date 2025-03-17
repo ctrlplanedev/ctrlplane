@@ -93,7 +93,6 @@ export const convertManagedClusterToResource = async (
         tenantId,
         subscriptionId: provider.subscriptionId,
       },
-      status: cluster.provisioningState ?? "UNKNOWN",
       server: { ...ca, endpoint: ca?.endpoint ?? cluster.fqdn ?? "" },
     },
     metadata: omitNullUndefined({
@@ -103,6 +102,12 @@ export const convertManagedClusterToResource = async (
       [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
       [ReservedMetadataKey.KubernetesFlavor]: "aks",
       [ReservedMetadataKey.KubernetesVersion]: cluster.currentKubernetesVersion,
+      [ReservedMetadataKey.KubernetesStatus]:
+        cluster.provisioningState === "InProgress"
+          ? "creating"
+          : cluster.powerState?.code === "Running"
+            ? "running"
+            : "unknown",
 
       "azure/tenant-id": tenantId,
       "azure/subscription-id": provider.subscriptionId,
