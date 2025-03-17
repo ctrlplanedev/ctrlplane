@@ -230,7 +230,7 @@ export const versionRouter = createTRPCRouter({
           .from(SCHEMA.deploymentVersion)
           .leftJoin(
             SCHEMA.versionDependency,
-            eq(SCHEMA.deploymentVersion.id, SCHEMA.versionDependency.versionId),
+            eq(SCHEMA.versionDependency.versionId, SCHEMA.deploymentVersion.id),
           )
           .where(checks)
           .orderBy(
