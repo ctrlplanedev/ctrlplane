@@ -66,8 +66,6 @@ export const createNamespaceResource = (
     identifier: `${project}/${cluster.name}/${namespace.metadata!.name}`,
     config: { namespace: namespace.metadata!.name },
     metadata: {
-      [ReservedMetadataKey.ParentResourceIdentifier]:
-        clusterResource.identifier,
       ...namespace.metadata?.labels,
       "kubernetes/namespace": namespace.metadata!.name ?? "",
     },

@@ -103,7 +103,7 @@ export const convertManagedClusterToResource = async (
       [ReservedMetadataKey.KubernetesFlavor]: "aks",
       [ReservedMetadataKey.KubernetesVersion]: cluster.currentKubernetesVersion,
       [ReservedMetadataKey.KubernetesStatus]:
-        cluster.provisioningState === "InProgress"
+        cluster.provisioningState === "In Progress"
           ? "creating"
           : cluster.powerState?.code === "Running"
             ? "running"
