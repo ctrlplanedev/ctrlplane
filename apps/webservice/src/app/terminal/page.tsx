@@ -9,7 +9,9 @@ import { TerminalSessionsProvider } from "./_components/TerminalSessionsProvider
 import { TerminalTabs } from "./_components/TerminalTabs";
 
 export const metadata = {
-  title: "Terminal",
+  title: "Terminal | Ctrlplane",
+  description:
+    "Interactive terminal for managing Ctrlplane resources and deployments",
 };
 
 export default function TerminalPage() {

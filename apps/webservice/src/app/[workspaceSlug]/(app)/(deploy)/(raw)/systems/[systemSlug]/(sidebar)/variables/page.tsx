@@ -14,12 +14,12 @@ export const generateMetadata = async (props: {
     const system = await api.system.bySlug(props.params);
     return {
       title: `Variables | ${system.name} | Ctrlplane`,
-      description: `Manage variables for the ${system.name} system in Ctrlplane.`
+      description: `Manage variables for the ${system.name} system in Ctrlplane.`,
     };
   } catch (error) {
     return {
       title: "System Variables | Ctrlplane",
-      description: "Manage system variables in Ctrlplane."
+      description: "Manage system variables in Ctrlplane.",
     };
   }
 };

@@ -17,12 +17,12 @@ export const generateMetadata = async (props: {
     const system = await api.system.bySlug(props.params);
     return {
       title: `Deployments | ${system.name} | Ctrlplane`,
-      description: `Manage deployments for the ${system.name} system in Ctrlplane.`
+      description: `Manage deployments for the ${system.name} system in Ctrlplane.`,
     };
   } catch (error) {
     return {
       title: "Deployments | Ctrlplane",
-      description: "Manage system deployments in Ctrlplane."
+      description: "Manage system deployments in Ctrlplane.",
     };
   }
 };

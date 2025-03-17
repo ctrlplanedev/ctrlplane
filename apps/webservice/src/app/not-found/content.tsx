@@ -16,7 +16,9 @@ export function NotFoundContent() {
   }, []);
 
   return (
-    <div className={`relative z-10 w-full max-w-screen-sm px-4 transition-all duration-700 ${mounted ? "opacity-100" : "opacity-0"}`}>
+    <div
+      className={`relative z-10 w-full max-w-screen-sm px-4 transition-all duration-700 ${mounted ? "opacity-100" : "opacity-0"}`}
+    >
       <div className="mx-auto w-full" style={{ maxWidth: "400px" }}>
         <div className="mb-6 flex items-center justify-center">
           <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 p-2">
@@ -34,7 +36,9 @@ export function NotFoundContent() {
         <Card className="overflow-hidden border-border/30 bg-card/60 shadow-xl backdrop-blur-sm">
           <CardHeader className="space-y-1 pb-2 text-center">
             <CardTitle className="text-6xl font-bold">404</CardTitle>
-            <CardTitle className="text-2xl font-semibold">Page Not Found</CardTitle>
+            <CardTitle className="text-2xl font-semibold">
+              Page Not Found
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pb-6 text-center">
             <p className="text-muted-foreground">

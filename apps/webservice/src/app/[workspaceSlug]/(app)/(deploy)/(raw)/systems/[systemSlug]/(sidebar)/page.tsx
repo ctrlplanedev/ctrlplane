@@ -10,12 +10,12 @@ export const generateMetadata = async (props: {
     const system = await api.system.bySlug(props.params);
     return {
       title: `${system.name} | Ctrlplane`,
-      description: `View and manage the ${system.name} system in Ctrlplane.`
+      description: `View and manage the ${system.name} system in Ctrlplane.`,
     };
   } catch (error) {
     return {
       title: "System | Ctrlplane",
-      description: "View and manage systems in Ctrlplane."
+      description: "View and manage systems in Ctrlplane.",
     };
   }
 };

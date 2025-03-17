@@ -11,8 +11,22 @@ import { SuccessRate } from "./overview-cards/SuccessRate";
 import { TotalJobs } from "./overview-cards/TotalJobs";
 import { WorkspaceResources } from "./overview-cards/WorkspaceResources";
 
-export const metadata: Metadata = {
-  title: "Insights | Ctrlplane",
+export const generateMetadata = async (props: {
+  params: { workspaceSlug: string };
+}): Promise<Metadata> => {
+  try {
+    const workspace = await api.workspace.bySlug(props.params.workspaceSlug);
+    return {
+      title: `Insights | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
+      description: `Analytics and performance metrics for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
+    };
+  } catch (error) {
+    return {
+      title: "Insights | Ctrlplane",
+      description:
+        "Analytics and performance metrics for your Ctrlplane workspace.",
+    };
+  }
 };
 
 type Props = {

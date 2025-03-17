@@ -19,7 +19,8 @@ import { api } from "~/trpc/server";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | Ctrlplane",
-  description: "Administrative dashboard for managing Ctrlplane users and workspaces."
+  description:
+    "Administrative dashboard for managing Ctrlplane users and workspaces.",
 };
 
 export default async function AdminPage() {

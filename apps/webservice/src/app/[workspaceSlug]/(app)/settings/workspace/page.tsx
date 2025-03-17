@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Workspace Settings | Ctrlplane",
-  description: "Configure settings for your Ctrlplane workspace."
+  description: "Configure settings for your Ctrlplane workspace.",
 };
 
 export default async function WorkspaceSettingsPage(props: {

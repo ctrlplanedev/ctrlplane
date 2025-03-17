@@ -6,7 +6,7 @@ import { api } from "~/trpc/server";
 
 export const metadata: Metadata = {
   title: "Settings | Ctrlplane",
-  description: "Configure your account and workspace settings in Ctrlplane."
+  description: "Configure your account and workspace settings in Ctrlplane.",
 };
 
 export default async function SettingsPage(props: {
