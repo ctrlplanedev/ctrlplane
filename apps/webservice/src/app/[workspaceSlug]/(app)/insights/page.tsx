@@ -20,7 +20,7 @@ export const generateMetadata = async (props: {
       title: `Insights | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
       description: `Analytics and performance metrics for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "Insights | Ctrlplane",
       description:

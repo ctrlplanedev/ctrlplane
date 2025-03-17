@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { IconMenu2 } from "@tabler/icons-react";
 
@@ -26,7 +26,7 @@ export const generateMetadata = async (props: {
       title: `Agents | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
       description: `Manage deployment agents for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "Agents | Ctrlplane",
       description: "Manage and monitor deployment agents in Ctrlplane.",

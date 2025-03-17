@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
@@ -16,7 +16,7 @@ export const generateMetadata = async (props: {
       title: `Variables | ${system.name} | Ctrlplane`,
       description: `Manage variables for the ${system.name} system in Ctrlplane.`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "System Variables | Ctrlplane",
       description: "Manage system variables in Ctrlplane.",

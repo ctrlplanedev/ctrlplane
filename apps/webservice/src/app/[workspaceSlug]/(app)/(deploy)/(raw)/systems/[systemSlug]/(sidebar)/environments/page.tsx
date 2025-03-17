@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -18,7 +18,7 @@ export const generateMetadata = async (props: {
       title: `Environments | ${system.name} | Ctrlplane`,
       description: `Manage environments for the ${system.name} system in Ctrlplane.`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "Environments | Ctrlplane",
       description: "Manage deployment environments in Ctrlplane.",

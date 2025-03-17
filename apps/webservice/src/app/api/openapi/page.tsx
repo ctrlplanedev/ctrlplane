@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import "swagger-ui-react/swagger-ui.css";
 

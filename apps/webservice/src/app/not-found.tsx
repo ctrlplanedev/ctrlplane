@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 
 import { AnimatedBackground } from "./not-found/animated-background";
 import { NotFoundContent } from "./not-found/content";

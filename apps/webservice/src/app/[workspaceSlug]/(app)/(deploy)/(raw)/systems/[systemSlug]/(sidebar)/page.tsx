@@ -1,4 +1,4 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { api } from "~/trpc/server";
@@ -12,7 +12,7 @@ export const generateMetadata = async (props: {
       title: `${system.name} | Ctrlplane`,
       description: `View and manage the ${system.name} system in Ctrlplane.`,
     };
-  } catch (error) {
+  } catch {
     return {
       title: "System | Ctrlplane",
       description: "View and manage systems in Ctrlplane.",
