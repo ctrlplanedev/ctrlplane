@@ -92,7 +92,7 @@ export const GoogleDialog: React.FC<{
     });
     await utils.resource.provider.byWorkspaceId.invalidate();
     router.refresh();
-    router.push(`/${workspace.slug}/resource-providers`);
+    router.push(`/${workspace.slug}/resources/providers`);
   });
   return (
     <Dialog>

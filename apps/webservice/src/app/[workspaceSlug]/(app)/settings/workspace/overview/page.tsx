@@ -54,7 +54,7 @@ export default async function OverviewPage(props: {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${workspaceSlug}/resource-providers`}>
+              <Link href={`/${workspaceSlug}/resources/providers`}>
                 <Button size="sm" variant="secondary">
                   Sync resources
                 </Button>
