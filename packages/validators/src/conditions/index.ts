@@ -5,7 +5,6 @@ export * from "./date-condition.js";
 
 export enum ColumnOperator {
   Equals = "equals",
-  Regex = "regex",
   StartsWith = "starts-with",
   EndsWith = "ends-with",
   Contains = "contains",

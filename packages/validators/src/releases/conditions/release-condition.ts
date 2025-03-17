@@ -26,7 +26,6 @@ export const deploymentVersionCondition = z.union([
 export enum DeploymentVersionOperator {
   Equals = "equals",
   Like = "like",
-  Regex = "regex",
   Null = "null",
   And = "and",
   Or = "or",

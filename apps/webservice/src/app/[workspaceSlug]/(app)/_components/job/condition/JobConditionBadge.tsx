@@ -52,7 +52,6 @@ const operatorVerbs = {
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [MetadataOperator.Regex]: "matches",
   [DateOperator.After]: "after",
   [DateOperator.Before]: "before",
   [DateOperator.AfterOrOn]: "after or on",

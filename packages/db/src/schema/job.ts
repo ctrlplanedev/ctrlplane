@@ -172,21 +172,6 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .limit(1),
     );
 
-  if (cond.operator === MetadataOperator.Regex)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(jobMetadata)
-        .where(
-          and(
-            eq(jobMetadata.jobId, job.id),
-            eq(jobMetadata.key, cond.key),
-            sql`${jobMetadata.value} ~ ${cond.value}`,
-          ),
-        )
-        .limit(1),
-    );
-
   if (cond.operator === MetadataOperator.StartsWith)
     return exists(
       tx
@@ -263,9 +248,7 @@ const buildVersionCondition = (cond: VersionCondition): SQL => {
     return ilike(deploymentVersion.tag, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
     return ilike(deploymentVersion.tag, `%${cond.value}`);
-  if (cond.operator === ColumnOperator.Contains)
-    return ilike(deploymentVersion.tag, `%${cond.value}%`);
-  return sql`${deploymentVersion.tag} ~ ${cond.value}`;
+  return ilike(deploymentVersion.tag, `%${cond.value}%`);
 };
 
 const buildCondition = (tx: Tx, cond: JobCondition): SQL => {
