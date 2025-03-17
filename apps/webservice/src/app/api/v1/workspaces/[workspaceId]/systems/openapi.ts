@@ -4,7 +4,7 @@ export const openapi: Swagger.SwaggerV3 = {
   openapi: "3.0.0",
   info: { title: "Ctrlplane API", version: "1.0.0" },
   paths: {
-    "/v1/workspaces/:workspaceId/systems": {
+    "/v1/workspaces/{workspaceId}/systems": {
       parameters: [
         {
           name: "workspaceId",

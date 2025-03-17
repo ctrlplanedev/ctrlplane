@@ -7,7 +7,7 @@ export const openapi: Swagger.SwaggerV3 = {
     version: "1.0.0",
   },
   paths: {
-    "/v1/workspaces/:workspaceId/deployments": {
+    "/v1/workspaces/{workspaceId}/deployments": {
       parameters: [
         {
           name: "workspaceId",
