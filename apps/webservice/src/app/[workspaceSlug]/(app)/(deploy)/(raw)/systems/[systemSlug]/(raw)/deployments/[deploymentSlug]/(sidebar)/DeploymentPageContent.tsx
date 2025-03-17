@@ -48,7 +48,7 @@ import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { JobHistoryPopover } from "./_components/release-cell/JobHistoryPopover";
 import { LazyReleaseEnvironmentCell } from "./_components/release-cell/ReleaseEnvironmentCell";
-import { ReleaseDistributionGraphPopover } from "./_components/release-cell/VersionDistributionPopover";
+import { VersionDistributionGraphPopover } from "./_components/release-cell/VersionDistributionPopover";
 
 type Deployment = NonNullable<RouterOutputs["deployment"]["bySlug"]>;
 
@@ -242,7 +242,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <ReleaseDistributionGraphPopover deployment={deployment}>
+          <VersionDistributionGraphPopover deployment={deployment}>
             <Button
               variant="ghost"
               size="icon"
@@ -250,7 +250,7 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
             >
               <IconGraph className="h-4 w-4" />
             </Button>
-          </ReleaseDistributionGraphPopover>
+          </VersionDistributionGraphPopover>
           {versionIds.length > 0 && (
             <JobHistoryPopover deploymentId={deployment.id}>
               <Button

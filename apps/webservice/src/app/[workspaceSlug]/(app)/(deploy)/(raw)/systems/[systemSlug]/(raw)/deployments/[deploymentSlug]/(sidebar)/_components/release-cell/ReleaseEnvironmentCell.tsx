@@ -22,9 +22,9 @@ import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components
 import { ReleaseDropdownMenu } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/release/ReleaseDropdownMenu";
 import { api } from "~/trpc/react";
 import { DeployButton } from "./DeployButton";
-import { DeploymentVersion } from "./TableCells";
+import { DeploymentVersion as DepVersion } from "./TableCells";
 
-type DeploymentVersion = {
+type DepVersion = {
   id: string;
   tag: string;
   name: string;
@@ -36,7 +36,7 @@ type DeploymentVersion = {
 type DeploymentVersionEnvironmentCellProps = {
   environment: SCHEMA.Environment;
   deployment: SCHEMA.Deployment;
-  deploymentVersion: DeploymentVersion;
+  deploymentVersion: DepVersion;
 };
 
 const useGetResourceCount = (
@@ -149,7 +149,7 @@ const DeploymentVersionEnvironmentCell: React.FC<
   if (showRelease)
     return (
       <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
-        <DeploymentVersion
+        <DepVersion
           workspaceSlug={workspaceSlug}
           systemSlug={systemSlug}
           deploymentSlug={deployment.slug}
