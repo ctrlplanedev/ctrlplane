@@ -3,6 +3,7 @@ import type { google } from "@google-cloud/container/build/protos/protos.js";
 import { SemVer } from "semver";
 
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
 import { omitNullUndefined } from "../../utils.js";
 
@@ -17,7 +18,8 @@ export const clusterToResource = (
   const autoscaling = String(
     cluster.autoscaling?.enableNodeAutoprovisioning ?? false,
   );
-
+  const { timezone, latitude, longitude } =
+    cloudRegionsGeo[cluster.location ?? ""] ?? {};
   const appUrl = `https://console.cloud.google.com/kubernetes/clusters/details/${cluster.location}/${cluster.name}/details?project=${project}`;
   return {
     workspaceId,
@@ -43,6 +45,9 @@ export const clusterToResource = (
     metadata: omitNullUndefined({
       [ReservedMetadataKey.Links]: JSON.stringify({ "Google Console": appUrl }),
       [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
+      [ReservedMetadataKey.LocationTimezone]: timezone,
+      [ReservedMetadataKey.LocationLatitude]: latitude,
+      [ReservedMetadataKey.LocationLongitude]: longitude,
 
       "google/self-link": cluster.selfLink,
       "google/project": project,

@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
 import { omitNullUndefined } from "../../utils.js";
 
@@ -77,6 +78,8 @@ export const convertManagedClusterToResource = async (
   }
 
   const ca = await getCertificateAuthorityData(cluster, resourceGroup, client);
+  const { timezone, latitude, longitude } =
+    cloudRegionsGeo[cluster.location] ?? {};
   return {
     workspaceId,
     providerId: provider.resourceProviderId,
@@ -108,6 +111,9 @@ export const convertManagedClusterToResource = async (
           : cluster.powerState?.code === "Running"
             ? "running"
             : "unknown",
+      [ReservedMetadataKey.LocationTimezone]: timezone,
+      [ReservedMetadataKey.LocationLatitude]: latitude,
+      [ReservedMetadataKey.LocationLongitude]: longitude,
 
       "azure/tenant-id": tenantId,
       "azure/subscription-id": provider.subscriptionId,
