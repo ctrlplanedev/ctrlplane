@@ -64,6 +64,10 @@ export const TopNavSearch: React.FC<{
           focus.isFocused && "bg-neutral-950",
         )}
         shouldFilter={false}
+        role="combobox"
+        aria-expanded={focus.isFocused}
+        aria-haspopup="listbox"
+        aria-label="Search resources, systems, deployments and more"
       >
         <CommandInput
           placeholder="Search for resources, systems, deployments, etc."
@@ -79,11 +83,22 @@ export const TopNavSearch: React.FC<{
         />
 
         {focus.isFocused && (
-          <CommandList className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 absolute left-0 right-0 top-12 z-50 rounded border bg-neutral-900">
+          <CommandList
+            className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 absolute left-0 right-0 top-12 z-50 rounded border bg-neutral-900"
+            role="listbox"
+            aria-live="polite"
+            aria-label="Search results"
+          >
             {isLoading ? (
               <CommandEmpty>
-                <div className="flex items-center justify-center gap-3">
-                  <IconLoader2 className="size-4 animate-spin" />
+                <div
+                  className="flex items-center justify-center gap-3"
+                  aria-live="polite"
+                >
+                  <IconLoader2
+                    className="size-4 animate-spin"
+                    aria-hidden="true"
+                  />
                   <span>Searching...</span>
                 </div>
               </CommandEmpty>
@@ -97,7 +112,12 @@ export const TopNavSearch: React.FC<{
                 if (results.length === 0) return null;
 
                 return (
-                  <CommandGroup key={type} heading={capitalCase(type)}>
+                  <CommandGroup
+                    key={type}
+                    heading={capitalCase(type)}
+                    role="group"
+                    aria-label={`${capitalCase(type)} results`}
+                  >
                     {results.map((result) => {
                       const url =
                         result.type === "system"
