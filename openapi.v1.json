@@ -5,6 +5,263 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/v1/channels": {
+      "post": {
+        "summary": "Create a channel",
+        "operationId": "createChannel",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "deploymentId",
+                  "name",
+                  "versionSelector"
+                ],
+                "properties": {
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "versionSelector": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Channel created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "versionSelector": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "deploymentId",
+                    "name",
+                    "createdAt"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Channel already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error",
+                    "id"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to create channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/deployments/{deploymentId}/channels/name/{name}": {
+      "delete": {
+        "summary": "Delete a channel",
+        "operationId": "deleteChannel",
+        "parameters": [
+          {
+            "name": "deploymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Channel deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "message"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Permission denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to delete channel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/deployments/{deploymentId}": {
       "get": {
         "summary": "Get a deployment",
@@ -188,104 +445,6 @@
         }
       }
     },
-    "/v1/deployments/{deploymentId}/release-channels/name/{name}": {
-      "delete": {
-        "summary": "Delete a release channel",
-        "operationId": "deleteReleaseChannel",
-        "parameters": [
-          {
-            "name": "deploymentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "name",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Release channel deleted",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Permission denied",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Release channel not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to delete release channel",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/deployments": {
       "post": {
         "summary": "Create a deployment",
@@ -412,6 +571,175 @@
         }
       }
     },
+    "/v1/deployments/versions/{versionId}": {
+      "patch": {
+        "summary": "Updates a deployment version",
+        "operationId": "updateDeploymentVersion",
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the deployment version"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "type": "string"
+                  },
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "jobAgentConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployments/versions": {
+      "post": {
+        "summary": "Upserts a deployment version",
+        "operationId": "upsertDeploymentVersion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag": {
+                    "type": "string"
+                  },
+                  "deploymentId": {
+                    "type": "string"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "config": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "jobAgentConfig": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ready",
+                      "building",
+                      "failed"
+                    ]
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "version",
+                  "deploymentId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentVersion"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Deployment version already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/environments/{environmentId}": {
       "get": {
         "summary": "Get an environment",
@@ -517,7 +845,7 @@
                   "policyId": {
                     "type": "string"
                   },
-                  "releaseChannels": {
+                  "channels": {
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -1180,334 +1508,6 @@
                   "type": "object",
                   "properties": {
                     "error": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/release-channels": {
-      "post": {
-        "summary": "Create a release channel",
-        "operationId": "createReleaseChannel",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "deploymentId",
-                  "name",
-                  "releaseFilter"
-                ],
-                "properties": {
-                  "deploymentId": {
-                    "type": "string"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "description": {
-                    "type": "string",
-                    "nullable": true
-                  },
-                  "releaseFilter": {
-                    "type": "object",
-                    "additionalProperties": true
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Release channel created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "deploymentId": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "description": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "createdAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "releaseFilter": {
-                      "type": "object",
-                      "additionalProperties": true
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "deploymentId",
-                    "name",
-                    "createdAt"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Release channel already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "id": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error",
-                    "id"
-                  ]
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to create release channel",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/v1/releases/{releaseId}": {
-      "patch": {
-        "summary": "Updates a release",
-        "operationId": "updateRelease",
-        "parameters": [
-          {
-            "name": "releaseId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The release ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": "string"
-                  },
-                  "deploymentId": {
-                    "type": "string"
-                  },
-                  "createdAt": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "config": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "jobAgentConfig": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "ready",
-                      "building",
-                      "failed"
-                    ]
-                  },
-                  "message": {
-                    "type": "string"
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Release"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/releases": {
-      "post": {
-        "summary": "Upserts a release",
-        "operationId": "upsertRelease",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "version": {
-                    "type": "string"
-                  },
-                  "deploymentId": {
-                    "type": "string"
-                  },
-                  "createdAt": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "name": {
-                    "type": "string"
-                  },
-                  "config": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "jobAgentConfig": {
-                    "type": "object",
-                    "additionalProperties": true
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "ready",
-                      "building",
-                      "failed"
-                    ]
-                  },
-                  "message": {
-                    "type": "string"
-                  },
-                  "metadata": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": [
-                  "version",
-                  "deploymentId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Release"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Release already exists",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "id": {
                       "type": "string"
                     }
                   }
@@ -2943,6 +2943,12 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
     "schemas": {
       "JobWithTrigger": {
         "allOf": [
@@ -2952,8 +2958,8 @@
           {
             "type": "object",
             "properties": {
-              "release": {
-                "$ref": "#/components/schemas/Release"
+              "deploymentVersion": {
+                "$ref": "#/components/schemas/DeploymentVersion"
               },
               "deployment": {
                 "$ref": "#/components/schemas/Deployment"
@@ -3146,7 +3152,7 @@
         ],
         "additionalProperties": true
       },
-      "Release": {
+      "DeploymentVersion": {
         "type": "object",
         "properties": {
           "id": {
@@ -3156,7 +3162,7 @@
           "name": {
             "type": "string"
           },
-          "version": {
+          "tag": {
             "type": "string"
           },
           "config": {
@@ -3183,7 +3189,7 @@
         "required": [
           "id",
           "name",
-          "version",
+          "tag",
           "config",
           "deploymentId",
           "createdAt",
@@ -3227,16 +3233,16 @@
               "all",
               "optional"
             ],
-            "description": "If a policy depends on an environment, whether or not the policy requires all, some, or optional successful releases in the environment"
+            "description": "If a policy depends on an environment, whether or not the policy requires all, some, or no successful jobs in the environment"
           },
           "successMinimum": {
             "type": "number",
-            "description": "If a policy depends on an environment, the minimum number of successful releases in the environment"
+            "description": "If a policy depends on an environment, the minimum number of successful deployments to resources in the environment"
           },
           "concurrencyLimit": {
             "type": "number",
             "nullable": true,
-            "description": "The maximum number of concurrent releases in the environment"
+            "description": "The maximum number of concurrent deployment pipeline runs in environments using this policy"
           },
           "rolloutDuration": {
             "type": "number",
@@ -3244,7 +3250,7 @@
           },
           "minimumReleaseInterval": {
             "type": "number",
-            "description": "The minimum interval between releases in milliseconds"
+            "description": "The minimum interval between version deployments in milliseconds"
           },
           "releaseSequencing": {
             "type": "string",
@@ -3252,7 +3258,7 @@
               "wait",
               "cancel"
             ],
-            "description": "If a new release is created, whether it will wait for the current release to finish before starting, or cancel the current release"
+            "description": "If a new deployment version is created, whether it will wait for the current deployment to finish before starting, or cancel the current deployment"
           }
         },
         "required": [
@@ -3501,13 +3507,6 @@
             "type": "boolean"
           }
         }
-      }
-    },
-    "securitySchemes": {
-      "apiKey": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-api-key"
       }
     }
   }
