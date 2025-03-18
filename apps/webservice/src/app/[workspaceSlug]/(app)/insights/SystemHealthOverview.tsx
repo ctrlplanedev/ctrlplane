@@ -62,8 +62,7 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
         });
 
         const total = envResources.length;
-        const healthy =
-          envResources.filter((r) => r.status === "healthy").length || 0;
+        const healthy = 0;
         const unhealthy = total - healthy;
 
         return {

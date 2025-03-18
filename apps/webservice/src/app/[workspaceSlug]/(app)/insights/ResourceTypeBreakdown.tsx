@@ -64,13 +64,12 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
         } else if (groupBy === "provider") {
           key = resource.provider ?? "Unknown";
         } else if (groupBy === "apiVersion") {
-          key = resource.apiVersion || "Unknown";
+          key = resource.version || "Unknown";
         }
 
-        if (!acc[key]) {
-          acc[key] = 0;
+        if (!acc[key as string]) {
+          acc[key as string] = (acc[key as string] ?? 0) + 1;
         }
-        acc[key]++;
         return acc;
       },
       {} as Record<string, number>,

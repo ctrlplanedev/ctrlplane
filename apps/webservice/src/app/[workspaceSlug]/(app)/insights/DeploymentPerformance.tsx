@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
-import { _Badge } from "@ctrlplane/ui/badge";
-import { _Button } from "@ctrlplane/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import {
   Table,
