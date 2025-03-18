@@ -9,20 +9,22 @@ const buildUrl = (...segments: string[]) => {
 };
 
 const workspaceSettings = (slug: string) => {
+  const base = [slug, "settings", "workspace"];
   return {
-    baseUrl: () => buildUrl(slug, "settings"),
-    members: () => buildUrl(slug, "settings", "members"),
-    general: () => buildUrl(slug, "settings", "general"),
+    baseUrl: () => buildUrl(...base),
+    overview: () => buildUrl(...base, "overview"),
+    members: () => buildUrl(...base, "members"),
+    general: () => buildUrl(...base, "general"),
     integrations: () => workspaceSettingsIntegrations(slug),
     account: () => ({
-      profile: () => buildUrl(slug, "settings", "account", "profile"),
-      api: () => buildUrl(slug, "settings", "account", "api"),
+      profile: () => buildUrl(...base, "account", "profile"),
+      api: () => buildUrl(...base, "account", "api"),
     }),
   };
 };
 
 const workspaceSettingsIntegrations = (slug: string) => {
-  const base = [slug, "settings", "integrations"];
+  const base = [slug, "settings", "workspace", "integrations"];
   return {
     baseUrl: () => buildUrl(...base),
     aws: () => buildUrl(...base, "aws"),
