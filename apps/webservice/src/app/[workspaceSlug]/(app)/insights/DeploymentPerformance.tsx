@@ -94,7 +94,12 @@ export const DeploymentPerformance: React.FC<DeploymentPerformanceProps> = ({
                       {deployment.systemName}
                     </TableCell>
                     <TableCell className="text-right text-sm">
-                      {typeof deployment.totalJobs === 'number' ? String(deployment.totalJobs).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : 0}
+                      {typeof deployment.totalJobs === "number"
+                        ? String(deployment.totalJobs).replace(
+                            /\B(?=(\d{3})+(?!\d))/g,
+                            ",",
+                          )
+                        : 0}
                     </TableCell>
                     <TableCell>
                       {deployment.successRate ? (

@@ -141,7 +141,13 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
                 fill="#8884d8"
                 dataKey="value"
                 paddingAngle={1}
-                label={({ name, percent }: {name: string, percent: number}) =>
+                label={({
+                  name,
+                  percent,
+                }: {
+                  name: string;
+                  percent: number;
+                }) =>
                   percent > 0.05
                     ? `${name.length > 12 ? `${name.substring(0, 12)}...` : name}`
                     : ""
