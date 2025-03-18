@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  "/api/v1/cloud-locations/{provider}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get all regions for a specific cloud provider
+     * @description Returns geographic data for all regions of a specific cloud provider
+     */
+    get: operations["getCloudProviderRegions"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/deployments/{deploymentId}": {
     parameters: {
       query?: never;
@@ -19,7 +39,8 @@ export interface paths {
     delete: operations["deleteDeployment"];
     options?: never;
     head?: never;
-    patch?: never;
+    /** Update a deployment */
+    patch: operations["updateDeployment"];
     trace?: never;
   };
   "/v1/deployments/{deploymentId}/release-channels/name/{name}": {
@@ -388,6 +409,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/deployments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    /** List all deployments */
+    get: operations["listDeployments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/environments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    /** List all environments */
+    get: operations["listEnvironments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/{workspaceId}": {
     parameters: {
       query?: never;
@@ -457,6 +518,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/v1/workspaces/{workspaceId}/resources": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    /** List all resources */
+    get: operations["listResources"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/v1/workspaces/{workspaceId}/systems": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    /** List all systems */
+    get: operations["listSystems"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/workspaces/slug/{workspaceSlug}": {
     parameters: {
       query?: never;
@@ -478,6 +579,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    CloudRegionGeoData: {
+      /**
+       * @description Timezone of the region in UTC format
+       * @example UTC+1
+       */
+      timezone: string;
+      /**
+       * Format: float
+       * @description Latitude coordinate for the region
+       * @example 50.1109
+       */
+      latitude: number;
+      /**
+       * Format: float
+       * @description Longitude coordinate for the region
+       * @example 8.6821
+       */
+      longitude: number;
+    };
     JobWithTrigger: components["schemas"]["Job"] & {
       release?: components["schemas"]["Release"];
       deployment?: components["schemas"]["Deployment"];
@@ -548,7 +668,15 @@ export interface components {
       jobAgentConfig: {
         [key: string]: unknown;
       };
+      retryCount?: number;
+      timeout?: number | null;
     };
+    /** @description Schema for updating a deployment (all fields optional) */
+    UpdateDeployment: {
+      [key: string]: unknown;
+    } & (WithRequired<components["schemas"]["Deployment"], "id"> & {
+      [key: string]: unknown;
+    });
     Release: {
       /** Format: uuid */
       id: string;
@@ -710,6 +838,43 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  getCloudProviderRegions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description Cloud provider (aws, gcp, azure) */
+        provider: "aws" | "gcp" | "azure";
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successfully returned geographic data for cloud provider regions */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: components["schemas"]["CloudRegionGeoData"];
+          };
+        };
+      };
+      /** @description Cloud provider not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @example Cloud provider 'unknown' not found */
+            error?: string;
+          };
+        };
+      };
+    };
+  };
   getDeployment: {
     parameters: {
       query?: never;
@@ -775,6 +940,54 @@ export interface operations {
         };
       };
       /** @description Failed to delete deployment */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+    };
+  };
+  updateDeployment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        deploymentId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateDeployment"];
+      };
+    };
+    responses: {
+      /** @description Deployment updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Deployment"];
+        };
+      };
+      /** @description Deployment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            error: string;
+          };
+        };
+      };
+      /** @description Failed to update deployment */
       500: {
         headers: {
           [name: string]: unknown;
@@ -1024,7 +1237,7 @@ export interface operations {
             [key: string]: unknown;
           };
           policyId?: string;
-          releaseChannels?: string[];
+          deploymentVersionChannels?: string[];
           metadata?: {
             [key: string]: string;
           };
@@ -2190,6 +2403,56 @@ export interface operations {
       };
     };
   };
+  listDeployments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All deployments */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["Deployment"][];
+          };
+        };
+      };
+    };
+  };
+  listEnvironments: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All environments */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["Environment"][];
+          };
+        };
+      };
+    };
+  };
   getWorkspace: {
     parameters: {
       query?: never;
@@ -2464,6 +2727,56 @@ export interface operations {
       };
     };
   };
+  listResources: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All resources */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["Resource"][];
+          };
+        };
+      };
+    };
+  };
+  listSystems: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The ID of the workspace */
+        workspaceId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All systems */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            data?: components["schemas"]["System"][];
+          };
+        };
+      };
+    };
+  };
   getWorkspaceBySlug: {
     parameters: {
       query?: never;
@@ -2509,3 +2822,6 @@ export interface operations {
     };
   };
 }
+type WithRequired<T, K extends keyof T> = T & {
+  [P in K]-?: T[P];
+};
