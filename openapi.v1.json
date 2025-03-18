@@ -701,7 +701,7 @@
                   }
                 },
                 "required": [
-                  "version",
+                  "tag",
                   "deploymentId"
                 ]
               }
@@ -1139,7 +1139,7 @@
                     }
                   },
                   "required": [
-                    "sucess"
+                    "success"
                   ]
                 }
               }

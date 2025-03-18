@@ -39,7 +39,7 @@ export const openapi: Swagger.SwaggerV3 = {
                     additionalProperties: { type: "string" },
                   },
                 },
-                required: ["version", "deploymentId"],
+                required: ["tag", "deploymentId"],
               },
             },
           },
