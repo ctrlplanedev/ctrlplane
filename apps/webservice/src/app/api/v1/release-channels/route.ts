@@ -25,7 +25,7 @@ export const POST = request()
         .on({ type: "deployment", id: ctx.body.deploymentId }),
     ),
   )
-  .handle<{ body: z.infer<typeof schema> }>(async ({ db, body }) => {
+  .handle<{ body: z.infer<typeof schema> }>(({ db, body }) => {
     const versionSelector = body.versionSelector ?? body.releaseFilter;
 
     return db
