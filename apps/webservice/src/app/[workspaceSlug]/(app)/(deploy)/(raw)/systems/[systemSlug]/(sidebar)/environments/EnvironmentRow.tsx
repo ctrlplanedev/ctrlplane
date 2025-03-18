@@ -20,64 +20,11 @@ import { EnvironmentDropdown } from "./EnvironmentDropdown";
 
 type Environment = RouterOutputs["environment"]["bySystemId"][number];
 
-type EnvironmentHealthProps = { environment: Environment };
-
-const EnvironmentHealth: React.FC<EnvironmentHealthProps> = ({
-  environment,
-}) => {
-  const allResourcesQ = api.resource.byWorkspaceId.list.useQuery(
-    {
-      workspaceId: environment.system.workspaceId,
-      filter: environment.resourceFilter ?? undefined,
-      limit: 0,
-    },
-    { enabled: environment.resourceFilter != null },
-  );
-
-  const unhealthyResourcesQ = api.environment.stats.unhealthyResources.useQuery(
-    environment.id,
-  );
-
-  const unhealthyCount = unhealthyResourcesQ.data?.length ?? 0;
-  const totalCount = allResourcesQ.data?.total ?? 0;
-  const healthyCount = totalCount - unhealthyCount;
-
-  const isLoading = unhealthyResourcesQ.isLoading || allResourcesQ.isLoading;
-
-  if (isLoading) return <Skeleton className="h-4 w-20 rounded-full" />;
-
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className={cn(
-          "h-2 w-2 rounded-full",
-          totalCount > 0
-            ? unhealthyCount === 0
-              ? "bg-green-500"
-              : "bg-red-500"
-            : "bg-neutral-600",
-        )}
-      />
-      {totalCount > 0
-        ? `${healthyCount}/${totalCount} Healthy`
-        : "No resources"}
-    </div>
-  );
-};
-
-const LazyEnvironmentHealth: React.FC<EnvironmentHealthProps> = (props) => {
-  const { ref, inView } = useInView();
-  return (
-    <div ref={ref}>
-      {!inView && <Skeleton className="h-4 w-20 rounded-full" />}
-      {inView && <EnvironmentHealth {...props} />}
-    </div>
-  );
-};
-
 export const EnvironmentCard: React.FC<{
   environment: Environment;
 }> = ({ environment }) => {
+  const { ref, inView } = useInView();
+
   const { workspaceSlug, systemSlug } = useParams<{
     workspaceSlug: string;
     systemSlug: string;
@@ -89,21 +36,23 @@ export const EnvironmentCard: React.FC<{
       filter: environment.resourceFilter ?? undefined,
       limit: 0,
     },
-    { enabled: environment.resourceFilter != null },
+    { enabled: inView && environment.resourceFilter != null },
   );
 
   const unhealthyResourcesQ = api.environment.stats.unhealthyResources.useQuery(
     environment.id,
+    { enabled: inView },
   );
 
   const endDate = new Date();
   const startDate = subWeeks(endDate, 1);
-  const failureRateQ = api.environment.stats.failureRate.useQuery({
-    environmentId: environment.id,
-    startDate,
-    endDate,
-  });
+  const failureRateQ = api.environment.stats.failureRate.useQuery(
+    { environmentId: environment.id, startDate, endDate },
+    { enabled: inView },
+  );
 
+  const isHealthSummaryLoading =
+    allResourcesQ.isLoading || unhealthyResourcesQ.isLoading;
   const unhealthyCount = unhealthyResourcesQ.data?.length ?? 0;
   const totalCount = allResourcesQ.data?.total ?? 0;
   const healthyCount = totalCount - unhealthyCount;
@@ -123,7 +72,7 @@ export const EnvironmentCard: React.FC<{
     .baseUrl();
 
   return (
-    <Link href={environmentUrl} className="block">
+    <Link href={environmentUrl} className="block" ref={ref}>
       <Card className="transition-shadow duration-300 hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center space-x-2">
@@ -142,18 +91,23 @@ export const EnvironmentCard: React.FC<{
             </CardTitle>
           </div>
           <div className="flex items-center">
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-1 text-xs font-semibold",
-                statusColor === "green"
-                  ? "bg-green-500/20 text-green-400"
-                  : statusColor === "red"
-                    ? "bg-red-500/20 text-red-400"
-                    : "bg-neutral-500/20 text-neutral-400",
-              )}
-            >
-              {status}
-            </span>
+            {!isHealthSummaryLoading && inView && (
+              <span
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-xs font-semibold",
+                  statusColor === "green"
+                    ? "bg-green-500/20 text-green-400"
+                    : statusColor === "red"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-neutral-500/20 text-neutral-400",
+                )}
+              >
+                {status}
+              </span>
+            )}
+            {(isHealthSummaryLoading || !inView) && (
+              <Skeleton className="h-6 w-16" />
+            )}
             <div className="ml-2">
               <EnvironmentDropdown environment={environment}>
                 <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -220,7 +174,7 @@ export const EnvironmentCard: React.FC<{
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Failure Rate</span>
-            {!failureRateQ.isLoading && failureRateQ.data != null && (
+            {inView && !failureRateQ.isLoading && failureRateQ.data != null && (
               <span
                 className={cn(
                   "text-sm font-medium",
@@ -230,46 +184,14 @@ export const EnvironmentCard: React.FC<{
                 {Number(failureRateQ.data).toFixed(0)}% failure rate
               </span>
             )}
-            {(failureRateQ.isLoading || failureRateQ.data == null) && (
+            {(!inView ||
+              failureRateQ.isLoading ||
+              failureRateQ.data == null) && (
               <span className="text-sm font-medium">-</span>
             )}
           </div>
         </CardContent>
       </Card>
-    </Link>
-  );
-};
-
-export const EnvironmentRow: React.FC<{
-  environment: Environment;
-}> = ({ environment }) => {
-  const { workspaceSlug, systemSlug } = useParams<{
-    workspaceSlug: string;
-    systemSlug: string;
-  }>();
-
-  const environmentUrl = urls
-    .workspace(workspaceSlug)
-    .system(systemSlug)
-    .environment(environment.id)
-    .baseUrl();
-
-  return (
-    <Link
-      className="flex items-center border-b p-4 hover:bg-muted/50"
-      href={environmentUrl}
-    >
-      <div className="flex-1">{environment.name}</div>
-      <div className="flex-1">
-        <LazyEnvironmentHealth environment={environment} />
-      </div>
-      <div className="flex flex-1 justify-end">
-        <EnvironmentDropdown environment={environment}>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <IconDots className="h-4 w-4" />
-          </Button>
-        </EnvironmentDropdown>
-      </div>
     </Link>
   );
 };
