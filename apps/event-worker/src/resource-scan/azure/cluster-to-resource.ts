@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
 import { omitNullUndefined } from "../../utils.js";
 
@@ -77,6 +78,8 @@ export const convertManagedClusterToResource = async (
   }
 
   const ca = await getCertificateAuthorityData(cluster, resourceGroup, client);
+  const { timezone, latitude, longitude } =
+    cloudRegionsGeo[cluster.location] ?? {};
   return {
     workspaceId,
     providerId: provider.resourceProviderId,
@@ -93,7 +96,6 @@ export const convertManagedClusterToResource = async (
         tenantId,
         subscriptionId: provider.subscriptionId,
       },
-      status: cluster.provisioningState ?? "UNKNOWN",
       server: { ...ca, endpoint: ca?.endpoint ?? cluster.fqdn ?? "" },
     },
     metadata: omitNullUndefined({
@@ -103,6 +105,15 @@ export const convertManagedClusterToResource = async (
       [ReservedMetadataKey.ExternalId]: cluster.id ?? "",
       [ReservedMetadataKey.KubernetesFlavor]: "aks",
       [ReservedMetadataKey.KubernetesVersion]: cluster.currentKubernetesVersion,
+      [ReservedMetadataKey.KubernetesStatus]:
+        cluster.provisioningState === "In Progress"
+          ? "creating"
+          : cluster.powerState?.code === "Running"
+            ? "running"
+            : "unknown",
+      [ReservedMetadataKey.LocationTimezone]: timezone,
+      [ReservedMetadataKey.LocationLatitude]: latitude,
+      [ReservedMetadataKey.LocationLongitude]: longitude,
 
       "azure/tenant-id": tenantId,
       "azure/subscription-id": provider.subscriptionId,

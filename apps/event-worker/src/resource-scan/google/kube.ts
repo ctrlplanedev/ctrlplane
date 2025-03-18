@@ -5,8 +5,6 @@ import type { AuthClient } from "google-auth-library";
 import { KubeConfig } from "@kubernetes/client-node";
 import _ from "lodash";
 
-import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
-
 import { sourceCredentials } from "./client.js";
 
 export const getKubeConfig = async (
@@ -66,8 +64,6 @@ export const createNamespaceResource = (
     identifier: `${project}/${cluster.name}/${namespace.metadata!.name}`,
     config: { namespace: namespace.metadata!.name },
     metadata: {
-      [ReservedMetadataKey.ParentResourceIdentifier]:
-        clusterResource.identifier,
       ...namespace.metadata?.labels,
       "kubernetes/namespace": namespace.metadata!.name ?? "",
     },

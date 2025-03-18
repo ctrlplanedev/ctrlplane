@@ -1,7 +1,28 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { api } from "~/trpc/server";
 import { HooksTable } from "./HooksTable";
+
+type PageProps = {
+  params: {
+    workspaceSlug: string;
+    systemSlug: string;
+    deploymentSlug: string;
+  };
+};
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const deployment = await api.deployment.bySlug(params);
+  if (!deployment) return notFound();
+
+  return {
+    title: `Hooks | ${deployment.name} | ${deployment.system.name}`,
+    description: `Manage hooks for ${deployment.name} deployment`,
+  };
+}
 
 export default async function HooksPage({
   params,

@@ -17,6 +17,7 @@ import { JobFilterType } from "@ctrlplane/validators/jobs";
 import { LazyDeploymentHistoryGraph } from "~/app/[workspaceSlug]/(app)/_components/deployments/DeploymentHistoryGraph";
 import { JobTableStatusIcon } from "~/app/[workspaceSlug]/(app)/_components/job/JobTableStatusIcon";
 import { api } from "~/trpc/react";
+import { ResourceDeploymentMenu } from "./ResourceDeploymentMenu";
 
 type DeploymentStats =
   RouterOutputs["deployment"]["stats"]["byWorkspaceId"][number];
@@ -70,7 +71,7 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
       className="h-16 cursor-pointer border-b"
       onClick={() => {
         router.push(
-          `/${workspaceSlug}/systems/${stats.systemSlug}/deployments/${stats.slug}/releases`,
+          `/${workspaceSlug}/systems/${stats.systemSlug}/deployments/${stats.slug}`,
         );
       }}
     >
@@ -84,8 +85,24 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
       </TableCell>
 
       <TableCell className="p-4 align-middle">
-        {!isLoading && <span>{data?.[0]?.version.tag ?? "No release"}</span>}
-        {isLoading && <Skeleton className="h-3 w-8" />}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            {!isLoading && (
+              <span>{data?.[0]?.version.tag ?? "No release"}</span>
+            )}
+            {isLoading && <Skeleton className="h-3 w-8" />}
+          </div>
+          {!isLoading && data?.[0] && (
+            <ResourceDeploymentMenu
+              deploymentId={stats.id}
+              deploymentName={stats.name}
+              versionId={data[0].version.id}
+              versionTag={data[0].version.tag}
+              environmentId={data[0].environment.id}
+              jobStatus={data[0].job.status}
+            />
+          )}
+        </div>
       </TableCell>
 
       <TableCell className="p-4 align-middle">

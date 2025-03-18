@@ -73,8 +73,12 @@ export type MetadataOperatorType =
 export enum ReservedMetadataKey {
   ExternalId = "ctrlplane/external-id",
   Links = "ctrlplane/links",
-  ParentResourceIdentifier = "ctrlplane/parent-resource-identifier",
+
   KubernetesVersion = "kubernetes/version",
   KubernetesFlavor = "kubernetes/flavor",
-  Ephemeral = "ctrlplane/ephemeral",
+  KubernetesStatus = "kubernetes/status",
+
+  LocationTimezone = "location/timezone",
+  LocationLatitude = "location/latitude",
+  LocationLongitude = "location/longitude",
 }
