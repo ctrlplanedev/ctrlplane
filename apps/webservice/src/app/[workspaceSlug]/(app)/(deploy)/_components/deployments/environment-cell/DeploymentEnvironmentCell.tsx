@@ -10,7 +10,6 @@ import {
 } from "@tabler/icons-react";
 import { useInView } from "react-intersection-observer";
 
-import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { ApprovalDialog } from "~/app/[workspaceSlug]/(app)/(deploy)/_components/deployment-version/ApprovalDialog";
@@ -162,8 +161,8 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
 
   return (
     <div className="flex w-full items-center justify-center rounded-md p-2 hover:bg-secondary/50">
-      <Button
-        className="flex w-full items-center justify-between gap-2 bg-transparent p-0 hover:bg-transparent"
+      <div
+        className="flex w-full cursor-pointer items-center justify-between gap-2 bg-transparent p-0 hover:bg-transparent"
         onClick={() =>
           deploy
             .mutateAsync({
@@ -172,7 +171,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
             })
             .then(() => router.refresh())
         }
-        disabled={deploy.isPending}
+        // disabled={deploy.isPending}
       >
         <div className="flex items-center gap-2">
           <div className="rounded-full bg-blue-400 p-1 dark:text-black">
@@ -191,7 +190,7 @@ const DeploymentEnvironmentCell: React.FC<DeploymentEnvironmentCellProps> = ({
           environment={environment}
           isVersionBeingDeployed={false}
         />
-      </Button>
+      </div>
     </div>
   );
 };
