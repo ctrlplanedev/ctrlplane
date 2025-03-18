@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
+import { Card, CardContent } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
@@ -20,13 +20,20 @@ export const WorkspaceResources: React.FC<WorkspaceResourcesProps> = ({
   const numResources = data?.total ?? 0;
 
   return (
-    <Card className="w-full rounded-md bg-inherit">
-      <CardHeader>
-        <CardTitle>Total Resources</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading && <Skeleton className="h-7 w-16" />}
-        {!isLoading && <p className="text-xl font-semibold">{numResources}</p>}
+    <Card className="shadow-sm">
+      <CardContent className="px-6 pt-6">
+        {isLoading ? (
+          <Skeleton className="h-8 w-20" />
+        ) : (
+          <div className="flex flex-col">
+            <p className="mb-1 text-sm font-medium text-muted-foreground">
+              Total Resources
+            </p>
+            <p className="text-3xl font-semibold">
+              {numResources.toLocaleString()}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

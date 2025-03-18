@@ -138,6 +138,7 @@ const environment = (params: EnvironmentParams) => {
     policies: () => buildUrl(...base, "policies"),
     resources: () => buildUrl(...base, "resources"),
     variables: () => buildUrl(...base, "variables"),
+    settings: () => buildUrl(...base, "settings"),
   };
 };
 type DeploymentParams = SystemParams & {
