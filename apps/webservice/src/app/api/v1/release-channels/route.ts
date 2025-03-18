@@ -1,18 +1,23 @@
 import type { z } from "zod";
 import { NextResponse } from "next/server";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
 import { createDeploymentVersionChannel } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
+import { deploymentVersionCondition } from "@ctrlplane/validators/releases";
 
 import { authn, authz } from "../auth";
 import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
+const schema = createDeploymentVersionChannel.extend({
+  releaseFilter: deploymentVersionCondition.optional(),
+});
+
 export const POST = request()
   .use(authn)
-  .use(parseBody(createDeploymentVersionChannel))
+  .use(parseBody(schema))
   .use(
     authz(({ ctx, can }) =>
       can
@@ -20,36 +25,25 @@ export const POST = request()
         .on({ type: "deployment", id: ctx.body.deploymentId }),
     ),
   )
-  .handle<{ body: z.infer<typeof createDeploymentVersionChannel> }>(
-    async ({ db, body }) => {
-      const deploymentVersionChannel = await db
-        .select()
-        .from(SCHEMA.deploymentVersionChannel)
-        .where(
-          and(
-            eq(SCHEMA.deploymentVersionChannel.deploymentId, body.deploymentId),
-            eq(SCHEMA.deploymentVersionChannel.name, body.name),
-          ),
-        )
-        .then(takeFirstOrNull);
+  .handle<{ body: z.infer<typeof schema> }>(async ({ db, body }) => {
+    const versionSelector = body.versionSelector ?? body.releaseFilter;
 
-      if (deploymentVersionChannel)
-        return NextResponse.json(
-          {
-            error: "Release channel already exists",
-            id: deploymentVersionChannel.id,
-          },
-          { status: 409 },
-        );
-
-      return db
-        .insert(SCHEMA.deploymentVersionChannel)
-        .values(body)
-        .returning()
-        .then(takeFirst)
-        .then((deploymentVersionChannel) =>
-          NextResponse.json(deploymentVersionChannel),
-        )
-        .catch((error) => NextResponse.json({ error }, { status: 500 }));
-    },
-  );
+    return db
+      .insert(SCHEMA.deploymentVersionChannel)
+      .values({ ...body, versionSelector })
+      .onConflictDoUpdate({
+        target: [
+          SCHEMA.deploymentVersionChannel.deploymentId,
+          SCHEMA.deploymentVersionChannel.name,
+        ],
+        set: buildConflictUpdateColumns(SCHEMA.deploymentVersionChannel, [
+          "versionSelector",
+        ]),
+      })
+      .returning()
+      .then(takeFirst)
+      .then((deploymentVersionChannel) =>
+        NextResponse.json(deploymentVersionChannel),
+      )
+      .catch((error) => NextResponse.json({ error }, { status: 500 }));
+  });
