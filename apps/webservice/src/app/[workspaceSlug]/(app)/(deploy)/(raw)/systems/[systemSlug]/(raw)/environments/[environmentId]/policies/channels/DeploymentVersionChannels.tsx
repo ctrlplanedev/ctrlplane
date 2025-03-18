@@ -52,7 +52,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
     (a, b) => a.name.localeCompare(b.name),
   );
 
-  const releaseChannelsUrl = urls
+  const deploymentVersionChannelsUrl = urls
     .workspace(workspaceSlug)
     .system(systemSlug)
     .deployment(deployment.slug)
@@ -82,7 +82,7 @@ const DeploymentSelect: React.FC<DeploymentSelectProps> = ({
               {sortedDeploymentVersionChannels.length === 0 && (
                 <CommandItem>
                   <Link
-                    href={releaseChannelsUrl}
+                    href={deploymentVersionChannelsUrl}
                     className="w-full hover:text-blue-300"
                   >
                     <IconPlus className="h-4 w-4" /> Create version channel
