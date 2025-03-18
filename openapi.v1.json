@@ -2881,7 +2881,7 @@
   },
   "components": {
     "schemas": {
-      "CloudLocation": {
+      "CloudRegionGeoData": {
         "type": "object",
         "required": ["timezone", "latitude", "longitude"],
         "properties": {
