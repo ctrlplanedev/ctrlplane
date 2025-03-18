@@ -1237,7 +1237,7 @@ export interface operations {
             [key: string]: unknown;
           };
           policyId?: string;
-          deploymentVersionChannels?: string[];
+          releaseChannels?: string[];
           metadata?: {
             [key: string]: string;
           };

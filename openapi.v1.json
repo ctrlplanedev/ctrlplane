@@ -572,7 +572,7 @@
                   "policyId": {
                     "type": "string"
                   },
-                  "deploymentVersionChannels": {
+                  "releaseChannels": {
                     "type": "array",
                     "items": {
                       "type": "string"
