@@ -10,7 +10,7 @@ const buildUrl = (...segments: string[]) => {
 
 const workspaceSettings = (slug: string) => {
   return {
-    baseUrl: () => buildUrl(slug, "settings"),
+    baseUrl: () => buildUrl(slug, "settings", "overview"),
     members: () => buildUrl(slug, "settings", "members"),
     general: () => buildUrl(slug, "settings", "general"),
     integrations: () => workspaceSettingsIntegrations(slug),
