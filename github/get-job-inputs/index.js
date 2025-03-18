@@ -28168,7 +28168,7 @@ async function run() {
             core.error(`Invalid Job data`);
             return;
         }
-        const { variables, resource, release, environment, runbook, deployment, approval, } = data;
+        const { variables, resource, environment, runbook, deployment, deploymentVersion, approval, } = data;
         setOutputAndLog("base_url", baseUrl);
         setOutputAndLog("resource", resource);
         setOutputAndLog("resource_id", resource?.id);
@@ -28181,10 +28181,10 @@ async function run() {
         setOutputAndLog("workspace_id", resource?.workspaceId);
         setOutputAndLog("environment_id", environment?.id);
         setOutputAndLog("environment_name", environment?.name);
-        setOutputAndLog("release_id", release?.id);
-        setOutputAndLog("release_version", release?.version);
-        setOutputsRecursively("release_config", release?.config);
-        setOutputsRecursively("release_metadata", release?.metadata);
+        setOutputAndLog("deployment_version_id", deploymentVersion?.id);
+        setOutputAndLog("deployment_version_tag", deploymentVersion?.tag)
+        setOutputsRecursively("deployment_version_config", deploymentVersion?.config);
+        setOutputsRecursively("deployment_version_metadata", deploymentVersion?.metadata);
         if (approval?.approver != null) {
             setOutputAndLog("approval_approver_id", approval.approver.id);
             setOutputAndLog("approval_approver_name", approval.approver.name);
