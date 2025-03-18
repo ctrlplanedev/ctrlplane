@@ -5,6 +5,7 @@ import React, { useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { IconCheck, IconCopy, IconDots } from "@tabler/icons-react";
+import { subWeeks } from "date-fns";
 import { useInView } from "react-intersection-observer";
 
 import { cn } from "@ctrlplane/ui";
@@ -13,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import { toast } from "@ctrlplane/ui/toast";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/react";
 import { EnvironmentDropdown } from "./EnvironmentDropdown";
 
@@ -94,10 +96,13 @@ export const EnvironmentCard: React.FC<{
     environment.id,
   );
 
-  // Mock data for failure rate
-  // In a real implementation, fetch this data from an API
-
-  const latestReleaseFailureRate = 3.2; // percentage
+  const endDate = new Date();
+  const startDate = subWeeks(endDate, 1);
+  const failureRateQ = api.environment.stats.failureRate.useQuery({
+    environmentId: environment.id,
+    startDate,
+    endDate,
+  });
 
   const unhealthyCount = unhealthyResourcesQ.data?.length ?? 0;
   const totalCount = allResourcesQ.data?.total ?? 0;
@@ -111,11 +116,14 @@ export const EnvironmentCard: React.FC<{
   const statusColor =
     totalCount > 0 ? (unhealthyCount === 0 ? "green" : "red") : "neutral";
 
+  const environmentUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .environment(environment.id)
+    .baseUrl();
+
   return (
-    <Link
-      href={`/${workspaceSlug}/systems/${systemSlug}/environments/${environment.id}`}
-      className="block"
-    >
+    <Link href={environmentUrl} className="block">
       <Card className="transition-shadow duration-300 hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center space-x-2">
@@ -211,20 +219,20 @@ export const EnvironmentCard: React.FC<{
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-sm text-muted-foreground">
-              Latest Release
-            </span>
-            <span className="text-sm font-medium">
-              {latestReleaseFailureRate > 5 ? (
-                <span className="text-red-400">
-                  {latestReleaseFailureRate}% failure rate
-                </span>
-              ) : (
-                <span className="text-green-400">
-                  {latestReleaseFailureRate}% failure rate
-                </span>
-              )}
-            </span>
+            <span className="text-sm text-muted-foreground">Failure Rate</span>
+            {!failureRateQ.isLoading && failureRateQ.data != null && (
+              <span
+                className={cn(
+                  "text-sm font-medium",
+                  failureRateQ.data > 5 ? "text-red-400" : "text-green-400",
+                )}
+              >
+                {Number(failureRateQ.data).toFixed(0)}% failure rate
+              </span>
+            )}
+            {(failureRateQ.isLoading || failureRateQ.data == null) && (
+              <span className="text-sm font-medium">-</span>
+            )}
           </div>
         </CardContent>
       </Card>

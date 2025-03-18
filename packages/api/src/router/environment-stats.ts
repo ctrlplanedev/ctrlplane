@@ -4,15 +4,18 @@ import {
   and,
   eq,
   exists,
+  gt,
+  inArray,
   isNotNull,
   isNull,
+  lte,
   ne,
   sql,
   takeFirstOrNull,
 } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+import { analyticsStatuses, JobStatus } from "@ctrlplane/validators/jobs";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 
@@ -90,4 +93,50 @@ export const environmentStatsRouter = createTRPCRouter({
           ),
         );
     }),
+
+  failureRate: protectedProcedure
+    .input(
+      z.object({
+        environmentId: z.string().uuid(),
+        startDate: z.date(),
+        endDate: z.date(),
+      }),
+    )
+    .meta({
+      authorizationCheck: ({ canUser, input }) =>
+        canUser
+          .perform(Permission.EnvironmentGet)
+          .on({ type: "environment", id: input.environmentId }),
+    })
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select({
+          failureRate: sql<number | null>`
+            CAST(
+              SUM(
+                CASE 
+                  WHEN ${SCHEMA.job.status} = ${JobStatus.Successful} THEN 0 ELSE 1 
+                END
+              ) AS FLOAT
+            ) / 
+            NULLIF(COUNT(*), 0) * 100
+          `.as("failureRate"),
+        })
+        .from(SCHEMA.job)
+        .innerJoin(
+          SCHEMA.releaseJobTrigger,
+          eq(SCHEMA.releaseJobTrigger.jobId, SCHEMA.job.id),
+        )
+        .where(
+          and(
+            eq(SCHEMA.releaseJobTrigger.environmentId, input.environmentId),
+            gt(SCHEMA.job.createdAt, input.startDate),
+            lte(SCHEMA.job.createdAt, input.endDate),
+            inArray(SCHEMA.job.status, analyticsStatuses),
+          ),
+        )
+        .limit(1)
+        .then(takeFirstOrNull)
+        .then((r) => r?.failureRate ?? null),
+    ),
 });
