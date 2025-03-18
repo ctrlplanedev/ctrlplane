@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { NextResponse } from "next/server";
 
-import { and, eq, takeFirst, takeFirstOrNull } from "@ctrlplane/db";
+import { buildConflictUpdateColumns, takeFirst } from "@ctrlplane/db";
 import { createDeploymentVersionChannel } from "@ctrlplane/db/schema";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { Permission } from "@ctrlplane/validators/auth";
@@ -21,35 +21,23 @@ export const POST = request()
     ),
   )
   .handle<{ body: z.infer<typeof createDeploymentVersionChannel> }>(
-    async ({ db, body }) => {
-      const deploymentVersionChannel = await db
-        .select()
-        .from(SCHEMA.deploymentVersionChannel)
-        .where(
-          and(
-            eq(SCHEMA.deploymentVersionChannel.deploymentId, body.deploymentId),
-            eq(SCHEMA.deploymentVersionChannel.name, body.name),
-          ),
-        )
-        .then(takeFirstOrNull);
-
-      if (deploymentVersionChannel)
-        return NextResponse.json(
-          {
-            error: "Channel already exists",
-            id: deploymentVersionChannel.id,
-          },
-          { status: 409 },
-        );
-
-      return db
+    ({ db, body }) =>
+      db
         .insert(SCHEMA.deploymentVersionChannel)
         .values(body)
+        .onConflictDoUpdate({
+          target: [
+            SCHEMA.deploymentVersionChannel.deploymentId,
+            SCHEMA.deploymentVersionChannel.name,
+          ],
+          set: buildConflictUpdateColumns(SCHEMA.deploymentVersionChannel, [
+            "versionSelector",
+          ]),
+        })
         .returning()
         .then(takeFirst)
         .then((deploymentVersionChannel) =>
           NextResponse.json(deploymentVersionChannel),
         )
-        .catch((error) => NextResponse.json({ error }, { status: 500 }));
-    },
+        .catch((error) => NextResponse.json({ error }, { status: 500 })),
   );
