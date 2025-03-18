@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useEffect, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import colors from "tailwindcss/colors";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
@@ -19,13 +28,16 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
   systemId,
   workspaceId,
 }) => {
-  const { data: system, isLoading: isLoadingSystem } = api.system.byId.useQuery(systemId);
-  const { data: resources, isLoading: isLoadingResources } = api.system.resources.useQuery({
-    systemId,
-    limit: 100,
-  });
+  const { data: system, isLoading: isLoadingSystem } =
+    api.system.byId.useQuery(systemId);
+  const { data: resources, isLoading: isLoadingResources } =
+    api.system.resources.useQuery({
+      systemId,
+      limit: 100,
+    });
 
-  const { data: environments, isLoading: isLoadingEnvironments } = api.environment.bySystemId.useQuery(systemId);
+  const { data: environments, isLoading: isLoadingEnvironments } =
+    api.environment.bySystemId.useQuery(systemId);
 
   const [healthData, setHealthData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,33 +48,41 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
       setIsLoading(true);
       return;
     }
-    
+
     setIsLoading(false);
 
     // Format data for the environments health chart
     if (environments && resources) {
-      const envHealthData = environments.map(env => {
-        const envResources = resources.items.filter(resource => {
-          // This is a simplified check - you'd need to implement logic to properly 
+      const envHealthData = environments.map((env) => {
+        const envResources = resources.items.filter((resource) => {
+          // This is a simplified check - you'd need to implement logic to properly
           // check if a resource belongs to an environment based on filter criteria
           return true;
         });
 
         const total = envResources.length;
-        const healthy = envResources.filter(r => r.status === "healthy").length || 0;
+        const healthy =
+          envResources.filter((r) => r.status === "healthy").length || 0;
         const unhealthy = total - healthy;
-        
+
         return {
           name: env.name,
           healthy,
           unhealthy,
-          total
+          total,
         };
       });
 
       setHealthData(envHealthData);
     }
-  }, [system, resources, environments, isLoadingSystem, isLoadingResources, isLoadingEnvironments]);
+  }, [
+    system,
+    resources,
+    environments,
+    isLoadingSystem,
+    isLoadingResources,
+    isLoadingEnvironments,
+  ]);
 
   if (isLoading) {
     return (
@@ -71,7 +91,7 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
           <CardTitle className="text-base">System Health Overview</CardTitle>
         </CardHeader>
         <CardContent className="h-[350px]">
-          <div className="h-full w-full flex items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <Skeleton className="h-4/5 w-4/5" />
           </div>
         </CardContent>
@@ -84,16 +104,18 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-base">System Health Overview</CardTitle>
           <span className="text-xs text-muted-foreground">{systemName}</span>
         </div>
       </CardHeader>
       <CardContent className="h-[350px]">
         {healthData.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-muted-foreground text-sm">No health data available</p>
+              <p className="text-sm text-muted-foreground">
+                No health data available
+              </p>
             </div>
           </div>
         ) : (
@@ -108,42 +130,42 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
               }}
               barSize={40}
             >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
-              <XAxis 
-                dataKey="name" 
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                opacity={0.2}
+              />
+              <XAxis
+                dataKey="name"
                 axisLine={false}
                 tickLine={false}
                 fontSize={12}
               />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                fontSize={11}
-              />
-              <Tooltip 
+              <YAxis axisLine={false} tickLine={false} fontSize={11} />
+              <Tooltip
                 formatter={(value, name) => [
-                  value, 
-                  name === "healthy" ? "Healthy" : "Unhealthy"
+                  value,
+                  name === "healthy" ? "Healthy" : "Unhealthy",
                 ]}
-                contentStyle={{ borderRadius: '4px', fontSize: '12px' }}
+                contentStyle={{ borderRadius: "4px", fontSize: "12px" }}
               />
-              <Legend 
-                wrapperStyle={{ fontSize: '12px' }}
+              <Legend
+                wrapperStyle={{ fontSize: "12px" }}
                 iconSize={10}
                 formatter={(value) => {
                   return value === "healthy" ? "Healthy" : "Unhealthy";
                 }}
               />
-              <Bar 
-                dataKey="healthy" 
-                stackId="a" 
-                fill={colors.green[500]} 
+              <Bar
+                dataKey="healthy"
+                stackId="a"
+                fill={colors.green[500]}
                 name="healthy"
               />
-              <Bar 
-                dataKey="unhealthy" 
-                stackId="a" 
-                fill={colors.red[500]} 
+              <Bar
+                dataKey="unhealthy"
+                stackId="a"
+                fill={colors.red[500]}
                 name="unhealthy"
               />
             </BarChart>

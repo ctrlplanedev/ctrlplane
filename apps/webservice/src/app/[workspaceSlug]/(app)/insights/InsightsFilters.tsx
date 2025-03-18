@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   Select,
@@ -43,7 +43,7 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
       }
       router.push(`/${workspaceSlug}/insights?${params.toString()}`);
     },
-    [router, workspaceSlug, currentTimeRange]
+    [router, workspaceSlug, currentTimeRange],
   );
 
   const handleTimeRangeChange = useCallback(
@@ -57,7 +57,7 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
       }
       router.push(`/${workspaceSlug}/insights?${params.toString()}`);
     },
-    [router, workspaceSlug, currentSystemId]
+    [router, workspaceSlug, currentSystemId],
   );
 
   return (
@@ -66,7 +66,7 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
         defaultValue={currentTimeRange}
         onValueChange={handleTimeRangeChange}
       >
-        <SelectTrigger className="w-[140px] h-9">
+        <SelectTrigger className="h-9 w-[140px]">
           <SelectValue placeholder="Time Range" />
         </SelectTrigger>
         <SelectContent>
@@ -77,12 +77,12 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
           <SelectItem value="90">Last 90 days</SelectItem>
         </SelectContent>
       </Select>
-      
+
       <Select
         defaultValue={currentSystemId || "all"}
         onValueChange={handleSystemChange}
       >
-        <SelectTrigger className="w-[180px] h-9">
+        <SelectTrigger className="h-9 w-[180px]">
           <SelectValue placeholder="All Systems" />
         </SelectTrigger>
         <SelectContent>

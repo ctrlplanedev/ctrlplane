@@ -26,13 +26,17 @@ export const SuccessRate: React.FC<SuccessRateProps> = ({
 
   return (
     <Card className="shadow-sm">
-      <CardContent className="pt-6 px-6">
+      <CardContent className="px-6 pt-6">
         {isLoading ? (
           <Skeleton className="h-8 w-20" />
         ) : (
           <div className="flex flex-col">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Success Rate</p>
-            <p className={`text-3xl font-semibold ${Number(prettySuccessRate) >= 90 ? 'text-green-600' : Number(prettySuccessRate) >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+            <p className="mb-1 text-sm font-medium text-muted-foreground">
+              Success Rate
+            </p>
+            <p
+              className={`text-3xl font-semibold ${Number(prettySuccessRate) >= 90 ? "text-green-600" : Number(prettySuccessRate) >= 70 ? "text-yellow-600" : "text-red-600"}`}
+            >
               {prettySuccessRate}%
             </p>
           </div>

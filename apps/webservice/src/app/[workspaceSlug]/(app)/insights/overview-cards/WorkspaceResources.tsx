@@ -21,13 +21,17 @@ export const WorkspaceResources: React.FC<WorkspaceResourcesProps> = ({
 
   return (
     <Card className="shadow-sm">
-      <CardContent className="pt-6 px-6">
+      <CardContent className="px-6 pt-6">
         {isLoading ? (
           <Skeleton className="h-8 w-20" />
         ) : (
           <div className="flex flex-col">
-            <p className="text-sm font-medium text-muted-foreground mb-1">Total Resources</p>
-            <p className="text-3xl font-semibold">{numResources.toLocaleString()}</p>
+            <p className="mb-1 text-sm font-medium text-muted-foreground">
+              Total Resources
+            </p>
+            <p className="text-3xl font-semibold">
+              {numResources.toLocaleString()}
+            </p>
           </div>
         )}
       </CardContent>

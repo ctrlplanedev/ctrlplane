@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
+import { Badge } from "@ctrlplane/ui/badge";
+import { Button } from "@ctrlplane/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import {
   Table,
@@ -12,8 +14,6 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
-import { Badge } from "@ctrlplane/ui/badge";
-import { Button } from "@ctrlplane/ui/button";
 
 type DeploymentPerformanceProps = {
   deployments: any[];
@@ -27,19 +27,19 @@ export const DeploymentPerformance: React.FC<DeploymentPerformanceProps> = ({
   endDate,
 }) => {
   const router = useRouter();
-  
+
   const formatDuration = (seconds: number | null | undefined) => {
     if (!seconds) return "N/A";
-    
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    
+
     if (minutes > 0) {
       return `${minutes}m ${remainingSeconds}s`;
     }
     return `${remainingSeconds}s`;
   };
-  
+
   const handleRowClick = (systemSlug: string, deploymentSlug: string) => {
     // Navigate to the deployment details
     router.push(`/${systemSlug}/deployments/${deploymentSlug}`);
@@ -48,7 +48,7 @@ export const DeploymentPerformance: React.FC<DeploymentPerformanceProps> = ({
   return (
     <Card className="shadow-sm">
       <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-base">Deployment Performance</CardTitle>
           <span className="text-xs text-muted-foreground">
             {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
@@ -72,50 +72,67 @@ export const DeploymentPerformance: React.FC<DeploymentPerformanceProps> = ({
             <TableBody>
               {deployments.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-4">
-                    <span className="text-muted-foreground text-sm">No deployments found</span>
+                  <TableCell colSpan={7} className="py-4 text-center">
+                    <span className="text-sm text-muted-foreground">
+                      No deployments found
+                    </span>
                   </TableCell>
                 </TableRow>
               ) : (
                 deployments.map((deployment) => (
-                  <TableRow 
-                    key={deployment.id} 
+                  <TableRow
+                    key={deployment.id}
                     className="cursor-pointer hover:bg-muted/10"
-                    onClick={() => handleRowClick(deployment.systemSlug, deployment.slug)}
+                    onClick={() =>
+                      handleRowClick(deployment.systemSlug, deployment.slug)
+                    }
                   >
-                    <TableCell className="font-medium">{deployment.name}</TableCell>
-                    <TableCell className="text-sm">{deployment.systemName}</TableCell>
-                    <TableCell className="text-right text-sm">{deployment.totalJobs?.toLocaleString() || 0}</TableCell>
+                    <TableCell className="font-medium">
+                      {deployment.name}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {deployment.systemName}
+                    </TableCell>
+                    <TableCell className="text-right text-sm">
+                      {deployment.totalJobs?.toLocaleString() || 0}
+                    </TableCell>
                     <TableCell>
                       {deployment.successRate ? (
-                        <div 
+                        <div
                           className={`text-sm ${
                             deployment.successRate >= 90
                               ? "text-green-600"
                               : deployment.successRate >= 70
-                              ? "text-yellow-600"
-                              : "text-red-600"
+                                ? "text-yellow-600"
+                                : "text-red-600"
                           }`}
                         >
                           {deployment.successRate.toFixed(1)}%
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm font-mono">
-                      {formatDuration(deployment.p50) !== "N/A" ? formatDuration(deployment.p50) : "-"}
+                    <TableCell className="font-mono text-sm">
+                      {formatDuration(deployment.p50) !== "N/A"
+                        ? formatDuration(deployment.p50)
+                        : "-"}
                     </TableCell>
-                    <TableCell className="text-sm font-mono">
-                      {formatDuration(deployment.p90) !== "N/A" ? formatDuration(deployment.p90) : "-"}
+                    <TableCell className="font-mono text-sm">
+                      {formatDuration(deployment.p90) !== "N/A"
+                        ? formatDuration(deployment.p90)
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       {deployment.lastRunAt ? (
                         <div className="text-sm">
-                          {format(new Date(deployment.lastRunAt), "MMM d, HH:mm")}
+                          {format(
+                            new Date(deployment.lastRunAt),
+                            "MMM d, HH:mm",
+                          )}
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
+                        <span className="text-sm text-muted-foreground">-</span>
                       )}
                     </TableCell>
                   </TableRow>
