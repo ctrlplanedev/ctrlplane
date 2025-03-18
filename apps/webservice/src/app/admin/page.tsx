@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { desc, sql } from "@ctrlplane/db";
+import { and, desc, eq, isNull, sql } from "@ctrlplane/db";
 import { db } from "@ctrlplane/db/client";
 import * as schema from "@ctrlplane/db/schema";
 import { Avatar, AvatarFallback, AvatarImage } from "@ctrlplane/ui/avatar";
@@ -39,10 +39,34 @@ export default async function AdminPage() {
     .then(([result]) => result?.count ?? 0);
 
   const workspaces = await db
-    .select()
+    .select({
+      id: schema.workspace.id,
+      name: schema.workspace.name,
+      slug: schema.workspace.slug,
+      googleServiceAccountEmail: schema.workspace.googleServiceAccountEmail,
+      awsRoleArn: schema.workspace.awsRoleArn,
+      createdAt: schema.workspace.createdAt,
+      resourceCount: sql<number>`count(${schema.resource.id})`,
+    })
     .from(schema.workspace)
+    .innerJoin(
+      schema.resource,
+      and(
+        eq(schema.resource.workspaceId, schema.workspace.id),
+        isNull(schema.resource.deletedAt),
+      ),
+    )
+    .groupBy(
+      schema.workspace.id,
+      schema.workspace.name,
+      schema.workspace.slug,
+      schema.workspace.googleServiceAccountEmail,
+      schema.workspace.awsRoleArn,
+      schema.workspace.createdAt,
+    )
     .orderBy(desc(schema.workspace.createdAt))
     .limit(500);
+
   const workspaceCount = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.workspace)
@@ -95,6 +119,7 @@ export default async function AdminPage() {
             <TableRow>
               <TableHead>id</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Resources</TableHead>
               <TableHead>Google SA</TableHead>
               <TableHead>AWS Role</TableHead>
               <TableHead>Created At</TableHead>
@@ -107,6 +132,7 @@ export default async function AdminPage() {
                 <TableCell>
                   {workspace.name} ({workspace.slug})
                 </TableCell>
+                <TableCell>{workspace.resourceCount}</TableCell>
                 <TableCell>{workspace.googleServiceAccountEmail}</TableCell>
                 <TableCell>{workspace.awsRoleArn}</TableCell>
                 <TableCell>{workspace.createdAt.toLocaleString()}</TableCell>
