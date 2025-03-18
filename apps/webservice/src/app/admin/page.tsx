@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { and, desc, eq, isNull, sql } from "@ctrlplane/db";
@@ -130,7 +131,12 @@ export default async function AdminPage() {
               <TableRow key={workspace.id}>
                 <TableCell>{workspace.id}</TableCell>
                 <TableCell>
-                  {workspace.name} ({workspace.slug})
+                  <Link
+                    href={`/workspace/${workspace.slug}`}
+                    className="text-blue-400 hover:text-blue-500"
+                  >
+                    {workspace.name} ({workspace.slug})
+                  </Link>
                 </TableCell>
                 <TableCell>{workspace.resourceCount}</TableCell>
                 <TableCell>{workspace.googleServiceAccountEmail}</TableCell>
