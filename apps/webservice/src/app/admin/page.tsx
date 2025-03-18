@@ -50,7 +50,7 @@ export default async function AdminPage() {
       resourceCount: sql<number>`count(${schema.resource.id})`,
     })
     .from(schema.workspace)
-    .innerJoin(
+    .leftJoin(
       schema.resource,
       and(
         eq(schema.resource.workspaceId, schema.workspace.id),
