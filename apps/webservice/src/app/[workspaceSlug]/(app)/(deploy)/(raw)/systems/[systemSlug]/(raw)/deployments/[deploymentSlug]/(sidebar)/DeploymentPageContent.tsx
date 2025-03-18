@@ -2,11 +2,9 @@
 
 import type { RouterOutputs } from "@ctrlplane/api";
 import type * as schema from "@ctrlplane/db/schema";
-import type { DeploymentVersionStatusType } from "@ctrlplane/validators/releases";
 import type { ResourceCondition } from "@ctrlplane/validators/resources";
 import { useParams, useRouter } from "next/navigation";
 import {
-  IconCircleFilled,
   IconFilter,
   IconFolder,
   IconGraph,
@@ -17,6 +15,7 @@ import { formatDistanceToNowStrict } from "date-fns";
 import _ from "lodash";
 import { isPresent } from "ts-is-present";
 
+import { cn } from "@ctrlplane/ui";
 import { Badge } from "@ctrlplane/ui/badge";
 import { Button } from "@ctrlplane/ui/button";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
@@ -56,33 +55,6 @@ type EnvHeaderProps = {
   environment: schema.Environment;
   deployment: Deployment;
   workspace: schema.Workspace;
-};
-
-const StatusIcon: React.FC<{ status: DeploymentVersionStatusType }> = ({
-  status,
-}) => {
-  if (status === DeploymentVersionStatus.Ready)
-    return (
-      <div className="relative h-[20px] w-[20px]">
-        <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-green-300/20" />
-        <IconCircleFilled className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 text-green-300" />
-      </div>
-    );
-
-  if (status === DeploymentVersionStatus.Building)
-    return (
-      <div className="relative h-[20px] w-[20px]">
-        <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-yellow-400/20" />
-        <IconCircleFilled className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 text-yellow-400" />
-      </div>
-    );
-
-  return (
-    <div className="relative h-[20px] w-[20px]">
-      <IconCircleFilled className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 text-red-400/20" />
-      <IconCircleFilled className="absolute left-1/2 top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 text-red-400" />
-    </div>
-  );
 };
 
 const EnvHeader: React.FC<EnvHeaderProps> = ({
@@ -314,11 +286,35 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                       router.push(versionUrl(version.id).baseUrl())
                     }
                   >
-                    <TableCell className="sticky left-0 z-10 flex h-[70px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 text-base">
+                    <TableCell className="sticky left-0 z-10 flex h-[70px] min-w-[400px] max-w-[750px] items-center gap-2 bg-background/95 py-0 pl-4 text-base">
+                      <span className="truncate">{version.name}</span>{" "}
+                      <Badge
+                        variant="secondary"
+                        className="flex-shrink-0 text-xs hover:bg-secondary"
+                      >
+                        {formatDistanceToNowStrict(version.createdAt, {
+                          addSuffix: true,
+                        })}
+                      </Badge>
                       <TooltipProvider>
                         <Tooltip>
-                          <TooltipTrigger>
-                            <StatusIcon status={version.status} />
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="secondary"
+                              className={cn({
+                                "bg-green-500/20 text-green-500 hover:bg-green-500/20":
+                                  version.status ===
+                                  DeploymentVersionStatus.Ready,
+                                "bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/20":
+                                  version.status ===
+                                  DeploymentVersionStatus.Building,
+                                "bg-red-500/20 text-red-500 hover:bg-red-500/20":
+                                  version.status ===
+                                  DeploymentVersionStatus.Failed,
+                              })}
+                            >
+                              {version.status}
+                            </Badge>
                           </TooltipTrigger>
                           <TooltipContent
                             align="start"
@@ -331,15 +327,6 @@ export const DeploymentPageContent: React.FC<DeploymentPageContentProps> = ({
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      <span className="truncate">{version.name}</span>{" "}
-                      <Badge
-                        variant="secondary"
-                        className="flex-shrink-0 text-xs hover:bg-secondary"
-                      >
-                        {formatDistanceToNowStrict(version.createdAt, {
-                          addSuffix: true,
-                        })}
-                      </Badge>
                     </TableCell>
                     {environments.map((env) => (
                       <TableCell
