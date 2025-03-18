@@ -79,7 +79,7 @@ export const InsightsFilters: React.FC<InsightsFiltersProps> = ({
       </Select>
 
       <Select
-        defaultValue={currentSystemId || "all"}
+        defaultValue={currentSystemId ?? "all"}
         onValueChange={handleSystemChange}
       >
         <SelectTrigger className="h-9 w-[180px]">

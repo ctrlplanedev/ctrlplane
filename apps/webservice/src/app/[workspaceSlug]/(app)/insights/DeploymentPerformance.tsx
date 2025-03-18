@@ -3,8 +3,8 @@
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
-import { Badge } from "@ctrlplane/ui/badge";
-import { Button } from "@ctrlplane/ui/button";
+import { _Badge } from "@ctrlplane/ui/badge";
+import { _Button } from "@ctrlplane/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import {
   Table,
@@ -94,7 +94,7 @@ export const DeploymentPerformance: React.FC<DeploymentPerformanceProps> = ({
                       {deployment.systemName}
                     </TableCell>
                     <TableCell className="text-right text-sm">
-                      {deployment.totalJobs?.toLocaleString() || 0}
+                      {typeof deployment.totalJobs === 'number' ? String(deployment.totalJobs).replace(/\B(?=(\d{3})+(?!\d))/g, ',') : 0}
                     </TableCell>
                     <TableCell>
                       {deployment.successRate ? (
@@ -107,7 +107,7 @@ export const DeploymentPerformance: React.FC<DeploymentPerformanceProps> = ({
                                 : "text-red-600"
                           }`}
                         >
-                          {deployment.successRate.toFixed(1)}%
+                          {(deployment.successRate as number).toFixed(1)}%
                         </div>
                       ) : (
                         <span className="text-sm text-muted-foreground">-</span>

@@ -15,7 +15,7 @@ import colors from "tailwindcss/colors";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import { JobStatus } from "@ctrlplane/validators/jobs";
+// import { JobStatus } from "@ctrlplane/validators/jobs";
 
 import { api } from "~/trpc/react";
 
@@ -26,7 +26,7 @@ type SystemHealthOverviewProps = {
 
 export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
   systemId,
-  workspaceId,
+  // workspaceId,
 }) => {
   const { data: system, isLoading: isLoadingSystem } =
     api.system.byId.useQuery(systemId);
@@ -54,10 +54,10 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
     // Format data for the environments health chart
     if (environments && resources) {
       const envHealthData = environments.map((env) => {
-        const envResources = resources.items.filter((resource) => {
+        const envResources = resources.items.filter((_resource) => {
           // This is a simplified check - you'd need to implement logic to properly
           // check if a resource belongs to an environment based on filter criteria
-          return true;
+          return true as boolean;
         });
 
         const total = envResources.length;
@@ -84,7 +84,7 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
     isLoadingEnvironments,
   ]);
 
-  if (isLoading) {
+  if (isLoading === true) {
     return (
       <Card className="shadow-sm">
         <CardHeader className="pb-2">
@@ -99,7 +99,7 @@ export const SystemHealthOverview: React.FC<SystemHealthOverviewProps> = ({
     );
   }
 
-  const systemName = system?.name || "Selected System";
+  const systemName = system?.name ?? "Selected System";
 
   return (
     <Card className="shadow-sm">

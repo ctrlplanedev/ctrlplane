@@ -13,7 +13,7 @@ import colors from "tailwindcss/colors";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@ctrlplane/ui/tabs";
 
 import { api } from "~/trpc/react";
 
@@ -53,7 +53,7 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
     if (!resources) return;
 
     // Filter by system if systemId is provided
-    let filteredResources = resources.items;
+    const filteredResources = resources.items;
 
     // Group resources by the selected attribute
     const groupedResources = filteredResources.reduce(
@@ -62,7 +62,7 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
         if (groupBy === "kind") {
           key = resource.kind || "Unknown";
         } else if (groupBy === "provider") {
-          key = resource.provider || "Unknown";
+          key = resource.provider ?? "Unknown";
         } else if (groupBy === "apiVersion") {
           key = resource.apiVersion || "Unknown";
         }
@@ -141,9 +141,9 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
                 fill="#8884d8"
                 dataKey="value"
                 paddingAngle={1}
-                label={({ name, percent }) =>
+                label={({ name, percent }: {name: string, percent: number}) =>
                   percent > 0.05
-                    ? `${name.length > 12 ? name.substring(0, 12) + "..." : name}`
+                    ? `${name.length > 12 ? `${name.substring(0, 12)}...` : name}`
                     : ""
                 }
               >
@@ -156,7 +156,7 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => [`${value} resources`, "Count"]}
+                formatter={(value: number) => [`${value} resources`, "Count"]}
                 labelFormatter={(label) => `${label}`}
                 contentStyle={{
                   borderRadius: "4px",
@@ -168,7 +168,7 @@ export const ResourceTypeBreakdown: React.FC<ResourceTypeBreakdownProps> = ({
                 verticalAlign="bottom"
                 align="center"
                 wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }}
-                formatter={(value) =>
+                formatter={(value: string) =>
                   value.length > 20 ? `${value.substring(0, 20)}...` : value
                 }
               />

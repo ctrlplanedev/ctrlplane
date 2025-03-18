@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@ctrlplane/ui/card";
+import { Card, CardContent } from "@ctrlplane/ui/card";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 
 import { api } from "~/trpc/react";
