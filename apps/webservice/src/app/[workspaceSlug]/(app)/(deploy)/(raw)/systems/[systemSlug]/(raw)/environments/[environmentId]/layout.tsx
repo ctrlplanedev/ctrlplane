@@ -17,6 +17,7 @@ import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { Sidebars } from "~/app/[workspaceSlug]/sidebars";
 import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
+import { EnvironmentTabs } from "./_components/EnvironmentTabs";
 
 export default async function EnvironmentLayout(props: {
   children: React.ReactNode;
@@ -71,7 +72,18 @@ export default async function EnvironmentLayout(props: {
         </SidebarTrigger>
       </PageHeader>
 
-      <div className="relative flex h-full w-full">{props.children}</div>
+      <div className="container mx-auto space-y-8 py-8">
+        <div className="flex flex-col space-y-2">
+          <h1 className="text-3xl font-bold text-neutral-100">
+            {environment.name} Environment
+          </h1>
+          <p className="text-neutral-400">{environment.description}</p>
+        </div>
+
+        <EnvironmentTabs />
+
+        {props.children}
+      </div>
     </div>
   );
 }
