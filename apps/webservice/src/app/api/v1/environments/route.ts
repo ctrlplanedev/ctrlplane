@@ -15,7 +15,7 @@ import { parseBody } from "../body-parser";
 import { request } from "../middleware";
 
 const body = schema.createEnvironment.extend({
-  deploymentVersionChannels: z.array(z.string()),
+  releaseChannels: z.array(z.string()),
   expiresAt: z.coerce
     .date()
     .min(new Date(), "Expires at must be in the future")
@@ -48,7 +48,11 @@ export const POST = request()
 
       try {
         return ctx.db.transaction(async (tx) => {
-          const { deploymentVersionChannels, metadata, ...rest } = ctx.body;
+          const {
+            releaseChannels: deploymentVersionChannels,
+            metadata,
+            ...rest
+          } = ctx.body;
 
           const channels = await tx
             .select()
