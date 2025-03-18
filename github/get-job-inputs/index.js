@@ -28182,7 +28182,7 @@ async function run() {
         setOutputAndLog("environment_id", environment?.id);
         setOutputAndLog("environment_name", environment?.name);
         setOutputAndLog("deployment_version_id", deploymentVersion?.id);
-        setOutputAndLog("deployment_version_tag", deploymentVersion?.tag)
+        setOutputAndLog("deployment_version_tag", deploymentVersion?.tag);
         setOutputsRecursively("deployment_version_config", deploymentVersion?.config);
         setOutputsRecursively("deployment_version_metadata", deploymentVersion?.metadata);
         if (approval?.approver != null) {
