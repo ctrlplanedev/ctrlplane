@@ -63,7 +63,7 @@ export const openapi: Swagger.SwaggerV3 = {
   },
   components: {
     schemas: {
-      CloudLocation: {
+      CloudRegionGeoData: {
         type: "object",
         required: ["timezone", "latitude", "longitude"],
         properties: {
