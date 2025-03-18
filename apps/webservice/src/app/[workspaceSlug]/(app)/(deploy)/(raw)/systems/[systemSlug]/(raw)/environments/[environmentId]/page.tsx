@@ -2654,237 +2654,203 @@ export default function EnvironmentOverviewPage(props: {
                   <h4 className="mb-3 text-sm font-medium text-neutral-300">
                     Deployment Versions
                   </h4>
-                  <div className="overflow-hidden rounded-lg border border-neutral-800/50 bg-neutral-900/30">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-neutral-800/70">
-                          <th className="px-3 py-2 text-left font-medium text-neutral-400">
-                            Component
-                          </th>
-                          <th className="px-3 py-2 text-left font-medium text-neutral-400">
+                  <div className="overflow-hidden rounded-lg border border-neutral-800/50">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-b border-neutral-800/50 hover:bg-transparent">
+                          <TableHead className="w-[200px] py-3 font-medium text-neutral-400">
+                            Deployments
+                          </TableHead>
+                          <TableHead className="w-[300px] py-3 font-medium text-neutral-400">
                             Current Distribution
-                          </th>
-                          <th className="px-3 py-2 text-left font-medium text-neutral-400">
+                          </TableHead>
+                          <TableHead className="w-[150px] py-3 font-medium text-neutral-400">
                             Desired Version
-                          </th>
-                          <th className="px-3 py-2 text-right font-medium text-neutral-400">
+                          </TableHead>
+                          <TableHead className="py-3 text-right font-medium text-neutral-400">
                             Deployment Status
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-neutral-800/40">
-                          <td className="px-3 py-2.5 font-medium text-neutral-300">
-                            Database{" "}
-                            <span className="text-[10px] text-neutral-400">
-                              (9)
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex h-1 w-full overflow-hidden rounded-full bg-neutral-800">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: "78%" }}
-                              ></div>
-                              <div
-                                className="h-full bg-amber-500"
-                                style={{ width: "22%" }}
-                              ></div>
-                            </div>
-                            <div className="mt-1 flex text-[10px] text-neutral-400">
-                              <div style={{ width: "78%" }}>v3.4.1</div>
-                              <div style={{ width: "22%" }}>v3.3.0</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-neutral-300">
-                            v3.4.1
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px] text-green-400">
-                                Deployed
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow className="border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30">
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                              <span className="text-sm text-neutral-200">
+                                Database
                               </span>
-                              <span className="inline-block h-2 w-2 rounded-full bg-green-500"></span>
-                            </span>
-                          </td>
-                        </tr>
-                        <tr className="border-b border-neutral-800/40">
-                          <td className="px-3 py-2.5 font-medium text-neutral-300">
-                            API Server{" "}
-                            <span className="text-[10px] text-neutral-400">
-                              (12)
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex h-1 w-full overflow-hidden rounded-full bg-neutral-800">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: "83%" }}
-                              ></div>
-                              <div
-                                className="h-full bg-red-500"
-                                style={{ width: "17%" }}
-                              ></div>
-                            </div>
-                            <div className="mt-1 flex text-[10px] text-neutral-400">
-                              <div style={{ width: "83%" }}>v2.8.5</div>
-                              <div style={{ width: "17%" }}>v2.7.0</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-neutral-300">
-                            v3.0.0
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px] text-amber-400">
-                                Pending Approval
+                              <span className="text-xs text-neutral-400">
+                                (9)
                               </span>
-                              <span className="inline-block h-2 w-2 rounded-full bg-amber-400"></span>
-                            </span>
-                          </td>
-                        </tr>
-                        <tr className="border-b border-neutral-800/40">
-                          <td className="px-3 py-2.5 font-medium text-neutral-300">
-                            Backend{" "}
-                            <span className="text-[10px] text-neutral-400">
-                              (7)
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex h-1 w-full overflow-hidden rounded-full bg-neutral-800">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: "100%" }}
-                              ></div>
                             </div>
-                            <div className="mt-1 flex text-[10px] text-neutral-400">
-                              <div style={{ width: "100%" }}>v4.1.0</div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div>
+                              <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                                <div
+                                  className="h-full bg-green-500"
+                                  style={{ width: "78%" }}
+                                ></div>
+                                <div
+                                  className="h-full bg-amber-500"
+                                  style={{ width: "22%" }}
+                                ></div>
+                              </div>
+                              <div className="mt-1.5 flex text-xs text-neutral-400">
+                                <div style={{ width: "78%" }}>v3.4.1</div>
+                                <div style={{ width: "22%" }}>v3.3.0</div>
+                              </div>
                             </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-neutral-300">
-                            v4.1.0
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px] text-green-400">
-                                Deployed
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className="rounded bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
+                              v3.4.1
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <span className="inline-flex items-center gap-1.5 rounded bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400">
+                              <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                              Deployed
+                            </span>
+                          </TableCell>
+                        </TableRow>
+
+                        <TableRow className="border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30">
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-amber-500"></div>
+                              <span className="text-sm text-neutral-200">
+                                API Server
                               </span>
-                              <span className="inline-block h-2 w-2 rounded-full bg-green-500"></span>
-                            </span>
-                          </td>
-                        </tr>
-                        <tr className="border-b border-neutral-800/40">
-                          <td className="px-3 py-2.5 font-medium text-neutral-300">
-                            Frontend{" "}
-                            <span className="text-[10px] text-neutral-400">
-                              (5)
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex h-1 w-full overflow-hidden rounded-full bg-neutral-800">
-                              <div
-                                className="h-full bg-blue-500"
-                                style={{ width: "60%" }}
-                              ></div>
-                              <div
-                                className="h-full bg-purple-500"
-                                style={{ width: "40%" }}
-                              ></div>
-                            </div>
-                            <div className="mt-1 flex text-[10px] text-neutral-400">
-                              <div style={{ width: "60%" }}>v2.0.0</div>
-                              <div style={{ width: "40%" }}>v2.1.0-β</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-neutral-300">
-                            v2.1.0
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px] text-blue-400">
-                                Deploying
+                              <span className="text-xs text-neutral-400">
+                                (12)
                               </span>
-                              <span className="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
-                            </span>
-                          </td>
-                        </tr>
-                        <tr className="border-b border-neutral-800/40">
-                          <td className="px-3 py-2.5 font-medium text-neutral-300">
-                            Cache{" "}
-                            <span className="text-[10px] text-neutral-400">
-                              (4)
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex h-1 w-full overflow-hidden rounded-full bg-neutral-800">
-                              <div
-                                className="h-full bg-amber-500"
-                                style={{ width: "50%" }}
-                              ></div>
-                              <div
-                                className="h-full bg-blue-500"
-                                style={{ width: "25%" }}
-                              ></div>
-                              <div
-                                className="h-full bg-red-500"
-                                style={{ width: "25%" }}
-                              ></div>
                             </div>
-                            <div className="mt-1 flex text-[10px] text-neutral-400">
-                              <div style={{ width: "50%" }}>v1.9.2</div>
-                              <div style={{ width: "25%" }}>v2.0.0</div>
-                              <div style={{ width: "25%" }}>v1.8.0</div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div>
+                              <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                                <div
+                                  className="h-full bg-green-500"
+                                  style={{ width: "83%" }}
+                                ></div>
+                                <div
+                                  className="h-full bg-red-500"
+                                  style={{ width: "17%" }}
+                                ></div>
+                              </div>
+                              <div className="mt-1.5 flex text-xs text-neutral-400">
+                                <div style={{ width: "83%" }}>v2.8.5</div>
+                                <div style={{ width: "17%" }}>v2.7.0</div>
+                              </div>
                             </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-neutral-300">
-                            v2.0.0
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px] text-red-400">
-                                Failed
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className="rounded bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
+                              v3.0.0
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <span className="inline-flex items-center gap-1.5 rounded bg-amber-500/10 px-2 py-1 text-xs font-medium text-amber-400">
+                              <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>
+                              Pending Approval
+                            </span>
+                          </TableCell>
+                        </TableRow>
+
+                        <TableRow className="border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30">
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                              <span className="text-sm text-neutral-200">
+                                Frontend
                               </span>
-                              <span className="inline-block h-2 w-2 rounded-full bg-red-500"></span>
-                            </span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td className="px-3 py-2.5 font-medium text-neutral-300">
-                            Monitoring{" "}
-                            <span className="text-[10px] text-neutral-400">
-                              (5)
-                            </span>
-                          </td>
-                          <td className="px-3 py-2.5">
-                            <div className="flex h-1 w-full overflow-hidden rounded-full bg-neutral-800">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: "80%" }}
-                              ></div>
-                              <div
-                                className="h-full bg-amber-500"
-                                style={{ width: "20%" }}
-                              ></div>
-                            </div>
-                            <div className="mt-1 flex text-[10px] text-neutral-400">
-                              <div style={{ width: "80%" }}>v3.0.1</div>
-                              <div style={{ width: "20%" }}>v2.9.5</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 text-neutral-300">
-                            v3.0.1
-                          </td>
-                          <td className="px-3 py-2.5 text-right">
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px] text-green-400">
-                                Deployed
+                              <span className="text-xs text-neutral-400">
+                                (5)
                               </span>
-                              <span className="inline-block h-2 w-2 rounded-full bg-green-500"></span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div>
+                              <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                                <div
+                                  className="h-full bg-blue-500"
+                                  style={{ width: "60%" }}
+                                ></div>
+                                <div
+                                  className="h-full bg-purple-500"
+                                  style={{ width: "40%" }}
+                                ></div>
+                              </div>
+                              <div className="mt-1.5 flex text-xs text-neutral-400">
+                                <div style={{ width: "60%" }}>v2.0.0</div>
+                                <div style={{ width: "40%" }}>v2.1.0-β</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className="rounded bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
+                              v2.1.0
                             </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <span className="inline-flex items-center gap-1.5 rounded bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400">
+                              <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                              Deploying
+                            </span>
+                          </TableCell>
+                        </TableRow>
+
+                        <TableRow className="border-b border-neutral-800/50 transition-colors hover:bg-neutral-800/30">
+                          <TableCell className="py-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                              <span className="text-sm text-neutral-200">
+                                Cache
+                              </span>
+                              <span className="text-xs text-neutral-400">
+                                (4)
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <div>
+                              <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+                                <div
+                                  className="h-full bg-amber-500"
+                                  style={{ width: "50%" }}
+                                ></div>
+                                <div
+                                  className="h-full bg-blue-500"
+                                  style={{ width: "25%" }}
+                                ></div>
+                                <div
+                                  className="h-full bg-red-500"
+                                  style={{ width: "25%" }}
+                                ></div>
+                              </div>
+                              <div className="mt-1.5 flex text-xs text-neutral-400">
+                                <div style={{ width: "50%" }}>v1.9.2</div>
+                                <div style={{ width: "25%" }}>v2.0.0</div>
+                                <div style={{ width: "25%" }}>v1.8.0</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-3">
+                            <span className="rounded bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
+                              v2.0.0
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-3 text-right">
+                            <span className="inline-flex items-center gap-1.5 rounded bg-red-500/10 px-2 py-1 text-xs font-medium text-red-400">
+                              <div className="h-1.5 w-1.5 rounded-full bg-red-500"></div>
+                              Failed
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </CardContent>
