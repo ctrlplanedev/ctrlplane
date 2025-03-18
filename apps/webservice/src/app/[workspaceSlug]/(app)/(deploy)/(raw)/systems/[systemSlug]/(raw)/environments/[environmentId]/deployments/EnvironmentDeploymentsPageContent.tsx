@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-import { DeploymentDetail } from "./DeploymentDetail";
+import { DeploymentDetail } from "./_components/DeploymentDetail";
 
 // Helper function for rendering status badges
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
