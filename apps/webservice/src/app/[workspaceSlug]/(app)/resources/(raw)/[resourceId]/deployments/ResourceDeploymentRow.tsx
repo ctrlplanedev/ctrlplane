@@ -1,5 +1,5 @@
 import type { RouterOutputs } from "@ctrlplane/api";
-import type { JobCondition } from "@ctrlplane/validators/jobs";
+import type { JobCondition, JobStatus } from "@ctrlplane/validators/jobs";
 import { useParams, useRouter } from "next/navigation";
 import { capitalCase } from "change-case";
 import { formatDistanceToNowStrict } from "date-fns";
@@ -99,7 +99,7 @@ export const ResourceDeploymentRow: React.FC<ResourceDeploymentRowProps> = ({
               versionId={data[0].version.id}
               versionTag={data[0].version.tag}
               environmentId={data[0].environment.id}
-              jobStatus={data[0].job.status}
+              jobStatus={data[0].job.status as JobStatus}
             />
           )}
         </div>
