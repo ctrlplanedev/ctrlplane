@@ -64,6 +64,11 @@ export const kubernetesClusterApiV1 = z.object({
     z
       .object({
         "kubernetes/version": z.string(),
+        "kubernetes/status": z
+          .literal("running")
+          .or(z.literal("unknown"))
+          .or(z.literal("creating"))
+          .or(z.literal("deleting")),
         "kubernetes/distribution": z.string(),
         "kubernetes/master-version": z.string(),
         "kubernetes/master-version-major": z.string(),

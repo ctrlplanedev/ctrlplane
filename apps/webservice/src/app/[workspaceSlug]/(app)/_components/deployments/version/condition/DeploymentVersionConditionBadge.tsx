@@ -36,7 +36,6 @@ const operatorVerbs = {
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [DeploymentVersionOperator.Regex]: "matches",
   [DeploymentVersionOperator.Like]: "contains",
   [DateOperator.After]: "after",
   [DateOperator.Before]: "before",

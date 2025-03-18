@@ -6,6 +6,7 @@ import { buttonVariants } from "@ctrlplane/ui/button";
 import { PageHeader } from "~/app/[workspaceSlug]/(app)/_components/PageHeader";
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
+import { urls } from "../../../../../../../../urls";
 import { RunbookGettingStarted } from "./RunbookGettingStarted";
 import { RunbookRow } from "./RunbookRow";
 
@@ -18,13 +19,19 @@ export default async function RunbooksPage(props: {
   const system = await api.system.bySlug(params).catch(notFound);
   const runbooks = await api.runbook.bySystemId(system.id);
   const jobAgents = await api.job.agent.byWorkspaceId(workspace.id);
+  const createRunbookUrl = urls
+    .workspace(params.workspaceSlug)
+    .system(params.systemSlug)
+    .runbooks()
+    .create();
+
   return (
     <div>
       <PageHeader className="flex w-full items-center justify-between">
         <SystemBreadcrumb system={system} page="Runbooks" />
 
         <Link
-          href={`/${params.workspaceSlug}/systems/${params.systemSlug}/runbooks/create`}
+          href={createRunbookUrl}
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           Create Runbook

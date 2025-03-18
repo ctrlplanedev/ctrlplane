@@ -184,21 +184,6 @@ const buildMetadataCondition = (tx: Tx, cond: MetadataCondition): SQL => {
         .limit(1),
     );
 
-  if (cond.operator === MetadataOperator.Regex)
-    return exists(
-      tx
-        .select({ value: sql<number>`1` })
-        .from(resourceMetadata)
-        .where(
-          and(
-            eq(resourceMetadata.resourceId, resource.id),
-            eq(resourceMetadata.key, cond.key),
-            sql`${resourceMetadata.value} ~ ${cond.value}`,
-          ),
-        )
-        .limit(1),
-    );
-
   if (cond.operator === MetadataOperator.StartsWith)
     return exists(
       tx
@@ -269,9 +254,7 @@ const buildIdentifierCondition = (tx: Tx, cond: IdentifierCondition): SQL => {
     return ilike(resource.identifier, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
     return ilike(resource.identifier, `%${cond.value}`);
-  if (cond.operator === ColumnOperator.Contains)
-    return ilike(resource.identifier, `%${cond.value}%`);
-  return sql`${resource.identifier} ~ ${cond.value}`;
+  return ilike(resource.identifier, `%${cond.value}%`);
 };
 
 const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
@@ -281,9 +264,7 @@ const buildNameCondition = (tx: Tx, cond: NameCondition): SQL => {
     return ilike(resource.name, `${cond.value}%`);
   if (cond.operator === ColumnOperator.EndsWith)
     return ilike(resource.name, `%${cond.value}`);
-  if (cond.operator === ColumnOperator.Contains)
-    return ilike(resource.name, `%${cond.value}%`);
-  return sql`${resource.name} ~ ${cond.value}`;
+  return ilike(resource.name, `%${cond.value}%`);
 };
 
 const buildCreatedAtCondition = (tx: Tx, cond: CreatedAtCondition): SQL => {

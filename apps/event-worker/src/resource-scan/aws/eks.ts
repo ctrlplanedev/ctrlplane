@@ -4,6 +4,7 @@ import type { ResourceProviderAws, Workspace } from "@ctrlplane/db/schema";
 import type { KubernetesClusterAPIV1 } from "@ctrlplane/validators/resources";
 import { DescribeRegionsCommand } from "@aws-sdk/client-ec2";
 import {
+  ClusterStatus,
   DescribeClusterCommand,
   ListClustersCommand,
 } from "@aws-sdk/client-eks";
@@ -12,6 +13,7 @@ import { isPresent } from "ts-is-present";
 
 import { logger } from "@ctrlplane/logger";
 import { ReservedMetadataKey } from "@ctrlplane/validators/conditions";
+import { cloudRegionsGeo } from "@ctrlplane/validators/resources";
 
 import type { AwsCredentials } from "./aws.js";
 import { omitNullUndefined } from "../../utils.js";
@@ -38,6 +40,8 @@ const convertEksClusterToKubernetesResource = (
   const version = cluster.version!;
   const [major, minor] = version.split(".");
 
+  const { timezone, latitude, longitude } = cloudRegionsGeo[region ?? ""] ?? {};
+
   return {
     name: cluster.name ?? "",
     identifier: cluster.arn ?? "",
@@ -62,6 +66,16 @@ const convertEksClusterToKubernetesResource = (
       [ReservedMetadataKey.ExternalId]: cluster.arn ?? "",
       [ReservedMetadataKey.KubernetesFlavor]: "eks",
       [ReservedMetadataKey.KubernetesVersion]: cluster.version,
+      [ReservedMetadataKey.KubernetesStatus]:
+        cluster.status === ClusterStatus.ACTIVE
+          ? "running"
+          : cluster.status === ClusterStatus.CREATING
+            ? "creating"
+            : "unknown",
+
+      [ReservedMetadataKey.LocationTimezone]: timezone,
+      [ReservedMetadataKey.LocationLatitude]: latitude,
+      [ReservedMetadataKey.LocationLongitude]: longitude,
 
       "aws/arn": cluster.arn,
       "aws/region": region,
@@ -69,7 +83,6 @@ const convertEksClusterToKubernetesResource = (
       "aws/account-id": accountId,
       "aws/eks-role-arn": cluster.roleArn,
 
-      "kubernetes/status": cluster.status,
       "kubernetes/version-major": major,
       "kubernetes/version-minor": minor,
 

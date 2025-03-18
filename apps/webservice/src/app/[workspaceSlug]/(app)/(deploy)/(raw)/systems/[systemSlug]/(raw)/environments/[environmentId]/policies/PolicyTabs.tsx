@@ -8,6 +8,7 @@ import {
   Tabs,
   TabsList,
 } from "~/app/[workspaceSlug]/(app)/_components/navigation/Tabs";
+import { urls } from "~/app/urls";
 
 const getActiveTab = (url: string) => {
   if (url.endsWith("/approval")) return "approval";
@@ -27,7 +28,11 @@ export const PolicyTabs: React.FC = () => {
 
   const pathname = usePathname();
   const activeTab = getActiveTab(pathname);
-  const baseUrl = `/${workspaceSlug}/systems/${systemSlug}/environments/${environmentId}/policies`;
+  const baseUrl = urls
+    .workspace(workspaceSlug)
+    .system(systemSlug)
+    .environment(environmentId)
+    .policies();
 
   return (
     <Tabs>

@@ -46,7 +46,6 @@ export const resourceCondition = z.union([
 export enum ResourceOperator {
   Equals = "equals",
   Like = "like",
-  Regex = "regex",
   Null = "null",
   And = "and",
   Or = "or",

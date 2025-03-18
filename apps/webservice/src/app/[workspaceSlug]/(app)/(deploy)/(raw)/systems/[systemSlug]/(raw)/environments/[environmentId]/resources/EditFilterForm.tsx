@@ -151,7 +151,7 @@ export const EditFilterForm: React.FC<{
             render={({ field: { onChange } }) => (
               <FormItem>
                 <FormControl>
-                  <>
+                  <div className="space-y-2">
                     <ResourceViewsCombobox
                       workspaceId={workspaceId}
                       onChange={onChange}
@@ -160,7 +160,7 @@ export const EditFilterForm: React.FC<{
                       condition={resourceFilter ?? defaultCondition}
                       onChange={onChange}
                     />
-                  </>
+                  </div>
                 </FormControl>
                 <FormMessage />
                 {form.formState.isDirty && (

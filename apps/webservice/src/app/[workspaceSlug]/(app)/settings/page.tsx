@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
+
+export const metadata: Metadata = {
+  title: "Settings | Ctrlplane",
+  description: "Configure your account and workspace settings in Ctrlplane.",
+};
 
 export default async function SettingsPage(props: {
   params: Promise<{ workspaceSlug: string }>;
@@ -8,5 +15,6 @@ export default async function SettingsPage(props: {
   const { workspaceSlug } = await props.params;
   const workspace = await api.workspace.bySlug(workspaceSlug);
   if (workspace == null) notFound();
-  return redirect(`/${workspaceSlug}/settings/workspace/overview`);
+  const overviewUrl = urls.workspace(workspaceSlug).settings().baseUrl();
+  return redirect(overviewUrl);
 }

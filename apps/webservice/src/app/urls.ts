@@ -13,8 +13,22 @@ const workspaceSettings = (slug: string) => {
     baseUrl: () => buildUrl(slug, "settings"),
     members: () => buildUrl(slug, "settings", "members"),
     general: () => buildUrl(slug, "settings", "general"),
-    account: () => buildUrl(slug, "settings", "account"),
-    integrations: () => buildUrl(slug, "settings", "integrations"),
+    integrations: () => workspaceSettingsIntegrations(slug),
+    account: () => ({
+      profile: () => buildUrl(slug, "settings", "account", "profile"),
+      api: () => buildUrl(slug, "settings", "account", "api"),
+    }),
+  };
+};
+
+const workspaceSettingsIntegrations = (slug: string) => {
+  const base = [slug, "settings", "integrations"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    aws: () => buildUrl(...base, "aws"),
+    azure: () => buildUrl(...base, "azure"),
+    google: () => buildUrl(...base, "google"),
+    github: () => buildUrl(...base, "github"),
   };
 };
 
@@ -25,10 +39,19 @@ const workspace = (slug: string) => {
     systems: () => buildUrl(slug, "systems"),
     system: (systemSlug: string) => system({ workspaceSlug: slug, systemSlug }),
     deployments: () => buildUrl(slug, "deployments"),
-    agents: () => buildUrl(slug, "agents"),
+    agents: () => workspaceJobAgents(slug),
     insights: () => buildUrl(slug, "insights"),
     resources: () => resources(slug),
+    resource: (resourceId: string) => resource(slug, resourceId),
     settings: () => workspaceSettings(slug),
+  };
+};
+
+const workspaceJobAgents = (slug: string) => {
+  const base = [slug, "job-agents"];
+  return {
+    baseUrl: () => buildUrl(...base),
+    integrations: () => buildUrl(...base, "integrations"),
   };
 };
 
@@ -39,6 +62,17 @@ const resources = (workspaceSlug: string) => ({
   groupings: () => buildUrl(workspaceSlug, "resources", "groupings"),
   views: () => buildUrl(workspaceSlug, "resources", "views"),
 });
+
+const resource = (workspaceSlug: string, resourceId: string) => {
+  const base = [workspaceSlug, "resources", resourceId];
+  return {
+    baseUrl: () => buildUrl(...base),
+    deployments: () => buildUrl(...base, "deployments"),
+    variables: () => buildUrl(...base, "variables"),
+    properties: () => buildUrl(...base, "properties"),
+    visualize: () => buildUrl(...base, "visualize"),
+  };
+};
 
 const providers = (workspaceSlug: string) => {
   const providersBase = [workspaceSlug, "resources", "providers"];
@@ -70,6 +104,17 @@ const system = (params: SystemParams) => {
       deployment({ ...params, deploymentSlug }),
     environments: () => buildUrl(...base, "environments"),
     environment: (id: string) => environment({ ...params, environmentId: id }),
+    runbooks: () => runbooks(params),
+  };
+};
+
+const runbooks = (params: SystemParams) => {
+  const { workspaceSlug, systemSlug } = params;
+  const base = [workspaceSlug, "systems", systemSlug, "runbooks"];
+
+  return {
+    baseUrl: () => buildUrl(...base),
+    create: () => buildUrl(...base, "create"),
   };
 };
 

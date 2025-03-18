@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { Button } from "@ctrlplane/ui/button";
@@ -8,6 +9,23 @@ import { DeleteSystemDialog } from "~/app/[workspaceSlug]/(app)/_components/syst
 import { api } from "~/trpc/server";
 import { SystemBreadcrumb } from "../_components/SystemBreadcrumb";
 import { GeneralSettings } from "./GeneralSettings";
+
+export const generateMetadata = async (props: {
+  params: { workspaceSlug: string; systemSlug: string };
+}): Promise<Metadata> => {
+  try {
+    const system = await api.system.bySlug(props.params);
+    return {
+      title: `Settings | ${system.name} | Ctrlplane`,
+      description: `Configure settings for the ${system.name} system in Ctrlplane.`,
+    };
+  } catch {
+    return {
+      title: "System Settings | Ctrlplane",
+      description: "Configure system settings in Ctrlplane.",
+    };
+  }
+};
 
 export default async function SystemSettingsPage(props: {
   params: Promise<{ workspaceSlug: string; systemSlug: string }>;

@@ -46,7 +46,6 @@ const operatorVerbs = {
       is <span className="text-orange-500">null</span>
     </span>
   ),
-  [ResourceOperator.Regex]: "matches",
   [ResourceOperator.Like]: "contains",
   [ColumnOperator.StartsWith]: "starts with",
   [ColumnOperator.EndsWith]: "ends with",

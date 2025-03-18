@@ -14,6 +14,7 @@ import {
 
 import { Button } from "@ctrlplane/ui/button";
 
+import { urls } from "~/app/urls";
 import { api } from "~/trpc/server";
 
 export const metadata = { title: "Overview - Workspace" };
@@ -26,6 +27,8 @@ export default async function OverviewPage(props: {
 
   const currentAwsAccountId =
     await api.workspace.integrations.aws.currentAwsAccountId();
+
+  const workspaceUrls = urls.workspace(workspaceSlug);
 
   return (
     <div className="scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 container mx-auto max-w-7xl space-y-8 overflow-auto pt-8">
@@ -54,7 +57,7 @@ export default async function OverviewPage(props: {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${workspaceSlug}/resource-providers`}>
+              <Link href={workspaceUrls.resources().providers().baseUrl()}>
                 <Button size="sm" variant="secondary">
                   Sync resources
                 </Button>
@@ -82,7 +85,7 @@ export default async function OverviewPage(props: {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${workspaceSlug}/systems`}>
+              <Link href={workspaceUrls.systems()}>
                 <Button size="sm" variant="secondary">
                   Create systems
                 </Button>
@@ -109,7 +112,7 @@ export default async function OverviewPage(props: {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link href={`/${workspaceSlug}/environments`}>
+              <Link href={workspaceUrls.systems()}>
                 <Button size="sm" variant="secondary">
                   Configure environments
                 </Button>
@@ -141,9 +144,7 @@ export default async function OverviewPage(props: {
                   repos.
                 </div>
                 <div>
-                  <Link
-                    href={`/${workspaceSlug}/settings/workspace/integrations/github`}
-                  >
+                  <Link href={workspaceUrls.settings().integrations().github()}>
                     <Button variant="secondary" size="sm">
                       Open
                     </Button>
@@ -161,9 +162,7 @@ export default async function OverviewPage(props: {
                   Sync deployment resource, trigger google workflows and more.
                 </div>
                 <div>
-                  <Link
-                    href={`/${workspaceSlug}/settings/workspace/integrations/google`}
-                  >
+                  <Link href={workspaceUrls.settings().integrations().google()}>
                     <Button variant="secondary" size="sm">
                       Open
                     </Button>
@@ -182,9 +181,7 @@ export default async function OverviewPage(props: {
                     Sync deployment resources, trigger AWS workflows and more.
                   </div>
                   <div>
-                    <Link
-                      href={`/${workspaceSlug}/settings/workspace/integrations/aws`}
-                    >
+                    <Link href={workspaceUrls.settings().integrations().aws()}>
                       <Button variant="secondary" size="sm">
                         Open
                       </Button>

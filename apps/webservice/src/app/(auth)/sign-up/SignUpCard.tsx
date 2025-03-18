@@ -71,7 +71,7 @@ export const SignUpCard: React.FC = () => {
           redirect: false,
         }).then((response) => {
           if (response?.error) throw new Error(response.error);
-          router.push("/");
+          router.refresh();
         }),
       )
       .catch((error) => {
