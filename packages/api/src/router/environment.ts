@@ -39,12 +39,14 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
+import { environmentPageRouter } from "./environment-page/environment-page";
 import { policyRouter } from "./environment-policy";
 import { environmentStatsRouter } from "./environment-stats";
 
 export const environmentRouter = createTRPCRouter({
   policy: policyRouter,
   stats: environmentStatsRouter,
+  page: environmentPageRouter,
 
   byId: protectedProcedure
     .meta({
