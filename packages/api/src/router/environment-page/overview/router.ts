@@ -12,8 +12,8 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../../../trpc";
-import { getDeploymentStats } from "./get-deployment-stats";
-import { getVersionDistro } from "./get-version-distro";
+import { getDeploymentStats } from "./deployment-stats";
+import { getVersionDistro } from "./version-distro";
 
 export const overviewRouter = createTRPCRouter({
   latestDeploymentStats: protectedProcedure

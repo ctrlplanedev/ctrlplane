@@ -24,6 +24,15 @@ const deployedStatuses = [
   JobStatus.InProgress,
 ];
 
+/**
+ * Get the deployment stats for a given environment and deployment.
+ * @param db - The database connection.
+ * @param environment - The environment to get the deployment stats for.
+ * @param deployment - The deployment to get the deployment stats for.
+ * @param resourceIds - The resource IDs to get the deployment stats for.
+ * @returns The count of successful, in progress, pending, and failed deployments across the resources
+ *  for the given environment and deployment.
+ */
 export const getDeploymentStats = async (
   db: Tx,
   environment: SCHEMA.Environment,

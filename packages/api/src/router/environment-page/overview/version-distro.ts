@@ -5,6 +5,14 @@ import { and, asc, count, desc, eq, inArray } from "@ctrlplane/db";
 import * as SCHEMA from "@ctrlplane/db/schema";
 import { JobStatus } from "@ctrlplane/validators/jobs";
 
+/**
+ * Get the version distro for a given environment and deployment.
+ * @param db - The database connection.
+ * @param environment - The environment to get the version distro for.
+ * @param deployment - The deployment to get the version distro for.
+ * @param resourceIds - The resource IDs to get the version distro for.
+ * @returns The distribution of latest versions across resources for the given environment and deployment.
+ */
 export const getVersionDistro = async (
   db: Tx,
   environment: SCHEMA.Environment,
