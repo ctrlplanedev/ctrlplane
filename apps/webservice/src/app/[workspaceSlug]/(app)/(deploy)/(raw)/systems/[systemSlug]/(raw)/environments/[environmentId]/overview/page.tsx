@@ -1,6 +1,5 @@
 import React from "react";
 import { notFound } from "next/navigation";
-import { IconCopy } from "@tabler/icons-react";
 
 import {
   Card,
@@ -43,12 +42,13 @@ export default async function EnvironmentOverviewPage(props: {
     <div className="w-full space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Environment Overview Card */}
-        <Card className="col-span-1">
-          <CardHeader>
+        <Card className="col-span-1 flex flex-col">
+          <CardHeader className="flex-shrink-0">
             <CardTitle>Environment Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-2 text-sm">
+          <CardContent className="flex flex-grow flex-col space-y-4">
+            <div className="grid shrink-0 grid-cols-2 gap-2 text-sm">
+              <div className="text-neutral-400">Environment ID</div>
               <div className="flex items-center justify-end gap-1 text-right">
                 <span className="text-neutral-100">
                   {environment.id.substring(0, 8)}...
@@ -70,29 +70,32 @@ export default async function EnvironmentOverviewPage(props: {
               <div className="text-right text-neutral-100">
                 {environment.createdAt.toLocaleDateString()}
               </div>
-              <div className="text-neutral-400">Environment ID</div>
             </div>
 
-            {Object.keys(environment.metadata).length > 0 && (
-              <>
-                <div className="my-4 h-px w-full bg-neutral-800"></div>
-                <div>
-                  <h4 className="mb-2 text-sm font-medium text-neutral-300">
-                    Metadata
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    {Object.entries(environment.metadata).map(
-                      ([key, value]) => (
-                        <React.Fragment key={key}>
-                          <div className="text-neutral-400">{key}</div>
-                          <div className="text-neutral-100">{value}</div>
-                        </React.Fragment>
-                      ),
-                    )}
+            <div className="h-full flex-grow rounded-md border bg-neutral-950 p-4">
+              {Object.keys(environment.metadata).length > 0 ? (
+                <>
+                  <div className="my-4 h-px w-full bg-neutral-800"></div>
+                  <div>
+                    <h4 className="mb-2 text-sm font-medium text-neutral-300">
+                      Metadata
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      {Object.entries(environment.metadata).map(
+                        ([key, value]) => (
+                          <React.Fragment key={key}>
+                            <code className="text-neutral-400">{key}</code>
+                            <code className="text-neutral-100">{value}</code>
+                          </React.Fragment>
+                        ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              ) : (
+                <div className="text-xs text-neutral-400">No metadata</div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
