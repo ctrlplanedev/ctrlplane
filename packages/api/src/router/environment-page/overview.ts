@@ -103,13 +103,11 @@ const getDeploymentStats = async (
         sql`CASE WHEN ${latestJobsPerResourceAndDeploymentSubquery.status} IN (${sql.raw(failureStatuses.map((s) => `'${s}'`).join(", "))}) THEN 1 ELSE NULL END`,
       ),
     })
-    .from(latestJobsPerResourceAndDeploymentSubquery);
+    .from(latestJobsPerResourceAndDeploymentSubquery)
+    .then(takeFirst);
 
   const total = numResources;
-  const successful = _.sumBy(statsByJobStatus, "successful");
-  const inProgress = _.sumBy(statsByJobStatus, "inProgress");
-  const pending = _.sumBy(statsByJobStatus, "pending");
-  const failed = _.sumBy(statsByJobStatus, "failed");
+  const { successful, inProgress, pending, failed } = statsByJobStatus;
   const notDeployed = numResources - successful - failed - inProgress - pending;
 
   return {
