@@ -19,6 +19,7 @@ export const EnvironmentTabs: React.FC = () => {
     .workspace(workspaceSlug)
     .system(systemSlug)
     .environment(environmentId);
+  const baseUrl = environmentUrls.baseUrl();
   const overviewUrl = environmentUrls.overview();
   const deploymentsUrl = environmentUrls.deployments();
   const resourcesUrl = environmentUrls.resources();
@@ -29,6 +30,7 @@ export const EnvironmentTabs: React.FC = () => {
     if (pathname === policiesUrl) return "policies";
     if (pathname === resourcesUrl) return "resources";
     if (pathname === deploymentsUrl) return "deployments";
+    if (pathname === baseUrl) return "overview";
     return "overview";
   };
 
