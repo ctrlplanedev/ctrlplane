@@ -1,5 +1,6 @@
 import React from "react";
 import { notFound } from "next/navigation";
+import { IconCopy } from "@tabler/icons-react";
 
 import {
   Card,
@@ -18,6 +19,7 @@ import {
 } from "@ctrlplane/ui/table";
 
 import { api } from "~/trpc/server";
+import { CopyEnvIdButton } from "./CopyEnvIdButton";
 
 export default async function EnvironmentOverviewPage(props: {
   params: Promise<{
@@ -47,16 +49,28 @@ export default async function EnvironmentOverviewPage(props: {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="flex items-center justify-end gap-1 text-right">
+                <span className="text-neutral-100">
+                  {environment.id.substring(0, 8)}...
+                </span>
+                <CopyEnvIdButton environmentId={environment.id} />
+              </div>
+
               <div className="text-neutral-400">Name</div>
-              <div className="text-neutral-100">{environment.name}</div>
+              <div className="text-right text-neutral-100 ">
+                {environment.name}
+              </div>
 
               <div className="text-neutral-400">Directory</div>
-              <div className="text-neutral-100">{environment.directory}</div>
+              <code className="text-right text-neutral-100">
+                {environment.directory === "" ? "/" : environment.directory}
+              </code>
 
               <div className="text-neutral-400">Created</div>
-              <div className="text-neutral-100">
+              <div className="text-right text-neutral-100">
                 {environment.createdAt.toLocaleDateString()}
               </div>
+              <div className="text-neutral-400">Environment ID</div>
             </div>
 
             {Object.keys(environment.metadata).length > 0 && (
