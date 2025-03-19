@@ -178,12 +178,12 @@ export const overviewRouter = createTRPCRouter({
 
       return {
         deployments: {
-          total: _.sumBy(deploymentStats, "total"),
-          successful: _.sumBy(deploymentStats, "successful"),
-          failed: _.sumBy(deploymentStats, "failed"),
-          inProgress: _.sumBy(deploymentStats, "inProgress"),
-          pending: _.sumBy(deploymentStats, "pending"),
-          notDeployed: _.sumBy(deploymentStats, "notDeployed"),
+          total: _.sumBy(deploymentStats, (s) => s.total),
+          successful: _.sumBy(deploymentStats, (s) => s.successful),
+          failed: _.sumBy(deploymentStats, (s) => s.failed),
+          inProgress: _.sumBy(deploymentStats, (s) => s.inProgress),
+          pending: _.sumBy(deploymentStats, (s) => s.pending),
+          notDeployed: _.sumBy(deploymentStats, (s) => s.notDeployed),
         },
         resources: resources.length,
       };
