@@ -39,7 +39,7 @@ import {
 } from "@ctrlplane/validators/conditions";
 
 import { createTRPCRouter, protectedProcedure } from "../trpc";
-import { environmentPageRouter } from "./environment-page/environment-page";
+import { environmentPageRouter } from "./environment-page/router";
 import { policyRouter } from "./environment-policy";
 import { environmentStatsRouter } from "./environment-stats";
 
