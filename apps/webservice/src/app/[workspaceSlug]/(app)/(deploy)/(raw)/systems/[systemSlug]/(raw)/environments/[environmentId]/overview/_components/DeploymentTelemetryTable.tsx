@@ -4,6 +4,7 @@ import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { useParams } from "next/navigation";
 
+import { cn } from "@ctrlplane/ui";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
 import {
   Table,
@@ -60,6 +61,8 @@ const DeploymentRow: React.FC<{
 
   const resourceCount = telemetry?.resourceCount ?? 0;
   const versionDistro = telemetry?.versionDistro ?? {};
+  const desiredVersion = telemetry?.desiredVersion ?? null;
+  const tag = desiredVersion?.tag ?? "No version released";
 
   return (
     <TableRow>
@@ -99,14 +102,37 @@ const DeploymentRow: React.FC<{
       </TableCell>
       <TableCell className="py-3">
         <span className="rounded bg-neutral-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
-          v3.4.1
+          {tag}
         </span>
       </TableCell>
       <TableCell className="py-3 text-right">
-        <span className="inline-flex items-center gap-1.5 rounded bg-green-500/10 px-2 py-1 text-xs font-medium text-green-400">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-          Deployed
-        </span>
+        {desiredVersion != null && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium",
+              {
+                "bg-green-500/10 text-green-400":
+                  desiredVersion.status === "Deployed",
+                "bg-blue-500/10 text-blue-400":
+                  desiredVersion.status === "Deploying",
+                "bg-red-500/10 text-red-400":
+                  desiredVersion.status === "Failed",
+                "bg-amber-500/10 text-amber-400":
+                  desiredVersion.status === "Pending Approval",
+              },
+            )}
+          >
+            <div
+              className={cn("h-1.5 w-1.5 rounded-full", {
+                "bg-green-500": desiredVersion.status === "Deployed",
+                "bg-blue-500": desiredVersion.status === "Deploying",
+                "bg-red-500": desiredVersion.status === "Failed",
+                "bg-amber-500": desiredVersion.status === "Pending Approval",
+              })}
+            />
+            {desiredVersion.status}
+          </span>
+        )}
       </TableCell>
     </TableRow>
   );
