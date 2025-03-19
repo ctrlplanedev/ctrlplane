@@ -34,9 +34,10 @@ export default async function EnvironmentOverviewPage(props: {
   const stats =
     await api.environment.page.overview.latestDeploymentStats(environmentId);
 
-  const deploymentSuccess = Math.round(
-    (stats.deployments.successful / (stats.deployments.total || 1)) * 100,
-  );
+  const deploymentSuccess = (
+    (stats.deployments.successful / (stats.deployments.total || 1)) *
+    100
+  ).toFixed(1);
 
   return (
     <div className="w-full space-y-6">
