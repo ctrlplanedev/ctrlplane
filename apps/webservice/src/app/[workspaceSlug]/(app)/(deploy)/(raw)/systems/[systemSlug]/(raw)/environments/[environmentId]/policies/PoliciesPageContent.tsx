@@ -1,6 +1,8 @@
 "use client";
 
+import type { RouterOutputs } from "@ctrlplane/api";
 import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
 import {
   IconAdjustments,
   IconArrowUpRight,
@@ -30,41 +32,40 @@ import {
   TooltipTrigger,
 } from "@ctrlplane/ui/tooltip";
 
-// PoliciesTabContent component for the Policies tab
-export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
-  environmentId,
+import {
+  EnvironmentPolicyDrawerTab,
+  param,
+  useEnvironmentPolicyDrawer,
+} from "~/app/[workspaceSlug]/(app)/_components/policy/drawer/EnvironmentPolicyDrawer";
+import { urls } from "~/app/urls";
+
+type Environment = NonNullable<RouterOutputs["environment"]["byId"]>;
+
+export const PoliciesPageContent: React.FC<{ environment: Environment }> = ({
+  environment,
 }) => {
-  const hasParentPolicy = true;
-  // Sample static policy data
-  const environmentPolicy = {
-    id: "env-pol-1",
-    name: "Production Environment Policy",
-    description: "Policy settings for the production environment",
-    environmentId: environmentId,
-    approvalRequirement: "manual",
-    successType: "all",
-    successMinimum: 0,
-    concurrencyLimit: 2,
-    rolloutDuration: 1800000, // 30 minutes in ms
-    minimumReleaseInterval: 86400000, // 24 hours in ms
-    releaseSequencing: "wait",
-    versionChannels: [
-      { id: "channel-1", name: "stable", deploymentId: "deploy-1" },
-      { id: "channel-2", name: "beta", deploymentId: "deploy-2" },
-    ],
-    releaseWindows: [
-      {
-        id: "window-1",
-        recurrence: "weekly",
-        startTime: new Date("2025-03-18T09:00:00"),
-        endTime: new Date("2025-03-18T17:00:00"),
-      },
-    ],
-  };
+  const { isDefaultPolicy } = environment.policy;
+  const hasParentPolicy = !isDefaultPolicy;
+  const { policy: environmentPolicy } = environment;
 
   const formatDurationText = (ms: number) => {
     if (ms === 0) return "None";
     return prettyMs(ms, { compact: true, verbose: false });
+  };
+
+  const { workspaceSlug, systemSlug } = useParams<{
+    workspaceSlug: string;
+    systemSlug: string;
+  }>();
+
+  const externalPolicyUrl = `${urls.workspace(workspaceSlug).system(systemSlug).policies()}?${param}=${environmentPolicy.id}`;
+  const router = useRouter();
+
+  const { setEnvironmentPolicyId } = useEnvironmentPolicyDrawer();
+
+  const onConfigurePolicyClick = (tab: EnvironmentPolicyDrawerTab) => {
+    if (hasParentPolicy) router.push(`${externalPolicyUrl}&tab=${tab}`);
+    if (!hasParentPolicy) setEnvironmentPolicyId(environmentPolicy.id, tab);
   };
 
   return (
@@ -88,7 +89,7 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
                 <AlertTitle className="">Inherited Parent Policies</AlertTitle>
                 <AlertDescription>
                   <div className="flex items-center justify-between">
-                    <p className="">
+                    <p>
                       These policies are inherited from a parent configuration.
                       You can override specific settings at the environment
                       level while maintaining the parent policy structure.
@@ -98,9 +99,14 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
               </div>
 
               <div>
-                <Button variant="ghost" size="sm" className="shrink-0" asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0 hover:bg-orange-400/10 hover:text-orange-300"
+                  asChild
+                >
                   <Link
-                    href="/parent-policy"
+                    href={externalPolicyUrl}
                     className="flex items-center gap-1"
                   >
                     View parent policy
@@ -199,6 +205,9 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200"
+                  onClick={() =>
+                    onConfigurePolicyClick(EnvironmentPolicyDrawerTab.Approval)
+                  }
                 >
                   Configure <IconArrowUpRight className="h-3 w-3" />
                 </Button>
@@ -244,6 +253,11 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200"
+                  onClick={() =>
+                    onConfigurePolicyClick(
+                      EnvironmentPolicyDrawerTab.Concurrency,
+                    )
+                  }
                 >
                   Configure <IconArrowUpRight className="h-3 w-3" />
                 </Button>
@@ -306,6 +320,11 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200"
+                  onClick={() =>
+                    onConfigurePolicyClick(
+                      EnvironmentPolicyDrawerTab.Management,
+                    )
+                  }
                 >
                   Configure <IconArrowUpRight className="h-3 w-3" />
                 </Button>
@@ -401,6 +420,11 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200"
+                  onClick={() =>
+                    onConfigurePolicyClick(
+                      EnvironmentPolicyDrawerTab.DeploymentVersionChannels,
+                    )
+                  }
                 >
                   Configure <IconArrowUpRight className="h-3 w-3" />
                 </Button>
@@ -482,6 +506,9 @@ export const PoliciesPageContent: React.FC<{ environmentId: string }> = ({
                   variant="ghost"
                   size="sm"
                   className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-neutral-200"
+                  onClick={() =>
+                    onConfigurePolicyClick(EnvironmentPolicyDrawerTab.Rollout)
+                  }
                 >
                   Configure <IconArrowUpRight className="h-3 w-3" />
                 </Button>

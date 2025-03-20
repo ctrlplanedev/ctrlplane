@@ -127,7 +127,7 @@ export const environmentRouter = createTRPCRouter({
               .filter(isPresent)
               .uniqBy((r) => r.id)
               .value(),
-            isOverride:
+            isDefaultPolicy:
               env.environment_policy.environmentId === env.environment.id,
           };
 

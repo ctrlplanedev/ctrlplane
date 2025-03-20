@@ -106,6 +106,7 @@ const system = (params: SystemParams) => {
       deployment({ ...params, deploymentSlug }),
     environments: () => buildUrl(...base, "environments"),
     environment: (id: string) => environment({ ...params, environmentId: id }),
+    policies: () => buildUrl(...base, "policies"),
     runbooks: () => runbooks(params),
   };
 };
