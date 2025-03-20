@@ -1,10 +1,17 @@
 "use client";
 
+import type * as SCHEMA from "@ctrlplane/db/schema";
+import type {
+  ComparisonCondition,
+  ResourceCondition,
+} from "@ctrlplane/validators/resources";
 import React, { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { IconFilter, IconSearch } from "@tabler/icons-react";
 import _ from "lodash";
 
 import { Badge } from "@ctrlplane/ui/badge";
+import { Button } from "@ctrlplane/ui/button";
 import { Input } from "@ctrlplane/ui/input";
 import {
   Table,
@@ -15,378 +22,72 @@ import {
   TableRow,
 } from "@ctrlplane/ui/table";
 
-export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
-  environmentId,
-}) => {
+import { api } from "~/trpc/react";
+import { ResourceCard } from "./_components/ResourceCard";
+
+const PAGE_SIZE = 8;
+
+const safeParseInt = (value: string, total: number) => {
+  try {
+    const page = parseInt(value);
+    if (Number.isNaN(page) || page < 0 || page * PAGE_SIZE >= total) return 0;
+    return page;
+  } catch {
+    return 0;
+  }
+};
+
+const usePagination = (total: number) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const page = safeParseInt(searchParams.get("page") ?? "0");
+  const setPage = (page: number) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("page", page.toString());
+    router.replace(`${url.pathname}?${url.searchParams.toString()}`);
+  };
+  return { page, setPage };
+};
+
+export const ResourcesPageContent: React.FC<{
+  id: string;
+  resourceSelector: ResourceCondition;
+  workspaceId: string;
+}> = ({ id, resourceSelector, workspaceId }) => {
   const [selectedView, setSelectedView] = useState("grid");
   const [showFilterEditor, setShowFilterEditor] = useState(false);
-  const [resourceFilter, setResourceFilter] = useState({
+  const [resourceFilter, setResourceFilter] = useState<ComparisonCondition>({
     type: "comparison",
     operator: "and",
     not: false,
-    conditions: [
-      {
-        type: "kind",
-        operator: "equals",
-        not: false,
-        value: "Pod",
-      },
-    ],
+    conditions: [resourceSelector],
   });
 
-  // Sample static resource data
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const resources = [
-    {
-      id: "res-1",
-      name: "api-server-pod-1",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "nginx:1.21",
-      lastUpdated: new Date("2024-03-15T10:30:00"),
-      component: "API Server",
-      healthScore: 98,
-      metrics: {
-        cpu: 32,
-        memory: 45,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T10:30:00"),
-          message: "Pod started successfully",
-        },
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T10:28:00"),
-          message: "Container image pulled successfully",
-        },
-      ],
-      relatedResources: [
-        { name: "api-server-service", kind: "Service", status: "healthy" },
-        {
-          name: "api-data-volume",
-          kind: "PersistentVolume",
-          status: "healthy",
-        },
-      ],
-      deploymentHistory: [
-        {
-          date: new Date("2024-03-15"),
-          version: "v1.21",
-          deploymentName: "API Server Rollout",
-          duration: 3,
-          status: "success",
-        },
-        {
-          date: new Date("2024-02-28"),
-          version: "v1.20",
-          deploymentName: "February Release",
-          duration: 5,
-          status: "success",
-        },
-      ],
-    },
-    {
-      id: "res-2",
-      name: "frontend-service",
-      kind: "Service",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "ClusterIP",
-      lastUpdated: new Date("2024-03-15T09:45:00"),
-      component: "Frontend",
-      healthScore: 100,
-      metrics: {
-        cpu: 12,
-        memory: 25,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T09:45:00"),
-          message: "Service created",
-        },
-      ],
-    },
-    {
-      id: "res-3",
-      name: "main-db-instance",
-      kind: "Database",
-      provider: "aws",
-      region: "us-west-2",
-      status: "degraded",
-      version: "postgres-13.4",
-      lastUpdated: new Date("2024-03-14T22:15:00"),
-      component: "Database",
-      healthScore: 75,
-      metrics: {
-        cpu: 78,
-        memory: 65,
-        disk: 82,
-      },
-      events: [
-        {
-          type: "warning",
-          timestamp: new Date("2024-03-15T02:12:00"),
-          message: "High disk usage detected",
-        },
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-14T22:15:00"),
-          message: "Database backup completed",
-        },
-      ],
-      relatedResources: [
-        { name: "db-backup-bucket", kind: "Storage", status: "healthy" },
-      ],
-    },
-    {
-      id: "res-4",
-      name: "cache-redis-01",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "failed",
-      version: "redis:6.2",
-      lastUpdated: new Date("2024-03-15T08:12:00"),
-      component: "Cache",
-      healthScore: 0,
-      metrics: {
-        cpu: 0,
-        memory: 0,
-      },
-      events: [
-        {
-          type: "error",
-          timestamp: new Date("2024-03-15T08:12:00"),
-          message: "Container failed to start: OOMKilled",
-        },
-        {
-          type: "warning",
-          timestamp: new Date("2024-03-15T08:11:30"),
-          message: "Memory usage exceeded limit",
-        },
-      ],
-    },
-    {
-      id: "res-5",
-      name: "monitoring-server",
-      kind: "VM",
-      provider: "gcp",
-      region: "us-west-1",
-      status: "healthy",
-      version: "n/a",
-      lastUpdated: new Date("2024-03-10T15:30:00"),
-      component: "Monitoring",
-      healthScore: 96,
-      metrics: {
-        cpu: 15,
-        memory: 40,
-        disk: 30,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-10T15:30:00"),
-          message: "VM started successfully",
-        },
-      ],
-    },
-    {
-      id: "res-6",
-      name: "backend-pod-1",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "backend:4.1.0",
-      lastUpdated: new Date("2024-03-10T11:45:00"),
-      component: "Backend",
-      healthScore: 99,
-      metrics: {
-        cpu: 45,
-        memory: 38,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-10T11:45:00"),
-          message: "Pod started successfully",
-        },
-      ],
-    },
-    {
-      id: "res-7",
-      name: "backend-pod-2",
-      kind: "Pod",
-      provider: "kubernetes",
-      region: "us-west-2",
-      status: "healthy",
-      version: "backend:4.1.0",
-      lastUpdated: new Date("2024-03-10T11:45:00"),
-      component: "Backend",
-      healthScore: 97,
-      metrics: {
-        cpu: 49,
-        memory: 42,
-      },
-    },
-    {
-      id: "res-8",
-      name: "analytics-queue",
-      kind: "Service",
-      provider: "aws",
-      region: "us-west-2",
-      status: "updating",
-      version: "n/a",
-      lastUpdated: new Date("2024-03-15T14:22:00"),
-      component: "Analytics",
-      healthScore: 90,
-      metrics: {
-        cpu: 28,
-        memory: 35,
-      },
-      events: [
-        {
-          type: "normal",
-          timestamp: new Date("2024-03-15T14:22:00"),
-          message: "Service configuration update in progress",
-        },
-      ],
-    },
-  ];
+  const { data: allResources, isLoading: isAllResourcesLoading } =
+    api.resource.byWorkspaceId.list.useQuery({
+      workspaceId,
+      filter: resourceSelector,
+      limit: 0,
+    });
 
-  // Group resources by component
-  const resourcesByComponent = _(resources)
-    .groupBy((t) => t.component)
-    .value() as Record<string, typeof resources>;
+  const totalResources = allResources?.total ?? 0;
+  const { page, setPage } = usePagination(totalResources);
 
-  // Apply filters to resources
-  const filteredResources = React.useMemo(() => {
-    // Start with all resources
-    let filtered = [...resources];
+  const hasNextPage = (page + 1) * PAGE_SIZE < totalResources;
+  const hasPreviousPage = page > 0;
 
-    // Apply resource condition filters
-    if (resourceFilter.conditions.length > 0) {
-      // If it's an AND operator, each condition must match
-      if (resourceFilter.operator === "and") {
-        resourceFilter.conditions.forEach((condition: any) => {
-          filtered = filtered.filter((resource) => {
-            switch (condition.type) {
-              case "kind":
-                return resource.kind === condition.value;
-              case "provider":
-                return resource.provider === condition.value;
-              case "status":
-                return resource.status === condition.value;
-              case "component":
-                return resource.component === condition.value;
-              default:
-                return true;
-            }
-          });
-        });
-      }
-      // If it's an OR operator, any condition can match
-      else if (resourceFilter.operator === "or") {
-        filtered = filtered.filter((resource) =>
-          resourceFilter.conditions.some((condition: any) => {
-            switch (condition.type) {
-              case "kind":
-                return resource.kind === condition.value;
-              case "provider":
-                return resource.provider === condition.value;
-              case "status":
-                return resource.status === condition.value;
-              case "component":
-                return resource.component === condition.value;
-              default:
-                return true;
-            }
-          }),
-        );
-      }
-    }
+  const { data: resourcesResult, isLoading: isResourcesLoading } =
+    api.resource.byWorkspaceId.list.useQuery({
+      workspaceId,
+      filter: resourceFilter,
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    });
 
-    return filtered;
-  }, [resources, resourceFilter]);
+  const resources = resourcesResult?.items ?? [];
 
   const getStatusCount = (status: string) => {
     return resources.filter((r) => r.status === status).length;
-  };
-
-  const renderResourceCard = (resource: any) => {
-    const statusColor = {
-      healthy: "bg-green-500",
-      degraded: "bg-amber-500",
-      failed: "bg-red-500",
-      updating: "bg-blue-500",
-      unknown: "bg-neutral-500",
-    };
-
-    return (
-      <div
-        key={resource.id}
-        className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 transition-all hover:border-neutral-700 hover:bg-neutral-900"
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div
-              className={`h-2.5 w-2.5 rounded-full ${statusColor[resource.status as keyof typeof statusColor] || "bg-neutral-500"}`}
-            ></div>
-            <h3 className="font-medium text-neutral-200">{resource.name}</h3>
-          </div>
-          <Badge
-            variant="outline"
-            className="bg-neutral-800/50 text-xs text-neutral-300"
-          >
-            {resource.kind}
-          </Badge>
-        </div>
-
-        <div className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-          <div className="text-neutral-400">Component</div>
-          <div className="text-neutral-300">{resource.component}</div>
-
-          <div className="text-neutral-400">Provider</div>
-          <div className="text-neutral-300">{resource.provider}</div>
-
-          <div className="text-neutral-400">Region</div>
-          <div className="text-neutral-300">{resource.region}</div>
-
-          <div className="text-neutral-400">Updated</div>
-          <div className="text-neutral-300">
-            {resource.lastUpdated.toLocaleDateString()}
-          </div>
-        </div>
-
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-400">Provider</span>
-            <span className="text-neutral-300">{resource.provider}</span>
-          </div>
-
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-neutral-400">Deployment Success</span>
-            <span
-              className={`text-${resource.healthScore > 90 ? "green" : resource.healthScore > 70 ? "amber" : "red"}-400`}
-            >
-              {resource.healthScore}%
-            </span>
-          </div>
-
-          <div className="mt-2 rounded-md bg-neutral-800/50 px-2 py-1.5 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-neutral-300">ID: {resource.id}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -399,9 +100,7 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
             {resources.length}
           </div>
           <div className="mt-1 flex items-center text-xs">
-            <span className="text-neutral-400">
-              Across {Object.keys(resourcesByComponent).length} components
-            </span>
+            <span className="text-neutral-400">Across 3 components</span>
           </div>
         </div>
 
@@ -485,11 +184,11 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
           </select>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
             <option value="all">All Components</option>
-            {Object.keys(resourcesByComponent).map((component) => (
+            {/* {Object.keys(resourcesByComponent).map((component) => (
               <option key={component} value={component.toLowerCase()}>
                 {component}
               </option>
-            ))}
+            ))} */}
           </select>
           <select className="rounded-md border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm text-neutral-300">
             <option value="all">All Status</option>
@@ -550,7 +249,9 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
       {/* Resource Content */}
       {selectedView === "grid" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredResources.map((resource) => renderResourceCard(resource))}
+          {resources.map((resource) => (
+            <ResourceCard key={resource.id} resource={resource} />
+          ))}
         </div>
       ) : (
         <div className="overflow-hidden rounded-md border border-neutral-800">
@@ -584,7 +285,7 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResources.map((resource) => (
+              {resources.map((resource) => (
                 <TableRow
                   key={resource.id}
                   className="border-b border-neutral-800/50 hover:bg-neutral-800/20"
@@ -596,53 +297,42 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
                     {resource.kind}
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    {resource.component}
+                    my-component
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    {resource.provider}
+                    my-provider
                   </TableCell>
                   <TableCell className="py-3 text-neutral-300">
-                    {resource.region}
+                    my-region
                   </TableCell>
                   <TableCell className="py-3">
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-16 rounded-full bg-neutral-800">
-                        <div
-                          className={`h-full rounded-full ${
-                            resource.healthScore > 90
-                              ? "bg-green-500"
-                              : resource.healthScore > 70
-                                ? "bg-amber-500"
-                                : resource.healthScore > 0
-                                  ? "bg-red-500"
-                                  : "bg-neutral-600"
-                          }`}
-                          style={{ width: `${resource.healthScore}%` }}
-                        />
+                        <div className={`h-full rounded-full bg-green-500`} />
                       </div>
-                      <span className="text-sm">{resource.healthScore}%</span>
+                      <span className="text-sm">100%</span>
                     </div>
                   </TableCell>
                   <TableCell className="py-3 text-sm text-neutral-400">
-                    {resource.lastUpdated.toLocaleString()}
+                    {resource.updatedAt?.toLocaleString()}
                   </TableCell>
                   <TableCell className="py-3">
                     <Badge
                       variant="outline"
-                      className={
-                        resource.status === "healthy"
-                          ? "border-green-500/30 bg-green-500/10 text-green-400"
-                          : resource.status === "degraded"
-                            ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                            : resource.status === "failed"
-                              ? "border-red-500/30 bg-red-500/10 text-red-400"
-                              : resource.status === "updating"
-                                ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
-                                : "border-neutral-500/30 bg-neutral-500/10 text-neutral-400"
-                      }
+                      className={`bg-green-500/10 text-green-400`}
+                      // className={
+                      //   resource.status === "healthy"
+                      //     ? "border-green-500/30 bg-green-500/10 text-green-400"
+                      //     : resource.status === "degraded"
+                      //       ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                      //       : resource.status === "failed"
+                      //         ? "border-red-500/30 bg-red-500/10 text-red-400"
+                      //         : resource.status === "updating"
+                      //           ? "border-blue-500/30 bg-blue-500/10 text-blue-400"
+                      //           : "border-neutral-500/30 bg-neutral-500/10 text-neutral-400"
+                      // }
                     >
-                      {resource.status.charAt(0).toUpperCase() +
-                        resource.status.slice(1)}
+                      Healthy
                     </Badge>
                   </TableCell>
                 </TableRow>
@@ -654,11 +344,11 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
 
       <div className="mt-4 flex items-center justify-between text-sm text-neutral-400">
         <div>
-          {filteredResources.length === resources.length ? (
+          {resources.length === resources.length ? (
             <>Showing all {resources.length} resources</>
           ) : (
             <>
-              Showing {filteredResources.length} of {resources.length} resources
+              Showing {resources.length} of {resources.length} resources
             </>
           )}
           {resourceFilter.conditions.length > 0 && (
@@ -669,12 +359,22 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
           )}
         </div>
         <div className="flex gap-2">
-          <button className="rounded-md border border-neutral-800 px-3 py-1 transition-colors hover:bg-neutral-800/30">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(page - 1)}
+            disabled={!hasPreviousPage}
+          >
             Previous
-          </button>
-          <button className="rounded-md border border-neutral-800 bg-neutral-800/40 px-3 py-1 transition-colors hover:bg-neutral-800/60">
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage(page + 1)}
+            disabled={!hasNextPage}
+          >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -704,7 +404,7 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
                 {resourceFilter.conditions.length > 0 ? (
                   <div className="space-y-2">
                     {resourceFilter.conditions.map(
-                      (condition: any, index: number) => (
+                      (condition: ResourceCondition, index: number) => (
                         <div
                           key={index}
                           className="flex items-center justify-between rounded border border-neutral-800 bg-neutral-800/30 p-3"
@@ -718,7 +418,9 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
                               equals
                             </span>
                             <span className="rounded bg-neutral-800 px-2 py-1 text-xs">
-                              {condition.value}
+                              {condition.type != "comparison"
+                                ? condition.value
+                                : condition.operator}
                             </span>
                           </div>
                           <button
@@ -802,11 +504,11 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
                       <option value="degraded">degraded</option>
                       <option value="failed">failed</option>
                       <option value="updating">updating</option>
-                      {Object.keys(resourcesByComponent).map((component) => (
+                      {/* {Object.keys(resourcesByComponent).map((component) => (
                         <option key={component} value={component}>
                           {component}
                         </option>
-                      ))}
+                      ))} */}
                     </select>
                   </div>
 
@@ -826,19 +528,18 @@ export const ResourcesPageContent: React.FC<{ environmentId: string }> = ({
                         ) as HTMLSelectElement;
 
                         if (typeSelect && valueSelect && valueSelect.value) {
-                          const newCondition = {
-                            type: typeSelect.value,
-                            operator: "equals",
-                            not: false,
-                            value: valueSelect.value,
-                          };
-
-                          const newFilter = { ...resourceFilter };
-                          newFilter.conditions = [
-                            ...resourceFilter.conditions,
-                            newCondition,
-                          ];
-                          setResourceFilter(newFilter);
+                          // const newCondition = {
+                          //   type: typeSelect.value,
+                          //   operator: "equals",
+                          //   not: false,
+                          //   value: valueSelect.value,
+                          // };
+                          // const newFilter = { ...resourceFilter };
+                          // newFilter.conditions = [
+                          //   ...resourceFilter.conditions,
+                          //   newCondition,
+                          // ];
+                          // setResourceFilter(newFilter);
                         }
                       }}
                     >
