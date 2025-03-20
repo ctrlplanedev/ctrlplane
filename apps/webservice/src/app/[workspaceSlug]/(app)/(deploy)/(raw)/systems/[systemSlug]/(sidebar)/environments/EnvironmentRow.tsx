@@ -71,27 +71,34 @@ export const EnvironmentCard: React.FC<{
     .environment(environment.id)
     .baseUrl();
 
+  const isLoading = isHealthSummaryLoading || !inView;
+
   return (
     <Link href={environmentUrl} className="block" ref={ref}>
       <Card className="transition-shadow duration-300 hover:shadow-md">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <div className="flex items-center space-x-2">
-            <div
-              className={cn(
-                "h-3 w-3 animate-pulse rounded-full",
-                statusColor === "green"
-                  ? "bg-green-400"
-                  : statusColor === "red"
-                    ? "bg-red-400"
-                    : "bg-neutral-400",
-              )}
-            />
+            {!isLoading && (
+              <div
+                className={cn(
+                  "h-3 w-3 animate-pulse rounded-full",
+                  statusColor === "green"
+                    ? "bg-green-400"
+                    : statusColor === "red"
+                      ? "bg-red-400"
+                      : "bg-neutral-400",
+                )}
+              />
+            )}
+            {isLoading && (
+              <div className="h-3 w-3 animate-pulse rounded-full bg-neutral-400" />
+            )}
             <CardTitle className="text-sm font-medium">
               {environment.name}
             </CardTitle>
           </div>
           <div className="flex items-center">
-            {!isHealthSummaryLoading && inView && (
+            {!isLoading && (
               <span
                 className={cn(
                   "rounded-full px-2.5 py-1 text-xs font-semibold",
@@ -105,9 +112,7 @@ export const EnvironmentCard: React.FC<{
                 {status}
               </span>
             )}
-            {(isHealthSummaryLoading || !inView) && (
-              <Skeleton className="h-6 w-16" />
-            )}
+            {isLoading && <Skeleton className="h-6 w-16 rounded-full" />}
             <div className="ml-2">
               <EnvironmentDropdown environment={environment}>
                 <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -121,26 +126,32 @@ export const EnvironmentCard: React.FC<{
         <CardContent className="mt-4 space-y-3">
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Resources</span>
-            <span className="text-sm font-medium">
-              {totalCount > 0 ? `${totalCount} total` : "None"}
-            </span>
+            {isLoading && <Skeleton className="h-4 w-16" />}
+            {!isLoading && (
+              <span className="text-sm font-medium">
+                {totalCount > 0 ? `${totalCount} total` : "None"}
+              </span>
+            )}
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Health</span>
-            <span
-              className={cn(
-                "text-sm font-medium",
-                statusColor === "green"
-                  ? "text-green-400"
-                  : statusColor === "red"
-                    ? "text-red-400"
-                    : "text-neutral-400",
-              )}
-            >
-              {totalCount > 0
-                ? `${healthyCount}/${totalCount} Healthy`
-                : "No resources"}
-            </span>
+            {isLoading && <Skeleton className="h-4 w-20" />}
+            {!isLoading && (
+              <span
+                className={cn(
+                  "text-sm font-medium",
+                  statusColor === "green"
+                    ? "text-green-400"
+                    : statusColor === "red"
+                      ? "text-red-400"
+                      : "text-neutral-400",
+                )}
+              >
+                {totalCount > 0
+                  ? `${healthyCount}/${totalCount} Healthy`
+                  : "No resources"}
+              </span>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
@@ -186,9 +197,7 @@ export const EnvironmentCard: React.FC<{
             )}
             {(!inView ||
               failureRateQ.isLoading ||
-              failureRateQ.data == null) && (
-              <span className="text-sm font-medium">-</span>
-            )}
+              failureRateQ.data == null) && <Skeleton className="h-4 w-28" />}
           </div>
         </CardContent>
       </Card>
