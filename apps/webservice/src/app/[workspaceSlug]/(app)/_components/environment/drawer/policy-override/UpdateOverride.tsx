@@ -11,6 +11,7 @@ import { useUpdateOverridePolicy } from "./useOverridePolicy";
 
 type Deployment = SCHEMA.Deployment & {
   versionChannels: SCHEMA.DeploymentVersionChannel[];
+  system: SCHEMA.System;
 };
 
 type Policy = NonNullable<
