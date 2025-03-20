@@ -14,6 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@ctrlplane/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@ctrlplane/ui/tooltip";
 
 import { api } from "~/trpc/react";
 
@@ -38,12 +44,22 @@ const DistroBar: React.FC<{
 
   return (
     <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-      {Object.values(versionDistro).map(({ percentage }, index) => (
-        <div
-          key={index}
-          className={`h-full ${colors[index % colors.length]}`}
-          style={{ width: `${percentage * 100}%` }}
-        />
+      {Object.entries(versionDistro).map(([version, { percentage }], index) => (
+        <TooltipProvider key={index}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                key={index}
+                className={`h-full ${colors[index % colors.length]}`}
+                style={{ width: `${percentage * 100}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent className="flex max-w-[284px] items-center gap-2">
+              <div>{version}</div>
+              <div>{percentage * 100}%</div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       ))}
     </div>
   );
@@ -75,8 +91,8 @@ const DeploymentRow: React.FC<{
           </span>
         </div>
       </TableCell>
-      <TableCell className="py-3">
-        <div>
+      <TableCell className="flex-grow py-3">
+        <div className="max-w-[600px]">
           <DistroBar versionDistro={versionDistro} isLoading={isLoading} />
           <div className="mt-1.5 flex text-xs text-neutral-400">
             {Object.values(versionDistro).length === 0 && (
@@ -93,7 +109,17 @@ const DeploymentRow: React.FC<{
                   className="flex items-center gap-1"
                   style={{ width: `${percentage * 100}%` }}
                 >
-                  {version}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="truncate">{version}</span>
+                      </TooltipTrigger>
+                      <TooltipContent className="flex max-w-[284px] items-center gap-2">
+                        <div>{version}</div>
+                        <div>{percentage * 100}%</div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               );
             })}
@@ -153,7 +179,7 @@ export const DeploymentTelemetryTable: React.FC<{
               <TableHead className="w-[200px] py-3 font-medium text-neutral-400">
                 Deployments
               </TableHead>
-              <TableHead className="w-[300px] py-3 font-medium text-neutral-400">
+              <TableHead className="w-[600px] py-3 font-medium text-neutral-400">
                 Current Distribution
               </TableHead>
               <TableHead className="w-[150px] py-3 font-medium text-neutral-400">
