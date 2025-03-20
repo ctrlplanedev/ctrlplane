@@ -3,6 +3,7 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
 import React from "react";
 import { useParams } from "next/navigation";
+import _ from "lodash";
 
 import { cn } from "@ctrlplane/ui";
 import { Skeleton } from "@ctrlplane/ui/skeleton";
@@ -24,45 +25,109 @@ import {
 import { api } from "~/trpc/react";
 
 const colors = [
-  "bg-green-500",
-  "bg-blue-500",
-  "bg-red-500",
-  "bg-purple-500",
-  "bg-amber-500",
+  "bg-teal-500",
+  "bg-orange-500",
+  "bg-indigo-500",
+  "bg-rose-500",
+  "bg-cyan-500",
 ];
 
+const OtherTooltip: React.FC<{
+  distros: { version: string; percentage: number }[];
+  children: React.ReactNode;
+}> = ({ distros, children }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="flex max-h-64 flex-col items-center gap-2 overflow-y-auto">
+        {distros.reverse().map(({ version, percentage }) => (
+          <div key={version} className="flex w-20 justify-between">
+            <span>{version}</span>
+            <span>{Number(percentage * 100).toFixed(1)}%</span>
+          </div>
+        ))}
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
+const DistroTooltip: React.FC<{
+  version: string;
+  percentage: number;
+  children: React.ReactNode;
+}> = ({ version, percentage, children }) => (
+  <TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="flex max-w-[284px] items-center gap-2">
+        <div>{version}</div>
+        <div>{Number(percentage * 100).toFixed(1)}%</div>
+      </TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);
+
 const DistroBar: React.FC<{
-  versionDistro: Record<string, { percentage: number }>;
+  distrosOver5Percent: { version: string; percentage: number }[];
+  other: {
+    percentage: number;
+    distros: { version: string; percentage: number }[];
+  };
   isLoading: boolean;
-}> = ({ versionDistro, isLoading }) => {
+}> = ({ distrosOver5Percent, other, isLoading }) => {
   if (isLoading) return <Skeleton className="h-1.5 w-full rounded-full" />;
 
-  if (Object.entries(versionDistro).length === 0)
+  if (distrosOver5Percent.length === 0 && other.distros.length === 0)
     return (
       <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted" />
     );
 
   return (
     <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
-      {Object.entries(versionDistro).map(([version, { percentage }], index) => (
-        <TooltipProvider key={index}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                key={index}
-                className={`h-full ${colors[index % colors.length]}`}
-                style={{ width: `${percentage * 100}%` }}
-              />
-            </TooltipTrigger>
-            <TooltipContent className="flex max-w-[284px] items-center gap-2">
-              <div>{version}</div>
-              <div>{percentage * 100}%</div>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <OtherTooltip {...other}>
+        <div
+          className="flex h-full bg-teal-500"
+          style={{ width: `${other.percentage * 100}%` }}
+        />
+      </OtherTooltip>
+
+      {distrosOver5Percent.map((distro, index) => (
+        <DistroTooltip key={index} {...distro}>
+          <div
+            className={`h-full ${colors[(index + 1) % colors.length]}`}
+            style={{ width: `${distro.percentage * 100}%` }}
+          />
+        </DistroTooltip>
       ))}
     </div>
   );
+};
+
+const getCleanedDistro = (
+  versionDistro: Record<string, { percentage: number }>,
+) => {
+  const distrosUnder5Percent = Object.entries(versionDistro).filter(
+    ([, { percentage }]) => percentage < 0.05,
+  );
+  const distrosOver5Percent = Object.entries(versionDistro)
+    .filter(([, { percentage }]) => percentage >= 0.05)
+    .map(([version, { percentage }]) => ({
+      version,
+      percentage,
+    }));
+
+  const other = {
+    percentage: _.sumBy(
+      distrosUnder5Percent,
+      ([, { percentage }]) => percentage,
+    ),
+    distros: distrosUnder5Percent.map(([version, { percentage }]) => ({
+      version,
+      percentage,
+    })),
+  };
+
+  return { distrosOver5Percent, other };
 };
 
 const DeploymentRow: React.FC<{
@@ -80,6 +145,12 @@ const DeploymentRow: React.FC<{
   const desiredVersion = telemetry?.desiredVersion ?? null;
   const tag = desiredVersion?.tag ?? "No version released";
 
+  const cleanedDistro = getCleanedDistro(versionDistro);
+  const { other, distrosOver5Percent } = cleanedDistro;
+  const isEmpty =
+    cleanedDistro.distrosOver5Percent.length === 0 &&
+    cleanedDistro.other.distros.length === 0;
+
   return (
     <TableRow>
       <TableCell className="py-3">
@@ -93,36 +164,36 @@ const DeploymentRow: React.FC<{
       </TableCell>
       <TableCell className="flex-grow py-3">
         <div className="max-w-[600px]">
-          <DistroBar versionDistro={versionDistro} isLoading={isLoading} />
+          <DistroBar {...cleanedDistro} isLoading={isLoading} />
           <div className="mt-1.5 flex text-xs text-neutral-400">
-            {Object.values(versionDistro).length === 0 && (
+            {isEmpty && (
               <span>
                 {isLoading
                   ? "Loading distribution..."
                   : "No resources deployed"}
               </span>
             )}
-            {Object.entries(versionDistro).map(([version, { percentage }]) => {
-              return (
-                <div
-                  key={version}
-                  className="flex items-center gap-1"
-                  style={{ width: `${percentage * 100}%` }}
-                >
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span className="truncate">{version}</span>
-                      </TooltipTrigger>
-                      <TooltipContent className="flex max-w-[284px] items-center gap-2">
-                        <div>{version}</div>
-                        <div>{percentage * 100}%</div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              );
-            })}
+            {other.percentage > 0 && (
+              <div
+                className="flex items-center justify-center gap-1"
+                style={{ width: `${other.percentage * 100}%` }}
+              >
+                <OtherTooltip {...other}>
+                  <span className="truncate">Other</span>
+                </OtherTooltip>
+              </div>
+            )}
+            {distrosOver5Percent.map((distro) => (
+              <div
+                key={distro.version}
+                className="flex items-center justify-center gap-1"
+                style={{ width: `${distro.percentage * 100}%` }}
+              >
+                <DistroTooltip {...distro}>
+                  <span className="truncate">{distro.version}</span>
+                </DistroTooltip>
+              </div>
+            ))}
           </div>
         </div>
       </TableCell>
