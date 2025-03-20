@@ -13,6 +13,7 @@ import {
 
 import { createTRPCRouter, protectedProcedure } from "../../../trpc";
 import { getDeploymentStats } from "./deployment-stats";
+import { getDesiredVersion } from "./desired-version";
 import { getVersionDistro } from "./version-distro";
 
 export const overviewRouter = createTRPCRouter({
@@ -139,14 +140,30 @@ export const overviewRouter = createTRPCRouter({
           )
           .then((rs) => rs.map((r) => r.id));
 
-        const versionDistro = await getVersionDistro(
+        const versionDistroPromise = getVersionDistro(
           ctx.db,
           environment,
           deployment,
           resourceIds,
         );
 
-        return { resourceCount: resourceIds.length, versionDistro };
+        const desiredVersionPromise = getDesiredVersion(
+          ctx.db,
+          environment,
+          deployment,
+          resourceIds,
+        );
+
+        const [versionDistro, desiredVersion] = await Promise.all([
+          versionDistroPromise,
+          desiredVersionPromise,
+        ]);
+
+        return {
+          resourceCount: resourceIds.length,
+          versionDistro,
+          desiredVersion,
+        };
       }),
   }),
 });
