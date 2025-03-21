@@ -4,21 +4,23 @@ import { notFound } from "next/navigation";
 import { api } from "~/trpc/server";
 import { SystemsPageContent } from "./SystemsPageContent";
 
-export const generateMetadata = async (props: {
+export const generateMetadata = async ({
+  params,
+}: {
   params: { workspaceSlug: string };
 }): Promise<Metadata> => {
-  try {
-    const workspace = await api.workspace.bySlug(props.params.workspaceSlug);
-    return {
-      title: `Systems | ${workspace?.name ?? props.params.workspaceSlug} | Ctrlplane`,
-      description: `Manage and deploy systems for the ${workspace?.name ?? props.params.workspaceSlug} workspace.`,
-    };
-  } catch {
-    return {
+  const { workspaceSlug } = params;
+
+  return api.workspace
+    .bySlug(workspaceSlug)
+    .then((workspace) => ({
+      title: `Systems | ${workspace?.name ?? workspaceSlug} | Ctrlplane`,
+      description: `Manage and deploy systems for the ${workspace?.name ?? workspaceSlug} workspace.`,
+    }))
+    .catch(() => ({
       title: "Systems | Ctrlplane",
       description: "Manage and deploy your systems with Ctrlplane.",
-    };
-  }
+    }));
 };
 
 export default async function SystemsPage(props: {
