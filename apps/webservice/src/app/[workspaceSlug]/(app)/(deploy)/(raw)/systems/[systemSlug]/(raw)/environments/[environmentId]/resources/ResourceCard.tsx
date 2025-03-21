@@ -1,6 +1,8 @@
 import type * as SCHEMA from "@ctrlplane/db/schema";
+import { IconCopy } from "@tabler/icons-react";
 
 import { Badge } from "@ctrlplane/ui/badge";
+import { toast } from "@ctrlplane/ui/toast";
 
 const statusColor = {
   healthy: "bg-green-500",
@@ -16,6 +18,14 @@ export const ResourceCard: React.FC<{
   resource: SCHEMA.Resource;
   resourceStatus?: ResourceStatus;
 }> = ({ resource, resourceStatus }) => {
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(resource.id);
+    toast("Resource ID copied", {
+      description: resource.id,
+      duration: 2000,
+    });
+  };
+
   return (
     <div
       key={resource.id}
@@ -37,6 +47,20 @@ export const ResourceCard: React.FC<{
       </div>
 
       <div className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+        <div className="text-neutral-400">ID</div>
+        <div className="flex items-center justify-end gap-1">
+          <span className="text-neutral-300">
+            {resource.id.split("-").at(0)}...
+          </span>
+          <button
+            onClick={handleCopyId}
+            className="text-neutral-400 hover:text-neutral-200"
+            title="Copy ID"
+          >
+            <IconCopy size={14} />
+          </button>
+        </div>
+
         <div className="text-neutral-400">Version</div>
         <div className="text-right text-neutral-300">{resource.version}</div>
 
@@ -66,12 +90,6 @@ export const ResourceCard: React.FC<{
           >
             10%
           </span>
-        </div>
-
-        <div className="mt-2 rounded-md bg-neutral-800/50 px-2 py-1.5 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="text-neutral-300">ID: {resource.id}</span>
-          </div>
         </div>
       </div>
     </div>
