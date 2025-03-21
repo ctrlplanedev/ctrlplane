@@ -14,9 +14,11 @@ import { api } from "~/trpc/react";
 export const useFilteredResources = (
   workspaceId: string,
   filter?: ResourceCondition | null,
+  limit?: number,
+  offset?: number,
 ) => {
   const resourcesQ = api.resource.byWorkspaceId.list.useQuery(
-    { workspaceId, filter: filter ?? undefined },
+    { workspaceId, filter: filter ?? undefined, limit, offset },
     { enabled: workspaceId !== "" },
   );
   return { ...resourcesQ, resources: resourcesQ.data?.items ?? [] };

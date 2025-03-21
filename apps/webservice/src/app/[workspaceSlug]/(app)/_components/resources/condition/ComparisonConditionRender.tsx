@@ -343,6 +343,17 @@ export const ComparisonConditionRender: React.FC<
             >
               Last sync
             </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                addCondition({
+                  type: ResourceFilterType.Version,
+                  operator: ResourceOperator.Equals,
+                  value: "",
+                })
+              }
+            >
+              Version
+            </DropdownMenuItem>
             {depth < 2 && (
               <DropdownMenuItem
                 onClick={() =>
